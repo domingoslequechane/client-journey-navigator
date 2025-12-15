@@ -1,13 +1,14 @@
 import { Client, StageConfig } from '@/types';
 import { ClientCard } from './ClientCard';
 import { cn } from '@/lib/utils';
-import { Search, Magnet, Scale, Rocket, Heart } from 'lucide-react';
+import { Search, Target, FileCheck, Cog, Megaphone, Heart } from 'lucide-react';
 
-const iconMap = {
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Search,
-  Magnet,
-  Scale,
-  Rocket,
+  Target,
+  FileCheck,
+  Cog,
+  Megaphone,
   Heart
 };
 
