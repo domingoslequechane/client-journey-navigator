@@ -1,4 +1,11 @@
-export type JourneyStage = 'discovery' | 'attraction' | 'consideration' | 'action' | 'advocacy';
+// ============= Journey & Stage Types =============
+export type SalesFunnelStage = 'prospecting' | 'qualification' | 'closing';
+export type OperationalStage = 'production' | 'campaigns' | 'retention';
+export type JourneyStage = SalesFunnelStage | OperationalStage;
+
+export type LeadSource = 'google_maps' | 'social_media' | 'referral' | 'visit' | 'inbound' | 'other';
+export type LeadTemperature = 'cold' | 'warm' | 'hot';
+export type ClientStatus = 'lead' | 'prospect' | 'active' | 'churned';
 
 export interface Client {
   id: string;
@@ -6,6 +13,8 @@ export interface Client {
   contactName: string;
   email: string;
   phone: string;
+  website?: string;
+  address?: string;
   industry: string;
   stage: JourneyStage;
   score: number;
@@ -15,7 +24,24 @@ export interface Client {
   notes: string;
   bant: BANTScore;
   tasks: Task[];
+  source: LeadSource;
+  temperature: LeadTemperature;
+  monthlyBudget: number;
+  trafficBudget?: number;
+  services: ServiceType[];
+  status: ClientStatus;
+  progress: number; // 0-9 for checklist progress
 }
+
+export type ServiceType = 
+  | 'social_management' 
+  | 'content_creation' 
+  | 'video_production'
+  | 'facebook_ads' 
+  | 'instagram_ads' 
+  | 'tiktok_ads'
+  | 'graphic_design'
+  | 'marketing_consulting';
 
 export interface BANTScore {
   budget: number;
@@ -36,6 +62,7 @@ export interface StageConfig {
   name: string;
   description: string;
   color: string;
+  borderColor: string;
   icon: string;
   checklist: ChecklistItem[];
 }
@@ -47,70 +74,169 @@ export interface ChecklistItem {
   required: boolean;
 }
 
-export const JOURNEY_STAGES: StageConfig[] = [
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'manager' | 'sales' | 'operations' | 'content';
+  roleLabel: string;
+  avatar?: string;
+  createdAt: string;
+  isActive: boolean;
+}
+
+// ============= Sales Funnel Stages (Funil de Vendas) =============
+export const SALES_FUNNEL_STAGES: StageConfig[] = [
   {
-    id: 'discovery',
-    name: 'Descoberta',
-    description: 'Consciência de marca e primeiro contato',
-    color: 'bg-info',
+    id: 'prospecting',
+    name: 'Prospecção de Leads',
+    description: 'Identificação e primeiro contato com potenciais clientes.',
+    color: 'bg-info/20',
+    borderColor: 'border-info',
     icon: 'Search',
     checklist: [
-      { id: 'd1', title: 'Pesquisa inicial do lead', description: 'Verificar presença digital e qualidade do marketing atual', required: true },
-      { id: 'd2', title: 'Primeiro contato realizado', description: 'Ligação, e-mail ou visita presencial', required: true },
-      { id: 'd3', title: 'Interesse demonstrado', description: 'Lead respondeu positivamente ao contato', required: true },
-      { id: 'd4', title: 'Reunião agendada', description: 'Data e hora confirmadas para apresentação', required: false },
+      { id: 'p1', title: 'Análise de perfil ideal de cliente (ICP)', description: 'Definir critérios do cliente ideal', required: true },
+      { id: 'p2', title: 'Pesquisar empresa no Google Maps', description: 'Verificar presença e avaliações', required: true },
+      { id: 'p3', title: 'Analisar redes sociais do prospect', description: 'Verificar qualidade do marketing atual', required: true },
+      { id: 'p4', title: 'Identificar pontos fracos no marketing', description: 'Encontrar oportunidades de melhoria', required: true },
+      { id: 'p5', title: 'Coletar informações de contato', description: 'Telefone, email, endereço', required: true },
+      { id: 'p6', title: 'Realizar primeira ligação de qualificação', description: 'Apresentar brevemente os serviços', required: true },
+      { id: 'p7', title: 'Fazer visita presencial (se aplicável)', description: 'Visita para empresas locais', required: false },
+      { id: 'p8', title: 'Agendar reunião de apresentação com decisor', description: 'Marcar data e hora com quem decide', required: true },
     ]
   },
   {
-    id: 'attraction',
-    name: 'Atração',
-    description: 'Geração de leads e engajamento',
-    color: 'bg-chart-5',
-    icon: 'Magnet',
+    id: 'qualification',
+    name: 'Qualificação e Proposta',
+    description: 'Entendimento das necessidades e apresentação da solução.',
+    color: 'bg-warning/20',
+    borderColor: 'border-warning',
+    icon: 'Target',
     checklist: [
-      { id: 'a1', title: 'Reunião de diagnóstico realizada', description: 'Entender dores e objetivos do cliente', required: true },
-      { id: 'a2', title: 'Qualificação BANT completa', description: 'Orçamento, Autoridade, Necessidade e Timeline', required: true },
-      { id: 'a3', title: 'Proposta comercial enviada', description: 'Documento detalhado com escopo e valores', required: true },
-      { id: 'a4', title: 'Follow-up pós-proposta', description: 'Contato para esclarecer dúvidas', required: false },
+      { id: 'q1', title: 'Preparar apresentação personalizada', description: 'Slides com cases relevantes', required: true },
+      { id: 'q2', title: 'Aplicar questionário de diagnóstico (BANT)', description: 'Budget, Authority, Need, Timeline', required: true },
+      { id: 'q3', title: 'Identificar dores, desafios e objetivos do cliente', description: 'Entender profundamente as necessidades', required: true },
+      { id: 'q4', title: 'Apresentar cases de sucesso relevantes', description: 'Mostrar resultados similares', required: true },
+      { id: 'q5', title: 'Preencher score BANT detalhado', description: 'Pontuar cada critério de 0-10', required: true },
+      { id: 'q6', title: 'Definir serviços de interesse e escopo', description: 'Listar serviços que o cliente precisa', required: true },
+      { id: 'q7', title: 'Elaborar proposta comercial completa', description: 'Documento com valores e condições', required: true },
+      { id: 'q8', title: 'Enviar proposta por email e agendar follow-up', description: 'Marcar data para retorno', required: true },
+      { id: 'q9', title: 'Sessão de perguntas e respostas sobre a proposta', description: 'Esclarecer todas as dúvidas', required: false },
     ]
   },
   {
-    id: 'consideration',
-    name: 'Consideração',
-    description: 'Qualificação e prova social',
-    color: 'bg-warning',
-    icon: 'Scale',
+    id: 'closing',
+    name: 'Fechamento e Onboarding',
+    description: 'Formalização do contrato e preparação para o início do projeto.',
+    color: 'bg-success/20',
+    borderColor: 'border-success',
+    icon: 'FileCheck',
     checklist: [
-      { id: 'c1', title: 'Contrato assinado', description: 'Termos e condições aceitos pelo cliente', required: true },
-      { id: 'c2', title: 'Onboarding iniciado', description: 'Coleta de informações e acessos', required: true },
-      { id: 'c3', title: 'Redes sociais configuradas', description: 'Acesso ou criação de perfis', required: true },
-      { id: 'c4', title: 'Materiais coletados', description: 'Logo, fotos, informações de contato', required: true },
-    ]
-  },
-  {
-    id: 'action',
-    name: 'Ação',
-    description: 'Conversão e entrega de valor',
-    color: 'bg-primary',
-    icon: 'Rocket',
-    checklist: [
-      { id: 'ac1', title: 'Primeira entrega realizada', description: 'Conteúdo inicial publicado', required: true },
-      { id: 'ac2', title: 'Calendário editorial definido', description: 'Planejamento de conteúdo mensal', required: true },
-      { id: 'ac3', title: 'Campanha de tráfego pago ativa', description: 'Anúncios configurados e veiculando', required: false },
-      { id: 'ac4', title: 'Relatório mensal enviado', description: 'Métricas e resultados do período', required: true },
-    ]
-  },
-  {
-    id: 'advocacy',
-    name: 'Apologia',
-    description: 'Fidelização e indicação',
-    color: 'bg-success',
-    icon: 'Heart',
-    checklist: [
-      { id: 'ad1', title: 'Resultados mensuráveis alcançados', description: 'KPIs atingidos conforme proposta', required: true },
-      { id: 'ad2', title: 'Depoimento coletado', description: 'Feedback positivo documentado', required: false },
-      { id: 'ad3', title: 'Indicações solicitadas', description: 'Pedido de referências a parceiros', required: true },
-      { id: 'ad4', title: 'Upsell/Cross-sell proposto', description: 'Novos serviços oferecidos', required: false },
+      { id: 'c1', title: 'Realizar follow-up da proposta e negociação final', description: 'Ajustes finais de valores e escopo', required: true },
+      { id: 'c2', title: 'Negociar ajustes contratuais se necessário', description: 'Alinhar termos e condições', required: false },
+      { id: 'c3', title: 'Elaborar contrato de prestação de serviços', description: 'Documento legal completo', required: true },
+      { id: 'c4', title: 'Obter assinatura do contrato (digital ou físico)', description: 'Formalizar o acordo', required: true },
+      { id: 'c5', title: 'Coletar dados fiscais do cliente (NUIT, endereço, etc.)', description: 'Informações para faturação', required: true },
+      { id: 'c6', title: 'Solicitar acessos a plataformas (redes sociais, Google Analytics, etc.)', description: 'Acesso às ferramentas necessárias', required: true },
+      { id: 'c7', title: 'Receber logotipo e materiais de marca em alta resolução', description: 'Arquivos para criação de conteúdo', required: true },
+      { id: 'c8', title: 'Coletar fotos e vídeos de produtos/serviços', description: 'Material visual para campanhas', required: true },
+      { id: 'c9', title: 'Criar pastas de arquivos e organização interna do cliente', description: 'Estrutura de pastas no Drive', required: true },
+      { id: 'c10', title: 'Reunião de alinhamento de expectativas (Kick-off com cliente)', description: 'Primeira reunião oficial', required: true },
     ]
   }
 ];
+
+// ============= Operational Flow Stages (Fluxo Operacional) =============
+export const OPERATIONAL_FLOW_STAGES: StageConfig[] = [
+  {
+    id: 'production',
+    name: 'Produção Contínua',
+    description: 'Execução e gestão de projetos em ciclos recorrentes (trimestral ou durante o contrato).',
+    color: 'bg-purple-500/20',
+    borderColor: 'border-purple-500',
+    icon: 'Cog',
+    checklist: [
+      { id: 'pr1', title: 'Planejamento trimestral de conteúdo e campanhas', description: 'Calendário editorial do período', required: true },
+      { id: 'pr2', title: 'Reunião mensal de performance e ajustes estratégicos', description: 'Análise de métricas e otimização', required: true },
+      { id: 'pr3', title: 'Criação e agendamento de posts para redes sociais', description: 'Conteúdo programado semanalmente', required: true },
+      { id: 'pr4', title: 'Produção de vídeos curtos e reels', description: 'Conteúdo audiovisual dinâmico', required: true },
+      { id: 'pr5', title: 'Criação de artigos para blog ou e-mail marketing', description: 'Conteúdo de valor agregado', required: false },
+      { id: 'pr6', title: 'Monitoramento de tendências e adaptação de conteúdo', description: 'Acompanhar trends e viralizar', required: true },
+    ]
+  },
+  {
+    id: 'campaigns',
+    name: 'Gestão de Campanhas',
+    description: 'Planejamento, execução e otimização de campanhas de marketing.',
+    color: 'bg-primary/20',
+    borderColor: 'border-primary',
+    icon: 'Megaphone',
+    checklist: [
+      { id: 'cm1', title: 'Definição de objetivos e orçamento de campanha com o cliente', description: 'Metas claras e investimento', required: true },
+      { id: 'cm2', title: 'Pesquisa de público-alvo e segmentação detalhada', description: 'Personas e audiências', required: true },
+      { id: 'cm3', title: 'Criação de criativos (imagens/vídeos) e copies persuasivas para anúncios', description: 'Material para as campanhas', required: true },
+      { id: 'cm4', title: 'Configuração de pixels e eventos de conversão nas plataformas', description: 'Tracking adequado', required: true },
+      { id: 'cm5', title: 'Lançamento das primeiras campanhas (Facebook Ads, Google Ads, TikTok Ads)', description: 'Início da veiculação', required: true },
+      { id: 'cm6', title: 'Monitoramento diário de performance e gastos das campanhas', description: 'Acompanhamento constante', required: true },
+      { id: 'cm7', title: 'Realização de testes A/B (criativos, públicos, copies) para otimização', description: 'Otimização baseada em dados', required: true },
+      { id: 'cm8', title: 'Otimização de campanhas para CPA/ROAS (Custo por Aquisição/Retorno sobre Anúncio)', description: 'Melhoria de resultados', required: true },
+      { id: 'cm9', title: 'Análise de dados e insights para melhoria contínua das estratégias', description: 'Aprendizados aplicados', required: true },
+      { id: 'cm10', title: 'Relatório de performance mensal com análise e recomendações', description: 'Documento mensal completo', required: true },
+    ]
+  },
+  {
+    id: 'retention',
+    name: 'Fidelização e Sucesso',
+    description: 'Garantia da satisfação do cliente e busca por novas oportunidades.',
+    color: 'bg-rose-500/20',
+    borderColor: 'border-rose-500',
+    icon: 'Heart',
+    checklist: [
+      { id: 'r1', title: 'Reunião de resultados trimestral com o cliente para revisão de KPIs', description: 'Apresentação de resultados', required: true },
+      { id: 'r2', title: 'Coleta de feedback proativo do cliente (pesquisas de satisfação, NPS)', description: 'Medir satisfação', required: true },
+      { id: 'r3', title: 'Identificação de oportunidades de upsell/cross-sell de novos serviços', description: 'Expandir escopo', required: true },
+      { id: 'r4', title: 'Solicitação de depoimentos e gravação de cases de sucesso', description: 'Material para portfólio', required: true },
+      { id: 'r5', title: 'Incentivo a indicações e referências para novos clientes', description: 'Programa de indicações', required: true },
+      { id: 'r6', title: 'Análise de churn risk e desenvolvimento de planos de ação preventivos', description: 'Evitar cancelamentos', required: true },
+      { id: 'r7', title: 'Proposta de renovação de contrato com novos objetivos e estratégias', description: 'Renovar parceria', required: true },
+      { id: 'r8', title: 'Celebração de marcos e conquistas do cliente (aniversários, resultados)', description: 'Relacionamento próximo', required: false },
+      { id: 'r9', title: 'Envio de conteúdos de valor adicionais (e-books, webinars)', description: 'Agregar valor extra', required: false },
+      { id: 'r10', title: 'Manutenção de um relacionamento próximo e consultivo', description: 'Parceria de longo prazo', required: true },
+    ]
+  }
+];
+
+// ============= All Stages Combined =============
+export const ALL_STAGES: StageConfig[] = [...SALES_FUNNEL_STAGES, ...OPERATIONAL_FLOW_STAGES];
+
+// Legacy support
+export const JOURNEY_STAGES = ALL_STAGES;
+
+// ============= Service Labels =============
+export const SERVICE_LABELS: Record<ServiceType, string> = {
+  social_management: 'Gestão de Redes Sociais',
+  content_creation: 'Criação de Conteúdo',
+  video_production: 'Produção de Vídeo',
+  facebook_ads: 'Tráfego Pago Facebook',
+  instagram_ads: 'Tráfego Pago Instagram',
+  tiktok_ads: 'Tráfego Pago TikTok',
+  graphic_design: 'Design Gráfico',
+  marketing_consulting: 'Consultoria de Marketing',
+};
+
+// ============= Source Labels =============
+export const SOURCE_LABELS: Record<LeadSource, string> = {
+  google_maps: 'Google Maps',
+  social_media: 'Redes Sociais',
+  referral: 'Indicação',
+  visit: 'Visita Presencial',
+  inbound: 'Inbound',
+  other: 'Outro',
+};
+
+// ============= Temperature Labels =============
+export const TEMPERATURE_LABELS: Record<LeadTemperature, string> = {
+  cold: 'Frio',
+  warm: 'Morno',
+  hot: 'Quente',
+};

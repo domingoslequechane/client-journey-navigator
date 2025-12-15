@@ -4,21 +4,23 @@ import {
   LayoutDashboard,
   Users,
   Kanban,
-  Target,
+  UserPlus,
   CheckSquare,
   Sparkles,
   Settings,
   Home,
-  LogOut
+  Workflow,
+  UsersRound
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
-  { name: 'Pipeline', href: '/app/pipeline', icon: Kanban },
+  { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban },
+  { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow },
   { name: 'Clientes', href: '/app/clients', icon: Users },
-  { name: 'Qualificação', href: '/app/qualification', icon: Target },
+  { name: 'Novo Cliente', href: '/app/new-client', icon: UserPlus },
   { name: 'Checklists', href: '/app/checklists', icon: CheckSquare },
-  { name: 'Assistente IA', href: '/app/ai-assistant', icon: Sparkles },
+  { name: 'Equipe', href: '/app/team', icon: UsersRound },
 ];
 
 export function Sidebar() {
@@ -56,11 +58,16 @@ export function Sidebar() {
 
       <div className="p-4 border-t border-border space-y-1">
         <Link
-          to="/"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          to="/app/ai-assistant"
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+            location.pathname === '/app/ai-assistant'
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+          )}
         >
-          <Home className="h-5 w-5" />
-          Voltar ao Site
+          <Sparkles className="h-5 w-5" />
+          Assistente IA
         </Link>
         <Link
           to="/app/settings"
@@ -68,6 +75,13 @@ export function Sidebar() {
         >
           <Settings className="h-5 w-5" />
           Configurações
+        </Link>
+        <Link
+          to="/"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          <Home className="h-5 w-5" />
+          Voltar ao Site
         </Link>
       </div>
     </div>

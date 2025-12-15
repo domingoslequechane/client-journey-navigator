@@ -1,125 +1,160 @@
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { dashboardStats, mockClients } from '@/data/mockData';
-import { JOURNEY_STAGES } from '@/types';
-import { Users, TrendingUp, DollarSign, Target, Calendar, ArrowUpRight, ArrowRight } from 'lucide-react';
+import { SALES_FUNNEL_STAGES, OPERATIONAL_FLOW_STAGES, ALL_STAGES, TEMPERATURE_LABELS, SOURCE_LABELS } from '@/types';
+import { Users, TrendingUp, Target, Award, Calendar, ArrowRight, UserPlus, Kanban, Workflow, CheckSquare, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { AIButton } from '@/components/ui/ai-button';
-import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
-  const [aiInsight, setAiInsight] = useState<string | null>(null);
-  const [isLoadingAi, setIsLoadingAi] = useState(false);
+  const recentClients = mockClients.slice(0, 3);
+  const salesFunnelClients = mockClients.filter(c => ['prospecting', 'qualification', 'closing'].includes(c.stage));
+  const operationalClients = mockClients.filter(c => ['production', 'campaigns', 'retention'].includes(c.stage));
 
-  const recentClients = mockClients.slice(0, 5);
-
-  const handleAIAnalysis = () => {
-    setIsLoadingAi(true);
-    setTimeout(() => {
-      setAiInsight(
-        "📊 **Análise do Pipeline:**\n\n" +
-        "• Você tem 2 leads na fase de **Descoberta** - recomendo priorizar o acompanhamento para converter para Atração.\n\n" +
-        "• O lead **Clínica Vida Saudável** está há 3 dias aguardando proposta - risco de perda. Envie a proposta hoje!\n\n" +
-        "• Excelente taxa de conversão de 62.5% - acima da média do mercado (45%).\n\n" +
-        "• **Sugestão:** Aproveite o sucesso da Farmácia Central para solicitar mais 2 indicações esta semana."
-      );
-      setIsLoadingAi(false);
-    }, 2000);
-  };
+  const quickActions = [
+    { title: 'Adicionar Novo Cliente', description: 'Cadastre um novo lead ou cliente', icon: UserPlus, href: '/app/new-client', color: 'text-info' },
+    { title: 'Ver Funil de Vendas', description: 'Kanban visual da jornada do cliente', icon: Kanban, href: '/app/sales-funnel', color: 'text-success' },
+    { title: 'Ver Fluxo Operacional', description: 'Acompanhe clientes em produção e retenção', icon: Workflow, href: '/app/operational-flow', color: 'text-purple-500' },
+    { title: 'Checklists de Processo', description: 'Acompanhe as tarefas por fase', icon: CheckSquare, href: '/app/checklists', color: 'text-rose-500' },
+  ];
 
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Visão geral do seu pipeline de clientes</p>
+          <p className="text-muted-foreground mt-1">Visão geral da jornada dos seus clientes</p>
         </div>
-        <AIButton onClick={handleAIAnalysis} isLoading={isLoadingAi}>
-          Análise Geral
-        </AIButton>
+        <Link to="/app/new-client">
+          <Button className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            Novo Cliente
+          </Button>
+        </Link>
       </div>
-
-      {/* AI Insight */}
-      {aiInsight && (
-        <div className="mb-8 bg-gradient-to-r from-primary/10 to-chart-5/10 border border-primary/20 rounded-xl p-6">
-          <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <span className="text-primary-foreground text-lg">🤖</span>
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold mb-2">Insights do Assistente de IA</h3>
-              <div className="text-sm text-muted-foreground whitespace-pre-line">{aiInsight}</div>
-            </div>
-            <button 
-              onClick={() => setAiInsight(null)}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatsCard 
           title="Total de Clientes" 
           value={dashboardStats.totalClients}
+          description="Na base de dados"
           icon={Users}
-          trend={{ value: 25, isPositive: true }}
+          trend={{ value: 12, isPositive: true, label: 'este mês' }}
+          variant="info"
         />
         <StatsCard 
           title="Clientes Ativos" 
           value={dashboardStats.activeClients}
+          description="Em execução ou fidelização"
           icon={TrendingUp}
-          trend={{ value: 12, isPositive: true }}
+          variant="success"
         />
         <StatsCard 
-          title="Receita Mensal" 
-          value={`${(dashboardStats.totalRevenue / 1000).toFixed(0)}k MT`}
-          icon={DollarSign}
-          trend={{ value: 18, isPositive: true }}
+          title="Leads Qualificados" 
+          value={dashboardStats.qualifiedLeads}
+          description="Prontos para fechamento"
+          icon={Target}
+          variant="warning"
         />
         <StatsCard 
           title="Taxa de Conversão" 
           value={`${dashboardStats.conversionRate}%`}
-          icon={Target}
-          trend={{ value: 5, isPositive: true }}
+          description="Leads → Clientes"
+          icon={Award}
+          variant="primary"
         />
       </div>
 
-      {/* Pipeline Overview & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Pipeline Distribution */}
-        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-6">
+      {/* Sales Funnel Overview */}
+      <div className="bg-card border border-border rounded-xl p-6 mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold">Funil de Vendas por Fase</h2>
+            <p className="text-sm text-muted-foreground">Distribuição dos clientes no funil de vendas</p>
+          </div>
+          <Link to="/app/sales-funnel">
+            <Button variant="ghost" size="sm" className="gap-2">
+              Ver Funil de Vendas
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {SALES_FUNNEL_STAGES.map((stage) => {
+            const count = mockClients.filter(c => c.stage === stage.id).length;
+            return (
+              <div 
+                key={stage.id} 
+                className={cn(
+                  "p-6 rounded-xl border-2 text-center transition-all hover:scale-105",
+                  stage.borderColor,
+                  stage.color
+                )}
+              >
+                <div className="text-4xl font-bold mb-2">{count}</div>
+                <div className="text-sm font-medium">{stage.name}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Clients */}
+        <div className="bg-card border border-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold">Distribuição do Pipeline</h2>
-            <Link to="/app/pipeline">
-              <Button variant="ghost" size="sm" className="gap-2">
-                Ver Pipeline
-                <ArrowRight className="h-4 w-4" />
+            <h2 className="text-lg font-semibold">Clientes Recentes</h2>
+            <Link to="/app/clients">
+              <Button variant="ghost" size="sm" className="text-primary">
+                Ver todos
               </Button>
             </Link>
           </div>
           
           <div className="space-y-4">
-            {JOURNEY_STAGES.map((stage) => {
-              const count = dashboardStats.clientsByStage[stage.id];
-              const percentage = (count / dashboardStats.totalClients) * 100;
-              
+            {recentClients.map((client) => {
+              const stage = ALL_STAGES.find(s => s.id === client.stage);
               return (
-                <div key={stage.id} className="flex items-center gap-4">
-                  <div className="w-28 text-sm font-medium">{stage.name}</div>
-                  <div className="flex-1 h-8 bg-muted rounded-lg overflow-hidden">
-                    <div 
-                      className={`h-full ${stage.color} flex items-center justify-end pr-3 transition-all duration-500`}
-                      style={{ width: `${Math.max(percentage, 10)}%` }}
-                    >
-                      <span className="text-xs font-bold text-primary-foreground">{count}</span>
+                <div key={client.id} className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-primary font-semibold text-sm">
+                        {client.companyName.charAt(0)}
+                      </span>
                     </div>
-                  </div>
-                  <div className="w-12 text-sm text-muted-foreground text-right">
-                    {percentage.toFixed(0)}%
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-medium truncate">{client.companyName}</p>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">{client.contactName}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">{client.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant={client.temperature === 'hot' ? 'default' : 'secondary'} className="text-xs">
+                          {TEMPERATURE_LABELS[client.temperature]}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {SOURCE_LABELS[client.source]}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between mt-3">
+                        <span className="text-xs text-muted-foreground">Progresso</span>
+                        <span className="text-xs text-muted-foreground">{client.progress}/9</span>
+                      </div>
+                      <Progress value={(client.progress / 9) * 100} className="h-1 mt-1" />
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-muted-foreground">Orçamento Mensal</span>
+                        <span className="text-sm font-medium text-primary">{client.monthlyBudget.toLocaleString()} MT</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -127,41 +162,25 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Quick Actions */}
         <div className="bg-card border border-border rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold">Atividade Recente</h2>
-            <Link to="/app/clients">
-              <Button variant="ghost" size="sm" className="gap-2">
-                Ver Todos
-                <ArrowUpRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+          <h2 className="text-lg font-semibold mb-6">Ações Rápidas</h2>
           
-          <div className="space-y-4">
-            {recentClients.map((client) => {
-              const stage = JOURNEY_STAGES.find(s => s.id === client.stage);
-              return (
-                <div key={client.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-primary font-semibold text-sm">
-                      {client.companyName.charAt(0)}
-                    </span>
+          <div className="space-y-3">
+            {quickActions.map((action) => (
+              <Link key={action.href} to={action.href}>
+                <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer">
+                  <div className={cn("h-10 w-10 rounded-lg bg-muted flex items-center justify-center", action.color)}>
+                    <action.icon className="h-5 w-5" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{client.companyName}</p>
-                    <p className="text-xs text-muted-foreground">{stage?.name}</p>
+                  <div className="flex-1">
+                    <p className="font-medium">{action.title}</p>
+                    <p className="text-sm text-muted-foreground">{action.description}</p>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(client.lastContact).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                    </span>
-                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 </div>
-              );
-            })}
+              </Link>
+            ))}
           </div>
         </div>
       </div>

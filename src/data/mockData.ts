@@ -1,4 +1,4 @@
-import { Client, JourneyStage } from '@/types';
+import { Client, TeamMember } from '@/types';
 
 export const mockClients: Client[] = [
   {
@@ -7,17 +7,26 @@ export const mockClients: Client[] = [
     contactName: 'Maria Silva',
     email: 'maria@sabordaterra.co.mz',
     phone: '+258 84 123 4567',
+    website: 'www.sabordaterra.co.mz',
+    address: 'Av. Eduardo Mondlane, 456 - Maputo',
     industry: 'Restauração',
-    stage: 'discovery',
+    stage: 'prospecting',
     score: 45,
     createdAt: '2024-12-01',
     lastContact: '2024-12-14',
     notes: 'Interessada em aumentar presença no Instagram',
     bant: { budget: 3, authority: 4, need: 5, timeline: 4 },
     tasks: [
-      { id: 't1', title: 'Pesquisa inicial do lead', completed: true, stageId: 'discovery' },
-      { id: 't2', title: 'Primeiro contato realizado', completed: true, stageId: 'discovery' },
-    ]
+      { id: 't1', title: 'Pesquisa inicial do lead', completed: true, stageId: 'prospecting' },
+      { id: 't2', title: 'Primeiro contato realizado', completed: true, stageId: 'prospecting' },
+    ],
+    source: 'google_maps',
+    temperature: 'warm',
+    monthlyBudget: 5000,
+    trafficBudget: 500,
+    services: ['social_management', 'content_creation'],
+    status: 'prospect',
+    progress: 2
   },
   {
     id: '2',
@@ -25,18 +34,27 @@ export const mockClients: Client[] = [
     contactName: 'Dr. João Fernandes',
     email: 'joao@vidasaudavel.co.mz',
     phone: '+258 82 987 6543',
+    website: 'www.vidasaudavel.co.mz',
+    address: 'Rua da Resistência, 123 - Maputo',
     industry: 'Saúde',
-    stage: 'attraction',
+    stage: 'qualification',
     score: 72,
     createdAt: '2024-11-15',
     lastContact: '2024-12-13',
     notes: 'Precisa de website e gestão de redes sociais',
     bant: { budget: 4, authority: 5, need: 5, timeline: 3 },
     tasks: [
-      { id: 't3', title: 'Reunião de diagnóstico realizada', completed: true, stageId: 'attraction' },
-      { id: 't4', title: 'Qualificação BANT completa', completed: true, stageId: 'attraction' },
-      { id: 't5', title: 'Proposta comercial enviada', completed: false, stageId: 'attraction' },
-    ]
+      { id: 't3', title: 'Reunião de diagnóstico realizada', completed: true, stageId: 'qualification' },
+      { id: 't4', title: 'Qualificação BANT completa', completed: true, stageId: 'qualification' },
+      { id: 't5', title: 'Proposta comercial enviada', completed: false, stageId: 'qualification' },
+    ],
+    source: 'referral',
+    temperature: 'hot',
+    monthlyBudget: 12000,
+    trafficBudget: 2000,
+    services: ['social_management', 'content_creation', 'facebook_ads', 'instagram_ads'],
+    status: 'prospect',
+    progress: 5
   },
   {
     id: '3',
@@ -44,18 +62,27 @@ export const mockClients: Client[] = [
     contactName: 'Carlos Nhaca',
     email: 'carlos@autopecas.co.mz',
     phone: '+258 86 555 7890',
+    website: 'www.autopecasmaputo.co.mz',
+    address: 'Av. Julius Nyerere, 789 - Maputo',
     industry: 'Comércio',
-    stage: 'consideration',
+    stage: 'closing',
     score: 85,
     createdAt: '2024-10-20',
     lastContact: '2024-12-12',
     notes: 'Contrato assinado, aguardando materiais',
     bant: { budget: 5, authority: 5, need: 4, timeline: 5 },
     tasks: [
-      { id: 't6', title: 'Contrato assinado', completed: true, stageId: 'consideration' },
-      { id: 't7', title: 'Onboarding iniciado', completed: true, stageId: 'consideration' },
-      { id: 't8', title: 'Redes sociais configuradas', completed: false, stageId: 'consideration' },
-    ]
+      { id: 't6', title: 'Contrato assinado', completed: true, stageId: 'closing' },
+      { id: 't7', title: 'Onboarding iniciado', completed: true, stageId: 'closing' },
+      { id: 't8', title: 'Redes sociais configuradas', completed: false, stageId: 'closing' },
+    ],
+    source: 'visit',
+    temperature: 'hot',
+    monthlyBudget: 8000,
+    trafficBudget: 1500,
+    services: ['social_management', 'video_production', 'facebook_ads'],
+    status: 'active',
+    progress: 7
   },
   {
     id: '4',
@@ -63,18 +90,27 @@ export const mockClients: Client[] = [
     contactName: 'Ana Lopes',
     email: 'ana@praiadourada.co.mz',
     phone: '+258 84 222 3333',
+    website: 'www.praiadourada.co.mz',
+    address: 'Praia do Tofo, Inhambane',
     industry: 'Turismo',
-    stage: 'action',
+    stage: 'campaigns',
     score: 92,
     createdAt: '2024-09-10',
     lastContact: '2024-12-10',
     notes: 'Campanhas de tráfego gerando resultados excelentes',
     bant: { budget: 5, authority: 5, need: 5, timeline: 5 },
     tasks: [
-      { id: 't9', title: 'Primeira entrega realizada', completed: true, stageId: 'action' },
-      { id: 't10', title: 'Calendário editorial definido', completed: true, stageId: 'action' },
-      { id: 't11', title: 'Campanha de tráfego pago ativa', completed: true, stageId: 'action' },
-    ]
+      { id: 't9', title: 'Primeira entrega realizada', completed: true, stageId: 'production' },
+      { id: 't10', title: 'Calendário editorial definido', completed: true, stageId: 'production' },
+      { id: 't11', title: 'Campanha de tráfego pago ativa', completed: true, stageId: 'campaigns' },
+    ],
+    source: 'inbound',
+    temperature: 'hot',
+    monthlyBudget: 25000,
+    trafficBudget: 5000,
+    services: ['social_management', 'content_creation', 'video_production', 'facebook_ads', 'instagram_ads', 'tiktok_ads'],
+    status: 'active',
+    progress: 9
   },
   {
     id: '5',
@@ -82,18 +118,27 @@ export const mockClients: Client[] = [
     contactName: 'Roberto Machava',
     email: 'roberto@farmaciacentral.co.mz',
     phone: '+258 82 444 5555',
+    website: 'www.farmaciacentral.co.mz',
+    address: 'Av. 24 de Julho, 321 - Maputo',
     industry: 'Saúde',
-    stage: 'advocacy',
+    stage: 'retention',
     score: 98,
     createdAt: '2024-06-01',
     lastContact: '2024-12-08',
     notes: 'Cliente satisfeito, já indicou 2 novos leads',
     bant: { budget: 5, authority: 5, need: 5, timeline: 5 },
     tasks: [
-      { id: 't12', title: 'Resultados mensuráveis alcançados', completed: true, stageId: 'advocacy' },
-      { id: 't13', title: 'Depoimento coletado', completed: true, stageId: 'advocacy' },
-      { id: 't14', title: 'Indicações solicitadas', completed: true, stageId: 'advocacy' },
-    ]
+      { id: 't12', title: 'Resultados mensuráveis alcançados', completed: true, stageId: 'retention' },
+      { id: 't13', title: 'Depoimento coletado', completed: true, stageId: 'retention' },
+      { id: 't14', title: 'Indicações solicitadas', completed: true, stageId: 'retention' },
+    ],
+    source: 'referral',
+    temperature: 'hot',
+    monthlyBudget: 15000,
+    trafficBudget: 3000,
+    services: ['social_management', 'content_creation', 'facebook_ads', 'instagram_ads'],
+    status: 'active',
+    progress: 9
   },
   {
     id: '6',
@@ -101,16 +146,23 @@ export const mockClients: Client[] = [
     contactName: 'Dra. Teresa Matsinhe',
     email: 'teresa@advocaciamz.co.mz',
     phone: '+258 84 777 8888',
+    address: 'Av. Friedrich Engels, 100 - Maputo',
     industry: 'Serviços',
-    stage: 'discovery',
+    stage: 'prospecting',
     score: 35,
     createdAt: '2024-12-10',
     lastContact: '2024-12-14',
     notes: 'Lead frio, precisa de mais nurturing',
     bant: { budget: 2, authority: 4, need: 3, timeline: 2 },
     tasks: [
-      { id: 't15', title: 'Pesquisa inicial do lead', completed: true, stageId: 'discovery' },
-    ]
+      { id: 't15', title: 'Pesquisa inicial do lead', completed: true, stageId: 'prospecting' },
+    ],
+    source: 'google_maps',
+    temperature: 'cold',
+    monthlyBudget: 0,
+    services: ['social_management'],
+    status: 'lead',
+    progress: 1
   },
   {
     id: '7',
@@ -118,18 +170,27 @@ export const mockClients: Client[] = [
     contactName: 'Manuel Sitoe',
     email: 'manuel@bompreco.co.mz',
     phone: '+258 86 999 1111',
+    website: 'www.bompreco.co.mz',
+    address: 'Av. Vladimir Lenine, 567 - Maputo',
     industry: 'Comércio',
-    stage: 'attraction',
+    stage: 'qualification',
     score: 68,
     createdAt: '2024-11-25',
     lastContact: '2024-12-11',
     notes: 'Proposta enviada, aguardando retorno',
     bant: { budget: 4, authority: 4, need: 4, timeline: 3 },
     tasks: [
-      { id: 't16', title: 'Reunião de diagnóstico realizada', completed: true, stageId: 'attraction' },
-      { id: 't17', title: 'Qualificação BANT completa', completed: true, stageId: 'attraction' },
-      { id: 't18', title: 'Proposta comercial enviada', completed: true, stageId: 'attraction' },
-    ]
+      { id: 't16', title: 'Reunião de diagnóstico realizada', completed: true, stageId: 'qualification' },
+      { id: 't17', title: 'Qualificação BANT completa', completed: true, stageId: 'qualification' },
+      { id: 't18', title: 'Proposta comercial enviada', completed: true, stageId: 'qualification' },
+    ],
+    source: 'social_media',
+    temperature: 'warm',
+    monthlyBudget: 10000,
+    trafficBudget: 2000,
+    services: ['social_management', 'content_creation', 'video_production'],
+    status: 'prospect',
+    progress: 6
   },
   {
     id: '8',
@@ -137,31 +198,82 @@ export const mockClients: Client[] = [
     contactName: 'Pedro Cossa',
     email: 'pedro@fitnesspro.co.mz',
     phone: '+258 82 333 4444',
+    website: 'www.fitnesspro.co.mz',
+    address: 'Rua da Argélia, 234 - Maputo',
     industry: 'Fitness',
-    stage: 'action',
+    stage: 'production',
     score: 88,
     createdAt: '2024-08-15',
     lastContact: '2024-12-09',
     notes: 'Conteúdo viral no TikTok, +500 novos seguidores',
     bant: { budget: 4, authority: 5, need: 5, timeline: 4 },
     tasks: [
-      { id: 't19', title: 'Primeira entrega realizada', completed: true, stageId: 'action' },
-      { id: 't20', title: 'Calendário editorial definido', completed: true, stageId: 'action' },
-    ]
+      { id: 't19', title: 'Primeira entrega realizada', completed: true, stageId: 'production' },
+      { id: 't20', title: 'Calendário editorial definido', completed: true, stageId: 'production' },
+    ],
+    source: 'visit',
+    temperature: 'hot',
+    monthlyBudget: 12000,
+    trafficBudget: 2500,
+    services: ['social_management', 'content_creation', 'video_production', 'tiktok_ads'],
+    status: 'active',
+    progress: 9
+  }
+];
+
+export const mockTeamMembers: TeamMember[] = [
+  {
+    id: '1',
+    name: 'Domingos Lequechane',
+    email: 'd.lequechane@qualify.co.mz',
+    role: 'admin',
+    roleLabel: 'Administrador',
+    createdAt: '2024-01-01',
+    isActive: true
+  },
+  {
+    id: '2',
+    name: 'Ana Martins',
+    email: 'ana.martins@qualify.co.mz',
+    role: 'manager',
+    roleLabel: 'Gerente de Contas',
+    createdAt: '2024-02-15',
+    isActive: true
+  },
+  {
+    id: '3',
+    name: 'Carlos Silva',
+    email: 'carlos.silva@qualify.co.mz',
+    role: 'sales',
+    roleLabel: 'Vendedor',
+    createdAt: '2024-03-20',
+    isActive: true
+  },
+  {
+    id: '4',
+    name: 'Maria João',
+    email: 'maria.joao@qualify.co.mz',
+    role: 'content',
+    roleLabel: 'Criador de Conteúdo',
+    createdAt: '2024-04-10',
+    isActive: true
   }
 ];
 
 export const dashboardStats = {
   totalClients: 8,
-  activeClients: 5,
-  totalRevenue: 125000,
-  conversionRate: 62.5,
+  activeClients: 4,
+  qualifiedLeads: 3,
+  conversionRate: 50,
   averageScore: 73,
-  clientsByStage: {
-    discovery: 2,
-    attraction: 2,
-    consideration: 1,
-    action: 2,
-    advocacy: 1
+  clientsBySalesFunnel: {
+    prospecting: 2,
+    qualification: 2,
+    closing: 1
+  },
+  clientsByOperationalFlow: {
+    production: 1,
+    campaigns: 1,
+    retention: 1
   }
 };
