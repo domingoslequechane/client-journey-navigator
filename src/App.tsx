@@ -8,6 +8,8 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
+import SetPassword from "./pages/SetPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import SalesFunnel from "./pages/SalesFunnel";
 import OperationalFlow from "./pages/OperationalFlow";
@@ -30,6 +32,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/set-password" element={<SetPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/app"
               element={

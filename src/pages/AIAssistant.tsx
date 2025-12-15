@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { JOURNEY_STAGES } from '@/types';
 import { cn } from '@/lib/utils';
 import { Send, Sparkles, User, Bot, Loader2, RefreshCcw } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -19,6 +20,8 @@ const suggestedPrompts = [
   "Como estruturar uma proposta comercial irrecusável?",
   "Quais perguntas fazer na reunião de diagnóstico?"
 ];
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export default function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([
@@ -42,34 +45,121 @@ export default function AIAssistant() {
     scrollToBottom();
   }, [messages]);
 
-  const generateResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
+  const streamChat = async (userMessage: string) => {
+    const apiMessages = messages
+      .filter(m => m.id !== '1') // Skip initial message
+      .map(m => ({ role: m.role, content: m.content }));
     
-    if (lowerMessage.includes('conversão') || lowerMessage.includes('converter')) {
-      return `📈 **Estratégias para Aumentar Conversão:**\n\n**1. Reduza o Tempo de Resposta**\nLeads respondidos em menos de 5 minutos têm 21x mais chance de conversão. Configure alertas automáticos.\n\n**2. Use Prova Social**\nInclua 2-3 depoimentos de clientes similares em cada proposta. Cases do mesmo setor convertem 35% mais.\n\n**3. Crie Urgência Genuína**\nOfertas limitadas por tempo ou vagas funcionam. "Só tenho 2 vagas disponíveis este mês" é mais efetivo que descontos.\n\n**4. Follow-up Estruturado**\n- 1º follow-up: 24h após proposta\n- 2º follow-up: 72h (com conteúdo de valor)\n- 3º follow-up: 7 dias (última chance)\n\n**5. Qualifique Melhor com BANT**\nLeads com score BANT acima de 80% têm 4x mais chance de fechar.`;
+    apiMessages.push({ role: 'user', content: userMessage });
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ 
+          messages: apiMessages,
+          context: selectedStage ? JOURNEY_STAGES.find(s => s.id === selectedStage)?.name : 'Geral'
+        }),
+      });
+
+      if (resp.status === 429) {
+        toast({ title: 'Limite excedido', description: 'Tente novamente em alguns minutos', variant: 'destructive' });
+        return;
+      }
+      if (resp.status === 402) {
+        toast({ title: 'Créditos insuficientes', description: 'Adicione créditos à sua conta', variant: 'destructive' });
+        return;
+      }
+      if (!resp.ok || !resp.body) {
+        throw new Error("Failed to start stream");
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+      let assistantContent = "";
+      let streamDone = false;
+
+      // Create assistant message
+      const assistantId = (Date.now() + 1).toString();
+      setMessages(prev => [...prev, {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date()
+      }]);
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") {
+            streamDone = true;
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages(prev => prev.map(m => 
+                m.id === assistantId 
+                  ? { ...m, content: assistantContent }
+                  : m
+              ));
+            }
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      // Final flush
+      if (textBuffer.trim()) {
+        for (let raw of textBuffer.split("\n")) {
+          if (!raw) continue;
+          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+          if (raw.startsWith(":") || raw.trim() === "") continue;
+          if (!raw.startsWith("data: ")) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages(prev => prev.map(m => 
+                m.id === assistantId 
+                  ? { ...m, content: assistantContent }
+                  : m
+              ));
+            }
+          } catch { /* ignore */ }
+        }
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      toast({ title: 'Erro', description: 'Não foi possível conectar ao assistente', variant: 'destructive' });
     }
-    
-    if (lowerMessage.includes('onboarding')) {
-      return `🚀 **Melhores Práticas de Onboarding:**\n\n**Primeiras 24 horas:**\n• Envie e-mail de boas-vindas personalizado\n• Compartilhe cronograma das próximas 2 semanas\n• Colete todos os acessos (formulário único)\n\n**Primeira Semana:**\n• Reunião de kick-off (máx. 45 min)\n• Defina 3 KPIs principais juntos\n• Publique primeiro conteúdo\n• Envie relatório "Ponto de Partida"\n\n**Primeiro Mês:**\n• Relatórios semanais nas primeiras 4 semanas\n• Check-in de 15 min na semana 2\n• Ajustes de estratégia conforme feedback\n\n**Dica de Ouro:** Clientes que recebem valor nas primeiras 72h têm 80% mais chance de renovar o contrato.`;
-    }
-    
-    if (lowerMessage.includes('conteúdo') || lowerMessage.includes('redes sociais') || lowerMessage.includes('restaurante')) {
-      return `🍽️ **Ideias de Conteúdo para Restaurante:**\n\n**Reels/TikTok (Alto Engajamento):**\n1. "Como fazemos nosso prato mais pedido" (bastidores)\n2. "Transformação: cozinha vazia → mesa cheia"\n3. "POV: você é o chef por um dia"\n4. "O segredo do nosso tempero especial"\n\n**Feed Instagram:**\n• Fotos profissionais dos pratos (2x/semana)\n• Depoimentos de clientes (1x/semana)\n• Equipe em ação (humanização)\n\n**Stories Diários:**\n• Prato do dia\n• Enquete: "Qual sabor você prefere?"\n• Contagem regressiva para novidades\n• Repost de clientes\n\n**Calendário Sugerido:**\n- Segunda: Dica de harmonização\n- Quarta: Bastidores\n- Sexta: Promoção fim de semana\n- Sábado: UGC (conteúdo dos clientes)`;
-    }
-    
-    if (lowerMessage.includes('proposta')) {
-      return `📝 **Estrutura de Proposta Irrecusável:**\n\n**1. Capa Impactante**\n"Proposta para [Nome da Empresa] alcançar [Resultado Específico]"\n\n**2. Diagnóstico (1 página)**\n• Resumo da situação atual (dores identificadas)\n• O que está custando não resolver isso\n• Oportunidade identificada\n\n**3. Solução (2 páginas)**\n• O que vamos fazer (escopo claro)\n• Como vamos fazer (metodologia)\n• Cronograma visual\n• Resultados esperados com números\n\n**4. Prova Social (1 página)**\n• 2-3 cases de clientes similares\n• Depoimento em destaque\n• Números concretos de resultado\n\n**5. Investimento**\n• 3 opções (Bronze, Prata, Ouro)\n• Opção do meio como âncora\n• Bônus por decisão rápida\n\n**6. Próximos Passos**\n• CTA claro: "Para iniciar, basta..."\n• Prazo de validade (7 dias)`;
-    }
-    
-    if (lowerMessage.includes('reunião') || lowerMessage.includes('diagnóstico') || lowerMessage.includes('perguntas')) {
-      return `🎯 **Perguntas Poderosas para Diagnóstico (SPIN):**\n\n**Situação (entender contexto):**\n• "Conte-me sobre o marketing atual da empresa"\n• "Quem é responsável pelas redes sociais hoje?"\n• "Qual o investimento mensal atual em marketing?"\n\n**Problema (identificar dores):**\n• "Qual o maior desafio de marketing hoje?"\n• "O que já tentaram que não funcionou?"\n• "Como os concorrentes estão se posicionando?"\n\n**Implicação (criar urgência):**\n• "O que acontece se continuar assim por mais 6 meses?"\n• "Quanto em faturamento estima perder por mês?"\n• "Como isso afeta o moral da equipe?"\n\n**Necessidade (mostrar solução):**\n• "Se pudéssemos resolver X, qual seria o impacto?"\n• "O que significaria ter Y resultados?"\n• "Como seria seu marketing ideal?"\n\n**Dica:** Deixe o cliente falar 70% do tempo. Sua função é fazer as perguntas certas.`;
-    }
-    
-    // Resposta padrão
-    return `Excelente pergunta! Como especialista em marketing digital com mais de 20 anos de experiência, posso te ajudar com isso.\n\n**Algumas orientações gerais:**\n\n1. **Foco no Cliente:** Sempre coloque as necessidades do cliente no centro de qualquer estratégia\n\n2. **Dados são Rei:** Tome decisões baseadas em métricas, não em achismos\n\n3. **Teste Constantemente:** O que funciona para um cliente pode não funcionar para outro\n\n4. **Consistência:** Resultados em marketing vêm da consistência, não de ações isoladas\n\nPode me dar mais detalhes sobre sua situação específica? Assim posso oferecer orientações mais direcionadas para o seu caso.`;
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
@@ -83,17 +173,8 @@ export default function AIAssistant() {
     setInput('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const response = generateResponse(input);
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsLoading(false);
-    }, 1500);
+    await streamChat(input);
+    setIsLoading(false);
   };
 
   const handleSuggestedPrompt = (prompt: string) => {
@@ -185,7 +266,7 @@ export default function AIAssistant() {
           </div>
         ))}
 
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.role === 'user' && (
           <div className="flex gap-3">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
               <Bot className="h-4 w-4 text-primary-foreground" />
