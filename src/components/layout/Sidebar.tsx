@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
   Users,
@@ -10,8 +11,10 @@ import {
   Settings,
   Home,
   Workflow,
-  UsersRound
+  UsersRound,
+  LogOut
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const navigation = [
   { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
@@ -25,6 +28,11 @@ const navigation = [
 
 export function Sidebar() {
   const location = useLocation();
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <div className="flex h-screen w-64 flex-col bg-card border-r border-border">
@@ -83,6 +91,22 @@ export function Sidebar() {
           <Home className="h-5 w-5" />
           Voltar ao Site
         </Link>
+        
+        {user && (
+          <div className="pt-2 border-t border-border mt-2">
+            <p className="px-3 py-1 text-xs text-muted-foreground truncate">
+              {user.email}
+            </p>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 px-3 py-2.5 h-auto text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-5 w-5" />
+              Sair
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
