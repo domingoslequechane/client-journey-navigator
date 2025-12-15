@@ -6,10 +6,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
-import Pipeline from "./pages/Pipeline";
+import SalesFunnel from "./pages/SalesFunnel";
+import OperationalFlow from "./pages/OperationalFlow";
 import Clients from "./pages/Clients";
-import Qualification from "./pages/Qualification";
+import NewClient from "./pages/NewClient";
 import Checklists from "./pages/Checklists";
+import Team from "./pages/Team";
 import AIAssistant from "./pages/AIAssistant";
 import NotFound from "./pages/NotFound";
 
@@ -25,10 +27,12 @@ const App = () => (
           <Route path="/" element={<LandingPage />} />
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Dashboard />} />
-            <Route path="pipeline" element={<Pipeline />} />
+            <Route path="sales-funnel" element={<SalesFunnel />} />
+            <Route path="operational-flow" element={<OperationalFlow />} />
             <Route path="clients" element={<Clients />} />
-            <Route path="qualification" element={<Qualification />} />
+            <Route path="new-client" element={<NewClient />} />
             <Route path="checklists" element={<Checklists />} />
+            <Route path="team" element={<Team />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
           </Route>
           <Route path="*" element={<NotFound />} />
