@@ -1,21 +1,22 @@
 import { useState } from 'react';
-import { JOURNEY_STAGES, StageConfig, ChecklistItem } from '@/types';
+import { ALL_STAGES, StageConfig } from '@/types';
 import { Button } from '@/components/ui/button';
 import { AIButton } from '@/components/ui/ai-button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { Search, Magnet, Scale, Rocket, Heart, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Target, FileCheck, Cog, Megaphone, Heart, ChevronDown, ChevronUp } from 'lucide-react';
 
-const iconMap = {
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Search,
-  Magnet,
-  Scale,
-  Rocket,
+  Target,
+  FileCheck,
+  Cog,
+  Megaphone,
   Heart
 };
 
 export default function Checklists() {
-  const [expandedStage, setExpandedStage] = useState<string | null>('discovery');
+  const [expandedStage, setExpandedStage] = useState<string | null>('prospecting');
   const [completedItems, setCompletedItems] = useState<Record<string, boolean>>({});
   const [aiTips, setAiTips] = useState<Record<string, string>>({});
   const [loadingStage, setLoadingStage] = useState<string | null>(null);
@@ -33,11 +34,12 @@ export default function Checklists() {
     setLoadingStage(stageId);
     setTimeout(() => {
       const tips: Record<string, string> = {
-        discovery: "💡 **Dicas para a Descoberta:**\n\n• Use o LinkedIn Sales Navigator para encontrar decisores.\n\n• Prepare um script de cold call de 30 segundos.\n\n• Envie um material de valor (case study) antes de ligar.\n\n• O melhor horário para ligações é entre 10h-11h e 15h-16h.",
-        attraction: "💡 **Dicas para a Atração:**\n\n• Use a técnica SPIN Selling na reunião.\n\n• Prepare 3 perguntas de implicação poderosas.\n\n• Mostre o custo de não agir (perda de mercado).\n\n• Envie a proposta em até 24h após a reunião.",
-        consideration: "💡 **Dicas para a Consideração:**\n\n• Crie um cronograma visual do onboarding.\n\n• Peça todos os acessos em um único formulário.\n\n• Agende a reunião de kick-off para a primeira semana.\n\n• Defina expectativas claras sobre resultados.",
-        action: "💡 **Dicas para a Ação:**\n\n• Publique o primeiro conteúdo em até 72h.\n\n• Crie um mix: 70% valor, 20% engajamento, 10% venda.\n\n• Use Stories diários para aumentar alcance.\n\n• Envie relatórios semanais nas primeiras 4 semanas.",
-        advocacy: "💡 **Dicas para a Apologia:**\n\n• Peça depoimento quando cliente demonstrar satisfação.\n\n• Crie um programa de indicação simples (10% desconto).\n\n• Envie presente simbólico em datas especiais.\n\n• Proponha novos serviços a cada 3 meses."
+        prospecting: "💡 **Dicas para Prospecção:**\n\n• Use o LinkedIn Sales Navigator para encontrar decisores.\n\n• Prepare um script de cold call de 30 segundos.\n\n• Envie um material de valor (case study) antes de ligar.\n\n• O melhor horário para ligações é entre 10h-11h e 15h-16h.",
+        qualification: "💡 **Dicas para Qualificação:**\n\n• Use a técnica SPIN Selling na reunião.\n\n• Prepare 3 perguntas de implicação poderosas.\n\n• Mostre o custo de não agir (perda de mercado).\n\n• Envie a proposta em até 24h após a reunião.",
+        closing: "💡 **Dicas para Fechamento:**\n\n• Crie um cronograma visual do onboarding.\n\n• Peça todos os acessos em um único formulário.\n\n• Agende a reunião de kick-off para a primeira semana.\n\n• Defina expectativas claras sobre resultados.",
+        production: "💡 **Dicas para Produção:**\n\n• Publique o primeiro conteúdo em até 72h.\n\n• Crie um mix: 70% valor, 20% engajamento, 10% venda.\n\n• Use Stories diários para aumentar alcance.\n\n• Envie relatórios semanais nas primeiras 4 semanas.",
+        campaigns: "💡 **Dicas para Campanhas:**\n\n• Teste pelo menos 3 criativos diferentes.\n\n• Comece com públicos amplos e refine.\n\n• Monitore ROAS diariamente na primeira semana.\n\n• Otimize anúncios com CTR abaixo de 1%.",
+        retention: "💡 **Dicas para Fidelização:**\n\n• Peça depoimento quando cliente demonstrar satisfação.\n\n• Crie um programa de indicação simples (10% desconto).\n\n• Envie presente simbólico em datas especiais.\n\n• Proponha novos serviços a cada 3 meses."
       };
       setAiTips(prev => ({ ...prev, [stageId]: tips[stageId] }));
       setLoadingStage(null);
@@ -54,7 +56,7 @@ export default function Checklists() {
       </div>
 
       <div className="space-y-4 max-w-4xl">
-        {JOURNEY_STAGES.map((stage) => {
+        {ALL_STAGES.map((stage) => {
           const Icon = iconMap[stage.icon as keyof typeof iconMap];
           const isExpanded = expandedStage === stage.id;
           const completionRate = getCompletionRate(stage);

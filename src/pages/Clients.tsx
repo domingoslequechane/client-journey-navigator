@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { mockClients } from '@/data/mockData';
-import { JOURNEY_STAGES, Client } from '@/types';
+import { ALL_STAGES, Client, TEMPERATURE_LABELS, SOURCE_LABELS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -65,7 +65,7 @@ export default function Clients() {
           >
             Todos
           </Button>
-          {JOURNEY_STAGES.map((stage) => (
+          {ALL_STAGES.map((stage) => (
             <Button
               key={stage.id}
               variant={filterStage === stage.id ? 'default' : 'outline'}
@@ -94,7 +94,7 @@ export default function Clients() {
             </thead>
             <tbody>
               {filteredClients.map((client) => {
-                const stage = JOURNEY_STAGES.find(s => s.id === client.stage);
+                const stage = ALL_STAGES.find(s => s.id === client.stage);
                 return (
                   <tr 
                     key={client.id}
