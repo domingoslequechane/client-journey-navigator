@@ -28,9 +28,9 @@ export function Sidebar() {
     <div className="flex h-screen w-64 flex-col bg-card border-r border-border">
       <div className="flex h-16 items-center gap-2 px-6 border-b border-border">
         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-lg">O</span>
+          <span className="text-primary-foreground font-bold text-lg">Q</span>
         </div>
-        <span className="font-bold text-xl">Onix Flow</span>
+        <span className="font-bold text-xl">Qualify</span>
       </div>
       
       <nav className="flex-1 px-4 py-4 space-y-1">

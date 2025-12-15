@@ -48,7 +48,7 @@ const testimonials = [
   {
     name: 'Ana Lopes',
     company: 'Hotel Praia Dourada',
-    text: 'Com o Onix Flow, finalmente conseguimos acompanhar cada cliente de forma clara. Nosso faturamento cresceu 40% em 3 meses.',
+    text: 'Com o Qualify, finalmente conseguimos acompanhar cada cliente de forma clara. Nosso faturamento cresceu 40% em 3 meses.',
     avatar: 'A'
   },
   {
@@ -67,9 +67,9 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">O</span>
+              <span className="text-primary-foreground font-bold text-lg">Q</span>
             </div>
-            <span className="font-bold text-xl">Onix Flow</span>
+            <span className="font-bold text-xl">Qualify</span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</a>
@@ -258,7 +258,7 @@ export default function LandingPage() {
             Pronto para transformar sua agência?
           </h2>
           <p className="text-xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
-            Comece a usar o Onix Flow hoje e veja seus processos se tornarem claros e escaláveis.
+            Comece a usar o Qualify hoje e veja seus processos se tornarem claros e escaláveis.
           </p>
           <Link to="/app">
             <Button size="lg" variant="secondary" className="text-lg px-8 gap-2">
@@ -275,12 +275,12 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">O</span>
+                <span className="text-primary-foreground font-bold text-lg">Q</span>
               </div>
-              <span className="font-bold text-xl">Onix Flow</span>
+              <span className="font-bold text-xl">Qualify</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2024 Onix Agence. Todos os direitos reservados.
+              © 2024 Qualify. Todos os direitos reservados.
             </p>
           </div>
         </div>
