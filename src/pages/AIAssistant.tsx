@@ -25,7 +25,7 @@ export default function AIAssistant() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Olá! Sou o assistente de marketing da Onix com mais de 20 anos de experiência. Como posso ajudar você hoje?\n\nPosso auxiliar com:\n• Estratégias para cada fase da jornada do cliente\n• Ideias de conteúdo para redes sociais\n• Técnicas de qualificação e vendas\n• Melhores práticas de onboarding\n• Análise de pipeline e otimização',
+      content: 'Olá! Sou o assistente de marketing do Qualify com mais de 20 anos de experiência. Como posso ajudar você hoje?\n\nPosso auxiliar com:\n• Estratégias para cada fase da jornada do cliente\n• Ideias de conteúdo para redes sociais\n• Técnicas de qualificação e vendas\n• Melhores práticas de onboarding\n• Análise de pipeline e otimização',
       timestamp: new Date()
     }
   ]);
