@@ -71,7 +71,7 @@ export default function Dashboard() {
   const conversionRate = totalClients > 0 ? Math.round((activeClients / totalClients) * 100) : 0;
 
   const quickActions = [
-    { title: 'Adicionar Novo Cliente', description: 'Cadastre um novo lead ou cliente', icon: UserPlus, href: '/app/clients', color: 'text-info' },
+    { title: 'Adicionar Novo Cliente', description: 'Cadastre um novo lead ou cliente', icon: UserPlus, href: '/app/new-client', color: 'text-info' },
     { title: 'Ver Funil de Vendas', description: 'Kanban visual da jornada do cliente', icon: Kanban, href: '/app/sales-funnel', color: 'text-success' },
     { title: 'Ver Fluxo Operacional', description: 'Acompanhe clientes em produção e retenção', icon: Workflow, href: '/app/operational-flow', color: 'text-purple-500' },
     { title: 'Checklists de Processo', description: 'Acompanhe as tarefas por fase', icon: CheckSquare, href: '/app/checklists', color: 'text-rose-500' },
@@ -92,12 +92,7 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Visão geral da jornada dos seus clientes</p>
         </div>
-        <Link to="/app/clients">
-          <Button className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Novo Cliente
-          </Button>
-        </Link>
+        {/* Botão 'Novo Cliente' removido conforme solicitado */}
       </div>
 
       {/* Stats Cards */}
@@ -195,47 +190,49 @@ export default function Dashboard() {
                 const bantScore = (client.bant_budget || 0) + (client.bant_authority || 0) + (client.bant_need || 0) + (client.bant_timeline || 0);
                 
                 return (
-                  <div key={client.id} className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="text-primary font-semibold text-sm">
-                          {client.company_name.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium truncate">{client.company_name}</p>
-                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <Link key={client.id} to={`/app/clients/${client.id}`}>
+                    <div className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer">
+                      <div className="flex items-start gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-primary font-semibold text-sm">
+                            {client.company_name.charAt(0)}
+                          </span>
                         </div>
-                        <p className="text-sm text-muted-foreground">{client.contact_name}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Phone className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">{client.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant={client.qualification === 'hot' ? 'default' : 'secondary'} className="text-xs">
-                            {QUALIFICATION_LABELS[client.qualification]}
-                          </Badge>
-                          {client.source && (
-                            <Badge variant="outline" className="text-xs">
-                              {SOURCE_LABELS[client.source] || client.source}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-medium truncate">{client.company_name}</p>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <p className="text-sm text-muted-foreground">{client.contact_name}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Phone className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">{client.phone}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant={client.qualification === 'hot' ? 'default' : 'secondary'} className="text-xs">
+                              {QUALIFICATION_LABELS[client.qualification]}
                             </Badge>
+                            {client.source && (
+                              <Badge variant="outline" className="text-xs">
+                                {SOURCE_LABELS[client.source] || client.source}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between mt-3">
+                            <span className="text-xs text-muted-foreground">BANT Score</span>
+                            <span className="text-xs text-muted-foreground">{bantScore}/40</span>
+                          </div>
+                          <Progress value={(bantScore / 40) * 100} className="h-1 mt-1" />
+                          {client.monthly_budget && (
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-muted-foreground">Orçamento Mensal</span>
+                              <span className="text-sm font-medium text-primary">{Number(client.monthly_budget).toLocaleString()} MT</span>
+                            </div>
                           )}
                         </div>
-                        <div className="flex items-center justify-between mt-3">
-                          <span className="text-xs text-muted-foreground">BANT Score</span>
-                          <span className="text-xs text-muted-foreground">{bantScore}/40</span>
-                        </div>
-                        <Progress value={(bantScore / 40) * 100} className="h-1 mt-1" />
-                        {client.monthly_budget && (
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-muted-foreground">Orçamento Mensal</span>
-                            <span className="text-sm font-medium text-primary">{Number(client.monthly_budget).toLocaleString()} MT</span>
-                          </div>
-                        )}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })
             )}

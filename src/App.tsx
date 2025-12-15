@@ -15,6 +15,7 @@ import SalesFunnel from "./pages/SalesFunnel";
 import OperationalFlow from "./pages/OperationalFlow";
 import Clients from "./pages/Clients";
 import NewClient from "./pages/NewClient";
+import ClientDetail from "./pages/ClientDetail";
 import Checklists from "./pages/Checklists";
 import Team from "./pages/Team";
 import AIAssistant from "./pages/AIAssistant";
@@ -46,6 +47,7 @@ const App = () => (
               <Route path="sales-funnel" element={<SalesFunnel />} />
               <Route path="operational-flow" element={<OperationalFlow />} />
               <Route path="clients" element={<Clients />} />
+              <Route path="clients/:clientId" element={<ClientDetail />} />
               <Route path="new-client" element={<NewClient />} />
               <Route path="checklists" element={<Checklists />} />
               <Route path="team" element={<Team />} />
