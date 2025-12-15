@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Users,
   Kanban,
-  UserPlus,
   CheckSquare,
   Sparkles,
   Settings,
@@ -21,7 +20,6 @@ const navigation = [
   { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban },
   { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow },
   { name: 'Clientes', href: '/app/clients', icon: Users },
-  { name: 'Novo Cliente', href: '/app/new-client', icon: UserPlus },
   { name: 'Checklists', href: '/app/checklists', icon: CheckSquare },
   { name: 'Equipe', href: '/app/team', icon: UsersRound },
 ];
@@ -76,13 +74,6 @@ export function Sidebar() {
         >
           <Sparkles className="h-5 w-5" />
           Assistente IA
-        </Link>
-        <Link
-          to="/app/settings"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          <Settings className="h-5 w-5" />
-          Configurações
         </Link>
         <Link
           to="/"

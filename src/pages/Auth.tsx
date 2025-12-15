@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { z } from 'zod';
+import { ArrowLeft, Mail } from 'lucide-react';
 
 const authSchema = z.object({
   email: z.string().email({ message: 'E-mail inválido' }),
@@ -24,6 +25,8 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string }>({});
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   useEffect(() => {
     if (session) {
@@ -106,10 +109,87 @@ export default function Auth() {
     setLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setErrors({ email: 'Digite seu e-mail' });
+      return;
+    }
+    
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } else {
+      setResetEmailSent(true);
+      toast({ title: 'E-mail enviado!', description: 'Verifique sua caixa de entrada' });
+    }
+    setLoading(false);
+  };
+
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Recuperar Senha</CardTitle>
+            <CardDescription>Digite seu e-mail para receber o link de recuperação</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {resetEmailSent ? (
+              <div className="text-center space-y-4">
+                <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <Mail className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="font-semibold">E-mail enviado!</h3>
+                <p className="text-sm text-muted-foreground">
+                  Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.
+                </p>
+                <Button variant="outline" onClick={() => { setShowForgotPassword(false); setResetEmailSent(false); }} className="w-full">
+                  Voltar ao Login
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">E-mail</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Enviando...' : 'Enviar Link de Recuperação'}
+                </Button>
+                <Button variant="ghost" onClick={() => setShowForgotPassword(false)} className="w-full gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Voltar ao Login
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-xl">Q</span>
+            </div>
+          </div>
           <CardTitle className="text-2xl font-bold">Qualify</CardTitle>
           <CardDescription>Sistema de gestão de clientes</CardDescription>
         </CardHeader>
@@ -135,7 +215,16 @@ export default function Auth() {
                   {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Senha</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="signin-password">Senha</Label>
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Esqueceu a senha?
+                    </button>
+                  </div>
                   <Input
                     id="signin-password"
                     type="password"
