@@ -69,16 +69,36 @@ DICAS PARA ESTA FASE:
 - Alinhe expectativas claramente
 `,
   producao: `
+FASE: Configurações Iniciais
+OBJETIVO: Configurar acessos, plataformas e preparar para início dos trabalhos.
+
+TAREFAS TÍPICAS:
+- Configuração de acessos às redes sociais
+- Configuração de ferramentas de gestão (Meta Business Suite, Google Analytics)
+- Definição de identidade visual e tom de voz
+- Criação de calendário editorial inicial
+- Configuração de pixels e tracking
+- Reunião de alinhamento de processos
+
+DICAS PARA ESTA FASE:
+- Documente todos os acessos de forma segura
+- Alinhe expectativas sobre prazos de configuração
+- Defina fluxos de aprovação claros
+- Prepare templates e materiais de marca
+`,
+  trafego: `
 FASE: Produção Contínua
 OBJETIVO: Executar e gerenciar projetos em ciclos recorrentes.
 
 TAREFAS TÍPICAS:
-- Planejamento trimestral de conteúdo
+- Planejamento trimestral de conteúdo e campanhas
 - Reuniões mensais de performance
 - Criação e agendamento de posts
 - Produção de vídeos curtos e reels
-- Criação de artigos e email marketing
-- Monitoramento de tendências
+- Gestão de campanhas de tráfego pago
+- Otimização de campanhas para CPA/ROAS
+- Análise de dados e insights
+- Relatórios de performance mensal
 
 DICAS PARA ESTA FASE:
 - Mantenha um calendário editorial atualizado
@@ -86,45 +106,25 @@ DICAS PARA ESTA FASE:
 - Analise métricas semanalmente
 - Adapte conteúdo às tendências
 `,
-  trafego: `
+  retencao: `
 FASE: Gestão de Campanhas
-OBJETIVO: Planejar, executar e otimizar campanhas de marketing pago.
+OBJETIVO: Planejar, executar e otimizar campanhas de tráfego pago.
 
 TAREFAS TÍPICAS:
-- Definir objetivos e orçamento
+- Definição de objetivos e orçamento de campanha
 - Pesquisa de público-alvo e segmentação
-- Criar criativos e copies persuasivas
-- Configurar pixels e eventos de conversão
-- Lançar campanhas (Facebook, Google, TikTok)
+- Criação de criativos e copies persuasivas
+- Lançamento das campanhas nas plataformas
 - Monitoramento diário de performance
-- Testes A/B para otimização
-- Relatório mensal de performance
+- Realização de testes A/B
+- Reunião de resultados com o cliente
+- Proposta de renovação de contrato
 
 DICAS PARA ESTA FASE:
 - Comece com orçamentos pequenos para testar
 - Foque em CPA e ROAS
 - Faça testes A/B constantes
 - Documente aprendizados de cada campanha
-`,
-  retencao: `
-FASE: Fidelização e Sucesso
-OBJETIVO: Garantir satisfação do cliente e buscar novas oportunidades.
-
-TAREFAS TÍPICAS:
-- Reuniões trimestrais de resultados
-- Coleta de feedback (NPS)
-- Identificar oportunidades de upsell
-- Solicitar depoimentos e cases
-- Incentivar indicações
-- Análise de risco de churn
-- Proposta de renovação de contrato
-- Celebração de marcos e conquistas
-
-DICAS PARA ESTA FASE:
-- Seja proativo na comunicação
-- Antecipe problemas antes que escalem
-- Mostre valor constantemente
-- Cultive o relacionamento a longo prazo
 `
 };
 
@@ -243,7 +243,8 @@ DIRETRIZES IMPORTANTES:
 - Se está em produção/campanhas, foque em otimização e resultados
 - Se está em retenção, foque em satisfação e upsell
 - Se o cliente já tem contrato, você pode fazer referência a isso nas suas sugestões
-- Use as informações da agência e da base de conhecimento para personalizar suas respostas`;
+- Use as informações da agência e da base de conhecimento para personalizar suas respostas
+- IMPORTANTE: Sempre se refira à empresa/cliente pelo nome da empresa (company_name), nunca pelo nome do contato. O contato é apenas o representante da empresa cliente.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

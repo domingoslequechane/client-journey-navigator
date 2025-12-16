@@ -1,4 +1,4 @@
-import { Client, ALL_STAGES } from '@/types';
+import { Client, ALL_STAGES, SOURCE_LABELS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { AIButton } from '@/components/ui/ai-button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,13 +22,16 @@ import {
   FileText,
   Pause,
   Play,
-  Lock
+  Lock,
+  Pencil,
+  User
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { ContractModal } from './ContractModal';
+import { EditClientModal } from './EditClientModal';
 
 interface ActivityItem {
   id: string;
@@ -58,6 +61,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [pauseDialogOpen, setPauseDialogOpen] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
+  const [editClientOpen, setEditClientOpen] = useState(false);
   const [contractUrl, setContractUrl] = useState<string | null>(null);
   const [contractName, setContractName] = useState<string | null>(null);
 
@@ -306,7 +310,28 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       </div>
 
       {/* All Client Info */}
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="font-semibold text-sm">Informações do Cliente</h4>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-2" 
+          disabled={isPaused}
+          onClick={() => setEditClientOpen(true)}
+        >
+          {isPaused ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+          Editar
+        </Button>
+      </div>
       <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 ${isPaused ? 'opacity-60' : ''}`}>
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
+          {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
+          <User className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground">Fonte</p>
+            <p className="text-sm font-medium truncate">{client.source ? SOURCE_LABELS[client.source] : 'N/A'}</p>
+          </div>
+        </div>
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
           {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
           <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -443,6 +468,14 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             </DialogContent>
           </Dialog>
         )}
+
+        {/* Edit Client Modal */}
+        <EditClientModal
+          open={editClientOpen}
+          onOpenChange={setEditClientOpen}
+          client={client}
+          onClientUpdated={() => onUpdate({ ...client, stage: client.stage })}
+        />
       </div>
 
       {/* AI Suggestion */}

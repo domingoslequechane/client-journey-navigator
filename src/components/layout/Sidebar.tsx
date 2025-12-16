@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const navigation = [
   { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
@@ -33,8 +34,11 @@ export function Sidebar() {
   const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+
   const handleSignOut = async () => {
     await signOut();
+    setLogoutDialogOpen(false);
     navigate('/auth');
   };
 
@@ -170,7 +174,7 @@ export function Sidebar() {
                     <Button
                       variant="ghost"
                       className="w-full justify-center px-2 py-2.5 h-auto text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                      onClick={handleSignOut}
+                      onClick={() => setLogoutDialogOpen(true)}
                     >
                       <LogOut className="h-5 w-5" />
                     </Button>
@@ -181,7 +185,7 @@ export function Sidebar() {
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-3 px-3 py-2.5 h-auto text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  onClick={handleSignOut}
+                  onClick={() => setLogoutDialogOpen(true)}
                 >
                   <LogOut className="h-5 w-5" />
                   Sair
@@ -189,6 +193,26 @@ export function Sidebar() {
               )}
             </div>
           )}
+
+          {/* Logout Confirmation Dialog */}
+          <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Confirmar Saída</DialogTitle>
+                <DialogDescription>
+                  Tem certeza que deseja sair da sua conta?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button variant="destructive" onClick={handleSignOut}>
+                  Sair
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Collapse Toggle */}
           <Button
