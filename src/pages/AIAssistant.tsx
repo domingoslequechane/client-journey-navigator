@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,6 +11,12 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { markdownToHtml } from '@/lib/markdown-to-html';
 
+// DOMPurify sanitization config to prevent XSS
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'code', 'h1', 'h2', 'h3', 'div', 'span'],
+  ALLOWED_ATTR: ['href', 'class', 'target', 'rel'],
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+};
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -220,11 +227,19 @@ export default function AIAssistant() {
     setIsTyping(true);
 
     try {
+      // Get the authenticated user's session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: 'Não autenticado', description: 'Faça login novamente', variant: 'destructive' });
+        setIsTyping(false);
+        return;
+      }
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhyYXJrcGp1Y2hyYmZmbnJoemN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3Njc4NDksImV4cCI6MjA4MTM0Mzg0OX0.vEy7Fy_1O01A7om_iiNHGF0-28_-CPlnvZ-pYlSFtRk`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ 
           messages: apiMessages,
@@ -369,12 +384,15 @@ export default function AIAssistant() {
 
       if (error) throw error;
 
-      const { data: { publicUrl } } = supabase.storage
+      // Use signed URL instead of public URL for private bucket
+      const { data: signedData, error: signError } = await supabase.storage
         .from('chat-files')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600); // 1 hour expiry
+
+      if (signError) throw signError;
 
       setPendingFile({
-        url: publicUrl,
+        url: signedData.signedUrl,
         type: file.type,
         name: file.name
       });
@@ -486,7 +504,7 @@ export default function AIAssistant() {
                       {message.role === 'assistant' ? (
                         <div 
                           className="text-sm prose prose-sm max-w-none"
-                          dangerouslySetInnerHTML={{ __html: markdownToHtml(message.content) }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }}
                         />
                       ) : (
                         <p className="text-sm whitespace-pre-line">{message.content}</p>

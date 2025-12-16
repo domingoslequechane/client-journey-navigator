@@ -153,13 +153,75 @@ serve(async (req) => {
   }
 
   try {
+    // SECURITY: Verify authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("Missing Authorization header");
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      throw new Error("Supabase configuration missing");
+    }
+
+    // Create client with user's auth token to verify their identity
+    const userSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await userSupabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Authenticated user:", user.id);
+
     const { messages, context, clientData } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Validate client ownership if clientData provided
+    if (clientData?.id && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { data: client, error: clientError } = await adminSupabase
+        .from('clients')
+        .select('user_id')
+        .eq('id', clientData.id)
+        .single();
+      
+      if (clientError || !client) {
+        console.error("Client not found:", clientData.id);
+        return new Response(
+          JSON.stringify({ error: "Client not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if user is admin or owns this client
+      const { data: isAdmin } = await adminSupabase.rpc('is_admin', { user_id: user.id });
+      
+      if (!isAdmin && client.user_id !== user.id) {
+        console.error("Unauthorized access to client:", clientData.id, "by user:", user.id);
+        return new Response(
+          JSON.stringify({ error: "Unauthorized access to client data" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Create Supabase client to fetch agency settings
