@@ -4,12 +4,13 @@ import { ALL_STAGES } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Search, 
   Plus, 
@@ -17,7 +18,7 @@ import {
   Loader2,
   Phone,
   Mail,
-  Globe
+  Filter
 } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -155,109 +156,111 @@ export default function Clients() {
           <h1 className="text-3xl font-bold">Clientes</h1>
           <p className="text-muted-foreground mt-1">Gerencie todos os seus clientes</p>
         </div>
-        <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
-          <DialogTrigger asChild>
+        <Sheet open={newClientOpen} onOpenChange={setNewClientOpen}>
+          <SheetTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
               Novo Cliente
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Novo Cliente</DialogTitle>
-              <DialogDescription>
+          </SheetTrigger>
+          <SheetContent className="w-full sm:max-w-xl">
+            <SheetHeader>
+              <SheetTitle>Novo Cliente</SheetTitle>
+              <SheetDescription>
                 Cadastre um novo lead ou cliente no sistema.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nome da Empresa *</Label>
-                  <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Ex: Restaurante Sabor" />
+              </SheetDescription>
+            </SheetHeader>
+            <ScrollArea className="h-[calc(100vh-180px)] pr-4">
+              <div className="space-y-6 py-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nome da Empresa *</Label>
+                    <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Ex: Restaurante Sabor" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nome do Contato *</Label>
+                    <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Ex: Maria Silva" />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Nome do Contato *</Label>
-                  <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Ex: Maria Silva" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Telefone *</Label>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+258 84 123 4567" />
-                </div>
-                <div className="space-y-2">
-                  <Label>E-mail</Label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@empresa.com" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Website</Label>
-                  <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="www.empresa.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fonte</Label>
-                  <Select value={source} onValueChange={setSource}>
-                    <SelectTrigger><SelectValue placeholder="Como conheceu?" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="google_maps">Google Maps</SelectItem>
-                      <SelectItem value="social_media">Redes Sociais</SelectItem>
-                      <SelectItem value="referral">Indicação</SelectItem>
-                      <SelectItem value="visit">Visita Presencial</SelectItem>
-                      <SelectItem value="inbound">Inbound</SelectItem>
-                      <SelectItem value="other">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Endereço</Label>
-                <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Endereço completo" />
-              </div>
-              
-              <div className="space-y-4">
-                <Label>Pontuação BANT (0-10)</Label>
                 <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { key: 'budget', label: 'Budget', desc: 'Tem orçamento?' },
-                    { key: 'authority', label: 'Authority', desc: 'Poder de decisão' },
-                    { key: 'need', label: 'Need', desc: 'Necessidade real' },
-                    { key: 'timeline', label: 'Timeline', desc: 'Prazo definido' }
-                  ].map(item => (
-                    <div key={item.key}>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span>{item.label} <span className="text-muted-foreground text-xs">{item.desc}</span></span>
-                        <span className="font-medium">{bant[item.key as keyof typeof bant]}/10</span>
+                  <div className="space-y-2">
+                    <Label>Telefone *</Label>
+                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+258 84 123 4567" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>E-mail</Label>
+                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@empresa.com" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Website</Label>
+                    <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="www.empresa.com" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Fonte</Label>
+                    <Select value={source} onValueChange={setSource}>
+                      <SelectTrigger><SelectValue placeholder="Como conheceu?" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="google_maps">Google Maps</SelectItem>
+                        <SelectItem value="social_media">Redes Sociais</SelectItem>
+                        <SelectItem value="referral">Indicação</SelectItem>
+                        <SelectItem value="visit">Visita Presencial</SelectItem>
+                        <SelectItem value="inbound">Inbound</SelectItem>
+                        <SelectItem value="other">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Endereço</Label>
+                  <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Endereço completo" />
+                </div>
+                
+                <div className="space-y-4">
+                  <Label>Pontuação BANT (0-10)</Label>
+                  <div className="grid grid-cols-1 gap-4">
+                    {[
+                      { key: 'budget', label: 'Budget', desc: 'Tem orçamento?' },
+                      { key: 'authority', label: 'Authority', desc: 'Poder de decisão' },
+                      { key: 'need', label: 'Need', desc: 'Necessidade real' },
+                      { key: 'timeline', label: 'Timeline', desc: 'Prazo definido' }
+                    ].map(item => (
+                      <div key={item.key}>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span>{item.label} <span className="text-muted-foreground text-xs">{item.desc}</span></span>
+                          <span className="font-medium">{bant[item.key as keyof typeof bant]}/10</span>
+                        </div>
+                        <Slider 
+                          value={[bant[item.key as keyof typeof bant]]} 
+                          max={10} 
+                          step={1} 
+                          onValueChange={([v]) => setBant(p => ({ ...p, [item.key]: v }))} 
+                        />
                       </div>
-                      <Slider 
-                        value={[bant[item.key as keyof typeof bant]]} 
-                        max={10} 
-                        step={1} 
-                        onValueChange={([v]) => setBant(p => ({ ...p, [item.key]: v }))} 
-                      />
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Observações</Label>
+                  <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas sobre o cliente..." />
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label>Observações</Label>
-                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas sobre o cliente..." />
-              </div>
-            </div>
-            <DialogFooter>
+            </ScrollArea>
+            <SheetFooter className="pt-4">
               <Button variant="outline" onClick={() => setNewClientOpen(false)}>Cancelar</Button>
               <Button onClick={handleCreateClient} disabled={saving}>
                 {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</> : 'Cadastrar Cliente'}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
+        <div className="relative flex-1 md:max-w-2xl">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por empresa ou contato..."
@@ -266,24 +269,21 @@ export default function Clients() {
             className="pl-10"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant={filterStage === null ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilterStage(null)}
-          >
-            Todos
-          </Button>
-          {ALL_STAGES.map((stage) => (
-            <Button
-              key={stage.id}
-              variant={filterStage === stage.id ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilterStage(stage.id)}
-            >
-              {stage.name}
-            </Button>
-          ))}
+        <div className="w-full md:w-56">
+          <Select value={filterStage || 'all'} onValueChange={(v) => setFilterStage(v === 'all' ? null : v)}>
+            <SelectTrigger className="w-full">
+              <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Filtrar por fase" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as fases</SelectItem>
+              {ALL_STAGES.map((stage) => (
+                <SelectItem key={stage.id} value={stage.id}>
+                  {stage.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
