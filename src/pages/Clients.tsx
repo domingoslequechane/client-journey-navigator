@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ALL_STAGES } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,7 @@ const QUALIFICATION_COLORS: Record<string, string> = {
 };
 
 export default function Clients() {
+  const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -316,6 +318,7 @@ export default function Clients() {
                     <tr 
                       key={client.id}
                       className="border-b border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/app/clients/${client.id}`)}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">

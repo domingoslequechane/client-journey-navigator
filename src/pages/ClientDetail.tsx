@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Client } from '@/types';
@@ -36,6 +36,16 @@ const fetchClientData = async (clientId: string) => {
 export default function ClientDetail() {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Handle back navigation - go to previous page or fallback to clients
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate('/app/clients');
+    }
+  };
 
   const { data: client, isLoading, error, refetch } = useQuery<Client, Error>({
     queryKey: ['client', clientId],
@@ -140,7 +150,7 @@ export default function ClientDetail() {
     return (
       <div className="p-8">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/app/clients')}><ArrowLeft className="h-5 w-5" /></Button>
+          <Button variant="ghost" size="icon" onClick={handleBack}><ArrowLeft className="h-5 w-5" /></Button>
           <h1 className="text-3xl font-bold">Cliente Não Encontrado</h1>
         </div>
         <p className="text-muted-foreground">O ID do cliente é inválido ou o cliente foi removido.</p>
@@ -151,7 +161,7 @@ export default function ClientDetail() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/app/clients')}><ArrowLeft className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" onClick={handleBack}><ArrowLeft className="h-5 w-5" /></Button>
         <div>
           <h1 className="text-3xl font-bold">{client.companyName}</h1>
           <p className="text-muted-foreground">Detalhes e acompanhamento da jornada</p>

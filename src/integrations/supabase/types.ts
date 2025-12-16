@@ -262,6 +262,42 @@ export type Database = {
         }
         Relationships: []
       }
+      study_suggestions: {
+        Row: {
+          ai_generated: boolean | null
+          category: string
+          created_at: string
+          description: string | null
+          difficulty_level: string | null
+          id: string
+          source: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          category: string
+          created_at?: string
+          description?: string | null
+          difficulty_level?: string | null
+          id?: string
+          source?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          difficulty_level?: string | null
+          id?: string
+          source?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null

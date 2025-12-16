@@ -16,7 +16,7 @@ import OperationalFlow from "./pages/OperationalFlow";
 import Clients from "./pages/Clients";
 import NewClient from "./pages/NewClient";
 import ClientDetail from "./pages/ClientDetail";
-import Checklists from "./pages/Checklists";
+import Academia from "./pages/Academia";
 import Team from "./pages/Team";
 import AIAssistant from "./pages/AIAssistant";
 import NotFound from "./pages/NotFound";
@@ -49,7 +49,7 @@ const App = () => (
               <Route path="clients" element={<Clients />} />
               <Route path="clients/:clientId" element={<ClientDetail />} />
               <Route path="new-client" element={<NewClient />} />
-              <Route path="checklists" element={<Checklists />} />
+              <Route path="academia" element={<Academia />} />
               <Route path="team" element={<Team />} />
               <Route path="ai-assistant" element={<AIAssistant />} />
             </Route>
