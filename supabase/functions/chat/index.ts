@@ -118,13 +118,32 @@ TAREFAS TÍPICAS:
 - Monitoramento diário de performance
 - Realização de testes A/B
 - Reunião de resultados com o cliente
-- Proposta de renovação de contrato
+- Otimização de campanhas para CPA/ROAS
 
 DICAS PARA ESTA FASE:
 - Comece com orçamentos pequenos para testar
 - Foque em CPA e ROAS
 - Faça testes A/B constantes
 - Documente aprendizados de cada campanha
+`,
+  fidelizacao: `
+FASE: Fidelização e Sucesso
+OBJETIVO: Retenção do cliente, expansão de serviços e renovação de contratos.
+
+TAREFAS TÍPICAS:
+- Reunião trimestral de resultados
+- Coleta de feedback e NPS
+- Identificação de oportunidades de upsell
+- Solicitar depoimento ou case de sucesso
+- Pedir indicações de novos clientes
+- Proposta de renovação de contrato
+
+DICAS PARA ESTA FASE:
+- Mantenha comunicação regular com o cliente
+- Antecipe problemas antes que o cliente reclame
+- Mostre valor constantemente com relatórios
+- Identifique oportunidades de expandir serviços
+- Cultive o relacionamento para gerar indicações
 `
 };
 

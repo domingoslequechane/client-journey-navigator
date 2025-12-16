@@ -13,6 +13,7 @@ const stageMap: Record<Enums<'journey_stage'>, JourneyStage> = {
   producao: 'production',
   trafego: 'campaigns',
   retencao: 'retention',
+  fidelizacao: 'loyalty',
 };
 
 // Helper to map DB qualification enum to UI temperature string
@@ -25,7 +26,7 @@ const qualificationMap: Record<Enums<'lead_qualification'>, LeadTemperature> = {
 
 // Helper to determine client status based on stage
 const getClientStatus = (stage: JourneyStage): ClientStatus => {
-    if (['production', 'campaigns', 'retention'].includes(stage)) return 'active';
+    if (['production', 'campaigns', 'retention', 'loyalty'].includes(stage)) return 'active';
     if (['prospecting', 'qualification', 'closing'].includes(stage)) return 'prospect';
     return 'lead'; // Default fallback
 };
