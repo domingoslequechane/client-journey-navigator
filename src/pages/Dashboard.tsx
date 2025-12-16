@@ -71,7 +71,6 @@ export default function Dashboard() {
   const conversionRate = totalClients > 0 ? Math.round((activeClients / totalClients) * 100) : 0;
 
   const quickActions = [
-    { title: 'Adicionar Novo Cliente', description: 'Cadastre um novo lead ou cliente', icon: UserPlus, href: '/app/new-client', color: 'text-info' },
     { title: 'Ver Funil de Vendas', description: 'Kanban visual da jornada do cliente', icon: Kanban, href: '/app/sales-funnel', color: 'text-success' },
     { title: 'Ver Fluxo Operacional', description: 'Acompanhe clientes em produção e retenção', icon: Workflow, href: '/app/operational-flow', color: 'text-purple-500' },
     { title: 'Checklists de Processo', description: 'Acompanhe as tarefas por fase', icon: CheckSquare, href: '/app/checklists', color: 'text-rose-500' },
