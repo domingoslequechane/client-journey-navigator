@@ -71,8 +71,9 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   });
   const allRequiredCompleted = completedRequiredItems.length === requiredItems.length;
 
-  // Check if user can see contract button (only in closing stage, only for sales and admin)
-  const canSeeContract = client.stage === 'closing' && (userRole === 'sales' || userRole === 'admin' || isAdmin);
+  // Check if user can see contract button (closing stage or later, only for sales and admin)
+  const closingAndLaterStages = ['closing', 'production', 'campaigns', 'retention'];
+  const canSeeContract = closingAndLaterStages.includes(client.stage) && (userRole === 'sales' || userRole === 'admin' || isAdmin);
 
   const handleTaskToggle = async (taskId: string) => {
     if (isPaused) {

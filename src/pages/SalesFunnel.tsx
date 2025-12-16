@@ -112,11 +112,14 @@ export default function SalesFunnel() {
                     {stageClients.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-sm text-muted-foreground mb-3">Nenhum cliente nesta fase</p>
-                        <Link to="/app/new-client">
-                          <Button variant="outline" size="sm" className="gap-1">
-                            <Plus className="h-4 w-4" /> Adicionar
-                          </Button>
-                        </Link>
+                        {/* Only show Add button for prospecting stage */}
+                        {stage.id === 'prospecting' && (
+                          <Link to="/app/new-client">
+                            <Button variant="outline" size="sm" className="gap-1">
+                              <Plus className="h-4 w-4" /> Adicionar
+                            </Button>
+                          </Link>
+                        )}
                       </div>
                     ) : (
                       stageClients.map((client) => (

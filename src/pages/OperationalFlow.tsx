@@ -5,11 +5,10 @@ import { OPERATIONAL_FLOW_STAGES, Client, TEMPERATURE_LABELS } from '@/types';
 import { mapDbClientToUiClient } from '@/lib/client-utils';
 import { ClientDetailSheet } from '@/components/clients/ClientDetailSheet';
 import { Button } from '@/components/ui/button';
-import { Plus, Cog, Megaphone, Heart, Phone, Loader2 } from 'lucide-react';
+import { Cog, Megaphone, Heart, Phone, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
 
 const stageIcons = { production: Cog, campaigns: Megaphone, retention: Heart };
 
@@ -95,11 +94,7 @@ export default function OperationalFlow() {
                     {stageClients.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-sm text-muted-foreground mb-3">Nenhum cliente nesta fase</p>
-                        <Link to="/app/new-client">
-                          <Button variant="outline" size="sm" className="gap-1">
-                            <Plus className="h-4 w-4" /> Adicionar
-                          </Button>
-                        </Link>
+                        {/* Clients cannot skip stages - no add button here */}
                       </div>
                     ) : (
                       stageClients.map((client) => (
