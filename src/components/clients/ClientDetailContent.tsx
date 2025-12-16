@@ -70,8 +70,8 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const nextStage = ALL_STAGES[currentStageIndex + 1];
   const prevStage = currentStageIndex > 0 ? ALL_STAGES[currentStageIndex - 1] : null;
 
-  // Check if client is paused
-  const isPaused = (client as any).paused || false;
+  // Check if client is paused/suspended
+  const isPaused = client.paused;
 
   // Fetch contract and activities on mount
   useEffect(() => {
@@ -136,7 +136,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
 
   const handleTaskToggle = async (taskId: string) => {
     if (isPaused) {
-      toast({ title: 'Cliente pausado', description: 'Este cliente está pausado. Contacte um administrador.', variant: 'destructive' });
+      toast({ title: 'Cliente suspenso', description: 'Este cliente está suspenso. Contacte um administrador.', variant: 'destructive' });
       return;
     }
 
@@ -162,7 +162,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
 
   const handleMoveToNextStage = async () => {
     if (isPaused) {
-      toast({ title: 'Cliente pausado', description: 'Este cliente está pausado. Contacte um administrador.', variant: 'destructive' });
+      toast({ title: 'Cliente suspenso', description: 'Este cliente está suspenso. Contacte um administrador.', variant: 'destructive' });
       return;
     }
 
@@ -178,7 +178,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
 
   const handleMoveToPrevStage = async () => {
     if (isPaused) {
-      toast({ title: 'Cliente pausado', description: 'Este cliente está pausado. Contacte um administrador.', variant: 'destructive' });
+      toast({ title: 'Cliente suspenso', description: 'Este cliente está suspenso. Contacte um administrador.', variant: 'destructive' });
       return;
     }
 
@@ -207,7 +207,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       if (error) throw error;
 
       toast({ 
-        title: isPaused ? 'Cliente reativado!' : 'Cliente pausado!', 
+        title: isPaused ? 'Cliente reativado!' : 'Cliente suspenso!', 
         description: isPaused ? 'O cliente foi reativado com sucesso.' : 'Todas as atividades foram bloqueadas.'
       });
       setPauseDialogOpen(false);
@@ -289,12 +289,12 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
 
   return (
     <div className="space-y-6">
-      {/* Paused Banner */}
+      {/* Suspended Banner */}
       {isPaused && (
         <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-center gap-3">
           <Pause className="h-5 w-5 text-destructive" />
           <div>
-            <p className="font-semibold text-destructive">Cliente Pausado</p>
+            <p className="font-semibold text-destructive">Cliente Suspenso</p>
             <p className="text-sm text-muted-foreground">Todas as atividades estão bloqueadas. Apenas administradores podem reativar.</p>
           </div>
         </div>
@@ -303,10 +303,10 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       {/* Current Stage Badge */}
       <div className="flex items-center gap-3">
         <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${currentStage?.color} ${currentStage?.borderColor} border-2`}>
-          {isPaused && <Lock className="h-3 w-3 mr-1.5" />}
-          {currentStage?.name}
-        </div>
-        {isPaused && <Badge variant="destructive" className="gap-1"><Lock className="h-3 w-3" /> Bloqueado</Badge>}
+        {isPaused && <Lock className="h-3 w-3 mr-1.5" />}
+        {currentStage?.name}
+      </div>
+      {isPaused && <Badge variant="destructive" className="gap-1"><Lock className="h-3 w-3" /> Suspenso</Badge>}
       </div>
 
       {/* All Client Info */}
@@ -435,7 +435,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           </>
         )}
 
-        {/* Pause Button - Only for Admins */}
+        {/* Suspend Button - Only for Admins */}
         {isAdmin && (
           <Dialog open={pauseDialogOpen} onOpenChange={setPauseDialogOpen}>
             <DialogTrigger asChild>
@@ -444,16 +444,16 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                 className={`gap-2 ${isPaused ? 'border-success text-success hover:bg-success hover:text-success-foreground' : ''}`}
               >
                 {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                {isPaused ? 'Startar' : 'Pausar'}
+                {isPaused ? 'Reativar' : 'Suspender'}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{isPaused ? 'Reativar Cliente' : 'Pausar Cliente'}</DialogTitle>
+                <DialogTitle>{isPaused ? 'Reativar Cliente' : 'Suspender Cliente'}</DialogTitle>
                 <DialogDescription>
                   {isPaused 
                     ? 'Deseja reativar este cliente? Todas as atividades serão desbloqueadas.'
-                    : 'Tem certeza que deseja pausar este cliente? Todas as atividades serão bloqueadas até que um administrador o reative.'
+                    : 'Tem certeza que deseja suspender este cliente? Todas as atividades serão bloqueadas até que um administrador o reative.'
                   }
                 </DialogDescription>
               </DialogHeader>
@@ -472,7 +472,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                       Processando...
                     </>
                   ) : (
-                    isPaused ? 'Reativar' : 'Pausar Cliente'
+                    isPaused ? 'Reativar' : 'Suspender Cliente'
                   )}
                 </Button>
               </DialogFooter>

@@ -83,5 +83,8 @@ export function mapDbClientToUiClient(dbClient: DbClient, checklistItems: DbChec
         services: (dbClient.services as ServiceType[]) || [],
         status: getClientStatus(stageId),
         progress: progress,
+        paused: dbClient.paused || false,
+        pausedAt: dbClient.paused_at || undefined,
+        pausedBy: dbClient.paused_by || undefined,
     };
 }

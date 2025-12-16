@@ -31,6 +31,9 @@ export interface Client {
   services: ServiceType[];
   status: ClientStatus;
   progress: number; // 0-9 for checklist progress
+  paused: boolean;
+  pausedAt?: string;
+  pausedBy?: string;
 }
 
 export type ServiceType = 
