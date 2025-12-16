@@ -425,6 +425,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      user_owns_contract: { Args: { contract_path: string }; Returns: boolean }
     }
     Enums: {
       activity_type:
