@@ -23,10 +23,11 @@ import {
   Pause,
   Play
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { ContractModal } from './ContractModal';
 
 interface ActivityItem {
   id: string;
@@ -54,6 +55,8 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [pauseDialogOpen, setPauseDialogOpen] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
+  const [contractUrl, setContractUrl] = useState<string | null>(null);
+  const [contractName, setContractName] = useState<string | null>(null);
 
   const currentStage = ALL_STAGES.find(s => s.id === client.stage);
   const currentStageIndex = ALL_STAGES.findIndex(s => s.id === client.stage);
@@ -62,6 +65,23 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
 
   // Check if client is paused
   const isPaused = (client as any).paused || false;
+
+  // Fetch contract info on mount
+  useEffect(() => {
+    const fetchContract = async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('contract_url, contract_name')
+        .eq('id', client.id)
+        .single();
+      
+      if (data) {
+        setContractUrl(data.contract_url);
+        setContractName(data.contract_name);
+      }
+    };
+    fetchContract();
+  }, [client.id]);
 
   // Check if all required checklist items are completed
   const requiredItems = currentStage?.checklist.filter(item => item.required) || [];
@@ -74,6 +94,19 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   // Check if user can see contract button (closing stage or later, only for sales and admin)
   const closingAndLaterStages = ['closing', 'production', 'campaigns', 'retention'];
   const canSeeContract = closingAndLaterStages.includes(client.stage) && (userRole === 'sales' || userRole === 'admin' || isAdmin);
+
+  const handleContractUpdated = async () => {
+    const { data } = await supabase
+      .from('clients')
+      .select('contract_url, contract_name')
+      .eq('id', client.id)
+      .single();
+    
+    if (data) {
+      setContractUrl(data.contract_url);
+      setContractName(data.contract_name);
+    }
+  };
 
   const handleTaskToggle = async (taskId: string) => {
     if (isPaused) {
@@ -298,32 +331,25 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         
         {/* Contract Button - Only visible in closing stage for sales/admin */}
         {canSeeContract && (
-          <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2" disabled={isPaused}>
-                <FileText className="h-4 w-4" />
-                Adicionar Contrato
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar Contrato</DialogTitle>
-                <DialogDescription>
-                  Anexe o contrato assinado para este cliente
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <p className="text-sm text-muted-foreground">
-                  Funcionalidade de upload de contrato em desenvolvimento.
-                </p>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setContractDialogOpen(false)}>
-                  Fechar
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <>
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              disabled={isPaused}
+              onClick={() => setContractDialogOpen(true)}
+            >
+              <FileText className="h-4 w-4" />
+              {contractUrl ? 'Ver Contrato' : 'Adicionar Contrato'}
+            </Button>
+            <ContractModal
+              open={contractDialogOpen}
+              onOpenChange={setContractDialogOpen}
+              clientId={client.id}
+              contractUrl={contractUrl}
+              contractName={contractName}
+              onContractUpdated={handleContractUpdated}
+            />
+          </>
         )}
 
         {/* Pause Button - Only for Admins */}

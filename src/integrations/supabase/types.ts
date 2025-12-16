@@ -55,6 +55,9 @@ export type Database = {
           created_at: string
           headquarters: string | null
           id: string
+          knowledge_base_name: string | null
+          knowledge_base_text: string | null
+          knowledge_base_url: string | null
           nuit: string | null
           representative_name: string | null
           representative_position: string | null
@@ -65,6 +68,9 @@ export type Database = {
           created_at?: string
           headquarters?: string | null
           id?: string
+          knowledge_base_name?: string | null
+          knowledge_base_text?: string | null
+          knowledge_base_url?: string | null
           nuit?: string | null
           representative_name?: string | null
           representative_position?: string | null
@@ -75,6 +81,9 @@ export type Database = {
           created_at?: string
           headquarters?: string | null
           id?: string
+          knowledge_base_name?: string | null
+          knowledge_base_text?: string | null
+          knowledge_base_url?: string | null
           nuit?: string | null
           representative_name?: string | null
           representative_position?: string | null
@@ -205,6 +214,8 @@ export type Database = {
           bant_timeline: number | null
           company_name: string
           contact_name: string
+          contract_name: string | null
+          contract_url: string | null
           created_at: string
           current_stage: Database["public"]["Enums"]["journey_stage"]
           email: string | null
@@ -231,6 +242,8 @@ export type Database = {
           bant_timeline?: number | null
           company_name: string
           contact_name: string
+          contract_name?: string | null
+          contract_url?: string | null
           created_at?: string
           current_stage?: Database["public"]["Enums"]["journey_stage"]
           email?: string | null
@@ -257,6 +270,8 @@ export type Database = {
           bant_timeline?: number | null
           company_name?: string
           contact_name?: string
+          contract_name?: string | null
+          contract_url?: string | null
           created_at?: string
           current_stage?: Database["public"]["Enums"]["journey_stage"]
           email?: string | null

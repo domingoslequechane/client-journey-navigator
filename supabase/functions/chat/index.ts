@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -135,9 +136,58 @@ serve(async (req) => {
   try {
     const { messages, context, clientData } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Create Supabase client to fetch agency settings
+    let agencyContext = "";
+    let knowledgeBaseContext = "";
+    
+    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      // Fetch agency settings
+      const { data: agencyData } = await supabase
+        .from('agency_settings')
+        .select('*')
+        .limit(1)
+        .single();
+      
+      if (agencyData) {
+        agencyContext = `
+INFORMAÇÕES DA AGÊNCIA PRESTADORA DE SERVIÇOS:
+- Nome da Agência: ${agencyData.agency_name || 'Não informado'}
+- Sede Social: ${agencyData.headquarters || 'Não informado'}
+- NUIT: ${agencyData.nuit || 'Não informado'}
+- Representante: ${agencyData.representative_name || 'Não informado'}
+- Cargo do Representante: ${agencyData.representative_position || 'Não informado'}
+`;
+        
+        if (agencyData.knowledge_base_text) {
+          knowledgeBaseContext = `
+BASE DE CONHECIMENTO DA AGÊNCIA:
+${agencyData.knowledge_base_text}
+`;
+        }
+      }
+
+      // If client has a contract, mention it
+      if (clientData?.id) {
+        const { data: clientWithContract } = await supabase
+          .from('clients')
+          .select('contract_url, contract_name')
+          .eq('id', clientData.id)
+          .single();
+        
+        if (clientWithContract?.contract_url) {
+          clientData.has_contract = true;
+          clientData.contract_name = clientWithContract.contract_name;
+        }
+      }
     }
 
     // Build detailed context
@@ -157,6 +207,7 @@ CLIENTE EM DISCUSSÃO:
 - Serviços: ${clientData.services?.join(', ') || 'Não definidos'}
 - Notas: ${clientData.notes || 'Nenhuma nota'}
 - BANT Score: Budget(${clientData.bant_budget || 0}/10) Authority(${clientData.bant_authority || 0}/10) Need(${clientData.bant_need || 0}/10) Timeline(${clientData.bant_timeline || 0}/10)
+- Contrato: ${clientData.has_contract ? `Sim (${clientData.contract_name})` : 'Não tem contrato anexado'}
 
 ${STAGE_CONTEXT[clientData.current_stage] || ''}
 `;
@@ -165,7 +216,10 @@ ${STAGE_CONTEXT[clientData.current_stage] || ''}
     }
 
     const systemPrompt = `Você é o Qualify AI, um assistente de marketing experiente com mais de 20 anos de experiência em agências de marketing digital.
-Você trabalha para a agência Onix, especializada em gestão de redes sociais (Facebook, Instagram, TikTok).
+
+${agencyContext}
+
+${knowledgeBaseContext}
 
 Suas especialidades incluem:
 - Estratégias de marketing digital e social media
@@ -187,7 +241,9 @@ DIRETRIZES IMPORTANTES:
 - Se o cliente tem baixo score BANT, sugira como melhorar a qualificação
 - Se está em fase de prospecção, foque em técnicas de primeiro contato
 - Se está em produção/campanhas, foque em otimização e resultados
-- Se está em retenção, foque em satisfação e upsell`;
+- Se está em retenção, foque em satisfação e upsell
+- Se o cliente já tem contrato, você pode fazer referência a isso nas suas sugestões
+- Use as informações da agência e da base de conhecimento para personalizar suas respostas`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

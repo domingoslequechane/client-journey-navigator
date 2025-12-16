@@ -229,6 +229,7 @@ export default function AIAssistant() {
         body: JSON.stringify({ 
           messages: apiMessages,
           clientData: {
+            id: selectedClient.id,
             company_name: selectedClient.company_name,
             contact_name: selectedClient.contact_name,
             current_stage: selectedClient.current_stage,
