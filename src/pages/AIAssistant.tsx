@@ -462,13 +462,16 @@ export default function AIAssistant() {
       {/* Chat Area - Center */}
       <div className="flex-1 flex flex-col">
         {!selectedClientId ? (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center">
-              <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary/50" />
-              <h3 className="text-lg font-medium">Assistente de IA</h3>
-              <p className="text-sm mt-1">Selecione um cliente para iniciar uma conversa</p>
+          <>
+            <div className="h-16 border-b border-border bg-background" />
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary/50" />
+                <h3 className="text-lg font-medium">Assistente de IA</h3>
+                <p className="text-sm mt-1">Selecione um cliente para iniciar uma conversa</p>
+              </div>
             </div>
-          </div>
+          </>
         ) : (
           <>
             {/* Header */}
