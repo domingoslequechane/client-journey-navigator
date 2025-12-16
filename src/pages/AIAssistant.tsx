@@ -23,6 +23,17 @@ interface ClientWithConversation {
   company_name: string;
   contact_name: string;
   current_stage: string;
+  qualification: string;
+  email: string | null;
+  phone: string | null;
+  monthly_budget: number | null;
+  paid_traffic_budget: number | null;
+  services: string[] | null;
+  notes: string | null;
+  bant_budget: number | null;
+  bant_authority: number | null;
+  bant_need: number | null;
+  bant_timeline: number | null;
   conversation_id?: string;
   last_message?: string;
   last_message_at?: string;
@@ -47,7 +58,7 @@ export default function AIAssistant() {
     queryFn: async () => {
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
-        .select('id, company_name, contact_name, current_stage')
+        .select('id, company_name, contact_name, current_stage, qualification, email, phone, monthly_budget, paid_traffic_budget, services, notes, bant_budget, bant_authority, bant_need, bant_timeline')
         .order('updated_at', { ascending: false });
 
       if (clientsError) throw clientsError;
@@ -178,18 +189,6 @@ export default function AIAssistant() {
     return data;
   };
 
-  // Build context from client data
-  const buildClientContext = (client: ClientWithConversation) => {
-    return `
-Contexto do Cliente:
-- Empresa: ${client.company_name}
-- Contacto: ${client.contact_name}
-- Fase atual: ${client.current_stage}
-
-Use estas informações para personalizar suas respostas e dar sugestões relevantes para a fase atual do cliente.
-    `.trim();
-  };
-
   const streamChat = async (userMessage: string, fileInfo?: { url: string; type: string; name: string }) => {
     if (!selectedClientId || !selectedClient) return;
 
@@ -224,7 +223,22 @@ Use estas informações para personalizar suas respostas e dar sugestões releva
         },
         body: JSON.stringify({ 
           messages: apiMessages,
-          context: buildClientContext(selectedClient)
+          clientData: {
+            company_name: selectedClient.company_name,
+            contact_name: selectedClient.contact_name,
+            current_stage: selectedClient.current_stage,
+            qualification: selectedClient.qualification,
+            email: selectedClient.email,
+            phone: selectedClient.phone,
+            monthly_budget: selectedClient.monthly_budget,
+            paid_traffic_budget: selectedClient.paid_traffic_budget,
+            services: selectedClient.services,
+            notes: selectedClient.notes,
+            bant_budget: selectedClient.bant_budget,
+            bant_authority: selectedClient.bant_authority,
+            bant_need: selectedClient.bant_need,
+            bant_timeline: selectedClient.bant_timeline
+          }
         }),
       });
 
