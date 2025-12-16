@@ -60,6 +60,8 @@ const STAGE_OPTIONS = [
   { value: 'retencao', label: 'Retenção' },
 ];
 
+const AI_SIDEBAR_COLLAPSED_KEY = 'qualify-ai-sidebar-collapsed';
+
 export default function AIAssistant() {
   const queryClient = useQueryClient();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -71,9 +73,16 @@ export default function AIAssistant() {
   const [pendingFile, setPendingFile] = useState<{ url: string; type: string; name: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStage, setFilterStage] = useState('all');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem(AI_SIDEBAR_COLLAPSED_KEY);
+    return saved === 'true';
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem(AI_SIDEBAR_COLLAPSED_KEY, String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   // Fetch clients with their conversations
   const { data: clients = [], isLoading: loadingClients } = useQuery({
