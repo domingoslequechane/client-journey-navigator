@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Client } from '@/types';
@@ -8,6 +8,7 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { mapDbClientToUiClient } from '@/lib/client-utils';
 import { ClientDetailContent } from '@/components/clients/ClientDetailContent';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Function to fetch client data and checklist items
 const fetchClientData = async (clientId: string) => {
@@ -36,7 +37,9 @@ const fetchClientData = async (clientId: string) => {
 export default function ClientDetail() {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState('sales');
 
   // Handle back navigation - go to previous page or fallback to clients
   const handleBack = () => {
@@ -58,6 +61,18 @@ export default function ClientDetail() {
       toast({ title: 'Erro ao carregar cliente', description: error.message, variant: 'destructive' });
     }
   }, [error]);
+
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (!user) return;
+      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      if (data) {
+        setUserRole(data.role);
+        setIsAdmin(data.role === 'admin');
+      }
+    };
+    checkUserRole();
+  }, [user]);
 
   const handleUpdateClient = async (updatedClient: Client) => {
     // This function handles updates to the DB (stage and checklist items)
@@ -168,7 +183,7 @@ export default function ClientDetail() {
         </div>
       </div>
       
-      <ClientDetailContent client={client} onUpdate={handleUpdateClient} />
+      <ClientDetailContent client={client} onUpdate={handleUpdateClient} isAdmin={isAdmin} userRole={userRole} />
     </div>
   );
 }

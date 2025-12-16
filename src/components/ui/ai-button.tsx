@@ -7,13 +7,14 @@ interface AIButtonProps {
   isLoading?: boolean;
   className?: string;
   children?: React.ReactNode;
+  disabled?: boolean;
 }
 
-export function AIButton({ onClick, isLoading, className, children }: AIButtonProps) {
+export function AIButton({ onClick, isLoading, className, children, disabled }: AIButtonProps) {
   return (
     <Button
       onClick={onClick}
-      disabled={isLoading}
+      disabled={isLoading || disabled}
       className={cn(
         'bg-gradient-to-r from-primary to-chart-5 hover:from-primary/90 hover:to-chart-5/90 text-primary-foreground gap-2',
         className
