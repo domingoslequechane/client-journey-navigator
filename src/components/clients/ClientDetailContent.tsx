@@ -3,14 +3,29 @@ import { Button } from '@/components/ui/button';
 import { AIButton } from '@/components/ui/ai-button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Mail, 
   Phone, 
   ArrowRight,
+  ArrowLeft,
   MessageSquare,
-  CheckSquare
+  CheckSquare,
+  Activity,
+  Plus,
+  Loader2,
+  Calendar
 } from 'lucide-react';
 import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+interface ActivityItem {
+  id: string;
+  title: string;
+  description: string;
+  createdAt: string;
+}
 
 interface ClientDetailContentProps {
   client: Client;
@@ -20,22 +35,83 @@ interface ClientDetailContentProps {
 export function ClientDetailContent({ client, onUpdate }: ClientDetailContentProps) {
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
+  const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
+  const [isLoadingStage, setIsLoadingStage] = useState<'next' | 'prev' | null>(null);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [isAddingActivity, setIsAddingActivity] = useState(false);
+  const [newActivity, setNewActivity] = useState({ title: '', description: '' });
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
 
   const currentStage = ALL_STAGES.find(s => s.id === client.stage);
   const currentStageIndex = ALL_STAGES.findIndex(s => s.id === client.stage);
   const nextStage = ALL_STAGES[currentStageIndex + 1];
+  const prevStage = currentStageIndex > 0 ? ALL_STAGES[currentStageIndex - 1] : null;
 
-  const handleTaskToggle = (taskId: string) => {
-    const updatedTasks = client.tasks.map(task =>
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    );
+  // Check if all required checklist items are completed
+  const requiredItems = currentStage?.checklist.filter(item => item.required) || [];
+  const completedRequiredItems = requiredItems.filter(item => {
+    const task = client.tasks.find(t => t.id === item.id);
+    return task?.completed;
+  });
+  const allRequiredCompleted = completedRequiredItems.length === requiredItems.length;
+
+  const handleTaskToggle = async (taskId: string) => {
+    setLoadingTaskId(taskId);
+    
+    // Simulate async operation
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const existingTask = client.tasks.find(t => t.id === taskId);
+    let updatedTasks;
+    
+    if (existingTask) {
+      updatedTasks = client.tasks.map(task =>
+        task.id === taskId ? { ...task, completed: !task.completed } : task
+      );
+    } else {
+      // Create new task if it doesn't exist
+      updatedTasks = [...client.tasks, { id: taskId, title: '', completed: true, stageId: client.stage }];
+    }
+    
     onUpdate({ ...client, tasks: updatedTasks });
+    setLoadingTaskId(null);
   };
 
-  const handleMoveToNextStage = () => {
-    if (nextStage) {
+  const handleMoveToNextStage = async () => {
+    if (nextStage && allRequiredCompleted) {
+      setIsLoadingStage('next');
+      await new Promise(resolve => setTimeout(resolve, 800));
       onUpdate({ ...client, stage: nextStage.id });
+      setIsLoadingStage(null);
     }
+  };
+
+  const handleMoveToPrevStage = async () => {
+    if (prevStage) {
+      setIsLoadingStage('prev');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      onUpdate({ ...client, stage: prevStage.id });
+      setIsLoadingStage(null);
+    }
+  };
+
+  const handleAddActivity = async () => {
+    if (!newActivity.title.trim()) return;
+    
+    setIsAddingActivity(true);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const activity: ActivityItem = {
+      id: `act-${Date.now()}`,
+      title: newActivity.title,
+      description: newActivity.description,
+      createdAt: new Date().toISOString(),
+    };
+    
+    setActivities(prev => [activity, ...prev]);
+    setNewActivity({ title: '', description: '' });
+    setIsAddingActivity(false);
+    setActivityDialogOpen(false);
   };
 
   const handleAIAnalysis = () => {
@@ -52,6 +128,17 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
       setAiSuggestion(suggestions[client.stage]);
       setIsLoadingAi(false);
     }, 1500);
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -125,6 +212,10 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
             <CheckSquare className="h-4 w-4" />
             Checklist
           </TabsTrigger>
+          <TabsTrigger value="activities" className="flex-1 gap-2">
+            <Activity className="h-4 w-4" />
+            Atividades
+          </TabsTrigger>
           <TabsTrigger value="notes" className="flex-1 gap-2">
             <MessageSquare className="h-4 w-4" />
             Notas
@@ -132,21 +223,35 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
         </TabsList>
 
         <TabsContent value="checklist" className="mt-4 space-y-3">
+          {/* Progress indicator */}
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="text-muted-foreground">
+              Itens obrigatórios: {completedRequiredItems.length}/{requiredItems.length}
+            </span>
+            {allRequiredCompleted && (
+              <span className="text-success font-medium">✓ Completo</span>
+            )}
+          </div>
+          
           {currentStage?.checklist.map((item) => {
             const task = client.tasks.find(t => t.id === item.id);
             const isCompleted = task?.completed || false;
+            const isLoading = loadingTaskId === item.id;
             
             return (
               <div 
                 key={item.id}
-                className="flex items-start gap-3 p-3 bg-card border border-border rounded-lg cursor-pointer"
-                onClick={() => handleTaskToggle(item.id)}
+                className={`flex items-start gap-3 p-3 bg-card border border-border rounded-lg cursor-pointer transition-all ${isLoading ? 'opacity-70' : 'hover:border-primary/50'}`}
+                onClick={() => !isLoading && handleTaskToggle(item.id)}
               >
-                <Checkbox 
-                  checked={isCompleted}
-                  onCheckedChange={() => handleTaskToggle(item.id)}
-                  className="mt-0.5 pointer-events-none"
-                />
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 mt-0.5 animate-spin text-primary" />
+                ) : (
+                  <Checkbox 
+                    checked={isCompleted}
+                    className="mt-0.5 pointer-events-none"
+                  />
+                )}
                 <div className="flex-1">
                   <p className={`text-sm font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
                     {item.title}
@@ -159,6 +264,84 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
           })}
         </TabsContent>
 
+        <TabsContent value="activities" className="mt-4 space-y-3">
+          <Dialog open={activityDialogOpen} onOpenChange={setActivityDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full gap-2">
+                <Plus className="h-4 w-4" />
+                Registrar Atividade
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Nova Atividade</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                <div>
+                  <label className="text-sm font-medium">Título</label>
+                  <Input
+                    placeholder="Ex: Ligação de follow-up"
+                    value={newActivity.title}
+                    onChange={(e) => setNewActivity(prev => ({ ...prev, title: e.target.value }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Descrição</label>
+                  <Textarea
+                    placeholder="Descreva o que foi realizado..."
+                    value={newActivity.description}
+                    onChange={(e) => setNewActivity(prev => ({ ...prev, description: e.target.value }))}
+                    className="mt-1"
+                    rows={4}
+                  />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>Data/Hora: {formatDateTime(new Date().toISOString())}</span>
+                </div>
+                <Button 
+                  onClick={handleAddActivity} 
+                  disabled={!newActivity.title.trim() || isAddingActivity}
+                  className="w-full"
+                >
+                  {isAddingActivity ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar Atividade'
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {activities.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Nenhuma atividade registrada</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activities.map((activity) => (
+                <div key={activity.id} className="p-3 bg-card border border-border rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <p className="font-medium text-sm">{activity.title}</p>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDateTime(activity.createdAt)}
+                    </span>
+                  </div>
+                  {activity.description && (
+                    <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
         <TabsContent value="notes" className="mt-4">
           <div className="p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">{client.notes || 'Nenhuma nota registrada.'}</p>
@@ -166,15 +349,51 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
         </TabsContent>
       </Tabs>
 
-      {/* Move to Next Stage */}
-      {nextStage && (
-        <Button 
-          onClick={handleMoveToNextStage}
-          className="w-full gap-2"
-        >
-          Avançar para {nextStage.name}
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+      {/* Stage Navigation Buttons */}
+      <div className="flex gap-2">
+        {prevStage && (
+          <Button 
+            variant="outline"
+            onClick={handleMoveToPrevStage}
+            disabled={isLoadingStage !== null}
+            className="flex-1 gap-2"
+          >
+            {isLoadingStage === 'prev' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowLeft className="h-4 w-4" />
+            )}
+            {prevStage.name}
+          </Button>
+        )}
+        
+        {nextStage && (
+          <Button 
+            onClick={handleMoveToNextStage}
+            disabled={!allRequiredCompleted || isLoadingStage !== null}
+            className="flex-1 gap-2"
+            title={!allRequiredCompleted ? 'Complete todos os itens obrigatórios (*) para avançar' : ''}
+          >
+            {isLoadingStage === 'next' ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Processando...
+              </>
+            ) : (
+              <>
+                {nextStage.name}
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+
+      {/* Helper text for disabled advance button */}
+      {nextStage && !allRequiredCompleted && (
+        <p className="text-xs text-muted-foreground text-center">
+          Complete todos os itens obrigatórios (*) para avançar para a próxima fase
+        </p>
       )}
     </div>
   );
