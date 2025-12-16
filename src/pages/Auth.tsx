@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { z } from 'zod';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, Mail, ShieldAlert } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 const authSchema = z.object({
   email: z.string().email({ message: 'E-mail inválido' }),
@@ -27,6 +28,7 @@ export default function Auth() {
   const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string }>({});
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [suspendedDialogOpen, setSuspendedDialogOpen] = useState(false);
 
   useEffect(() => {
     if (session) {
@@ -61,7 +63,7 @@ export default function Auth() {
     if (!validateForm(false)) return;
     
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
@@ -69,10 +71,36 @@ export default function Auth() {
       } else {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       }
-    } else {
-      toast({ title: 'Bem-vindo!', description: 'Login realizado com sucesso' });
-      navigate('/app');
+      setLoading(false);
+      return;
     }
+
+    // Check if user is suspended
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+      
+      // Check user_roles for suspended status
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id);
+      
+      // If user has a suspended flag in metadata or no active roles
+      const userMeta = data.user.user_metadata;
+      if (userMeta?.suspended === true) {
+        await supabase.auth.signOut();
+        setSuspendedDialogOpen(true);
+        setLoading(false);
+        return;
+      }
+    }
+
+    toast({ title: 'Bem-vindo!', description: 'Login realizado com sucesso' });
+    navigate('/app');
     setLoading(false);
   };
 
@@ -129,6 +157,34 @@ export default function Auth() {
     }
     setLoading(false);
   };
+
+  // Suspended user dialog
+  if (suspendedDialogOpen) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Dialog open={suspendedDialogOpen} onOpenChange={setSuspendedDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <ShieldAlert className="h-6 w-6 text-destructive" />
+                </div>
+              </div>
+              <DialogTitle>Conta Suspensa</DialogTitle>
+              <DialogDescription>
+                A sua conta foi suspensa pelo administrador. Não é possível aceder ao sistema até que a sua conta seja reativada.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={() => setSuspendedDialogOpen(false)} className="w-full">
+                Entendi
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
 
   if (showForgotPassword) {
     return (

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter } from 'lucide-react';
+import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { markdownToHtml } from '@/lib/markdown-to-html';
@@ -64,6 +64,7 @@ export default function AIAssistant() {
   const [pendingFile, setPendingFile] = useState<{ url: string; type: string; name: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStage, setFilterStage] = useState('all');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -130,12 +131,12 @@ export default function AIAssistant() {
   useEffect(() => {
     if (selectedClient?.conversation_id) {
       setMessages(conversationMessages);
-    } else if (selectedClientId) {
-      // New conversation - show welcome message
+    } else if (selectedClientId && selectedClient) {
+      // New conversation - show welcome message with full client context
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Olá! Sou o assistente de marketing do Qualify. Estou aqui para ajudar com o cliente **${selectedClient?.company_name || ''}**.\n\nComo posso auxiliar hoje?`,
+        content: `Olá! Sou o assistente de marketing do Qualify. Estou aqui para ajudar com o cliente **${selectedClient.company_name}**.\n\n**Contexto do Cliente:**\n- Contato: ${selectedClient.contact_name}\n- Fase atual: ${getStageLabel(selectedClient.current_stage)}\n- Qualificação: ${selectedClient.qualification}\n- Orçamento mensal: ${selectedClient.monthly_budget ? `${selectedClient.monthly_budget.toLocaleString()} MT` : 'Não informado'}\n\nComo posso auxiliar hoje?`,
         created_at: new Date().toISOString()
       }]);
     } else {
@@ -596,38 +597,57 @@ export default function AIAssistant() {
       </div>
 
       {/* Clients Sidebar - Right */}
-      <div className="w-80 border-l border-border bg-muted/30 flex flex-col">
+      <div className={cn(
+        "border-l border-border bg-muted/30 flex flex-col transition-all duration-300",
+        sidebarCollapsed ? "w-16" : "w-80"
+      )}>
         <div className="p-4 border-b border-border">
-          <h2 className="font-semibold flex items-center gap-2 mb-3">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Conversas por Cliente
-          </h2>
-          
-          {/* Search */}
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar cliente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9"
-            />
+          <div className="flex items-center justify-between mb-3">
+            {!sidebarCollapsed && (
+              <h2 className="font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Conversas por Cliente
+              </h2>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className={sidebarCollapsed ? "mx-auto" : ""}
+            >
+              {sidebarCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+            </Button>
           </div>
           
-          {/* Filter */}
-          <Select value={filterStage} onValueChange={setFilterStage}>
-            <SelectTrigger className="h-9">
-              <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Filtrar por fase" />
-            </SelectTrigger>
-            <SelectContent>
-              {STAGE_OPTIONS.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {!sidebarCollapsed && (
+            <>
+              {/* Search */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar cliente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+              
+              {/* Filter */}
+              <Select value={filterStage} onValueChange={setFilterStage}>
+                <SelectTrigger className="h-9">
+                  <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Filtrar por fase" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STAGE_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
         </div>
         
         <ScrollArea className="flex-1">
@@ -637,7 +657,7 @@ export default function AIAssistant() {
             </div>
           ) : filteredClients.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground text-sm">
-              Nenhum cliente encontrado
+              {sidebarCollapsed ? '' : 'Nenhum cliente encontrado'}
             </div>
           ) : (
             <div className="p-2 space-y-1">
@@ -649,21 +669,31 @@ export default function AIAssistant() {
                     "w-full text-left p-3 rounded-lg transition-colors",
                     selectedClientId === client.id 
                       ? "bg-primary/10 border border-primary/20" 
-                      : "hover:bg-muted"
+                      : "hover:bg-muted",
+                    sidebarCollapsed && "flex items-center justify-center"
                   )}
+                  title={sidebarCollapsed ? client.company_name : undefined}
                 >
-                  <div className="flex items-start gap-2">
-                    <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{client.company_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{client.contact_name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                          {getStageLabel(client.current_stage)}
-                        </span>
+                  {sidebarCollapsed ? (
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <span className="text-primary font-semibold text-sm">
+                        {client.company_name.charAt(0)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{client.company_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{client.contact_name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                            {getStageLabel(client.current_stage)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </button>
               ))}
             </div>
