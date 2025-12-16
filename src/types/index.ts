@@ -1,6 +1,6 @@
 // ============= Journey & Stage Types =============
 export type SalesFunnelStage = 'prospecting' | 'qualification' | 'closing';
-export type OperationalStage = 'production' | 'campaigns' | 'retention';
+export type OperationalStage = 'production' | 'campaigns' | 'retention' | 'loyalty';
 export type JourneyStage = SalesFunnelStage | OperationalStage;
 
 export type LeadSource = 'google_maps' | 'social_media' | 'referral' | 'visit' | 'inbound' | 'other';
@@ -178,10 +178,6 @@ export const OPERATIONAL_FLOW_STAGES: StageConfig[] = [
       { id: 'cm4', title: 'Produção de vídeos curtos e reels', description: 'Conteúdo audiovisual dinâmico', required: true },
       { id: 'cm5', title: 'Criação de artigos para blog ou e-mail marketing', description: 'Conteúdo de valor agregado', required: false },
       { id: 'cm6', title: 'Monitoramento de tendências e adaptação de conteúdo', description: 'Acompanhar trends e viralizar', required: true },
-      { id: 'cm7', title: 'Gestão de campanhas de tráfego pago', description: 'Facebook Ads, Instagram Ads, TikTok Ads', required: true },
-      { id: 'cm8', title: 'Otimização de campanhas para CPA/ROAS', description: 'Melhoria contínua de resultados', required: true },
-      { id: 'cm9', title: 'Análise de dados e insights', description: 'Aprendizados aplicados às estratégias', required: true },
-      { id: 'cm10', title: 'Relatório de performance mensal', description: 'Documento mensal completo', required: true },
     ]
   },
   {
@@ -190,7 +186,7 @@ export const OPERATIONAL_FLOW_STAGES: StageConfig[] = [
     description: 'Planejamento, execução e otimização de campanhas de tráfego pago.',
     color: 'bg-rose-500/20',
     borderColor: 'border-rose-500',
-    icon: 'Heart',
+    icon: 'Target',
     checklist: [
       { id: 'r1', title: 'Definição de objetivos e orçamento de campanha', description: 'Metas claras e investimento', required: true },
       { id: 'r2', title: 'Pesquisa de público-alvo e segmentação detalhada', description: 'Personas e audiências', required: true },
@@ -199,9 +195,23 @@ export const OPERATIONAL_FLOW_STAGES: StageConfig[] = [
       { id: 'r5', title: 'Monitoramento diário de performance', description: 'Acompanhamento constante', required: true },
       { id: 'r6', title: 'Realização de testes A/B', description: 'Criativos, públicos e copies', required: true },
       { id: 'r7', title: 'Reunião de resultados com o cliente', description: 'Apresentação de métricas e KPIs', required: true },
-      { id: 'r8', title: 'Identificação de oportunidades de upsell', description: 'Expandir escopo de serviços', required: false },
-      { id: 'r9', title: 'Coleta de feedback e NPS', description: 'Medir satisfação do cliente', required: true },
-      { id: 'r10', title: 'Proposta de renovação de contrato', description: 'Renovar parceria com novos objetivos', required: true },
+      { id: 'r8', title: 'Otimização de campanhas para CPA/ROAS', description: 'Melhoria contínua de resultados', required: true },
+    ]
+  },
+  {
+    id: 'loyalty',
+    name: 'Fidelização e Sucesso',
+    description: 'Retenção do cliente, expansão de serviços e renovação de contratos.',
+    color: 'bg-success/20',
+    borderColor: 'border-success',
+    icon: 'Heart',
+    checklist: [
+      { id: 'l1', title: 'Reunião trimestral de resultados', description: 'Apresentação consolidada de KPIs', required: true },
+      { id: 'l2', title: 'Coleta de feedback e NPS', description: 'Medir satisfação do cliente', required: true },
+      { id: 'l3', title: 'Identificação de oportunidades de upsell', description: 'Expandir escopo de serviços', required: true },
+      { id: 'l4', title: 'Solicitar depoimento ou case de sucesso', description: 'Material para marketing da agência', required: false },
+      { id: 'l5', title: 'Pedir indicações de novos clientes', description: 'Programa de referral', required: false },
+      { id: 'l6', title: 'Proposta de renovação de contrato', description: 'Renovar parceria com novos objetivos', required: true },
     ]
   }
 ];

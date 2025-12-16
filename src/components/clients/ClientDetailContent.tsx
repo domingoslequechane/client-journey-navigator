@@ -364,6 +364,17 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             <p className="text-sm font-medium truncate">{client.address || 'N/A'}</p>
           </div>
         </div>
+        {/* Paid Traffic Budget - Only visible after closing stage */}
+        {closingAndLaterStages.includes(client.stage) && (
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
+            {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
+            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Orçamento de Tráfego Pago</p>
+              <p className="text-sm font-medium">{client.trafficBudget ? `${Number(client.trafficBudget).toLocaleString()} MT` : 'N/A'}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* BANT Score */}
