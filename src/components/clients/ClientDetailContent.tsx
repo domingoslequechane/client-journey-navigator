@@ -49,6 +49,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
   const [isLoadingStage, setIsLoadingStage] = useState<'next' | 'prev' | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
   const [isAddingActivity, setIsAddingActivity] = useState(false);
   const [newActivity, setNewActivity] = useState({ title: '', description: '' });
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
@@ -66,21 +67,40 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   // Check if client is paused
   const isPaused = (client as any).paused || false;
 
-  // Fetch contract info on mount
+  // Fetch contract and activities on mount
   useEffect(() => {
-    const fetchContract = async () => {
-      const { data } = await supabase
+    const fetchContractAndActivities = async () => {
+      // Fetch contract
+      const { data: contractData } = await supabase
         .from('clients')
         .select('contract_url, contract_name')
         .eq('id', client.id)
         .single();
       
-      if (data) {
-        setContractUrl(data.contract_url);
-        setContractName(data.contract_name);
+      if (contractData) {
+        setContractUrl(contractData.contract_url);
+        setContractName(contractData.contract_name);
       }
+
+      // Fetch activities
+      setIsLoadingActivities(true);
+      const { data: activitiesData, error } = await supabase
+        .from('activities')
+        .select('*')
+        .eq('client_id', client.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && activitiesData) {
+        setActivities(activitiesData.map(a => ({
+          id: a.id,
+          title: a.title,
+          description: a.description || '',
+          createdAt: a.created_at,
+        })));
+      }
+      setIsLoadingActivities(false);
     };
-    fetchContract();
+    fetchContractAndActivities();
   }, [client.id]);
 
   // Check if all required checklist items are completed
@@ -203,17 +223,37 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
     
     setIsAddingActivity(true);
     
-    const activity: ActivityItem = {
-      id: `act-${Date.now()}`,
-      title: newActivity.title,
-      description: newActivity.description,
-      createdAt: new Date().toISOString(),
-    };
-    
-    setActivities(prev => [activity, ...prev]);
-    setNewActivity({ title: '', description: '' });
-    setIsAddingActivity(false);
-    setActivityDialogOpen(false);
+    try {
+      const { data, error } = await supabase
+        .from('activities')
+        .insert({
+          client_id: client.id,
+          title: newActivity.title,
+          description: newActivity.description || null,
+          type: 'note' as const,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const activity: ActivityItem = {
+        id: data.id,
+        title: data.title,
+        description: data.description || '',
+        createdAt: data.created_at,
+      };
+      
+      setActivities(prev => [activity, ...prev]);
+      setNewActivity({ title: '', description: '' });
+      setActivityDialogOpen(false);
+      toast({ title: 'Atividade registrada!', description: 'A atividade foi salva com sucesso.' });
+    } catch (error) {
+      console.error('Error adding activity:', error);
+      toast({ title: 'Erro', description: 'Não foi possível salvar a atividade', variant: 'destructive' });
+    } finally {
+      setIsAddingActivity(false);
+    }
   };
 
   const handleAIAnalysis = () => {
@@ -516,7 +556,11 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             </DialogContent>
           </Dialog>
 
-          {activities.length === 0 ? (
+          {isLoadingActivities ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : activities.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">Nenhuma atividade registrada</p>

@@ -72,8 +72,7 @@ export default function Dashboard() {
 
   const quickActions = [
     { title: 'Ver Funil de Vendas', description: 'Kanban visual da jornada do cliente', icon: Kanban, href: '/app/sales-funnel', color: 'text-success' },
-    { title: 'Ver Fluxo Operacional', description: 'Acompanhe clientes em produção e retenção', icon: Workflow, href: '/app/operational-flow', color: 'text-purple-500' },
-    { title: 'Checklists de Processo', description: 'Acompanhe as tarefas por fase', icon: CheckSquare, href: '/app/checklists', color: 'text-rose-500' },
+    { title: 'Ver Fluxo Operacional', description: 'Acompanhe clientes em produção e retenção', icon: Workflow, href: '/app/operational-flow', color: 'text-chart-5' },
   ];
 
   if (loading) {
