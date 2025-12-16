@@ -231,16 +231,23 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">Q</span>
+      <div className="w-full max-w-md">
+        {/* Back to Landing */}
+        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Voltar ao site
+        </Link>
+        
+        <Card>
+          <CardHeader className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-xl">Q</span>
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-2xl font-bold">Qualify</CardTitle>
-          <CardDescription>Sistema de gestão de clientes</CardDescription>
-        </CardHeader>
+            <CardTitle className="text-2xl font-bold">Qualify</CardTitle>
+            <CardDescription>Sistema de gestão de clientes</CardDescription>
+          </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -335,6 +342,7 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
