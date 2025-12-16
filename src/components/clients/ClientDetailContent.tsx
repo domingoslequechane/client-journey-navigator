@@ -2,10 +2,8 @@ import { Client, ALL_STAGES } from '@/types';
 import { Button } from '@/components/ui/button';
 import { AIButton } from '@/components/ui/ai-button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Building2, 
   Mail, 
   Phone, 
   ArrowRight,
@@ -58,18 +56,9 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
 
   return (
     <div className="space-y-6">
-      {/* Header Info (Simplified for content component) */}
-      <div className="flex items-start gap-4">
-        <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-          <Building2 className="h-7 w-7 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xl font-semibold">{client.companyName}</p>
-          <p className="text-muted-foreground text-sm mt-1">{client.contactName}</p>
-          <Badge className={`${currentStage?.color} text-primary-foreground mt-2`}>
-            {currentStage?.name}
-          </Badge>
-        </div>
+      {/* Current Stage Badge */}
+      <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${currentStage?.color} ${currentStage?.borderColor} border-2`}>
+        {currentStage?.name}
       </div>
 
       {/* Contact Info */}
@@ -150,12 +139,13 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
             return (
               <div 
                 key={item.id}
-                className="flex items-start gap-3 p-3 bg-card border border-border rounded-lg"
+                className="flex items-start gap-3 p-3 bg-card border border-border rounded-lg cursor-pointer"
+                onClick={() => handleTaskToggle(item.id)}
               >
                 <Checkbox 
                   checked={isCompleted}
                   onCheckedChange={() => handleTaskToggle(item.id)}
-                  className="mt-0.5"
+                  className="mt-0.5 pointer-events-none"
                 />
                 <div className="flex-1">
                   <p className={`text-sm font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
