@@ -33,7 +33,7 @@ double_confirm_changes = true
 enable_confirmations = false
 
 [functions.chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.invite-user]
 verify_jwt = true

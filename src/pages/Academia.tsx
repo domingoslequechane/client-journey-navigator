@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,12 @@ import { Loader2, GraduationCap, Sparkles, BookOpen, Clock } from 'lucide-react'
 import { toast } from '@/hooks/use-toast';
 import { markdownToHtml } from '@/lib/markdown-to-html';
 
+// DOMPurify sanitization config to prevent XSS
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'code', 'h1', 'h2', 'h3', 'div', 'span'],
+  ALLOWED_ATTR: ['href', 'class'],
+  ALLOWED_URI_REGEXP: /^https?:\/\//i
+};
 interface StudySuggestion {
   id: string;
   title: string;
@@ -323,7 +330,7 @@ Nível: [nível]
           <CardContent>
             <div 
               className="prose prose-sm max-w-none text-foreground"
-              dangerouslySetInnerHTML={{ __html: markdownToHtml(generatedSuggestions) }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(generatedSuggestions), SANITIZE_CONFIG) }}
             />
           </CardContent>
         </Card>
