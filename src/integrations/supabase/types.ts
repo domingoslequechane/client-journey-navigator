@@ -284,6 +284,9 @@ export type Database = {
           full_name: string | null
           id: string
           role: Database["public"]["Enums"]["user_role"]
+          suspended: boolean
+          suspended_at: string | null
+          suspended_by: string | null
           updated_at: string | null
         }
         Insert: {
@@ -292,6 +295,9 @@ export type Database = {
           full_name?: string | null
           id: string
           role?: Database["public"]["Enums"]["user_role"]
+          suspended?: boolean
+          suspended_at?: string | null
+          suspended_by?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -300,6 +306,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
+          suspended?: boolean
+          suspended_at?: string | null
+          suspended_by?: string | null
           updated_at?: string | null
         }
         Relationships: []

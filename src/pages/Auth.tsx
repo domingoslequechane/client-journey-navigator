@@ -79,19 +79,11 @@ export default function Auth() {
     if (data.user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('suspended')
         .eq('id', data.user.id)
         .single();
       
-      // Check user_roles for suspended status
-      const { data: userRoles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', data.user.id);
-      
-      // If user has a suspended flag in metadata or no active roles
-      const userMeta = data.user.user_metadata;
-      if (userMeta?.suspended === true) {
+      if (profile?.suspended === true) {
         await supabase.auth.signOut();
         setSuspendedDialogOpen(true);
         setLoading(false);

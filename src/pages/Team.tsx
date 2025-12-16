@@ -97,10 +97,18 @@ export default function Team() {
       if (error) throw error;
 
       // Determine status based on profile data
-      const membersWithStatus = data?.map(member => ({
-        ...member,
-        status: member.full_name ? 'active' : 'pending' as 'active' | 'pending' | 'suspended',
-      })) || [];
+      const membersWithStatus = data?.map(member => {
+        let status: 'active' | 'pending' | 'suspended' = 'active';
+        if ((member as any).suspended) {
+          status = 'suspended';
+        } else if (!member.full_name) {
+          status = 'pending';
+        }
+        return {
+          ...member,
+          status,
+        };
+      }) || [];
 
       setMembers(membersWithStatus);
     } catch (error) {
@@ -200,20 +208,31 @@ export default function Team() {
   const handleToggleSuspend = async (member: TeamMember) => {
     setActionLoading(member.id);
     try {
-      // Toggle suspend status - in a real app, this would disable the user
-      const newStatus = member.status === 'suspended' ? 'active' : 'suspended';
+      const { data: { user } } = await supabase.auth.getUser();
+      const isSuspending = member.status !== 'suspended';
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          suspended: isSuspending,
+          suspended_at: isSuspending ? new Date().toISOString() : null,
+          suspended_by: isSuspending ? user?.id : null,
+        } as any)
+        .eq('id', member.id);
+
+      if (error) throw error;
       
       toast({ 
-        title: newStatus === 'suspended' ? 'Usuário suspenso' : 'Usuário ativado',
-        description: newStatus === 'suspended' 
+        title: isSuspending ? 'Usuário suspenso' : 'Usuário ativado',
+        description: isSuspending 
           ? 'O usuário não poderá mais acessar o sistema'
           : 'O usuário pode acessar o sistema novamente'
       });
       
-      // Update local state
-      setMembers(prev => prev.map(m => 
-        m.id === member.id ? { ...m, status: newStatus as any } : m
-      ));
+      fetchMembers();
+    } catch (error) {
+      console.error('Error toggling suspend:', error);
+      toast({ title: 'Erro', description: 'Não foi possível alterar o status do usuário', variant: 'destructive' });
     } finally {
       setActionLoading(null);
     }
