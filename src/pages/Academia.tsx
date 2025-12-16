@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, GraduationCap, Sparkles, BookOpen, Clock, RefreshCw } from 'lucide-react';
+import { Loader2, GraduationCap, Sparkles, BookOpen, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { markdownToHtml } from '@/lib/markdown-to-html';
 
@@ -26,12 +26,18 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   beginner: 'bg-green-100 text-green-800',
   intermediate: 'bg-yellow-100 text-yellow-800',
   advanced: 'bg-red-100 text-red-800',
+  iniciante: 'bg-green-100 text-green-800',
+  intermediário: 'bg-yellow-100 text-yellow-800',
+  avançado: 'bg-red-100 text-red-800',
 };
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   beginner: 'Iniciante',
   intermediate: 'Intermediário',
   advanced: 'Avançado',
+  iniciante: 'Iniciante',
+  intermediário: 'Intermediário',
+  avançado: 'Avançado',
 };
 
 export default function Academia() {
@@ -40,7 +46,7 @@ export default function Academia() {
   const [generatedSuggestions, setGeneratedSuggestions] = useState<string | null>(null);
 
   // Fetch study suggestions history
-  const { data: suggestions = [], isLoading } = useQuery({
+  const { data: suggestions = [], isLoading, refetch } = useQuery({
     queryKey: ['study-suggestions'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -52,6 +58,83 @@ export default function Academia() {
       return data as StudySuggestion[];
     }
   });
+
+  const parseSuggestions = (content: string) => {
+    const suggestions = [];
+    
+    // Try different patterns to extract suggestions
+    const patterns = [
+      // Pattern 1: **Sugestão X: Title**
+      /\*{0,2}Sugestão\s*\d+[:\s]+([^\n*]+)\*{0,2}\s*\n+(?:Descrição[:\s]*)?([^\n]+(?:\n(?!Categoria|Nível|Sugestão)[^\n]+)*)\s*\n*(?:Categoria[:\s]*)?([^\n]+)\s*\n*(?:Nível[:\s]*)?([^\n]+)/gi,
+      // Pattern 2: numbered list
+      /(\d+)\.\s*\*{0,2}([^\n*]+)\*{0,2}\s*\n+([^\n]+(?:\n(?!\d+\.)[^\n]+)*)/gi,
+    ];
+
+    // First pattern
+    let regex = /Sugestão\s*\d+[:\s.]*\*{0,2}([^\n*]+)\*{0,2}\s*\n+(?:Descrição[:\s]*)?([^\n]+)/gi;
+    let match;
+    
+    while ((match = regex.exec(content)) !== null) {
+      const title = match[1].replace(/\*+/g, '').trim();
+      const description = match[2].replace(/\*+/g, '').trim();
+      
+      // Try to find category and level after the match
+      const afterMatch = content.slice(match.index + match[0].length, match.index + match[0].length + 200);
+      
+      const categoryMatch = afterMatch.match(/Categoria[:\s]*([^\n]+)/i);
+      const levelMatch = afterMatch.match(/Nível[:\s]*([^\n]+)/i);
+      
+      suggestions.push({
+        title,
+        description,
+        category: categoryMatch ? categoryMatch[1].trim().toLowerCase() : 'marketing',
+        difficulty_level: levelMatch ? levelMatch[1].trim().toLowerCase() : 'intermediate',
+        source: 'ai_analysis',
+        ai_generated: true,
+      });
+    }
+
+    // If no matches found, try a simpler approach
+    if (suggestions.length === 0) {
+      const lines = content.split('\n').filter(l => l.trim());
+      let currentSuggestion: any = null;
+      
+      for (const line of lines) {
+        const cleanLine = line.replace(/\*+/g, '').trim();
+        
+        if (cleanLine.match(/^(Sugestão\s*\d+|\d+\.)/i)) {
+          if (currentSuggestion && currentSuggestion.title) {
+            suggestions.push(currentSuggestion);
+          }
+          const titleMatch = cleanLine.match(/(?:Sugestão\s*\d+[:\s.]*|\d+\.\s*)(.+)/i);
+          currentSuggestion = {
+            title: titleMatch ? titleMatch[1].trim() : cleanLine,
+            description: '',
+            category: 'marketing',
+            difficulty_level: 'intermediate',
+            source: 'ai_analysis',
+            ai_generated: true,
+          };
+        } else if (currentSuggestion) {
+          if (cleanLine.toLowerCase().startsWith('descrição')) {
+            currentSuggestion.description = cleanLine.replace(/^descrição[:\s]*/i, '').trim();
+          } else if (cleanLine.toLowerCase().startsWith('categoria')) {
+            currentSuggestion.category = cleanLine.replace(/^categoria[:\s]*/i, '').trim().toLowerCase();
+          } else if (cleanLine.toLowerCase().startsWith('nível')) {
+            currentSuggestion.difficulty_level = cleanLine.replace(/^nível[:\s]*/i, '').trim().toLowerCase();
+          } else if (!currentSuggestion.description && cleanLine.length > 10) {
+            currentSuggestion.description = cleanLine;
+          }
+        }
+      }
+      
+      if (currentSuggestion && currentSuggestion.title) {
+        suggestions.push(currentSuggestion);
+      }
+    }
+
+    return suggestions;
+  };
 
   const generateStudySuggestions = async () => {
     setIsGenerating(true);
@@ -79,19 +162,19 @@ Considere áreas como:
 - Fechamento de vendas e propostas
 - Retenção de clientes
 
-Para cada sugestão, forneça:
-1. Título claro e objetivo
-2. Descrição do que estudar e por quê
-3. Categoria (vendas, marketing, atendimento, técnico, gestão)
-4. Nível de dificuldade (beginner, intermediate, advanced)
+Para cada sugestão, forneça no formato EXATO abaixo:
 
-Formato de resposta:
-**Sugestão 1: [Título]**
-Descrição: [texto]
+Sugestão 1: [Título aqui]
+Descrição: [Descrição detalhada do que estudar]
+Categoria: [vendas/marketing/atendimento/técnico/gestão]
+Nível: [iniciante/intermediário/avançado]
+
+Sugestão 2: [Título aqui]
+Descrição: [Descrição detalhada]
 Categoria: [categoria]
 Nível: [nível]
 
-(repita para as 5 sugestões)`
+(Continue para as 5 sugestões)`
             }
           ],
           clientData: {
@@ -138,30 +221,24 @@ Nível: [nível]
       setGeneratedSuggestions(fullContent);
 
       // Parse and save suggestions to database
-      const suggestionRegex = /\*\*Sugestão \d+: (.+?)\*\*\s*\nDescrição: (.+?)\nCategoria: (.+?)\nNível: (.+?)(?=\n\n|\n\*\*|$)/gs;
-      let match;
-      const parsedSuggestions = [];
+      const parsedSuggestions = parseSuggestions(fullContent);
 
-      while ((match = suggestionRegex.exec(fullContent)) !== null) {
-        parsedSuggestions.push({
-          title: match[1].trim(),
-          description: match[2].trim(),
-          category: match[3].trim().toLowerCase(),
-          difficulty_level: match[4].trim().toLowerCase(),
-          source: 'ai_analysis',
-          ai_generated: true,
-        });
-      }
+      console.log('Parsed suggestions:', parsedSuggestions);
 
       if (parsedSuggestions.length > 0) {
         const { error } = await supabase
           .from('study_suggestions')
           .insert(parsedSuggestions);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error saving suggestions:', error);
+          throw error;
+        }
         
-        queryClient.invalidateQueries({ queryKey: ['study-suggestions'] });
-        toast({ title: 'Sugestões salvas!', description: `${parsedSuggestions.length} novas sugestões de estudo foram adicionadas.` });
+        await refetch();
+        toast({ title: 'Sugestões salvas!', description: `${parsedSuggestions.length} novas sugestões de estudo foram adicionadas ao histórico.` });
+      } else {
+        toast({ title: 'Sugestões geradas', description: 'As sugestões foram geradas mas não puderam ser salvas automaticamente.' });
       }
 
     } catch (error) {

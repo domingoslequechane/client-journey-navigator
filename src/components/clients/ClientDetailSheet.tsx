@@ -6,7 +6,7 @@ import { ClientDetailContent } from './ClientDetailContent'; // Import the new c
 interface ClientDetailSheetProps {
   client: Client | null;
   onClose: () => void;
-  onUpdate: (client: Client) => void;
+  onUpdate: (client: Client) => Promise<void>;
 }
 
 export function ClientDetailSheet({ client, onClose, onUpdate }: ClientDetailSheetProps) {

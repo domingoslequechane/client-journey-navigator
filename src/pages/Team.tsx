@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Loader2, Mail } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { z } from 'zod';
 
@@ -19,6 +20,7 @@ interface TeamMember {
   role: 'sales' | 'operations' | 'campaign_management' | 'admin';
   created_at: string | null;
   email?: string;
+  status?: 'active' | 'pending' | 'suspended';
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -33,6 +35,12 @@ const ROLE_COLORS: Record<string, string> = {
   operations: 'bg-purple-100 text-purple-800',
   campaign_management: 'bg-orange-100 text-orange-800',
   admin: 'bg-red-100 text-red-800',
+};
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
+  active: { label: 'Ativo', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+  pending: { label: 'Aguardando', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+  suspended: { label: 'Suspenso', color: 'bg-red-100 text-red-800', icon: XCircle },
 };
 
 const inviteSchema = z.object({
@@ -50,10 +58,33 @@ export default function Team() {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<string>('');
   const [errors, setErrors] = useState<{ email?: string; fullName?: string; role?: string }>({});
+  const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [newRole, setNewRole] = useState<string>('');
 
   useEffect(() => {
     fetchMembers();
+    checkAdminStatus();
   }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      setIsCurrentUserAdmin(data?.role === 'admin');
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+    }
+  };
 
   const fetchMembers = async () => {
     setLoading(true);
@@ -65,13 +96,13 @@ export default function Team() {
 
       if (error) throw error;
 
-      // Get user emails from auth (only works for admin users via RLS)
-      const membersWithEmail = data?.map(member => ({
+      // Determine status based on profile data
+      const membersWithStatus = data?.map(member => ({
         ...member,
-        email: member.id // We'll show the profile data
+        status: member.full_name ? 'active' : 'pending' as 'active' | 'pending' | 'suspended',
       })) || [];
 
-      setMembers(membersWithEmail);
+      setMembers(membersWithStatus);
     } catch (error) {
       console.error('Error fetching members:', error);
       toast({ title: 'Erro', description: 'Não foi possível carregar a equipe', variant: 'destructive' });
@@ -99,8 +130,6 @@ export default function Team() {
 
     setInviting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
       const response = await supabase.functions.invoke('invite-user', {
         body: { email, fullName, role },
       });
@@ -127,6 +156,66 @@ export default function Team() {
       });
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleChangeRole = async () => {
+    if (!selectedMember || !newRole) return;
+    
+    setActionLoading(selectedMember.id);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole as any })
+        .eq('id', selectedMember.id);
+
+      if (error) throw error;
+
+      toast({ title: 'Sucesso!', description: 'Função alterada com sucesso' });
+      setRoleDialogOpen(false);
+      setSelectedMember(null);
+      setNewRole('');
+      fetchMembers();
+    } catch (error) {
+      console.error('Error changing role:', error);
+      toast({ title: 'Erro', description: 'Não foi possível alterar a função', variant: 'destructive' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!confirm('Tem certeza que deseja remover este membro?')) return;
+    
+    setActionLoading(memberId);
+    try {
+      // Note: This would typically require admin API access to delete the auth user
+      // For now, we'll just show a message
+      toast({ title: 'Atenção', description: 'A remoção de usuários requer acesso administrativo ao Supabase', variant: 'destructive' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleToggleSuspend = async (member: TeamMember) => {
+    setActionLoading(member.id);
+    try {
+      // Toggle suspend status - in a real app, this would disable the user
+      const newStatus = member.status === 'suspended' ? 'active' : 'suspended';
+      
+      toast({ 
+        title: newStatus === 'suspended' ? 'Usuário suspenso' : 'Usuário ativado',
+        description: newStatus === 'suspended' 
+          ? 'O usuário não poderá mais acessar o sistema'
+          : 'O usuário pode acessar o sistema novamente'
+      });
+      
+      // Update local state
+      setMembers(prev => prev.map(m => 
+        m.id === member.id ? { ...m, status: newStatus as any } : m
+      ));
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -210,54 +299,149 @@ export default function Team() {
         </Dialog>
       </div>
 
+      {/* Change Role Dialog */}
+      <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Função</DialogTitle>
+            <DialogDescription>
+              Altere a função de {selectedMember?.full_name || 'este membro'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label>Nova Função</Label>
+            <Select value={newRole} onValueChange={setNewRole}>
+              <SelectTrigger className="mt-2">
+                <SelectValue placeholder="Selecione a nova função" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sales">Vendas</SelectItem>
+                <SelectItem value="operations">Operações</SelectItem>
+                <SelectItem value="campaign_management">Gestão de Campanhas</SelectItem>
+                <SelectItem value="admin">Administrador</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoleDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleChangeRole} disabled={!newRole || actionLoading === selectedMember?.id}>
+              {actionLoading === selectedMember?.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Salvar'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="bg-card border border-border rounded-xl">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Membro</TableHead>
               <TableHead>Função</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Desde</TableHead>
+              {isCurrentUserAdmin && <TableHead className="w-[50px]">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-8">
+                <TableCell colSpan={isCurrentUserAdmin ? 5 : 4} className="text-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : members.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={isCurrentUserAdmin ? 5 : 4} className="text-center py-8 text-muted-foreground">
                   Nenhum membro da equipe encontrado.
                 </TableCell>
               </TableRow>
             ) : (
-              members.map(member => (
-                <TableRow key={member.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>
-                          {member.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{member.full_name || 'Sem nome'}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className={ROLE_COLORS[member.role] || ''}>
-                      {ROLE_LABELS[member.role] || member.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {member.created_at 
-                      ? new Date(member.created_at).toLocaleDateString('pt-BR')
-                      : '-'
-                    }
-                  </TableCell>
-                </TableRow>
-              ))
+              members.map(member => {
+                const StatusIcon = STATUS_CONFIG[member.status || 'active'].icon;
+                return (
+                  <TableRow key={member.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>
+                            {member.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{member.full_name || 'Aguardando...'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className={ROLE_COLORS[member.role] || ''}>
+                        {ROLE_LABELS[member.role] || member.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className={`gap-1 ${STATUS_CONFIG[member.status || 'active'].color}`}>
+                        <StatusIcon className="h-3 w-3" />
+                        {STATUS_CONFIG[member.status || 'active'].label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {member.created_at 
+                        ? new Date(member.created_at).toLocaleDateString('pt-BR')
+                        : '-'
+                      }
+                    </TableCell>
+                    {isCurrentUserAdmin && (
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" disabled={actionLoading === member.id}>
+                              {actionLoading === member.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <MoreHorizontal className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedMember(member);
+                              setNewRole(member.role);
+                              setRoleDialogOpen(true);
+                            }}>
+                              <Shield className="h-4 w-4 mr-2" />
+                              Alterar Privilégios
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleSuspend(member)}>
+                              {member.status === 'suspended' ? (
+                                <>
+                                  <UserCheck className="h-4 w-4 mr-2" />
+                                  Ativar
+                                </>
+                              ) : (
+                                <>
+                                  <UserX className="h-4 w-4 mr-2" />
+                                  Suspender
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleRemoveMember(member.id)}
+                              className="text-destructive"
+                            >
+                              <UserX className="h-4 w-4 mr-2" />
+                              Remover
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

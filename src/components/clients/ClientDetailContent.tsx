@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { 
   Mail, 
   Phone, 
@@ -15,10 +16,17 @@ import {
   Activity,
   Plus,
   Loader2,
-  Calendar
+  Calendar,
+  Globe,
+  MapPin,
+  FileText,
+  Pause,
+  Play
 } from 'lucide-react';
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface ActivityItem {
   id: string;
@@ -29,10 +37,12 @@ interface ActivityItem {
 
 interface ClientDetailContentProps {
   client: Client;
-  onUpdate: (client: Client) => void;
+  onUpdate: (client: Client) => Promise<void>;
+  isAdmin?: boolean;
+  userRole?: string;
 }
 
-export function ClientDetailContent({ client, onUpdate }: ClientDetailContentProps) {
+export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRole = 'sales' }: ClientDetailContentProps) {
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
@@ -41,11 +51,17 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
   const [isAddingActivity, setIsAddingActivity] = useState(false);
   const [newActivity, setNewActivity] = useState({ title: '', description: '' });
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+  const [pauseDialogOpen, setPauseDialogOpen] = useState(false);
+  const [isPausing, setIsPausing] = useState(false);
+  const [contractDialogOpen, setContractDialogOpen] = useState(false);
 
   const currentStage = ALL_STAGES.find(s => s.id === client.stage);
   const currentStageIndex = ALL_STAGES.findIndex(s => s.id === client.stage);
   const nextStage = ALL_STAGES[currentStageIndex + 1];
   const prevStage = currentStageIndex > 0 ? ALL_STAGES[currentStageIndex - 1] : null;
+
+  // Check if client is paused
+  const isPaused = (client as any).paused || false;
 
   // Check if all required checklist items are completed
   const requiredItems = currentStage?.checklist.filter(item => item.required) || [];
@@ -55,11 +71,16 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
   });
   const allRequiredCompleted = completedRequiredItems.length === requiredItems.length;
 
+  // Check if user can see contract button (only in closing stage, only for sales and admin)
+  const canSeeContract = client.stage === 'closing' && (userRole === 'sales' || userRole === 'admin' || isAdmin);
+
   const handleTaskToggle = async (taskId: string) => {
+    if (isPaused) {
+      toast({ title: 'Cliente pausado', description: 'Este cliente está pausado. Contacte um administrador.', variant: 'destructive' });
+      return;
+    }
+
     setLoadingTaskId(taskId);
-    
-    // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 500));
     
     const existingTask = client.tasks.find(t => t.id === taskId);
     let updatedTasks;
@@ -69,37 +90,84 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
         task.id === taskId ? { ...task, completed: !task.completed } : task
       );
     } else {
-      // Create new task if it doesn't exist
       updatedTasks = [...client.tasks, { id: taskId, title: '', completed: true, stageId: client.stage }];
     }
     
-    onUpdate({ ...client, tasks: updatedTasks });
-    setLoadingTaskId(null);
+    try {
+      await onUpdate({ ...client, tasks: updatedTasks });
+    } finally {
+      setLoadingTaskId(null);
+    }
   };
 
   const handleMoveToNextStage = async () => {
+    if (isPaused) {
+      toast({ title: 'Cliente pausado', description: 'Este cliente está pausado. Contacte um administrador.', variant: 'destructive' });
+      return;
+    }
+
     if (nextStage && allRequiredCompleted) {
       setIsLoadingStage('next');
-      await new Promise(resolve => setTimeout(resolve, 800));
-      onUpdate({ ...client, stage: nextStage.id });
-      setIsLoadingStage(null);
+      try {
+        await onUpdate({ ...client, stage: nextStage.id });
+      } finally {
+        setIsLoadingStage(null);
+      }
     }
   };
 
   const handleMoveToPrevStage = async () => {
+    if (isPaused) {
+      toast({ title: 'Cliente pausado', description: 'Este cliente está pausado. Contacte um administrador.', variant: 'destructive' });
+      return;
+    }
+
     if (prevStage) {
       setIsLoadingStage('prev');
-      await new Promise(resolve => setTimeout(resolve, 800));
-      onUpdate({ ...client, stage: prevStage.id });
-      setIsLoadingStage(null);
+      try {
+        await onUpdate({ ...client, stage: prevStage.id });
+      } finally {
+        setIsLoadingStage(null);
+      }
+    }
+  };
+
+  const handleTogglePause = async () => {
+    setIsPausing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          paused: !isPaused,
+          paused_at: !isPaused ? new Date().toISOString() : null,
+          paused_by: !isPaused ? user?.id : null,
+        })
+        .eq('id', client.id);
+
+      if (error) throw error;
+
+      toast({ 
+        title: isPaused ? 'Cliente reativado!' : 'Cliente pausado!', 
+        description: isPaused ? 'O cliente foi reativado com sucesso.' : 'Todas as atividades foram bloqueadas.'
+      });
+      setPauseDialogOpen(false);
+      
+      // Trigger a refetch by calling onUpdate with paused state
+      await onUpdate({ ...client, stage: client.stage });
+    } catch (error) {
+      console.error('Error toggling pause:', error);
+      toast({ title: 'Erro', description: 'Não foi possível alterar o estado do cliente', variant: 'destructive' });
+    } finally {
+      setIsPausing(false);
     }
   };
 
   const handleAddActivity = async () => {
-    if (!newActivity.title.trim()) return;
+    if (!newActivity.title.trim() || isPaused) return;
     
     setIsAddingActivity(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
     
     const activity: ActivityItem = {
       id: `act-${Date.now()}`,
@@ -118,12 +186,12 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
     setIsLoadingAi(true);
     setTimeout(() => {
       const suggestions: Record<string, string> = {
-        prospecting: `🎯 **Sugestões para "${client.companyName}" na Prospecção:**\n\n• Prepare uma apresentação personalizada focando nos problemas específicos do setor de N/A.\n\n• Pesquise cases de sucesso de empresas similares para usar como prova social.\n\n• Agende a reunião para os próximos 2-3 dias para manter o interesse aquecido.`,
-        qualification: `💡 **Sugestões para "${client.companyName}" na Qualificação:**\n\n• Na proposta, destaque o ROI esperado com números concretos.\n\n• Inclua um caso de sucesso do setor de N/A com resultados mensuráveis.\n\n• Ofereça um diagnóstico gratuito de 30 minutos das redes sociais atuais.`,
-        closing: `📋 **Sugestões para "${client.companyName}" no Fechamento:**\n\n• Colete todos os acessos às redes sociais nas próximas 48h.\n\n• Crie um documento de onboarding personalizado com as cores e tom da marca.\n\n• Agende uma reunião de kick-off para alinhar expectativas.`,
-        production: `🚀 **Sugestões para "${client.companyName}" na Produção:**\n\n• Publique conteúdo 5x por semana para máximo alcance.\n\n• Crie vídeos curtos (Reels/TikTok) mostrando os bastidores do negócio.\n\n• Envie relatório semanal nas primeiras 4 semanas para mostrar progresso.`,
-        campaigns: `📊 **Sugestões para "${client.companyName}" em Campanhas:**\n\n• Inicie campanhas de tráfego pago com orçamento teste de 500MT.\n\n• Teste pelo menos 3 criativos diferentes.\n\n• Monitore ROAS diariamente na primeira semana.`,
-        retention: `❤️ **Sugestões para "${client.companyName}" na Fidelização:**\n\n• Solicite um depoimento em vídeo de 30 segundos sobre os resultados.\n\n• Peça indicação de 3 parceiros comerciais que poderiam se beneficiar.\n\n• Proponha upgrade para gestão completa (Instagram + TikTok + Tráfego).`
+        prospecting: `Sugestões para "${client.companyName}" na Prospecção:\n\nPrepare uma apresentação personalizada focando nos problemas específicos do setor.\n\nPesquise cases de sucesso de empresas similares para usar como prova social.\n\nAgende a reunião para os próximos 2-3 dias para manter o interesse aquecido.`,
+        qualification: `Sugestões para "${client.companyName}" na Qualificação:\n\nNa proposta, destaque o ROI esperado com números concretos.\n\nInclua um caso de sucesso do setor com resultados mensuráveis.\n\nOfereça um diagnóstico gratuito de 30 minutos das redes sociais atuais.`,
+        closing: `Sugestões para "${client.companyName}" no Fechamento:\n\nColete todos os acessos às redes sociais nas próximas 48h.\n\nCrie um documento de onboarding personalizado com as cores e tom da marca.\n\nAgende uma reunião de kick-off para alinhar expectativas.`,
+        production: `Sugestões para "${client.companyName}" na Produção:\n\nPublique conteúdo 5x por semana para máximo alcance.\n\nCrie vídeos curtos (Reels/TikTok) mostrando os bastidores do negócio.\n\nEnvie relatório semanal nas primeiras 4 semanas para mostrar progresso.`,
+        campaigns: `Sugestões para "${client.companyName}" em Campanhas:\n\nInicie campanhas de tráfego pago com orçamento teste de 500MT.\n\nTeste pelo menos 3 criativos diferentes.\n\nMonitore ROAS diariamente na primeira semana.`,
+        retention: `Sugestões para "${client.companyName}" na Fidelização:\n\nSolicite um depoimento em vídeo de 30 segundos sobre os resultados.\n\nPeça indicação de 3 parceiros comerciais que poderiam se beneficiar.\n\nProponha upgrade para gestão completa (Instagram + TikTok + Tráfego).`
       };
       setAiSuggestion(suggestions[client.stage]);
       setIsLoadingAi(false);
@@ -143,12 +211,26 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
 
   return (
     <div className="space-y-6">
+      {/* Paused Banner */}
+      {isPaused && (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-center gap-3">
+          <Pause className="h-5 w-5 text-destructive" />
+          <div>
+            <p className="font-semibold text-destructive">Cliente Pausado</p>
+            <p className="text-sm text-muted-foreground">Todas as atividades estão bloqueadas. Apenas administradores podem reativar.</p>
+          </div>
+        </div>
+      )}
+
       {/* Current Stage Badge */}
-      <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${currentStage?.color} ${currentStage?.borderColor} border-2`}>
-        {currentStage?.name}
+      <div className="flex items-center gap-3">
+        <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${currentStage?.color} ${currentStage?.borderColor} border-2`}>
+          {currentStage?.name}
+        </div>
+        {isPaused && <Badge variant="destructive" className="gap-1"><Pause className="h-3 w-3" /> Pausado</Badge>}
       </div>
 
-      {/* Contact Info */}
+      {/* All Client Info */}
       <div className="grid grid-cols-2 gap-4">
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
           <Mail className="h-4 w-4 text-muted-foreground" />
@@ -162,6 +244,20 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Telefone</p>
             <p className="text-sm font-medium">{client.phone || 'N/A'}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground">Website</p>
+            <p className="text-sm font-medium truncate">{client.website || 'N/A'}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+          <MapPin className="h-4 w-4 text-muted-foreground" />
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground">Endereço</p>
+            <p className="text-sm font-medium truncate">{client.address || 'N/A'}</p>
           </div>
         </div>
       </div>
@@ -193,10 +289,84 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
         </p>
       </div>
 
-      {/* AI Button */}
-      <AIButton onClick={handleAIAnalysis} isLoading={isLoadingAi} className="w-full">
-        Sugestões para esta fase
-      </AIButton>
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <AIButton onClick={handleAIAnalysis} isLoading={isLoadingAi} className="flex-1" disabled={isPaused}>
+          Sugestões para esta fase
+        </AIButton>
+        
+        {/* Contract Button - Only visible in closing stage for sales/admin */}
+        {canSeeContract && (
+          <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2" disabled={isPaused}>
+                <FileText className="h-4 w-4" />
+                Adicionar Contrato
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Contrato</DialogTitle>
+                <DialogDescription>
+                  Anexe o contrato assinado para este cliente
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <p className="text-sm text-muted-foreground">
+                  Funcionalidade de upload de contrato em desenvolvimento.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setContractDialogOpen(false)}>
+                  Fechar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Pause Button - Only for Admins */}
+        {isAdmin && (
+          <Dialog open={pauseDialogOpen} onOpenChange={setPauseDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant={isPaused ? "default" : "destructive"} className="gap-2">
+                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                {isPaused ? 'Reativar' : 'Pausar'}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{isPaused ? 'Reativar Cliente' : 'Pausar Cliente'}</DialogTitle>
+                <DialogDescription>
+                  {isPaused 
+                    ? 'Deseja reativar este cliente? Todas as atividades serão desbloqueadas.'
+                    : 'Tem certeza que deseja pausar este cliente? Todas as atividades serão bloqueadas até que um administrador o reative.'
+                  }
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPauseDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  variant={isPaused ? "default" : "destructive"} 
+                  onClick={handleTogglePause}
+                  disabled={isPausing}
+                >
+                  {isPausing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    isPaused ? 'Reativar' : 'Pausar Cliente'
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
 
       {/* AI Suggestion */}
       {aiSuggestion && (
@@ -241,8 +411,8 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
             return (
               <div 
                 key={item.id}
-                className={`flex items-start gap-3 p-3 bg-card border border-border rounded-lg cursor-pointer transition-all ${isLoading ? 'opacity-70' : 'hover:border-primary/50'}`}
-                onClick={() => !isLoading && handleTaskToggle(item.id)}
+                className={`flex items-start gap-3 p-3 bg-card border border-border rounded-lg cursor-pointer transition-all ${isLoading ? 'opacity-70' : 'hover:border-primary/50'} ${isPaused ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => !isLoading && !isPaused && handleTaskToggle(item.id)}
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 mt-0.5 animate-spin text-primary" />
@@ -250,6 +420,7 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
                   <Checkbox 
                     checked={isCompleted}
                     className="mt-0.5 pointer-events-none"
+                    disabled={isPaused}
                   />
                 )}
                 <div className="flex-1">
@@ -267,7 +438,7 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
         <TabsContent value="activities" className="mt-4 space-y-3">
           <Dialog open={activityDialogOpen} onOpenChange={setActivityDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="w-full gap-2">
+              <Button variant="outline" className="w-full gap-2" disabled={isPaused}>
                 <Plus className="h-4 w-4" />
                 Registrar Atividade
               </Button>
@@ -355,7 +526,7 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
           <Button 
             variant="outline"
             onClick={handleMoveToPrevStage}
-            disabled={isLoadingStage !== null}
+            disabled={isLoadingStage !== null || isPaused}
             className="flex-1 gap-2"
           >
             {isLoadingStage === 'prev' ? (
@@ -370,7 +541,7 @@ export function ClientDetailContent({ client, onUpdate }: ClientDetailContentPro
         {nextStage && (
           <Button 
             onClick={handleMoveToNextStage}
-            disabled={!allRequiredCompleted || isLoadingStage !== null}
+            disabled={!allRequiredCompleted || isLoadingStage !== null || isPaused}
             className="flex-1 gap-2"
             title={!allRequiredCompleted ? 'Complete todos os itens obrigatórios (*) para avançar' : ''}
           >

@@ -19,6 +19,7 @@ import ClientDetail from "./pages/ClientDetail";
 import Academia from "./pages/Academia";
 import Team from "./pages/Team";
 import AIAssistant from "./pages/AIAssistant";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="academia" element={<Academia />} />
               <Route path="team" element={<Team />} />
               <Route path="ai-assistant" element={<AIAssistant />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

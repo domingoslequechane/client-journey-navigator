@@ -49,6 +49,39 @@ export type Database = {
           },
         ]
       }
+      agency_settings: {
+        Row: {
+          agency_name: string
+          created_at: string
+          headquarters: string | null
+          id: string
+          nuit: string | null
+          representative_name: string | null
+          representative_position: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_name?: string
+          created_at?: string
+          headquarters?: string | null
+          id?: string
+          nuit?: string | null
+          representative_name?: string | null
+          representative_position?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_name?: string
+          created_at?: string
+          headquarters?: string | null
+          id?: string
+          nuit?: string | null
+          representative_name?: string | null
+          representative_position?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           client_id: string
@@ -179,6 +212,9 @@ export type Database = {
           monthly_budget: number | null
           notes: string | null
           paid_traffic_budget: number | null
+          paused: boolean
+          paused_at: string | null
+          paused_by: string | null
           phone: string | null
           qualification: Database["public"]["Enums"]["lead_qualification"]
           services: string[] | null
@@ -202,6 +238,9 @@ export type Database = {
           monthly_budget?: number | null
           notes?: string | null
           paid_traffic_budget?: number | null
+          paused?: boolean
+          paused_at?: string | null
+          paused_by?: string | null
           phone?: string | null
           qualification?: Database["public"]["Enums"]["lead_qualification"]
           services?: string[] | null
@@ -225,6 +264,9 @@ export type Database = {
           monthly_budget?: number | null
           notes?: string | null
           paid_traffic_budget?: number | null
+          paused?: boolean
+          paused_at?: string | null
+          paused_by?: string | null
           phone?: string | null
           qualification?: Database["public"]["Enums"]["lead_qualification"]
           services?: string[] | null
