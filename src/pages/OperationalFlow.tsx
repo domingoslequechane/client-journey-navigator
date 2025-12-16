@@ -21,7 +21,7 @@ export default function OperationalFlow() {
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
-        .in('current_stage', ['producao', 'trafego', 'retencao'])
+        .in('current_stage', ['producao', 'trafego', 'retencao', 'fidelizacao'])
         .order('updated_at', { ascending: false });
 
       if (clientsError) throw clientsError;

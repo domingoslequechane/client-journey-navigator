@@ -415,6 +415,7 @@ export type Database = {
         | "producao"
         | "trafego"
         | "retencao"
+        | "fidelizacao"
       lead_qualification: "cold" | "warm" | "hot" | "qualified"
       user_role: "sales" | "operations" | "campaign_management" | "admin"
     }
@@ -553,6 +554,7 @@ export const Constants = {
         "producao",
         "trafego",
         "retencao",
+        "fidelizacao",
       ],
       lead_qualification: ["cold", "warm", "hot", "qualified"],
       user_role: ["sales", "operations", "campaign_management", "admin"],
