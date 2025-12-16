@@ -33,6 +33,52 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
+    // SECURITY: Verify authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: "Não autorizado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+
+    if (userError || !user) {
+      console.error("Invalid authentication:", userError?.message);
+      return new Response(
+        JSON.stringify({ error: "Autenticação inválida" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // SECURITY: Verify admin privileges using user_roles table
+    const { data: roleData, error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    // Also check profiles table for admin role (legacy support)
+    const { data: profileData } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const isAdmin = roleData?.role === "admin" || profileData?.role === "admin";
+
+    if (!isAdmin) {
+      console.error(`User ${user.id} attempted to invite without admin privileges`);
+      return new Response(
+        JSON.stringify({ error: "Apenas administradores podem convidar novos membros" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { email, fullName, role }: InviteRequest = await req.json();
 
     if (!email || !fullName || !role) {
@@ -42,7 +88,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Inviting user: ${email}, ${fullName}, ${role}`);
+    console.log(`Admin ${user.id} inviting user: ${email}, ${fullName}, ${role}`);
 
     // Check if user already exists
     const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
