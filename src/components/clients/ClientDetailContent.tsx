@@ -42,9 +42,10 @@ interface ClientDetailContentProps {
   onUpdate: (client: Client) => Promise<void>;
   isAdmin?: boolean;
   userRole?: string;
+  userId?: string;
 }
 
-export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRole = 'sales' }: ClientDetailContentProps) {
+export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRole = 'sales', userId }: ClientDetailContentProps) {
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
@@ -190,14 +191,12 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const handleTogglePause = async () => {
     setIsPausing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
       const { error } = await supabase
         .from('clients')
         .update({
           paused: !isPaused,
           paused_at: !isPaused ? new Date().toISOString() : null,
-          paused_by: !isPaused ? user?.id : null,
+          paused_by: !isPaused ? userId : null,
         })
         .eq('id', client.id);
 

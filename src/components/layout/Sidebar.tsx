@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -7,7 +7,6 @@ import {
   Users,
   Kanban,
   Sparkles,
-  Home,
   Workflow,
   UsersRound,
   LogOut,
@@ -30,11 +29,13 @@ const navigation = [
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
+    navigate('/auth');
   };
 
   const NavItem = ({ item, isActive }: { item: typeof navigation[0]; isActive: boolean }) => {
@@ -156,29 +157,6 @@ export function Sidebar() {
             </Link>
           )}
 
-          {/* Back to site */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/"
-                  className="flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                >
-                  <Home className="h-5 w-5" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Voltar ao Site</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Link
-              to="/"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              <Home className="h-5 w-5" />
-              Voltar ao Site
-            </Link>
-          )}
-          
           {user && (
             <div className={cn("pt-2 border-t border-border mt-2", collapsed && "px-1")}>
               {!collapsed && (

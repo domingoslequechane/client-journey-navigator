@@ -185,7 +185,7 @@ export default function ClientDetail() {
         </div>
       </div>
       
-      <ClientDetailContent client={client} onUpdate={handleUpdateClient} isAdmin={isAdmin} userRole={userRole} />
+      <ClientDetailContent client={client} onUpdate={handleUpdateClient} isAdmin={isAdmin} userRole={userRole} userId={user?.id} />
     </div>
   );
 }
