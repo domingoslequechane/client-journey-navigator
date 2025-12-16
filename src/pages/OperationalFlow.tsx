@@ -2,13 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OPERATIONAL_FLOW_STAGES, Client } from '@/types';
 import { mapDbClientToUiClient } from '@/lib/client-utils';
-import { Cog, Megaphone, Heart, Phone, Loader2 } from 'lucide-react';
+import { Cog, Megaphone, Target, Heart, Phone, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
-const stageIcons = { production: Cog, campaigns: Megaphone, retention: Heart };
+const stageIcons = { production: Cog, campaigns: Megaphone, retention: Target };
 
 export default function OperationalFlow() {
   const navigate = useNavigate();
