@@ -472,7 +472,7 @@ export default function AIAssistant() {
         ) : (
           <>
             {/* Header */}
-            <div className="p-4 border-b border-border bg-background">
+            <div className="h-16 px-4 border-b border-border bg-background flex items-center">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
                   <Sparkles className="h-5 w-5 text-primary-foreground" />
@@ -629,54 +629,52 @@ export default function AIAssistant() {
         "border-l border-border bg-muted/30 flex flex-col transition-all duration-300",
         sidebarCollapsed ? "w-16" : "w-80"
       )}>
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between mb-3">
-            {!sidebarCollapsed && (
-              <h2 className="font-semibold flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                Conversas por Cliente
-              </h2>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className={sidebarCollapsed ? "mx-auto" : ""}
-            >
-              {sidebarCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
-            </Button>
-          </div>
-          
+        <div className="h-16 px-4 border-b border-border flex items-center justify-between">
           {!sidebarCollapsed && (
-            <>
-              {/* Search */}
-              <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar cliente..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-9"
-                />
-              </div>
-              
-              {/* Filter */}
-              <Select value={filterStage} onValueChange={setFilterStage}>
-                <SelectTrigger className="h-9">
-                  <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Filtrar por fase" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STAGE_OPTIONS.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
+            <h2 className="font-semibold flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Conversas por Cliente
+            </h2>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className={sidebarCollapsed ? "mx-auto" : ""}
+          >
+            {sidebarCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+          </Button>
         </div>
+        
+        {!sidebarCollapsed && (
+          <div className="p-4 border-b border-border space-y-3">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+            
+            {/* Filter */}
+            <Select value={filterStage} onValueChange={setFilterStage}>
+              <SelectTrigger className="h-9">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Filtrar por fase" />
+              </SelectTrigger>
+              <SelectContent>
+                {STAGE_OPTIONS.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         
         <ScrollArea className="flex-1">
           {loadingClients ? (
