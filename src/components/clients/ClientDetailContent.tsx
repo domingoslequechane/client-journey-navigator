@@ -21,7 +21,8 @@ import {
   MapPin,
   FileText,
   Pause,
-  Play
+  Play,
+  Lock
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -299,35 +300,40 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       {/* Current Stage Badge */}
       <div className="flex items-center gap-3">
         <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${currentStage?.color} ${currentStage?.borderColor} border-2`}>
+          {isPaused && <Lock className="h-3 w-3 mr-1.5" />}
           {currentStage?.name}
         </div>
-        {isPaused && <Badge variant="destructive" className="gap-1"><Pause className="h-3 w-3" /> Pausado</Badge>}
+        {isPaused && <Badge variant="destructive" className="gap-1"><Lock className="h-3 w-3" /> Bloqueado</Badge>}
       </div>
 
       {/* All Client Info */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 ${isPaused ? 'opacity-60' : ''}`}>
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
+          {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
           <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Email</p>
             <p className="text-sm font-medium truncate">{client.email || 'N/A'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
+          {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
           <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Telefone</p>
             <p className="text-sm font-medium">{client.phone || 'N/A'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
+          {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
           <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Website</p>
             <p className="text-sm font-medium truncate">{client.website || 'N/A'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
+          {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
           <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Endereço</p>
@@ -337,7 +343,8 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       </div>
 
       {/* BANT Score */}
-      <div className="bg-muted/50 rounded-lg p-3 md:p-4">
+      <div className={`bg-muted/50 rounded-lg p-3 md:p-4 relative ${isPaused ? 'opacity-60' : ''}`}>
+        {isPaused && <Lock className="h-4 w-4 text-destructive absolute top-3 right-3" />}
         <h4 className="font-semibold text-sm mb-3">Qualificação BANT</h4>
         <div className="grid grid-cols-4 gap-2 md:gap-4">
           {[
@@ -366,6 +373,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-2">
         <AIButton onClick={handleAIAnalysis} isLoading={isLoadingAi} className="flex-1 min-w-[150px]" disabled={isPaused}>
+          {isPaused && <Lock className="h-4 w-4 mr-1" />}
           Sugestões para esta fase
         </AIButton>
         
@@ -378,7 +386,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               disabled={isPaused}
               onClick={() => setContractDialogOpen(true)}
             >
-              <FileText className="h-4 w-4" />
+              {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
               {contractUrl ? 'Ver Contrato' : 'Adicionar Contrato'}
             </Button>
             <ContractModal
@@ -396,9 +404,12 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         {isAdmin && (
           <Dialog open={pauseDialogOpen} onOpenChange={setPauseDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant={isPaused ? "default" : "destructive"} className="gap-2">
+              <Button 
+                variant={isPaused ? "outline" : "destructive"} 
+                className={`gap-2 ${isPaused ? 'border-success text-success hover:bg-success hover:text-success-foreground' : ''}`}
+              >
                 {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                {isPaused ? 'Reativar' : 'Pausar'}
+                {isPaused ? 'Startar' : 'Pausar'}
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -445,12 +456,12 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       {/* Tabs */}
       <Tabs defaultValue="checklist">
         <TabsList className="w-full">
-          <TabsTrigger value="checklist" className="flex-1 gap-2">
-            <CheckSquare className="h-4 w-4" />
+          <TabsTrigger value="checklist" className="flex-1 gap-2" disabled={isPaused}>
+            {isPaused ? <Lock className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
             Checklist
           </TabsTrigger>
-          <TabsTrigger value="activities" className="flex-1 gap-2">
-            <Activity className="h-4 w-4" />
+          <TabsTrigger value="activities" className="flex-1 gap-2" disabled={isPaused}>
+            {isPaused ? <Lock className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
             Atividades
           </TabsTrigger>
           <TabsTrigger value="notes" className="flex-1 gap-2">
@@ -459,9 +470,10 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="checklist" className="mt-4 space-y-3">
+        <TabsContent value="checklist" className={`mt-4 space-y-3 ${isPaused ? 'opacity-50 pointer-events-none' : ''}`}>
           {/* Progress indicator */}
           <div className="flex items-center justify-between text-sm mb-2">
+            {isPaused && <Lock className="h-4 w-4 text-destructive mr-2" />}
             <span className="text-muted-foreground">
               Itens obrigatórios: {completedRequiredItems.length}/{requiredItems.length}
             </span>
@@ -478,11 +490,14 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             return (
               <div 
                 key={item.id}
-                className={`flex items-start gap-3 p-3 bg-card border border-border rounded-lg cursor-pointer transition-all ${isLoading ? 'opacity-70' : 'hover:border-primary/50'} ${isPaused ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex items-start gap-3 p-3 bg-card border border-border rounded-lg cursor-pointer transition-all relative ${isLoading ? 'opacity-70' : 'hover:border-primary/50'} ${isPaused ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => !isLoading && !isPaused && handleTaskToggle(item.id)}
               >
+                {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 mt-0.5 animate-spin text-primary" />
+                ) : isPaused ? (
+                  <Lock className="h-4 w-4 mt-0.5 text-destructive" />
                 ) : (
                   <Checkbox 
                     checked={isCompleted}
@@ -502,12 +517,12 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           })}
         </TabsContent>
 
-        <TabsContent value="activities" className="mt-4 space-y-3">
+        <TabsContent value="activities" className={`mt-4 space-y-3 ${isPaused ? 'opacity-50' : ''}`}>
           <Dialog open={activityDialogOpen} onOpenChange={setActivityDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="w-full gap-2" disabled={isPaused}>
-                <Plus className="h-4 w-4" />
-                Registrar Atividade
+                {isPaused ? <Lock className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {isPaused ? 'Bloqueado' : 'Registrar Atividade'}
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -592,7 +607,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       </Tabs>
 
       {/* Stage Navigation Buttons */}
-      <div className="flex gap-2">
+      <div className={`flex gap-2 ${isPaused ? 'opacity-50' : ''}`}>
         {prevStage && (
           <Button 
             variant="outline"
@@ -600,7 +615,9 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             disabled={isLoadingStage !== null || isPaused}
             className="flex-1 gap-2"
           >
-            {isLoadingStage === 'prev' ? (
+            {isPaused ? (
+              <Lock className="h-4 w-4" />
+            ) : isLoadingStage === 'prev' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <ArrowLeft className="h-4 w-4" />
@@ -614,9 +631,14 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             onClick={handleMoveToNextStage}
             disabled={!allRequiredCompleted || isLoadingStage !== null || isPaused}
             className="flex-1 gap-2"
-            title={!allRequiredCompleted ? 'Complete todos os itens obrigatórios (*) para avançar' : ''}
+            title={isPaused ? 'Cliente bloqueado' : !allRequiredCompleted ? 'Complete todos os itens obrigatórios (*) para avançar' : ''}
           >
-            {isLoadingStage === 'next' ? (
+            {isPaused ? (
+              <>
+                <Lock className="h-4 w-4" />
+                Bloqueado
+              </>
+            ) : isLoadingStage === 'next' ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Processando...
@@ -632,7 +654,11 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       </div>
 
       {/* Helper text for disabled advance button */}
-      {nextStage && !allRequiredCompleted && (
+      {isPaused ? (
+        <p className="text-xs text-destructive text-center flex items-center justify-center gap-1">
+          <Lock className="h-3 w-3" /> Cliente bloqueado - Contacte um administrador para reativar
+        </p>
+      ) : nextStage && !allRequiredCompleted && (
         <p className="text-xs text-muted-foreground text-center">
           Complete todos os itens obrigatórios (*) para avançar para a próxima fase
         </p>
