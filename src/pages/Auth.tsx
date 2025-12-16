@@ -101,29 +101,47 @@ export default function Auth() {
     if (!validateForm(true)) return;
     
     setLoading(true);
-    const redirectUrl = `${window.location.origin}/app`;
     
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-    
-    if (error) {
-      if (error.message.includes('already registered')) {
-        toast({ title: 'Erro', description: 'Este e-mail já está cadastrado', variant: 'destructive' });
-      } else {
-        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    try {
+      // Send OTP email via edge function
+      const response = await fetch(
+        `https://hrarkpjuchrbffnrhzcy.supabase.co/functions/v1/send-otp`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, fullName }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast({ 
+          title: 'Erro', 
+          description: data.error || 'Erro ao enviar código de verificação', 
+          variant: 'destructive' 
+        });
+        setLoading(false);
+        return;
       }
-    } else {
+
+      // Navigate to verification page with credentials
+      navigate('/verify-email', { 
+        state: { email, password, fullName } 
+      });
+      
       toast({
-        title: 'Conta criada!',
-        description: 'Verifique seu e-mail para confirmar o cadastro',
+        title: 'Código enviado!',
+        description: 'Verifique seu e-mail para o código de verificação',
+      });
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      toast({ 
+        title: 'Erro', 
+        description: 'Erro ao processar cadastro. Tente novamente.', 
+        variant: 'destructive' 
       });
     }
     setLoading(false);
