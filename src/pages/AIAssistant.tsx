@@ -41,7 +41,7 @@ interface ClientWithConversation {
   last_message_at?: string;
 }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const CHAT_URL = `https://hrarkpjuchrbffnrhzcy.supabase.co/functions/v1/chat`;
 
 const STAGE_OPTIONS = [
   { value: 'all', label: 'Todas as fases' },
@@ -224,7 +224,7 @@ export default function AIAssistant() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhyYXJrcGp1Y2hyYmZmbnJoemN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3Njc4NDksImV4cCI6MjA4MTM0Mzg0OX0.vEy7Fy_1O01A7om_iiNHGF0-28_-CPlnvZ-pYlSFtRk`,
         },
         body: JSON.stringify({ 
           messages: apiMessages,

@@ -265,30 +265,30 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       </div>
 
       {/* All Client Info */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-          <Mail className="h-4 w-4 text-muted-foreground" />
+          <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Email</p>
             <p className="text-sm font-medium truncate">{client.email || 'N/A'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-          <Phone className="h-4 w-4 text-muted-foreground" />
+          <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Telefone</p>
             <p className="text-sm font-medium">{client.phone || 'N/A'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-          <Globe className="h-4 w-4 text-muted-foreground" />
+          <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Website</p>
             <p className="text-sm font-medium truncate">{client.website || 'N/A'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-          <MapPin className="h-4 w-4 text-muted-foreground" />
+          <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Endereço</p>
             <p className="text-sm font-medium truncate">{client.address || 'N/A'}</p>
@@ -297,9 +297,9 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       </div>
 
       {/* BANT Score */}
-      <div className="bg-muted/50 rounded-lg p-4">
+      <div className="bg-muted/50 rounded-lg p-3 md:p-4">
         <h4 className="font-semibold text-sm mb-3">Qualificação BANT</h4>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-2 md:gap-4">
           {[
             { label: 'Budget', value: client.bant.budget },
             { label: 'Authority', value: client.bant.authority },
@@ -307,8 +307,8 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             { label: 'Timeline', value: client.bant.timeline }
           ].map((item) => (
             <div key={item.label} className="text-center">
-              <div className="text-2xl font-bold text-primary">{item.value}</div>
-              <div className="text-xs text-muted-foreground">{item.label}</div>
+              <div className="text-lg md:text-2xl font-bold text-primary">{item.value}</div>
+              <div className="text-[10px] md:text-xs text-muted-foreground">{item.label}</div>
             </div>
           ))}
         </div>
@@ -324,8 +324,8 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2">
-        <AIButton onClick={handleAIAnalysis} isLoading={isLoadingAi} className="flex-1" disabled={isPaused}>
+      <div className="flex flex-wrap gap-2">
+        <AIButton onClick={handleAIAnalysis} isLoading={isLoadingAi} className="flex-1 min-w-[150px]" disabled={isPaused}>
           Sugestões para esta fase
         </AIButton>
         

@@ -239,17 +239,18 @@ export default function Team() {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Equipe</h1>
-          <p className="text-muted-foreground mt-1">Gerencie os membros da sua equipe e seus níveis de acesso</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Equipe</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">Gerencie os membros da sua equipe</p>
         </div>
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 w-full sm:w-auto">
               <UserPlus className="h-4 w-4" />
-              Adicionar Membro
+              <span className="hidden sm:inline">Adicionar Membro</span>
+              <span className="sm:hidden">Adicionar</span>
             </Button>
           </DialogTrigger>
           <DialogContent>

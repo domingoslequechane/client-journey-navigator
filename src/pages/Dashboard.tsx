@@ -85,17 +85,16 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Visão geral da jornada dos seus clientes</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">Visão geral da jornada dos seus clientes</p>
         </div>
-        {/* Botão 'Novo Cliente' removido conforme solicitado */}
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
         <StatsCard 
           title="Total de Clientes" 
           value={totalClients}
@@ -127,21 +126,21 @@ export default function Dashboard() {
       </div>
 
       {/* Sales Funnel Overview */}
-      <div className="bg-card border border-border rounded-xl p-6 mb-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-card border border-border rounded-xl p-4 md:p-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-6">
           <div>
-            <h2 className="text-lg font-semibold">Funil de Vendas por Fase</h2>
-            <p className="text-sm text-muted-foreground">Distribuição dos clientes no funil de vendas</p>
+            <h2 className="text-base md:text-lg font-semibold">Funil de Vendas por Fase</h2>
+            <p className="text-xs md:text-sm text-muted-foreground">Distribuição dos clientes no funil de vendas</p>
           </div>
           <Link to="/app/sales-funnel">
-            <Button variant="ghost" size="sm" className="gap-2">
+            <Button variant="ghost" size="sm" className="gap-2 w-full sm:w-auto">
               Ver Funil de Vendas
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
           {SALES_FUNNEL_STAGES.map((stage) => {
             const dbStages: Record<string, string> = {
               prospecting: 'prospeccao',
@@ -153,13 +152,13 @@ export default function Dashboard() {
               <div 
                 key={stage.id} 
                 className={cn(
-                  "p-6 rounded-xl border-2 text-center transition-all hover:scale-105",
+                  "p-3 md:p-6 rounded-xl border-2 text-center transition-all hover:scale-105",
                   stage.borderColor,
                   stage.color
                 )}
               >
-                <div className="text-4xl font-bold mb-2">{count}</div>
-                <div className="text-sm font-medium">{stage.name}</div>
+                <div className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{count}</div>
+                <div className="text-xs md:text-sm font-medium">{stage.name}</div>
               </div>
             );
           })}
@@ -167,11 +166,11 @@ export default function Dashboard() {
       </div>
 
       {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Recent Clients */}
-        <div className="bg-card border border-border rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold">Clientes Recentes</h2>
+        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h2 className="text-base md:text-lg font-semibold">Clientes Recentes</h2>
             <Link to="/app/clients">
               <Button variant="ghost" size="sm" className="text-primary">
                 Ver todos
@@ -239,8 +238,8 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-card border border-border rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-6">Ações Rápidas</h2>
+        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+          <h2 className="text-base md:text-lg font-semibold mb-4 md:mb-6">Ações Rápidas</h2>
           
           <div className="space-y-3">
             {quickActions.map((action) => (

@@ -33,22 +33,22 @@ const iconVariantStyles = {
 
 export function StatsCard({ title, value, description, icon: Icon, trend, variant = 'default', className }: StatsCardProps) {
   return (
-    <div className={cn('p-6 rounded-xl border transition-all hover:shadow-lg', variantStyles[variant], className)}>
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className="text-3xl font-bold">{value}</p>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+    <div className={cn('p-3 md:p-6 rounded-xl border transition-all hover:shadow-lg', variantStyles[variant], className)}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1 md:space-y-2 min-w-0">
+          <p className="text-xs md:text-sm text-muted-foreground truncate">{title}</p>
+          <p className="text-xl md:text-3xl font-bold">{value}</p>
+          {description && <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">{description}</p>}
           {trend && (
             <div className="flex items-center gap-1.5">
-              {trend.isPositive ? <TrendingUp className="h-4 w-4 text-success" /> : <TrendingDown className="h-4 w-4 text-destructive" />}
-              <span className={cn('text-sm font-medium', trend.isPositive ? 'text-success' : 'text-destructive')}>+{trend.value}%</span>
-              {trend.label && <span className="text-sm text-muted-foreground">{trend.label}</span>}
+              {trend.isPositive ? <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-success" /> : <TrendingDown className="h-3 w-3 md:h-4 md:w-4 text-destructive" />}
+              <span className={cn('text-xs md:text-sm font-medium', trend.isPositive ? 'text-success' : 'text-destructive')}>+{trend.value}%</span>
+              {trend.label && <span className="text-xs md:text-sm text-muted-foreground hidden sm:inline">{trend.label}</span>}
             </div>
           )}
         </div>
-        <div className={cn('h-12 w-12 rounded-xl flex items-center justify-center', iconVariantStyles[variant])}>
-          <Icon className="h-6 w-6" />
+        <div className={cn('h-8 w-8 md:h-12 md:w-12 rounded-lg md:rounded-xl flex items-center justify-center shrink-0', iconVariantStyles[variant])}>
+          <Icon className="h-4 w-4 md:h-6 md:w-6" />
         </div>
       </div>
     </div>

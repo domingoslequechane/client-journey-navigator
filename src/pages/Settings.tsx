@@ -332,30 +332,33 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" onClick={handleBack}>
+    <div className="p-4 md:p-8 max-w-4xl mx-auto">
+      <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+        <Button variant="ghost" size="icon" onClick={handleBack} className="shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Configurações</h1>
-          <p className="text-muted-foreground">Gerencie as configurações do sistema</p>
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-3xl font-bold">Configurações</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Gerencie as configurações do sistema</p>
         </div>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="profile" className="gap-2">
-            <User className="h-4 w-4" />
-            Meu Perfil
+          <TabsTrigger value="profile" className="gap-1 md:gap-2 text-xs md:text-sm px-2">
+            <User className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Meu Perfil</span>
+            <span className="sm:hidden">Perfil</span>
           </TabsTrigger>
-          <TabsTrigger value="agency" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            Agência
+          <TabsTrigger value="agency" className="gap-1 md:gap-2 text-xs md:text-sm px-2">
+            <Building2 className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Agência</span>
+            <span className="sm:hidden">Agência</span>
           </TabsTrigger>
-          <TabsTrigger value="knowledge" className="gap-2">
-            <BookOpen className="h-4 w-4" />
-            Base de Conhecimento
+          <TabsTrigger value="knowledge" className="gap-1 md:gap-2 text-xs md:text-sm px-2">
+            <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Base de Conhecimento</span>
+            <span className="sm:hidden">Conhec.</span>
           </TabsTrigger>
         </TabsList>
 
