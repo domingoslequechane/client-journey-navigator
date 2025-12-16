@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
-const stageIcons = { production: Cog, campaigns: Megaphone, retention: Target };
+const stageIcons = { production: Cog, campaigns: Megaphone, retention: Target, loyalty: Heart };
 
 export default function OperationalFlow() {
   const navigate = useNavigate();
