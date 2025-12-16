@@ -73,14 +73,14 @@ export default function SalesFunnel() {
   };
 
   return (
-    <div className="p-8 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-8 h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Funil de Vendas</h1>
-          <p className="text-muted-foreground mt-1">Acompanhe os clientes nas fases de prospecção, qualificação e fechamento</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Funil de Vendas</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">Acompanhe os clientes nas fases de prospecção, qualificação e fechamento</p>
         </div>
         <Link to="/app/new-client">
-          <Button className="gap-2">
+          <Button className="gap-2 w-full sm:w-auto">
             <Plus className="h-4 w-4" />
             Novo Cliente
           </Button>
@@ -92,13 +92,13 @@ export default function SalesFunnel() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="flex-1 overflow-x-auto">
-          <div className="flex gap-4 pb-4 min-w-max">
+        <div className="flex-1 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex gap-3 md:gap-4 pb-4 min-w-max">
             {SALES_FUNNEL_STAGES.map((stage) => {
               const stageClients = getClientsByStage(stage.id);
               const StageIcon = stageIcons[stage.id as keyof typeof stageIcons];
               return (
-                <div key={stage.id} className="w-80 flex flex-col">
+                <div key={stage.id} className="w-72 md:w-80 flex flex-col">
                   <div className={cn('p-4 rounded-t-xl border-t-4', stage.color, stage.borderColor)}>
                     <div className="flex items-center gap-2 mb-1">
                       <StageIcon className="h-5 w-5" />

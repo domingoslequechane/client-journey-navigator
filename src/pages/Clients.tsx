@@ -152,15 +152,15 @@ export default function Clients() {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Clientes</h1>
-          <p className="text-muted-foreground mt-1">Gerencie todos os seus clientes</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Clientes</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">Gerencie todos os seus clientes</p>
         </div>
         <Sheet open={newClientOpen} onOpenChange={setNewClientOpen}>
           <SheetTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 w-full sm:w-auto">
               <Plus className="h-4 w-4" />
               Novo Cliente
             </Button>
@@ -289,86 +289,133 @@ export default function Clients() {
         </div>
       </div>
 
-      {/* Clients Table */}
+      {/* Clients - Mobile Cards / Desktop Table */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Empresa</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Contato</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Fase</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Qualificação</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">BANT Score</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Criado em</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredClients.map((client) => {
-                  const mappedStage = getStageFromDb(client.current_stage);
-                  const stage = ALL_STAGES.find(s => s.id === mappedStage);
-                  const bantScore = (client.bant_budget || 0) + (client.bant_authority || 0) + (client.bant_need || 0) + (client.bant_timeline || 0);
-                  
-                  return (
-                    <tr 
-                      key={client.id}
-                      className="border-b border-border hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => navigate(`/app/clients/${client.id}`)}
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Building2 className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{client.company_name}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              {client.email && <><Mail className="h-3 w-3" />{client.email}</>}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm">{client.contact_name}</p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <>
+            {/* Mobile Cards View */}
+            <div className="md:hidden divide-y divide-border">
+              {filteredClients.map((client) => {
+                const mappedStage = getStageFromDb(client.current_stage);
+                const stage = ALL_STAGES.find(s => s.id === mappedStage);
+                const bantScore = (client.bant_budget || 0) + (client.bant_authority || 0) + (client.bant_need || 0) + (client.bant_timeline || 0);
+                
+                return (
+                  <div 
+                    key={client.id}
+                    className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/app/clients/${client.id}`)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Building2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{client.company_name}</p>
+                        <p className="text-sm text-muted-foreground">{client.contact_name}</p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                           <Phone className="h-3 w-3" />{client.phone}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge className={`${stage?.color || 'bg-muted'}`}>
-                          {stage?.name || client.current_stage}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge variant="secondary" className={QUALIFICATION_COLORS[client.qualification]}>
-                          {QUALIFICATION_LABELS[client.qualification]}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-primary rounded-full"
-                              style={{ width: `${(bantScore / 40) * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium">{bantScore}/40</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <Badge className={`${stage?.color || 'bg-muted'} text-xs`}>
+                        {stage?.name || client.current_stage}
+                      </Badge>
+                      <Badge variant="secondary" className={`${QUALIFICATION_COLORS[client.qualification]} text-xs`}>
+                        {QUALIFICATION_LABELS[client.qualification]}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-xs text-muted-foreground">BANT: {bantScore}/40</span>
+                      <span className="text-xs text-muted-foreground">
                         {new Date(client.created_at).toLocaleDateString('pt-BR')}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Empresa</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Contato</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Fase</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Qualificação</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">BANT Score</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Criado em</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredClients.map((client) => {
+                    const mappedStage = getStageFromDb(client.current_stage);
+                    const stage = ALL_STAGES.find(s => s.id === mappedStage);
+                    const bantScore = (client.bant_budget || 0) + (client.bant_authority || 0) + (client.bant_need || 0) + (client.bant_timeline || 0);
+                    
+                    return (
+                      <tr 
+                        key={client.id}
+                        className="border-b border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => navigate(`/app/clients/${client.id}`)}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Building2 className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{client.company_name}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                {client.email && <><Mail className="h-3 w-3" />{client.email}</>}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm">{client.contact_name}</p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Phone className="h-3 w-3" />{client.phone}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge className={`${stage?.color || 'bg-muted'}`}>
+                            {stage?.name || client.current_stage}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge variant="secondary" className={QUALIFICATION_COLORS[client.qualification]}>
+                            {QUALIFICATION_LABELS[client.qualification]}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary rounded-full"
+                                style={{ width: `${(bantScore / 40) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium">{bantScore}/40</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
+                          {new Date(client.created_at).toLocaleDateString('pt-BR')}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {!loading && filteredClients.length === 0 && (

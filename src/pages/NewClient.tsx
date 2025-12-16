@@ -27,20 +27,20 @@ export default function NewClient() {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="flex items-center gap-4 mb-8">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto">
+      <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
         <Link to="/app/clients">
-          <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
+          <Button variant="ghost" size="icon" className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold">Novo Cliente</h1>
-          <p className="text-muted-foreground">Cadastre um novo lead ou cliente</p>
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-3xl font-bold">Novo Cliente</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Cadastre um novo lead ou cliente</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
         {/* Company Info */}
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <Building2 className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Informações da Empresa</h2>
@@ -53,27 +53,27 @@ export default function NewClient() {
         </div>
 
         {/* Contact Info */}
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <User className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Contato Principal</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div><Label>Nome do Contato *</Label><Input placeholder="Ex: Maria Santos" required /></div>
             <div><Label>Telefone *</Label><Input placeholder="+258 84 123 4567" required /></div>
-            <div><Label>E-mail</Label><Input type="email" placeholder="email@empresa.com" /></div>
+            <div className="sm:col-span-2 md:col-span-1"><Label>E-mail</Label><Input type="email" placeholder="email@empresa.com" /></div>
           </div>
         </div>
 
         {/* Lead Qualification */}
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <Globe className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Qualificação do Lead</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
             <div><Label>Fonte de Origem</Label>
-              <Select><SelectTrigger><SelectValue placeholder="Como conheceu o cliente?" /></SelectTrigger>
+              <Select><SelectTrigger><SelectValue placeholder="Como conheceu?" /></SelectTrigger>
                 <SelectContent>{Object.entries(SOURCE_LABELS).map(([key, label]) => (<SelectItem key={key} value={key}>{label}</SelectItem>))}</SelectContent>
               </Select>
             </div>
@@ -82,7 +82,7 @@ export default function NewClient() {
                 <SelectContent>{SALES_FUNNEL_STAGES.map(stage => (<SelectItem key={stage.id} value={stage.id}>{stage.name}</SelectItem>))}</SelectContent>
               </Select>
             </div>
-            <div><Label>Qualificação</Label>
+            <div className="sm:col-span-2 md:col-span-1"><Label>Qualificação</Label>
               <Select><SelectTrigger><SelectValue placeholder="Temperatura" /></SelectTrigger>
                 <SelectContent><SelectItem value="cold">Frio</SelectItem><SelectItem value="warm">Morno</SelectItem><SelectItem value="hot">Quente</SelectItem></SelectContent>
               </Select>
@@ -115,12 +115,12 @@ export default function NewClient() {
         </div>
 
         {/* Services */}
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <DollarSign className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Serviços de Interesse</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {(Object.entries(SERVICE_LABELS) as [ServiceType, string][]).map(([key, label]) => (
               <div key={key} className="flex items-center space-x-2">
                 <Checkbox id={key} checked={services.includes(key)} onCheckedChange={() => handleServiceToggle(key)} />
@@ -131,14 +131,14 @@ export default function NewClient() {
         </div>
 
         {/* Notes */}
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
           <Label>Observações</Label>
           <Textarea placeholder="Anotações importantes sobre o cliente..." className="mt-2" rows={4} />
         </div>
 
-        <div className="flex gap-4 justify-end">
-          <Link to="/app/clients"><Button variant="outline">Cancelar</Button></Link>
-          <Button type="submit">Cadastrar Cliente</Button>
+        <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-end">
+          <Link to="/app/clients" className="w-full sm:w-auto"><Button variant="outline" className="w-full">Cancelar</Button></Link>
+          <Button type="submit" className="w-full sm:w-auto">Cadastrar Cliente</Button>
         </div>
       </form>
     </div>
