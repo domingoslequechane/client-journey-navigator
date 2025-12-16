@@ -5,13 +5,12 @@ import {
   LayoutDashboard,
   Users,
   Kanban,
-  CheckSquare,
   Sparkles,
-  Settings,
   Home,
   Workflow,
   UsersRound,
-  LogOut
+  LogOut,
+  GraduationCap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -20,7 +19,7 @@ const navigation = [
   { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban },
   { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow },
   { name: 'Clientes', href: '/app/clients', icon: Users },
-  { name: 'Checklists', href: '/app/checklists', icon: CheckSquare },
+  { name: 'Academia', href: '/app/academia', icon: GraduationCap },
   { name: 'Equipe', href: '/app/team', icon: UsersRound },
 ];
 

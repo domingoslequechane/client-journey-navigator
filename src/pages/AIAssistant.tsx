@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2 } from 'lucide-react';
+import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { markdownToHtml } from '@/lib/markdown-to-html';
 
 interface Message {
   id: string;
@@ -41,14 +43,27 @@ interface ClientWithConversation {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
+const STAGE_OPTIONS = [
+  { value: 'all', label: 'Todas as fases' },
+  { value: 'prospeccao', label: 'Prospecção' },
+  { value: 'reuniao', label: 'Reunião' },
+  { value: 'contratacao', label: 'Contratação' },
+  { value: 'producao', label: 'Produção' },
+  { value: 'trafego', label: 'Tráfego' },
+  { value: 'retencao', label: 'Retenção' },
+];
+
 export default function AIAssistant() {
   const queryClient = useQueryClient();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [pendingFile, setPendingFile] = useState<{ url: string; type: string; name: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStage, setFilterStage] = useState('all');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,35 +86,23 @@ export default function AIAssistant() {
 
       if (convError) throw convError;
 
-      // Get last message for each conversation
-      const conversationIds = conversations?.map(c => c.id) || [];
-      let lastMessages: Record<string, { content: string; created_at: string }> = {};
-      
-      if (conversationIds.length > 0) {
-        const { data: messagesData } = await supabase
-          .from('ai_messages')
-          .select('conversation_id, content, created_at')
-          .in('conversation_id', conversationIds)
-          .order('created_at', { ascending: false });
-
-        messagesData?.forEach(msg => {
-          if (!lastMessages[msg.conversation_id]) {
-            lastMessages[msg.conversation_id] = { content: msg.content, created_at: msg.created_at };
-          }
-        });
-      }
-
-      // Map clients with their conversations
+      // Map clients with their conversations (without last message)
       return (clientsData || []).map(client => {
         const conv = conversations?.find(c => c.client_id === client.id);
         return {
           ...client,
           conversation_id: conv?.id,
-          last_message: conv ? lastMessages[conv.id]?.content : undefined,
-          last_message_at: conv ? lastMessages[conv.id]?.created_at : undefined,
         };
       }) as ClientWithConversation[];
     }
+  });
+
+  // Filter clients based on search and stage
+  const filteredClients = clients.filter(client => {
+    const matchesSearch = client.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         client.contact_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStage = filterStage === 'all' || client.current_stage === filterStage;
+    return matchesSearch && matchesStage;
   });
 
   // Get selected client
@@ -150,7 +153,6 @@ export default function AIAssistant() {
 
   // Create or get conversation
   const getOrCreateConversation = async (clientId: string): Promise<string> => {
-    // Check if conversation exists
     const { data: existing } = await supabase
       .from('ai_conversations')
       .select('id')
@@ -159,7 +161,6 @@ export default function AIAssistant() {
 
     if (existing) return existing.id;
 
-    // Create new conversation
     const { data: newConv, error } = await supabase
       .from('ai_conversations')
       .insert({ client_id: clientId })
@@ -214,6 +215,9 @@ export default function AIAssistant() {
     
     apiMessages.push({ role: 'user', content: userMsgContent });
 
+    // Show typing animation
+    setIsTyping(true);
+
     try {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -244,10 +248,12 @@ export default function AIAssistant() {
 
       if (resp.status === 429) {
         toast({ title: 'Limite excedido', description: 'Tente novamente em alguns minutos', variant: 'destructive' });
+        setIsTyping(false);
         return;
       }
       if (resp.status === 402) {
         toast({ title: 'Créditos insuficientes', description: 'Adicione créditos à sua conta', variant: 'destructive' });
+        setIsTyping(false);
         return;
       }
       if (!resp.ok || !resp.body) {
@@ -259,15 +265,6 @@ export default function AIAssistant() {
       let textBuffer = "";
       let assistantContent = "";
       let streamDone = false;
-
-      // Create assistant message in UI
-      const assistantId = `temp-${Date.now()}`;
-      setMessages(prev => [...prev, {
-        id: assistantId,
-        role: 'assistant',
-        content: '',
-        created_at: new Date().toISOString()
-      }]);
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -294,11 +291,6 @@ export default function AIAssistant() {
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantContent += content;
-              setMessages(prev => prev.map(m => 
-                m.id === assistantId 
-                  ? { ...m, content: assistantContent }
-                  : m
-              ));
             }
           } catch {
             textBuffer = line + "\n" + textBuffer;
@@ -321,15 +313,22 @@ export default function AIAssistant() {
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantContent += content;
-              setMessages(prev => prev.map(m => 
-                m.id === assistantId 
-                  ? { ...m, content: assistantContent }
-                  : m
-              ));
             }
           } catch { /* ignore */ }
         }
       }
+
+      // Hide typing animation and show complete message
+      setIsTyping(false);
+      
+      // Add complete assistant message to UI
+      const assistantId = `msg-${Date.now()}`;
+      setMessages(prev => [...prev, {
+        id: assistantId,
+        role: 'assistant',
+        content: assistantContent,
+        created_at: new Date().toISOString()
+      }]);
 
       // Save assistant message to database
       await saveMessage(conversationId, {
@@ -343,6 +342,7 @@ export default function AIAssistant() {
 
     } catch (error) {
       console.error('Chat error:', error);
+      setIsTyping(false);
       toast({ title: 'Erro', description: 'Não foi possível conectar ao assistente', variant: 'destructive' });
     }
   };
@@ -351,7 +351,6 @@ export default function AIAssistant() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       toast({ title: 'Arquivo muito grande', description: 'O tamanho máximo é 10MB', variant: 'destructive' });
       return;
@@ -431,61 +430,7 @@ export default function AIAssistant() {
 
   return (
     <div className="flex h-full">
-      {/* Clients Sidebar */}
-      <div className="w-80 border-r border-border bg-muted/30 flex flex-col">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Conversas por Cliente
-          </h2>
-        </div>
-        <ScrollArea className="flex-1">
-          {loadingClients ? (
-            <div className="p-4 flex justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : clients.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground text-sm">
-              Nenhum cliente encontrado
-            </div>
-          ) : (
-            <div className="p-2 space-y-1">
-              {clients.map(client => (
-                <button
-                  key={client.id}
-                  onClick={() => setSelectedClientId(client.id)}
-                  className={cn(
-                    "w-full text-left p-3 rounded-lg transition-colors",
-                    selectedClientId === client.id 
-                      ? "bg-primary/10 border border-primary/20" 
-                      : "hover:bg-muted"
-                  )}
-                >
-                  <div className="flex items-start gap-2">
-                    <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{client.company_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{client.contact_name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                          {getStageLabel(client.current_stage)}
-                        </span>
-                      </div>
-                      {client.last_message && (
-                        <p className="text-xs text-muted-foreground mt-1 truncate">
-                          {client.last_message.substring(0, 50)}...
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
-      </div>
-
-      {/* Chat Area */}
+      {/* Chat Area - Center */}
       <div className="flex-1 flex flex-col">
         {!selectedClientId ? (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -536,7 +481,14 @@ export default function AIAssistant() {
                           : 'bg-muted'
                       )}
                     >
-                      <p className="text-sm whitespace-pre-line">{message.content}</p>
+                      {message.role === 'assistant' ? (
+                        <div 
+                          className="text-sm prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: markdownToHtml(message.content) }}
+                        />
+                      ) : (
+                        <p className="text-sm whitespace-pre-line">{message.content}</p>
+                      )}
                       {message.file_url && (
                         <a 
                           href={message.file_url} 
@@ -566,13 +518,18 @@ export default function AIAssistant() {
                   </div>
                 ))}
 
-                {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                {/* Typing Animation */}
+                {isTyping && (
                   <div className="flex gap-3">
                     <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
                       <Bot className="h-4 w-4 text-primary-foreground" />
                     </div>
                     <div className="bg-muted rounded-xl px-4 py-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -627,14 +584,91 @@ export default function AIAssistant() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                   className="flex-1"
+                  disabled={isLoading || isTyping}
                 />
-                <Button onClick={handleSend} disabled={isLoading || (!input.trim() && !pendingFile)}>
+                <Button onClick={handleSend} disabled={isLoading || isTyping || (!input.trim() && !pendingFile)}>
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </>
         )}
+      </div>
+
+      {/* Clients Sidebar - Right */}
+      <div className="w-80 border-l border-border bg-muted/30 flex flex-col">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold flex items-center gap-2 mb-3">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Conversas por Cliente
+          </h2>
+          
+          {/* Search */}
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+          
+          {/* Filter */}
+          <Select value={filterStage} onValueChange={setFilterStage}>
+            <SelectTrigger className="h-9">
+              <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Filtrar por fase" />
+            </SelectTrigger>
+            <SelectContent>
+              {STAGE_OPTIONS.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <ScrollArea className="flex-1">
+          {loadingClients ? (
+            <div className="p-4 flex justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredClients.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground text-sm">
+              Nenhum cliente encontrado
+            </div>
+          ) : (
+            <div className="p-2 space-y-1">
+              {filteredClients.map(client => (
+                <button
+                  key={client.id}
+                  onClick={() => setSelectedClientId(client.id)}
+                  className={cn(
+                    "w-full text-left p-3 rounded-lg transition-colors",
+                    selectedClientId === client.id 
+                      ? "bg-primary/10 border border-primary/20" 
+                      : "hover:bg-muted"
+                  )}
+                >
+                  <div className="flex items-start gap-2">
+                    <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{client.company_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{client.contact_name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                          {getStageLabel(client.current_stage)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
       </div>
     </div>
   );
