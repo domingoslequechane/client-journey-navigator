@@ -1,19 +1,17 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { OPERATIONAL_FLOW_STAGES, Client, TEMPERATURE_LABELS } from '@/types';
+import { OPERATIONAL_FLOW_STAGES, Client } from '@/types';
 import { mapDbClientToUiClient } from '@/lib/client-utils';
-import { ClientDetailSheet } from '@/components/clients/ClientDetailSheet';
-import { Button } from '@/components/ui/button';
 import { Cog, Megaphone, Heart, Phone, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 const stageIcons = { production: Cog, campaigns: Megaphone, retention: Heart };
 
 export default function OperationalFlow() {
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const navigate = useNavigate();
 
   // Fetch clients from Supabase
   const { data: clients = [], isLoading, refetch } = useQuery({
@@ -47,17 +45,8 @@ export default function OperationalFlow() {
 
   const getClientsByStage = (stageId: string) => clients.filter(client => client.stage === stageId);
 
-  const handleUpdateClient = async (updatedClient: Client) => {
-    await refetch();
-    const freshClient = clients.find(c => c.id === updatedClient.id);
-    if (freshClient) {
-      setSelectedClient(freshClient);
-    }
-  };
-
-  const handleCloseSheet = () => {
-    setSelectedClient(null);
-    refetch();
+  const handleClientClick = (clientId: string) => {
+    navigate(`/app/clients/${clientId}`);
   };
 
   return (
@@ -94,13 +83,12 @@ export default function OperationalFlow() {
                     {stageClients.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-sm text-muted-foreground mb-3">Nenhum cliente nesta fase</p>
-                        {/* Clients cannot skip stages - no add button here */}
                       </div>
                     ) : (
                       stageClients.map((client) => (
                         <div
                           key={client.id}
-                          onClick={() => setSelectedClient(client)}
+                          onClick={() => handleClientClick(client.id)}
                           className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-all"
                         >
                           <div className="flex items-start gap-3">
@@ -137,8 +125,6 @@ export default function OperationalFlow() {
           </div>
         </div>
       )}
-
-      <ClientDetailSheet client={selectedClient} onClose={handleCloseSheet} onUpdate={handleUpdateClient} />
     </div>
   );
 }

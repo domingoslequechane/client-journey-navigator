@@ -1,29 +1,18 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SALES_FUNNEL_STAGES, Client, TEMPERATURE_LABELS, SOURCE_LABELS } from '@/types';
 import { mapDbClientToUiClient } from '@/lib/client-utils';
-import { ClientDetailSheet } from '@/components/clients/ClientDetailSheet';
 import { Button } from '@/components/ui/button';
 import { Plus, Search, Target, FileCheck, Phone, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
-import { toast } from '@/hooks/use-toast';
+import { Link, useNavigate } from 'react-router-dom';
 
 const stageIcons = { prospecting: Search, qualification: Target, closing: FileCheck };
 
-// Map UI stages to DB stages
-const uiToDbStageMap: Record<string, string> = {
-  prospecting: 'prospeccao',
-  qualification: 'reuniao',
-  closing: 'contratacao',
-};
-
 export default function SalesFunnel() {
-  const queryClient = useQueryClient();
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const navigate = useNavigate();
 
   // Fetch clients from Supabase
   const { data: clients = [], isLoading, refetch } = useQuery({
@@ -57,19 +46,8 @@ export default function SalesFunnel() {
 
   const getClientsByStage = (stageId: string) => clients.filter(client => client.stage === stageId);
 
-  const handleUpdateClient = async (updatedClient: Client) => {
-    // Refetch data after update
-    await refetch();
-    // Update selected client with fresh data
-    const freshClient = clients.find(c => c.id === updatedClient.id);
-    if (freshClient) {
-      setSelectedClient(freshClient);
-    }
-  };
-
-  const handleCloseSheet = () => {
-    setSelectedClient(null);
-    refetch(); // Refresh data when sheet closes
+  const handleClientClick = (clientId: string) => {
+    navigate(`/app/clients/${clientId}`);
   };
 
   return (
@@ -125,7 +103,7 @@ export default function SalesFunnel() {
                       stageClients.map((client) => (
                         <div
                           key={client.id}
-                          onClick={() => setSelectedClient(client)}
+                          onClick={() => handleClientClick(client.id)}
                           className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-all"
                         >
                           <div className="flex items-start gap-3">
@@ -168,8 +146,6 @@ export default function SalesFunnel() {
           </div>
         </div>
       )}
-
-      <ClientDetailSheet client={selectedClient} onClose={handleCloseSheet} onUpdate={handleUpdateClient} />
     </div>
   );
 }
