@@ -23,12 +23,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
 
 const navigation = [
-  { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
-  { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban },
-  { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow },
-  { name: 'Clientes', href: '/app/clients', icon: Users },
-  { name: 'Academia', href: '/app/academia', icon: GraduationCap },
-  { name: 'Equipe', href: '/app/team', icon: UsersRound },
+  { name: 'Dashboard', href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard' },
+  { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel' },
+  { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational' },
+  { name: 'Clientes', href: '/app/clients', icon: Users, tutorialId: 'sidebar-clients' },
+  { name: 'Academia', href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia' },
+  { name: 'Equipe', href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team' },
 ];
 
 export function Sidebar() {
@@ -56,6 +56,7 @@ export function Sidebar() {
     const content = (
       <Link
         to={item.href}
+        data-tutorial={item.tutorialId}
         className={cn(
           'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
           isActive
@@ -111,6 +112,7 @@ export function Sidebar() {
               <TooltipTrigger asChild>
                 <Link
                   to="/app/ai-assistant"
+                  data-tutorial="sidebar-ai"
                   className={cn(
                     'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     location.pathname === '/app/ai-assistant'
@@ -126,6 +128,7 @@ export function Sidebar() {
           ) : (
             <Link
               to="/app/ai-assistant"
+              data-tutorial="sidebar-ai"
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 location.pathname === '/app/ai-assistant'
@@ -144,6 +147,7 @@ export function Sidebar() {
               <TooltipTrigger asChild>
                 <Link
                   to="/app/settings"
+                  data-tutorial="sidebar-settings"
                   className={cn(
                     'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     location.pathname === '/app/settings'
@@ -159,6 +163,7 @@ export function Sidebar() {
           ) : (
             <Link
               to="/app/settings"
+              data-tutorial="sidebar-settings"
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 location.pathname === '/app/settings'
