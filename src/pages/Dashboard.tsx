@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
+import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 
 type Client = Tables<'clients'>;
 
@@ -35,6 +36,7 @@ const SOURCE_LABELS: Record<string, string> = {
 export default function Dashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const { currencySymbol } = useOrganizationCurrency();
 
   useEffect(() => {
     fetchClients();
@@ -245,7 +247,7 @@ export default function Dashboard() {
                             {client.monthly_budget && (
                               <div className="flex items-center justify-between mt-2">
                                 <span className="text-xs text-muted-foreground">Orçamento Mensal</span>
-                                <span className="text-sm font-medium text-primary">{Number(client.monthly_budget).toLocaleString()} MT</span>
+                                <span className="text-sm font-medium text-primary">{currencySymbol} {Number(client.monthly_budget).toLocaleString()}</span>
                               </div>
                             )}
                           </div>
