@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,10 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, CreditCard } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-
+import { SubscriptionTab } from '@/components/subscription/SubscriptionTab';
 interface AgencySettings {
   id: string;
   agency_name: string;
@@ -31,6 +31,7 @@ interface UserProfile {
 
 export default function Settings() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,6 +41,7 @@ export default function Settings() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [defaultTab, setDefaultTab] = useState('profile');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [settings, setSettings] = useState<AgencySettings>({
@@ -69,7 +71,21 @@ export default function Settings() {
   useEffect(() => {
     fetchSettings();
     fetchProfile();
-  }, [user]);
+    
+    // Check for subscription success redirect
+    const tab = searchParams.get('tab');
+    const success = searchParams.get('success');
+    
+    if (tab === 'subscription') {
+      setDefaultTab('subscription');
+      if (success === 'true') {
+        toast({
+          title: 'Assinatura realizada!',
+          description: 'Sua assinatura foi confirmada com sucesso.',
+        });
+      }
+    }
+  }, [user, searchParams]);
 
   const fetchSettings = async () => {
     try {
@@ -343,22 +359,27 @@ export default function Settings() {
         </div>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="profile" className="gap-1 md:gap-2 text-xs md:text-sm px-2">
+      <Tabs defaultValue={defaultTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="profile" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
             <User className="h-3 w-3 md:h-4 md:w-4" />
             <span className="hidden sm:inline">Meu Perfil</span>
             <span className="sm:hidden">Perfil</span>
           </TabsTrigger>
-          <TabsTrigger value="agency" className="gap-1 md:gap-2 text-xs md:text-sm px-2">
+          <TabsTrigger value="agency" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
             <Building2 className="h-3 w-3 md:h-4 md:w-4" />
             <span className="hidden sm:inline">Agência</span>
             <span className="sm:hidden">Agência</span>
           </TabsTrigger>
-          <TabsTrigger value="knowledge" className="gap-1 md:gap-2 text-xs md:text-sm px-2">
+          <TabsTrigger value="knowledge" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
             <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
-            <span className="hidden sm:inline">Base de Conhecimento</span>
+            <span className="hidden sm:inline">Conhecimento</span>
             <span className="sm:hidden">Conhec.</span>
+          </TabsTrigger>
+          <TabsTrigger value="subscription" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
+            <CreditCard className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Assinatura</span>
+            <span className="sm:hidden">Plano</span>
           </TabsTrigger>
         </TabsList>
 
@@ -703,6 +724,11 @@ export default function Settings() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Subscription Tab */}
+        <TabsContent value="subscription">
+          <SubscriptionTab />
         </TabsContent>
       </Tabs>
     </div>
