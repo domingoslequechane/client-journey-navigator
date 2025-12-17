@@ -238,6 +238,24 @@ serve(async (req) => {
         if (error) {
           console.error("Error updating subscription after payment:", error);
         }
+
+        // Record payment in history
+        const amount = subscriptionData?.first_subscription_item?.price || 1000; // Default to $10 in cents
+        const { error: paymentError } = await supabase
+          .from('payment_history')
+          .insert({
+            organization_id: organizationId,
+            amount: amount / 100, // Convert from cents to dollars
+            currency: 'USD',
+            status: 'confirmed',
+            payment_date: new Date().toISOString(),
+            lemonsqueezy_order_id: String(subscriptionData?.order_id || ''),
+            description: 'Assinatura mensal Qualify',
+          });
+
+        if (paymentError) {
+          console.error("Error recording payment:", paymentError);
+        }
         
         console.log("Payment processed successfully");
         break;
@@ -256,6 +274,24 @@ serve(async (req) => {
 
         if (error) {
           console.error("Error updating subscription after failed payment:", error);
+        }
+
+        // Record failed payment in history
+        const amount = subscriptionData?.first_subscription_item?.price || 1000;
+        const { error: paymentError } = await supabase
+          .from('payment_history')
+          .insert({
+            organization_id: organizationId,
+            amount: amount / 100,
+            currency: 'USD',
+            status: 'failed',
+            payment_date: new Date().toISOString(),
+            lemonsqueezy_order_id: String(subscriptionData?.order_id || ''),
+            description: 'Assinatura mensal Qualify - Falha no pagamento',
+          });
+
+        if (paymentError) {
+          console.error("Error recording failed payment:", paymentError);
         }
         
         console.log("Payment failure recorded");
