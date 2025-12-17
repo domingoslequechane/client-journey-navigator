@@ -565,10 +565,13 @@ export default function AIAssistant() {
                       <Bot className="h-4 w-4 text-primary-foreground" />
                     </div>
                     <div className="bg-muted rounded-xl px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">digitando</span>
+                        <div className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
                       </div>
                     </div>
                   </div>

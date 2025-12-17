@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
-  Users,
+  Building2,
   Kanban,
   Sparkles,
   Workflow,
@@ -28,7 +28,7 @@ const navigation = [
   { name: 'Dashboard', href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard' },
   { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel' },
   { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational' },
-  { name: 'Clientes', href: '/app/clients', icon: Users, tutorialId: 'sidebar-clients' },
+  { name: 'Clientes', href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients' },
   { name: 'Academia', href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia' },
   { name: 'Equipe', href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team' },
 ];
