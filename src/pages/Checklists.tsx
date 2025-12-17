@@ -5,6 +5,7 @@ import { AIButton } from '@/components/ui/ai-button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Search, Target, FileCheck, Cog, Megaphone, Heart, ChevronDown, ChevronUp } from 'lucide-react';
+import { AnimatedContainer } from '@/components/ui/animated-container';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Search,
@@ -48,21 +49,21 @@ export default function Checklists() {
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+      <AnimatedContainer animation="fade-up" className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Checklists</h1>
           <p className="text-muted-foreground mt-1">Tarefas essenciais para cada fase da jornada</p>
         </div>
-      </div>
+      </AnimatedContainer>
 
       <div className="space-y-4 max-w-4xl">
-        {ALL_STAGES.map((stage) => {
+        {ALL_STAGES.map((stage, index) => {
           const Icon = iconMap[stage.icon as keyof typeof iconMap];
           const isExpanded = expandedStage === stage.id;
           const completionRate = getCompletionRate(stage);
           
           return (
-            <div key={stage.id} className="bg-card border border-border rounded-xl overflow-hidden">
+            <AnimatedContainer key={stage.id} animation="fade-up" delay={0.1 + index * 0.05} className="bg-card border border-border rounded-xl overflow-hidden">
               {/* Header */}
               <button
                 onClick={() => setExpandedStage(isExpanded ? null : stage.id)}
@@ -141,7 +142,7 @@ export default function Checklists() {
                   </p>
                 </div>
               )}
-            </div>
+            </AnimatedContainer>
           );
         })}
       </div>

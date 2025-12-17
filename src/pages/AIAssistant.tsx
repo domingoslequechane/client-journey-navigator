@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { AnimatedContainer } from '@/components/ui/animated-container';
 import { supabase } from '@/integrations/supabase/client';
 import { markdownToHtml } from '@/lib/markdown-to-html';
 
@@ -458,18 +459,18 @@ export default function AIAssistant() {
   };
 
   return (
-    <div className="flex h-full">
+    <AnimatedContainer animation="fade-in" className="flex h-full">
       {/* Chat Area - Center */}
       <div className="flex-1 flex flex-col">
         {!selectedClientId ? (
           <>
             <div className="h-16 border-b border-border bg-background" />
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              <div className="text-center">
+              <AnimatedContainer animation="scale-in" className="text-center">
                 <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary/50" />
                 <h3 className="text-lg font-medium">Assistente de IA</h3>
                 <p className="text-sm mt-1">Selecione um cliente para iniciar uma conversa</p>
-              </div>
+              </AnimatedContainer>
             </div>
           </>
         ) : (
@@ -729,6 +730,6 @@ export default function AIAssistant() {
           )}
         </ScrollArea>
       </div>
-    </div>
+    </AnimatedContainer>
   );
 }
