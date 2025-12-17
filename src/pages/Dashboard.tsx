@@ -94,7 +94,7 @@ export default function Dashboard() {
       {/* Trial Banner */}
       <TrialBanner />
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8" data-tutorial="dashboard">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">Visão geral da jornada dos seus clientes</p>
