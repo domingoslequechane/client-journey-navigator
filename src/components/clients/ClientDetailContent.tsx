@@ -32,6 +32,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { ContractModal } from './ContractModal';
 import { EditClientModal } from './EditClientModal';
+import { GenerateContractModal } from './GenerateContractModal';
 
 interface ActivityItem {
   id: string;
@@ -61,6 +62,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [pauseDialogOpen, setPauseDialogOpen] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
+  const [generateContractOpen, setGenerateContractOpen] = useState(false);
   const [editClientOpen, setEditClientOpen] = useState(false);
   const [contractUrl, setContractUrl] = useState<string | null>(null);
   const [contractName, setContractName] = useState<string | null>(null);
@@ -424,6 +426,15 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
               {contractUrl ? 'Ver Contrato' : 'Adicionar Contrato'}
             </Button>
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              disabled={isPaused}
+              onClick={() => setGenerateContractOpen(true)}
+            >
+              {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+              Gerar Contrato
+            </Button>
             <ContractModal
               open={contractDialogOpen}
               onOpenChange={setContractDialogOpen}
@@ -431,6 +442,21 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               contractUrl={contractUrl}
               contractName={contractName}
               onContractUpdated={handleContractUpdated}
+            />
+            <GenerateContractModal
+              open={generateContractOpen}
+              onOpenChange={setGenerateContractOpen}
+              client={{
+                id: client.id,
+                company_name: client.companyName,
+                contact_name: client.contactName,
+                email: client.email,
+                phone: client.phone,
+                address: client.address || null,
+                services: client.services,
+                monthly_budget: client.monthlyBudget,
+                paid_traffic_budget: client.trafficBudget || null,
+              }}
             />
           </>
         )}
