@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, CreditCard } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { AnimatedContainer } from '@/components/ui/animated-container';
 import { useAuth } from '@/contexts/AuthContext';
 import { SubscriptionTab } from '@/components/subscription/SubscriptionTab';
 interface AgencySettings {
@@ -349,7 +350,7 @@ export default function Settings() {
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+      <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
         <Button variant="ghost" size="icon" onClick={handleBack} className="shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -357,8 +358,9 @@ export default function Settings() {
           <h1 className="text-xl md:text-3xl font-bold">Configurações</h1>
           <p className="text-sm md:text-base text-muted-foreground">Gerencie as configurações do sistema</p>
         </div>
-      </div>
+      </AnimatedContainer>
 
+      <AnimatedContainer animation="fade-up" delay={0.1}>
       <Tabs defaultValue={defaultTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="profile" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
@@ -731,6 +733,7 @@ export default function Settings() {
           <SubscriptionTab />
         </TabsContent>
       </Tabs>
+      </AnimatedContainer>
     </div>
   );
 }

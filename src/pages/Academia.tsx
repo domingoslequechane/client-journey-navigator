@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, GraduationCap, Sparkles, BookOpen, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { AnimatedContainer } from '@/components/ui/animated-container';
 import { markdownToHtml } from '@/lib/markdown-to-html';
 
 // DOMPurify sanitization config to prevent XSS
@@ -266,7 +267,7 @@ Nível: [nível]
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+      <AnimatedContainer animation="fade-up" className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <GraduationCap className="h-8 w-8 text-primary" />
@@ -293,10 +294,11 @@ Nível: [nível]
             </>
           )}
         </Button>
-      </div>
+      </AnimatedContainer>
 
       {/* AI Generated Content */}
       {isGenerating && (
+        <AnimatedContainer animation="scale-in">
         <Card className="mb-6 border-primary/20 bg-gradient-to-r from-primary/5 to-chart-5/5">
           <CardContent className="p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -314,9 +316,11 @@ Nível: [nível]
             </div>
           </CardContent>
         </Card>
+        </AnimatedContainer>
       )}
 
       {generatedSuggestions && !isGenerating && (
+        <AnimatedContainer animation="fade-up" delay={0.1}>
         <Card className="mb-6 border-primary/20 bg-gradient-to-r from-primary/5 to-chart-5/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -334,9 +338,11 @@ Nível: [nível]
             />
           </CardContent>
         </Card>
+        </AnimatedContainer>
       )}
 
       {/* Suggestions History */}
+      <AnimatedContainer animation="fade-up" delay={0.2}>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -401,6 +407,7 @@ Nível: [nível]
           )}
         </CardContent>
       </Card>
+      </AnimatedContainer>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Building2, User, Globe, DollarSign } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SERVICE_LABELS, SOURCE_LABELS, ServiceType, LeadSource, LeadTemperature, SALES_FUNNEL_STAGES } from '@/types';
 import { toast } from '@/hooks/use-toast';
 
@@ -28,7 +29,7 @@ export default function NewClient() {
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+      <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
         <Link to="/app/clients">
           <Button variant="ghost" size="icon" className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
         </Link>
@@ -36,11 +37,11 @@ export default function NewClient() {
           <h1 className="text-xl md:text-3xl font-bold">Novo Cliente</h1>
           <p className="text-sm md:text-base text-muted-foreground">Cadastre um novo lead ou cliente</p>
         </div>
-      </div>
+      </AnimatedContainer>
 
       <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
         {/* Company Info */}
-        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <AnimatedContainer animation="fade-up" delay={0.1} className="bg-card border border-border rounded-xl p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <Building2 className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Informações da Empresa</h2>
@@ -50,10 +51,10 @@ export default function NewClient() {
             <div><Label>Website</Label><Input placeholder="www.empresa.com" /></div>
             <div className="md:col-span-2"><Label>Endereço</Label><Input placeholder="Av. Eduardo Mondlane, 123 - Maputo" /></div>
           </div>
-        </div>
+        </AnimatedContainer>
 
         {/* Contact Info */}
-        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <AnimatedContainer animation="fade-up" delay={0.15} className="bg-card border border-border rounded-xl p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <User className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Contato Principal</h2>
@@ -63,10 +64,10 @@ export default function NewClient() {
             <div><Label>Telefone *</Label><Input placeholder="+258 84 123 4567" required /></div>
             <div className="sm:col-span-2 md:col-span-1"><Label>E-mail</Label><Input type="email" placeholder="email@empresa.com" /></div>
           </div>
-        </div>
+        </AnimatedContainer>
 
         {/* Lead Qualification */}
-        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <AnimatedContainer animation="fade-up" delay={0.2} className="bg-card border border-border rounded-xl p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <Globe className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Qualificação do Lead</h2>
@@ -112,10 +113,10 @@ export default function NewClient() {
             <div><Label>Orçamento Mensal Estimado (MT)</Label><Input type="number" placeholder="10000" /></div>
             <div><Label>Orçamento Tráfego Pago ($)</Label><Input type="number" placeholder="500" /></div>
           </div>
-        </div>
+        </AnimatedContainer>
 
         {/* Services */}
-        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <AnimatedContainer animation="fade-up" delay={0.25} className="bg-card border border-border rounded-xl p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <DollarSign className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Serviços de Interesse</h2>
@@ -128,18 +129,18 @@ export default function NewClient() {
               </div>
             ))}
           </div>
-        </div>
+        </AnimatedContainer>
 
         {/* Notes */}
-        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <AnimatedContainer animation="fade-up" delay={0.3} className="bg-card border border-border rounded-xl p-4 md:p-6">
           <Label>Observações</Label>
           <Textarea placeholder="Anotações importantes sobre o cliente..." className="mt-2" rows={4} />
-        </div>
+        </AnimatedContainer>
 
-        <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-end">
+        <AnimatedContainer animation="fade-up" delay={0.35} className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-end">
           <Link to="/app/clients" className="w-full sm:w-auto"><Button variant="outline" className="w-full">Cancelar</Button></Link>
           <Button type="submit" className="w-full sm:w-auto">Cadastrar Cliente</Button>
-        </div>
+        </AnimatedContainer>
       </form>
     </div>
   );

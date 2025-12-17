@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, History, ShieldAlert } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { AnimatedContainer } from '@/components/ui/animated-container';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -340,7 +341,7 @@ export default function Team() {
 
   return (
     <div className="p-4 md:p-8 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <AnimatedContainer animation="fade-up" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Equipe</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">Gerencie os membros da sua equipe</p>
@@ -417,7 +418,7 @@ export default function Team() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </AnimatedContainer>
 
       {/* Change Role Dialog */}
       <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
@@ -458,7 +459,7 @@ export default function Team() {
       </Dialog>
 
       {/* Team Members Table */}
-      <div className="bg-card border border-border rounded-xl">
+      <AnimatedContainer animation="fade-up" delay={0.1} className="bg-card border border-border rounded-xl">
         <Table>
           <TableHeader>
             <TableRow>
@@ -577,7 +578,7 @@ export default function Team() {
             )}
           </TableBody>
         </Table>
-      </div>
+      </AnimatedContainer>
 
       {/* Login History Section */}
       <Card>
