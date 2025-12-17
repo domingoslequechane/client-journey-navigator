@@ -14,10 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Eye, CheckCircle, Loader2 } from 'lucide-react';
+import { Eye, CheckCircle, Loader2, Bell } from 'lucide-react';
+import { NotificationCreator } from '@/components/admin/NotificationCreator';
 
 interface Feedback {
   id: string;
+  user_id: string;
   user_email: string | null;
   type: string;
   subject: string;
@@ -263,15 +265,23 @@ export default function AdminFeedbacks() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedFeedback(null)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Salvar
-            </Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <NotificationCreator
+              feedbackId={selectedFeedback?.id}
+              targetUserId={selectedFeedback?.user_id}
+              defaultTitle={`Resposta: ${selectedFeedback?.subject || ''}`}
+              defaultMessage=""
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setSelectedFeedback(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSave} disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Salvar
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

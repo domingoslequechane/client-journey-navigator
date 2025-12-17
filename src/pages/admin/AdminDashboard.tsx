@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Users, Building2, CreditCard, MessageSquare, TrendingUp, AlertCircle } from 'lucide-react';
+import { NotificationCreator } from '@/components/admin/NotificationCreator';
 
 interface DashboardStats {
   totalUsers: number;
@@ -111,9 +112,12 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 space-y-6">
       <AnimatedContainer animation="fade-up">
-        <div>
-          <h1 className="text-3xl font-bold">Painel Administrativo</h1>
-          <p className="text-muted-foreground">Visão geral do sistema</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Painel Administrativo</h1>
+            <p className="text-muted-foreground">Visão geral do sistema</p>
+          </div>
+          <NotificationCreator />
         </div>
       </AnimatedContainer>
 
