@@ -200,8 +200,8 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Inline keyframes for header animation */}
+    <div className="min-h-screen bg-background overflow-x-hidden relative">
+      {/* Inline keyframes for animations */}
       <style>{`
         @keyframes shimmer {
           0%, 100% { transform: translateX(-100%); }
@@ -211,7 +211,62 @@ export default function LandingPage() {
           0%, 100% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
         }
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(3deg); }
+        }
+        @keyframes glow {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.1); }
+        }
       `}</style>
+      
+      {/* Global Animated Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Gradient mesh background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-chart-5/5" />
+        
+        {/* Animated gradient orbs */}
+        <div 
+          className="absolute top-[10%] left-[5%] w-[40vw] h-[40vw] max-w-[600px] max-h-[600px] bg-primary/10 rounded-full blur-[100px]"
+          style={{ animation: 'glow 8s ease-in-out infinite' }}
+        />
+        <div 
+          className="absolute top-[40%] right-[10%] w-[35vw] h-[35vw] max-w-[500px] max-h-[500px] bg-chart-5/10 rounded-full blur-[100px]"
+          style={{ animation: 'glow 10s ease-in-out infinite', animationDelay: '2s' }}
+        />
+        <div 
+          className="absolute bottom-[10%] left-[20%] w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] bg-success/10 rounded-full blur-[80px]"
+          style={{ animation: 'glow 12s ease-in-out infinite', animationDelay: '4s' }}
+        />
+        
+        {/* Floating geometric shapes */}
+        <div 
+          className="absolute top-[20%] right-[20%] w-16 h-16 border border-primary/20 rounded-xl rotate-45"
+          style={{ animation: 'float 6s ease-in-out infinite' }}
+        />
+        <div 
+          className="absolute top-[60%] left-[10%] w-12 h-12 border border-chart-5/20 rounded-full"
+          style={{ animation: 'float 8s ease-in-out infinite', animationDelay: '1s' }}
+        />
+        <div 
+          className="absolute bottom-[30%] right-[15%] w-20 h-20 border border-success/15 rounded-2xl rotate-12"
+          style={{ animation: 'float 7s ease-in-out infinite', animationDelay: '2s' }}
+        />
+        <div 
+          className="absolute top-[80%] left-[30%] w-10 h-10 border border-primary/15 rounded-lg rotate-[-20deg]"
+          style={{ animation: 'float 9s ease-in-out infinite', animationDelay: '3s' }}
+        />
+        
+        {/* Grid pattern overlay */}
+        <div 
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: 'linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)',
+            backgroundSize: '60px 60px'
+          }}
+        />
+      </div>
       {/* Header */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         isScrolled 
