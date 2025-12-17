@@ -41,7 +41,7 @@ export function TrialBanner() {
           </p>
         </div>
         
-        <Link to="/app/settings?tab=subscription">
+        <Link to="/app/subscription">
           <Button 
             size="sm" 
             className={`gap-2 shrink-0 ${isUrgent ? 'bg-destructive hover:bg-destructive/90' : ''}`}

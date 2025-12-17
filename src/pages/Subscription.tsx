@@ -1,11 +1,24 @@
+import { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SubscriptionTab } from '@/components/subscription/SubscriptionTab';
 import { AnimatedContainer } from '@/components/ui/animated-container';
+import { toast } from '@/hooks/use-toast';
 
 export default function Subscription() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const success = searchParams.get('success');
+    if (success === 'true') {
+      toast({
+        title: 'Assinatura realizada!',
+        description: 'Sua assinatura foi confirmada com sucesso.',
+      });
+    }
+  }, [searchParams]);
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
