@@ -963,7 +963,7 @@ export type Database = {
         | "note"
         | "task"
         | "milestone"
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "proprietor"
       journey_stage:
         | "prospeccao"
         | "reuniao"
@@ -1108,7 +1108,7 @@ export const Constants = {
   public: {
     Enums: {
       activity_type: ["call", "email", "meeting", "note", "task", "milestone"],
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "proprietor"],
       journey_stage: [
         "prospeccao",
         "reuniao",
