@@ -15,6 +15,10 @@ interface OTPRequest {
   fullName: string;
 }
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_EMAIL = 3; // Max 3 OTP requests per email per minute
+
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -34,15 +38,39 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
     // Initialize Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Delete any existing OTP for this email
+    // Check rate limit for this email - count recent OTP requests
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+    const { data: recentOtps, error: countError } = await supabase
+      .from("email_otps")
+      .select("created_at")
+      .eq("email", email)
+      .gte("created_at", windowStart);
+
+    if (countError) {
+      console.error("Error checking rate limit:", countError);
+    }
+
+    // If too many recent requests, reject
+    if (recentOtps && recentOtps.length >= MAX_REQUESTS_PER_EMAIL) {
+      console.warn(`Rate limit exceeded for email: ${email}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Muitas tentativas. Aguarde 1 minuto antes de tentar novamente.",
+          code: "RATE_LIMITED"
+        }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Delete any existing OTP for this email (keeps only the newest)
     await supabase.from("email_otps").delete().eq("email", email);
 
     // Store new OTP
