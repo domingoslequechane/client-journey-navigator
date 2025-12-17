@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, History, ShieldAlert } from 'lucide-react';
+import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, History, ShieldAlert, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { z } from 'zod';
@@ -356,6 +356,43 @@ export default function Team() {
     }
   };
 
+  const handleResendInvite = async (member: TeamMember) => {
+    if (!member.email) {
+      toast({ title: 'Erro', description: 'Email do usuário não encontrado', variant: 'destructive' });
+      return;
+    }
+
+    setActionLoading(member.id);
+    try {
+      const response = await supabase.functions.invoke('invite-user', {
+        body: { 
+          email: member.email, 
+          fullName: member.full_name || 'Colaborador', 
+          role: member.role === 'admin' ? 'operations' : member.role,
+          resend: true 
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Erro ao reenviar convite');
+      }
+
+      toast({ 
+        title: 'Convite reenviado!', 
+        description: `Um novo e-mail foi enviado para ${member.email}` 
+      });
+    } catch (error) {
+      console.error('Resend invite error:', error);
+      toast({ 
+        title: 'Erro', 
+        description: error instanceof Error ? error.message : 'Não foi possível reenviar o convite', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // Show loading while checking admin status
   if (isCurrentUserAdmin === null) {
     return (
@@ -633,6 +670,15 @@ export default function Team() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {member.status === 'pending' && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleResendInvite(member)}>
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Reenviar Convite
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
                           <DropdownMenuItem onClick={() => {
                             setSelectedMember(member);
                             setNewRole(member.role);
