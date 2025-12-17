@@ -19,15 +19,25 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const apiKey = Deno.env.get("LEMONSQUEEZY_API_KEY");
-    const storeId = Deno.env.get("LEMONSQUEEZY_STORE_ID");
-    const variantId = Deno.env.get("LEMONSQUEEZY_VARIANT_ID");
+    const normalizeId = (v?: string | null) =>
+      v?.trim().replace(/^["']+|["']+$/g, "");
+
+    const apiKey = (Deno.env.get("LEMONSQUEEZY_API_KEY") ?? "").trim();
+    const storeId = normalizeId(Deno.env.get("LEMONSQUEEZY_STORE_ID"));
+    const variantId = normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID"));
 
     if (!apiKey || !storeId || !variantId) {
-      console.error("Missing LemonSqueezy configuration");
+      console.error("Missing LemonSqueezy configuration", {
+        hasApiKey: Boolean(apiKey),
+        storeId,
+        variantId,
+      });
       return new Response(
         JSON.stringify({ error: "Payment system not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
       );
     }
 
@@ -78,7 +88,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Creating checkout for organization:", organizationId);
+    console.log("Creating checkout", {
+      organizationId,
+      storeId,
+      variantId,
+      userId: user.id,
+    });
 
     // Create checkout session with LemonSqueezy API
     const checkoutResponse = await fetch("https://api.lemonsqueezy.com/v1/checkouts", {
@@ -124,9 +139,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!checkoutResponse.ok) {
       const errorText = await checkoutResponse.text();
-      console.error("LemonSqueezy API error:", errorText);
+      console.error("LemonSqueezy API error:", {
+        status: checkoutResponse.status,
+        body: errorText,
+      });
+
       return new Response(
-        JSON.stringify({ error: "Failed to create checkout session" }),
+        JSON.stringify({
+          error: "Failed to create checkout session",
+          lemonsqueezy_status: checkoutResponse.status,
+          lemonsqueezy_error: errorText,
+        }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
