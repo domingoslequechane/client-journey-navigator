@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,9 +10,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, History, ShieldAlert } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface TeamMember {
   id: string;
@@ -19,8 +23,18 @@ interface TeamMember {
   avatar_url: string | null;
   role: 'sales' | 'operations' | 'campaign_management' | 'admin';
   created_at: string | null;
-  email?: string;
+  email?: string | null;
   status?: 'active' | 'pending' | 'suspended';
+}
+
+interface LoginRecord {
+  id: string;
+  user_id: string;
+  logged_in_at: string;
+  provider: string;
+  user_agent: string | null;
+  user_name?: string;
+  user_email?: string;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -50,29 +64,48 @@ const inviteSchema = z.object({
 });
 
 export default function Team() {
+  const navigate = useNavigate();
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loginHistory, setLoginHistory] = useState<LoginRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<string>('');
   const [errors, setErrors] = useState<{ email?: string; fullName?: string; role?: string }>({});
-  const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
+  const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState<boolean | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [newRole, setNewRole] = useState<string>('');
 
   useEffect(() => {
-    fetchMembers();
     checkAdminStatus();
   }, []);
+
+  useEffect(() => {
+    if (isCurrentUserAdmin === true) {
+      fetchMembers();
+      fetchLoginHistory();
+    } else if (isCurrentUserAdmin === false) {
+      navigate('/app');
+      toast({
+        title: 'Acesso negado',
+        description: 'Apenas administradores podem acessar esta página',
+        variant: 'destructive',
+      });
+    }
+  }, [isCurrentUserAdmin, navigate]);
 
   const checkAdminStatus = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setIsCurrentUserAdmin(false);
+        return;
+      }
 
       const { data } = await supabase
         .from('profiles')
@@ -83,6 +116,7 @@ export default function Team() {
       setIsCurrentUserAdmin(data?.role === 'admin');
     } catch (error) {
       console.error('Error checking admin status:', error);
+      setIsCurrentUserAdmin(false);
     }
   };
 
@@ -96,7 +130,6 @@ export default function Team() {
 
       if (error) throw error;
 
-      // Determine status based on profile data
       const membersWithStatus = data?.map(member => {
         let status: 'active' | 'pending' | 'suspended' = 'active';
         if ((member as any).suspended) {
@@ -116,6 +149,38 @@ export default function Team() {
       toast({ title: 'Erro', description: 'Não foi possível carregar a equipe', variant: 'destructive' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLoginHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const { data: logins, error } = await supabase
+        .from('login_history')
+        .select('*')
+        .order('logged_in_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      // Get profiles for user names
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email');
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      const historyWithNames = (logins || []).map(login => ({
+        ...login,
+        user_name: profileMap.get(login.user_id)?.full_name || 'Usuário',
+        user_email: profileMap.get(login.user_id)?.email || '',
+      }));
+
+      setLoginHistory(historyWithNames as LoginRecord[]);
+    } catch (error) {
+      console.error('Error fetching login history:', error);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -197,8 +262,6 @@ export default function Team() {
     
     setActionLoading(memberId);
     try {
-      // Note: This would typically require admin API access to delete the auth user
-      // For now, we'll just show a message
       toast({ title: 'Atenção', description: 'A remoção de usuários requer acesso administrativo ao Supabase', variant: 'destructive' });
     } finally {
       setActionLoading(null);
@@ -238,8 +301,22 @@ export default function Team() {
     }
   };
 
+  // Show loading while checking admin status
+  if (isCurrentUserAdmin === null) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Don't render if not admin (redirect will happen)
+  if (!isCurrentUserAdmin) {
+    return null;
+  }
+
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Equipe</h1>
@@ -357,33 +434,36 @@ export default function Team() {
         </DialogContent>
       </Dialog>
 
+      {/* Team Members Table */}
       <div className="bg-card border border-border rounded-xl">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Membro</TableHead>
+              <TableHead className="hidden md:table-cell">E-mail</TableHead>
               <TableHead>Função</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Desde</TableHead>
-              {isCurrentUserAdmin && <TableHead className="w-[50px]">Ações</TableHead>}
+              <TableHead className="hidden sm:table-cell">Desde</TableHead>
+              <TableHead className="w-[50px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={isCurrentUserAdmin ? 5 : 4} className="text-center py-8">
+                <TableCell colSpan={6} className="text-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : members.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isCurrentUserAdmin ? 5 : 4} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Nenhum membro da equipe encontrado.
                 </TableCell>
               </TableRow>
             ) : (
               members.map(member => {
                 const StatusIcon = STATUS_CONFIG[member.status || 'active'].icon;
+                const hasAcceptedInvite = member.status !== 'pending' && member.full_name;
                 return (
                   <TableRow key={member.id}>
                     <TableCell>
@@ -393,8 +473,14 @@ export default function Team() {
                             {member.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium">{member.full_name || 'Aguardando...'}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{member.full_name || 'Aguardando...'}</span>
+                          <span className="text-xs text-muted-foreground md:hidden">{member.email || '-'}</span>
+                        </div>
                       </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">
+                      {member.email || '-'}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={ROLE_COLORS[member.role] || ''}>
@@ -402,63 +488,66 @@ export default function Team() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={`gap-1 ${STATUS_CONFIG[member.status || 'active'].color}`}>
-                        <StatusIcon className="h-3 w-3" />
-                        {STATUS_CONFIG[member.status || 'active'].label}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant="secondary" className={`gap-1 ${STATUS_CONFIG[member.status || 'active'].color}`}>
+                          <StatusIcon className="h-3 w-3" />
+                          {STATUS_CONFIG[member.status || 'active'].label}
+                        </Badge>
+                        {member.status === 'pending' && (
+                          <span className="text-xs text-muted-foreground">Convite pendente</span>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="hidden sm:table-cell text-muted-foreground">
                       {member.created_at 
                         ? new Date(member.created_at).toLocaleDateString('pt-BR')
                         : '-'
                       }
                     </TableCell>
-                    {isCurrentUserAdmin && (
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" disabled={actionLoading === member.id}>
-                              {actionLoading === member.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <MoreHorizontal className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
-                              setSelectedMember(member);
-                              setNewRole(member.role);
-                              setRoleDialogOpen(true);
-                            }}>
-                              <Shield className="h-4 w-4 mr-2" />
-                              Alterar Privilégios
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleSuspend(member)}>
-                              {member.status === 'suspended' ? (
-                                <>
-                                  <UserCheck className="h-4 w-4 mr-2" />
-                                  Ativar
-                                </>
-                              ) : (
-                                <>
-                                  <UserX className="h-4 w-4 mr-2" />
-                                  Suspender
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={() => handleRemoveMember(member.id)}
-                              className="text-destructive"
-                            >
-                              <UserX className="h-4 w-4 mr-2" />
-                              Remover
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    )}
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" disabled={actionLoading === member.id}>
+                            {actionLoading === member.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <MoreHorizontal className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedMember(member);
+                            setNewRole(member.role);
+                            setRoleDialogOpen(true);
+                          }}>
+                            <Shield className="h-4 w-4 mr-2" />
+                            Alterar Privilégios
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleSuspend(member)}>
+                            {member.status === 'suspended' ? (
+                              <>
+                                <UserCheck className="h-4 w-4 mr-2" />
+                                Ativar
+                              </>
+                            ) : (
+                              <>
+                                <UserX className="h-4 w-4 mr-2" />
+                                Suspender
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleRemoveMember(member.id)}
+                            className="text-destructive"
+                          >
+                            <UserX className="h-4 w-4 mr-2" />
+                            Remover
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 );
               })
@@ -466,6 +555,70 @@ export default function Team() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Login History Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Histórico de Logins
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingHistory ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : loginHistory.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">
+              Nenhum registro de login encontrado.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead className="hidden md:table-cell">E-mail</TableHead>
+                    <TableHead>Data/Hora</TableHead>
+                    <TableHead className="hidden sm:table-cell">Método</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loginHistory.map(login => (
+                    <TableRow key={login.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs">
+                              {login.user_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">{login.user_name}</span>
+                            <span className="text-xs text-muted-foreground md:hidden">{login.user_email}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
+                        {login.user_email}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {format(new Date(login.logged_in_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {login.provider}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
