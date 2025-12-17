@@ -12,6 +12,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { SERVICE_LABELS, ServiceType } from '@/types';
 import { getCurrencySymbol } from '@/lib/currencies';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+import { saveAs } from 'file-saver';
+import { jsPDF } from 'jspdf';
 
 interface ContractTemplate {
   id: string;
@@ -44,6 +47,8 @@ export function GenerateContractModal({ open, onOpenChange, client }: GenerateCo
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [generatedContract, setGeneratedContract] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [downloadingDocx, setDownloadingDocx] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [agencySettings, setAgencySettings] = useState<any>(null);
   const [organizationCurrency, setOrganizationCurrency] = useState('MZN');
   const [copied, setCopied] = useState(false);
@@ -175,17 +180,135 @@ export function GenerateContractModal({ open, onOpenChange, client }: GenerateCo
     }
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([generatedContract], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Contrato_${client?.company_name?.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast({ title: 'Download iniciado', description: 'O contrato foi baixado com sucesso' });
+  const handleDownloadDocx = async () => {
+    setDownloadingDocx(true);
+    try {
+      // Parse the text content into paragraphs
+      const lines = generatedContract.split('\n');
+      const children: Paragraph[] = [];
+
+      lines.forEach((line) => {
+        const trimmedLine = line.trim();
+        
+        if (!trimmedLine) {
+          // Empty line - add spacing
+          children.push(new Paragraph({ text: '' }));
+        } else if (trimmedLine.startsWith('CONTRATO') || trimmedLine.startsWith('CLÁUSULA')) {
+          // Headings
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: trimmedLine, bold: true, size: 28 })],
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 400, after: 200 },
+            })
+          );
+        } else if (/^\d+\./.test(trimmedLine) || /^[a-z]\)/.test(trimmedLine)) {
+          // Numbered or lettered items
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: trimmedLine, size: 24 })],
+              spacing: { before: 100, after: 100 },
+            })
+          );
+        } else {
+          // Regular paragraph
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: trimmedLine, size: 24 })],
+              alignment: AlignmentType.JUSTIFIED,
+              spacing: { before: 100, after: 100 },
+            })
+          );
+        }
+      });
+
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: children,
+          },
+        ],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `Contrato_${client?.company_name?.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.docx`);
+      toast({ title: 'Download iniciado', description: 'Contrato baixado em formato Word (.docx)' });
+    } catch (error) {
+      console.error('Error generating DOCX:', error);
+      toast({ title: 'Erro', description: 'Não foi possível gerar o documento Word', variant: 'destructive' });
+    } finally {
+      setDownloadingDocx(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - (margin * 2);
+      let y = margin;
+      const lineHeight = 6;
+
+      const lines = generatedContract.split('\n');
+
+      lines.forEach((line) => {
+        const trimmedLine = line.trim();
+
+        // Check if we need a new page
+        if (y > pageHeight - margin) {
+          doc.addPage();
+          y = margin;
+        }
+
+        if (!trimmedLine) {
+          // Empty line
+          y += lineHeight / 2;
+        } else if (trimmedLine.startsWith('CONTRATO') || trimmedLine.startsWith('CLÁUSULA')) {
+          // Headings - bold and centered
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(14);
+          const textWidth = doc.getTextWidth(trimmedLine);
+          const x = (pageWidth - textWidth) / 2;
+          y += lineHeight;
+          doc.text(trimmedLine, x, y);
+          y += lineHeight * 1.5;
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(11);
+        } else {
+          // Regular text - justified
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(11);
+          
+          // Split long lines
+          const splitLines = doc.splitTextToSize(trimmedLine, maxWidth);
+          splitLines.forEach((splitLine: string) => {
+            if (y > pageHeight - margin) {
+              doc.addPage();
+              y = margin;
+            }
+            doc.text(splitLine, margin, y);
+            y += lineHeight;
+          });
+        }
+      });
+
+      doc.save(`Contrato_${client?.company_name?.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      toast({ title: 'Download iniciado', description: 'Contrato baixado em formato PDF' });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({ title: 'Erro', description: 'Não foi possível gerar o PDF', variant: 'destructive' });
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   const handleClose = () => {
@@ -298,9 +421,24 @@ export function GenerateContractModal({ open, onOpenChange, client }: GenerateCo
                       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                       {copied ? 'Copiado!' : 'Copiar'}
                     </Button>
-                    <Button onClick={handleDownload} className="gap-2 flex-1">
-                      <Download className="h-4 w-4" />
-                      Baixar TXT
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button onClick={handleDownloadDocx} disabled={downloadingDocx} className="gap-2">
+                      {downloadingDocx ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                      Baixar Word (.docx)
+                    </Button>
+                    <Button onClick={handleDownloadPdf} disabled={downloadingPdf} variant="secondary" className="gap-2">
+                      {downloadingPdf ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                      Baixar PDF
                     </Button>
                   </div>
 
