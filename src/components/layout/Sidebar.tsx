@@ -14,11 +14,13 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  CreditCard
+  CreditCard,
+  MessageSquareHeart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
 
@@ -45,6 +47,7 @@ export function Sidebar() {
   }, [collapsed]);
 
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -209,6 +212,31 @@ export function Sidebar() {
             </Link>
           )}
 
+          {/* Feedback */}
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-center px-2 py-2.5 h-auto text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  onClick={() => setFeedbackOpen(true)}
+                >
+                  <MessageSquareHeart className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Feedback</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 px-3 py-2.5 h-auto text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              onClick={() => setFeedbackOpen(true)}
+            >
+              <MessageSquareHeart className="h-5 w-5" />
+              Feedback
+            </Button>
+          )}
+
           {user && (
             <div className={cn("pt-2 border-t border-border mt-2", collapsed && "px-1")}>
               {!collapsed && (
@@ -283,6 +311,9 @@ export function Sidebar() {
           </Button>
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </TooltipProvider>
   );
 }
