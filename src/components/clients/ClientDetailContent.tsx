@@ -373,7 +373,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Orçamento de Tráfego Pago</p>
-              <p className="text-sm font-medium">{client.trafficBudget ? `${Number(client.trafficBudget).toLocaleString()} MT` : 'N/A'}</p>
+              <p className="text-sm font-medium">{client.trafficBudget ? `$ ${Number(client.trafficBudget).toLocaleString()}` : 'N/A'}</p>
             </div>
           </div>
         )}
