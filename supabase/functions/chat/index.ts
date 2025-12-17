@@ -227,15 +227,15 @@ serve(async (req) => {
       throw new Error("Supabase configuration missing");
     }
 
-    // Create client with user's auth token to verify their identity
-    const userSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    const { data: { user }, error: authError } = await userSupabase.auth.getUser();
+    // Extract the JWT token from Authorization header
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Create client and verify user with token
+    const userSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data: { user }, error: authError } = await userSupabase.auth.getUser(token);
     
     if (authError || !user) {
-      console.error("Authentication failed:", authError?.message);
+      console.error("Authentication failed:", authError?.message || "Auth session missing!");
       return new Response(
         JSON.stringify({ error: "Invalid authentication" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
