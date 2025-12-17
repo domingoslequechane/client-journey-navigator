@@ -43,12 +43,12 @@ export default function Auth() {
   useEffect(() => {
     const checkSessionAndRedirect = async () => {
       if (session) {
-        // Check if user is system admin
+        // Check if user is system proprietor
         const { data: adminRole } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', session.user.id)
-          .eq('role', 'admin')
+          .eq('role', 'proprietor')
           .maybeSingle();
 
         if (adminRole) {
@@ -136,12 +136,12 @@ export default function Auth() {
         return;
       }
 
-      // Check if user is system admin
+      // Check if user is system proprietor
       const { data: adminRole } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', data.user.id)
-        .eq('role', 'admin')
+        .eq('role', 'proprietor')
         .maybeSingle();
 
       // Record login history
