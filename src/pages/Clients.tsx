@@ -12,6 +12,8 @@ import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AnimatedContainer } from '@/components/ui/animated-container';
+import { ClientListSkeleton } from '@/components/ui/loading-skeleton';
 import { 
   Search, 
   Plus, 
@@ -151,9 +153,13 @@ export default function Clients() {
     return stageMap[dbStage] || dbStage;
   };
 
+  if (loading) {
+    return <ClientListSkeleton />;
+  }
+
   return (
     <div className="p-4 md:p-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Clientes</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">Gerencie todos os seus clientes</p>
@@ -258,10 +264,10 @@ export default function Clients() {
             </SheetFooter>
           </SheetContent>
         </Sheet>
-      </div>
+      </AnimatedContainer>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <AnimatedContainer animation="fade-up" delay={0.1} className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="relative flex-1 md:max-w-2xl">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -287,18 +293,12 @@ export default function Clients() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </AnimatedContainer>
 
       {/* Clients - Mobile Cards / Desktop Table */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <>
-            {/* Mobile Cards View */}
-            <div className="md:hidden divide-y divide-border">
+      <AnimatedContainer animation="fade-up" delay={0.2} className="bg-card border border-border rounded-xl overflow-hidden">
+        {/* Mobile Cards View */}
+        <div className="md:hidden divide-y divide-border">
               {filteredClients.map((client) => {
                 const mappedStage = getStageFromDb(client.current_stage);
                 const stage = ALL_STAGES.find(s => s.id === mappedStage);
@@ -415,15 +415,13 @@ export default function Clients() {
                 </tbody>
               </table>
             </div>
-          </>
-        )}
 
-        {!loading && filteredClients.length === 0 && (
+        {filteredClients.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             Nenhum cliente encontrado
           </div>
         )}
-      </div>
+      </AnimatedContainer>
     </div>
   );
 }
