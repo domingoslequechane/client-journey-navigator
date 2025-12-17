@@ -69,13 +69,14 @@ const handler = async (req: Request): Promise<Response> => {
     // Mark OTP as verified
     await supabase.from("email_otps").update({ verified: true }).eq("email", email);
 
-    // Create user with confirmed email
+    // Create user with confirmed email - all signup users are admins (agency owners)
     const { data: userData, error: signUpError } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: {
         full_name: fullName,
+        role: 'admin',
       },
     });
 
