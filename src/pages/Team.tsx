@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -81,6 +82,8 @@ export default function Team() {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [newRole, setNewRole] = useState<string>('');
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
 
   useEffect(() => {
     checkAdminStatus();
@@ -258,13 +261,13 @@ export default function Team() {
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Tem certeza que deseja remover este membro? Esta ação é irreversível.')) return;
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
     
-    setActionLoading(memberId);
+    setActionLoading(memberToRemove.id);
     try {
       const response = await supabase.functions.invoke('delete-user', {
-        body: { userId: memberId },
+        body: { userId: memberToRemove.id },
       });
 
       if (response.error) {
@@ -289,7 +292,14 @@ export default function Team() {
       });
     } finally {
       setActionLoading(null);
+      setRemoveDialogOpen(false);
+      setMemberToRemove(null);
     }
+  };
+
+  const openRemoveDialog = (member: TeamMember) => {
+    setMemberToRemove(member);
+    setRemoveDialogOpen(true);
   };
 
   const handleToggleSuspend = async (member: TeamMember) => {
@@ -458,6 +468,31 @@ export default function Team() {
         </DialogContent>
       </Dialog>
 
+      {/* Remove Member Confirmation Dialog */}
+      <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover Membro</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover {memberToRemove?.full_name || 'este membro'}? Esta ação é irreversível.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleRemoveMember}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {actionLoading === memberToRemove?.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Remover'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Team Members Table */}
       <AnimatedContainer animation="fade-up" delay={0.1} className="bg-card border border-border rounded-xl">
         <Table>
@@ -563,7 +598,7 @@ export default function Team() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
-                            onClick={() => handleRemoveMember(member.id)}
+                            onClick={() => openRemoveDialog(member)}
                             className="text-destructive"
                           >
                             <UserX className="h-4 w-4 mr-2" />
