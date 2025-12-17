@@ -72,6 +72,7 @@ const App = () => (
               <Route path="subscription" element={<Subscription />} />
               <Route path="upgrade" element={<Upgrade />} />
             </Route>
+            <Route path="/not-found" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

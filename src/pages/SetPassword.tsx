@@ -30,25 +30,33 @@ export default function SetPassword() {
   useEffect(() => {
     // Check if there's a valid session from the invite link
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        // Try to get session from URL hash (Supabase redirects with tokens in hash)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-        
-        if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (error) {
-            console.error('Session error:', error);
-            toast({ title: 'Erro', description: 'Link de convite inválido ou expirado', variant: 'destructive' });
-            navigate('/auth');
-            return;
-          }
+      // First check if URL has tokens (required for this page)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      
+      // If no tokens in URL, check existing session
+      if (!accessToken && !refreshToken) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          // No valid context - redirect to 404
+          navigate('/not-found', { replace: true });
+          return;
         }
+        setVerifying(false);
+        return;
+      }
+      
+      // Try to set session from URL tokens
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (error) {
+        console.error('Session error:', error);
+        toast({ title: 'Erro', description: 'Link de convite inválido ou expirado', variant: 'destructive' });
+        navigate('/auth');
+        return;
       }
       setVerifying(false);
     };
