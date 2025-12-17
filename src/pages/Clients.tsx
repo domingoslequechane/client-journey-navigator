@@ -5,20 +5,14 @@ import { ALL_STAGES } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { ClientListSkeleton } from '@/components/ui/loading-skeleton';
 import { 
   Search, 
   Plus, 
   Building2, 
-  Loader2,
   Phone,
   Mail,
   Filter,
@@ -50,20 +44,7 @@ export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStage, setFilterStage] = useState<string | null>(null);
   const [filterQualification, setFilterQualification] = useState<string | null>(null);
-  const [newClientOpen, setNewClientOpen] = useState(false);
   const { exportToCSV } = useClientExport();
-  const [saving, setSaving] = useState(false);
-  
-  // New client form state
-  const [companyName, setCompanyName] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [website, setWebsite] = useState('');
-  const [address, setAddress] = useState('');
-  const [source, setSource] = useState('');
-  const [notes, setNotes] = useState('');
-  const [bant, setBant] = useState({ budget: 0, authority: 0, need: 0, timeline: 0 });
 
   useEffect(() => {
     fetchClients();
@@ -85,57 +66,6 @@ export default function Clients() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCreateClient = async () => {
-    if (!companyName || !contactName || !phone) {
-      toast({ title: 'Erro', description: 'Preencha os campos obrigatórios', variant: 'destructive' });
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('clients')
-        .insert({
-          company_name: companyName,
-          contact_name: contactName,
-          email: email || null,
-          phone,
-          website: website || null,
-          address: address || null,
-          source: source || null,
-          notes: notes || null,
-          bant_budget: bant.budget,
-          bant_authority: bant.authority,
-          bant_need: bant.need,
-          bant_timeline: bant.timeline,
-        });
-
-      if (error) throw error;
-
-      toast({ title: 'Sucesso!', description: 'Cliente cadastrado com sucesso' });
-      setNewClientOpen(false);
-      resetForm();
-      fetchClients();
-    } catch (error) {
-      console.error('Error creating client:', error);
-      toast({ title: 'Erro', description: 'Não foi possível cadastrar o cliente', variant: 'destructive' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const resetForm = () => {
-    setCompanyName('');
-    setContactName('');
-    setEmail('');
-    setPhone('');
-    setWebsite('');
-    setAddress('');
-    setSource('');
-    setNotes('');
-    setBant({ budget: 0, authority: 0, need: 0, timeline: 0 });
   };
 
   const filteredClients = clients.filter(client => {
@@ -182,106 +112,10 @@ export default function Clients() {
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">Exportar</span>
           </Button>
-          <Sheet open={newClientOpen} onOpenChange={setNewClientOpen}>
-            <SheetTrigger asChild>
-              <Button className="gap-2 flex-1 sm:flex-none">
-                <Plus className="h-4 w-4" />
-                Novo Cliente
-              </Button>
-            </SheetTrigger>
-          <SheetContent className="w-full sm:max-w-xl">
-            <SheetHeader>
-              <SheetTitle>Novo Cliente</SheetTitle>
-              <SheetDescription>
-                Cadastre um novo lead ou cliente no sistema.
-              </SheetDescription>
-            </SheetHeader>
-            <ScrollArea className="h-[calc(100vh-180px)] pr-4">
-              <div className="space-y-6 py-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <Label>Nome da Empresa *</Label>
-                    <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Ex: Restaurante Sabor" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nome do Contato *</Label>
-                    <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Ex: Maria Silva" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Telefone *</Label>
-                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+258 84 123 4567" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>E-mail</Label>
-                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@empresa.com" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Website</Label>
-                    <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="www.empresa.com" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Fonte</Label>
-                    <Select value={source} onValueChange={setSource}>
-                      <SelectTrigger><SelectValue placeholder="Como conheceu?" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="google_maps">Google Maps</SelectItem>
-                        <SelectItem value="social_media">Redes Sociais</SelectItem>
-                        <SelectItem value="referral">Indicação</SelectItem>
-                        <SelectItem value="visit">Visita Presencial</SelectItem>
-                        <SelectItem value="inbound">Inbound</SelectItem>
-                        <SelectItem value="other">Outro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Endereço</Label>
-                  <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Endereço completo" />
-                </div>
-                
-                <div className="space-y-4">
-                  <Label>Pontuação BANT (0-10)</Label>
-                  <div className="grid grid-cols-1 gap-4">
-                    {[
-                      { key: 'budget', label: 'Budget', desc: 'Tem orçamento?' },
-                      { key: 'authority', label: 'Authority', desc: 'Poder de decisão' },
-                      { key: 'need', label: 'Need', desc: 'Necessidade real' },
-                      { key: 'timeline', label: 'Timeline', desc: 'Prazo definido' }
-                    ].map(item => (
-                      <div key={item.key}>
-                        <div className="flex justify-between text-sm mb-2">
-                          <span>{item.label} <span className="text-muted-foreground text-xs">{item.desc}</span></span>
-                          <span className="font-medium">{bant[item.key as keyof typeof bant]}/10</span>
-                        </div>
-                        <Slider 
-                          value={[bant[item.key as keyof typeof bant]]} 
-                          max={10} 
-                          step={1} 
-                          onValueChange={([v]) => setBant(p => ({ ...p, [item.key]: v }))} 
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Observações</Label>
-                  <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas sobre o cliente..." />
-                </div>
-              </div>
-            </ScrollArea>
-            <SheetFooter className="pt-4">
-              <Button variant="outline" onClick={() => setNewClientOpen(false)}>Cancelar</Button>
-              <Button onClick={handleCreateClient} disabled={saving}>
-                {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</> : 'Cadastrar Cliente'}
-              </Button>
-            </SheetFooter>
-          </SheetContent>
-        </Sheet>
+          <Button className="gap-2 flex-1 sm:flex-none" onClick={() => navigate('/app/new-client')}>
+            <Plus className="h-4 w-4" />
+            Novo Cliente
+          </Button>
         </div>
       </AnimatedContainer>
 
