@@ -65,13 +65,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/app/onboarding" replace />;
   }
 
-  // Allow access to settings and subscription pages always (for subscription management)
-  const isSettingsPage = location.pathname.includes('/settings');
+  // Allow access to subscription page always (for subscription management)
   const isSubscriptionPage = location.pathname.includes('/subscription');
   
-  // If no access and not on settings/subscription, redirect to upgrade
-  if (!hasAccess && !isSettingsPage && !isSubscriptionPage) {
-    return <Navigate to="/app/upgrade" replace />;
+  // If no access and not on subscription, redirect to subscription page
+  if (!hasAccess && !isSubscriptionPage) {
+    return <Navigate to="/app/subscription" replace />;
   }
 
   return <>{children}</>;

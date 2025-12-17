@@ -1,19 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CreditCard, CheckCircle2, AlertCircle, Clock, ExternalLink } from 'lucide-react';
+import { Loader2, CreditCard, CheckCircle2, AlertCircle, Clock, Receipt, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+interface PaymentHistory {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  payment_date: string;
+  description: string | null;
+}
 
 export function SubscriptionTab() {
   const { user } = useAuth();
   const { loading, subscription, organization, isActive, isTrialing, trialDaysLeft, hasAccess, refetch } = useSubscription();
   const [creatingCheckout, setCreatingCheckout] = useState(false);
+  const [payments, setPayments] = useState<PaymentHistory[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(true);
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      if (!organization?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('payment_history')
+          .select('*')
+          .eq('organization_id', organization.id)
+          .order('payment_date', { ascending: false });
+
+        if (error) throw error;
+        setPayments(data || []);
+      } catch (error) {
+        console.error('Error fetching payments:', error);
+      } finally {
+        setLoadingPayments(false);
+      }
+    };
+
+    if (organization?.id) {
+      fetchPayments();
+    }
+  }, [organization?.id]);
 
   const handleSubscribe = async () => {
     if (!organization?.id || !user?.email) {
@@ -81,6 +117,21 @@ export function SubscriptionTab() {
     }
   };
 
+  const getPaymentStatusBadge = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Confirmado</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Pendente</Badge>;
+      case 'failed':
+        return <Badge variant="destructive">Falhou</Badge>;
+      case 'refunded':
+        return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20">Reembolsado</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -114,6 +165,11 @@ export function SubscriptionTab() {
               <span className="font-medium">{organization.name}</span>
             </div>
           )}
+
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Valor mensal</span>
+            <span className="font-bold text-lg">$10,00 USD</span>
+          </div>
 
           {isTrialing && (
             <div className="flex items-center justify-between">
@@ -169,7 +225,7 @@ export function SubscriptionTab() {
                   ) : (
                     <>
                       <CreditCard className="h-4 w-4" />
-                      Assinar Agora
+                      Assinar Agora - $10/mês
                     </>
                   )}
                 </Button>
@@ -225,7 +281,7 @@ export function SubscriptionTab() {
                   ) : (
                     <>
                       <CreditCard className="h-4 w-4" />
-                      Assinar Agora
+                      Assinar Agora - $10/mês
                     </>
                   )}
                 </Button>
@@ -258,6 +314,62 @@ export function SubscriptionTab() {
               </li>
             ))}
           </ul>
+        </CardContent>
+      </Card>
+
+      {/* Payment History */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Receipt className="h-5 w-5" />
+            Histórico de Pagamentos
+          </CardTitle>
+          <CardDescription>
+            Veja todos os pagamentos realizados
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingPayments ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : payments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>Nenhum pagamento registrado ainda</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {payments.map((payment) => (
+                <div 
+                  key={payment.id} 
+                  className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                >
+                  <div className="flex items-center gap-3">
+                    {payment.status === 'confirmed' ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    ) : payment.status === 'failed' ? (
+                      <XCircle className="h-5 w-5 text-destructive" />
+                    ) : (
+                      <Clock className="h-5 w-5 text-yellow-500" />
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">{payment.description || 'Assinatura'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(payment.payment_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">
+                      ${payment.amount.toFixed(2)} {payment.currency}
+                    </span>
+                    {getPaymentStatusBadge(payment.status)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

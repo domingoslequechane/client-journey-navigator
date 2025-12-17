@@ -523,6 +523,53 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_history: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          lemonsqueezy_invoice_id: string | null
+          lemonsqueezy_order_id: string | null
+          organization_id: string
+          payment_date: string
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          lemonsqueezy_invoice_id?: string | null
+          lemonsqueezy_order_id?: string | null
+          organization_id: string
+          payment_date?: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          lemonsqueezy_invoice_id?: string | null
+          lemonsqueezy_order_id?: string | null
+          organization_id?: string
+          payment_date?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
