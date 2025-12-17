@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { TrialBanner } from '@/components/subscription/TrialBanner';
+import { OnboardingTutorial } from '@/components/onboarding/OnboardingTutorial';
 import { SALES_FUNNEL_STAGES, OPERATIONAL_FLOW_STAGES, ALL_STAGES } from '@/types';
 import { Users, TrendingUp, Target, Award, ArrowRight, UserPlus, Kanban, Workflow, CheckSquare, Phone, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -87,6 +88,9 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 md:p-8">
+      {/* Onboarding Tutorial */}
+      <OnboardingTutorial />
+      
       {/* Trial Banner */}
       <TrialBanner />
 
