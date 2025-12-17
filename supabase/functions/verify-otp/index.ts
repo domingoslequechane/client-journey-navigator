@@ -97,6 +97,65 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    const userId = userData.user?.id;
+    
+    if (userId) {
+      // Create organization for the new user
+      const orgName = fullName ? `${fullName}'s Agency` : `Agency`;
+      
+      // Generate a unique slug
+      const { data: slugData } = await supabase.rpc('generate_slug', { name: orgName });
+      const slug = slugData || `agency-${Date.now()}`;
+      
+      // Calculate trial end date (14 days from now)
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+      
+      // Create the organization
+      const { data: orgData, error: orgError } = await supabase
+        .from("organizations")
+        .insert({
+          name: orgName,
+          slug: slug,
+          owner_id: userId,
+          trial_ends_at: trialEndsAt.toISOString(),
+        })
+        .select()
+        .single();
+      
+      if (orgError) {
+        console.error("Error creating organization:", orgError);
+      } else if (orgData) {
+        console.log("Organization created:", orgData.id);
+        
+        // Update profile with organization_id
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ organization_id: orgData.id })
+          .eq("id", userId);
+        
+        if (profileError) {
+          console.error("Error updating profile with org:", profileError);
+        }
+        
+        // Create initial subscription with trialing status
+        const { error: subError } = await supabase
+          .from("subscriptions")
+          .insert({
+            organization_id: orgData.id,
+            status: 'trialing',
+            current_period_start: new Date().toISOString(),
+            current_period_end: trialEndsAt.toISOString(),
+          });
+        
+        if (subError) {
+          console.error("Error creating subscription:", subError);
+        } else {
+          console.log("Trial subscription created for org:", orgData.id);
+        }
+      }
+    }
+
     // Delete OTP record
     await supabase.from("email_otps").delete().eq("email", email);
 
