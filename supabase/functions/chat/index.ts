@@ -10,7 +10,7 @@ const corsHeaders = {
 // Input validation schemas
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
-  content: z.string().max(10000, "Mensagem muito longa"),
+  content: z.string().max(50000, "Mensagem muito longa"),
 });
 
 const ClientDataSchema = z.object({
