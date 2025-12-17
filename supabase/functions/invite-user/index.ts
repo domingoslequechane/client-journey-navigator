@@ -105,24 +105,41 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://hrarkpjuchrbffnrhzcy.lovableproject.com";
     const redirectUrl = `${origin}/set-password`;
 
-    // Create user with invite
-    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: {
-        full_name: fullName,
-        role: role,
+    // Generate invite link with token using Supabase admin API
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'invite',
+      email: email,
+      options: {
+        data: {
+          full_name: fullName,
+          role: role,
+        },
+        redirectTo: redirectUrl,
       },
-      redirectTo: redirectUrl,
     });
 
-    if (inviteError) {
-      console.error("Invite error:", inviteError);
+    if (linkError) {
+      console.error("Link generation error:", linkError);
       return new Response(
-        JSON.stringify({ error: inviteError.message }),
+        JSON.stringify({ error: linkError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Send welcome email via Resend
+    // Extract the action link with token
+    const inviteLink = linkData.properties?.action_link;
+    
+    if (!inviteLink) {
+      console.error("No invite link generated");
+      return new Response(
+        JSON.stringify({ error: "Falha ao gerar link de convite" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Invite link generated for:", email);
+
+    // Send welcome email via Resend with the actual invite link
     try {
       await resend.emails.send({
         from: "Qualify <onboarding@resend.dev>",
@@ -154,19 +171,19 @@ serve(async (req) => {
                 <p><span class="role-badge">${ROLE_LABELS[role]}</span></p>
                 <p>Clique no botão abaixo para criar sua senha e acessar o sistema:</p>
                 <p style="text-align: center;">
-                  <a href="${redirectUrl}" class="button">Criar Minha Senha</a>
+                  <a href="${inviteLink}" class="button">Criar Minha Senha</a>
                 </p>
-                <p style="color: #64748b; font-size: 14px;">Se o botão não funcionar, acesse este link: ${redirectUrl}</p>
+                <p style="color: #64748b; font-size: 14px;">Se o botão não funcionar, copie e cole este link no navegador:<br/>${inviteLink}</p>
               </div>
               <div class="footer">
-                <p>© 2024 Qualify - Onix Agency</p>
+                <p>© ${new Date().getFullYear()} Qualify - Onix Agency</p>
               </div>
             </div>
           </body>
           </html>
         `,
       });
-      console.log("Welcome email sent successfully");
+      console.log("Welcome email sent successfully via Resend");
     } catch (emailError) {
       console.error("Email error:", emailError);
       // Don't fail the invite if email fails
@@ -176,7 +193,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: "Convite enviado com sucesso!",
-        user: inviteData.user 
+        user: linkData.user 
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
