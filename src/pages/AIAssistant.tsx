@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { supabase } from '@/integrations/supabase/client';
 import { markdownToHtml } from '@/lib/markdown-to-html';
+import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 
 // DOMPurify sanitization config to prevent XSS
 const SANITIZE_CONFIG = {
@@ -65,6 +66,7 @@ const AI_SIDEBAR_COLLAPSED_KEY = 'qualify-ai-sidebar-collapsed';
 
 export default function AIAssistant() {
   const queryClient = useQueryClient();
+  const { currencySymbol } = useOrganizationCurrency();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -153,13 +155,13 @@ export default function AIAssistant() {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Olá! Sou o assistente de marketing do Qualify. Estou aqui para ajudar com o cliente **${selectedClient.company_name}**.\n\n**Contexto do Cliente:**\n- Contato: ${selectedClient.contact_name}\n- Fase atual: ${getStageLabel(selectedClient.current_stage)}\n- Qualificação: ${selectedClient.qualification}\n- Orçamento mensal: ${selectedClient.monthly_budget ? `${selectedClient.monthly_budget.toLocaleString()} MT` : 'Não informado'}\n\nComo posso auxiliar hoje?`,
+        content: `Olá! Sou o assistente de marketing do Qualify. Estou aqui para ajudar com o cliente **${selectedClient.company_name}**.\n\n**Contexto do Cliente:**\n- Contato: ${selectedClient.contact_name}\n- Fase atual: ${getStageLabel(selectedClient.current_stage)}\n- Qualificação: ${selectedClient.qualification}\n- Orçamento mensal: ${selectedClient.monthly_budget ? `${currencySymbol} ${selectedClient.monthly_budget.toLocaleString()}` : 'Não informado'}\n\nComo posso auxiliar hoje?`,
         created_at: new Date().toISOString()
       }]);
     } else {
       setMessages([]);
     }
-  }, [selectedClient?.conversation_id, conversationMessages, selectedClientId, selectedClient?.company_name]);
+  }, [selectedClient?.conversation_id, conversationMessages, selectedClientId, selectedClient?.company_name, currencySymbol]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

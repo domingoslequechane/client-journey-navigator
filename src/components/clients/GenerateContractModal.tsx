@@ -11,6 +11,7 @@ import { FileText, Download, Loader2, Copy, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { SERVICE_LABELS, ServiceType } from '@/types';
+import { getCurrencySymbol } from '@/lib/currencies';
 
 interface ContractTemplate {
   id: string;
@@ -44,6 +45,7 @@ export function GenerateContractModal({ open, onOpenChange, client }: GenerateCo
   const [generatedContract, setGeneratedContract] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [agencySettings, setAgencySettings] = useState<any>(null);
+  const [organizationCurrency, setOrganizationCurrency] = useState('MZN');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -80,15 +82,16 @@ export function GenerateContractModal({ open, onOpenChange, client }: GenerateCo
 
   const fetchAgencySettings = async () => {
     try {
-      // Get organization settings
+      // Get organization settings including currency
       const { data: orgData } = await supabase
         .from('organizations')
-        .select('name, headquarters, nuit, representative_name, representative_position')
+        .select('name, headquarters, nuit, representative_name, representative_position, currency')
         .eq('id', organization?.id)
         .single();
 
       if (orgData) {
         setAgencySettings(orgData);
+        setOrganizationCurrency(orgData.currency || 'MZN');
       }
     } catch (error) {
       console.error('Error fetching agency settings:', error);
@@ -115,9 +118,10 @@ export function GenerateContractModal({ open, onOpenChange, client }: GenerateCo
       const servicesText = client.services?.map(s => SERVICE_LABELS[s as ServiceType] || s).join(', ') || '';
       content = content.replace(/\{\{servicos_contratados\}\}/g, servicesText);
 
-      // Values
-      const valorMensal = client.monthly_budget ? `MT ${client.monthly_budget.toLocaleString('pt-BR')}` : '';
-      const valorTrafego = client.paid_traffic_budget ? `MT ${client.paid_traffic_budget.toLocaleString('pt-BR')}` : '';
+      // Values - use organization currency for monthly, USD for traffic
+      const currencySymbol = getCurrencySymbol(organizationCurrency);
+      const valorMensal = client.monthly_budget ? `${currencySymbol} ${client.monthly_budget.toLocaleString('pt-BR')}` : '';
+      const valorTrafego = client.paid_traffic_budget ? `$ ${client.paid_traffic_budget.toLocaleString('pt-BR')}` : '';
       content = content.replace(/\{\{valor_mensal\}\}/g, valorMensal);
       content = content.replace(/\{\{valor_mensal_extenso\}\}/g, valorMensal);
       content = content.replace(/\{\{valor_trafego\}\}/g, valorTrafego);
@@ -255,11 +259,11 @@ export function GenerateContractModal({ open, onOpenChange, client }: GenerateCo
                       </div>
                       <div>
                         <span className="text-muted-foreground">Valor Mensal:</span>{' '}
-                        {client?.monthly_budget ? `MT ${client.monthly_budget.toLocaleString('pt-BR')}` : '-'}
+                        {client?.monthly_budget ? `${getCurrencySymbol(organizationCurrency)} ${client.monthly_budget.toLocaleString('pt-BR')}` : '-'}
                       </div>
                       <div>
                         <span className="text-muted-foreground">Tráfego Pago:</span>{' '}
-                        {client?.paid_traffic_budget ? `MT ${client.paid_traffic_budget.toLocaleString('pt-BR')}` : '-'}
+                        {client?.paid_traffic_budget ? `$ ${client.paid_traffic_budget.toLocaleString('pt-BR')}` : '-'}
                       </div>
                     </div>
                   </div>

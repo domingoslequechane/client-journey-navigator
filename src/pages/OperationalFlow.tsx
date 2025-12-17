@@ -9,11 +9,13 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SalesFunnelSkeleton } from '@/components/ui/loading-skeleton';
+import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 
 const stageIcons = { production: Cog, campaigns: Megaphone, retention: Target, loyalty: Heart };
 
 export default function OperationalFlow() {
   const navigate = useNavigate();
+  const { currencySymbol } = useOrganizationCurrency();
 
   // Fetch clients from Supabase
   const { data: clients = [], isLoading, refetch } = useQuery({
@@ -123,7 +125,7 @@ export default function OperationalFlow() {
                           </div>
                           <div className="flex justify-between mt-2 text-xs">
                             <span className="text-muted-foreground">Orçamento Mensal</span>
-                            <span className="font-medium text-primary">{client.monthlyBudget.toLocaleString()} MT</span>
+                            <span className="font-medium text-primary">{currencySymbol} {client.monthlyBudget.toLocaleString()}</span>
                           </div>
                         </div>
                       </AnimatedContainer>

@@ -10,11 +10,13 @@ import { cn } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SalesFunnelSkeleton } from '@/components/ui/loading-skeleton';
+import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 
 const stageIcons = { prospecting: Search, qualification: Target, closing: FileCheck };
 
 export default function SalesFunnel() {
   const navigate = useNavigate();
+  const { currencySymbol } = useOrganizationCurrency();
 
   // Fetch clients from Supabase
   const { data: clients = [], isLoading, refetch } = useQuery({
@@ -144,7 +146,7 @@ export default function SalesFunnel() {
                           </div>
                           <div className="flex justify-between mt-2 text-xs">
                             <span className="text-muted-foreground">Orçamento Mensal</span>
-                            <span className="font-medium text-primary">{client.monthlyBudget.toLocaleString()} MT</span>
+                            <span className="font-medium text-primary">{currencySymbol} {client.monthlyBudget.toLocaleString()}</span>
                           </div>
                         </div>
                       </AnimatedContainer>
