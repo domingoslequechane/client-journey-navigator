@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { SALES_FUNNEL_STAGES, OPERATIONAL_FLOW_STAGES, ALL_STAGES } from '@/types';
 import { Users, TrendingUp, Target, Award, ArrowRight, UserPlus, Kanban, Workflow, CheckSquare, Phone, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -86,6 +87,9 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 md:p-8">
+      {/* Trial Banner */}
+      <TrialBanner />
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
