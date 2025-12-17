@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          organization_id: string | null
           title: string
           type: Database["public"]["Enums"]["activity_type"]
         }
@@ -28,6 +29,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          organization_id?: string | null
           title: string
           type: Database["public"]["Enums"]["activity_type"]
         }
@@ -36,6 +38,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          organization_id?: string | null
           title?: string
           type?: Database["public"]["Enums"]["activity_type"]
         }
@@ -45,6 +48,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -96,6 +106,7 @@ export type Database = {
           client_id: string
           created_at: string
           id: string
+          organization_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -103,6 +114,7 @@ export type Database = {
           client_id: string
           created_at?: string
           id?: string
+          organization_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -110,6 +122,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           id?: string
+          organization_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -119,6 +132,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_conversations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -172,6 +192,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          organization_id: string | null
           stage: Database["public"]["Enums"]["journey_stage"]
           title: string
         }
@@ -182,6 +203,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          organization_id?: string | null
           stage: Database["public"]["Enums"]["journey_stage"]
           title: string
         }
@@ -192,6 +214,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          organization_id?: string | null
           stage?: Database["public"]["Enums"]["journey_stage"]
           title?: string
         }
@@ -201,6 +224,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -222,6 +252,7 @@ export type Database = {
           id: string
           monthly_budget: number | null
           notes: string | null
+          organization_id: string | null
           paid_traffic_budget: number | null
           paused: boolean
           paused_at: string | null
@@ -250,6 +281,7 @@ export type Database = {
           id?: string
           monthly_budget?: number | null
           notes?: string | null
+          organization_id?: string | null
           paid_traffic_budget?: number | null
           paused?: boolean
           paused_at?: string | null
@@ -278,6 +310,7 @@ export type Database = {
           id?: string
           monthly_budget?: number | null
           notes?: string | null
+          organization_id?: string | null
           paid_traffic_budget?: number | null
           paused?: boolean
           paused_at?: string | null
@@ -290,7 +323,15 @@ export type Database = {
           user_id?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_otps: {
         Row: {
@@ -346,6 +387,57 @@ export type Database = {
         }
         Relationships: []
       }
+      organizations: {
+        Row: {
+          created_at: string
+          headquarters: string | null
+          id: string
+          knowledge_base_name: string | null
+          knowledge_base_text: string | null
+          knowledge_base_url: string | null
+          name: string
+          nuit: string | null
+          owner_id: string
+          representative_name: string | null
+          representative_position: string | null
+          slug: string
+          trial_ends_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          headquarters?: string | null
+          id?: string
+          knowledge_base_name?: string | null
+          knowledge_base_text?: string | null
+          knowledge_base_url?: string | null
+          name: string
+          nuit?: string | null
+          owner_id: string
+          representative_name?: string | null
+          representative_position?: string | null
+          slug: string
+          trial_ends_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          headquarters?: string | null
+          id?: string
+          knowledge_base_name?: string | null
+          knowledge_base_text?: string | null
+          knowledge_base_url?: string | null
+          name?: string
+          nuit?: string | null
+          owner_id?: string
+          representative_name?: string | null
+          representative_position?: string | null
+          slug?: string
+          trial_ends_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -353,6 +445,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          organization_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           suspended: boolean
           suspended_at: string | null
@@ -365,6 +458,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          organization_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           suspended?: boolean
           suspended_at?: string | null
@@ -377,13 +471,22 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          organization_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           suspended?: boolean
           suspended_at?: string | null
           suspended_by?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       study_suggestions: {
         Row: {
@@ -421,6 +524,62 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          lemonsqueezy_customer_id: string | null
+          lemonsqueezy_order_id: string | null
+          lemonsqueezy_product_id: string | null
+          lemonsqueezy_subscription_id: string | null
+          lemonsqueezy_variant_id: string | null
+          organization_id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          lemonsqueezy_customer_id?: string | null
+          lemonsqueezy_order_id?: string | null
+          lemonsqueezy_product_id?: string | null
+          lemonsqueezy_subscription_id?: string | null
+          lemonsqueezy_variant_id?: string | null
+          organization_id: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          lemonsqueezy_customer_id?: string | null
+          lemonsqueezy_order_id?: string | null
+          lemonsqueezy_product_id?: string | null
+          lemonsqueezy_subscription_id?: string | null
+          lemonsqueezy_variant_id?: string | null
+          organization_id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -447,6 +606,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_slug: { Args: { name: string }; Returns: string }
+      get_user_organization_id: { Args: { user_uuid: string }; Returns: string }
+      has_active_subscription: { Args: { org_uuid: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -455,6 +617,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      user_belongs_to_org: {
+        Args: { org_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
       user_owns_contract: { Args: { contract_path: string }; Returns: boolean }
     }
     Enums: {
@@ -475,6 +641,12 @@ export type Database = {
         | "retencao"
         | "fidelizacao"
       lead_qualification: "cold" | "warm" | "hot" | "qualified"
+      subscription_status:
+        | "trialing"
+        | "active"
+        | "past_due"
+        | "cancelled"
+        | "expired"
       user_role: "sales" | "operations" | "campaign_management" | "admin"
     }
     CompositeTypes: {
@@ -615,6 +787,13 @@ export const Constants = {
         "fidelizacao",
       ],
       lead_qualification: ["cold", "warm", "hot", "qualified"],
+      subscription_status: [
+        "trialing",
+        "active",
+        "past_due",
+        "cancelled",
+        "expired",
+      ],
       user_role: ["sales", "operations", "campaign_management", "admin"],
     },
   },
