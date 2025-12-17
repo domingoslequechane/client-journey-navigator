@@ -78,6 +78,8 @@ export default function Team() {
   const [role, setRole] = useState<string>('');
   const [errors, setErrors] = useState<{ email?: string; fullName?: string; role?: string }>({});
   const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState<boolean | null>(null);
+  const [currentUserOrgId, setCurrentUserOrgId] = useState<string | null>(null);
+  const [isProprietor, setIsProprietor] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
@@ -92,7 +94,7 @@ export default function Team() {
   }, []);
 
   useEffect(() => {
-    if (isCurrentUserAdmin === true) {
+    if (isCurrentUserAdmin === true && currentUserOrgId) {
       fetchMembers();
       fetchLoginHistory();
     } else if (isCurrentUserAdmin === false) {
@@ -103,7 +105,7 @@ export default function Team() {
         variant: 'destructive',
       });
     }
-  }, [isCurrentUserAdmin, navigate]);
+  }, [isCurrentUserAdmin, currentUserOrgId, navigate]);
 
   const checkAdminStatus = async () => {
     try {
@@ -113,13 +115,23 @@ export default function Team() {
         return;
       }
 
-      const { data } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, organization_id')
         .eq('id', user.id)
         .single();
 
-      setIsCurrentUserAdmin(data?.role === 'admin');
+      // Check if user is proprietor
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'proprietor')
+        .maybeSingle();
+
+      setIsProprietor(roleData?.role === 'proprietor');
+      setCurrentUserOrgId(profile?.organization_id || null);
+      setIsCurrentUserAdmin(profile?.role === 'admin' || roleData?.role === 'proprietor');
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsCurrentUserAdmin(false);
@@ -129,14 +141,40 @@ export default function Team() {
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !currentUserOrgId) {
+        setMembers([]);
+        return;
+      }
+
+      // Fetch profiles from the same organization
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
+        .eq('organization_id', currentUserOrgId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      const membersWithStatus = data?.map(member => {
+      // Fetch proprietor user IDs to filter them out (unless current user is proprietor)
+      const { data: proprietorRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'proprietor');
+
+      const proprietorIds = new Set(proprietorRoles?.map(r => r.user_id) || []);
+
+      // Filter out proprietors unless the current user is a proprietor
+      const filteredProfiles = profiles?.filter(profile => {
+        // If current user is proprietor, show all including themselves
+        if (isProprietor) {
+          return true;
+        }
+        // Otherwise, hide all proprietors
+        return !proprietorIds.has(profile.id);
+      }) || [];
+
+      const membersWithStatus = filteredProfiles.map(member => {
         let status: 'active' | 'pending' | 'suspended' = 'active';
         if ((member as any).suspended) {
           status = 'suspended';
@@ -147,7 +185,7 @@ export default function Team() {
           ...member,
           status,
         };
-      }) || [];
+      });
 
       setMembers(membersWithStatus);
     } catch (error) {
@@ -161,20 +199,48 @@ export default function Team() {
   const fetchLoginHistory = async () => {
     setLoadingHistory(true);
     try {
+      if (!currentUserOrgId) {
+        setLoginHistory([]);
+        return;
+      }
+
+      // Get profiles from the same organization
+      const { data: orgProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('organization_id', currentUserOrgId);
+
+      if (!orgProfiles) {
+        setLoginHistory([]);
+        return;
+      }
+
+      // Fetch proprietor user IDs to filter them out (unless current user is proprietor)
+      const { data: proprietorRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'proprietor');
+
+      const proprietorIds = new Set(proprietorRoles?.map(r => r.user_id) || []);
+
+      // Filter profiles - hide proprietors unless current user is proprietor
+      const visibleProfiles = orgProfiles.filter(profile => {
+        if (isProprietor) return true;
+        return !proprietorIds.has(profile.id);
+      });
+
+      const profileMap = new Map(visibleProfiles.map(p => [p.id, p]));
+      const visibleUserIds = visibleProfiles.map(p => p.id);
+
+      // Fetch login history only for visible users in the organization
       const { data: logins, error } = await supabase
         .from('login_history')
         .select('*')
+        .in('user_id', visibleUserIds)
         .order('logged_in_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-
-      // Get profiles for user names
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email');
-
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
       const historyWithNames = (logins || []).map(login => ({
         ...login,
