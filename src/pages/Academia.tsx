@@ -5,9 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, GraduationCap, Sparkles, BookOpen, Clock } from 'lucide-react';
+import { Loader2, GraduationCap, Sparkles, BookOpen, Clock, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface StudySuggestion {
   id: string;
@@ -43,6 +53,7 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 export default function Academia() {
   const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [suggestionToDelete, setSuggestionToDelete] = useState<StudySuggestion | null>(null);
 
   // Fetch study suggestions history
   const { data: suggestions = [], isLoading, refetch } = useQuery({
@@ -257,6 +268,25 @@ Nível: [nível]
     }
   };
 
+  const deleteSuggestion = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('study_suggestions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      await refetch();
+      toast({ title: 'Sugestão removida', description: 'A sugestão de estudo foi removida do histórico.' });
+    } catch (error) {
+      console.error('Error deleting suggestion:', error);
+      toast({ title: 'Erro', description: 'Não foi possível remover a sugestão', variant: 'destructive' });
+    } finally {
+      setSuggestionToDelete(null);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -321,8 +351,8 @@ Nível: [nível]
 
 
       {/* Suggestions History */}
-      <AnimatedContainer animation="fade-up" delay={0.2}>
-      <Card>
+      <AnimatedContainer animation="fade-up" delay={0.2} className="w-full">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
@@ -352,12 +382,12 @@ Nível: [nível]
                     className="p-4 border border-border rounded-lg hover:border-primary/30 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-sm">{suggestion.title}</h3>
                         {suggestion.description && (
                           <p className="text-sm text-muted-foreground mt-1">{suggestion.description}</p>
                         )}
-                        <div className="flex items-center gap-2 mt-3">
+                        <div className="flex items-center gap-2 mt-3 flex-wrap">
                           <Badge variant="outline" className="text-xs">
                             {suggestion.category}
                           </Badge>
@@ -374,9 +404,19 @@ Nível: [nível]
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                        <Clock className="h-3 w-3" />
-                        {formatDate(suggestion.created_at)}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {formatDate(suggestion.created_at)}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => setSuggestionToDelete(suggestion)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -387,6 +427,27 @@ Nível: [nível]
         </CardContent>
       </Card>
       </AnimatedContainer>
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={!!suggestionToDelete} onOpenChange={() => setSuggestionToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover sugestão de estudo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover a sugestão "{suggestionToDelete?.title}"? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => suggestionToDelete && deleteSuggestion(suggestionToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
