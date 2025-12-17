@@ -84,6 +84,8 @@ export default function Team() {
   const [newRole, setNewRole] = useState<string>('');
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
+  const [adminPromotionDialogOpen, setAdminPromotionDialogOpen] = useState(false);
+  const [pendingAdminPromotion, setPendingAdminPromotion] = useState<{ member: TeamMember; role: string } | null>(null);
 
   useEffect(() => {
     checkAdminStatus();
@@ -239,19 +241,33 @@ export default function Team() {
   const handleChangeRole = async () => {
     if (!selectedMember || !newRole) return;
     
-    setActionLoading(selectedMember.id);
+    // If promoting to admin, show special confirmation dialog
+    if (newRole === 'admin' && selectedMember.role !== 'admin') {
+      setPendingAdminPromotion({ member: selectedMember, role: newRole });
+      setAdminPromotionDialogOpen(true);
+      setRoleDialogOpen(false);
+      return;
+    }
+    
+    await executeRoleChange(selectedMember.id, newRole);
+  };
+
+  const executeRoleChange = async (memberId: string, role: string) => {
+    setActionLoading(memberId);
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ role: newRole as any })
-        .eq('id', selectedMember.id);
+        .update({ role: role as any })
+        .eq('id', memberId);
 
       if (error) throw error;
 
       toast({ title: 'Sucesso!', description: 'Função alterada com sucesso' });
       setRoleDialogOpen(false);
+      setAdminPromotionDialogOpen(false);
       setSelectedMember(null);
       setNewRole('');
+      setPendingAdminPromotion(null);
       fetchMembers();
     } catch (error) {
       console.error('Error changing role:', error);
@@ -259,6 +275,11 @@ export default function Team() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleConfirmAdminPromotion = async () => {
+    if (!pendingAdminPromotion) return;
+    await executeRoleChange(pendingAdminPromotion.member.id, pendingAdminPromotion.role);
   };
 
   const handleRemoveMember = async () => {
@@ -493,7 +514,44 @@ export default function Team() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Team Members Table */}
+      {/* Admin Promotion Confirmation Dialog */}
+      <AlertDialog open={adminPromotionDialogOpen} onOpenChange={setAdminPromotionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <ShieldAlert className="h-5 w-5" />
+              Promoção a Administrador
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Você está prestes a promover <strong>{pendingAdminPromotion?.member.full_name}</strong> para Administrador.</p>
+              <p className="text-amber-600 font-medium">Esta ação concederá privilégios completos sobre o sistema, incluindo:</p>
+              <ul className="list-disc list-inside text-sm space-y-1 mt-2">
+                <li>Gerenciamento de todos os clientes</li>
+                <li>Acesso às configurações da organização</li>
+                <li>Controle sobre membros da equipe</li>
+                <li>Acesso a informações financeiras</li>
+              </ul>
+              <p className="mt-3">Tem certeza que deseja continuar?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingAdminPromotion(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmAdminPromotion}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {actionLoading === pendingAdminPromotion?.member.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Confirmar Promoção'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AnimatedContainer animation="fade-up" delay={0.1} className="bg-card border border-border rounded-xl">
         <Table>
           <TableHeader>
