@@ -28,15 +28,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Create client with user's token to verify they're an admin
-    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    // Extract token from authorization header
+    const token = authHeader.replace("Bearer ", "");
 
-    // Get requesting user
-    const { data: { user: requestingUser }, error: userError } = await supabaseUser.auth.getUser();
+    // Create admin client to verify user
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get requesting user using the token
+    const { data: { user: requestingUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
     if (userError || !requestingUser) {
       console.error("Auth error:", userError);
       return new Response(
@@ -44,9 +44,6 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-
-    // Create admin client
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check if requesting user is admin
     const { data: profile, error: profileError } = await supabaseAdmin
