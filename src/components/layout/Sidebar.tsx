@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
 
@@ -109,6 +110,9 @@ export function Sidebar() {
         </nav>
 
         <div className="p-2 border-t border-border space-y-1">
+          {/* Notifications */}
+          <NotificationBell collapsed={collapsed} />
+
           {/* AI Assistant */}
           {collapsed ? (
             <Tooltip>
