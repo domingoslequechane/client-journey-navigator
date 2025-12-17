@@ -116,7 +116,7 @@ const handler = async (req: Request): Promise<Response> => {
               },
             },
             product_options: {
-              redirect_url: `${req.headers.get("origin") || "https://qualify.lovable.app"}/app/settings?tab=subscription&success=true`,
+              redirect_url: `${req.headers.get("origin") || "https://qualify.lovable.app"}/app/subscription?success=true`,
             },
           },
           relationships: {
