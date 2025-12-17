@@ -149,11 +149,17 @@ export default function Academia() {
     setGeneratedSuggestions(null);
 
     try {
+      // Get session token for authenticated request
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Você precisa estar logado para gerar sugestões");
+      }
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           messages: [
@@ -192,8 +198,14 @@ Nível: [nível]
         }),
       });
 
+      if (resp.status === 429) {
+        throw new Error("Limite de requisições excedido. Tente novamente em alguns minutos.");
+      }
+      if (resp.status === 402) {
+        throw new Error("Créditos insuficientes. Adicione créditos à sua conta.");
+      }
       if (!resp.ok || !resp.body) {
-        throw new Error("Failed to generate suggestions");
+        throw new Error("Falha ao gerar sugestões");
       }
 
       const reader = resp.body.getReader();
