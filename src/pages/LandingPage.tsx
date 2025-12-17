@@ -25,6 +25,8 @@ import {
   PieChart
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { PublicBackground } from '@/components/layout/PublicBackground';
 
 // Animation hook for scroll reveal
 const useScrollReveal = () => {
@@ -274,6 +276,7 @@ export default function LandingPage() {
             <a href="#depoimentos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Depoimentos</a>
           </nav>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link to="/auth">
               <Button variant="ghost" size="sm" className="hidden sm:inline-flex">Entrar</Button>
             </Link>

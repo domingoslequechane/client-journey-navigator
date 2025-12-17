@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
 
@@ -107,9 +108,25 @@ export function Sidebar() {
         </nav>
 
         <div className="p-2 border-t border-border space-y-1">
+          {/* Theme Toggle */}
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex justify-center">
+                  <ThemeToggle />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">Alternar tema</TooltipContent>
+            </Tooltip>
+          ) : (
+            <div className="flex items-center gap-3 px-3 py-2.5">
+              <ThemeToggle />
+              <span className="text-sm text-muted-foreground">Tema</span>
+            </div>
+          )}
+
           {/* Notifications */}
           <NotificationBell collapsed={collapsed} />
-
           {/* AI Assistant */}
           {collapsed ? (
             <Tooltip>

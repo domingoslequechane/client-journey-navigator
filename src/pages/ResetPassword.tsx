@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { CheckCircle, Loader2 } from 'lucide-react';
+import { PublicBackground } from '@/components/layout/PublicBackground';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 const passwordSchema = z.object({
   password: z.string().min(6, { message: 'Senha deve ter no mínimo 6 caracteres' }),
@@ -96,79 +98,88 @@ export default function ResetPassword() {
 
   if (verifying) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Verificando link...</p>
+      <PublicBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Verificando link...</p>
+          </div>
         </div>
-      </div>
+      </PublicBackground>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <div className="h-16 w-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+      <PublicBackground>
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <CheckCircle className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold">Senha alterada com sucesso!</h3>
+                <p className="text-muted-foreground">
+                  Você será redirecionado para a página de login...
+                </p>
               </div>
-              <h3 className="text-xl font-semibold">Senha alterada com sucesso!</h3>
-              <p className="text-muted-foreground">
-                Você será redirecionado para a página de login...
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      </PublicBackground>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">Q</span>
+    <PublicBackground>
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-xl">Q</span>
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-2xl font-bold">Redefinir Senha</CardTitle>
-          <CardDescription>Digite sua nova senha</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleResetPassword} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Nova Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Mínimo 6 caracteres"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirmar Senha</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                placeholder="Digite a senha novamente"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-              {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar Nova Senha'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+            <CardTitle className="text-2xl font-bold">Redefinir Senha</CardTitle>
+            <CardDescription>Digite sua nova senha</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">Nova Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirmar Senha</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="Digite a senha novamente"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Salvando...' : 'Salvar Nova Senha'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </PublicBackground>
   );
 }
