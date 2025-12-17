@@ -296,7 +296,7 @@ Nível: [nível]
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 h-full flex flex-col">
       <AnimatedContainer animation="fade-up" className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -351,8 +351,8 @@ Nível: [nível]
 
 
       {/* Suggestions History */}
-      <AnimatedContainer animation="fade-up" delay={0.2} className="w-full">
-      <Card className="w-full">
+      <AnimatedContainer animation="fade-up" delay={0.2} className="w-full flex-1 flex flex-col min-h-0">
+      <Card className="w-full flex-1 flex flex-col min-h-0">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
@@ -362,7 +362,7 @@ Nível: [nível]
             Todas as sugestões de estudo geradas anteriormente
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 flex flex-col min-h-0">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -374,7 +374,7 @@ Nível: [nível]
               <p className="text-sm mt-1">Clique em "Gerar Novas Sugestões" para começar</p>
             </div>
           ) : (
-            <ScrollArea className="h-[500px] pr-4">
+            <ScrollArea className="flex-1 pr-4">
               <div className="space-y-4">
                 {suggestions.map((suggestion) => (
                   <div 
