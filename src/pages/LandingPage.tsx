@@ -10,7 +10,6 @@ import {
   Rocket,
   Heart,
   ChevronRight,
-  Play,
   Zap,
   Shield,
   Clock,
@@ -315,10 +314,6 @@ export default function LandingPage() {
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6 gap-3 hover:scale-105 transition-all">
-                <Play className="h-5 w-5" />
-                Ver Demo de 2 min
-              </Button>
             </div>
             
             {/* Trust badges */}
