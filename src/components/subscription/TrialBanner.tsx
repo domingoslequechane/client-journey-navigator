@@ -1,37 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
-import { Clock, CreditCard, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
-
-const TRIAL_BANNER_DISMISSED_KEY = 'trial-banner-dismissed';
+import { Clock, CreditCard } from 'lucide-react';
 
 export function TrialBanner() {
   const { loading, isTrialing, trialDaysLeft, isActive } = useSubscription();
-  const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    const dismissedUntil = localStorage.getItem(TRIAL_BANNER_DISMISSED_KEY);
-    if (dismissedUntil) {
-      const dismissedDate = new Date(dismissedUntil);
-      if (dismissedDate > new Date()) {
-        setDismissed(true);
-      } else {
-        localStorage.removeItem(TRIAL_BANNER_DISMISSED_KEY);
-      }
-    }
-  }, []);
-
-  const handleDismiss = () => {
-    // Dismiss for 24 hours
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    localStorage.setItem(TRIAL_BANNER_DISMISSED_KEY, tomorrow.toISOString());
-    setDismissed(true);
-  };
-
-  // Don't show if loading, dismissed, active subscription, or not trialing
-  if (loading || dismissed || isActive || !isTrialing) {
+  // Don't show if loading, active subscription, or not trialing
+  if (loading || isActive || !isTrialing) {
     return null;
   }
 
@@ -39,20 +15,12 @@ export function TrialBanner() {
 
   return (
     <div 
-      className={`relative rounded-lg p-4 mb-6 ${
+      className={`rounded-lg p-4 mb-6 ${
         isUrgent 
           ? 'bg-destructive/10 border border-destructive/20' 
           : 'bg-blue-500/10 border border-blue-500/20'
       }`}
     >
-      <button
-        onClick={handleDismiss}
-        className="absolute top-2 right-2 p-1 rounded-md hover:bg-background/50 transition-colors"
-        aria-label="Fechar"
-      >
-        <X className="h-4 w-4 text-muted-foreground" />
-      </button>
-      
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className={`p-2 rounded-full ${isUrgent ? 'bg-destructive/10' : 'bg-blue-500/10'}`}>
           <Clock className={`h-5 w-5 ${isUrgent ? 'text-destructive' : 'text-blue-500'}`} />
