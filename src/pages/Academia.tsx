@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import DOMPurify from 'dompurify';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,14 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, GraduationCap, Sparkles, BookOpen, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
-import { markdownToHtml } from '@/lib/markdown-to-html';
 
-// DOMPurify sanitization config to prevent XSS
-const SANITIZE_CONFIG = {
-  ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'code', 'h1', 'h2', 'h3', 'div', 'span'],
-  ALLOWED_ATTR: ['href', 'class'],
-  ALLOWED_URI_REGEXP: /^https?:\/\//i
-};
 interface StudySuggestion {
   id: string;
   title: string;
@@ -51,7 +43,6 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 export default function Academia() {
   const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedSuggestions, setGeneratedSuggestions] = useState<string | null>(null);
 
   // Fetch study suggestions history
   const { data: suggestions = [], isLoading, refetch } = useQuery({
@@ -146,7 +137,6 @@ export default function Academia() {
 
   const generateStudySuggestions = async () => {
     setIsGenerating(true);
-    setGeneratedSuggestions(null);
 
     try {
       // Get session token for authenticated request
@@ -237,8 +227,6 @@ Nível: [nível]
           } catch { /* ignore */ }
         }
       }
-
-      setGeneratedSuggestions(fullContent);
 
       // Parse and save suggestions to database
       const parsedSuggestions = parseSuggestions(fullContent);
@@ -331,27 +319,6 @@ Nível: [nível]
         </AnimatedContainer>
       )}
 
-      {generatedSuggestions && !isGenerating && (
-        <AnimatedContainer animation="fade-up" delay={0.1}>
-        <Card className="mb-6 border-primary/20 bg-gradient-to-r from-primary/5 to-chart-5/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Sugestões Geradas
-            </CardTitle>
-            <CardDescription>
-              Baseadas nas dificuldades comuns identificadas durante o processo com clientes
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div 
-              className="prose prose-sm max-w-none text-foreground"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(generatedSuggestions), SANITIZE_CONFIG) }}
-            />
-          </CardContent>
-        </Card>
-        </AnimatedContainer>
-      )}
 
       {/* Suggestions History */}
       <AnimatedContainer animation="fade-up" delay={0.2}>
