@@ -17,6 +17,7 @@ const InviteRequestSchema = z.object({
   role: z.enum(["sales", "operations", "campaign_management"], {
     errorMap: () => ({ message: "Função inválida" })
   }),
+  resend: z.boolean().optional(),
 });
 
 const ROLE_LABELS: Record<string, string> = {
@@ -98,19 +99,24 @@ serve(async (req) => {
       );
     }
 
-    const { email, fullName, role } = validationResult.data;
+    const { email, fullName, role, resend: isResend } = validationResult.data;
 
-    console.log(`Admin ${user.id} inviting user: ${email}, ${fullName}, ${role}`);
+    console.log(`Admin ${user.id} ${isResend ? 'resending invite to' : 'inviting user'}: ${email}, ${fullName}, ${role}`);
 
     // Check if user already exists
     const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
-    const userExists = existingUser?.users?.some(u => u.email === email);
+    const existingUserRecord = existingUser?.users?.find(u => u.email === email);
     
-    if (userExists) {
+    if (existingUserRecord && !isResend) {
       return new Response(
         JSON.stringify({ error: "Este email já está cadastrado no sistema" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // If resending but user doesn't exist, treat as new invite
+    if (isResend && !existingUserRecord) {
+      console.log("User doesn't exist, creating new invite");
     }
 
     // Get the origin from request headers for redirect URL
