@@ -54,22 +54,22 @@ serve(async (req) => {
       );
     }
 
-    // SECURITY: Verify admin privileges using user_roles table
+    // SECURITY: Verify proprietor privileges using user_roles table
     const { data: roleData, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .eq("role", "admin")
+      .eq("role", "proprietor")
       .maybeSingle();
 
-    // Also check profiles table for admin role (legacy support)
+    // Also check profiles table for admin role (organization admin support)
     const { data: profileData } = await supabaseAdmin
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
 
-    const isAdmin = roleData?.role === "admin" || profileData?.role === "admin";
+    const isAdmin = roleData?.role === "proprietor" || profileData?.role === "admin";
 
     if (!isAdmin) {
       console.error(`User ${user.id} attempted to invite without admin privileges`);
