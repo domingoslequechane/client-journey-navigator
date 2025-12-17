@@ -44,10 +44,10 @@ export function NotificationBell({ collapsed = false }: NotificationBellProps) {
     if (!user) return;
 
     try {
-      // Get all visible notifications
+      // Get all visible notifications with type info for client-side filtering
       const { data: notifications, error: notifsError } = await supabase
         .from('notifications')
-        .select('id');
+        .select('id, type, target_user_id');
 
       if (notifsError) throw notifsError;
 
@@ -59,8 +59,16 @@ export function NotificationBell({ collapsed = false }: NotificationBellProps) {
 
       if (readsError) throw readsError;
 
+      // Client-side filter to ensure users only see their notifications
+      const filteredNotifications = (notifications || []).filter(n => {
+        if (n.type === 'general') return true;
+        if (n.type === 'user_specific') return n.target_user_id === user.id;
+        if (n.type === 'admin_only') return true; // RLS handles this
+        return false;
+      });
+
       const readIds = new Set(reads?.map(r => r.notification_id) || []);
-      const unread = (notifications || []).filter(n => !readIds.has(n.id)).length;
+      const unread = filteredNotifications.filter(n => !readIds.has(n.id)).length;
       
       setUnreadCount(unread);
     } catch (error) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -20,48 +20,84 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Fetch all stats in parallel
-        const [
-          { count: totalUsers },
-          { count: totalOrganizations },
-          { data: subscriptions },
-          { count: pendingFeedbacks },
-          { count: totalFeedbacks },
-        ] = await Promise.all([
-          supabase.from('profiles').select('*', { count: 'exact', head: true }),
-          supabase.from('organizations').select('*', { count: 'exact', head: true }),
-          supabase.from('subscriptions').select('status'),
-          supabase.from('feedbacks').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('feedbacks').select('*', { count: 'exact', head: true }),
-        ]);
+  const fetchStats = useCallback(async () => {
+    try {
+      // Fetch all stats in parallel
+      const [
+        { count: totalUsers },
+        { count: totalOrganizations },
+        { data: subscriptions },
+        { count: pendingFeedbacks },
+        { count: totalFeedbacks },
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('organizations').select('*', { count: 'exact', head: true }),
+        supabase.from('subscriptions').select('status'),
+        supabase.from('feedbacks').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('feedbacks').select('*', { count: 'exact', head: true }),
+      ]);
 
-        const activeSubscriptions = subscriptions?.filter(s => s.status === 'active').length || 0;
-        const trialingSubscriptions = subscriptions?.filter(s => s.status === 'trialing').length || 0;
-        const expiredSubscriptions = subscriptions?.filter(s => 
-          s.status === 'expired' || s.status === 'cancelled'
-        ).length || 0;
+      const activeSubscriptions = subscriptions?.filter(s => s.status === 'active').length || 0;
+      const trialingSubscriptions = subscriptions?.filter(s => s.status === 'trialing').length || 0;
+      const expiredSubscriptions = subscriptions?.filter(s => 
+        s.status === 'expired' || s.status === 'cancelled'
+      ).length || 0;
 
-        setStats({
-          totalUsers: totalUsers || 0,
-          totalOrganizations: totalOrganizations || 0,
-          activeSubscriptions,
-          trialingSubscriptions,
-          expiredSubscriptions,
-          pendingFeedbacks: pendingFeedbacks || 0,
-          totalFeedbacks: totalFeedbacks || 0,
-        });
-      } catch (error) {
-        console.error('Error fetching admin stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
+      setStats({
+        totalUsers: totalUsers || 0,
+        totalOrganizations: totalOrganizations || 0,
+        activeSubscriptions,
+        trialingSubscriptions,
+        expiredSubscriptions,
+        pendingFeedbacks: pendingFeedbacks || 0,
+        totalFeedbacks: totalFeedbacks || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchStats();
+
+    // Set up realtime subscriptions for live updates
+    const profilesChannel = supabase
+      .channel('admin-profiles-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchStats();
+      })
+      .subscribe();
+
+    const orgsChannel = supabase
+      .channel('admin-orgs-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'organizations' }, () => {
+        fetchStats();
+      })
+      .subscribe();
+
+    const subsChannel = supabase
+      .channel('admin-subs-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () => {
+        fetchStats();
+      })
+      .subscribe();
+
+    const feedbacksChannel = supabase
+      .channel('admin-feedbacks-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks' }, () => {
+        fetchStats();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profilesChannel);
+      supabase.removeChannel(orgsChannel);
+      supabase.removeChannel(subsChannel);
+      supabase.removeChannel(feedbacksChannel);
+    };
+  }, [fetchStats]);
 
   const statCards = [
     {

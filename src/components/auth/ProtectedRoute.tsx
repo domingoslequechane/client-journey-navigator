@@ -85,7 +85,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // System admins have full access without organization/subscription checks
+  // System admins trying to access /app/* routes - redirect to admin panel
+  if (isSystemAdmin && location.pathname.startsWith('/app')) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // System admins have full access to admin area
   if (isSystemAdmin) {
     return <>{children}</>;
   }
