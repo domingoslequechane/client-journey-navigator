@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -9,11 +10,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface InviteRequest {
-  email: string;
-  fullName: string;
-  role: "sales" | "operations" | "campaign_management";
-}
+// Input validation schema
+const InviteRequestSchema = z.object({
+  email: z.string().email("Email inválido").max(255, "Email muito longo"),
+  fullName: z.string().min(2, "Nome muito curto").max(100, "Nome muito longo").trim(),
+  role: z.enum(["sales", "operations", "campaign_management"], {
+    errorMap: () => ({ message: "Função inválida" })
+  }),
+});
 
 const ROLE_LABELS: Record<string, string> = {
   sales: "Vendas",
@@ -79,14 +83,22 @@ serve(async (req) => {
       );
     }
 
-    const { email, fullName, role }: InviteRequest = await req.json();
+    const body = await req.json();
 
-    if (!email || !fullName || !role) {
+    // Validate input with Zod
+    const validationResult = InviteRequestSchema.safeParse(body);
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.errors);
       return new Response(
-        JSON.stringify({ error: "Email, nome e função são obrigatórios" }),
+        JSON.stringify({ 
+          error: "Dados inválidos", 
+          details: validationResult.error.errors.map(e => e.message) 
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const { email, fullName, role } = validationResult.data;
 
     console.log(`Admin ${user.id} inviting user: ${email}, ${fullName}, ${role}`);
 
@@ -200,7 +212,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in invite-user function:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Erro desconhecido" }),
+      JSON.stringify({ error: "Erro interno do servidor" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,11 +8,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface CheckoutRequest {
-  organizationId: string;
-  userEmail: string;
-  userName?: string;
-}
+// Input validation schema
+const CheckoutRequestSchema = z.object({
+  organizationId: z.string().uuid("ID da organização inválido"),
+  userEmail: z.string().email("Email inválido").max(255, "Email muito longo").optional(),
+  userName: z.string().max(100, "Nome muito longo").optional(),
+});
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -65,14 +67,22 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { organizationId, userEmail, userName }: CheckoutRequest = await req.json();
+    const body = await req.json();
 
-    if (!organizationId) {
+    // Validate input with Zod
+    const validationResult = CheckoutRequestSchema.safeParse(body);
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.errors);
       return new Response(
-        JSON.stringify({ error: "Organization ID is required" }),
+        JSON.stringify({ 
+          error: "Dados inválidos", 
+          details: validationResult.error.errors.map(e => e.message) 
+        }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    const { organizationId, userEmail, userName } = validationResult.data;
 
     // Verify user belongs to this organization
     const { data: profile } = await supabase
@@ -174,7 +184,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in create-checkout function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Erro interno do servidor" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }

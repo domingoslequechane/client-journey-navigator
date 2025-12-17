@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,9 +8,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface DeleteUserRequest {
-  userId: string;
-}
+// Input validation schema
+const DeleteUserSchema = z.object({
+  userId: z.string().uuid("ID de usuário inválido"),
+});
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -60,14 +62,22 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { userId }: DeleteUserRequest = await req.json();
+    const body = await req.json();
 
-    if (!userId) {
+    // Validate input with Zod
+    const validationResult = DeleteUserSchema.safeParse(body);
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.errors);
       return new Response(
-        JSON.stringify({ error: "ID do usuário é obrigatório" }),
+        JSON.stringify({ 
+          error: "Dados inválidos", 
+          details: validationResult.error.errors.map(e => e.message) 
+        }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    const { userId } = validationResult.data;
 
     // Prevent self-deletion
     if (userId === requestingUser.id) {
@@ -108,7 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in delete-user function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Erro interno do servidor" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }

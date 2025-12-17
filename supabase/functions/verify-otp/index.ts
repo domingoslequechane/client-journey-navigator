@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,12 +8,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface VerifyOTPRequest {
-  email: string;
-  otp: string;
-  password: string;
-  fullName: string;
-}
+// Input validation schema
+const VerifyOTPSchema = z.object({
+  email: z.string().email("Email inválido").max(255, "Email muito longo"),
+  otp: z.string().regex(/^\d{6}$/, "OTP deve ter 6 dígitos"),
+  password: z.string().min(8, "Senha deve ter no mínimo 8 caracteres").max(128, "Senha muito longa"),
+  fullName: z.string().min(2, "Nome muito curto").max(100, "Nome muito longo").trim(),
+});
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -20,14 +22,22 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, otp, password, fullName }: VerifyOTPRequest = await req.json();
+    const body = await req.json();
 
-    if (!email || !otp || !password) {
+    // Validate input with Zod
+    const validationResult = VerifyOTPSchema.safeParse(body);
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.errors);
       return new Response(
-        JSON.stringify({ error: "Email, OTP, and password are required" }),
+        JSON.stringify({ 
+          error: "Dados inválidos", 
+          details: validationResult.error.errors.map(e => e.message) 
+        }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    const { email, otp, password, fullName } = validationResult.data;
 
     // Initialize Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -170,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in verify-otp function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Erro interno do servidor" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
