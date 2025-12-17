@@ -14,7 +14,7 @@ const MessageSchema = z.object({
 });
 
 const ClientDataSchema = z.object({
-  id: z.string().uuid("ID de cliente inválido"),
+  id: z.string().uuid("ID de cliente inválido").optional(),
   company_name: z.string().max(255).optional(),
   contact_name: z.string().max(255).optional(),
   phone: z.string().max(50).optional(),
@@ -31,6 +31,7 @@ const ClientDataSchema = z.object({
   bant_timeline: z.number().min(0).max(10).optional().nullable(),
   has_contract: z.boolean().optional(),
   contract_name: z.string().max(255).optional().nullable(),
+  context: z.string().max(255).optional(),
 }).optional();
 
 const ChatRequestSchema = z.object({
