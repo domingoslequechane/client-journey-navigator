@@ -6,7 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Bell, MessageSquare, CheckCheck, Send, X, RotateCcw } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Bell, MessageSquare, CheckCheck, Send, X, RotateCcw, MessageSquareHeart, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -40,6 +43,23 @@ interface SupportMessage {
   sender_id: string;
 }
 
+interface UserFeedback {
+  id: string;
+  type: string;
+  subject: string;
+  message: string;
+  status: string;
+  admin_notes: string | null;
+  created_at: string;
+}
+
+const feedbackTypes = [
+  { value: 'general', label: 'Geral' },
+  { value: 'bug', label: 'Reportar Bug' },
+  { value: 'feature', label: 'Sugestão de Funcionalidade' },
+  { value: 'support', label: 'Suporte Técnico' },
+];
+
 export default function Notifications() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -53,11 +73,19 @@ export default function Notifications() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [creatingTicket, setCreatingTicket] = useState(false);
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
+  
+  // Feedback state
+  const [userFeedbacks, setUserFeedbacks] = useState<UserFeedback[]>([]);
+  const [feedbackType, setFeedbackType] = useState('general');
+  const [feedbackSubject, setFeedbackSubject] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [sendingFeedback, setSendingFeedback] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
       fetchTickets();
+      fetchUserFeedbacks();
     }
   }, [user]);
 
@@ -131,6 +159,21 @@ export default function Notifications() {
       setTickets(data || []);
     } catch (error) {
       console.error('Error fetching tickets:', error);
+    }
+  };
+
+  const fetchUserFeedbacks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('feedbacks')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUserFeedbacks(data || []);
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error);
     }
   };
 
@@ -312,6 +355,54 @@ export default function Notifications() {
     }
   };
 
+  const submitFeedback = async () => {
+    if (!feedbackSubject.trim() || !feedbackMessage.trim()) {
+      toast.error('Preencha o assunto e a mensagem');
+      return;
+    }
+
+    setSendingFeedback(true);
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user?.id)
+        .single();
+
+      const { error } = await supabase.from('feedbacks').insert({
+        user_id: user?.id,
+        user_email: user?.email,
+        organization_id: profileData?.organization_id,
+        type: feedbackType,
+        subject: feedbackSubject.trim(),
+        message: feedbackMessage.trim(),
+      });
+
+      if (error) throw error;
+
+      toast.success('Feedback enviado com sucesso!');
+      setFeedbackType('general');
+      setFeedbackSubject('');
+      setFeedbackMessage('');
+      fetchUserFeedbacks();
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      toast.error('Erro ao enviar feedback');
+    } finally {
+      setSendingFeedback(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statuses: Record<string, { variant: 'default' | 'secondary' | 'outline'; label: string }> = {
+      pending: { variant: 'secondary', label: 'Pendente' },
+      reviewed: { variant: 'outline', label: 'Em Análise' },
+      resolved: { variant: 'default', label: 'Resolvido' },
+    };
+    const s = statuses[status] || statuses.pending;
+    return <Badge variant={s.variant}>{s.label}</Badge>;
+  };
+
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const openTickets = tickets.filter(t => t.status === 'open');
   const closedTickets = tickets.filter(t => t.status === 'closed');
@@ -342,6 +433,9 @@ export default function Notifications() {
                 {unreadCount}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="feedback">
+            Feedback
           </TabsTrigger>
           <TabsTrigger value="support" className="relative">
             Suporte
@@ -405,6 +499,115 @@ export default function Notifications() {
               </div>
             )}
           </AnimatedContainer>
+        </TabsContent>
+
+        <TabsContent value="feedback">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Send Feedback Form */}
+            <AnimatedContainer animation="fade-up" delay={0.1}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquareHeart className="h-5 w-5" />
+                    Enviar Feedback
+                  </CardTitle>
+                  <CardDescription>
+                    Compartilhe sua opinião, reporte problemas ou sugira melhorias
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Tipo de Feedback</Label>
+                    <Select value={feedbackType} onValueChange={setFeedbackType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {feedbackTypes.map((t) => (
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Assunto</Label>
+                    <Input
+                      value={feedbackSubject}
+                      onChange={(e) => setFeedbackSubject(e.target.value)}
+                      placeholder="Resumo do seu feedback"
+                      maxLength={200}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Mensagem</Label>
+                    <Textarea
+                      value={feedbackMessage}
+                      onChange={(e) => setFeedbackMessage(e.target.value)}
+                      placeholder="Descreva seu feedback em detalhes..."
+                      rows={5}
+                      maxLength={2000}
+                    />
+                  </div>
+
+                  <Button 
+                    onClick={submitFeedback} 
+                    disabled={sendingFeedback} 
+                    className="w-full"
+                  >
+                    {sendingFeedback && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Enviar Feedback
+                  </Button>
+                </CardContent>
+              </Card>
+            </AnimatedContainer>
+
+            {/* Previous Feedbacks */}
+            <AnimatedContainer animation="fade-up" delay={0.2}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Seus Feedbacks</CardTitle>
+                  <CardDescription>
+                    Acompanhe o status dos feedbacks enviados
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[400px]">
+                    {userFeedbacks.length === 0 ? (
+                      <div className="p-6 text-center text-muted-foreground">
+                        <MessageSquareHeart className="h-8 w-8 mx-auto mb-2" />
+                        <p className="text-sm">Nenhum feedback enviado</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {userFeedbacks.map(fb => (
+                          <div key={fb.id} className="p-4 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm">{fb.subject}</span>
+                              {getStatusBadge(fb.status)}
+                            </div>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{fb.message}</p>
+                            {fb.admin_notes && (
+                              <div className="bg-muted p-2 rounded text-sm">
+                                <span className="font-medium">Resposta: </span>
+                                {fb.admin_notes}
+                              </div>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(fb.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </AnimatedContainer>
+          </div>
         </TabsContent>
 
         <TabsContent value="support">
