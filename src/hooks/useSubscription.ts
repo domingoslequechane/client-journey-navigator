@@ -97,16 +97,19 @@ export function useSubscription(): UseSubscriptionReturn {
     fetchSubscriptionData();
   }, [user]);
 
-  // Calculate trial days left
+  // Calculate trial days left based on organization's trial_ends_at
   const trialDaysLeft = organization?.trialEndsAt
     ? Math.max(0, Math.ceil((new Date(organization.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
   // Determine subscription status
-  const isTrialing = subscription?.status === 'trialing' && trialDaysLeft > 0;
+  // User is trialing if they have days left, regardless of subscription record
+  const isTrialing = trialDaysLeft > 0;
   const isActive = subscription?.status === 'active' || subscription?.status === 'past_due';
   
-  // User has access if they have an active subscription or are in valid trial
+  // User has access if:
+  // 1. They have an active paid subscription, OR
+  // 2. They are still in valid trial period (trial_ends_at hasn't passed)
   const hasAccess = isActive || isTrialing;
 
   return {
