@@ -12,6 +12,7 @@ import { AnimatedContainer } from '@/components/ui/animated-container';
 import { supabase } from '@/integrations/supabase/client';
 import { markdownToHtml } from '@/lib/markdown-to-html';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useRateLimit } from '@/hooks/useRateLimit';
 
 // DOMPurify sanitization config to prevent XSS
 const SANITIZE_CONFIG = {
@@ -82,6 +83,7 @@ export default function AIAssistant() {
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { checkRateLimit, isRateLimited } = useRateLimit({ maxRequests: 15, windowMs: 60000 });
 
   useEffect(() => {
     localStorage.setItem(AI_SIDEBAR_COLLAPSED_KEY, String(sidebarCollapsed));
@@ -420,7 +422,10 @@ export default function AIAssistant() {
   };
 
   const handleSend = async () => {
-    if ((!input.trim() && !pendingFile) || isLoading || !selectedClientId) return;
+    if ((!input.trim() && !pendingFile) || isLoading || !selectedClientId || isRateLimited) return;
+    
+    // Check rate limit before sending
+    if (!checkRateLimit()) return;
 
     const userMessage: Message = {
       id: `temp-user-${Date.now()}`,
