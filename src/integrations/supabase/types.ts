@@ -319,10 +319,38 @@ export type Database = {
         }
         Relationships: []
       }
+      login_history: {
+        Row: {
+          id: string
+          ip_address: string | null
+          logged_in_at: string
+          provider: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: string | null
+          logged_in_at?: string
+          provider?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          ip_address?: string | null
+          logged_in_at?: string
+          provider?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          email: string | null
           full_name: string | null
           id: string
           role: Database["public"]["Enums"]["user_role"]
@@ -334,6 +362,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          email?: string | null
           full_name?: string | null
           id: string
           role?: Database["public"]["Enums"]["user_role"]
@@ -345,6 +374,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          email?: string | null
           full_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["user_role"]

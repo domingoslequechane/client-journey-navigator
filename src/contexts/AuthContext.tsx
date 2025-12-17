@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,6 +15,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const loginRecordedRef = useRef<string | null>(null);
+
+  const recordLogin = async (userId: string, provider: string = 'email') => {
+    // Prevent duplicate login records in same session
+    if (loginRecordedRef.current === userId) return;
+    loginRecordedRef.current = userId;
+
+    try {
+      await supabase.from('login_history').insert({
+        user_id: userId,
+        provider,
+        user_agent: navigator.userAgent,
+      } as any);
+    } catch (error) {
+      console.error('Error recording login:', error);
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -23,6 +40,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Record login on SIGNED_IN event
+        if (event === 'SIGNED_IN' && session?.user) {
+          const provider = session.user.app_metadata?.provider || 'email';
+          recordLogin(session.user.id, provider);
+        }
+
+        // Reset ref on sign out
+        if (event === 'SIGNED_OUT') {
+          loginRecordedRef.current = null;
+        }
       }
     );
 
