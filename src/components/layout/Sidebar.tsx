@@ -13,7 +13,8 @@ import {
   GraduationCap,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -167,6 +168,39 @@ export function Sidebar() {
             >
               <Settings className="h-5 w-5" />
               Configurações
+            </Link>
+          )}
+
+          {/* Subscription */}
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/app/upgrade"
+                  className={cn(
+                    'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    location.pathname === '/app/upgrade'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )}
+                >
+                  <CreditCard className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Assinatura</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Link
+              to="/app/upgrade"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                location.pathname === '/app/upgrade'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              )}
+            >
+              <CreditCard className="h-5 w-5" />
+              Assinatura
             </Link>
           )}
 
