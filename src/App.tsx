@@ -23,6 +23,7 @@ import AIAssistant from "./pages/AIAssistant";
 import Settings from "./pages/Settings";
 import Upgrade from "./pages/Upgrade";
 import Onboarding from "./pages/Onboarding";
+import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -68,6 +69,7 @@ const App = () => (
               <Route path="team" element={<Team />} />
               <Route path="ai-assistant" element={<AIAssistant />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="subscription" element={<Subscription />} />
               <Route path="upgrade" element={<Upgrade />} />
             </Route>
             <Route path="*" element={<NotFound />} />

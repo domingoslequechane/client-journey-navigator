@@ -181,10 +181,10 @@ export function Sidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  to="/app/settings?tab=subscription"
+                  to="/app/subscription"
                   className={cn(
                     'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    location.pathname === '/app/settings' && location.search.includes('subscription')
+                    location.pathname === '/app/subscription'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
@@ -196,10 +196,10 @@ export function Sidebar() {
             </Tooltip>
           ) : (
             <Link
-              to="/app/settings?tab=subscription"
+              to="/app/subscription"
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                location.pathname === '/app/settings' && location.search.includes('subscription')
+                location.pathname === '/app/subscription'
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
