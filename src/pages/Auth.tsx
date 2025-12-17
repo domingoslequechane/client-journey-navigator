@@ -43,9 +43,25 @@ export default function Auth() {
   const [suspendedDialogOpen, setSuspendedDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (session) {
-      navigate('/app');
-    }
+    const checkSessionAndRedirect = async () => {
+      if (session) {
+        // Check if user is system admin
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        if (adminRole) {
+          navigate('/admin');
+        } else {
+          navigate('/app');
+        }
+      }
+    };
+    
+    checkSessionAndRedirect();
   }, [session, navigate]);
 
   // Check if user is suspended after social login
@@ -121,10 +137,31 @@ export default function Auth() {
         setLoading(false);
         return;
       }
-    }
 
-    toast({ title: 'Bem-vindo!', description: 'Login realizado com sucesso' });
-    navigate('/app');
+      // Check if user is system admin
+      const { data: adminRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      // Record login history
+      await supabase.from('login_history').insert({
+        user_id: data.user.id,
+        provider: 'email',
+        user_agent: navigator.userAgent,
+      });
+
+      toast({ title: 'Bem-vindo!', description: 'Login realizado com sucesso' });
+      
+      // Redirect system admins to admin panel
+      if (adminRole) {
+        navigate('/admin');
+      } else {
+        navigate('/app');
+      }
+    }
     setLoading(false);
   };
 
