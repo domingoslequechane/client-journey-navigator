@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Mail, Loader2, CheckCircle } from 'lucide-react';
+import { PublicBackground } from '@/components/layout/PublicBackground';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
@@ -106,101 +108,108 @@ export default function VerifyEmail() {
 
   if (verified) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <div className="h-16 w-16 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+      <PublicBackground>
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <CheckCircle className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="font-semibold text-xl">Conta verificada!</h3>
+                <p className="text-sm text-muted-foreground">
+                  Redirecionando para o dashboard...
+                </p>
+                <Loader2 className="h-5 w-5 mx-auto animate-spin text-muted-foreground" />
               </div>
-              <h3 className="font-semibold text-xl">Conta verificada!</h3>
-              <p className="text-sm text-muted-foreground">
-                Redirecionando para o dashboard...
-              </p>
-              <Loader2 className="h-5 w-5 mx-auto animate-spin text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      </PublicBackground>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <Link to="/auth" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <ArrowLeft className="h-4 w-4" />
-          Voltar ao login
-        </Link>
+    <PublicBackground>
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Link to="/auth" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar ao login
+          </Link>
 
-        <Card>
-          <CardHeader className="text-center">
-            <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Mail className="h-8 w-8 text-primary" />
-            </div>
-            <CardTitle className="text-2xl font-bold">Verifique seu e-mail</CardTitle>
-            <CardDescription>
-              Enviamos um código de 6 dígitos para<br />
-              <span className="font-medium text-foreground">{email}</span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex justify-center">
-              <InputOTP
-                maxLength={6}
-                value={otp}
-                onChange={(value) => setOtp(value)}
-                disabled={loading}
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
+          <Card>
+            <CardHeader className="text-center">
+              <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Mail className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle className="text-2xl font-bold">Verifique seu e-mail</CardTitle>
+              <CardDescription>
+                Enviamos um código de 6 dígitos para<br />
+                <span className="font-medium text-foreground">{email}</span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  value={otp}
+                  onChange={(value) => setOtp(value)}
+                  disabled={loading}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
 
-            <Button 
-              onClick={handleVerify} 
-              className="w-full" 
-              disabled={loading || otp.length !== 6}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verificando...
-                </>
-              ) : (
-                'Verificar código'
-              )}
-            </Button>
-
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">
-                Não recebeu o código?
-              </p>
               <Button 
-                variant="ghost" 
-                onClick={handleResendOTP} 
-                disabled={resending}
-                className="text-primary"
+                onClick={handleVerify} 
+                className="w-full" 
+                disabled={loading || otp.length !== 6}
               >
-                {resending ? (
+                {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Reenviando...
+                    Verificando...
                   </>
                 ) : (
-                  'Reenviar código'
+                  'Verificar código'
                 )}
               </Button>
-            </div>
-          </CardContent>
-        </Card>
+
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Não recebeu o código?
+                </p>
+                <Button 
+                  variant="ghost" 
+                  onClick={handleResendOTP} 
+                  disabled={resending}
+                  className="text-primary"
+                >
+                  {resending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Reenviando...
+                    </>
+                  ) : (
+                    'Reenviar código'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </PublicBackground>
   );
 }
