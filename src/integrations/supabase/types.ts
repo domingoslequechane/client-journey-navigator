@@ -442,6 +442,56 @@ export type Database = {
         }
         Relationships: []
       }
+      feedbacks: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          message: string
+          organization_id: string | null
+          status: string
+          subject: string
+          type: string
+          updated_at: string
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          organization_id?: string | null
+          status?: string
+          subject: string
+          type?: string
+          updated_at?: string
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          organization_id?: string | null
+          status?: string
+          subject?: string
+          type?: string
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedbacks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_history: {
         Row: {
           id: string

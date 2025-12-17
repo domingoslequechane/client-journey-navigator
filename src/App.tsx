@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
+import { AdminLayout } from "./components/admin/AdminLayout";
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -25,6 +26,11 @@ import Upgrade from "./pages/Upgrade";
 import Onboarding from "./pages/Onboarding";
 import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
+import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
+import AdminSupport from "./pages/admin/AdminSupport";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +77,14 @@ const App = () => (
               <Route path="settings" element={<Settings />} />
               <Route path="subscription" element={<Subscription />} />
               <Route path="upgrade" element={<Upgrade />} />
+            </Route>
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="subscriptions" element={<AdminSubscriptions />} />
+              <Route path="feedbacks" element={<AdminFeedbacks />} />
+              <Route path="support" element={<AdminSupport />} />
             </Route>
             <Route path="/not-found" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
