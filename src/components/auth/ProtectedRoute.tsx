@@ -13,6 +13,28 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { loading: subLoading, hasAccess, organization } = useSubscription();
   const location = useLocation();
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+  const [isSystemAdmin, setIsSystemAdmin] = useState<boolean | null>(null);
+
+  // Check if user is a system admin (app owner)
+  useEffect(() => {
+    const checkSystemAdmin = async () => {
+      if (!user) {
+        setIsSystemAdmin(false);
+        return;
+      }
+      
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      setIsSystemAdmin(!!data);
+    };
+
+    checkSystemAdmin();
+  }, [user]);
 
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -28,8 +50,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     if (!subLoading && organization) {
       checkOnboarding();
+    } else if (!subLoading && !organization && isSystemAdmin === false) {
+      // No organization and not system admin - needs onboarding
+      setNeedsOnboarding(true);
     }
-  }, [user, organization, subLoading]);
+  }, [user, organization, subLoading, isSystemAdmin]);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -48,8 +73,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Show loading while checking subscription
-  if (subLoading || needsOnboarding === null) {
+  // Show loading while checking subscription and admin status
+  if (subLoading || isSystemAdmin === null || (needsOnboarding === null && !isSystemAdmin)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -58,6 +83,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         </div>
       </div>
     );
+  }
+
+  // System admins have full access without organization/subscription checks
+  if (isSystemAdmin) {
+    return <>{children}</>;
   }
 
   // Redirect to onboarding if organization needs setup
