@@ -202,11 +202,29 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* Inline keyframes for header animation */}
+      <style>{`
+        @keyframes shimmer {
+          0%, 100% { transform: translateX(-100%); }
+          50% { transform: translateX(100%); }
+        }
+        @keyframes gradient-shift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+      `}</style>
       {/* Header */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-background/95 backdrop-blur-md border-b border-border shadow-lg' : 'bg-transparent'
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        isScrolled 
+          ? 'bg-gradient-to-r from-background/95 via-primary/5 to-background/95 backdrop-blur-md border-b border-border shadow-lg' 
+          : 'bg-transparent'
       }`}>
-        <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
+        {/* Animated gradient overlay */}
+        <div className={`absolute inset-0 transition-opacity duration-500 ${isScrolled ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-chart-5/5 to-primary/10 animate-pulse" style={{ animationDuration: '4s' }} />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,hsl(var(--primary)/0.1)_50%,transparent_100%)] animate-[shimmer_3s_ease-in-out_infinite]" />
+        </div>
+        <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-chart-5 flex items-center justify-center shadow-lg">
               <span className="text-primary-foreground font-bold text-xl">Q</span>
