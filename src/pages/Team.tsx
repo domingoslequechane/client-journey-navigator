@@ -258,11 +258,34 @@ export default function Team() {
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Tem certeza que deseja remover este membro?')) return;
+    if (!confirm('Tem certeza que deseja remover este membro? Esta ação é irreversível.')) return;
     
     setActionLoading(memberId);
     try {
-      toast({ title: 'Atenção', description: 'A remoção de usuários requer acesso administrativo ao Supabase', variant: 'destructive' });
+      const response = await supabase.functions.invoke('delete-user', {
+        body: { userId: memberId },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Erro ao remover usuário');
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      toast({ 
+        title: 'Sucesso!', 
+        description: 'Usuário removido com sucesso' 
+      });
+      fetchMembers();
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toast({ 
+        title: 'Erro', 
+        description: error instanceof Error ? error.message : 'Não foi possível remover o usuário', 
+        variant: 'destructive' 
+      });
     } finally {
       setActionLoading(null);
     }

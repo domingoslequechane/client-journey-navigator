@@ -1,5 +1,8 @@
 project_id = "hrarkpjuchrbffnrhzcy"
 
+[functions.delete-user]
+verify_jwt = false
+
 [api]
 enabled = true
 port = 54321
