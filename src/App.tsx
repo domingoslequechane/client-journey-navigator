@@ -22,6 +22,7 @@ import Team from "./pages/Team";
 import AIAssistant from "./pages/AIAssistant";
 import Settings from "./pages/Settings";
 import Upgrade from "./pages/Upgrade";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/set-password" element={<SetPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/app/onboarding" element={<Onboarding />} />
             <Route
               path="/app"
               element={
