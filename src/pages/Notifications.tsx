@@ -118,7 +118,7 @@ export default function Notifications() {
 
   const fetchNotifications = async () => {
     try {
-      // Fetch notifications based on user type
+      // Fetch notifications - RLS should handle visibility but we also filter client-side
       const { data: notifs, error } = await supabase
         .from('notifications')
         .select('*')
@@ -134,8 +134,19 @@ export default function Notifications() {
 
       const readIds = new Set(reads?.map(r => r.notification_id) || []);
 
+      // Client-side filter to ensure users only see their notifications
+      // General: visible to all
+      // User-specific: only if target_user_id matches current user
+      // Admin-only: only visible to organization admins (handled by RLS)
+      const filteredNotifs = (notifs || []).filter(n => {
+        if (n.type === 'general') return true;
+        if (n.type === 'user_specific') return n.target_user_id === user?.id;
+        if (n.type === 'admin_only') return true; // RLS handles this
+        return false;
+      });
+
       setNotifications(
-        (notifs || []).map(n => ({
+        filteredNotifs.map(n => ({
           ...n,
           isRead: readIds.has(n.id)
         }))
