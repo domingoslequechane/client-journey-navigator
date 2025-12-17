@@ -74,26 +74,6 @@ const AnimatedCounter = ({ target, suffix = '', duration = 2000 }: { target: num
   return <span ref={ref}>{count}{suffix}</span>;
 };
 
-// Floating particles background
-const FloatingParticles = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    {[...Array(20)].map((_, i) => (
-      <div
-        key={i}
-        className="absolute rounded-full bg-primary/10 animate-pulse"
-        style={{
-          width: Math.random() * 100 + 20,
-          height: Math.random() * 100 + 20,
-          left: `${Math.random() * 100}%`,
-          top: `${Math.random() * 100}%`,
-          animationDelay: `${Math.random() * 5}s`,
-          animationDuration: `${Math.random() * 10 + 5}s`,
-        }}
-      />
-    ))}
-  </div>
-);
-
 const features = [
   {
     icon: Layers,
@@ -190,10 +170,12 @@ const stats = [
 
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
+      setScrollY(window.scrollY);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -207,63 +189,45 @@ export default function LandingPage() {
           0%, 100% { transform: translateX(-100%); }
           50% { transform: translateX(100%); }
         }
-        @keyframes gradient-shift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(3deg); }
-        }
-        @keyframes glow {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.1); }
-        }
       `}</style>
       
-      {/* Global Animated Background */}
+      {/* Parallax Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {/* Gradient mesh background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-chart-5/5" />
+        {/* Subtle gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/3 via-background to-background" />
         
-        {/* Animated gradient orbs */}
+        {/* Parallax floating geometric shapes */}
         <div 
-          className="absolute top-[10%] left-[5%] w-[40vw] h-[40vw] max-w-[600px] max-h-[600px] bg-primary/10 rounded-full blur-[100px]"
-          style={{ animation: 'glow 8s ease-in-out infinite' }}
+          className="absolute top-[15%] right-[15%] w-20 h-20 border border-primary/10 rounded-xl rotate-45 transition-transform duration-100"
+          style={{ transform: `translateY(${scrollY * 0.1}px) rotate(45deg)` }}
         />
         <div 
-          className="absolute top-[40%] right-[10%] w-[35vw] h-[35vw] max-w-[500px] max-h-[500px] bg-chart-5/10 rounded-full blur-[100px]"
-          style={{ animation: 'glow 10s ease-in-out infinite', animationDelay: '2s' }}
+          className="absolute top-[45%] left-[8%] w-14 h-14 border border-primary/10 rounded-full transition-transform duration-100"
+          style={{ transform: `translateY(${scrollY * -0.08}px)` }}
         />
         <div 
-          className="absolute bottom-[10%] left-[20%] w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] bg-success/10 rounded-full blur-[80px]"
-          style={{ animation: 'glow 12s ease-in-out infinite', animationDelay: '4s' }}
-        />
-        
-        {/* Floating geometric shapes */}
-        <div 
-          className="absolute top-[20%] right-[20%] w-16 h-16 border border-primary/20 rounded-xl rotate-45"
-          style={{ animation: 'float 6s ease-in-out infinite' }}
+          className="absolute top-[70%] right-[12%] w-24 h-24 border border-primary/8 rounded-2xl rotate-12 transition-transform duration-100"
+          style={{ transform: `translateY(${scrollY * 0.12}px) rotate(12deg)` }}
         />
         <div 
-          className="absolute top-[60%] left-[10%] w-12 h-12 border border-chart-5/20 rounded-full"
-          style={{ animation: 'float 8s ease-in-out infinite', animationDelay: '1s' }}
+          className="absolute top-[25%] left-[20%] w-10 h-10 border border-primary/10 rounded-lg rotate-[-20deg] transition-transform duration-100"
+          style={{ transform: `translateY(${scrollY * -0.05}px) rotate(-20deg)` }}
         />
         <div 
-          className="absolute bottom-[30%] right-[15%] w-20 h-20 border border-success/15 rounded-2xl rotate-12"
-          style={{ animation: 'float 7s ease-in-out infinite', animationDelay: '2s' }}
+          className="absolute top-[85%] left-[25%] w-16 h-16 border border-primary/8 rounded-xl rotate-[30deg] transition-transform duration-100"
+          style={{ transform: `translateY(${scrollY * 0.15}px) rotate(30deg)` }}
         />
         <div 
-          className="absolute top-[80%] left-[30%] w-10 h-10 border border-primary/15 rounded-lg rotate-[-20deg]"
-          style={{ animation: 'float 9s ease-in-out infinite', animationDelay: '3s' }}
+          className="absolute top-[55%] right-[25%] w-12 h-12 border border-primary/10 rounded-full transition-transform duration-100"
+          style={{ transform: `translateY(${scrollY * -0.1}px)` }}
         />
         
-        {/* Grid pattern overlay */}
+        {/* Subtle grid pattern */}
         <div 
-          className="absolute inset-0 opacity-[0.02]"
+          className="absolute inset-0 opacity-[0.015]"
           style={{
             backgroundImage: 'linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)',
-            backgroundSize: '60px 60px'
+            backgroundSize: '80px 80px'
           }}
         />
       </div>
@@ -280,7 +244,7 @@ export default function LandingPage() {
         </div>
         <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-chart-5 flex items-center justify-center shadow-lg">
+            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
               <span className="text-primary-foreground font-bold text-xl">Q</span>
             </div>
             <span className="font-bold text-2xl tracking-tight">Qualify</span>
@@ -307,12 +271,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-        <FloatingParticles />
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-background" />
-        
-        {/* Animated gradient orbs */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-chart-5/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
@@ -333,17 +292,17 @@ export default function LandingPage() {
             >
               Transforme o{' '}
               <span className="relative inline-block">
-                <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-primary via-chart-5 to-primary">
+                <span className="relative z-10 text-primary">
                   Caos
                 </span>
                 <span className="absolute -bottom-2 left-0 right-0 h-3 bg-primary/20 -rotate-1" />
               </span>
               {' '}em{' '}
               <span className="relative inline-block">
-                <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-success to-chart-5">
+                <span className="relative z-10 text-primary">
                   Clareza
                 </span>
-                <span className="absolute -bottom-2 left-0 right-0 h-3 bg-success/20 rotate-1" />
+                <span className="absolute -bottom-2 left-0 right-0 h-3 bg-primary/20 rotate-1" />
               </span>
             </h1>
             
@@ -377,19 +336,19 @@ export default function LandingPage() {
               style={{ animationDelay: '1s' }}
             >
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-success" />
+                <CheckCircle2 className="h-5 w-5 text-primary" />
                 <span>Sem cartão de crédito</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-success" />
+                <CheckCircle2 className="h-5 w-5 text-primary" />
                 <span>Setup em 5 minutos</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-success" />
+                <CheckCircle2 className="h-5 w-5 text-primary" />
                 <span>Cancele quando quiser</span>
               </div>
               <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-success" />
+                <Shield className="h-5 w-5 text-primary" />
                 <span>Dados 100% seguros</span>
               </div>
             </div>
@@ -450,8 +409,8 @@ export default function LandingPage() {
                     </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground hidden sm:block" />
                     <div className="flex items-center gap-4 flex-1">
-                      <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <Check className="h-6 w-6 text-success" />
+                      <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Check className="h-6 w-6 text-primary" />
                       </div>
                       <span className="text-lg font-medium text-foreground">{item.solution}</span>
                     </div>
@@ -485,7 +444,7 @@ export default function LandingPage() {
                 style={{ animationDelay: `${i * 0.1}s` }}
               >
                 <div className="flex items-start justify-between mb-6">
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/20 to-chart-5/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="h-14 w-14 rounded-2xl bg-primary/15 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <feature.icon className="h-7 w-7 text-primary" />
                   </div>
                   <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
@@ -516,7 +475,7 @@ export default function LandingPage() {
           
           <div className="relative max-w-6xl mx-auto">
             {/* Connection line */}
-            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-primary via-chart-5 to-success -translate-y-1/2 rounded-full" />
+            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-primary -translate-y-1/2 rounded-full" />
             
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
               {journeySteps.map((step, i) => (
@@ -555,7 +514,7 @@ export default function LandingPage() {
                 className="bg-card border border-border rounded-2xl p-8 hover:border-primary/50 transition-all duration-300 hover:shadow-xl relative group"
               >
                 {/* Metric badge */}
-                <div className="absolute -top-4 -right-4 bg-gradient-to-br from-primary to-chart-5 text-primary-foreground rounded-2xl px-4 py-2 shadow-lg">
+                <div className="absolute -top-4 -right-4 bg-primary text-primary-foreground rounded-2xl px-4 py-2 shadow-lg">
                   <div className="text-2xl font-bold">{testimonial.metric}</div>
                   <div className="text-xs opacity-80">{testimonial.metricLabel}</div>
                 </div>
@@ -570,7 +529,7 @@ export default function LandingPage() {
                 <p className="text-muted-foreground mb-6 leading-relaxed italic">"{testimonial.text}"</p>
                 
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-chart-5 flex items-center justify-center">
+                  <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
                     <span className="text-primary-foreground font-bold">{testimonial.avatar}</span>
                   </div>
                   <div>
@@ -588,12 +547,12 @@ export default function LandingPage() {
       <section className="py-20 md:py-32">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-br from-primary/10 via-card to-chart-5/10 border border-primary/20 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-chart-5/10 rounded-full blur-3xl" />
+            <div className="bg-primary/10 border border-primary/20 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
               
               <div className="relative z-10">
-                <span className="inline-block bg-success/20 text-success text-sm font-semibold px-4 py-1 rounded-full mb-6">
+                <span className="inline-block bg-primary/20 text-primary text-sm font-semibold px-4 py-1 rounded-full mb-6">
                   🎉 Oferta de Lançamento
                 </span>
                 
@@ -607,15 +566,15 @@ export default function LandingPage() {
                 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Check className="h-5 w-5 text-success" />
+                    <Check className="h-5 w-5 text-primary" />
                     <span>14 dias grátis</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Check className="h-5 w-5 text-success" />
+                    <Check className="h-5 w-5 text-primary" />
                     <span>Usuários ilimitados</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Check className="h-5 w-5 text-success" />
+                    <Check className="h-5 w-5 text-primary" />
                     <span>Suporte prioritário</span>
                   </div>
                 </div>
@@ -633,7 +592,7 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA Section */}
-      <section className="py-20 md:py-32 bg-gradient-to-br from-primary via-primary to-chart-5 relative overflow-hidden">
+      <section className="py-20 md:py-32 bg-primary relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NDEgMC0xOCA4LjA1OS0xOCAxOHM4LjA1OSAxOCAxOCAxOCAxOC04LjA1OSAxOC0xOC04LjA1OS0xOC0xOC0xOHptMCAzMmMtNy43MzIgMC0xNC02LjI2OC0xNC0xNHM2LjI2OC0xNCAxNC0xNCAxNCA2LjI2OCAxNCAxNC02LjI2OCAxNC0xNCAxNHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjA1Ii8+PC9nPjwvc3ZnPg==')] opacity-30" />
         
         <div className="container mx-auto px-4 text-center relative z-10">
@@ -664,7 +623,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-chart-5 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-xl">Q</span>
               </div>
               <span className="font-bold text-xl">Qualify</span>
