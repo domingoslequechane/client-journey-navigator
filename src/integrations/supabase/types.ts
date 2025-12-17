@@ -472,6 +472,7 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string
+          currency: string
           headquarters: string | null
           id: string
           knowledge_base_name: string | null
@@ -488,6 +489,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          currency?: string
           headquarters?: string | null
           id?: string
           knowledge_base_name?: string | null
@@ -504,6 +506,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          currency?: string
           headquarters?: string | null
           id?: string
           knowledge_base_name?: string | null
