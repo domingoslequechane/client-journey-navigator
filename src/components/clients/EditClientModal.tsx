@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Client, SOURCE_LABELS } from '@/types';
+import { CURRENCIES } from '@/lib/currencies';
 
 interface EditClientModalProps {
   open: boolean;
@@ -39,6 +40,8 @@ export function EditClientModal({ open, onOpenChange, client, onClientUpdated }:
   const [notes, setNotes] = useState(client.notes || '');
   const [monthlyBudget, setMonthlyBudget] = useState(client.monthlyBudget?.toString() || '');
   const [trafficBudget, setTrafficBudget] = useState(client.trafficBudget?.toString() || '');
+  const [budgetCurrency, setBudgetCurrency] = useState('MZN');
+  const [trafficCurrency, setTrafficCurrency] = useState('USD');
   const [bant, setBant] = useState({
     budget: client.bant.budget,
     authority: client.bant.authority,
@@ -65,8 +68,34 @@ export function EditClientModal({ open, onOpenChange, client, onClientUpdated }:
         need: client.bant.need,
         timeline: client.bant.timeline,
       });
+      
+      // Load organization currency
+      loadOrganizationCurrency();
     }
   }, [open, client]);
+
+  const loadOrganizationCurrency = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+    
+    if (profile?.organization_id) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('currency')
+        .eq('id', profile.organization_id)
+        .single();
+      
+      if (org?.currency) {
+        setBudgetCurrency(org.currency);
+      }
+    }
+  };
 
   const handleSave = async () => {
     if (!companyName || !contactName || !phone) {
@@ -108,6 +137,11 @@ export function EditClientModal({ open, onOpenChange, client, onClientUpdated }:
     } finally {
       setSaving(false);
     }
+  };
+
+  const getCurrencySymbol = (code: string) => {
+    const currency = CURRENCIES.find(c => c.code === code);
+    return currency?.symbol || code;
   };
 
   return (
@@ -173,13 +207,49 @@ export function EditClientModal({ open, onOpenChange, client, onClientUpdated }:
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Orçamento Mensal (MT)</Label>
-                <Input type="number" value={monthlyBudget} onChange={(e) => setMonthlyBudget(e.target.value)} placeholder="10000" />
+                <Label>Orçamento Mensal</Label>
+                <div className="flex gap-2">
+                  <Select value={budgetCurrency} onValueChange={setBudgetCurrency}>
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>{c.symbol}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input 
+                    type="number" 
+                    value={monthlyBudget} 
+                    onChange={(e) => setMonthlyBudget(e.target.value)} 
+                    placeholder="10000" 
+                    className="flex-1"
+                  />
+                </div>
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Orçamento Tráfego Pago ($)</Label>
-              <Input type="number" value={trafficBudget} onChange={(e) => setTrafficBudget(e.target.value)} placeholder="500" />
+              <Label>Orçamento Tráfego Pago</Label>
+              <div className="flex gap-2">
+                <Select value={trafficCurrency} onValueChange={setTrafficCurrency}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((c) => (
+                      <SelectItem key={c.code} value={c.code}>{c.symbol}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input 
+                  type="number" 
+                  value={trafficBudget} 
+                  onChange={(e) => setTrafficBudget(e.target.value)} 
+                  placeholder="500" 
+                  className="flex-1"
+                />
+              </div>
             </div>
             
             <div className="space-y-4">

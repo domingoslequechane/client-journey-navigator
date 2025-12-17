@@ -6,13 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, ArrowRight } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Building2, ArrowRight, Globe } from 'lucide-react';
 import { toast } from 'sonner';
+import { COUNTRIES } from '@/lib/currencies';
 
 export default function Onboarding() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [agencyName, setAgencyName] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('MZ');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingOrg, setCheckingOrg] = useState(true);
 
@@ -82,15 +85,20 @@ export default function Onboarding() {
         return;
       }
 
+      // Get country currency
+      const country = COUNTRIES.find(c => c.code === selectedCountry);
+      const currency = country?.currency || 'MZN';
+
       // Generate a new slug for the agency name
       const { data: slug } = await supabase.rpc('generate_slug', { name: agencyName.trim() });
 
-      // Update organization name
+      // Update organization name and currency
       const { error } = await supabase
         .from('organizations')
         .update({ 
           name: agencyName.trim(),
-          slug: slug || `agency-${Date.now()}`
+          slug: slug || `agency-${Date.now()}`,
+          currency: currency
         })
         .eq('id', profile.organization_id);
 
@@ -126,7 +134,7 @@ export default function Onboarding() {
           </div>
           <CardTitle className="text-2xl">Configure sua Agência</CardTitle>
           <CardDescription>
-            Insira o nome da sua agência para começar a usar o Qualify
+            Insira o nome da sua agência e selecione o seu país para configurar a moeda
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -145,6 +153,28 @@ export default function Onboarding() {
               />
               <p className="text-sm text-muted-foreground">
                 Este será o nome exibido em toda a plataforma
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                País
+              </Label>
+              <Select value={selectedCountry} onValueChange={setSelectedCountry} disabled={isSubmitting}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o seu país" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country.code} value={country.code}>
+                      {country.name} ({country.currencySymbol})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                A moeda será definida automaticamente com base no país selecionado
               </p>
             </div>
 

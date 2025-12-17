@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,11 +11,42 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SERVICE_LABELS, SOURCE_LABELS, ServiceType, LeadSource, LeadTemperature, SALES_FUNNEL_STAGES } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { CURRENCIES } from '@/lib/currencies';
 
 export default function NewClient() {
   const navigate = useNavigate();
   const [bant, setBant] = useState({ budget: 0, authority: 0, need: 0, timeline: 0 });
   const [services, setServices] = useState<ServiceType[]>([]);
+  const [budgetCurrency, setBudgetCurrency] = useState('MZN');
+  const [trafficCurrency, setTrafficCurrency] = useState('USD');
+
+  useEffect(() => {
+    loadOrganizationCurrency();
+  }, []);
+
+  const loadOrganizationCurrency = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+    
+    if (profile?.organization_id) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('currency')
+        .eq('id', profile.organization_id)
+        .single();
+      
+      if (org?.currency) {
+        setBudgetCurrency(org.currency);
+      }
+    }
+  };
 
   const handleServiceToggle = (service: ServiceType) => {
     setServices(prev => prev.includes(service) ? prev.filter(s => s !== service) : [...prev, service]);
@@ -110,8 +141,38 @@ export default function NewClient() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <div><Label>Orçamento Mensal Estimado (MT)</Label><Input type="number" placeholder="10000" /></div>
-            <div><Label>Orçamento Tráfego Pago ($)</Label><Input type="number" placeholder="500" /></div>
+            <div>
+              <Label>Orçamento Mensal Estimado</Label>
+              <div className="flex gap-2 mt-1">
+                <Select value={budgetCurrency} onValueChange={setBudgetCurrency}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((c) => (
+                      <SelectItem key={c.code} value={c.code}>{c.symbol}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input type="number" placeholder="10000" className="flex-1" />
+              </div>
+            </div>
+            <div>
+              <Label>Orçamento Tráfego Pago</Label>
+              <div className="flex gap-2 mt-1">
+                <Select value={trafficCurrency} onValueChange={setTrafficCurrency}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((c) => (
+                      <SelectItem key={c.code} value={c.code}>{c.symbol}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input type="number" placeholder="500" className="flex-1" />
+              </div>
+            </div>
           </div>
         </AnimatedContainer>
 

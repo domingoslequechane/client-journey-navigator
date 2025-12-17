@@ -426,15 +426,18 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
               {contractUrl ? 'Ver Contrato' : 'Adicionar Contrato'}
             </Button>
-            <Button 
-              variant="outline" 
-              className="gap-2" 
-              disabled={isPaused}
-              onClick={() => setGenerateContractOpen(true)}
-            >
-              {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-              Gerar Contrato
-            </Button>
+            {/* Show Generate Contract button only in contratacao stage and when no contract exists */}
+            {client.stage === 'closing' && !contractUrl && (
+              <Button 
+                variant="outline" 
+                className="gap-2" 
+                disabled={isPaused}
+                onClick={() => setGenerateContractOpen(true)}
+              >
+                {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                Gerar Contrato
+              </Button>
+            )}
             <ContractModal
               open={contractDialogOpen}
               onOpenChange={setContractDialogOpen}
