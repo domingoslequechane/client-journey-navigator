@@ -34,24 +34,22 @@ export default function ResetPassword() {
       const refreshToken = hashParams.get('refresh_token');
       const type = hashParams.get('type');
       
-      if (type === 'recovery' && accessToken && refreshToken) {
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        if (error) {
-          console.error('Session error:', error);
-          toast({ title: 'Erro', description: 'Link de recuperação inválido ou expirado', variant: 'destructive' });
-          navigate('/auth');
-          return;
-        }
-      } else {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          toast({ title: 'Erro', description: 'Link de recuperação inválido ou expirado', variant: 'destructive' });
-          navigate('/auth');
-          return;
-        }
+      // This page requires recovery tokens - if not present, redirect to 404
+      if (type !== 'recovery' || !accessToken || !refreshToken) {
+        // No valid recovery context - redirect to 404
+        navigate('/not-found', { replace: true });
+        return;
+      }
+      
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (error) {
+        console.error('Session error:', error);
+        toast({ title: 'Erro', description: 'Link de recuperação inválido ou expirado', variant: 'destructive' });
+        navigate('/auth');
+        return;
       }
       setVerifying(false);
     };

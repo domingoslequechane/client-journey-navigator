@@ -19,8 +19,9 @@ export default function VerifyEmail() {
   const { email, password, fullName } = location.state || {};
 
   useEffect(() => {
+    // This page requires email and password from signup flow
     if (!email || !password) {
-      navigate('/auth');
+      navigate('/not-found', { replace: true });
     }
   }, [email, password, navigate]);
 
