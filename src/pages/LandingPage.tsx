@@ -189,12 +189,30 @@ export default function LandingPage() {
           0%, 100% { transform: translateX(-100%); }
           50% { transform: translateX(100%); }
         }
+        @keyframes glow {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.05); }
+        }
       `}</style>
       
-      {/* Parallax Background Elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      {/* Parallax Background Elements - z-index negativo para ficar atrás do conteúdo */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         {/* Subtle gradient background */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/3 via-background to-background" />
+        
+        {/* Animated blur glow orbs */}
+        <div 
+          className="absolute top-[5%] left-[5%] w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] bg-primary/8 rounded-full blur-[120px]"
+          style={{ animation: 'glow 8s ease-in-out infinite' }}
+        />
+        <div 
+          className="absolute top-[50%] right-[5%] w-[25vw] h-[25vw] max-w-[350px] max-h-[350px] bg-primary/6 rounded-full blur-[100px]"
+          style={{ animation: 'glow 10s ease-in-out infinite', animationDelay: '2s' }}
+        />
+        <div 
+          className="absolute bottom-[10%] left-[15%] w-[20vw] h-[20vw] max-w-[300px] max-h-[300px] bg-primary/8 rounded-full blur-[80px]"
+          style={{ animation: 'glow 12s ease-in-out infinite', animationDelay: '4s' }}
+        />
         
         {/* Parallax floating geometric shapes */}
         <div 
@@ -239,7 +257,7 @@ export default function LandingPage() {
       }`}>
         {/* Animated gradient overlay */}
         <div className={`absolute inset-0 transition-opacity duration-500 ${isScrolled ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-chart-5/5 to-primary/10 animate-pulse" style={{ animationDuration: '4s' }} />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 animate-pulse" style={{ animationDuration: '4s' }} />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,hsl(var(--primary)/0.1)_50%,transparent_100%)] animate-[shimmer_3s_ease-in-out_infinite]" />
         </div>
         <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between relative z-10">
