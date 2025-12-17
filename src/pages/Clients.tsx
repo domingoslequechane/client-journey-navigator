@@ -21,9 +21,11 @@ import {
   Loader2,
   Phone,
   Mail,
-  Filter
+  Filter,
+  Download
 } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
+import { useClientExport } from '@/hooks/useClientExport';
 
 type Client = Tables<'clients'>;
 
@@ -47,7 +49,9 @@ export default function Clients() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStage, setFilterStage] = useState<string | null>(null);
+  const [filterQualification, setFilterQualification] = useState<string | null>(null);
   const [newClientOpen, setNewClientOpen] = useState(false);
+  const { exportToCSV } = useClientExport();
   const [saving, setSaving] = useState(false);
   
   // New client form state
@@ -136,9 +140,11 @@ export default function Clients() {
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.contact_name.toLowerCase().includes(searchTerm.toLowerCase());
+                         client.contact_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (client.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     const matchesStage = !filterStage || client.current_stage === filterStage;
-    return matchesSearch && matchesStage;
+    const matchesQualification = !filterQualification || client.qualification === filterQualification;
+    return matchesSearch && matchesStage && matchesQualification;
   });
 
   const getStageFromDb = (dbStage: string) => {
@@ -162,15 +168,27 @@ export default function Clients() {
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Clientes</h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">Gerencie todos os seus clientes</p>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
+            Gerencie todos os seus clientes ({filteredClients.length} de {clients.length})
+          </p>
         </div>
-        <Sheet open={newClientOpen} onOpenChange={setNewClientOpen}>
-          <SheetTrigger asChild>
-            <Button className="gap-2 w-full sm:w-auto">
-              <Plus className="h-4 w-4" />
-              Novo Cliente
-            </Button>
-          </SheetTrigger>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => exportToCSV(filteredClients)}
+            disabled={filteredClients.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Exportar</span>
+          </Button>
+          <Sheet open={newClientOpen} onOpenChange={setNewClientOpen}>
+            <SheetTrigger asChild>
+              <Button className="gap-2 flex-1 sm:flex-none">
+                <Plus className="h-4 w-4" />
+                Novo Cliente
+              </Button>
+            </SheetTrigger>
           <SheetContent className="w-full sm:max-w-xl">
             <SheetHeader>
               <SheetTitle>Novo Cliente</SheetTitle>
@@ -264,24 +282,25 @@ export default function Clients() {
             </SheetFooter>
           </SheetContent>
         </Sheet>
+        </div>
       </AnimatedContainer>
 
       {/* Filters */}
       <AnimatedContainer animation="fade-up" delay={0.1} className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="relative flex-1 md:max-w-2xl">
+        <div className="relative flex-1 md:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por empresa ou contato..."
+            placeholder="Buscar por empresa, contato ou email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
-        <div className="w-full md:w-56">
+        <div className="flex gap-2 w-full md:w-auto">
           <Select value={filterStage || 'all'} onValueChange={(v) => setFilterStage(v === 'all' ? null : v)}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full md:w-44">
               <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Filtrar por fase" />
+              <SelectValue placeholder="Fase" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as fases</SelectItem>
@@ -290,6 +309,18 @@ export default function Clients() {
                   {stage.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterQualification || 'all'} onValueChange={(v) => setFilterQualification(v === 'all' ? null : v)}>
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue placeholder="Qualificação" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="cold">Frio</SelectItem>
+              <SelectItem value="warm">Morno</SelectItem>
+              <SelectItem value="hot">Quente</SelectItem>
+              <SelectItem value="qualified">Qualificado</SelectItem>
             </SelectContent>
           </Select>
         </div>

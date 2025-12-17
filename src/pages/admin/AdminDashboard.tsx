@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Building2, CreditCard, MessageSquare, TrendingUp, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Users, Building2, CreditCard, MessageSquare, TrendingUp, AlertCircle, Sparkles } from 'lucide-react';
 import { NotificationCreator } from '@/components/admin/NotificationCreator';
 
 interface DashboardStats {
@@ -16,9 +17,17 @@ interface DashboardStats {
   totalFeedbacks: number;
 }
 
+interface RecentChanges {
+  newUsers: number;
+  newFeedbacks: number;
+  newSubscriptions: number;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recentChanges, setRecentChanges] = useState<RecentChanges>({ newUsers: 0, newFeedbacks: 0, newSubscriptions: 0 });
+  const prevStatsRef = useRef<DashboardStats | null>(null);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -43,7 +52,7 @@ export default function AdminDashboard() {
         s.status === 'expired' || s.status === 'cancelled'
       ).length || 0;
 
-      setStats({
+      const newStats: DashboardStats = {
         totalUsers: totalUsers || 0,
         totalOrganizations: totalOrganizations || 0,
         activeSubscriptions,
@@ -51,7 +60,24 @@ export default function AdminDashboard() {
         expiredSubscriptions,
         pendingFeedbacks: pendingFeedbacks || 0,
         totalFeedbacks: totalFeedbacks || 0,
-      });
+      };
+
+      setStats(newStats);
+      
+      // Track recent changes for visual indicators
+      if (prevStatsRef.current) {
+        const changes: RecentChanges = {
+          newUsers: Math.max(0, newStats.totalUsers - prevStatsRef.current.totalUsers),
+          newFeedbacks: Math.max(0, newStats.pendingFeedbacks - prevStatsRef.current.pendingFeedbacks),
+          newSubscriptions: Math.max(0, newStats.activeSubscriptions - prevStatsRef.current.activeSubscriptions),
+        };
+        if (changes.newUsers > 0 || changes.newFeedbacks > 0 || changes.newSubscriptions > 0) {
+          setRecentChanges(changes);
+          // Clear indicators after 10 seconds
+          setTimeout(() => setRecentChanges({ newUsers: 0, newFeedbacks: 0, newSubscriptions: 0 }), 10000);
+        }
+      }
+      prevStatsRef.current = newStats;
     } catch (error) {
       console.error('Error fetching admin stats:', error);
     } finally {
@@ -106,6 +132,7 @@ export default function AdminDashboard() {
       icon: Users,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
+      newCount: recentChanges.newUsers,
     },
     {
       title: 'Organizações',
@@ -113,6 +140,7 @@ export default function AdminDashboard() {
       icon: Building2,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
+      newCount: 0,
     },
     {
       title: 'Assinaturas Ativas',
@@ -120,6 +148,7 @@ export default function AdminDashboard() {
       icon: CreditCard,
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
+      newCount: recentChanges.newSubscriptions,
     },
     {
       title: 'Em Período de Teste',
@@ -127,6 +156,7 @@ export default function AdminDashboard() {
       icon: TrendingUp,
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-500/10',
+      newCount: 0,
     },
     {
       title: 'Assinaturas Expiradas',
@@ -134,6 +164,7 @@ export default function AdminDashboard() {
       icon: AlertCircle,
       color: 'text-red-500',
       bgColor: 'bg-red-500/10',
+      newCount: 0,
     },
     {
       title: 'Feedbacks Pendentes',
@@ -142,6 +173,7 @@ export default function AdminDashboard() {
       icon: MessageSquare,
       color: 'text-orange-500',
       bgColor: 'bg-orange-500/10',
+      newCount: recentChanges.newFeedbacks,
     },
   ];
 
@@ -160,11 +192,19 @@ export default function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {statCards.map((card, index) => (
           <AnimatedContainer key={card.title} animation="fade-up" delay={0.1 * (index + 1)}>
-            <Card>
+            <Card className={card.newCount > 0 ? 'ring-2 ring-primary/50' : ''}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {card.title}
-                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {card.title}
+                  </CardTitle>
+                  {card.newCount > 0 && (
+                    <Badge variant="default" className="bg-primary text-primary-foreground text-xs animate-pulse">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      +{card.newCount}
+                    </Badge>
+                  )}
+                </div>
                 <div className={`p-2 rounded-lg ${card.bgColor}`}>
                   <card.icon className={`h-4 w-4 ${card.color}`} />
                 </div>
