@@ -1,46 +1,35 @@
 import * as React from 'react';
-import { Input } from '@/components/ui/input';
+import PhoneInputWithCountry from 'react-phone-number-input';
 import { cn } from '@/lib/utils';
-import { formatPhoneNumber, formatPhoneInput } from '@/lib/phone-utils';
+import 'react-phone-number-input/style.css';
 
-interface PhoneInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
+interface PhoneInputProps {
   value: string;
   onChange: (value: string) => void;
-  formatOnBlur?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  className?: string;
+  defaultCountry?: 'MZ' | 'PT' | 'BR' | 'AO' | 'ZA' | 'US';
 }
 
 const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
-  ({ className, value, onChange, formatOnBlur = true, ...props }, ref) => {
-    const [displayValue, setDisplayValue] = React.useState(value);
-
-    React.useEffect(() => {
-      setDisplayValue(value);
-    }, [value]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = formatPhoneInput(e.target.value);
-      setDisplayValue(newValue);
-      onChange(newValue);
-    };
-
-    const handleBlur = () => {
-      if (formatOnBlur && displayValue) {
-        const formatted = formatPhoneNumber(displayValue);
-        setDisplayValue(formatted);
-        onChange(formatted);
-      }
-    };
-
+  ({ className, value, onChange, placeholder = '+258 84 123 4567', disabled, defaultCountry = 'MZ', ...props }, ref) => {
     return (
-      <Input
-        ref={ref}
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel"
-        value={displayValue}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        className={cn('font-mono', className)}
+      <PhoneInputWithCountry
+        international
+        countryCallingCodeEditable={false}
+        defaultCountry={defaultCountry}
+        value={value || ''}
+        onChange={(newValue) => onChange(newValue || '')}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={cn(
+          'phone-input-container flex h-10 w-full rounded-md border border-input bg-background text-sm ring-offset-background',
+          'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+          disabled && 'cursor-not-allowed opacity-50',
+          className
+        )}
         {...props}
       />
     );

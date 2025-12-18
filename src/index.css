@@ -229,3 +229,40 @@ All colors MUST be HSL.
 .animate-in {
   animation-fill-mode: both;
 }
+
+/* Phone Input Styles */
+.phone-input-container {
+  @apply px-3;
+}
+
+.phone-input-container .PhoneInputInput {
+  @apply bg-transparent border-0 outline-none flex-1 h-full placeholder:text-muted-foreground;
+}
+
+.phone-input-container .PhoneInputInput:focus {
+  @apply outline-none ring-0;
+}
+
+.phone-input-container .PhoneInputCountry {
+  @apply mr-2 flex items-center gap-1;
+}
+
+.phone-input-container .PhoneInputCountryIcon {
+  @apply w-5 h-4 rounded-sm overflow-hidden;
+}
+
+.phone-input-container .PhoneInputCountryIcon--border {
+  @apply shadow-none bg-transparent;
+}
+
+.phone-input-container .PhoneInputCountrySelectArrow {
+  @apply ml-1 opacity-60;
+}
+
+.phone-input-container .PhoneInputCountrySelect {
+  @apply absolute inset-0 opacity-0 cursor-pointer;
+}
+
+.phone-input-container .PhoneInputCountrySelect:focus + .PhoneInputCountryIcon--border {
+  @apply ring-1 ring-ring;
+}
