@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, GraduationCap, Sparkles, BookOpen, Clock, Trash2 } from 'lucide-react';
+import { Loader2, GraduationCap, Sparkles, BookOpen, Clock, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
+import { usePagination } from '@/hooks/usePagination';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,6 +69,20 @@ export default function Academia() {
       return data as StudySuggestion[];
     }
   });
+
+  // Pagination
+  const {
+    currentPage,
+    totalPages,
+    paginatedData,
+    nextPage,
+    prevPage,
+    isFirstPage,
+    isLastPage,
+    startIndex,
+    endIndex,
+    totalItems,
+  } = usePagination({ data: suggestions, itemsPerPage: 10 });
 
   const parseSuggestions = (content: string) => {
     const suggestions = [];
@@ -371,13 +386,44 @@ Nível: [nível]
       <AnimatedContainer animation="fade-up" delay={0.2} className="w-full flex-1 flex flex-col min-h-0">
       <Card className="w-full flex-1 flex flex-col min-h-0">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            Histórico de Sugestões
-          </CardTitle>
-          <CardDescription>
-            Todas as sugestões de estudo geradas anteriormente
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Histórico de Sugestões
+              </CardTitle>
+              <CardDescription>
+                {totalItems > 0 ? `${totalItems} sugestões de estudo` : 'Todas as sugestões de estudo geradas anteriormente'}
+              </CardDescription>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {startIndex}-{endIndex} de {totalItems}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={prevPage}
+                    disabled={isFirstPage}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={nextPage}
+                    disabled={isLastPage}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col min-h-0">
           {isLoading ? (
@@ -393,7 +439,7 @@ Nível: [nível]
           ) : (
             <ScrollArea className="flex-1 pr-4">
               <div className="space-y-4">
-                {suggestions.map((suggestion) => (
+                {paginatedData.map((suggestion) => (
                   <div 
                     key={suggestion.id}
                     className="p-4 border border-border rounded-lg hover:border-primary/30 transition-colors"
