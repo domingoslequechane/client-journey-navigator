@@ -57,7 +57,6 @@ const feedbackTypes = [
   { value: 'general', label: 'Geral' },
   { value: 'bug', label: 'Reportar Bug' },
   { value: 'feature', label: 'Sugestão de Funcionalidade' },
-  { value: 'support', label: 'Suporte Técnico' },
 ];
 
 export default function Notifications() {
