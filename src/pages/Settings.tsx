@@ -8,11 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone } from 'lucide-react';
+import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContractTemplatesTab } from '@/components/settings/ContractTemplatesTab';
+import { DeleteAgencyModal } from '@/components/settings/DeleteAgencyModal';
+
 interface AgencySettings {
   id: string;
   agency_name: string;
@@ -56,9 +58,12 @@ export default function Settings() {
     knowledge_base_text: null,
   });
 
-  // Organization phone state
+  // Organization state
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [organizationPhone, setOrganizationPhone] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
+  const [isOwner, setIsOwner] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [profile, setProfile] = useState<UserProfile>({
     full_name: '',
@@ -114,17 +119,19 @@ export default function Settings() {
         setProfile(data);
         setIsAdmin(data.role === 'admin');
         
-        // Fetch organization phone
+        // Fetch organization data
         if (data.organization_id) {
           setOrganizationId(data.organization_id);
           const { data: orgData } = await supabase
             .from('organizations')
-            .select('phone')
+            .select('phone, name, owner_id')
             .eq('id', data.organization_id)
             .single();
           
-          if (orgData?.phone) {
-            setOrganizationPhone(orgData.phone);
+          if (orgData) {
+            if (orgData.phone) setOrganizationPhone(orgData.phone);
+            if (orgData.name) setOrganizationName(orgData.name);
+            setIsOwner(orgData.owner_id === user.id);
           }
         }
       }
@@ -629,6 +636,33 @@ export default function Settings() {
                   )}
                 </Button>
               )}
+
+              {/* Delete Agency Section - Only for owner */}
+              {isAdmin && isOwner && organizationId && (
+                <div className="pt-6 border-t border-border">
+                  <Card className="border-destructive/50 bg-destructive/5">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-destructive flex items-center gap-2 text-base">
+                        <AlertTriangle className="h-5 w-5" />
+                        Zona de Perigo
+                      </CardTitle>
+                      <CardDescription>
+                        Ações irreversíveis para sua agência
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button 
+                        variant="destructive" 
+                        onClick={() => setShowDeleteModal(true)}
+                        className="w-full gap-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Apagar Agência Permanentemente
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -762,6 +796,16 @@ export default function Settings() {
         </TabsContent>
       </Tabs>
       </AnimatedContainer>
+
+      {/* Delete Agency Modal */}
+      {organizationId && (
+        <DeleteAgencyModal
+          open={showDeleteModal}
+          onOpenChange={setShowDeleteModal}
+          organizationId={organizationId}
+          organizationName={organizationName}
+        />
+      )}
     </div>
   );
 }

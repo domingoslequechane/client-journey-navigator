@@ -80,7 +80,7 @@ const features = [
   {
     icon: Layers,
     title: 'Pipeline Kanban Visual',
-    description: 'Visualize toda sua operação em um quadro intuitivo. Arraste e solte clientes entre os 7 estágios da jornada.',
+    description: 'Visualize toda sua operação em um quadro intuitivo. Conduza os seus clientes em 7 estágios da jornada.',
     highlight: '7 estágios'
   },
   {
