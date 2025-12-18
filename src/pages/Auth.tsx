@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,7 @@ const authSchema = z.object({
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -56,13 +57,15 @@ export default function Auth() {
         if (adminRole) {
           navigate('/admin');
         } else {
-          navigate('/app');
+          // Preserve the original route if coming from a protected page
+          const from = (location.state as any)?.from?.pathname || '/app';
+          navigate(from);
         }
       }
     };
     
     checkSessionAndRedirect();
-  }, [session, navigate]);
+  }, [session, navigate, location.state]);
 
   // Check if user is suspended after social login
   useEffect(() => {

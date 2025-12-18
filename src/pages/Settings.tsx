@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,6 +56,10 @@ export default function Settings() {
     knowledge_base_text: null,
   });
 
+  // Organization phone state
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [organizationPhone, setOrganizationPhone] = useState('');
+
   const [profile, setProfile] = useState<UserProfile>({
     full_name: '',
     avatar_url: null,
@@ -99,7 +104,7 @@ export default function Settings() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url, role')
+        .select('full_name, avatar_url, role, organization_id')
         .eq('id', user.id)
         .single();
 
@@ -108,6 +113,20 @@ export default function Settings() {
       if (data) {
         setProfile(data);
         setIsAdmin(data.role === 'admin');
+        
+        // Fetch organization phone
+        if (data.organization_id) {
+          setOrganizationId(data.organization_id);
+          const { data: orgData } = await supabase
+            .from('organizations')
+            .select('phone')
+            .eq('id', data.organization_id)
+            .single();
+          
+          if (orgData?.phone) {
+            setOrganizationPhone(orgData.phone);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -122,6 +141,7 @@ export default function Settings() {
 
     setSaving(true);
     try {
+      // Save agency settings
       const { error } = await supabase
         .from('agency_settings')
         .update({
@@ -134,6 +154,16 @@ export default function Settings() {
         .eq('id', settings.id);
 
       if (error) throw error;
+
+      // Save organization phone
+      if (organizationId) {
+        const { error: orgError } = await supabase
+          .from('organizations')
+          .update({ phone: organizationPhone })
+          .eq('id', organizationId);
+        
+        if (orgError) throw orgError;
+      }
 
       toast({ title: 'Sucesso!', description: 'Configurações da agência salvas' });
     } catch (error) {
@@ -536,15 +566,29 @@ export default function Settings() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="nuit">NUIT</Label>
-                <Input
-                  id="nuit"
-                  placeholder="Ex: 123456789"
-                  value={settings.nuit || ''}
-                  onChange={(e) => setSettings(prev => ({ ...prev, nuit: e.target.value }))}
-                  disabled={!isAdmin}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nuit">NUIT</Label>
+                  <Input
+                    id="nuit"
+                    placeholder="Ex: 123456789"
+                    value={settings.nuit || ''}
+                    onChange={(e) => setSettings(prev => ({ ...prev, nuit: e.target.value }))}
+                    disabled={!isAdmin}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Contacto da Agência
+                  </Label>
+                  <PhoneInput
+                    value={organizationPhone}
+                    onChange={setOrganizationPhone}
+                    placeholder="+258 84 123 4567"
+                    disabled={!isAdmin}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

@@ -604,6 +604,7 @@ export type Database = {
           name: string
           nuit: string | null
           owner_id: string
+          phone: string | null
           representative_name: string | null
           representative_position: string | null
           slug: string
@@ -621,6 +622,7 @@ export type Database = {
           name: string
           nuit?: string | null
           owner_id: string
+          phone?: string | null
           representative_name?: string | null
           representative_position?: string | null
           slug: string
@@ -638,6 +640,7 @@ export type Database = {
           name?: string
           nuit?: string | null
           owner_id?: string
+          phone?: string | null
           representative_name?: string | null
           representative_position?: string | null
           slug?: string
