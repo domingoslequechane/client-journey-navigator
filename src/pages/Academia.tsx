@@ -352,7 +352,8 @@ Nível: [nível]
           ) : (
             <>
               <Sparkles className="h-4 w-4" />
-              Gerar Novas Sugestões
+              <span className="hidden sm:inline">Gerar Sugestões</span>
+              <span className="sm:hidden">Gerar</span>
             </>
           )}
         </Button>

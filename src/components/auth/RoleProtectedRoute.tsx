@@ -71,7 +71,7 @@ export function RoleProtectedRoute({
         <Link to="/app">
           <Button className="gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Voltar ao Dashboard
+            Voltar
           </Button>
         </Link>
       </div>
