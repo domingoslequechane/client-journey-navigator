@@ -49,6 +49,9 @@ interface ChecklistReport {
 }
 
 export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRole = 'sales', userId }: ClientDetailContentProps) {
+  // Permission checks
+  const canEditClient = userRole === 'admin' || userRole === 'sales' || isAdmin;
+  const canSeeContracts = userRole === 'admin' || userRole === 'sales' || isAdmin;
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
@@ -122,7 +125,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
 
   // Check if user can see contract button (closing stage or later, only for sales and admin)
   const closingAndLaterStages = ['closing', 'production', 'campaigns', 'retention', 'loyalty'];
-  const canSeeContract = closingAndLaterStages.includes(client.stage) && (userRole === 'sales' || userRole === 'admin' || isAdmin);
+  const canSeeContract = closingAndLaterStages.includes(client.stage) && canSeeContracts;
 
   const handleContractUpdated = async () => {
     const { data } = await supabase
@@ -384,16 +387,18 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       {/* All Client Info */}
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold text-sm">Informações do Cliente</h4>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="gap-2" 
-          disabled={isPaused}
-          onClick={() => setEditClientOpen(true)}
-        >
-          {isPaused ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
-          Editar
-        </Button>
+        {canEditClient && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2" 
+            disabled={isPaused}
+            onClick={() => setEditClientOpen(true)}
+          >
+            {isPaused ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+            Editar
+          </Button>
+        )}
       </div>
       <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 ${isPaused ? 'opacity-60' : ''}`}>
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">

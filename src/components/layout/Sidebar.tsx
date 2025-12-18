@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import {
   LayoutDashboard,
   Building2,
@@ -25,20 +26,19 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
 
-const navigation = [
-  { name: 'Dashboard', href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard' },
-  { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel' },
-  { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational' },
-  { name: 'Clientes', href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients' },
-  { name: 'Assistente IA', href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai' },
-  { name: 'Academia', href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia' },
-  { name: 'Equipe', href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team' },
-];
-
 export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { 
+    canSeeSalesFunnel, 
+    canSeeOperationalFlow, 
+    canSeeClients, 
+    canSeeTeam, 
+    canSeeSettings, 
+    canSeeSubscription 
+  } = useUserRole();
+
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';
@@ -49,6 +49,20 @@ export function Sidebar() {
   }, [collapsed]);
 
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+
+  // Filter navigation items based on role
+  const navigation = useMemo(() => {
+    const allItems = [
+      { name: 'Dashboard', href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true },
+      { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel', show: canSeeSalesFunnel },
+      { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational', show: canSeeOperationalFlow },
+      { name: 'Clientes', href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
+      { name: 'Assistente IA', href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
+      { name: 'Academia', href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
+      { name: 'Equipe', href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam },
+    ];
+    return allItems.filter(item => item.show);
+  }, [canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -163,72 +177,76 @@ export function Sidebar() {
           {/* Notifications */}
           <NotificationBell collapsed={collapsed} />
 
-          {/* Settings */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/app/settings"
-                  data-tutorial="sidebar-settings"
-                  className={cn(
-                    'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    location.pathname === '/app/settings'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                  )}
-                >
-                  <Settings className="h-5 w-5" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Configurações</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Link
-              to="/app/settings"
-              data-tutorial="sidebar-settings"
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                location.pathname === '/app/settings'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
-            >
-              <Settings className="h-5 w-5" />
-              Configurações
-            </Link>
+          {/* Settings - Admin only */}
+          {canSeeSettings && (
+            collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/app/settings"
+                    data-tutorial="sidebar-settings"
+                    className={cn(
+                      'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      location.pathname === '/app/settings'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    )}
+                  >
+                    <Settings className="h-5 w-5" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Configurações</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link
+                to="/app/settings"
+                data-tutorial="sidebar-settings"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  location.pathname === '/app/settings'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                )}
+              >
+                <Settings className="h-5 w-5" />
+                Configurações
+              </Link>
+            )
           )}
 
-          {/* Subscription */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/app/subscription"
-                  className={cn(
-                    'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    location.pathname === '/app/subscription'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                  )}
-                >
-                  <CreditCard className="h-5 w-5" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Assinatura</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Link
-              to="/app/subscription"
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                location.pathname === '/app/subscription'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
-            >
-              <CreditCard className="h-5 w-5" />
-              Assinatura
-            </Link>
+          {/* Subscription - Admin only */}
+          {canSeeSubscription && (
+            collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/app/subscription"
+                    className={cn(
+                      'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      location.pathname === '/app/subscription'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    )}
+                  >
+                    <CreditCard className="h-5 w-5" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Assinatura</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link
+                to="/app/subscription"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  location.pathname === '/app/subscription'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                )}
+              >
+                <CreditCard className="h-5 w-5" />
+                Assinatura
+              </Link>
+            )
           )}
 
           {user && (
