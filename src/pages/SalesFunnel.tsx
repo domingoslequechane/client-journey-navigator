@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SALES_FUNNEL_STAGES, Client, TEMPERATURE_LABELS, SOURCE_LABELS } from '@/types';
-import { mapDbClientToUiClient, CustomChecklistTemplate } from '@/lib/client-utils';
+import { mapDbClientToUiClient } from '@/lib/client-utils';
 import { Button } from '@/components/ui/button';
 import { Plus, Search, Target, FileCheck, Phone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -24,23 +24,6 @@ export default function SalesFunnel() {
   const { data: clients = [], isLoading, refetch } = useQuery({
     queryKey: ['sales-funnel-clients', user?.id],
     queryFn: async () => {
-      // First get user's organization
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user?.id || '')
-        .maybeSingle();
-
-      // Fetch custom checklist templates for the organization
-      let customTemplates: CustomChecklistTemplate[] = [];
-      if (profile?.organization_id) {
-        const { data: templates } = await supabase
-          .from('checklist_templates')
-          .select('id, stage, title, description, is_required, sort_order')
-          .eq('organization_id', profile.organization_id);
-        customTemplates = (templates || []) as CustomChecklistTemplate[];
-      }
-
       // Fetch clients in sales funnel stages
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
@@ -59,10 +42,10 @@ export default function SalesFunnel() {
 
       if (checklistError) throw checklistError;
 
-      // Map DB clients to UI clients with custom templates
+      // Map DB clients to UI clients
       return (clientsData || []).map(dbClient => {
         const clientChecklist = checklistItems?.filter(item => item.client_id === dbClient.id) || [];
-        return mapDbClientToUiClient(dbClient, clientChecklist, customTemplates);
+        return mapDbClientToUiClient(dbClient, clientChecklist);
       });
     },
     enabled: !!user?.id

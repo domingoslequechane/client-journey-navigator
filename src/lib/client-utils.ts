@@ -5,27 +5,6 @@ import { ALL_STAGES } from '@/types';
 type DbClient = Tables<'clients'>;
 type DbChecklistItem = Tables<'checklist_items'>;
 
-// Type for custom checklist templates from database
-export interface CustomChecklistTemplate {
-  id: string;
-  stage: string;
-  title: string;
-  description: string | null;
-  is_required: boolean;
-  sort_order: number;
-}
-
-// Reverse stage map for finding DB stage from UI stage
-const reverseStageMap: Record<JourneyStage, Enums<'journey_stage'>> = {
-  prospecting: 'prospeccao',
-  qualification: 'reuniao',
-  closing: 'contratacao',
-  production: 'producao',
-  campaigns: 'trafego',
-  retention: 'retencao',
-  loyalty: 'fidelizacao',
-};
-
 // Helper to map DB stage enum to UI stage string
 const stageMap: Record<Enums<'journey_stage'>, JourneyStage> = {
   prospeccao: 'prospecting',
@@ -54,8 +33,7 @@ const getClientStatus = (stage: JourneyStage): ClientStatus => {
 
 export function mapDbClientToUiClient(
   dbClient: DbClient, 
-  checklistItems: DbChecklistItem[] = [],
-  customTemplates: CustomChecklistTemplate[] = []
+  checklistItems: DbChecklistItem[] = []
 ): Client {
     const stageId = stageMap[dbClient.current_stage] || 'prospecting';
     const bantScore = (dbClient.bant_budget || 0) + (dbClient.bant_authority || 0) + (dbClient.bant_need || 0) + (dbClient.bant_timeline || 0);
@@ -63,24 +41,7 @@ export function mapDbClientToUiClient(
     const scorePercentage = Math.round((bantScore / maxBantScore) * 100);
 
     // Get default checklist from ALL_STAGES
-    const defaultChecklist = ALL_STAGES.find(s => s.id === stageId)?.checklist || [];
-    
-    // Get the DB stage name for filtering custom templates
-    const dbStageName = reverseStageMap[stageId];
-    
-    // Filter custom templates for this stage and convert to checklist format
-    const customItems = customTemplates
-        .filter(t => t.stage === dbStageName)
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map(t => ({
-            id: t.id,
-            title: t.title,
-            description: t.description || '',
-            required: t.is_required,
-        }));
-    
-    // Merge: default + custom templates
-    const stageChecklist = [...defaultChecklist, ...customItems];
+    const stageChecklist = ALL_STAGES.find(s => s.id === stageId)?.checklist || [];
     
     // Map DB checklist items to UI tasks
     const tasks: Task[] = stageChecklist.map(uiItem => {
