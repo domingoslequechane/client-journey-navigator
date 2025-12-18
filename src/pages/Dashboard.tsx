@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { TrialBanner } from '@/components/subscription/TrialBanner';
@@ -14,10 +14,9 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 
 type Client = Tables<'clients'>;
-type UserRole = 'sales' | 'operations' | 'campaign_management' | 'admin';
 
 const QUALIFICATION_LABELS: Record<string, string> = {
   cold: 'Frio',
@@ -35,32 +34,32 @@ const SOURCE_LABELS: Record<string, string> = {
   other: 'Outro',
 };
 
+// Stages each role is responsible for
+const SALES_STAGES = ['prospeccao', 'reuniao', 'contratacao'];
+const OPERATIONS_STAGES = ['producao', 'trafego'];
+const CAMPAIGN_STAGES = ['trafego', 'retencao', 'fidelizacao'];
+
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { 
+    role: userRole, 
+    loading: roleLoading, 
+    canSeeSalesFunnel: canSeeSales, 
+    canSeeOperationalFlow: canSeeOperations,
+    canAddClient,
+    getVisibleStages
+  } = useUserRole();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const { currencySymbol } = useOrganizationCurrency();
 
   useEffect(() => {
-    if (user) {
+    if (!roleLoading) {
       fetchData();
     }
-  }, [user]);
+  }, [roleLoading]);
 
   const fetchData = async () => {
     try {
-      // Fetch user role from profiles
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user?.id)
-        .single();
-
-      if (profileData?.role) {
-        setUserRole(profileData.role as UserRole);
-      }
-
       // Fetch clients
       const { data, error } = await supabase
         .from('clients')
@@ -89,11 +88,15 @@ export default function Dashboard() {
     return stageMap[dbStage] || dbStage;
   };
 
-  // Role-based visibility helpers
-  const canSeeSales = userRole === 'admin' || userRole === 'sales';
-  const canSeeOperations = userRole === 'admin' || userRole === 'operations' || userRole === 'campaign_management';
+  // Filter recent clients based on role's responsible stages
+  const recentClients = useMemo(() => {
+    const visibleStages = getVisibleStages();
+    const filteredClients = visibleStages 
+      ? clients.filter(c => visibleStages.includes(c.current_stage))
+      : clients;
+    return filteredClients.slice(0, 3);
+  }, [clients, getVisibleStages]);
 
-  const recentClients = clients.slice(0, 3);
   const totalClients = clients.length;
   const activeClients = clients.filter(c => ['producao', 'trafego', 'retencao', 'fidelizacao'].includes(c.current_stage)).length;
   const qualifiedLeads = clients.filter(c => c.qualification === 'qualified' || c.qualification === 'hot').length;
@@ -106,17 +109,15 @@ export default function Dashboard() {
   const operationalClients = clients.filter(c => ['producao', 'trafego', 'retencao', 'fidelizacao'].includes(c.current_stage)).length;
 
   // Quick actions based on role
-  const getQuickActions = () => {
+  const quickActions = useMemo(() => {
     const allActions = [
-      { title: 'Adicionar Novo Cliente', description: 'Cadastre um novo lead no sistema', icon: UserPlus, href: '/app/new-client', color: 'text-primary', roles: ['admin', 'sales'] },
-      { title: 'Ver Funil de Vendas', description: 'Kanban visual da jornada do cliente', icon: Kanban, href: '/app/sales-funnel', color: 'text-success', roles: ['admin', 'sales'] },
-      { title: 'Ver Fluxo Operacional', description: 'Acompanhe clientes em produção e retenção', icon: Workflow, href: '/app/operational-flow', color: 'text-chart-5', roles: ['admin', 'operations', 'campaign_management'] },
+      { title: 'Adicionar Novo Cliente', description: 'Cadastre um novo lead no sistema', icon: UserPlus, href: '/app/new-client', color: 'text-primary', show: canAddClient },
+      { title: 'Ver Funil de Vendas', description: 'Kanban visual da jornada do cliente', icon: Kanban, href: '/app/sales-funnel', color: 'text-success', show: canSeeSales },
+      { title: 'Ver Fluxo Operacional', description: 'Acompanhe clientes em produção e retenção', icon: Workflow, href: '/app/operational-flow', color: 'text-chart-5', show: canSeeOperations },
     ];
 
-    return allActions.filter(action => action.roles.includes(userRole || 'admin'));
-  };
-
-  const quickActions = getQuickActions();
+    return allActions.filter(action => action.show);
+  }, [canAddClient, canSeeSales, canSeeOperations]);
 
   if (loading) {
     return <DashboardSkeleton />;
