@@ -751,6 +751,7 @@ export type Database = {
           description: string | null
           difficulty_level: string | null
           id: string
+          organization_id: string | null
           source: string | null
           title: string
           updated_at: string
@@ -762,6 +763,7 @@ export type Database = {
           description?: string | null
           difficulty_level?: string | null
           id?: string
+          organization_id?: string | null
           source?: string | null
           title: string
           updated_at?: string
@@ -773,11 +775,20 @@ export type Database = {
           description?: string | null
           difficulty_level?: string | null
           id?: string
+          organization_id?: string | null
           source?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "study_suggestions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
