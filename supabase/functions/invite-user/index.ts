@@ -129,18 +129,8 @@ serve(async (req) => {
       console.log("User doesn't exist, creating new invite");
     }
 
-    // Use production URL - Lovable preview/deployed URL
-    // Priority: origin header > deployed domain > lovable project domain
-    const origin = req.headers.get("origin");
-    let baseUrl: string;
-    
-    if (origin && !origin.includes('localhost')) {
-      baseUrl = origin;
-    } else {
-      // Fallback to Lovable project domain
-      baseUrl = "https://qualify.lovable.app";
-    }
-    
+    // Use production domain
+    const baseUrl = "https://qualify.onixagence.com";
     const redirectUrl = `${baseUrl}/set-password`;
 
     console.log(`Using redirect URL: ${redirectUrl}`);
