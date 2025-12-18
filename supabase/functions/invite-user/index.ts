@@ -189,7 +189,7 @@ serve(async (req) => {
     // Send welcome email via Resend with the actual invite link
     try {
       await resend.emails.send({
-        from: "Qualify <onboarding@resend.dev>",
+        from: "Qualify <no-reply@onixagence.com>",
         to: [email],
         subject: "Você foi convidado para o Qualify!",
         html: `
