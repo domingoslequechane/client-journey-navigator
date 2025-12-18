@@ -240,7 +240,7 @@ serve(async (req) => {
         }
 
         // Record payment in history
-        const amount = subscriptionData?.first_subscription_item?.price || 1000; // Default to $10 in cents
+        const amount = subscriptionData?.first_subscription_item?.price || 700; // Default to $7 in cents
         const { error: paymentError } = await supabase
           .from('payment_history')
           .insert({
@@ -277,7 +277,7 @@ serve(async (req) => {
         }
 
         // Record failed payment in history
-        const amount = subscriptionData?.first_subscription_item?.price || 1000;
+        const amount = subscriptionData?.first_subscription_item?.price || 700; // Default to $7 in cents
         const { error: paymentError } = await supabase
           .from('payment_history')
           .insert({
