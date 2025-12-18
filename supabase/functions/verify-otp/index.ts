@@ -117,9 +117,9 @@ const handler = async (req: Request): Promise<Response> => {
       const { data: slugData } = await supabase.rpc('generate_slug', { name: orgName });
       const slug = slugData || `agency-${Date.now()}`;
       
-      // Calculate trial end date (14 days from now)
+      // Calculate trial end date (7 days from now)
       const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+      trialEndsAt.setDate(trialEndsAt.getDate() + 7);
       
       // Create the organization
       const { data: orgData, error: orgError } = await supabase

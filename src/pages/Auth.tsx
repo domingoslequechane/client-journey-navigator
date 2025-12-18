@@ -158,11 +158,12 @@ export default function Auth() {
 
       toast({ title: 'Bem-vindo!', description: 'Login realizado com sucesso' });
       
-      // Redirect system admins to admin panel
+      // Redirect system admins to admin panel, preserve route for regular users
       if (adminRole) {
         navigate('/admin');
       } else {
-        navigate('/app');
+        const from = (location.state as any)?.from?.pathname || '/app';
+        navigate(from);
       }
     }
     setLoading(false);
