@@ -98,11 +98,16 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Get the origin for redirect URL
+    const origin = req.headers.get("origin") || "https://qualify.lovable.app";
+    const redirectUrl = `${origin}/onboarding?success=true`;
+
     console.log("Creating checkout", {
       organizationId,
       storeId,
       variantId,
       userId: user.id,
+      redirectUrl,
     });
 
     // Create checkout session with LemonSqueezy API
@@ -126,7 +131,7 @@ const handler = async (req: Request): Promise<Response> => {
               },
             },
             product_options: {
-              redirect_url: `${req.headers.get("origin") || "https://qualify.lovable.app"}/app/subscription?success=true`,
+              redirect_url: redirectUrl,
             },
           },
           relationships: {

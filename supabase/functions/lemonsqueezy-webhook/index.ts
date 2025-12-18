@@ -79,6 +79,7 @@ serve(async (req) => {
 
     console.log("Processing event:", eventName);
     console.log("Custom data:", JSON.stringify(customData));
+    console.log("Subscription status:", subscriptionData?.status);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -111,6 +112,32 @@ serve(async (req) => {
       case 'subscription_created': {
         console.log("Creating subscription for organization:", organizationId);
         
+        const status = mapStatus(subscriptionData.status);
+        const isOnTrial = subscriptionData.status === 'on_trial';
+        
+        // Calculate trial end date based on LemonSqueezy data
+        let trialEndsAt: string | null = null;
+        if (isOnTrial && subscriptionData.trial_ends_at) {
+          trialEndsAt = new Date(subscriptionData.trial_ends_at).toISOString();
+        } else if (isOnTrial && subscriptionData.renews_at) {
+          // If no trial_ends_at, use renews_at as the trial end
+          trialEndsAt = new Date(subscriptionData.renews_at).toISOString();
+        }
+        
+        // Update organization's trial_ends_at if on trial
+        if (trialEndsAt) {
+          const { error: orgError } = await supabase
+            .from('organizations')
+            .update({ trial_ends_at: trialEndsAt })
+            .eq('id', organizationId);
+          
+          if (orgError) {
+            console.error("Error updating organization trial_ends_at:", orgError);
+          } else {
+            console.log("Updated organization trial_ends_at:", trialEndsAt);
+          }
+        }
+        
         const { error } = await supabase
           .from('subscriptions')
           .upsert({
@@ -120,7 +147,7 @@ serve(async (req) => {
             lemonsqueezy_order_id: String(subscriptionData.order_id),
             lemonsqueezy_product_id: String(subscriptionData.product_id),
             lemonsqueezy_variant_id: String(subscriptionData.variant_id),
-            status: mapStatus(subscriptionData.status),
+            status: status,
             current_period_start: subscriptionData.renews_at ? new Date(subscriptionData.created_at).toISOString() : null,
             current_period_end: subscriptionData.renews_at ? new Date(subscriptionData.renews_at).toISOString() : null,
             cancel_at_period_end: subscriptionData.cancelled || false,
@@ -133,17 +160,32 @@ serve(async (req) => {
           throw error;
         }
         
-        console.log("Subscription created successfully");
+        console.log("Subscription created successfully with status:", status);
         break;
       }
 
       case 'subscription_updated': {
         console.log("Updating subscription for organization:", organizationId);
         
+        const status = mapStatus(subscriptionData.status);
+        
+        // If transitioning from trial to active, update trial_ends_at to now
+        if (subscriptionData.status === 'active') {
+          const { data: currentSub } = await supabase
+            .from('subscriptions')
+            .select('status')
+            .eq('organization_id', organizationId)
+            .single();
+          
+          if (currentSub?.status === 'trialing') {
+            console.log("Trial ended, subscription now active");
+          }
+        }
+        
         const { error } = await supabase
           .from('subscriptions')
           .update({
-            status: mapStatus(subscriptionData.status),
+            status: status,
             current_period_start: subscriptionData.renews_at ? new Date(subscriptionData.created_at).toISOString() : null,
             current_period_end: subscriptionData.renews_at ? new Date(subscriptionData.renews_at).toISOString() : null,
             cancel_at_period_end: subscriptionData.cancelled || false,
