@@ -239,16 +239,16 @@ export function ContractTemplatesTab() {
     <div className="space-y-6">
       <AnimatedContainer animation="fade-up">
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Templates de Contrato</CardTitle>
-                <CardDescription>
+          <CardHeader className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="min-w-0">
+                <CardTitle className="text-lg md:text-xl">Templates de Contrato</CardTitle>
+                <CardDescription className="text-sm">
                   Crie modelos de contrato que podem ser preenchidos automaticamente com dados do cliente.
                 </CardDescription>
               </div>
               {!showForm && (
-                <Button onClick={handleNewTemplate} className="gap-2">
+                <Button onClick={handleNewTemplate} className="gap-2 shrink-0 w-full sm:w-auto">
                   <Plus className="h-4 w-4" />
                   Novo Template
                 </Button>
@@ -304,20 +304,20 @@ export function ContractTemplatesTab() {
 
             {/* Variables reference */}
             <div className="bg-muted/50 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Variáveis Disponíveis</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-                <code className="bg-background px-2 py-1 rounded">{'{{empresa_cliente}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{nome_contato}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{email_cliente}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{telefone_cliente}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{endereco_cliente}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{servicos_contratados}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{valor_mensal}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{valor_trafego}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{nome_agencia}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{sede_agencia}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{nuit_agencia}}'}</code>
-                <code className="bg-background px-2 py-1 rounded">{'{{data_assinatura}}'}</code>
+              <h4 className="font-medium mb-2 text-sm md:text-base">Variáveis Disponíveis</h4>
+              <div className="flex flex-wrap gap-2 text-xs md:text-sm">
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{empresa_cliente}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{nome_contato}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{email_cliente}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{telefone_cliente}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{endereco_cliente}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{servicos_contratados}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{valor_mensal}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{valor_trafego}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{nome_agencia}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{sede_agencia}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{nuit_agencia}}'}</code>
+                <code className="bg-background px-2 py-1 rounded break-all">{'{{data_assinatura}}'}</code>
               </div>
             </div>
 
@@ -332,23 +332,25 @@ export function ContractTemplatesTab() {
                 <div className="space-y-2">
                   {templates.map((template, index) => (
                     <AnimatedContainer key={template.id} animation="fade-up" delay={index * 0.05}>
-                      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium truncate">{template.name}</p>
-                            {template.is_default && (
-                              <Badge variant="secondary" className="gap-1">
-                                <Star className="h-3 w-3" />
-                                Padrão
-                              </Badge>
-                            )}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <FileText className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-medium truncate">{template.name}</p>
+                              {template.is_default && (
+                                <Badge variant="secondary" className="gap-1 shrink-0">
+                                  <Star className="h-3 w-3" />
+                                  Padrão
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {template.content.substring(0, 100)}...
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {template.content.substring(0, 100)}...
-                          </p>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 shrink-0 self-end sm:self-center">
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(template)}>
                             <Edit2 className="h-4 w-4" />
                           </Button>

@@ -7,11 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, CheckSquare } from 'lucide-react';
+import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChecklistTemplatesTab } from '@/components/settings/ChecklistTemplatesTab';
 import { ContractTemplatesTab } from '@/components/settings/ContractTemplatesTab';
 interface AgencySettings {
   id: string;
@@ -347,7 +346,7 @@ export default function Settings() {
 
       <AnimatedContainer animation="fade-up" delay={0.1}>
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="profile" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
             <User className="h-3 w-3 md:h-4 md:w-4" />
             <span className="hidden sm:inline">Meu Perfil</span>
@@ -362,11 +361,6 @@ export default function Settings() {
             <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
             <span className="hidden sm:inline">Conhecimento</span>
             <span className="sm:hidden">Conhec.</span>
-          </TabsTrigger>
-          <TabsTrigger value="checklists" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
-            <CheckSquare className="h-3 w-3 md:h-4 md:w-4" />
-            <span className="hidden sm:inline">Checklists</span>
-            <span className="sm:hidden">Check</span>
           </TabsTrigger>
           <TabsTrigger value="contracts" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
             <FileText className="h-3 w-3 md:h-4 md:w-4" />
@@ -716,11 +710,6 @@ export default function Settings() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        {/* Checklists Tab */}
-        <TabsContent value="checklists">
-          <ChecklistTemplatesTab />
         </TabsContent>
 
         {/* Contracts Tab */}
