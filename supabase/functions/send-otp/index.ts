@@ -100,7 +100,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: "Qualify <onboarding@resend.dev>",
+      from: "Qualify <noreply@onixagence.com>",
       to: [email],
       subject: "Código de verificação - Qualify",
       html: `
@@ -146,7 +146,16 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("OTP email sent:", emailResponse);
+    // Check for Resend API errors
+    if (emailResponse.error) {
+      console.error("Resend API error:", JSON.stringify(emailResponse.error, null, 2));
+      return new Response(
+        JSON.stringify({ error: "Falha ao enviar e-mail de verificação" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("OTP email sent successfully:", JSON.stringify(emailResponse, null, 2));
 
     return new Response(
       JSON.stringify({ success: true, message: "OTP sent successfully" }),
