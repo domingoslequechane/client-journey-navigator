@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Send, X, RotateCcw, MessageSquareHeart, Loader2, HeadphonesIcon, ArrowLeft } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { MessageSquare, Send, X, RotateCcw, MessageSquareHeart, Loader2, HeadphonesIcon, ArrowLeft, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -71,6 +72,7 @@ export default function SupportFeedback() {
   const [feedbackSubject, setFeedbackSubject] = useState('');
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   const handleSelectTicket = (ticket: SupportTicket) => {
     setSelectedTicket(ticket);
@@ -319,6 +321,7 @@ export default function SupportFeedback() {
       setFeedbackType('general');
       setFeedbackSubject('');
       setFeedbackMessage('');
+      setShowFeedbackModal(false);
       fetchUserFeedbacks();
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -707,112 +710,129 @@ export default function SupportFeedback() {
         </TabsContent>
 
         <TabsContent value="feedback">
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Send Feedback Form */}
-            <AnimatedContainer animation="fade-up" delay={0.1}>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquareHeart className="h-5 w-5" />
-                    Enviar Feedback
-                  </CardTitle>
-                  <CardDescription>
-                    Compartilhe sua opinião, reporte problemas ou sugira melhorias
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Tipo de Feedback</Label>
-                    <Select value={feedbackType} onValueChange={setFeedbackType}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {feedbackTypes.map((t) => (
-                          <SelectItem key={t.value} value={t.value}>
-                            {t.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+          <AnimatedContainer animation="fade-up">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquareHeart className="h-5 w-5" />
+                      Seus Feedbacks
+                    </CardTitle>
+                    <CardDescription>
+                      Acompanhe o status dos feedbacks enviados
+                    </CardDescription>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Assunto</Label>
-                    <Input
-                      value={feedbackSubject}
-                      onChange={(e) => setFeedbackSubject(e.target.value)}
-                      placeholder="Resumo do seu feedback"
-                      maxLength={200}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Mensagem</Label>
-                    <Textarea
-                      value={feedbackMessage}
-                      onChange={(e) => setFeedbackMessage(e.target.value)}
-                      placeholder="Descreva seu feedback em detalhes..."
-                      rows={5}
-                      maxLength={2000}
-                    />
-                  </div>
-
-                  <Button 
-                    onClick={submitFeedback} 
-                    disabled={sendingFeedback} 
-                    className="w-full"
-                  >
-                    {sendingFeedback && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Enviar Feedback
+                  <Button onClick={() => setShowFeedbackModal(true)} size="sm" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Novo Feedback</span>
+                    <span className="sm:hidden">Novo</span>
                   </Button>
-                </CardContent>
-              </Card>
-            </AnimatedContainer>
-
-            {/* Previous Feedbacks */}
-            <AnimatedContainer animation="fade-up" delay={0.2}>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Seus Feedbacks</CardTitle>
-                  <CardDescription>
-                    Acompanhe o status dos feedbacks enviados
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <ScrollArea className="h-[400px]">
-                    {userFeedbacks.length === 0 ? (
-                      <div className="p-6 text-center text-muted-foreground">
-                        <MessageSquareHeart className="h-8 w-8 mx-auto mb-2" />
-                        <p className="text-sm">Nenhum feedback enviado</p>
-                      </div>
-                    ) : (
-                      <div className="divide-y">
-                        {userFeedbacks.map(fb => (
-                          <div key={fb.id} className="p-4 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm">{fb.subject}</span>
-                              {getStatusBadge(fb.status)}
-                            </div>
-                            <p className="text-sm text-muted-foreground line-clamp-2">{fb.message}</p>
-                            {fb.admin_notes && (
-                              <div className="bg-muted p-2 rounded text-sm">
-                                <span className="font-medium">Resposta: </span>
-                                {fb.admin_notes}
-                              </div>
-                            )}
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(fb.created_at), "dd/MM/yyyy 'às' HH:mm")}
-                            </p>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[calc(100vh-320px)] md:h-[400px]">
+                  {userFeedbacks.length === 0 ? (
+                    <div className="p-6 text-center text-muted-foreground">
+                      <MessageSquareHeart className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">Nenhum feedback enviado</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-3"
+                        onClick={() => setShowFeedbackModal(true)}
+                      >
+                        Enviar primeiro feedback
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="divide-y">
+                      {userFeedbacks.map(fb => (
+                        <div key={fb.id} className="p-4 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium text-sm truncate">{fb.subject}</span>
+                            {getStatusBadge(fb.status)}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </AnimatedContainer>
-          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{fb.message}</p>
+                          {fb.admin_notes && (
+                            <div className="bg-muted p-2 rounded text-sm">
+                              <span className="font-medium">Resposta: </span>
+                              {fb.admin_notes}
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(fb.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </AnimatedContainer>
+
+          {/* Feedback Modal */}
+          <Dialog open={showFeedbackModal} onOpenChange={setShowFeedbackModal}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <MessageSquareHeart className="h-5 w-5" />
+                  Enviar Feedback
+                </DialogTitle>
+                <DialogDescription>
+                  Compartilhe sua opinião, reporte problemas ou sugira melhorias
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label>Tipo de Feedback</Label>
+                  <Select value={feedbackType} onValueChange={setFeedbackType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {feedbackTypes.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Assunto</Label>
+                  <Input
+                    value={feedbackSubject}
+                    onChange={(e) => setFeedbackSubject(e.target.value)}
+                    placeholder="Resumo do seu feedback"
+                    maxLength={200}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Mensagem</Label>
+                  <Textarea
+                    value={feedbackMessage}
+                    onChange={(e) => setFeedbackMessage(e.target.value)}
+                    placeholder="Descreva seu feedback em detalhes..."
+                    rows={4}
+                    maxLength={2000}
+                  />
+                </div>
+
+                <Button 
+                  onClick={submitFeedback} 
+                  disabled={sendingFeedback} 
+                  className="w-full"
+                >
+                  {sendingFeedback && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Enviar Feedback
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
       </Tabs>
     </div>

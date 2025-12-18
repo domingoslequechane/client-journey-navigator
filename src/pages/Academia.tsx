@@ -439,48 +439,50 @@ Nível: [nível]
             </div>
           ) : (
             <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {paginatedData.map((suggestion) => (
                   <div 
                     key={suggestion.id}
-                    className="p-4 border border-border rounded-lg hover:border-primary/30 transition-colors"
+                    className="p-3 md:p-4 border border-border rounded-lg hover:border-primary/30 transition-colors"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm">{suggestion.title}</h3>
-                        {suggestion.description && (
-                          <p className="text-sm text-muted-foreground mt-1">{suggestion.description}</p>
-                        )}
-                        <div className="flex items-center gap-2 mt-3 flex-wrap">
-                          <Badge variant="outline" className="text-xs">
-                            {suggestion.category}
-                          </Badge>
-                          {suggestion.difficulty_level && (
-                            <Badge className={`text-xs ${DIFFICULTY_COLORS[suggestion.difficulty_level] || 'bg-muted text-muted-foreground'}`}>
-                              {DIFFICULTY_LABELS[suggestion.difficulty_level] || suggestion.difficulty_level}
-                            </Badge>
-                          )}
-                          {suggestion.ai_generated && (
-                            <Badge variant="secondary" className="text-xs gap-1">
-                              <Sparkles className="h-3 w-3" />
-                              IA
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {formatDate(suggestion.created_at)}
-                        </div>
+                    {/* Stack everything vertically for better mobile layout */}
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold text-sm flex-1">{suggestion.title}</h3>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
                           onClick={() => setSuggestionToDelete(suggestion)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                      </div>
+                      
+                      {suggestion.description && (
+                        <p className="text-sm text-muted-foreground">{suggestion.description}</p>
+                      )}
+                      
+                      {/* Badges and date in a row */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          {suggestion.category}
+                        </Badge>
+                        {suggestion.difficulty_level && (
+                          <Badge className={`text-xs ${DIFFICULTY_COLORS[suggestion.difficulty_level] || 'bg-muted text-muted-foreground'}`}>
+                            {DIFFICULTY_LABELS[suggestion.difficulty_level] || suggestion.difficulty_level}
+                          </Badge>
+                        )}
+                        {suggestion.ai_generated && (
+                          <Badge variant="secondary" className="text-xs gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            IA
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
+                          <Clock className="h-3 w-3" />
+                          {formatDate(suggestion.created_at)}
+                        </span>
                       </div>
                     </div>
                   </div>
