@@ -1,6 +1,7 @@
 import { Client } from '@/types';
 import { Building2, Mail, Phone, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatPhoneNumber } from '@/lib/phone-utils';
 
 interface ClientCardProps {
   client: Client;
@@ -32,7 +33,7 @@ export function ClientCard({ client, onClick }: ClientCardProps) {
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Phone className="h-3.5 w-3.5" />
-          <span>{client.phone}</span>
+          <span className="font-mono">{formatPhoneNumber(client.phone)}</span>
         </div>
       </div>
       

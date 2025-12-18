@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { useClientExport } from '@/hooks/useClientExport';
+import { formatPhoneNumber } from '@/lib/phone-utils';
 
 type Client = Tables<'clients'>;
 
@@ -182,8 +183,8 @@ export default function Clients() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{client.company_name}</p>
                         <p className="text-sm text-muted-foreground">{client.contact_name}</p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <Phone className="h-3 w-3" />{client.phone}
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 font-mono">
+                          <Phone className="h-3 w-3" />{formatPhoneNumber(client.phone)}
                         </div>
                       </div>
                     </div>
@@ -246,8 +247,8 @@ export default function Clients() {
                         </td>
                         <td className="px-6 py-4">
                           <p className="text-sm">{client.contact_name}</p>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Phone className="h-3 w-3" />{client.phone}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+                            <Phone className="h-3 w-3" />{formatPhoneNumber(client.phone)}
                           </div>
                         </td>
                         <td className="px-6 py-4">

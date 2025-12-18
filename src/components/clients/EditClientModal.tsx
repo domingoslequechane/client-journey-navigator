@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
@@ -166,7 +167,7 @@ export function EditClientModal({ open, onOpenChange, client, onClientUpdated }:
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Telefone *</Label>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+258 84 123 4567" />
+                <PhoneInput value={phone} onChange={setPhone} placeholder="+258 84 123 4567" />
               </div>
               <div className="space-y-2">
                 <Label>E-mail</Label>
