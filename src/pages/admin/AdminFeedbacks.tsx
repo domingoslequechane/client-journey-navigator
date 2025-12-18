@@ -96,7 +96,6 @@ export default function AdminFeedbacks() {
       general: { className: 'bg-blue-500/10 text-blue-500', label: 'Geral' },
       bug: { className: 'bg-red-500/10 text-red-500', label: 'Bug' },
       feature: { className: 'bg-purple-500/10 text-purple-500', label: 'Funcionalidade' },
-      support: { className: 'bg-orange-500/10 text-orange-500', label: 'Suporte' },
     };
     const variant = types[type] || types.general;
     return <Badge className={variant.className}>{variant.label}</Badge>;
