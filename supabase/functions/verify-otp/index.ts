@@ -110,25 +110,21 @@ const handler = async (req: Request): Promise<Response> => {
     const userId = userData.user?.id;
     
     if (userId) {
-      // Create organization for the new user
+      // Create organization for the new user (without trial - will be set by LemonSqueezy checkout)
       const orgName = fullName ? `${fullName}'s Agency` : `Agency`;
       
       // Generate a unique slug
       const { data: slugData } = await supabase.rpc('generate_slug', { name: orgName });
       const slug = slugData || `agency-${Date.now()}`;
       
-      // Calculate trial end date (7 days from now)
-      const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-      
-      // Create the organization
+      // Create the organization with a placeholder trial_ends_at (will be updated by webhook)
       const { data: orgData, error: orgError } = await supabase
         .from("organizations")
         .insert({
           name: orgName,
           slug: slug,
           owner_id: userId,
-          trial_ends_at: trialEndsAt.toISOString(),
+          trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Temporary placeholder
         })
         .select()
         .single();
@@ -148,21 +144,8 @@ const handler = async (req: Request): Promise<Response> => {
           console.error("Error updating profile with org:", profileError);
         }
         
-        // Create initial subscription with trialing status
-        const { error: subError } = await supabase
-          .from("subscriptions")
-          .insert({
-            organization_id: orgData.id,
-            status: 'trialing',
-            current_period_start: new Date().toISOString(),
-            current_period_end: trialEndsAt.toISOString(),
-          });
-        
-        if (subError) {
-          console.error("Error creating subscription:", subError);
-        } else {
-          console.log("Trial subscription created for org:", orgData.id);
-        }
+        // Note: No subscription created here - will be created by LemonSqueezy webhook after checkout
+        console.log("Organization created, user will complete checkout to start trial");
       }
     }
 
