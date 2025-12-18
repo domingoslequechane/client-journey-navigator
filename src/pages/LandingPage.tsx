@@ -91,7 +91,7 @@ const features = [
   },
   {
     icon: Bot,
-    title: 'IA com 20+ Anos de Marketing',
+    title: 'IA para Marketing',
     description: 'Assistente que conhece seu cliente, sua agência e sugere estratégias personalizadas em tempo real.',
     highlight: 'Contexto total'
   },
@@ -345,7 +345,7 @@ export default function LandingPage() {
               <Link to="/auth">
                 <Button size="lg" className="text-lg px-8 py-6 gap-3 shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105">
                   <Rocket className="h-5 w-5" />
-                  Começar 14 Dias Grátis
+                  Começar 7 Dias Grátis
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
@@ -358,7 +358,7 @@ export default function LandingPage() {
             >
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
-                <span>Sem cartão de crédito</span>
+                <span>7 dias grátis</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -487,7 +487,7 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <span className="text-primary font-semibold text-sm uppercase tracking-wider mb-4 block">A Jornada</span>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-              Os <span className="text-primary">7 Estágios</span> que transformam leads em fãs
+              Os <span className="text-primary">7 Estágios</span> que transformam leads em clientes satisfeitos
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Cada cliente passa por uma jornada. O Qualify garante que nenhum se perca no caminho.
@@ -578,7 +578,8 @@ export default function LandingPage() {
                 </span>
                 
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-                  Apenas <span className="text-primary">$10/mês</span>
+                  Apenas <span className="text-primary">$7/mês</span>
+                  <span className="ml-3 text-lg text-muted-foreground line-through">$14</span>
                 </h2>
                 
                 <p className="text-xl text-muted-foreground mb-8 max-w-xl mx-auto">
@@ -588,7 +589,7 @@ export default function LandingPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Check className="h-5 w-5 text-primary" />
-                    <span>14 dias grátis</span>
+                    <span>7 dias grátis</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Check className="h-5 w-5 text-primary" />
@@ -634,7 +635,7 @@ export default function LandingPage() {
           </div>
           
           <p className="mt-8 text-primary-foreground/60 text-sm">
-            Sem cartão de crédito • Setup em 5 minutos • Suporte em português
+            7 dias grátis • Setup em 5 minutos • Suporte em português
           </p>
         </div>
       </section>
