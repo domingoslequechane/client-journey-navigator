@@ -328,21 +328,21 @@ Nível: [nível]
   };
 
   return (
-    <div className="p-8 h-full flex flex-col">
-      <AnimatedContainer animation="fade-up" className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-8 h-full flex flex-col">
+      <AnimatedContainer animation="fade-up" className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <GraduationCap className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
+            <GraduationCap className="h-7 w-7 md:h-8 md:w-8 text-primary" />
             Academia
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
             Sugestões de estudo para a equipe se destacar no mercado
           </p>
         </div>
         <Button 
           onClick={generateStudySuggestions} 
           disabled={isGenerating}
-          className="gap-2"
+          className="gap-2 w-full md:w-auto"
         >
           {isGenerating ? (
             <>
@@ -385,14 +385,14 @@ Nível: [nível]
       {/* Suggestions History */}
       <AnimatedContainer animation="fade-up" delay={0.2} className="w-full flex-1 flex flex-col min-h-0">
       <Card className="w-full flex-1 flex flex-col min-h-0">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                 <BookOpen className="h-5 w-5" />
                 Histórico de Sugestões
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 {totalItems > 0 ? `${totalItems} sugestões de estudo` : 'Todas as sugestões de estudo geradas anteriormente'}
               </CardDescription>
             </div>

@@ -9,12 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Send, X, RotateCcw, MessageSquareHeart, Loader2, HeadphonesIcon } from 'lucide-react';
+import { MessageSquare, Send, X, RotateCcw, MessageSquareHeart, Loader2, HeadphonesIcon, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SupportTicket {
   id: string;
@@ -51,6 +52,8 @@ const feedbackTypes = [
 
 export default function SupportFeedback() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const [showTicketList, setShowTicketList] = useState(true);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
@@ -68,6 +71,18 @@ export default function SupportFeedback() {
   const [feedbackSubject, setFeedbackSubject] = useState('');
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [sendingFeedback, setSendingFeedback] = useState(false);
+
+  const handleSelectTicket = (ticket: SupportTicket) => {
+    setSelectedTicket(ticket);
+    if (isMobile) {
+      setShowTicketList(false);
+    }
+  };
+
+  const handleBackToTicketList = () => {
+    setShowTicketList(true);
+    setSelectedTicket(null);
+  };
 
   useEffect(() => {
     if (user) {
@@ -343,180 +358,352 @@ export default function SupportFeedback() {
       </AnimatedContainer>
 
       <Tabs defaultValue="support" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="support" className="relative">
+        <TabsList className="w-full md:w-auto grid grid-cols-2 md:flex">
+          <TabsTrigger value="support" className="relative flex-1 md:flex-initial">
             <HeadphonesIcon className="h-4 w-4 mr-2" />
-            Suporte Técnico
+            <span className="hidden sm:inline">Suporte Técnico</span>
+            <span className="sm:hidden">Suporte</span>
             {openTickets.length > 0 && (
               <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
                 {openTickets.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="feedback">
+          <TabsTrigger value="feedback" className="flex-1 md:flex-initial">
             <MessageSquareHeart className="h-4 w-4 mr-2" />
             Feedback
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="support">
-          <div className="grid gap-4 md:grid-cols-3">
-            {/* Tickets List */}
-            <AnimatedContainer animation="fade-up" delay={0.1}>
-              <Card className="md:col-span-1">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Tickets</CardTitle>
-                    <Button size="sm" onClick={() => setShowNewTicketForm(true)}>
-                      Novo
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <ScrollArea className="h-[400px]">
-                    {tickets.length === 0 ? (
-                      <div className="p-4 text-center text-muted-foreground">
-                        <MessageSquare className="h-8 w-8 mx-auto mb-2" />
-                        <p className="text-sm">Nenhum ticket</p>
-                      </div>
-                    ) : (
-                      <div className="divide-y">
-                        {tickets.map(ticket => (
-                          <div
-                            key={ticket.id}
-                            className={`p-3 cursor-pointer hover:bg-accent transition-colors ${selectedTicket?.id === ticket.id ? 'bg-accent' : ''}`}
-                            onClick={() => setSelectedTicket(ticket)}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium text-sm truncate flex-1">{ticket.subject}</span>
-                              <Badge variant={ticket.status === 'open' ? 'default' : 'secondary'} className="text-xs ml-2">
-                                {ticket.status === 'open' ? 'Aberto' : 'Fechado'}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(ticket.updated_at), "dd/MM/yyyy HH:mm")}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </AnimatedContainer>
-
-            {/* Chat Area */}
-            <AnimatedContainer animation="fade-up" delay={0.2} className="md:col-span-2">
-              <Card className="h-[500px] flex flex-col">
-                {showNewTicketForm ? (
-                  <>
-                    <CardHeader className="pb-3 border-b">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Novo Ticket</CardTitle>
-                        <Button variant="ghost" size="sm" onClick={() => setShowNewTicketForm(false)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 p-4 space-y-4">
-                      <div>
-                        <label className="text-sm font-medium">Assunto</label>
-                        <Input
-                          value={newTicketSubject}
-                          onChange={(e) => setNewTicketSubject(e.target.value)}
-                          placeholder="Descreva brevemente o problema"
-                          className="mt-1"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="text-sm font-medium">Mensagem</label>
-                        <textarea
-                          value={newTicketMessage}
-                          onChange={(e) => setNewTicketMessage(e.target.value)}
-                          placeholder="Descreva seu problema em detalhes..."
-                          className="w-full h-40 mt-1 px-3 py-2 rounded-md border border-input bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
-                      </div>
-                      <Button onClick={createTicket} disabled={creatingTicket} className="w-full">
-                        {creatingTicket ? 'Criando...' : 'Criar Ticket'}
+          {/* Mobile: Show either ticket list OR chat */}
+          {isMobile ? (
+            showTicketList ? (
+              <AnimatedContainer animation="fade-up">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">Tickets</CardTitle>
+                      <Button size="sm" onClick={() => {
+                        setShowNewTicketForm(true);
+                        setShowTicketList(false);
+                      }}>
+                        Novo
                       </Button>
-                    </CardContent>
-                  </>
-                ) : selectedTicket ? (
-                  <>
-                    <CardHeader className="pb-3 border-b">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{selectedTicket.subject}</CardTitle>
-                          <CardDescription>
-                            {selectedTicket.status === 'open' ? 'Ticket aberto' : 'Ticket fechado'}
-                          </CardDescription>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ScrollArea className="h-[calc(100vh-280px)]">
+                      {tickets.length === 0 ? (
+                        <div className="p-4 text-center text-muted-foreground">
+                          <MessageSquare className="h-8 w-8 mx-auto mb-2" />
+                          <p className="text-sm">Nenhum ticket</p>
                         </div>
-                        {selectedTicket.status === 'open' ? (
-                          <Button variant="outline" size="sm" onClick={closeTicket}>
-                            <X className="h-4 w-4 mr-1" />
-                            Fechar
-                          </Button>
-                        ) : (
-                          <Button variant="outline" size="sm" onClick={reopenTicket}>
-                            <RotateCcw className="h-4 w-4 mr-1" />
-                            Reabrir
-                          </Button>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
-                      <ScrollArea className="flex-1 p-4">
-                        <div className="space-y-4">
-                          {messages.map(msg => (
+                      ) : (
+                        <div className="divide-y">
+                          {tickets.map(ticket => (
                             <div
-                              key={msg.id}
-                              className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                              key={ticket.id}
+                              className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                              onClick={() => handleSelectTicket(ticket)}
                             >
-                              <div
-                                className={`max-w-[80%] rounded-lg p-3 ${
-                                  msg.sender_id === user?.id
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted'
-                                }`}
-                              >
-                                <p className="text-sm">{msg.message}</p>
-                                <p className={`text-xs mt-1 ${msg.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                                  {msg.is_admin ? 'Suporte' : 'Você'} • {format(new Date(msg.created_at), 'HH:mm')}
-                                </p>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium text-sm truncate flex-1">{ticket.subject}</span>
+                                <Badge variant={ticket.status === 'open' ? 'default' : 'secondary'} className="text-xs ml-2">
+                                  {ticket.status === 'open' ? 'Aberto' : 'Fechado'}
+                                </Badge>
                               </div>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(ticket.updated_at), "dd/MM/yyyy HH:mm")}
+                              </p>
                             </div>
                           ))}
                         </div>
-                      </ScrollArea>
-                      {selectedTicket.status === 'open' && (
-                        <div className="p-4 border-t">
-                          <div className="flex gap-2">
-                            <Input
-                              value={newMessage}
-                              onChange={(e) => setNewMessage(e.target.value)}
-                              placeholder="Digite sua mensagem..."
-                              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessageToTicket()}
-                            />
-                            <Button onClick={sendMessageToTicket} disabled={sendingMessage || !newMessage.trim()}>
-                              <Send className="h-4 w-4" />
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </AnimatedContainer>
+            ) : (
+              <AnimatedContainer animation="fade-up">
+                <Card className="h-[calc(100vh-220px)] flex flex-col">
+                  {showNewTicketForm ? (
+                    <>
+                      <CardHeader className="pb-3 border-b">
+                        <div className="flex items-center gap-3">
+                          <Button variant="ghost" size="icon" onClick={() => {
+                            setShowNewTicketForm(false);
+                            setShowTicketList(true);
+                          }}>
+                            <ArrowLeft className="h-5 w-5" />
+                          </Button>
+                          <CardTitle className="text-lg">Novo Ticket</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-1 p-4 space-y-4">
+                        <div>
+                          <label className="text-sm font-medium">Assunto</label>
+                          <Input
+                            value={newTicketSubject}
+                            onChange={(e) => setNewTicketSubject(e.target.value)}
+                            placeholder="Descreva brevemente o problema"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-sm font-medium">Mensagem</label>
+                          <textarea
+                            value={newTicketMessage}
+                            onChange={(e) => setNewTicketMessage(e.target.value)}
+                            placeholder="Descreva seu problema em detalhes..."
+                            className="w-full h-40 mt-1 px-3 py-2 rounded-md border border-input bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                          />
+                        </div>
+                        <Button onClick={createTicket} disabled={creatingTicket} className="w-full">
+                          {creatingTicket ? 'Criando...' : 'Criar Ticket'}
+                        </Button>
+                      </CardContent>
+                    </>
+                  ) : selectedTicket ? (
+                    <>
+                      <CardHeader className="pb-3 border-b">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Button variant="ghost" size="icon" onClick={handleBackToTicketList}>
+                              <ArrowLeft className="h-5 w-5" />
                             </Button>
+                            <div>
+                              <CardTitle className="text-lg">{selectedTicket.subject}</CardTitle>
+                              <CardDescription>
+                                {selectedTicket.status === 'open' ? 'Ticket aberto' : 'Ticket fechado'}
+                              </CardDescription>
+                            </div>
                           </div>
+                          {selectedTicket.status === 'open' ? (
+                            <Button variant="outline" size="sm" onClick={closeTicket}>
+                              <X className="h-4 w-4 mr-1" />
+                              Fechar
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={reopenTicket}>
+                              <RotateCcw className="h-4 w-4 mr-1" />
+                              Reabrir
+                            </Button>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
+                        <ScrollArea className="flex-1 p-4">
+                          <div className="space-y-4">
+                            {messages.map(msg => (
+                              <div
+                                key={msg.id}
+                                className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                              >
+                                <div
+                                  className={`max-w-[80%] rounded-lg p-3 ${
+                                    msg.sender_id === user?.id
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-muted'
+                                  }`}
+                                >
+                                  <p className="text-sm">{msg.message}</p>
+                                  <p className={`text-xs mt-1 ${msg.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                    {msg.is_admin ? 'Suporte' : 'Você'} • {format(new Date(msg.created_at), 'HH:mm')}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                        {selectedTicket.status === 'open' && (
+                          <div className="p-4 border-t">
+                            <div className="flex gap-2">
+                              <Input
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                placeholder="Digite sua mensagem..."
+                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessageToTicket()}
+                              />
+                              <Button onClick={sendMessageToTicket} disabled={sendingMessage || !newMessage.trim()}>
+                                <Send className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </>
+                  ) : (
+                    <CardContent className="flex-1 flex items-center justify-center">
+                      <div className="text-center text-muted-foreground">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4" />
+                        <p>Selecione um ticket ou crie um novo</p>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              </AnimatedContainer>
+            )
+          ) : (
+            /* Desktop: Show both side by side */
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* Tickets List */}
+              <AnimatedContainer animation="fade-up" delay={0.1}>
+                <Card className="md:col-span-1">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">Tickets</CardTitle>
+                      <Button size="sm" onClick={() => setShowNewTicketForm(true)}>
+                        Novo
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ScrollArea className="h-[400px]">
+                      {tickets.length === 0 ? (
+                        <div className="p-4 text-center text-muted-foreground">
+                          <MessageSquare className="h-8 w-8 mx-auto mb-2" />
+                          <p className="text-sm">Nenhum ticket</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y">
+                          {tickets.map(ticket => (
+                            <div
+                              key={ticket.id}
+                              className={`p-3 cursor-pointer hover:bg-accent transition-colors ${selectedTicket?.id === ticket.id ? 'bg-accent' : ''}`}
+                              onClick={() => handleSelectTicket(ticket)}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium text-sm truncate flex-1">{ticket.subject}</span>
+                                <Badge variant={ticket.status === 'open' ? 'default' : 'secondary'} className="text-xs ml-2">
+                                  {ticket.status === 'open' ? 'Aberto' : 'Fechado'}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(ticket.updated_at), "dd/MM/yyyy HH:mm")}
+                              </p>
+                            </div>
+                          ))}
                         </div>
                       )}
-                    </CardContent>
-                  </>
-                ) : (
-                  <CardContent className="flex-1 flex items-center justify-center">
-                    <div className="text-center text-muted-foreground">
-                      <MessageSquare className="h-12 w-12 mx-auto mb-4" />
-                      <p>Selecione um ticket ou crie um novo</p>
-                    </div>
+                    </ScrollArea>
                   </CardContent>
-                )}
-              </Card>
-            </AnimatedContainer>
-          </div>
+                </Card>
+              </AnimatedContainer>
+
+              {/* Chat Area */}
+              <AnimatedContainer animation="fade-up" delay={0.2} className="md:col-span-2">
+                <Card className="h-[500px] flex flex-col">
+                  {showNewTicketForm ? (
+                    <>
+                      <CardHeader className="pb-3 border-b">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">Novo Ticket</CardTitle>
+                          <Button variant="ghost" size="sm" onClick={() => setShowNewTicketForm(false)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-1 p-4 space-y-4">
+                        <div>
+                          <label className="text-sm font-medium">Assunto</label>
+                          <Input
+                            value={newTicketSubject}
+                            onChange={(e) => setNewTicketSubject(e.target.value)}
+                            placeholder="Descreva brevemente o problema"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-sm font-medium">Mensagem</label>
+                          <textarea
+                            value={newTicketMessage}
+                            onChange={(e) => setNewTicketMessage(e.target.value)}
+                            placeholder="Descreva seu problema em detalhes..."
+                            className="w-full h-40 mt-1 px-3 py-2 rounded-md border border-input bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                          />
+                        </div>
+                        <Button onClick={createTicket} disabled={creatingTicket} className="w-full">
+                          {creatingTicket ? 'Criando...' : 'Criar Ticket'}
+                        </Button>
+                      </CardContent>
+                    </>
+                  ) : selectedTicket ? (
+                    <>
+                      <CardHeader className="pb-3 border-b">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-lg">{selectedTicket.subject}</CardTitle>
+                            <CardDescription>
+                              {selectedTicket.status === 'open' ? 'Ticket aberto' : 'Ticket fechado'}
+                            </CardDescription>
+                          </div>
+                          {selectedTicket.status === 'open' ? (
+                            <Button variant="outline" size="sm" onClick={closeTicket}>
+                              <X className="h-4 w-4 mr-1" />
+                              Fechar
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={reopenTicket}>
+                              <RotateCcw className="h-4 w-4 mr-1" />
+                              Reabrir
+                            </Button>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
+                        <ScrollArea className="flex-1 p-4">
+                          <div className="space-y-4">
+                            {messages.map(msg => (
+                              <div
+                                key={msg.id}
+                                className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                              >
+                                <div
+                                  className={`max-w-[80%] rounded-lg p-3 ${
+                                    msg.sender_id === user?.id
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-muted'
+                                  }`}
+                                >
+                                  <p className="text-sm">{msg.message}</p>
+                                  <p className={`text-xs mt-1 ${msg.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                    {msg.is_admin ? 'Suporte' : 'Você'} • {format(new Date(msg.created_at), 'HH:mm')}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                        {selectedTicket.status === 'open' && (
+                          <div className="p-4 border-t">
+                            <div className="flex gap-2">
+                              <Input
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                placeholder="Digite sua mensagem..."
+                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessageToTicket()}
+                              />
+                              <Button onClick={sendMessageToTicket} disabled={sendingMessage || !newMessage.trim()}>
+                                <Send className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </>
+                  ) : (
+                    <CardContent className="flex-1 flex items-center justify-center">
+                      <div className="text-center text-muted-foreground">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4" />
+                        <p>Selecione um ticket ou crie um novo</p>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              </AnimatedContainer>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="feedback">
