@@ -44,32 +44,29 @@ export function MobileNav() {
       { name: 'Home', href: '/app', icon: LayoutDashboard, show: true },
     ];
 
-    // Add Sales Funnel or Operational Flow based on role
+    // Add Sales Funnel if available
     if (canSeeSalesFunnel) {
       items.push({ name: 'Funil', href: '/app/sales-funnel', icon: Kanban, show: true });
     }
-    if (canSeeOperationalFlow && !canSeeSalesFunnel) {
-      items.push({ name: 'Fluxo', href: '/app/operational-flow', icon: Workflow, show: true });
-    }
 
-    // Clients for sales/admin
-    if (canSeeClients) {
-      items.push({ name: 'Clientes', href: '/app/clients', icon: Building2, show: true });
+    // Always show Operational Flow in main nav if user has access
+    if (canSeeOperationalFlow) {
+      items.push({ name: 'Fluxo', href: '/app/operational-flow', icon: Workflow, show: true });
     }
 
     // AI Assistant for everyone
     items.push({ name: 'IA', href: '/app/ai-assistant', icon: Sparkles, show: true });
 
     return items;
-  }, [canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients]);
+  }, [canSeeSalesFunnel, canSeeOperationalFlow]);
 
   // Build "More" menu items
   const moreItems = useMemo(() => {
     const items: { name: string; href: string; icon: typeof GraduationCap; show: boolean }[] = [];
 
-    // Add Operational Flow if user has access but it's not in main nav (because Sales Funnel is there)
-    if (canSeeOperationalFlow && canSeeSalesFunnel) {
-      items.push({ name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow, show: true });
+    // Add Clients to more menu on mobile
+    if (canSeeClients) {
+      items.push({ name: 'Clientes', href: '/app/clients', icon: Building2, show: true });
     }
 
     items.push(
@@ -88,7 +85,7 @@ export function MobileNav() {
     }
 
     return items;
-  }, [canSeeTeam, isAdmin, canSeeOperationalFlow, canSeeSalesFunnel]);
+  }, [canSeeTeam, isAdmin, canSeeClients]);
 
   const handleNavigate = (href: string) => {
     setMoreOpen(false);
