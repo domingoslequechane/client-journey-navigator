@@ -30,6 +30,7 @@ const navigation = [
   { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel' },
   { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational' },
   { name: 'Clientes', href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients' },
+  { name: 'Assistente IA', href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai' },
   { name: 'Academia', href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia' },
   { name: 'Equipe', href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team' },
 ];
@@ -161,40 +162,6 @@ export function Sidebar() {
 
           {/* Notifications */}
           <NotificationBell collapsed={collapsed} />
-          {/* AI Assistant */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/app/ai-assistant"
-                  data-tutorial="sidebar-ai"
-                  className={cn(
-                    'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    location.pathname === '/app/ai-assistant'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                  )}
-                >
-                  <Sparkles className="h-5 w-5" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Assistente IA</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Link
-              to="/app/ai-assistant"
-              data-tutorial="sidebar-ai"
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                location.pathname === '/app/ai-assistant'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
-            >
-              <Sparkles className="h-5 w-5" />
-              Assistente IA
-            </Link>
-          )}
 
           {/* Settings */}
           {collapsed ? (
