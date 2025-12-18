@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -184,9 +185,9 @@ export default function NewClient() {
             </div>
             <div>
               <Label>Telefone *</Label>
-              <Input 
+              <PhoneInput 
                 value={phone} 
-                onChange={(e) => setPhone(e.target.value)} 
+                onChange={setPhone} 
                 placeholder="+258 84 123 4567" 
                 required 
               />

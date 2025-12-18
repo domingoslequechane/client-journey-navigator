@@ -12,6 +12,7 @@ import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SalesFunnelSkeleton } from '@/components/ui/loading-skeleton';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatPhoneNumber } from '@/lib/phone-utils';
 
 const stageIcons = { prospecting: Search, qualification: Target, closing: FileCheck };
 
@@ -128,9 +129,9 @@ export default function SalesFunnel() {
                             <div className="flex-1 min-w-0">
                               <p className="font-medium truncate">{client.companyName}</p>
                               <p className="text-sm text-muted-foreground">{client.contactName}</p>
-                              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground font-mono">
                                 <Phone className="h-3 w-3" />
-                                {client.phone}
+                                {formatPhoneNumber(client.phone)}
                               </div>
                             </div>
                           </div>

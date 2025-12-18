@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useUserRole } from '@/hooks/useUserRole';
+import { formatPhoneNumber } from '@/lib/phone-utils';
 
 type Client = Tables<'clients'>;
 
@@ -371,7 +372,7 @@ export default function Dashboard() {
                             <p className="text-sm text-muted-foreground">{client.contact_name}</p>
                             <div className="flex items-center gap-2 mt-2">
                               <Phone className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">{client.phone}</span>
+                              <span className="text-xs text-muted-foreground font-mono">{formatPhoneNumber(client.phone)}</span>
                             </div>
                             <div className="flex items-center gap-2 mt-2">
                               <Badge variant={client.qualification === 'hot' ? 'default' : 'secondary'} className="text-xs">

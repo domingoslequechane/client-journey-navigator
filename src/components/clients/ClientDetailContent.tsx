@@ -32,6 +32,7 @@ import { ContractModal } from './ContractModal';
 import { EditClientModal } from './EditClientModal';
 import { GenerateContractModal } from './GenerateContractModal';
 import { ReportModal } from './ReportModal';
+import { formatPhoneNumber } from '@/lib/phone-utils';
 
 
 interface ClientDetailContentProps {
@@ -422,7 +423,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Telefone</p>
-            <p className="text-sm font-medium">{client.phone || 'N/A'}</p>
+            <p className="text-sm font-medium font-mono">{formatPhoneNumber(client.phone) || 'N/A'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
