@@ -44,7 +44,7 @@ const ROLE_COLORS: Record<string, string> = {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   active: { label: 'Ativo', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  pending: { label: 'Aguardando', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+  pending: { label: 'Convite Pendente', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
   suspended: { label: 'Suspenso', color: 'bg-red-100 text-red-800', icon: XCircle },
 };
 
@@ -160,11 +160,21 @@ export default function Team() {
         return !proprietorIds.has(profile.id);
       }) || [];
 
+      // Fetch login history to determine if users have accepted their invite
+      const userIds = filteredProfiles.map(p => p.id);
+      const { data: loginHistory } = await supabase
+        .from('login_history')
+        .select('user_id')
+        .in('user_id', userIds);
+
+      const usersWithLogins = new Set(loginHistory?.map(l => l.user_id) || []);
+
       const membersWithStatus = filteredProfiles.map(member => {
         let status: 'active' | 'pending' | 'suspended' = 'active';
         if ((member as any).suspended) {
           status = 'suspended';
-        } else if (!member.full_name) {
+        } else if (!usersWithLogins.has(member.id)) {
+          // User has never logged in - invite is pending
           status = 'pending';
         }
         return {
