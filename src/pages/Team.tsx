@@ -12,12 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, History, ShieldAlert, RefreshCw } from 'lucide-react';
+import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { z } from 'zod';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface TeamMember {
   id: string;
@@ -29,15 +27,6 @@ interface TeamMember {
   status?: 'active' | 'pending' | 'suspended';
 }
 
-interface LoginRecord {
-  id: string;
-  user_id: string;
-  logged_in_at: string;
-  provider: string;
-  user_agent: string | null;
-  user_name?: string;
-  user_email?: string;
-}
 
 const ROLE_LABELS: Record<string, string> = {
   sales: 'Vendas',
@@ -68,9 +57,7 @@ const inviteSchema = z.object({
 export default function Team() {
   const navigate = useNavigate();
   const [members, setMembers] = useState<TeamMember[]>([]);
-  const [loginHistory, setLoginHistory] = useState<LoginRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingHistory, setLoadingHistory] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState('');
@@ -96,7 +83,6 @@ export default function Team() {
   useEffect(() => {
     if (isCurrentUserAdmin === true && currentUserOrgId) {
       fetchMembers();
-      fetchLoginHistory();
     } else if (isCurrentUserAdmin === false) {
       navigate('/app');
       toast({
@@ -193,66 +179,6 @@ export default function Team() {
       toast({ title: 'Erro', description: 'Não foi possível carregar a equipe', variant: 'destructive' });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchLoginHistory = async () => {
-    setLoadingHistory(true);
-    try {
-      if (!currentUserOrgId) {
-        setLoginHistory([]);
-        return;
-      }
-
-      // Get profiles from the same organization
-      const { data: orgProfiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .eq('organization_id', currentUserOrgId);
-
-      if (!orgProfiles) {
-        setLoginHistory([]);
-        return;
-      }
-
-      // Fetch proprietor user IDs to filter them out (unless current user is proprietor)
-      const { data: proprietorRoles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'proprietor');
-
-      const proprietorIds = new Set(proprietorRoles?.map(r => r.user_id) || []);
-
-      // Filter profiles - hide proprietors unless current user is proprietor
-      const visibleProfiles = orgProfiles.filter(profile => {
-        if (isProprietor) return true;
-        return !proprietorIds.has(profile.id);
-      });
-
-      const profileMap = new Map(visibleProfiles.map(p => [p.id, p]));
-      const visibleUserIds = visibleProfiles.map(p => p.id);
-
-      // Fetch login history only for visible users in the organization
-      const { data: logins, error } = await supabase
-        .from('login_history')
-        .select('*')
-        .in('user_id', visibleUserIds)
-        .order('logged_in_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      const historyWithNames = (logins || []).map(login => ({
-        ...login,
-        user_name: profileMap.get(login.user_id)?.full_name || 'Usuário',
-        user_email: profileMap.get(login.user_id)?.email || '',
-      }));
-
-      setLoginHistory(historyWithNames as LoginRecord[]);
-    } catch (error) {
-      console.error('Error fetching login history:', error);
-    } finally {
-      setLoadingHistory(false);
     }
   };
 
@@ -785,69 +711,6 @@ export default function Team() {
         </Table>
       </AnimatedContainer>
 
-      {/* Login History Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Histórico de Logins
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingHistory ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : loginHistory.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">
-              Nenhum registro de login encontrado.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Usuário</TableHead>
-                    <TableHead className="hidden md:table-cell">E-mail</TableHead>
-                    <TableHead>Data/Hora</TableHead>
-                    <TableHead className="hidden sm:table-cell">Método</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loginHistory.map(login => (
-                    <TableRow key={login.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs">
-                              {login.user_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-sm">{login.user_name}</span>
-                            <span className="text-xs text-muted-foreground md:hidden">{login.user_email}</span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
-                        {login.user_email}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {format(new Date(login.logged_in_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {login.provider}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
