@@ -30,7 +30,7 @@ interface StudySuggestion {
   created_at: string;
 }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const CHAT_URL = `https://hrarkpjuchrbffnrhzcy.supabase.co/functions/v1/chat`;
 
 const DIFFICULTY_COLORS: Record<string, string> = {
   beginner: 'bg-green-100 text-green-800',
@@ -156,6 +156,17 @@ export default function Academia() {
         throw new Error("Você precisa estar logado para gerar sugestões");
       }
 
+      // Get user's organization_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (!profile?.organization_id) {
+        throw new Error("Organização não encontrada");
+      }
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
@@ -245,9 +256,15 @@ Nível: [nível]
       console.log('Parsed suggestions:', parsedSuggestions);
 
       if (parsedSuggestions.length > 0) {
+        // Add organization_id to each suggestion
+        const suggestionsWithOrg = parsedSuggestions.map(s => ({
+          ...s,
+          organization_id: profile.organization_id
+        }));
+
         const { error } = await supabase
           .from('study_suggestions')
-          .insert(parsedSuggestions);
+          .insert(suggestionsWithOrg);
 
         if (error) {
           console.error('Error saving suggestions:', error);
