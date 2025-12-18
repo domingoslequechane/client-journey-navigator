@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { RoleProtectedRoute } from "@/components/auth/RoleProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import LandingPage from "./pages/LandingPage";
@@ -75,16 +76,44 @@ const App = () => (
                 }
               >
                 <Route index element={<Dashboard />} />
-                <Route path="sales-funnel" element={<SalesFunnel />} />
-                <Route path="operational-flow" element={<OperationalFlow />} />
-                <Route path="clients" element={<Clients />} />
+                <Route path="sales-funnel" element={
+                  <RoleProtectedRoute requireSalesFunnel>
+                    <SalesFunnel />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="operational-flow" element={
+                  <RoleProtectedRoute requireOperationalFlow>
+                    <OperationalFlow />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="clients" element={
+                  <RoleProtectedRoute requireClients>
+                    <Clients />
+                  </RoleProtectedRoute>
+                } />
                 <Route path="clients/:clientId" element={<ClientDetail />} />
-                <Route path="new-client" element={<NewClient />} />
+                <Route path="new-client" element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'sales']}>
+                    <NewClient />
+                  </RoleProtectedRoute>
+                } />
                 <Route path="academia" element={<Academia />} />
-                <Route path="team" element={<Team />} />
+                <Route path="team" element={
+                  <RoleProtectedRoute requireTeam>
+                    <Team />
+                  </RoleProtectedRoute>
+                } />
                 <Route path="ai-assistant" element={<AIAssistant />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="subscription" element={<Subscription />} />
+                <Route path="settings" element={
+                  <RoleProtectedRoute requireSettings>
+                    <Settings />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="subscription" element={
+                  <RoleProtectedRoute requireSubscription>
+                    <Subscription />
+                  </RoleProtectedRoute>
+                } />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="support" element={<SupportFeedback />} />
                 <Route path="upgrade" element={<Upgrade />} />
