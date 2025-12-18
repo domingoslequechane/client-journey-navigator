@@ -70,7 +70,7 @@ serve(async (req) => {
     // Also check profiles table for admin role (organization admin support)
     const { data: profileData } = await supabaseAdmin
       .from("profiles")
-      .select("role")
+      .select("role, organization_id")
       .eq("id", user.id)
       .single();
 
@@ -81,6 +81,16 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Apenas administradores podem convidar novos membros" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get the admin's organization_id to assign to the invited user
+    const adminOrgId = profileData?.organization_id;
+    if (!adminOrgId) {
+      console.error(`Admin ${user.id} has no organization_id`);
+      return new Response(
+        JSON.stringify({ error: "Administrador não está associado a uma organização" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -156,6 +166,25 @@ serve(async (req) => {
     }
 
     console.log("Invite link generated for:", email);
+
+    // Update the invited user's profile with the admin's organization_id
+    if (linkData.user?.id) {
+      const { error: profileUpdateError } = await supabaseAdmin
+        .from("profiles")
+        .update({ 
+          organization_id: adminOrgId,
+          role: role as any,
+          full_name: fullName,
+        })
+        .eq("id", linkData.user.id);
+
+      if (profileUpdateError) {
+        console.error("Error updating profile with organization_id:", profileUpdateError);
+        // Continue anyway - the user was created, just without org assignment
+      } else {
+        console.log(`Profile updated with organization_id: ${adminOrgId}`);
+      }
+    }
 
     // Send welcome email via Resend with the actual invite link
     try {
