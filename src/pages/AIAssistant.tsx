@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen, ArrowLeft, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { supabase } from '@/integrations/supabase/client';
 import { markdownToHtml } from '@/lib/markdown-to-html';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useRateLimit } from '@/hooks/useRateLimit';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // DOMPurify sanitization config to prevent XSS
 const SANITIZE_CONFIG = {
@@ -68,6 +69,7 @@ const AI_SIDEBAR_COLLAPSED_KEY = 'qualify-ai-sidebar-collapsed';
 export default function AIAssistant() {
   const queryClient = useQueryClient();
   const { currencySymbol } = useOrganizationCurrency();
+  const isMobile = useIsMobile();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -81,6 +83,8 @@ export default function AIAssistant() {
     const saved = localStorage.getItem(AI_SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';
   });
+  // On mobile, when no client selected, show client list
+  const [showClientList, setShowClientList] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { checkRateLimit, isRateLimited } = useRateLimit({ maxRequests: 15, windowMs: 60000 });
@@ -465,6 +469,293 @@ export default function AIAssistant() {
     return labels[stage] || stage;
   };
 
+  // Handle client selection - on mobile, hide client list after selection
+  const handleSelectClient = (clientId: string) => {
+    setSelectedClientId(clientId);
+    if (isMobile) {
+      setShowClientList(false);
+    }
+  };
+
+  // Handle back to client list on mobile
+  const handleBackToClientList = () => {
+    setShowClientList(true);
+    setSelectedClientId(null);
+  };
+
+  // Client List Component (reusable)
+  const ClientListContent = () => (
+    <>
+      <div className="p-4 border-b border-border space-y-3">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+        
+        {/* Filter */}
+        <Select value={filterStage} onValueChange={setFilterStage}>
+          <SelectTrigger className="h-9">
+            <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+            <SelectValue placeholder="Filtrar por fase" />
+          </SelectTrigger>
+          <SelectContent>
+            {STAGE_OPTIONS.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <ScrollArea className="flex-1">
+        {loadingClients ? (
+          <div className="p-4 flex justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : filteredClients.length === 0 ? (
+          <div className="p-4 text-center text-muted-foreground text-sm">
+            Nenhum cliente encontrado
+          </div>
+        ) : (
+          <div className="p-2 space-y-1">
+            {filteredClients.map(client => (
+              <button
+                key={client.id}
+                onClick={() => handleSelectClient(client.id)}
+                className={cn(
+                  "w-full text-left p-3 rounded-lg transition-colors",
+                  selectedClientId === client.id 
+                    ? "bg-primary/10 border border-primary/20" 
+                    : "hover:bg-muted"
+                )}
+              >
+                <div className="flex items-start gap-2">
+                  <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{client.company_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{client.contact_name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                        {getStageLabel(client.current_stage)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </ScrollArea>
+    </>
+  );
+
+  // Chat Area Component (reusable)
+  const ChatContent = () => (
+    <>
+      {/* Header */}
+      <div className="h-14 md:h-16 px-3 md:px-4 border-b border-border bg-background flex items-center gap-2">
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBackToClientList}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        )}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="h-9 w-9 md:h-10 md:w-10 rounded-xl bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center shrink-0">
+            <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-semibold text-sm md:text-base truncate">{selectedClient?.company_name}</h1>
+            <p className="text-xs md:text-sm text-muted-foreground truncate">
+              {selectedClient?.contact_name} • {getStageLabel(selectedClient?.current_stage || '')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <ScrollArea className="flex-1 p-3 md:p-4">
+        <div className="space-y-4 max-w-3xl mx-auto">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={cn(
+                'flex gap-2 md:gap-3',
+                message.role === 'user' ? 'justify-end' : 'justify-start'
+              )}
+            >
+              {message.role === 'assistant' && (
+                <div className="h-7 w-7 md:h-8 md:w-8 rounded-lg bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center shrink-0">
+                  <Bot className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary-foreground" />
+                </div>
+              )}
+              <div
+                className={cn(
+                  'max-w-[85%] md:max-w-[80%] rounded-xl px-3 py-2.5 md:px-4 md:py-3',
+                  message.role === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted'
+                )}
+              >
+                {message.role === 'assistant' ? (
+                  <div 
+                    className="text-sm prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }}
+                  />
+                ) : (
+                  <p className="text-sm whitespace-pre-line">{message.content}</p>
+                )}
+                {message.file_url && (
+                  <a 
+                    href={message.file_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "flex items-center gap-2 mt-2 text-xs underline",
+                      message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                    )}
+                  >
+                    {getFileIcon(message.file_type)}
+                    {message.file_name}
+                  </a>
+                )}
+                <p className={cn(
+                  'text-xs mt-2 opacity-70',
+                  message.role === 'user' ? 'text-right' : ''
+                )}>
+                  {new Date(message.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+              {message.role === 'user' && (
+                <div className="h-7 w-7 md:h-8 md:w-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                  <User className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Typing Animation */}
+          {isTyping && (
+            <div className="flex gap-2 md:gap-3">
+              <div className="h-7 w-7 md:h-8 md:w-8 rounded-lg bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
+                <Bot className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary-foreground" />
+              </div>
+              <div className="bg-muted rounded-xl px-3 py-2.5 md:px-4 md:py-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">digitando</span>
+                  <div className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
+
+      {/* Pending File */}
+      {pendingFile && (
+        <div className="px-3 md:px-4 py-2 border-t border-border bg-muted/50">
+          <div className="flex items-center gap-2 text-sm">
+            {getFileIcon(pendingFile.type)}
+            <span className="truncate flex-1">{pendingFile.name}</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setPendingFile(null)}
+              className="h-6 w-6 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="p-3 md:p-4 border-t border-border">
+        <div className="flex gap-2 max-w-3xl mx-auto">
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileUpload}
+            className="hidden"
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+          />
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingFile}
+            className="shrink-0"
+          >
+            {uploadingFile ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Paperclip className="h-4 w-4" />
+            )}
+          </Button>
+          <Input
+            placeholder="Escreva sua mensagem..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            className="flex-1"
+            disabled={isLoading || isTyping}
+          />
+          <Button 
+            onClick={handleSend} 
+            disabled={isLoading || isTyping || (!input.trim() && !pendingFile)}
+            className="shrink-0"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <AnimatedContainer animation="fade-in" className="flex flex-col h-full">
+        {showClientList || !selectedClientId ? (
+          // Mobile Client List View
+          <div className="flex flex-col h-full">
+            <div className="h-14 px-4 border-b border-border flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-sm">Assistente de IA</h2>
+                <p className="text-xs text-muted-foreground">Selecione um cliente</p>
+              </div>
+            </div>
+            <ClientListContent />
+          </div>
+        ) : (
+          // Mobile Chat View
+          <ChatContent />
+        )}
+      </AnimatedContainer>
+    );
+  }
+
+  // Desktop Layout
   return (
     <AnimatedContainer animation="fade-in" className="flex h-full">
       {/* Chat Area - Center */}
@@ -481,164 +772,11 @@ export default function AIAssistant() {
             </div>
           </>
         ) : (
-          <>
-            {/* Header */}
-            <div className="h-16 px-4 border-b border-border bg-background flex items-center">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="font-semibold">{selectedClient?.company_name}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedClient?.contact_name} • {getStageLabel(selectedClient?.current_stage || '')}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4 max-w-3xl mx-auto">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      'flex gap-3',
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    )}
-                  >
-                    {message.role === 'assistant' && (
-                      <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center shrink-0">
-                        <Bot className="h-4 w-4 text-primary-foreground" />
-                      </div>
-                    )}
-                    <div
-                      className={cn(
-                        'max-w-[80%] rounded-xl px-4 py-3',
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      )}
-                    >
-                      {message.role === 'assistant' ? (
-                        <div 
-                          className="text-sm prose prose-sm max-w-none"
-                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }}
-                        />
-                      ) : (
-                        <p className="text-sm whitespace-pre-line">{message.content}</p>
-                      )}
-                      {message.file_url && (
-                        <a 
-                          href={message.file_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className={cn(
-                            "flex items-center gap-2 mt-2 text-xs underline",
-                            message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'
-                          )}
-                        >
-                          {getFileIcon(message.file_type)}
-                          {message.file_name}
-                        </a>
-                      )}
-                      <p className={cn(
-                        'text-xs mt-2 opacity-70',
-                        message.role === 'user' ? 'text-right' : ''
-                      )}>
-                        {new Date(message.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                    {message.role === 'user' && (
-                      <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                        <User className="h-4 w-4" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Typing Animation */}
-                {isTyping && (
-                  <div className="flex gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
-                      <Bot className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                    <div className="bg-muted rounded-xl px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">digitando</span>
-                        <div className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-
-            {/* Pending File */}
-            {pendingFile && (
-              <div className="px-4 py-2 border-t border-border bg-muted/50">
-                <div className="flex items-center gap-2 text-sm">
-                  {getFileIcon(pendingFile.type)}
-                  <span className="truncate flex-1">{pendingFile.name}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setPendingFile(null)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Input */}
-            <div className="p-4 border-t border-border">
-              <div className="flex gap-2 max-w-3xl mx-auto">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-                />
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingFile}
-                >
-                  {uploadingFile ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Paperclip className="h-4 w-4" />
-                  )}
-                </Button>
-                <Input
-                  placeholder="Escreva sua mensagem..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                  className="flex-1"
-                  disabled={isLoading || isTyping}
-                />
-                <Button onClick={handleSend} disabled={isLoading || isTyping || (!input.trim() && !pendingFile)}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </>
+          <ChatContent />
         )}
       </div>
 
-      {/* Clients Sidebar - Right */}
+      {/* Clients Sidebar - Right (Desktop only) */}
       <div className={cn(
         "border-l border-border bg-muted/30 flex flex-col transition-all duration-300",
         sidebarCollapsed ? "w-16" : "w-80"
@@ -660,85 +798,41 @@ export default function AIAssistant() {
           </Button>
         </div>
         
-        {!sidebarCollapsed && (
-          <div className="p-4 border-b border-border space-y-3">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-9"
-              />
-            </div>
-            
-            {/* Filter */}
-            <Select value={filterStage} onValueChange={setFilterStage}>
-              <SelectTrigger className="h-9">
-                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="Filtrar por fase" />
-              </SelectTrigger>
-              <SelectContent>
-                {STAGE_OPTIONS.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        
-        <ScrollArea className="flex-1">
-          {loadingClients ? (
-            <div className="p-4 flex justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : filteredClients.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground text-sm">
-              {sidebarCollapsed ? '' : 'Nenhum cliente encontrado'}
-            </div>
-          ) : (
-            <div className="p-2 space-y-1">
-              {filteredClients.map(client => (
-                <button
-                  key={client.id}
-                  onClick={() => setSelectedClientId(client.id)}
-                  className={cn(
-                    "w-full text-left p-3 rounded-lg transition-colors",
-                    selectedClientId === client.id 
-                      ? "bg-primary/10 border border-primary/20" 
-                      : "hover:bg-muted",
-                    sidebarCollapsed && "flex items-center justify-center"
-                  )}
-                  title={sidebarCollapsed ? client.company_name : undefined}
-                >
-                  {sidebarCollapsed ? (
+        {!sidebarCollapsed ? (
+          <ClientListContent />
+        ) : (
+          <ScrollArea className="flex-1">
+            {loadingClients ? (
+              <div className="p-4 flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredClients.length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground text-sm" />
+            ) : (
+              <div className="p-2 space-y-1">
+                {filteredClients.map(client => (
+                  <button
+                    key={client.id}
+                    onClick={() => handleSelectClient(client.id)}
+                    className={cn(
+                      "w-full p-3 rounded-lg transition-colors flex items-center justify-center",
+                      selectedClientId === client.id 
+                        ? "bg-primary/10 border border-primary/20" 
+                        : "hover:bg-muted"
+                    )}
+                    title={client.company_name}
+                  >
                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                       <span className="text-primary font-semibold text-sm">
                         {client.company_name.charAt(0)}
                       </span>
                     </div>
-                  ) : (
-                    <div className="flex items-start gap-2">
-                      <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{client.company_name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{client.contact_name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                            {getStageLabel(client.current_stage)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        )}
       </div>
     </AnimatedContainer>
   );
