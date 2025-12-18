@@ -168,7 +168,7 @@ export function SubscriptionTab() {
 
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Valor mensal</span>
-            <span className="font-bold text-lg">$10,00 USD</span>
+            <span className="font-bold text-lg">$7,00 USD <span className="text-sm text-muted-foreground line-through">$14</span></span>
           </div>
 
           {isTrialing && (
@@ -225,7 +225,7 @@ export function SubscriptionTab() {
                   ) : (
                     <>
                       <CreditCard className="h-4 w-4" />
-                      Assinar Agora - $10/mês
+                      Assinar Agora - $7/mês
                     </>
                   )}
                 </Button>
@@ -281,7 +281,7 @@ export function SubscriptionTab() {
                   ) : (
                     <>
                       <CreditCard className="h-4 w-4" />
-                      Assinar Agora - $10/mês
+                      Assinar Agora - $7/mês
                     </>
                   )}
                 </Button>

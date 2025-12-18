@@ -118,7 +118,7 @@ export default function Upgrade() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Plano Profissional</span>
-              <span className="text-primary">MT 2.500/mês</span>
+              <span className="text-primary">$7/mês <span className="text-sm text-muted-foreground line-through">$14</span></span>
             </CardTitle>
             <CardDescription>
               Tudo o que você precisa para gerenciar sua agência
