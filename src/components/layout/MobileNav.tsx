@@ -65,11 +65,18 @@ export function MobileNav() {
 
   // Build "More" menu items
   const moreItems = useMemo(() => {
-    const items = [
+    const items: { name: string; href: string; icon: typeof GraduationCap; show: boolean }[] = [];
+
+    // Add Operational Flow if user has access but it's not in main nav (because Sales Funnel is there)
+    if (canSeeOperationalFlow && canSeeSalesFunnel) {
+      items.push({ name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow, show: true });
+    }
+
+    items.push(
       { name: 'Academia', href: '/app/academia', icon: GraduationCap, show: true },
       { name: 'Notificações', href: '/app/notifications', icon: Bell, show: true },
       { name: 'Suporte', href: '/app/support', icon: MessageSquare, show: true },
-    ];
+    );
 
     if (canSeeTeam) {
       items.push({ name: 'Equipe', href: '/app/team', icon: Users, show: true });
@@ -81,7 +88,7 @@ export function MobileNav() {
     }
 
     return items;
-  }, [canSeeTeam, isAdmin]);
+  }, [canSeeTeam, isAdmin, canSeeOperationalFlow, canSeeSalesFunnel]);
 
   const handleNavigate = (href: string) => {
     setMoreOpen(false);
