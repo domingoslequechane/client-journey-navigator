@@ -13,10 +13,7 @@ import {
   ArrowLeft,
   MessageSquare,
   CheckSquare,
-  Activity,
-  Plus,
   Loader2,
-  Calendar,
   Globe,
   MapPin,
   FileText,
@@ -36,12 +33,6 @@ import { EditClientModal } from './EditClientModal';
 import { GenerateContractModal } from './GenerateContractModal';
 import { ReportModal } from './ReportModal';
 
-interface ActivityItem {
-  id: string;
-  title: string;
-  description: string;
-  createdAt: string;
-}
 
 interface ClientDetailContentProps {
   client: Client;
@@ -62,11 +53,6 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
   const [isLoadingStage, setIsLoadingStage] = useState<'next' | 'prev' | null>(null);
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
-  const [isAddingActivity, setIsAddingActivity] = useState(false);
-  const [newActivity, setNewActivity] = useState({ title: '', description: '' });
-  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
   const [pauseDialogOpen, setPauseDialogOpen] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
@@ -108,23 +94,6 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         setContractName(contractData.contract_name);
       }
 
-      // Fetch activities
-      setIsLoadingActivities(true);
-      const { data: activitiesData, error } = await supabase
-        .from('activities')
-        .select('*')
-        .eq('client_id', client.id)
-        .order('created_at', { ascending: false });
-
-      if (!error && activitiesData) {
-        setActivities(activitiesData.map(a => ({
-          id: a.id,
-          title: a.title,
-          description: a.description || '',
-          createdAt: a.created_at,
-        })));
-      }
-      setIsLoadingActivities(false);
 
       // Fetch checklist reports
       const { data: checklistData } = await supabase
@@ -362,43 +331,6 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
     }
   };
 
-  const handleAddActivity = async () => {
-    if (!newActivity.title.trim() || isPaused) return;
-    
-    setIsAddingActivity(true);
-    
-    try {
-      const { data, error } = await supabase
-        .from('activities')
-        .insert({
-          client_id: client.id,
-          title: newActivity.title,
-          description: newActivity.description || null,
-          type: 'note' as const,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const activity: ActivityItem = {
-        id: data.id,
-        title: data.title,
-        description: data.description || '',
-        createdAt: data.created_at,
-      };
-      
-      setActivities(prev => [activity, ...prev]);
-      setNewActivity({ title: '', description: '' });
-      setActivityDialogOpen(false);
-      toast({ title: 'Atividade registrada!', description: 'A atividade foi salva com sucesso.' });
-    } catch (error) {
-      console.error('Error adding activity:', error);
-      toast({ title: 'Erro', description: 'Não foi possível salvar a atividade', variant: 'destructive' });
-    } finally {
-      setIsAddingActivity(false);
-    }
-  };
 
   const handleAIAnalysis = () => {
     setIsLoadingAi(true);
@@ -670,10 +602,6 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             {isPaused ? <Lock className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
             Checklist
           </TabsTrigger>
-          <TabsTrigger value="activities" className="flex-1 gap-2" disabled={isPaused}>
-            {isPaused ? <Lock className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
-            Atividades
-          </TabsTrigger>
           <TabsTrigger value="notes" className="flex-1 gap-2">
             <MessageSquare className="h-4 w-4" />
             Notas
@@ -760,87 +688,6 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           )}
         </TabsContent>
 
-        <TabsContent value="activities" className={`mt-4 space-y-3 ${isPaused ? 'opacity-50' : ''}`}>
-          <Dialog open={activityDialogOpen} onOpenChange={setActivityDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="w-full gap-2" disabled={isPaused}>
-                {isPaused ? <Lock className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                {isPaused ? 'Bloqueado' : 'Registrar Atividade'}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Nova Atividade</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 mt-4">
-                <div>
-                  <label className="text-sm font-medium">Título</label>
-                  <Input
-                    placeholder="Ex: Ligação de follow-up"
-                    value={newActivity.title}
-                    onChange={(e) => setNewActivity(prev => ({ ...prev, title: e.target.value }))}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Descrição</label>
-                  <Textarea
-                    placeholder="Descreva o que foi realizado..."
-                    value={newActivity.description}
-                    onChange={(e) => setNewActivity(prev => ({ ...prev, description: e.target.value }))}
-                    className="mt-1"
-                    rows={4}
-                  />
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Data/Hora: {formatDateTime(new Date().toISOString())}</span>
-                </div>
-                <Button 
-                  onClick={handleAddActivity} 
-                  disabled={!newActivity.title.trim() || isAddingActivity}
-                  className="w-full"
-                >
-                  {isAddingActivity ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    'Salvar Atividade'
-                  )}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {isLoadingActivities ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : activities.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Nenhuma atividade registrada</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {activities.map((activity) => (
-                <div key={activity.id} className="p-3 bg-card border border-border rounded-lg">
-                  <div className="flex items-start justify-between">
-                    <p className="font-medium text-sm">{activity.title}</p>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDateTime(activity.createdAt)}
-                    </span>
-                  </div>
-                  {activity.description && (
-                    <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
 
         <TabsContent value="notes" className="mt-4">
           <div className="p-4 bg-muted/50 rounded-lg">
