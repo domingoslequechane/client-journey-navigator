@@ -111,9 +111,9 @@ export default function Dashboard() {
   // Quick actions based on role
   const quickActions = useMemo(() => {
     const allActions = [
-      { title: 'Adicionar Novo Cliente', description: 'Cadastre um novo lead no sistema', icon: UserPlus, href: '/app/new-client', color: 'text-primary', show: canAddClient },
-      { title: 'Ver Funil de Vendas', description: 'Kanban visual da jornada do cliente', icon: Kanban, href: '/app/sales-funnel', color: 'text-success', show: canSeeSales },
-      { title: 'Ver Fluxo Operacional', description: 'Acompanhe clientes em produção e retenção', icon: Workflow, href: '/app/operational-flow', color: 'text-chart-5', show: canSeeOperations },
+      { title: 'Novo Cliente', description: 'Cadastre um novo lead no sistema', icon: UserPlus, href: '/app/new-client', color: 'text-primary', show: canAddClient },
+      { title: 'Funil de Vendas', description: 'Kanban visual da jornada do cliente', icon: Kanban, href: '/app/sales-funnel', color: 'text-success', show: canSeeSales },
+      { title: 'Fluxo Operacional', description: 'Acompanhe clientes em produção', icon: Workflow, href: '/app/operational-flow', color: 'text-chart-5', show: canSeeOperations },
     ];
 
     return allActions.filter(action => action.show);
@@ -248,7 +248,7 @@ export default function Dashboard() {
             </div>
             <Link to="/app/sales-funnel">
               <Button variant="ghost" size="sm" className="gap-2 w-full sm:w-auto">
-                Ver Funil de Vendas
+                Ver Funil
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -292,7 +292,7 @@ export default function Dashboard() {
             </div>
             <Link to="/app/operational-flow">
               <Button variant="ghost" size="sm" className="gap-2 w-full sm:w-auto">
-                Ver Fluxo Operacional
+                Ver Fluxo
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>

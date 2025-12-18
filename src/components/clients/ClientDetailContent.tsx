@@ -484,9 +484,9 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-2">
-        <AIButton onClick={handleAIAnalysis} isLoading={isLoadingAi} className="flex-1 min-w-[150px]" disabled={isPaused}>
+        <AIButton onClick={handleAIAnalysis} isLoading={isLoadingAi} className="flex-1 min-w-[120px]" disabled={isPaused}>
           {isPaused && <Lock className="h-4 w-4 mr-1" />}
-          Sugestões para esta fase
+          Sugestões IA
         </AIButton>
         
         {/* Contract Button - Only visible in closing stage for sales/admin */}
