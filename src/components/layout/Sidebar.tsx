@@ -14,7 +14,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  CreditCard
+  CreditCard,
+  HeadphonesIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -123,6 +124,39 @@ export function Sidebar() {
               <ThemeToggle />
               <span className="text-sm text-muted-foreground">Tema</span>
             </div>
+          )}
+
+          {/* Support & Feedback */}
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/app/support"
+                  className={cn(
+                    'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    location.pathname === '/app/support'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )}
+                >
+                  <HeadphonesIcon className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Suporte e Feedback</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Link
+              to="/app/support"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                location.pathname === '/app/support'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              )}
+            >
+              <HeadphonesIcon className="h-5 w-5" />
+              Suporte e Feedback
+            </Link>
           )}
 
           {/* Notifications */}
