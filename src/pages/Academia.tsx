@@ -19,6 +19,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 interface StudySuggestion {
   id: string;
@@ -55,6 +62,7 @@ export default function Academia() {
   const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestionToDelete, setSuggestionToDelete] = useState<StudySuggestion | null>(null);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<StudySuggestion | null>(null);
 
   // Fetch study suggestions history
   const { data: suggestions = [], isLoading, refetch } = useQuery({
@@ -443,7 +451,8 @@ Nível: [nível]
                 {paginatedData.map((suggestion) => (
                   <div 
                     key={suggestion.id}
-                    className="p-3 md:p-4 border border-border rounded-lg hover:border-primary/30 transition-colors"
+                    className="p-3 md:p-4 border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer"
+                    onClick={() => setSelectedSuggestion(suggestion)}
                   >
                     {/* Stack everything vertically for better mobile layout */}
                     <div className="space-y-2">
@@ -453,14 +462,17 @@ Nível: [nível]
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => setSuggestionToDelete(suggestion)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSuggestionToDelete(suggestion);
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                       
                       {suggestion.description && (
-                        <p className="text-sm text-muted-foreground">{suggestion.description}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-3">{suggestion.description}</p>
                       )}
                       
                       {/* Badges and date in a row */}
@@ -493,6 +505,64 @@ Nível: [nível]
         </CardContent>
       </Card>
       </AnimatedContainer>
+
+      {/* View Suggestion Modal */}
+      <Dialog open={!!selectedSuggestion} onOpenChange={() => setSelectedSuggestion(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              {selectedSuggestion?.ai_generated && (
+                <Badge variant="secondary" className="gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  Gerado por IA
+                </Badge>
+              )}
+              {selectedSuggestion?.difficulty_level && (
+                <Badge className={DIFFICULTY_COLORS[selectedSuggestion.difficulty_level] || 'bg-muted text-muted-foreground'}>
+                  {DIFFICULTY_LABELS[selectedSuggestion.difficulty_level] || selectedSuggestion.difficulty_level}
+                </Badge>
+              )}
+              <Badge variant="outline">
+                {selectedSuggestion?.category}
+              </Badge>
+            </div>
+            <DialogTitle className="text-xl leading-relaxed">
+              {selectedSuggestion?.title}
+            </DialogTitle>
+            {selectedSuggestion?.created_at && (
+              <DialogDescription className="flex items-center gap-1 text-sm">
+                <Clock className="h-4 w-4" />
+                {formatDate(selectedSuggestion.created_at)}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-4 pr-4">
+              {selectedSuggestion?.description && (
+                <p className="text-base leading-relaxed text-foreground">
+                  {selectedSuggestion.description}
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+
+          <div className="flex justify-end pt-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                setSuggestionToDelete(selectedSuggestion);
+                setSelectedSuggestion(null);
+              }}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Remover
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Modal */}
       <AlertDialog open={!!suggestionToDelete} onOpenChange={() => setSuggestionToDelete(null)}>
