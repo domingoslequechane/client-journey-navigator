@@ -24,7 +24,8 @@ import {
   Play,
   Lock,
   Pencil,
-  User
+  User,
+  ClipboardList
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -33,6 +34,7 @@ import { toast } from '@/hooks/use-toast';
 import { ContractModal } from './ContractModal';
 import { EditClientModal } from './EditClientModal';
 import { GenerateContractModal } from './GenerateContractModal';
+import { ReportModal } from './ReportModal';
 
 interface ActivityItem {
   id: string;
@@ -47,6 +49,12 @@ interface ClientDetailContentProps {
   isAdmin?: boolean;
   userRole?: string;
   userId?: string;
+}
+
+interface ChecklistReport {
+  itemId: string;
+  report: string | null;
+  completedAt: string | null;
 }
 
 export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRole = 'sales', userId }: ClientDetailContentProps) {
@@ -66,6 +74,16 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [editClientOpen, setEditClientOpen] = useState(false);
   const [contractUrl, setContractUrl] = useState<string | null>(null);
   const [contractName, setContractName] = useState<string | null>(null);
+  
+  // Report modal state
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [selectedChecklistItem, setSelectedChecklistItem] = useState<{
+    id: string;
+    title: string;
+    description?: string;
+    required?: boolean;
+  } | null>(null);
+  const [checklistReports, setChecklistReports] = useState<ChecklistReport[]>([]);
 
   const currentStage = ALL_STAGES.find(s => s.id === client.stage);
   const currentStageIndex = ALL_STAGES.findIndex(s => s.id === client.stage);
@@ -75,9 +93,9 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   // Check if client is paused/suspended
   const isPaused = client.paused;
 
-  // Fetch contract and activities on mount
+  // Fetch contract, activities and checklist reports on mount
   useEffect(() => {
-    const fetchContractAndActivities = async () => {
+    const fetchData = async () => {
       // Fetch contract
       const { data: contractData } = await supabase
         .from('clients')
@@ -107,8 +125,22 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         })));
       }
       setIsLoadingActivities(false);
+
+      // Fetch checklist reports
+      const { data: checklistData } = await supabase
+        .from('checklist_items')
+        .select('title, report, completed_at')
+        .eq('client_id', client.id);
+
+      if (checklistData) {
+        setChecklistReports(checklistData.map(item => ({
+          itemId: item.title,
+          report: item.report,
+          completedAt: item.completed_at,
+        })));
+      }
     };
-    fetchContractAndActivities();
+    fetchData();
   }, [client.id]);
 
   // Check if all required checklist items are completed
@@ -136,30 +168,136 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
     }
   };
 
-  const handleTaskToggle = async (taskId: string) => {
+  const handleOpenReportModal = (item: { id: string; title: string; description?: string; required?: boolean }) => {
     if (isPaused) {
       toast({ title: 'Cliente suspenso', description: 'Este cliente está suspenso. Contacte um administrador.', variant: 'destructive' });
       return;
     }
+    setSelectedChecklistItem(item);
+    setReportModalOpen(true);
+  };
 
-    setLoadingTaskId(taskId);
+  const handleSaveReport = async (report: string) => {
+    if (!selectedChecklistItem) return;
+
+    setLoadingTaskId(selectedChecklistItem.id);
     
-    const existingTask = client.tasks.find(t => t.id === taskId);
+    const existingTask = client.tasks.find(t => t.id === selectedChecklistItem.id);
     let updatedTasks;
     
     if (existingTask) {
       updatedTasks = client.tasks.map(task =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
+        task.id === selectedChecklistItem.id ? { ...task, completed: true } : task
       );
     } else {
-      updatedTasks = [...client.tasks, { id: taskId, title: '', completed: true, stageId: client.stage }];
+      updatedTasks = [...client.tasks, { id: selectedChecklistItem.id, title: selectedChecklistItem.title, completed: true, stageId: client.stage }];
     }
-    
+
+    // Save report to checklist_items
+    const stageDbMap: Record<string, string> = {
+      prospecting: 'prospeccao',
+      qualification: 'reuniao',
+      closing: 'contratacao',
+      production: 'producao',
+      campaigns: 'trafego',
+      retention: 'retencao',
+    };
+    const stageDbName = stageDbMap[client.stage];
+
+    // Check if checklist item exists
+    const { data: existingItem } = await supabase
+      .from('checklist_items')
+      .select('id')
+      .eq('client_id', client.id)
+      .eq('stage', stageDbName as any)
+      .eq('title', selectedChecklistItem.title)
+      .maybeSingle();
+
+    if (existingItem) {
+      // Update existing
+      await supabase
+        .from('checklist_items')
+        .update({
+          completed: true,
+          completed_at: new Date().toISOString(),
+          report: report,
+        })
+        .eq('id', existingItem.id);
+    } else {
+      // Insert new
+      await supabase
+        .from('checklist_items')
+        .insert({
+          client_id: client.id,
+          stage: stageDbName as any,
+          title: selectedChecklistItem.title,
+          completed: true,
+          completed_at: new Date().toISOString(),
+          report: report,
+        });
+    }
+
+    // Update local state
+    setChecklistReports(prev => {
+      const existing = prev.find(r => r.itemId === selectedChecklistItem.title);
+      if (existing) {
+        return prev.map(r => 
+          r.itemId === selectedChecklistItem.title 
+            ? { ...r, report, completedAt: new Date().toISOString() } 
+            : r
+        );
+      }
+      return [...prev, { itemId: selectedChecklistItem.title, report, completedAt: new Date().toISOString() }];
+    });
+
     try {
       await onUpdate({ ...client, tasks: updatedTasks });
+      toast({ title: 'Tarefa concluída!', description: 'O relatório foi salvo com sucesso.' });
     } finally {
       setLoadingTaskId(null);
     }
+  };
+
+  const handleUncompleteTask = async () => {
+    if (!selectedChecklistItem) return;
+
+    setLoadingTaskId(selectedChecklistItem.id);
+    
+    const updatedTasks = client.tasks.map(task =>
+      task.id === selectedChecklistItem.id ? { ...task, completed: false } : task
+    );
+
+    // Update checklist_items in DB
+    const stageDbMap: Record<string, string> = {
+      prospecting: 'prospeccao',
+      qualification: 'reuniao',
+      closing: 'contratacao',
+      production: 'producao',
+      campaigns: 'trafego',
+      retention: 'retencao',
+    };
+    const stageDbName = stageDbMap[client.stage];
+
+    await supabase
+      .from('checklist_items')
+      .update({
+        completed: false,
+        completed_at: null,
+      })
+      .eq('client_id', client.id)
+      .eq('stage', stageDbName as any)
+      .eq('title', selectedChecklistItem.title);
+
+    try {
+      await onUpdate({ ...client, tasks: updatedTasks });
+      toast({ title: 'Tarefa reaberta', description: 'A tarefa foi desmarcada como concluída.' });
+    } finally {
+      setLoadingTaskId(null);
+    }
+  };
+
+  const getReportForItem = (itemTitle: string) => {
+    return checklistReports.find(r => r.itemId === itemTitle);
   };
 
   const handleMoveToNextStage = async () => {
@@ -558,12 +696,19 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             const task = client.tasks.find(t => t.id === item.id);
             const isCompleted = task?.completed || false;
             const isLoading = loadingTaskId === item.id;
+            const reportData = getReportForItem(item.title);
+            const hasReport = !!reportData?.report;
             
             return (
               <div 
                 key={item.id}
                 className={`flex items-start gap-3 p-3 bg-card border border-border rounded-lg cursor-pointer transition-all relative ${isLoading ? 'opacity-70' : 'hover:border-primary/50'} ${isPaused ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={() => !isLoading && !isPaused && handleTaskToggle(item.id)}
+                onClick={() => !isLoading && !isPaused && handleOpenReportModal({ 
+                  id: item.id, 
+                  title: item.title, 
+                  description: item.description,
+                  required: item.required 
+                })}
               >
                 {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
                 {isLoading ? (
@@ -577,16 +722,42 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                     disabled={isPaused}
                   />
                 )}
-                <div className="flex-1">
-                  <p className={`text-sm font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
-                    {item.title}
-                    {item.required && <span className="text-destructive ml-1">*</span>}
-                  </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className={`text-sm font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                      {item.title}
+                      {item.required && <span className="text-destructive ml-1">*</span>}
+                    </p>
+                    {isCompleted && hasReport && (
+                      <ClipboardList className="h-4 w-4 text-primary shrink-0" />
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                  {isCompleted && hasReport && reportData?.report && (
+                    <p className="text-xs text-primary/80 mt-2 line-clamp-2 italic">
+                      "{reportData.report}"
+                    </p>
+                  )}
                 </div>
               </div>
             );
           })}
+
+          {/* Report Modal */}
+          {selectedChecklistItem && (
+            <ReportModal
+              open={reportModalOpen}
+              onOpenChange={setReportModalOpen}
+              itemTitle={selectedChecklistItem.title}
+              itemDescription={selectedChecklistItem.description}
+              isRequired={selectedChecklistItem.required}
+              isCompleted={client.tasks.find(t => t.id === selectedChecklistItem.id)?.completed || false}
+              existingReport={getReportForItem(selectedChecklistItem.title)?.report}
+              completedAt={getReportForItem(selectedChecklistItem.title)?.completedAt}
+              onSave={handleSaveReport}
+              onUncomplete={handleUncompleteTask}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="activities" className={`mt-4 space-y-3 ${isPaused ? 'opacity-50' : ''}`}>

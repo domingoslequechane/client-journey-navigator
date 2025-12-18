@@ -193,6 +193,7 @@ export type Database = {
           description: string | null
           id: string
           organization_id: string | null
+          report: string | null
           stage: Database["public"]["Enums"]["journey_stage"]
           title: string
         }
@@ -204,6 +205,7 @@ export type Database = {
           description?: string | null
           id?: string
           organization_id?: string | null
+          report?: string | null
           stage: Database["public"]["Enums"]["journey_stage"]
           title: string
         }
@@ -215,6 +217,7 @@ export type Database = {
           description?: string | null
           id?: string
           organization_id?: string | null
+          report?: string | null
           stage?: Database["public"]["Enums"]["journey_stage"]
           title?: string
         }
