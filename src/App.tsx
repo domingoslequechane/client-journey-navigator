@@ -27,6 +27,7 @@ import Upgrade from "./pages/Upgrade";
 import Onboarding from "./pages/Onboarding";
 import Subscription from "./pages/Subscription";
 import Notifications from "./pages/Notifications";
+import SupportFeedback from "./pages/SupportFeedback";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -85,6 +86,7 @@ const App = () => (
                 <Route path="settings" element={<Settings />} />
                 <Route path="subscription" element={<Subscription />} />
                 <Route path="notifications" element={<Notifications />} />
+                <Route path="support" element={<SupportFeedback />} />
                 <Route path="upgrade" element={<Upgrade />} />
               </Route>
               {/* Admin Routes */}
