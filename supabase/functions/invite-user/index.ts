@@ -129,9 +129,21 @@ serve(async (req) => {
       console.log("User doesn't exist, creating new invite");
     }
 
-    // Get the origin from request headers for redirect URL
-    const origin = req.headers.get("origin") || "https://hrarkpjuchrbffnrhzcy.lovableproject.com";
-    const redirectUrl = `${origin}/set-password`;
+    // Use production URL - Lovable preview/deployed URL
+    // Priority: origin header > deployed domain > lovable project domain
+    const origin = req.headers.get("origin");
+    let baseUrl: string;
+    
+    if (origin && !origin.includes('localhost')) {
+      baseUrl = origin;
+    } else {
+      // Fallback to Lovable project domain
+      baseUrl = "https://qualify.lovable.app";
+    }
+    
+    const redirectUrl = `${baseUrl}/set-password`;
+
+    console.log(`Using redirect URL: ${redirectUrl}`);
 
     // Generate invite link with token using Supabase admin API
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
