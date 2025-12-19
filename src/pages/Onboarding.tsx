@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, ArrowRight, Globe, CreditCard } from 'lucide-react';
+import { Building2, ArrowRight, Globe, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import { COUNTRIES } from '@/lib/currencies';
 
@@ -20,11 +20,11 @@ export default function Onboarding() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingOrg, setCheckingOrg] = useState(true);
 
-  // Check if returning from successful checkout
+  // Check if returning from successful payment (for future upgrades)
   useEffect(() => {
     const success = searchParams.get('success');
     if (success === 'true') {
-      toast.success('Assinatura ativada com sucesso!');
+      toast.success('Plano atualizado com sucesso!');
       navigate('/app');
     }
   }, [searchParams, navigate]);
@@ -35,7 +35,7 @@ export default function Onboarding() {
       return;
     }
 
-    // Check if user already has organization setup with active subscription
+    // Check if user already has organization setup
     const checkOrganization = async () => {
       if (!user) return;
       
@@ -47,24 +47,17 @@ export default function Onboarding() {
           .single();
         
         if (profile?.organization_id) {
-          // Check if org has a proper name AND active subscription
+          // Check if org has a proper name
           const { data: org } = await supabase
             .from('organizations')
             .select('name')
             .eq('id', profile.organization_id)
             .single();
           
-          const { data: subscription } = await supabase
-            .from('subscriptions')
-            .select('status')
-            .eq('organization_id', profile.organization_id)
-            .single();
-          
-          // If organization has a real name and active/trialing subscription, redirect to dashboard
+          // If organization has a real name, redirect to dashboard
           const hasProperName = org && !org.name.includes("'s Agency") && org.name !== 'Agency';
-          const hasActiveSubscription = subscription && ['active', 'trialing'].includes(subscription.status);
           
-          if (hasProperName && hasActiveSubscription) {
+          if (hasProperName) {
             navigate('/app');
           }
         }
@@ -171,29 +164,14 @@ export default function Onboarding() {
         if (error) throw error;
       }
 
-      // Now redirect to LemonSqueezy checkout
-      toast.info('Redirecionando para o checkout...');
+      // Set plan_type to free and redirect to app
+      await supabase
+        .from('organizations')
+        .update({ plan_type: 'free' })
+        .eq('id', organizationId);
 
-      const response = await supabase.functions.invoke('create-checkout', {
-        body: {
-          organizationId: organizationId,
-          userEmail: sessionUser.email,
-          userName: (sessionUser.user_metadata as any)?.full_name || agencyName,
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Erro ao criar checkout');
-      }
-
-      const { checkoutUrl } = response.data;
-
-      if (checkoutUrl) {
-        // Redirect to LemonSqueezy checkout
-        window.location.href = checkoutUrl;
-      } else {
-        throw new Error('URL de checkout não encontrada');
-      }
+      toast.success('Agência configurada com sucesso!');
+      navigate('/app');
     } catch (error: any) {
       console.error('Error in onboarding:', error);
       toast.error(error.message || 'Erro ao configurar agência. Tente novamente.');
@@ -221,7 +199,7 @@ export default function Onboarding() {
           </div>
           <CardTitle className="text-2xl">Configure sua Agência</CardTitle>
           <CardDescription>
-            Configure sua agência e ative seu período de teste gratuito de 7 dias
+            Configure sua agência e comece a usar gratuitamente
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -267,15 +245,11 @@ export default function Onboarding() {
 
             <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
-                <CreditCard className="h-4 w-4 text-primary" />
-                Período de teste gratuito
+                <Rocket className="h-4 w-4 text-primary" />
+                Plano Gratuito
               </div>
               <p className="text-sm text-muted-foreground">
-                Você terá <strong>7 dias grátis</strong> para experimentar todos os recursos. 
-                Após o período de teste, será cobrado automaticamente $7/mês.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Você pode cancelar a qualquer momento antes do fim do período de teste.
+                Comece gratuitamente com recursos essenciais. Você pode fazer upgrade a qualquer momento para desbloquear mais funcionalidades.
               </p>
             </div>
 
@@ -287,11 +261,11 @@ export default function Onboarding() {
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-background mr-2"></div>
-                  Redirecionando...
+                  Configurando...
                 </>
               ) : (
                 <>
-                  Continuar para Pagamento
+                  Começar Agora
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}

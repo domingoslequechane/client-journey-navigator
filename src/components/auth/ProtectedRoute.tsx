@@ -100,13 +100,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/app/onboarding" replace />;
   }
 
-  // Allow access to subscription page always (for subscription management)
-  const isSubscriptionPage = location.pathname.includes('/subscription');
-  
-  // If no access and not on subscription, redirect to subscription page
-  if (!hasAccess && !isSubscriptionPage) {
-    return <Navigate to="/app/subscription" replace />;
-  }
-
+  // Freemium model: all authenticated users with organization have access
+  // Feature limitations are handled at the page/component level via usePlanLimits
   return <>{children}</>;
 }
