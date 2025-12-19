@@ -23,6 +23,19 @@ import planCatapulta from '@/assets/plans/plan-catapulta.png';
 
 type PlanType = 'free' | 'starter' | 'pro' | 'agency';
 
+// Plan order for upgrade/downgrade comparison
+const PLAN_ORDER: PlanType[] = ['free', 'starter', 'pro', 'agency'];
+
+// Get button label based on plan comparison
+const getButtonLabel = (targetPlan: PlanType, currentPlan: PlanType): string => {
+  const currentIndex = PLAN_ORDER.indexOf(currentPlan);
+  const targetIndex = PLAN_ORDER.indexOf(targetPlan);
+  
+  if (targetIndex > currentIndex) return 'Fazer Upgrade';
+  if (targetIndex < currentIndex) return 'Fazer Downgrade';
+  return 'Plano Atual';
+};
+
 // Plan colors (HSL values)
 export const planColors: Record<PlanType, { primary: string; bg: string; border: string; text: string }> = {
   free: {
@@ -135,7 +148,7 @@ const plans: Record<Exclude<PlanType, 'free'>, PlanConfig> = {
       { text: 'Clientes ilimitados', included: true },
       { text: 'Contratos ilimitados', included: true },
       { text: 'Mensagens IA ilimitadas', included: true },
-      { text: '15 usuários', included: true },
+      { text: 'Usuários ilimitados', included: true },
       { text: 'Funil de vendas', included: true },
       { text: 'Fluxo operacional', included: true },
       { text: 'Checklists personalizados', included: true },
@@ -145,7 +158,7 @@ const plans: Record<Exclude<PlanType, 'free'>, PlanConfig> = {
       clients: 'Ilimitado',
       contracts: 'Ilimitado',
       ai: 'Ilimitado',
-      team: '15 usuários',
+      team: 'Ilimitado',
     },
   },
 };
@@ -434,7 +447,7 @@ export default function Upgrade() {
                       ) : (
                         <>
                           <CreditCard className="h-4 w-4" />
-                          {currentPlan !== 'free' && isActive ? 'Mudar Plano' : 'Assinar'}
+                          {getButtonLabel(planKey, currentPlan)}
                         </>
                       )}
                     </Button>

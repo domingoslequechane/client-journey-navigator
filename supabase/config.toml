@@ -52,3 +52,6 @@ verify_jwt = false
 
 [functions.create-checkout]
 verify_jwt = true
+
+[functions.check-trial-expiry]
+verify_jwt = false
