@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowUpRight, Lock } from 'lucide-react';
+import { ArrowUpRight, Lock, Info } from 'lucide-react';
+import { useUserRole } from '@/hooks/useUserRole';
 import type { PlanType } from '@/hooks/usePlanLimits';
 
 interface UpgradePromptProps {
@@ -19,6 +20,8 @@ const planNames: Record<PlanType, string> = {
 };
 
 export function UpgradePrompt({ feature, currentPlan, requiredPlan, variant = 'card' }: UpgradePromptProps) {
+  const { isAdmin } = useUserRole();
+
   if (variant === 'inline') {
     return (
       <div className="flex items-center gap-2 p-3 bg-muted rounded-lg border border-border">
@@ -26,11 +29,17 @@ export function UpgradePrompt({ feature, currentPlan, requiredPlan, variant = 'c
         <span className="text-sm text-muted-foreground">
           {feature} não está disponível no plano {planNames[currentPlan]}.
         </span>
-        <Link to="/app/upgrade">
-          <Button variant="link" size="sm" className="h-auto p-0">
-            Fazer upgrade <ArrowUpRight className="h-3 w-3 ml-1" />
-          </Button>
-        </Link>
+        {isAdmin ? (
+          <Link to="/app/upgrade">
+            <Button variant="link" size="sm" className="h-auto p-0">
+              Fazer upgrade <ArrowUpRight className="h-3 w-3 ml-1" />
+            </Button>
+          </Link>
+        ) : (
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Info className="h-3 w-3" /> Fale com o admin
+          </span>
+        )}
       </div>
     );
   }
@@ -50,12 +59,19 @@ export function UpgradePrompt({ feature, currentPlan, requiredPlan, variant = 'c
         </CardDescription>
       </CardHeader>
       <CardContent className="text-center">
-        <Link to="/app/upgrade">
-          <Button className="gap-2">
-            Ver Planos
-            <ArrowUpRight className="h-4 w-4" />
-          </Button>
-        </Link>
+        {isAdmin ? (
+          <Link to="/app/upgrade">
+            <Button className="gap-2">
+              Ver Planos
+              <ArrowUpRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        ) : (
+          <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+            <Info className="h-4 w-4" />
+            Apenas o administrador pode alterar o plano
+          </p>
+        )}
       </CardContent>
     </Card>
   );

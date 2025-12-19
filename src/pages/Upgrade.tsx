@@ -4,12 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   CreditCard, CheckCircle2, Loader2, ArrowLeft, X, 
-  Users, FileText, Bot, Briefcase, Crown, Sparkles 
+  Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert 
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -175,6 +177,7 @@ export default function Upgrade() {
   const { user } = useAuth();
   const { loading, organization, isActive, isTrialing, trialDaysLeft, planType: currentPlanType } = useSubscription();
   const { planType: activePlanType } = usePlanLimits();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [creatingCheckout, setCreatingCheckout] = useState<PlanType | null>(null);
 
   const handleSubscribe = async (planType: Exclude<PlanType, 'free'>) => {
@@ -221,10 +224,51 @@ export default function Upgrade() {
     }
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Non-admin users cannot change plans
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background py-8 px-4">
+        <div className="max-w-2xl mx-auto space-y-8">
+          <Link to="/app" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar ao Dashboard
+          </Link>
+          
+          <Alert variant="default" className="border-primary/30 bg-primary/5">
+            <ShieldAlert className="h-5 w-5" />
+            <AlertTitle>Acesso Restrito</AlertTitle>
+            <AlertDescription className="mt-2 space-y-2">
+              <p>
+                Apenas o <strong>administrador da agência</strong> pode visualizar e alterar o plano de assinatura.
+              </p>
+              <p className="text-muted-foreground">
+                Se você precisa de um upgrade ou alteração no plano, entre em contato com o administrador da sua organização.
+              </p>
+            </AlertDescription>
+          </Alert>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Por que essa restrição?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p>• Decisões de assinatura envolvem custos financeiros</p>
+              <p>• Apenas administradores têm autoridade para aprovar mudanças de plano</p>
+              <p>• Isso garante controle adequado sobre os recursos da organização</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

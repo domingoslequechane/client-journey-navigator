@@ -1,13 +1,15 @@
 import { Link } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
-import { Rocket, Sparkles } from 'lucide-react';
+import { Rocket, Sparkles, Info } from 'lucide-react';
 
 export function FreePlanBanner() {
-  const { loading, isPaidPlan, planType } = useSubscription();
+  const { loading, isPaidPlan } = useSubscription();
+  const { isAdmin, loading: roleLoading } = useUserRole();
 
   // Don't show if loading or user has a paid plan
-  if (loading || isPaidPlan) {
+  if (loading || roleLoading || isPaidPlan) {
     return null;
   }
 
@@ -23,19 +25,29 @@ export function FreePlanBanner() {
             Você está no plano gratuito
           </h3>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Faça upgrade para desbloquear mais clientes, contratos e funcionalidades avançadas.
+            {isAdmin 
+              ? 'Faça upgrade para desbloquear mais clientes, contratos e funcionalidades avançadas.'
+              : 'Converse com o administrador da sua organização para fazer upgrade.'
+            }
           </p>
         </div>
         
-        <Link to="/app/upgrade">
-          <Button 
-            size="sm" 
-            className="gap-2 shrink-0"
-          >
-            <Sparkles className="h-4 w-4" />
-            Ver Planos
-          </Button>
-        </Link>
+        {isAdmin ? (
+          <Link to="/app/upgrade">
+            <Button 
+              size="sm" 
+              className="gap-2 shrink-0"
+            >
+              <Sparkles className="h-4 w-4" />
+              Ver Planos
+            </Button>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+            <Info className="h-4 w-4" />
+            Apenas admins
+          </div>
+        )}
       </div>
     </div>
   );
