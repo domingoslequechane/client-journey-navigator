@@ -25,6 +25,7 @@ interface UseSubscriptionReturn {
   planType: PlanType;
   isActive: boolean;
   isTrialing: boolean;
+  isPaidPlan: boolean;
   trialDaysLeft: number;
   hasAccess: boolean;
   refetch: () => Promise<void>;
@@ -107,17 +108,15 @@ export function useSubscription(): UseSubscriptionReturn {
     ? Math.max(0, Math.ceil((new Date(organization.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
-  // Determine subscription status
-  // User is trialing if they have days left, regardless of subscription record
-  const isTrialing = trialDaysLeft > 0;
-  const isActive = subscription?.status === 'active' || subscription?.status === 'past_due';
-  
-  // User has access if:
-  // 1. They have an active paid subscription, OR
-  // 2. They are still in valid trial period (trial_ends_at hasn't passed)
-  const hasAccess = isActive || isTrialing;
-
   const planType = organization?.planType || 'free';
+  
+  // Determine subscription status
+  const isTrialing = trialDaysLeft > 0 && planType === 'free';
+  const isActive = subscription?.status === 'active' || subscription?.status === 'past_due';
+  const isPaidPlan = ['starter', 'pro', 'agency'].includes(planType);
+  
+  // Freemium model: everyone has access, limitations are per-feature via usePlanLimits
+  const hasAccess = true;
 
   return {
     loading,
@@ -126,6 +125,7 @@ export function useSubscription(): UseSubscriptionReturn {
     planType,
     isActive,
     isTrialing,
+    isPaidPlan,
     trialDaysLeft,
     hasAccess,
     refetch: fetchSubscriptionData,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StatsCard } from '@/components/dashboard/StatsCard';
-import { TrialBanner } from '@/components/subscription/TrialBanner';
+import { FreePlanBanner } from '@/components/subscription/FreePlanBanner';
 import { OnboardingTutorial } from '@/components/onboarding/OnboardingTutorial';
 import { DashboardSkeleton } from '@/components/ui/loading-skeleton';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -129,8 +129,8 @@ export default function Dashboard() {
       {/* Onboarding Tutorial */}
       <OnboardingTutorial />
       
-      {/* Trial Banner */}
-      <TrialBanner />
+      {/* Free Plan Banner */}
+      <FreePlanBanner />
 
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8" data-tutorial="dashboard">
         <div>
