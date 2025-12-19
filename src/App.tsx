@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { PlanThemeProvider } from "@/components/theme/PlanThemeProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RoleProtectedRoute } from "@/components/auth/RoleProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
@@ -61,7 +62,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
+            <PlanThemeProvider>
+              <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/auth" element={<Auth />} />
@@ -130,7 +132,8 @@ const App = () => (
               </Route>
               <Route path="/not-found" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />
-            </Routes>
+              </Routes>
+            </PlanThemeProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
