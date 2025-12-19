@@ -99,8 +99,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Get the origin for redirect URL
-    const origin = req.headers.get("origin") || "https://qualify.lovable.app";
-    const redirectUrl = `${origin}/onboarding?success=true`;
+    const origin = req.headers.get("origin") || "https://qualify.onixagence.com";
+    const redirectUrl = `${origin}/app/onboarding?success=true`;
 
     console.log("Creating checkout", {
       organizationId,
