@@ -112,6 +112,53 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Resolve store ID from the variant -> product (prevents mismatch between configured storeId and variant).
+    let resolvedStoreId = storeId;
+    try {
+      const lemonHeaders = {
+        Accept: "application/vnd.api+json",
+        "Content-Type": "application/vnd.api+json",
+        Authorization: `Bearer ${apiKey}`,
+      };
+
+      const variantRes = await fetch(`https://api.lemonsqueezy.com/v1/variants/${variantId}`, {
+        headers: lemonHeaders,
+      });
+
+      const variantText = await variantRes.text();
+      if (variantRes.ok) {
+        const variantJson = JSON.parse(variantText);
+        const productId = variantJson?.data?.attributes?.product_id;
+
+        if (productId) {
+          const productRes = await fetch(`https://api.lemonsqueezy.com/v1/products/${productId}`, {
+            headers: lemonHeaders,
+          });
+          const productText = await productRes.text();
+
+          if (productRes.ok) {
+            const productJson = JSON.parse(productText);
+            const storeIdFromProduct = productJson?.data?.attributes?.store_id;
+            if (storeIdFromProduct) {
+              resolvedStoreId = String(storeIdFromProduct);
+            }
+          } else {
+            console.warn("Failed to fetch product for variant (continuing with configured storeId)", {
+              status: productRes.status,
+              body: productText,
+            });
+          }
+        }
+      } else {
+        console.warn("Failed to fetch variant details (continuing with configured storeId)", {
+          status: variantRes.status,
+          body: variantText,
+        });
+      }
+    } catch (e) {
+      console.warn("Store resolve error (continuing with configured storeId)", e);
+    }
+
     // Verify user belongs to this organization
     const { data: profile } = await supabase
       .from("profiles")
@@ -133,7 +180,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Creating checkout", {
       organizationId,
       planType,
-      storeId,
+      configuredStoreId: storeId,
+      resolvedStoreId,
       variantId,
       testMode,
       userId: user.id,
@@ -170,7 +218,7 @@ const handler = async (req: Request): Promise<Response> => {
             store: {
               data: {
                 type: "stores",
-                id: storeId,
+                id: resolvedStoreId,
               },
             },
             variant: {
@@ -198,7 +246,8 @@ const handler = async (req: Request): Promise<Response> => {
           lemonsqueezy_error: errorText,
           context: {
             planType,
-            storeId,
+            configuredStoreId: storeId,
+            resolvedStoreId,
             variantId,
             testMode,
           },
