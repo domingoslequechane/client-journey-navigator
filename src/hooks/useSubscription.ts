@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+export type PlanType = 'free' | 'starter' | 'pro' | 'agency';
+
 interface SubscriptionData {
   id: string;
   status: 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired';
@@ -13,12 +15,14 @@ interface OrganizationData {
   id: string;
   name: string;
   trialEndsAt: string;
+  planType: PlanType;
 }
 
 interface UseSubscriptionReturn {
   loading: boolean;
   subscription: SubscriptionData | null;
   organization: OrganizationData | null;
+  planType: PlanType;
   isActive: boolean;
   isTrialing: boolean;
   trialDaysLeft: number;
@@ -55,7 +59,7 @@ export function useSubscription(): UseSubscriptionReturn {
       // Get organization data
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
-        .select('id, name, trial_ends_at')
+        .select('id, name, trial_ends_at, plan_type')
         .eq('id', profile.organization_id)
         .single();
 
@@ -66,6 +70,7 @@ export function useSubscription(): UseSubscriptionReturn {
           id: orgData.id,
           name: orgData.name,
           trialEndsAt: orgData.trial_ends_at,
+          planType: (orgData.plan_type as PlanType) || 'free',
         });
       }
 
@@ -112,10 +117,13 @@ export function useSubscription(): UseSubscriptionReturn {
   // 2. They are still in valid trial period (trial_ends_at hasn't passed)
   const hasAccess = isActive || isTrialing;
 
+  const planType = organization?.planType || 'free';
+
   return {
     loading,
     subscription,
     organization,
+    planType,
     isActive,
     isTrialing,
     trialDaysLeft,

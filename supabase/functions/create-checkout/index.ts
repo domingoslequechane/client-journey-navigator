@@ -11,9 +11,25 @@ const corsHeaders = {
 // Input validation schema
 const CheckoutRequestSchema = z.object({
   organizationId: z.string().uuid("ID da organização inválido"),
+  planType: z.enum(['starter', 'pro', 'agency']),
   userEmail: z.string().email("Email inválido").max(255, "Email muito longo").optional(),
   userName: z.string().max(100, "Nome muito longo").optional(),
 });
+
+// Get variant ID based on plan type
+const getVariantId = (planType: string): string | undefined => {
+  const normalizeId = (v?: string | null) =>
+    v?.trim().replace(/^["']+|["']+$/g, "");
+  
+  const variants: Record<string, string | undefined> = {
+    'starter': normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID_STARTER')),
+    'pro': normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID_PRO')),
+    'agency': normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID_AGENCY')),
+  };
+  
+  // Fallback to default LEMONSQUEEZY_VARIANT_ID if specific variant not found
+  return variants[planType] || normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID'));
+};
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -26,13 +42,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const apiKey = (Deno.env.get("LEMONSQUEEZY_API_KEY") ?? "").trim();
     const storeId = normalizeId(Deno.env.get("LEMONSQUEEZY_STORE_ID"));
-    const variantId = normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID"));
 
-    if (!apiKey || !storeId || !variantId) {
+    if (!apiKey || !storeId) {
       console.error("Missing LemonSqueezy configuration", {
         hasApiKey: Boolean(apiKey),
         storeId,
-        variantId,
       });
       return new Response(
         JSON.stringify({ error: "Payment system not configured" }),
@@ -82,7 +96,18 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { organizationId, userEmail, userName } = validationResult.data;
+    const { organizationId, planType, userEmail, userName } = validationResult.data;
+
+    // Get the correct variant ID for the plan
+    const variantId = getVariantId(planType);
+    
+    if (!variantId) {
+      console.error("No variant ID found for plan:", planType);
+      return new Response(
+        JSON.stringify({ error: "Plano não encontrado" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     // Verify user belongs to this organization
     const { data: profile } = await supabase
@@ -104,6 +129,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Creating checkout", {
       organizationId,
+      planType,
       storeId,
       variantId,
       userId: user.id,
@@ -128,6 +154,7 @@ const handler = async (req: Request): Promise<Response> => {
               custom: {
                 organization_id: organizationId,
                 user_id: user.id,
+                plan_type: planType,
               },
             },
             product_options: {

@@ -3,17 +3,133 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CreditCard, CheckCircle2, Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { 
+  CreditCard, CheckCircle2, Loader2, ArrowLeft, X, 
+  Users, FileText, Bot, Briefcase, Crown, Sparkles 
+} from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+
+type PlanType = 'free' | 'starter' | 'pro' | 'agency';
+
+interface PlanConfig {
+  name: string;
+  price: number;
+  priceLabel: string;
+  description: string;
+  popular?: boolean;
+  features: { text: string; included: boolean }[];
+  limits: {
+    clients: string;
+    contracts: string;
+    ai: string;
+    team: string;
+  };
+}
+
+const plans: Record<Exclude<PlanType, 'free'>, PlanConfig> = {
+  starter: {
+    name: 'Iniciante',
+    price: 19,
+    priceLabel: '$19/mês',
+    description: 'Para agências em crescimento',
+    features: [
+      { text: 'Até 15 clientes', included: true },
+      { text: '10 contratos/mês', included: true },
+      { text: '50 mensagens IA/mês', included: true },
+      { text: '2 usuários', included: true },
+      { text: 'Funil de vendas', included: true },
+      { text: 'Fluxo operacional', included: true },
+      { text: 'Checklists personalizados', included: true },
+      { text: 'Suporte por email', included: true },
+    ],
+    limits: {
+      clients: '15',
+      contracts: '10/mês',
+      ai: '50 msgs/mês',
+      team: '2 usuários',
+    },
+  },
+  pro: {
+    name: 'Pro',
+    price: 49,
+    priceLabel: '$49/mês',
+    description: 'Para agências estabelecidas',
+    popular: true,
+    features: [
+      { text: 'Até 50 clientes', included: true },
+      { text: 'Contratos ilimitados', included: true },
+      { text: 'Mensagens IA ilimitadas', included: true },
+      { text: '5 usuários', included: true },
+      { text: 'Funil de vendas', included: true },
+      { text: 'Fluxo operacional', included: true },
+      { text: 'Checklists personalizados', included: true },
+      { text: 'Suporte prioritário', included: true },
+    ],
+    limits: {
+      clients: '50',
+      contracts: 'Ilimitado',
+      ai: 'Ilimitado',
+      team: '5 usuários',
+    },
+  },
+  agency: {
+    name: 'Agência',
+    price: 129,
+    priceLabel: '$129/mês',
+    description: 'Para grandes agências',
+    features: [
+      { text: 'Clientes ilimitados', included: true },
+      { text: 'Contratos ilimitados', included: true },
+      { text: 'Mensagens IA ilimitadas', included: true },
+      { text: '15 usuários', included: true },
+      { text: 'Funil de vendas', included: true },
+      { text: 'Fluxo operacional', included: true },
+      { text: 'Checklists personalizados', included: true },
+      { text: 'Suporte VIP', included: true },
+    ],
+    limits: {
+      clients: 'Ilimitado',
+      contracts: 'Ilimitado',
+      ai: 'Ilimitado',
+      team: '15 usuários',
+    },
+  },
+};
+
+const freePlan: PlanConfig = {
+  name: 'Grátis',
+  price: 0,
+  priceLabel: '$0/mês',
+  description: 'Para testar a plataforma',
+  features: [
+    { text: 'Até 5 clientes', included: true },
+    { text: '2 contratos/mês', included: true },
+    { text: 'Sem acesso à IA', included: false },
+    { text: '1 usuário', included: true },
+    { text: 'Funil de vendas', included: true },
+    { text: 'Fluxo operacional', included: true },
+    { text: 'Checklists básicos', included: true },
+    { text: 'Suporte comunidade', included: true },
+  ],
+  limits: {
+    clients: '5',
+    contracts: '2/mês',
+    ai: 'Bloqueado',
+    team: '1 usuário',
+  },
+};
 
 export default function Upgrade() {
   const { user } = useAuth();
-  const { loading, organization, isActive, isTrialing, trialDaysLeft } = useSubscription();
-  const [creatingCheckout, setCreatingCheckout] = useState(false);
+  const { loading, organization, isActive, isTrialing, trialDaysLeft, planType: currentPlanType } = useSubscription();
+  const { planType: activePlanType } = usePlanLimits();
+  const [creatingCheckout, setCreatingCheckout] = useState<PlanType | null>(null);
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = async (planType: Exclude<PlanType, 'free'>) => {
     if (!organization?.id || !user?.email) {
       toast({
         title: 'Erro',
@@ -23,11 +139,12 @@ export default function Upgrade() {
       return;
     }
 
-    setCreatingCheckout(true);
+    setCreatingCheckout(planType);
     try {
       const response = await supabase.functions.invoke('create-checkout', {
         body: {
           organizationId: organization.id,
+          planType,
           userEmail: user.email,
           userName: user.user_metadata?.full_name,
         },
@@ -52,7 +169,7 @@ export default function Upgrade() {
         variant: 'destructive',
       });
     } finally {
-      setCreatingCheckout(false);
+      setCreatingCheckout(null);
     }
   };
 
@@ -64,108 +181,218 @@ export default function Upgrade() {
     );
   }
 
-  // If user has active subscription, redirect info
-  if (isActive) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="h-6 w-6 text-green-500" />
-            </div>
-            <CardTitle>Assinatura Ativa</CardTitle>
-            <CardDescription>
-              Você já possui uma assinatura ativa do Qualify.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link to="/app">
-              <Button className="w-full gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Voltar ao Dashboard
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const currentPlan = activePlanType || currentPlanType || 'free';
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="max-w-lg w-full space-y-6">
+    <div className="min-h-screen bg-background py-8 px-4">
+      <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle className="h-8 w-8 text-destructive" />
-          </div>
-          <h1 className="text-2xl font-bold">
-            {isTrialing && trialDaysLeft > 0
-              ? 'Seu período de teste está acabando'
-              : 'Seu período de teste expirou'
-            }
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            {isTrialing && trialDaysLeft > 0
-              ? `Você tem ${trialDaysLeft} dia${trialDaysLeft !== 1 ? 's' : ''} restantes. Assine agora para continuar usando o Qualify.`
-              : 'Assine o Qualify para continuar gerenciando seus clientes e equipe.'
-            }
+        <div className="text-center space-y-4">
+          <Link to="/app" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar ao Dashboard
+          </Link>
+          
+          <h1 className="text-3xl font-bold">Escolha o plano ideal para sua agência</h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            {isTrialing && trialDaysLeft > 0 ? (
+              <>Você tem <strong>{trialDaysLeft} dias</strong> restantes do período de teste. Assine agora para continuar usando o Qualify.</>
+            ) : (
+              'Escale suas operações com o plano que melhor se adapta às suas necessidades.'
+            )}
           </p>
         </div>
 
-        {/* Pricing Card */}
-        <Card className="border-primary/20">
+        {/* Current Plan Banner */}
+        {currentPlan !== 'free' && isActive && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="flex items-center justify-between py-4">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span>
+                  Você está no plano <strong className="capitalize">{plans[currentPlan as keyof typeof plans]?.name || 'Ativo'}</strong>
+                </span>
+              </div>
+              <Badge variant="outline" className="border-primary text-primary">
+                Ativo
+              </Badge>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pricing Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Free Plan */}
+          <Card className={`relative ${currentPlan === 'free' && !isActive ? 'border-primary ring-2 ring-primary/20' : ''}`}>
+            {currentPlan === 'free' && !isActive && (
+              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                Plano Atual
+              </Badge>
+            )}
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5 text-muted-foreground" />
+                {freePlan.name}
+              </CardTitle>
+              <CardDescription>{freePlan.description}</CardDescription>
+              <div className="pt-2">
+                <span className="text-3xl font-bold">$0</span>
+                <span className="text-muted-foreground">/mês</span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-2">
+                {freePlan.features.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-2 text-sm">
+                    {feature.included ? (
+                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    ) : (
+                      <X className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
+                    <span className={!feature.included ? 'text-muted-foreground' : ''}>
+                      {feature.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <Button variant="outline" disabled className="w-full">
+                Plano Atual
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Paid Plans */}
+          {(Object.entries(plans) as [Exclude<PlanType, 'free'>, PlanConfig][]).map(([planKey, plan]) => {
+            const isCurrentPlan = currentPlan === planKey && isActive;
+            const isLoading = creatingCheckout === planKey;
+
+            return (
+              <Card 
+                key={planKey} 
+                className={`relative ${plan.popular ? 'border-primary ring-2 ring-primary/20' : ''} ${isCurrentPlan ? 'border-primary' : ''}`}
+              >
+                {plan.popular && (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Mais Popular
+                  </Badge>
+                )}
+                {isCurrentPlan && !plan.popular && (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    Plano Atual
+                  </Badge>
+                )}
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2">
+                    {planKey === 'starter' && <Users className="h-5 w-5 text-primary" />}
+                    {planKey === 'pro' && <Crown className="h-5 w-5 text-primary" />}
+                    {planKey === 'agency' && <Bot className="h-5 w-5 text-primary" />}
+                    {plan.name}
+                  </CardTitle>
+                  <CardDescription>{plan.description}</CardDescription>
+                  <div className="pt-2">
+                    <span className="text-3xl font-bold">${plan.price}</span>
+                    <span className="text-muted-foreground">/mês</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm">
+                        {feature.included ? (
+                          <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                        ) : (
+                          <X className="h-4 w-4 text-muted-foreground shrink-0" />
+                        )}
+                        <span className={!feature.included ? 'text-muted-foreground' : ''}>
+                          {feature.text}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  {isCurrentPlan ? (
+                    <Button variant="outline" disabled className="w-full">
+                      Plano Atual
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={() => handleSubscribe(planKey)}
+                      disabled={isLoading || creatingCheckout !== null}
+                      className="w-full gap-2"
+                      variant={plan.popular ? 'default' : 'outline'}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Processando...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-4 w-4" />
+                          {currentPlan !== 'free' && isActive ? 'Mudar Plano' : 'Assinar'}
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Comparison Table */}
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Plano Profissional</span>
-              <span className="text-primary">$7/mês <span className="text-sm text-muted-foreground line-through">$14</span></span>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Comparação de Planos
             </CardTitle>
-            <CardDescription>
-              Tudo o que você precisa para gerenciar sua agência
-            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <ul className="space-y-3">
-              {[
-                'Gestão ilimitada de clientes',
-                'Funil de vendas completo',
-                'Fluxo operacional',
-                'Assistente de IA por cliente',
-                'Gestão de equipe ilimitada',
-                'Checklists personalizados',
-                'Contratos digitais',
-                'Base de conhecimento',
-                'Suporte prioritário',
-              ].map((feature, index) => (
-                <li key={index} className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <Button 
-              onClick={handleSubscribe} 
-              disabled={creatingCheckout}
-              className="w-full gap-2"
-              size="lg"
-            >
-              {creatingCheckout ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="h-4 w-4" />
-                  Assinar Agora
-                </>
-              )}
-            </Button>
-
-            <p className="text-xs text-center text-muted-foreground">
-              Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
-            </p>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium">Recurso</th>
+                    <th className="text-center py-3 px-4 font-medium">Grátis</th>
+                    <th className="text-center py-3 px-4 font-medium">Iniciante</th>
+                    <th className="text-center py-3 px-4 font-medium bg-primary/5">Pro</th>
+                    <th className="text-center py-3 px-4 font-medium">Agência</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Clientes</td>
+                    <td className="text-center py-3 px-4">{freePlan.limits.clients}</td>
+                    <td className="text-center py-3 px-4">{plans.starter.limits.clients}</td>
+                    <td className="text-center py-3 px-4 bg-primary/5">{plans.pro.limits.clients}</td>
+                    <td className="text-center py-3 px-4">{plans.agency.limits.clients}</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Contratos</td>
+                    <td className="text-center py-3 px-4">{freePlan.limits.contracts}</td>
+                    <td className="text-center py-3 px-4">{plans.starter.limits.contracts}</td>
+                    <td className="text-center py-3 px-4 bg-primary/5">{plans.pro.limits.contracts}</td>
+                    <td className="text-center py-3 px-4">{plans.agency.limits.contracts}</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Assistente IA</td>
+                    <td className="text-center py-3 px-4">{freePlan.limits.ai}</td>
+                    <td className="text-center py-3 px-4">{plans.starter.limits.ai}</td>
+                    <td className="text-center py-3 px-4 bg-primary/5">{plans.pro.limits.ai}</td>
+                    <td className="text-center py-3 px-4">{plans.agency.limits.ai}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4">Equipe</td>
+                    <td className="text-center py-3 px-4">{freePlan.limits.team}</td>
+                    <td className="text-center py-3 px-4">{plans.starter.limits.team}</td>
+                    <td className="text-center py-3 px-4 bg-primary/5">{plans.pro.limits.team}</td>
+                    <td className="text-center py-3 px-4">{plans.agency.limits.team}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
 
@@ -177,6 +404,11 @@ export default function Upgrade() {
             </Link>
           </div>
         )}
+
+        {/* Payment Info */}
+        <p className="text-xs text-center text-muted-foreground">
+          Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
+        </p>
       </div>
     </div>
   );
