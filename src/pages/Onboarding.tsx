@@ -88,17 +88,31 @@ export default function Onboarding() {
       return;
     }
 
-    if (!user) return;
+    // A validação de sessão é feita dentro do try (cobre casos de login social)
 
     setIsSubmitting(true);
 
     try {
-      // Get user's profile to find organization_id
+      const { data: { session } } = await supabase.auth.getSession();
+      const sessionUser = session?.user;
+
+      if (!sessionUser) {
+        toast.error('Sua sessão expirou. Entre novamente para continuar.');
+        setIsSubmitting(false);
+        navigate('/auth');
+        return;
+      }
+
+      if (!sessionUser.email) {
+        throw new Error('Não foi possível obter seu e-mail do login. Tente novamente.');
+      }
+
+      // Get user's profile to find organization_id (may not exist for first social login)
       const { data: profile } = await supabase
         .from('profiles')
         .select('organization_id')
-        .eq('id', user.id)
-        .single();
+        .eq('id', sessionUser.id)
+        .maybeSingle();
 
       // Get country currency
       const country = COUNTRIES.find(c => c.code === selectedCountry);
@@ -116,7 +130,7 @@ export default function Onboarding() {
           .insert({
             name: agencyName.trim(),
             slug: slug,
-            owner_id: user.id,
+            owner_id: sessionUser.id,
             currency: currency,
             trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Temporary, will be updated by webhook
           })
@@ -127,11 +141,20 @@ export default function Onboarding() {
 
         organizationId = orgData.id;
 
-        // Update profile with organization_id
-        await supabase
+        // Ensure profile exists and has organization_id
+        const { error: profileUpsertError } = await supabase
           .from('profiles')
-          .update({ organization_id: organizationId })
-          .eq('id', user.id);
+          .upsert(
+            {
+              id: sessionUser.id,
+              email: sessionUser.email,
+              full_name: (sessionUser.user_metadata as any)?.full_name ?? null,
+              organization_id: organizationId,
+            },
+            { onConflict: 'id' }
+          );
+
+        if (profileUpsertError) throw profileUpsertError;
       } else {
         // Update existing organization with name and currency
         const { data: slug } = await supabase.rpc('generate_slug', { name: agencyName.trim() });
@@ -151,13 +174,11 @@ export default function Onboarding() {
       // Now redirect to LemonSqueezy checkout
       toast.info('Redirecionando para o checkout...');
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      
       const response = await supabase.functions.invoke('create-checkout', {
         body: {
           organizationId: organizationId,
-          userEmail: user.email,
-          userName: user.user_metadata?.full_name || agencyName,
+          userEmail: sessionUser.email,
+          userName: (sessionUser.user_metadata as any)?.full_name || agencyName,
         },
       });
 
