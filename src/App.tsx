@@ -25,6 +25,7 @@ import Team from "./pages/Team";
 import AIAssistant from "./pages/AIAssistant";
 import Settings from "./pages/Settings";
 import Upgrade from "./pages/Upgrade";
+import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/Onboarding";
 import Subscription from "./pages/Subscription";
 import Notifications from "./pages/Notifications";
@@ -62,6 +63,7 @@ const App = () => (
           <AuthProvider>
             <Routes>
               <Route path="/" element={<LandingPage />} />
+              <Route path="/pricing" element={<Pricing />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/set-password" element={<SetPassword />} />
