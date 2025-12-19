@@ -14,6 +14,7 @@ import {
   Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert 
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { LemonSqueezyDiagnosticsDialog } from '@/components/subscription/LemonSqueezyDiagnosticsDialog';
 
 // Plan images
 import planBussola from '@/assets/plans/plan-bussola.png';
@@ -526,6 +527,11 @@ export default function Upgrade() {
         <p className="text-xs text-center text-muted-foreground">
           Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
         </p>
+
+        {/* Diagnostics for admins */}
+        <div className="flex justify-center pt-4">
+          <LemonSqueezyDiagnosticsDialog />
+        </div>
       </div>
     </div>
   );
