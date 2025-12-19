@@ -189,10 +189,11 @@ const freePlan: PlanConfig = {
 
 export default function Upgrade() {
   const { user } = useAuth();
-  const { loading, organization, isActive, isTrialing, trialDaysLeft, planType: currentPlanType } = useSubscription();
+  const { loading, organization, isActive, isTrialing, trialDaysLeft, planType: currentPlanType, subscription, refetch } = useSubscription();
   const { planType: activePlanType } = usePlanLimits();
   const { isAdmin, loading: roleLoading } = useUserRole();
   const [creatingCheckout, setCreatingCheckout] = useState<PlanType | null>(null);
+  const [changingPlan, setChangingPlan] = useState<PlanType | null>(null);
 
   const handleSubscribe = async (planType: Exclude<PlanType, 'free'>) => {
     if (!organization?.id || !user?.email) {
@@ -235,6 +236,48 @@ export default function Upgrade() {
       });
     } finally {
       setCreatingCheckout(null);
+    }
+  };
+
+  const handleChangePlan = async (newPlanType: Exclude<PlanType, 'free'>) => {
+    if (!organization?.id) {
+      toast({
+        title: 'Erro',
+        description: 'Dados da organização não encontrados',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setChangingPlan(newPlanType);
+    try {
+      const response = await supabase.functions.invoke('manage-subscription', {
+        body: {
+          action: 'change-plan',
+          organizationId: organization.id,
+          newPlanType,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to change plan');
+      }
+
+      toast({
+        title: 'Plano alterado com sucesso!',
+        description: `Seu plano foi alterado para ${planNames[newPlanType].codename}.`,
+      });
+
+      await refetch();
+    } catch (error: any) {
+      console.error('Error changing plan:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível alterar o plano. Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setChangingPlan(null);
     }
   };
 
@@ -349,9 +392,16 @@ export default function Upgrade() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {allPlans.map(({ key: planKey, config: plan }) => {
             const isCurrentPlan = currentPlan === planKey && (planKey === 'free' ? !isActive : isActive);
-            const isLoading = creatingCheckout === planKey;
+            const isLoading = creatingCheckout === planKey || changingPlan === planKey;
             const colors = planColors[planKey];
             const planInfo = planNames[planKey];
+            const hasActiveSubscription = isActive && subscription?.lemonsqueezySubscriptionId;
+
+            // Determine if this is upgrade or downgrade
+            const currentIndex = PLAN_ORDER.indexOf(currentPlan);
+            const targetIndex = PLAN_ORDER.indexOf(planKey);
+            const isUpgrade = targetIndex > currentIndex;
+            const isDowngrade = targetIndex < currentIndex;
 
             return (
               <Card 
@@ -433,7 +483,32 @@ export default function Upgrade() {
                     <Button variant="outline" disabled className="w-full">
                       Plano Atual
                     </Button>
+                  ) : hasActiveSubscription ? (
+                    // User has active subscription - use change-plan API
+                    <Button 
+                      onClick={() => handleChangePlan(planKey)}
+                      disabled={isLoading || creatingCheckout !== null || changingPlan !== null}
+                      className="w-full gap-2 text-white"
+                      style={{ backgroundColor: colors.primary }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          {isUpgrade ? 'Fazendo Upgrade...' : 'Fazendo Downgrade...'}
+                        </>
+                      ) : (
+                        <>
+                          {isUpgrade ? (
+                            <Crown className="h-4 w-4" />
+                          ) : (
+                            <CreditCard className="h-4 w-4" />
+                          )}
+                          {getButtonLabel(planKey, currentPlan)}
+                        </>
+                      )}
+                    </Button>
                   ) : (
+                    // No subscription - create new checkout
                     <Button 
                       onClick={() => handleSubscribe(planKey)}
                       disabled={isLoading || creatingCheckout !== null}
@@ -448,7 +523,7 @@ export default function Upgrade() {
                       ) : (
                         <>
                           <CreditCard className="h-4 w-4" />
-                          {getButtonLabel(planKey, currentPlan)}
+                          Assinar Agora
                         </>
                       )}
                     </Button>

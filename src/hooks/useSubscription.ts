@@ -8,7 +8,9 @@ interface SubscriptionData {
   id: string;
   status: 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired';
   currentPeriodEnd: string | null;
+  currentPeriodStart: string | null;
   cancelAtPeriodEnd: boolean;
+  lemonsqueezySubscriptionId: string | null;
 }
 
 interface OrganizationData {
@@ -26,6 +28,9 @@ interface UseSubscriptionReturn {
   isActive: boolean;
   isTrialing: boolean;
   isPaidPlan: boolean;
+  isPastDue: boolean;
+  isCancelled: boolean;
+  cancelAtPeriodEnd: boolean;
   trialDaysLeft: number;
   hasAccess: boolean;
   refetch: () => Promise<void>;
@@ -78,7 +83,7 @@ export function useSubscription(): UseSubscriptionReturn {
       // Get subscription data
       const { data: subData, error: subError } = await supabase
         .from('subscriptions')
-        .select('id, status, current_period_end, cancel_at_period_end')
+        .select('id, status, current_period_end, current_period_start, cancel_at_period_end, lemonsqueezy_subscription_id')
         .eq('organization_id', profile.organization_id)
         .single();
 
@@ -89,7 +94,9 @@ export function useSubscription(): UseSubscriptionReturn {
           id: subData.id,
           status: subData.status,
           currentPeriodEnd: subData.current_period_end,
+          currentPeriodStart: subData.current_period_start,
           cancelAtPeriodEnd: subData.cancel_at_period_end || false,
+          lemonsqueezySubscriptionId: subData.lemonsqueezy_subscription_id,
         });
       }
     } catch (error) {
@@ -115,6 +122,9 @@ export function useSubscription(): UseSubscriptionReturn {
   const isActive = subscription?.status === 'active' || subscription?.status === 'past_due';
   const isTrialing = trialDaysLeft > 0 && !isActive;
   const isPaidPlan = ['starter', 'pro', 'agency'].includes(planType);
+  const isPastDue = subscription?.status === 'past_due';
+  const isCancelled = subscription?.status === 'cancelled' || subscription?.status === 'expired';
+  const cancelAtPeriodEnd = subscription?.cancelAtPeriodEnd || false;
   
   // Freemium model: everyone has access, limitations are per-feature via usePlanLimits
   const hasAccess = true;
@@ -127,6 +137,9 @@ export function useSubscription(): UseSubscriptionReturn {
     isActive,
     isTrialing,
     isPaidPlan,
+    isPastDue,
+    isCancelled,
+    cancelAtPeriodEnd,
     trialDaysLeft,
     hasAccess,
     refetch: fetchSubscriptionData,

@@ -6,9 +6,25 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle2, Clock, Receipt, XCircle, Compass, Target, TrendingUp, Rocket, Sparkles } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { 
+  Loader2, CheckCircle2, Clock, Receipt, XCircle, Compass, Target, 
+  TrendingUp, Rocket, Sparkles, AlertTriangle, ExternalLink, RotateCcw, CreditCard 
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from '@/hooks/use-toast';
 
 import planBussola from '@/assets/plans/plan-bussola.png';
 import planLanca from '@/assets/plans/plan-lanca.png';
@@ -42,8 +58,8 @@ const PLAN_CONFIG = {
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
     image: planLanca,
-    price: '$7/mês',
-    features: ['25 clientes', '3 membros na equipe', '15 contratos/mês', '50 mensagens IA/mês']
+    price: '$19/mês',
+    features: ['15 clientes', '2 membros na equipe', '10 contratos/mês', '50 mensagens IA/mês']
   },
   pro: { 
     name: 'Arco', 
@@ -52,8 +68,8 @@ const PLAN_CONFIG = {
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/20',
     image: planArco,
-    price: '$14/mês',
-    features: ['100 clientes', '10 membros na equipe', '50 contratos/mês', '200 mensagens IA/mês']
+    price: '$49/mês',
+    features: ['50 clientes', '5 membros na equipe', 'Contratos ilimitados', 'IA ilimitada']
   },
   agency: { 
     name: 'Catapulta', 
@@ -62,16 +78,20 @@ const PLAN_CONFIG = {
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/20',
     image: planCatapulta,
-    price: '$29/mês',
+    price: '$129/mês',
     features: ['Clientes ilimitados', 'Equipe ilimitada', 'Contratos ilimitados', 'IA ilimitada']
   },
 };
 
 export function SubscriptionTab() {
   const { user } = useAuth();
-  const { loading, subscription, organization, isActive, isPaidPlan, planType, refetch } = useSubscription();
+  const { 
+    loading, subscription, organization, isActive, isPaidPlan, planType, 
+    isPastDue, cancelAtPeriodEnd, refetch 
+  } = useSubscription();
   const [payments, setPayments] = useState<PaymentHistory[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const currentPlan = PLAN_CONFIG[planType] || PLAN_CONFIG.free;
   const PlanIcon = currentPlan.icon;
@@ -101,6 +121,101 @@ export function SubscriptionTab() {
     }
   }, [organization?.id]);
 
+  const handleManagePayment = async () => {
+    if (!organization?.id) return;
+    
+    setActionLoading('portal');
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-subscription', {
+        body: {
+          action: 'get-portal-url',
+          organizationId: organization.id,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.customerPortalUrl) {
+        window.open(data.customerPortalUrl, '_blank');
+      } else {
+        throw new Error('URL do portal não encontrada');
+      }
+    } catch (error: any) {
+      console.error('Error getting portal URL:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível abrir o portal de pagamento',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!organization?.id) return;
+    
+    setActionLoading('cancel');
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-subscription', {
+        body: {
+          action: 'cancel',
+          organizationId: organization.id,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Assinatura cancelada',
+        description: 'Sua assinatura será cancelada no final do período atual.',
+      });
+
+      await refetch();
+    } catch (error: any) {
+      console.error('Error cancelling subscription:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível cancelar a assinatura',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleResumeSubscription = async () => {
+    if (!organization?.id) return;
+    
+    setActionLoading('resume');
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-subscription', {
+        body: {
+          action: 'resume',
+          organizationId: organization.id,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Assinatura reativada',
+        description: 'Sua assinatura continuará normalmente.',
+      });
+
+      await refetch();
+    } catch (error: any) {
+      console.error('Error resuming subscription:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível reativar a assinatura',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const getPaymentStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -126,6 +241,58 @@ export function SubscriptionTab() {
 
   return (
     <div className="space-y-6">
+      {/* Past Due Alert */}
+      {isPastDue && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Pagamento em atraso</AlertTitle>
+          <AlertDescription>
+            O pagamento da sua assinatura falhou. Por favor, atualize seu método de pagamento para evitar a suspensão do serviço.
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2 gap-2"
+              onClick={handleManagePayment}
+              disabled={actionLoading === 'portal'}
+            >
+              {actionLoading === 'portal' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CreditCard className="h-4 w-4" />
+              )}
+              Atualizar Pagamento
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Pending Cancellation Alert */}
+      {cancelAtPeriodEnd && subscription?.currentPeriodEnd && (
+        <Alert className="border-yellow-500/30 bg-yellow-500/5">
+          <Clock className="h-4 w-4 text-yellow-500" />
+          <AlertTitle className="text-yellow-600">Cancelamento Pendente</AlertTitle>
+          <AlertDescription>
+            Sua assinatura será cancelada em{' '}
+            <strong>{format(new Date(subscription.currentPeriodEnd), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</strong>.
+            Você continuará tendo acesso até essa data.
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2 gap-2"
+              onClick={handleResumeSubscription}
+              disabled={actionLoading === 'resume'}
+            >
+              {actionLoading === 'resume' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4" />
+              )}
+              Manter Assinatura
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Current Plan Card */}
       <Card className={cn("border-2", currentPlan.borderColor)}>
         <CardHeader>
@@ -148,7 +315,7 @@ export function SubscriptionTab() {
             </div>
             <div className="text-right">
               <span className={cn("text-2xl font-bold", currentPlan.color)}>{currentPlan.price}</span>
-              {isActive && subscription?.currentPeriodEnd && (
+              {isActive && subscription?.currentPeriodEnd && !cancelAtPeriodEnd && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Renova em {format(new Date(subscription.currentPeriodEnd), "dd/MM/yyyy", { locale: ptBR })}
                 </p>
@@ -156,7 +323,7 @@ export function SubscriptionTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
             {currentPlan.features.map((feature, index) => (
               <div key={index} className="flex items-center gap-2 text-sm">
@@ -165,6 +332,65 @@ export function SubscriptionTab() {
               </div>
             ))}
           </div>
+
+          {/* Management buttons for paid plans */}
+          {isPaidPlan && isActive && (
+            <div className="flex flex-wrap gap-2 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleManagePayment}
+                disabled={actionLoading === 'portal'}
+                className="gap-2"
+              >
+                {actionLoading === 'portal' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="h-4 w-4" />
+                )}
+                Gerenciar Pagamento
+              </Button>
+
+              {!cancelAtPeriodEnd && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="gap-2 text-destructive hover:text-destructive"
+                    >
+                      <XCircle className="h-4 w-4" />
+                      Cancelar Assinatura
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Tem certeza que deseja cancelar?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Sua assinatura será cancelada no final do período atual 
+                        ({subscription?.currentPeriodEnd ? format(new Date(subscription.currentPeriodEnd), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'data não disponível'}).
+                        Você continuará tendo acesso aos recursos do plano {currentPlan.name} até essa data.
+                        Após o cancelamento, sua conta será revertida para o plano gratuito.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Manter Assinatura</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleCancelSubscription}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        disabled={actionLoading === 'cancel'}
+                      >
+                        {actionLoading === 'cancel' ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : null}
+                        Confirmar Cancelamento
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -194,7 +420,7 @@ export function SubscriptionTab() {
       )}
 
       {/* Active Subscription Info */}
-      {isActive && !subscription?.cancelAtPeriodEnd && (
+      {isActive && !cancelAtPeriodEnd && !isPastDue && isPaidPlan && (
         <Card className="border-green-500/20 bg-green-500/5">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
