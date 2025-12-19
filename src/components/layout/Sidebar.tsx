@@ -32,10 +32,10 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
 
 const PLAN_CONFIG = {
-  free: { name: 'Bússola', icon: Compass, color: 'text-green-500', bgColor: 'bg-green-500/10' },
-  starter: { name: 'Lança', icon: Target, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
-  pro: { name: 'Arco', icon: TrendingUp, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
-  agency: { name: 'Catapulta', icon: Rocket, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
+  free: { name: 'Bússola', icon: Compass },
+  starter: { name: 'Lança', icon: Target },
+  pro: { name: 'Arco', icon: TrendingUp },
+  agency: { name: 'Catapulta', icon: Rocket },
 };
 
 export function Sidebar() {
@@ -244,8 +244,8 @@ export function Sidebar() {
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                   >
-                    <div className={cn("p-1 rounded", currentPlan.bgColor)}>
-                      <PlanIcon className={cn("h-4 w-4", currentPlan.color)} />
+                    <div className="p-1 rounded bg-primary/10">
+                      <PlanIcon className="h-4 w-4 text-primary" />
                     </div>
                   </Link>
                 </TooltipTrigger>
@@ -263,8 +263,8 @@ export function Sidebar() {
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 )}
               >
-                <div className={cn("p-1 rounded", currentPlan.bgColor)}>
-                  <PlanIcon className={cn("h-4 w-4", currentPlan.color)} />
+                <div className="p-1 rounded bg-primary/10">
+                  <PlanIcon className="h-4 w-4 text-primary" />
                 </div>
                 <span>Plano {currentPlan.name}</span>
               </Link>
