@@ -111,8 +111,9 @@ export function useSubscription(): UseSubscriptionReturn {
   const planType = organization?.planType || 'free';
   
   // Determine subscription status
-  const isTrialing = trialDaysLeft > 0 && planType === 'free';
+  // isTrialing = has trial days left AND no active paid subscription
   const isActive = subscription?.status === 'active' || subscription?.status === 'past_due';
+  const isTrialing = trialDaysLeft > 0 && !isActive;
   const isPaidPlan = ['starter', 'pro', 'agency'].includes(planType);
   
   // Freemium model: everyone has access, limitations are per-feature via usePlanLimits

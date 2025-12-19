@@ -125,7 +125,8 @@ export default function Onboarding() {
             slug: slug,
             owner_id: sessionUser.id,
             currency: currency,
-            trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Temporary, will be updated by webhook
+            plan_type: 'agency', // Start with Agency plan for 7-day trial
+            trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           })
           .select()
           .single();
@@ -164,11 +165,8 @@ export default function Onboarding() {
         if (error) throw error;
       }
 
-      // Set plan_type to free and redirect to app
-      await supabase
-        .from('organizations')
-        .update({ plan_type: 'free' })
-        .eq('id', organizationId);
+      // Organization already has plan_type set (agency for trial or existing)
+      // No need to override to free here
 
       toast.success('Agência configurada com sucesso!');
       navigate('/app');
@@ -243,13 +241,13 @@ export default function Onboarding() {
               </p>
             </div>
 
-            <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Rocket className="h-4 w-4 text-primary" />
-                Plano Gratuito
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                <Rocket className="h-4 w-4" />
+                Período de Teste Gratuito - 7 Dias
               </div>
               <p className="text-sm text-muted-foreground">
-                Comece gratuitamente com recursos essenciais. Você pode fazer upgrade a qualquer momento para desbloquear mais funcionalidades.
+                Comece com acesso completo ao plano Catapulta por 7 dias. Após o período de teste, você pode escolher um plano ou continuar gratuitamente.
               </p>
             </div>
 
