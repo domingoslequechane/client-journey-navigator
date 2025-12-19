@@ -708,7 +708,7 @@ export default function LandingPage() {
             <p className="text-muted-foreground mb-4">
               Todos os planos incluem 7 dias de teste grátis. Cancele a qualquer momento.
             </p>
-            <Link to="/auth">
+            <Link to="/pricing">
               <Button variant="outline" size="lg" className="gap-2">
                 Ver comparação completa
                 <ArrowRight className="h-4 w-4" />
