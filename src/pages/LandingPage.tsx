@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   ArrowRight, 
   CheckCircle2, 
@@ -22,11 +24,63 @@ import {
   X,
   Bot,
   Layers,
-  PieChart
+  PieChart,
+  CreditCard
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { PublicBackground } from '@/components/layout/PublicBackground';
+
+// Plan images
+import planBussola from '@/assets/plans/plan-bussola.png';
+import planLanca from '@/assets/plans/plan-lanca.png';
+import planArco from '@/assets/plans/plan-arco.png';
+import planCatapulta from '@/assets/plans/plan-catapulta.png';
+
+// Plan colors and config
+const planConfig = {
+  free: {
+    name: 'Bússola',
+    subtitle: 'Grátis',
+    price: 0,
+    tagline: 'Encontre o caminho certo para começar!',
+    image: planBussola,
+    color: 'hsl(142, 71%, 45%)',
+    bgColor: 'hsl(142, 71%, 45%, 0.1)',
+    features: ['5 clientes', '2 contratos/mês', '1 usuário'],
+  },
+  starter: {
+    name: 'Lança',
+    subtitle: 'Iniciante',
+    price: 19,
+    tagline: 'Lance sua marca no mundo digital!',
+    image: planLanca,
+    color: 'hsl(217, 91%, 60%)',
+    bgColor: 'hsl(217, 91%, 60%, 0.1)',
+    features: ['15 clientes', '10 contratos/mês', '50 msgs IA', '2 usuários'],
+  },
+  pro: {
+    name: 'Arco',
+    subtitle: 'Pro',
+    price: 49,
+    tagline: 'Alcance resultados com precisão!',
+    image: planArco,
+    color: 'hsl(270, 91%, 65%)',
+    bgColor: 'hsl(270, 91%, 65%, 0.1)',
+    features: ['50 clientes', 'Contratos ilimitados', 'IA ilimitada', '5 usuários'],
+    popular: true,
+  },
+  agency: {
+    name: 'Catapulta',
+    subtitle: 'Agência',
+    price: 129,
+    tagline: 'Imponha sua agência no mercado!',
+    image: planCatapulta,
+    color: 'hsl(25, 95%, 53%)',
+    bgColor: 'hsl(25, 95%, 53%, 0.1)',
+    features: ['Clientes ilimitados', 'Tudo ilimitado', '15 usuários', 'Suporte VIP'],
+  },
+};
 
 // Animation hook for scroll reveal
 const useScrollReveal = () => {
@@ -273,6 +327,7 @@ export default function LandingPage() {
             <a href="#problema" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Problema</a>
             <a href="#funcionalidades" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</a>
             <a href="#jornada" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Jornada</a>
+            <a href="#planos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Planos</a>
             <a href="#depoimentos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Depoimentos</a>
           </nav>
           <div className="flex items-center gap-3">
@@ -564,51 +619,101 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Teaser */}
-      <section className="py-20 md:py-32">
+      {/* Pricing Section */}
+      <section id="planos" className="py-20 md:py-32">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-primary/10 border border-primary/20 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-              
-              <div className="relative z-10">
-                <span className="inline-block bg-primary/20 text-primary text-sm font-semibold px-4 py-1 rounded-full mb-6">
-                  🎉 Oferta de Lançamento
-                </span>
-                
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-                  Apenas <span className="text-primary">$7/mês</span>
-                  <span className="ml-3 text-lg text-muted-foreground line-through">$14</span>
-                </h2>
-                
-                <p className="text-xl text-muted-foreground mb-8 max-w-xl mx-auto">
-                  Acesso completo a todas as funcionalidades. Sem surpresas. Cancele quando quiser.
-                </p>
-                
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Check className="h-5 w-5 text-primary" />
-                    <span>7 dias grátis</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Check className="h-5 w-5 text-primary" />
-                    <span>Usuários ilimitados</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Check className="h-5 w-5 text-primary" />
-                    <span>Suporte prioritário</span>
-                  </div>
+          <div className="text-center mb-16">
+            <span className="text-primary font-semibold text-sm uppercase tracking-wider mb-4 block">Planos</span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+              Escolha o plano ideal para{' '}
+              <span className="text-primary">sua agência</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Do iniciante ao avançado, temos um plano perfeito para você.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            {(Object.entries(planConfig) as [string, typeof planConfig.pro][]).map(([key, plan]) => (
+              <Card 
+                key={key}
+                className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 ${
+                  'popular' in plan && plan.popular ? 'ring-2' : ''
+                }`}
+                style={{
+                  ...('popular' in plan && plan.popular ? { borderColor: plan.color } : {}),
+                }}
+              >
+                {/* Plan Image */}
+                <div 
+                  className="relative h-48 overflow-hidden"
+                  style={{ backgroundColor: plan.bgColor }}
+                >
+                  <img 
+                    src={plan.image} 
+                    alt={`Plano ${plan.name}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {'popular' in plan && plan.popular && (
+                    <Badge 
+                      className="absolute top-3 right-3 shadow-lg text-white"
+                      style={{ backgroundColor: plan.color }}
+                    >
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Mais Popular
+                    </Badge>
+                  )}
                 </div>
-                
-                <Link to="/auth">
-                  <Button size="lg" className="text-lg px-10 py-6 gap-3 shadow-xl shadow-primary/30">
-                    Começar Agora
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
+
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <span style={{ color: plan.color }}>{plan.name}</span>
+                  </CardTitle>
+                  <CardDescription>{plan.subtitle}</CardDescription>
+                  <div className="pt-2">
+                    <span className="text-3xl font-bold" style={{ color: plan.color }}>
+                      ${plan.price}
+                    </span>
+                    <span className="text-muted-foreground">/mês</span>
+                  </div>
+                  <p className="text-xs italic text-muted-foreground mt-1">
+                    {plan.tagline}
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: plan.color }} />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Link to="/auth" className="block">
+                    <Button 
+                      className="w-full gap-2 text-white"
+                      style={{ backgroundColor: plan.color }}
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      {plan.price === 0 ? 'Começar Grátis' : 'Assinar Agora'}
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-muted-foreground mb-4">
+              Todos os planos incluem 7 dias de teste grátis. Cancele a qualquer momento.
+            </p>
+            <Link to="/auth">
+              <Button variant="outline" size="lg" className="gap-2">
+                Ver comparação completa
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
