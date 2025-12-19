@@ -701,28 +701,34 @@ export type Database = {
       }
       plan_limits: {
         Row: {
+          can_export_data: boolean | null
           created_at: string | null
           id: string
           max_ai_messages_per_month: number | null
           max_clients: number | null
+          max_contract_templates: number | null
           max_contracts_per_month: number | null
           max_team_members: number | null
           plan_type: Database["public"]["Enums"]["plan_type"]
         }
         Insert: {
+          can_export_data?: boolean | null
           created_at?: string | null
           id?: string
           max_ai_messages_per_month?: number | null
           max_clients?: number | null
+          max_contract_templates?: number | null
           max_contracts_per_month?: number | null
           max_team_members?: number | null
           plan_type: Database["public"]["Enums"]["plan_type"]
         }
         Update: {
+          can_export_data?: boolean | null
           created_at?: string | null
           id?: string
           max_ai_messages_per_month?: number | null
           max_clients?: number | null
+          max_contract_templates?: number | null
           max_contracts_per_month?: number | null
           max_team_members?: number | null
           plan_type?: Database["public"]["Enums"]["plan_type"]

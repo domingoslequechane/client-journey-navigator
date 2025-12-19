@@ -12,10 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw } from 'lucide-react';
+import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw, Lock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { z } from 'zod';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 
 interface TeamMember {
   id: string;
@@ -56,6 +58,7 @@ const inviteSchema = z.object({
 
 export default function Team() {
   const navigate = useNavigate();
+  const { canInviteTeamMember, planType, usage, limits, loading: planLoading } = usePlanLimits();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -411,6 +414,15 @@ export default function Team() {
 
   return (
     <div className="p-4 md:p-8 space-y-6">
+      {!canInviteTeamMember && limits.maxTeamMembers !== null && (
+        <LimitReachedCard 
+          feature="membros da equipe" 
+          current={usage.teamMembersCount} 
+          limit={limits.maxTeamMembers} 
+          planType={planType}
+          variant="banner"
+        />
+      )}
       <AnimatedContainer animation="fade-up" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Equipe</h1>
@@ -418,10 +430,23 @@ export default function Team() {
         </div>
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 w-full sm:w-auto">
-              <UserPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">Adicionar Membro</span>
-              <span className="sm:hidden">Adicionar</span>
+            <Button 
+              className="gap-2 w-full sm:w-auto" 
+              disabled={!canInviteTeamMember}
+            >
+              {!canInviteTeamMember ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  <span className="hidden sm:inline">Limite Atingido</span>
+                  <span className="sm:hidden">Limite</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Adicionar Membro</span>
+                  <span className="sm:hidden">Adicionar</span>
+                </>
+              )}
             </Button>
           </DialogTrigger>
           <DialogContent>
