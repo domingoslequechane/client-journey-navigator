@@ -13,7 +13,55 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
+// Plan images
+import planBussola from '@/assets/plans/plan-bussola.png';
+import planLanca from '@/assets/plans/plan-lanca.png';
+import planArco from '@/assets/plans/plan-arco.png';
+import planCatapulta from '@/assets/plans/plan-catapulta.png';
+
 type PlanType = 'free' | 'starter' | 'pro' | 'agency';
+
+// Plan colors (HSL values)
+export const planColors: Record<PlanType, { primary: string; bg: string; border: string; text: string }> = {
+  free: {
+    primary: 'hsl(142, 71%, 45%)',
+    bg: 'hsl(142, 71%, 45%, 0.1)',
+    border: 'hsl(142, 71%, 45%, 0.3)',
+    text: 'hsl(142, 71%, 35%)',
+  },
+  starter: {
+    primary: 'hsl(217, 91%, 60%)',
+    bg: 'hsl(217, 91%, 60%, 0.1)',
+    border: 'hsl(217, 91%, 60%, 0.3)',
+    text: 'hsl(217, 91%, 50%)',
+  },
+  pro: {
+    primary: 'hsl(270, 91%, 65%)',
+    bg: 'hsl(270, 91%, 65%, 0.1)',
+    border: 'hsl(270, 91%, 65%, 0.3)',
+    text: 'hsl(270, 91%, 55%)',
+  },
+  agency: {
+    primary: 'hsl(25, 95%, 53%)',
+    bg: 'hsl(25, 95%, 53%, 0.1)',
+    border: 'hsl(25, 95%, 53%, 0.3)',
+    text: 'hsl(25, 95%, 43%)',
+  },
+};
+
+export const planImages: Record<PlanType, string> = {
+  free: planBussola,
+  starter: planLanca,
+  pro: planArco,
+  agency: planCatapulta,
+};
+
+export const planNames: Record<PlanType, { name: string; codename: string; tagline: string }> = {
+  free: { name: 'Grátis', codename: 'Bússola', tagline: 'Encontre o caminho certo para começar!' },
+  starter: { name: 'Iniciante', codename: 'Lança', tagline: 'Lance sua marca no mundo digital!' },
+  pro: { name: 'Pro', codename: 'Arco', tagline: 'Alcance resultados com precisão!' },
+  agency: { name: 'Agência', codename: 'Catapulta', tagline: 'Imponha sua agência no mercado!' },
+};
 
 interface PlanConfig {
   name: string;
@@ -183,6 +231,13 @@ export default function Upgrade() {
 
   const currentPlan = activePlanType || currentPlanType || 'free';
 
+  const allPlans: { key: PlanType; config: PlanConfig }[] = [
+    { key: 'free', config: freePlan },
+    { key: 'starter', config: plans.starter },
+    { key: 'pro', config: plans.pro },
+    { key: 'agency', config: plans.agency },
+  ];
+
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -205,15 +260,27 @@ export default function Upgrade() {
 
         {/* Current Plan Banner */}
         {currentPlan !== 'free' && isActive && (
-          <Card className="border-primary/20 bg-primary/5">
+          <Card 
+            className="border-2"
+            style={{ 
+              borderColor: planColors[currentPlan].border,
+              backgroundColor: planColors[currentPlan].bg 
+            }}
+          >
             <CardContent className="flex items-center justify-between py-4">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <CheckCircle2 className="h-5 w-5" style={{ color: planColors[currentPlan].primary }} />
                 <span>
-                  Você está no plano <strong className="capitalize">{plans[currentPlan as keyof typeof plans]?.name || 'Ativo'}</strong>
+                  Você está no plano <strong>{planNames[currentPlan].codename}</strong> ({planNames[currentPlan].name})
                 </span>
               </div>
-              <Badge variant="outline" className="border-primary text-primary">
+              <Badge 
+                variant="outline" 
+                style={{ 
+                  borderColor: planColors[currentPlan].primary,
+                  color: planColors[currentPlan].text 
+                }}
+              >
                 Ativo
               </Badge>
             </CardContent>
@@ -222,85 +289,74 @@ export default function Upgrade() {
 
         {/* Pricing Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Free Plan */}
-          <Card className={`relative ${currentPlan === 'free' && !isActive ? 'border-primary ring-2 ring-primary/20' : ''}`}>
-            {currentPlan === 'free' && !isActive && (
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                Plano Atual
-              </Badge>
-            )}
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Briefcase className="h-5 w-5 text-muted-foreground" />
-                {freePlan.name}
-              </CardTitle>
-              <CardDescription>{freePlan.description}</CardDescription>
-              <div className="pt-2">
-                <span className="text-3xl font-bold">$0</span>
-                <span className="text-muted-foreground">/mês</span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-2">
-                {freePlan.features.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-2 text-sm">
-                    {feature.included ? (
-                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                    ) : (
-                      <X className="h-4 w-4 text-muted-foreground shrink-0" />
-                    )}
-                    <span className={!feature.included ? 'text-muted-foreground' : ''}>
-                      {feature.text}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <Button variant="outline" disabled className="w-full">
-                Plano Atual
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Paid Plans */}
-          {(Object.entries(plans) as [Exclude<PlanType, 'free'>, PlanConfig][]).map(([planKey, plan]) => {
-            const isCurrentPlan = currentPlan === planKey && isActive;
+          {allPlans.map(({ key: planKey, config: plan }) => {
+            const isCurrentPlan = currentPlan === planKey && (planKey === 'free' ? !isActive : isActive);
             const isLoading = creatingCheckout === planKey;
+            const colors = planColors[planKey];
+            const planInfo = planNames[planKey];
 
             return (
               <Card 
                 key={planKey} 
-                className={`relative ${plan.popular ? 'border-primary ring-2 ring-primary/20' : ''} ${isCurrentPlan ? 'border-primary' : ''}`}
+                className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg ${
+                  plan.popular ? 'ring-2' : ''
+                } ${isCurrentPlan ? 'ring-2' : ''}`}
+                style={{
+                  borderColor: isCurrentPlan || plan.popular ? colors.border : undefined,
+                  ...(plan.popular || isCurrentPlan ? { '--ring-color': colors.primary } as any : {}),
+                  ringColor: isCurrentPlan || plan.popular ? colors.primary : undefined,
+                }}
               >
-                {plan.popular && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Mais Popular
-                  </Badge>
-                )}
-                {isCurrentPlan && !plan.popular && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    Plano Atual
-                  </Badge>
-                )}
+                {/* Plan Image */}
+                <div 
+                  className="relative h-48 overflow-hidden"
+                  style={{ backgroundColor: colors.bg }}
+                >
+                  <img 
+                    src={planImages[planKey]} 
+                    alt={`Plano ${planInfo.codename}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {plan.popular && (
+                    <Badge 
+                      className="absolute top-3 right-3 shadow-lg"
+                      style={{ backgroundColor: colors.primary }}
+                    >
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Mais Popular
+                    </Badge>
+                  )}
+                  {isCurrentPlan && !plan.popular && (
+                    <Badge 
+                      className="absolute top-3 right-3 shadow-lg"
+                      style={{ backgroundColor: colors.primary }}
+                    >
+                      Plano Atual
+                    </Badge>
+                  )}
+                </div>
+
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2">
-                    {planKey === 'starter' && <Users className="h-5 w-5 text-primary" />}
-                    {planKey === 'pro' && <Crown className="h-5 w-5 text-primary" />}
-                    {planKey === 'agency' && <Bot className="h-5 w-5 text-primary" />}
-                    {plan.name}
+                    <span style={{ color: colors.text }}>{planInfo.codename}</span>
                   </CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="pt-2">
-                    <span className="text-3xl font-bold">${plan.price}</span>
+                    <span className="text-3xl font-bold" style={{ color: colors.text }}>
+                      ${plan.price}
+                    </span>
                     <span className="text-muted-foreground">/mês</span>
                   </div>
+                  <p className="text-xs italic text-muted-foreground mt-1">
+                    {planInfo.tagline}
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
-                    {plan.features.map((feature, index) => (
+                    {plan.features.slice(0, 6).map((feature, index) => (
                       <li key={index} className="flex items-center gap-2 text-sm">
                         {feature.included ? (
-                          <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                          <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: colors.primary }} />
                         ) : (
                           <X className="h-4 w-4 text-muted-foreground shrink-0" />
                         )}
@@ -311,7 +367,11 @@ export default function Upgrade() {
                     ))}
                   </ul>
                   
-                  {isCurrentPlan ? (
+                  {planKey === 'free' ? (
+                    <Button variant="outline" disabled className="w-full">
+                      {isCurrentPlan ? 'Plano Atual' : 'Plano Base'}
+                    </Button>
+                  ) : isCurrentPlan ? (
                     <Button variant="outline" disabled className="w-full">
                       Plano Atual
                     </Button>
@@ -319,8 +379,8 @@ export default function Upgrade() {
                     <Button 
                       onClick={() => handleSubscribe(planKey)}
                       disabled={isLoading || creatingCheckout !== null}
-                      className="w-full gap-2"
-                      variant={plan.popular ? 'default' : 'outline'}
+                      className="w-full gap-2 text-white"
+                      style={{ backgroundColor: colors.primary }}
                     >
                       {isLoading ? (
                         <>
@@ -355,10 +415,10 @@ export default function Upgrade() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">Recurso</th>
-                    <th className="text-center py-3 px-4 font-medium">Grátis</th>
-                    <th className="text-center py-3 px-4 font-medium">Iniciante</th>
-                    <th className="text-center py-3 px-4 font-medium bg-primary/5">Pro</th>
-                    <th className="text-center py-3 px-4 font-medium">Agência</th>
+                    <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.free.text }}>Bússola</th>
+                    <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.starter.text }}>Lança</th>
+                    <th className="text-center py-3 px-4 font-medium" style={{ backgroundColor: planColors.pro.bg, color: planColors.pro.text }}>Arco</th>
+                    <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.agency.text }}>Catapulta</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -366,28 +426,28 @@ export default function Upgrade() {
                     <td className="py-3 px-4">Clientes</td>
                     <td className="text-center py-3 px-4">{freePlan.limits.clients}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.clients}</td>
-                    <td className="text-center py-3 px-4 bg-primary/5">{plans.pro.limits.clients}</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.clients}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.clients}</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Contratos</td>
                     <td className="text-center py-3 px-4">{freePlan.limits.contracts}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.contracts}</td>
-                    <td className="text-center py-3 px-4 bg-primary/5">{plans.pro.limits.contracts}</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.contracts}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.contracts}</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Assistente IA</td>
                     <td className="text-center py-3 px-4">{freePlan.limits.ai}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.ai}</td>
-                    <td className="text-center py-3 px-4 bg-primary/5">{plans.pro.limits.ai}</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.ai}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.ai}</td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4">Equipe</td>
                     <td className="text-center py-3 px-4">{freePlan.limits.team}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.team}</td>
-                    <td className="text-center py-3 px-4 bg-primary/5">{plans.pro.limits.team}</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.team}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.team}</td>
                   </tr>
                 </tbody>
