@@ -43,6 +43,13 @@ const handler = async (req: Request): Promise<Response> => {
     const apiKey = (Deno.env.get("LEMONSQUEEZY_API_KEY") ?? "").trim();
     const storeId = normalizeId(Deno.env.get("LEMONSQUEEZY_STORE_ID"));
 
+    // LemonSqueezy requires `attributes.test_mode = true` when creating test-mode checkouts.
+    // We infer it from the API key (common pattern) and allow an explicit override via env.
+    const testModeEnv = (Deno.env.get("LEMONSQUEEZY_TEST_MODE") ?? "")
+      .trim()
+      .toLowerCase();
+    const testMode = testModeEnv === "true" || apiKey.toLowerCase().includes("test");
+
     if (!apiKey || !storeId) {
       console.error("Missing LemonSqueezy configuration", {
         hasApiKey: Boolean(apiKey),
@@ -132,6 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
       planType,
       storeId,
       variantId,
+      testMode,
       userId: user.id,
       redirectUrl,
     });
@@ -148,6 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
         data: {
           type: "checkouts",
           attributes: {
+            test_mode: testMode,
             checkout_data: {
               email: userEmail || user.email,
               name: userName,
@@ -191,6 +200,12 @@ const handler = async (req: Request): Promise<Response> => {
           error: "Failed to create checkout session",
           lemonsqueezy_status: checkoutResponse.status,
           lemonsqueezy_error: errorText,
+          context: {
+            planType,
+            storeId,
+            variantId,
+            testMode,
+          },
         }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
