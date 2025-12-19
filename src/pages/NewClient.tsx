@@ -14,9 +14,12 @@ import { SERVICE_LABELS, SOURCE_LABELS, ServiceType, SALES_FUNNEL_STAGES } from 
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CURRENCIES } from '@/lib/currencies';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 
 export default function NewClient() {
   const navigate = useNavigate();
+  const { loading: planLoading, canAddClient, planType, usage, limits } = usePlanLimits();
   const [saving, setSaving] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   
@@ -118,6 +121,36 @@ export default function NewClient() {
       setSaving(false);
     }
   };
+
+  if (planLoading) {
+    return (
+      <div className="p-4 md:p-8 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!canAddClient) {
+    return (
+      <div className="p-4 md:p-8 max-w-4xl mx-auto">
+        <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+          <Link to="/app/clients">
+            <Button variant="ghost" size="icon" className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-3xl font-bold">Novo Cliente</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Cadastre um novo lead ou cliente</p>
+          </div>
+        </AnimatedContainer>
+        <LimitReachedCard 
+          feature="clientes" 
+          current={usage.clientsCount} 
+          limit={limits.maxClients || 0} 
+          planType={planType}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto">

@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { toast } from '@/hooks/use-toast';
-import { FileText, Download, Loader2, Copy, Check } from 'lucide-react';
+import { FileText, Download, Loader2, Copy, Check, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { SERVICE_LABELS, ServiceType } from '@/types';
@@ -15,6 +16,7 @@ import { getCurrencySymbol } from '@/lib/currencies';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
+import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 
 interface ContractTemplate {
   id: string;
@@ -43,6 +45,7 @@ interface GenerateContractModalProps {
 
 export function GenerateContractModal({ open, onOpenChange, client }: GenerateContractModalProps) {
   const { organization } = useSubscription();
+  const { canGenerateContract, planType, usage, limits, incrementUsage } = usePlanLimits();
   const [templates, setTemplates] = useState<ContractTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [generatedContract, setGeneratedContract] = useState<string>('');
@@ -103,9 +106,18 @@ export function GenerateContractModal({ open, onOpenChange, client }: GenerateCo
     }
   };
 
-  const generateContract = () => {
+  const generateContract = async () => {
     const template = templates.find(t => t.id === selectedTemplateId);
     if (!template || !client) return;
+
+    if (!canGenerateContract) {
+      toast({ 
+        title: 'Limite atingido', 
+        description: 'Você atingiu o limite de contratos do seu plano', 
+        variant: 'destructive' 
+      });
+      return;
+    }
 
     setLoading(true);
 
@@ -161,6 +173,9 @@ export function GenerateContractModal({ open, onOpenChange, client }: GenerateCo
       }
 
       setGeneratedContract(content);
+      
+      // Increment contract usage
+      await incrementUsage('contracts');
     } catch (error) {
       console.error('Error generating contract:', error);
       toast({ title: 'Erro', description: 'Não foi possível gerar o contrato', variant: 'destructive' });
@@ -391,17 +406,26 @@ export function GenerateContractModal({ open, onOpenChange, client }: GenerateCo
                     </div>
                   </div>
 
+                  {!canGenerateContract && limits.maxContractsPerMonth !== null && (
+                    <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/20 rounded-lg text-sm">
+                      <Lock className="h-4 w-4 text-warning shrink-0" />
+                      <span>Limite de contratos atingido ({usage.contractsThisMonth}/{limits.maxContractsPerMonth} este mês)</span>
+                    </div>
+                  )}
+
                   <Button
                     onClick={generateContract}
-                    disabled={!selectedTemplateId || loading}
+                    disabled={!selectedTemplateId || loading || !canGenerateContract}
                     className="w-full gap-2"
                   >
                     {loading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : !canGenerateContract ? (
+                      <Lock className="h-4 w-4" />
                     ) : (
                       <FileText className="h-4 w-4" />
                     )}
-                    Gerar Contrato
+                    {!canGenerateContract ? 'Limite Atingido' : 'Gerar Contrato'}
                   </Button>
                 </div>
               ) : (

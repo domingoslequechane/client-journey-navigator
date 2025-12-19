@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { ClientListSkeleton } from '@/components/ui/loading-skeleton';
@@ -16,11 +17,14 @@ import {
   Phone,
   Mail,
   Filter,
-  Download
+  Download,
+  Lock
 } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { useClientExport } from '@/hooks/useClientExport';
 import { formatPhoneNumber } from '@/lib/phone-utils';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 
 type Client = Tables<'clients'>;
 
@@ -46,6 +50,7 @@ export default function Clients() {
   const [filterStage, setFilterStage] = useState<string | null>(null);
   const [filterQualification, setFilterQualification] = useState<string | null>(null);
   const { exportToCSV } = useClientExport();
+  const { canExportData, canAddClient, planType, usage, limits } = usePlanLimits();
 
   useEffect(() => {
     fetchClients();
@@ -104,18 +109,43 @@ export default function Clients() {
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button 
+                    variant="outline" 
+                    className="gap-2"
+                    onClick={() => canExportData ? exportToCSV(filteredClients) : toast({ title: 'Não disponível', description: 'Exportação disponível a partir do plano Lança', variant: 'destructive' })}
+                    disabled={filteredClients.length === 0}
+                  >
+                    {canExportData ? (
+                      <Download className="h-4 w-4" />
+                    ) : (
+                      <Lock className="h-4 w-4" />
+                    )}
+                    <span className="hidden sm:inline">Exportar</span>
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!canExportData && (
+                <TooltipContent>
+                  <p>Disponível a partir do plano Lança</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           <Button 
-            variant="outline" 
-            className="gap-2"
-            onClick={() => exportToCSV(filteredClients)}
-            disabled={filteredClients.length === 0}
+            className="gap-2 flex-1 sm:flex-none" 
+            onClick={() => navigate('/app/new-client')}
+            disabled={!canAddClient}
           >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Exportar</span>
-          </Button>
-          <Button className="gap-2 flex-1 sm:flex-none" onClick={() => navigate('/app/new-client')}>
-            <Plus className="h-4 w-4" />
-            Novo Cliente
+            {canAddClient ? (
+              <Plus className="h-4 w-4" />
+            ) : (
+              <Lock className="h-4 w-4" />
+            )}
+            {canAddClient ? 'Novo Cliente' : 'Limite'}
           </Button>
         </div>
       </AnimatedContainer>

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen, ArrowLeft, Users } from 'lucide-react';
+import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen, ArrowLeft, Users, Lock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +14,8 @@ import { markdownToHtml } from '@/lib/markdown-to-html';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useRateLimit } from '@/hooks/useRateLimit';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 
 // DOMPurify sanitization config to prevent XSS
 const SANITIZE_CONFIG = {
@@ -70,6 +72,7 @@ export default function AIAssistant() {
   const queryClient = useQueryClient();
   const { currencySymbol } = useOrganizationCurrency();
   const isMobile = useIsMobile();
+  const { canAccessAI, planType, usage, limits, incrementUsage, loading: planLoading } = usePlanLimits();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -428,6 +431,16 @@ export default function AIAssistant() {
   const handleSend = async () => {
     if ((!input.trim() && !pendingFile) || isLoading || !selectedClientId || isRateLimited) return;
     
+    // Check plan limit
+    if (!canAccessAI) {
+      toast({ 
+        title: 'Limite atingido', 
+        description: 'Você atingiu o limite de mensagens IA do seu plano', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
     // Check rate limit before sending
     if (!checkRateLimit()) return;
 
@@ -449,6 +462,10 @@ export default function AIAssistant() {
     setIsLoading(true);
 
     await streamChat(messageText, fileToSend || undefined);
+    
+    // Increment AI usage after successful message
+    await incrementUsage('ai_messages');
+    
     setIsLoading(false);
   };
 

@@ -9,6 +9,8 @@ interface PlanLimits {
   maxContractsPerMonth: number | null;
   maxAIMessagesPerMonth: number | null;
   maxTeamMembers: number | null;
+  maxContractTemplates: number | null;
+  canExportData: boolean;
 }
 
 interface Usage {
@@ -16,6 +18,7 @@ interface Usage {
   contractsThisMonth: number;
   aiMessagesThisMonth: number;
   teamMembersCount: number;
+  contractTemplatesCount: number;
 }
 
 interface UsePlanLimitsReturn {
@@ -27,10 +30,13 @@ interface UsePlanLimitsReturn {
   canGenerateContract: boolean;
   canAccessAI: boolean;
   canInviteTeamMember: boolean;
+  canExportData: boolean;
+  canAddContractTemplate: boolean;
   remainingClients: number | null;
   remainingContracts: number | null;
   remainingAIMessages: number | null;
   remainingTeamMembers: number | null;
+  remainingContractTemplates: number | null;
   incrementUsage: (featureType: 'contracts' | 'ai_messages') => Promise<void>;
   refetch: () => Promise<void>;
 }
@@ -38,8 +44,10 @@ interface UsePlanLimitsReturn {
 const DEFAULT_LIMITS: PlanLimits = {
   maxClients: 5,
   maxContractsPerMonth: 2,
-  maxAIMessagesPerMonth: 0,
+  maxAIMessagesPerMonth: 10,
   maxTeamMembers: 1,
+  maxContractTemplates: 1,
+  canExportData: false,
 };
 
 export function usePlanLimits(): UsePlanLimitsReturn {
@@ -52,6 +60,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     contractsThisMonth: 0,
     aiMessagesThisMonth: 0,
     teamMembersCount: 0,
+    contractTemplatesCount: 0,
   });
   const [organizationId, setOrganizationId] = useState<string | null>(null);
 
@@ -101,11 +110,13 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           maxContractsPerMonth: planLimitsData.max_contracts_per_month,
           maxAIMessagesPerMonth: planLimitsData.max_ai_messages_per_month,
           maxTeamMembers: planLimitsData.max_team_members,
+          maxContractTemplates: (planLimitsData as any).max_contract_templates ?? 1,
+          canExportData: (planLimitsData as any).can_export_data ?? false,
         });
       }
 
       // Get current usage counts
-      const [clientsResult, teamResult, contractsUsage, aiUsage] = await Promise.all([
+      const [clientsResult, teamResult, contractsUsage, aiUsage, templatesResult] = await Promise.all([
         // Count clients
         supabase
           .from('clients')
@@ -123,7 +134,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           .eq('organization_id', profile.organization_id)
           .eq('feature_type', 'contracts')
           .gte('period_start', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
-          .single(),
+          .maybeSingle(),
         // Get AI messages usage this month
         supabase
           .from('usage_tracking')
@@ -131,7 +142,12 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           .eq('organization_id', profile.organization_id)
           .eq('feature_type', 'ai_messages')
           .gte('period_start', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
-          .single(),
+          .maybeSingle(),
+        // Count contract templates
+        supabase
+          .from('contract_templates')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', profile.organization_id),
       ]);
 
       setUsage({
@@ -139,6 +155,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         teamMembersCount: teamResult.count || 0,
         contractsThisMonth: contractsUsage.data?.usage_count || 0,
         aiMessagesThisMonth: aiUsage.data?.usage_count || 0,
+        contractTemplatesCount: templatesResult.count || 0,
       });
     } catch (error) {
       console.error('Error fetching plan limits:', error);
@@ -189,6 +206,10 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     ? Math.max(0, limits.maxTeamMembers - usage.teamMembersCount)
     : null;
 
+  const remainingContractTemplates = limits.maxContractTemplates !== null
+    ? Math.max(0, limits.maxContractTemplates - usage.contractTemplatesCount)
+    : null;
+
   // Calculate permissions
   const canAddClient = limits.maxClients === null || usage.clientsCount < limits.maxClients;
   
@@ -201,6 +222,9 @@ export function usePlanLimits(): UsePlanLimitsReturn {
   const canInviteTeamMember = limits.maxTeamMembers === null || 
     usage.teamMembersCount < limits.maxTeamMembers;
 
+  const canAddContractTemplate = limits.maxContractTemplates === null ||
+    usage.contractTemplatesCount < limits.maxContractTemplates;
+
   return {
     loading,
     planType,
@@ -210,10 +234,13 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     canGenerateContract,
     canAccessAI,
     canInviteTeamMember,
+    canExportData: limits.canExportData,
+    canAddContractTemplate,
     remainingClients,
     remainingContracts,
     remainingAIMessages,
     remainingTeamMembers,
+    remainingContractTemplates,
     incrementUsage,
     refetch: fetchData,
   };
