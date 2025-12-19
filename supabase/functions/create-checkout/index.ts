@@ -11,24 +11,23 @@ const corsHeaders = {
 // Input validation schema
 const CheckoutRequestSchema = z.object({
   organizationId: z.string().uuid("ID da organização inválido"),
-  planType: z.enum(['starter', 'pro', 'agency']),
+  planType: z.enum(["starter", "pro", "agency"]),
   userEmail: z.string().email("Email inválido").max(255, "Email muito longo").optional(),
   userName: z.string().max(100, "Nome muito longo").optional(),
 });
 
 // Get variant ID based on plan type
 const getVariantId = (planType: string): string | undefined => {
-  const normalizeId = (v?: string | null) =>
-    v?.trim().replace(/^["']+|["']+$/g, "");
-  
+  const normalizeId = (v?: string | null) => v?.trim().replace(/^["']+|["']+$/g, "");
+
   const variants: Record<string, string | undefined> = {
-    'starter': normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID_STARTER')),
-    'pro': normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID_PRO')),
-    'agency': normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID_AGENCY')),
+    starter: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_STARTER")),
+    pro: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_PRO")),
+    agency: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_AGENCY")),
   };
-  
+
   // Fallback to default LEMONSQUEEZY_VARIANT_ID if specific variant not found
-  return variants[planType] || normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID'));
+  return variants[planType] || normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID"));
 };
 
 const handler = async (req: Request): Promise<Response> => {
@@ -37,40 +36,34 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const normalizeId = (v?: string | null) =>
-      v?.trim().replace(/^["']+|["']+$/g, "");
+    const normalizeId = (v?: string | null) => v?.trim().replace(/^["']+|["']+$/g, "");
 
     const apiKey = (Deno.env.get("LEMONSQUEEZY_API_KEY") ?? "").trim();
     const storeId = normalizeId(Deno.env.get("LEMONSQUEEZY_STORE_ID"));
 
-    // LemonSqueezy requires `attributes.test_mode = true` when creating test-mode checkouts.
-    // We infer it from the API key (common pattern) and allow an explicit override via env.
-    const testModeEnv = (Deno.env.get("LEMONSQUEEZY_TEST_MODE") ?? "")
-      .trim()
-      .toLowerCase();
-    const testMode = testModeEnv === "true" || apiKey.toLowerCase().includes("test");
+    // Force test mode by default (per your request).
+    // If you ever need to go live, set LEMONSQUEEZY_TEST_MODE="false".
+    const testModeEnv = (Deno.env.get("LEMONSQUEEZY_TEST_MODE") ?? "").trim().toLowerCase();
+    const testMode = testModeEnv !== "false";
 
     if (!apiKey || !storeId) {
       console.error("Missing LemonSqueezy configuration", {
         hasApiKey: Boolean(apiKey),
         storeId,
       });
-      return new Response(
-        JSON.stringify({ error: "Payment system not configured" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Payment system not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Verify authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -79,13 +72,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Verify the user's JWT
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const body = await req.json();
@@ -95,11 +91,11 @@ const handler = async (req: Request): Promise<Response> => {
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.errors);
       return new Response(
-        JSON.stringify({ 
-          error: "Dados inválidos", 
-          details: validationResult.error.errors.map(e => e.message) 
+        JSON.stringify({
+          error: "Dados inválidos",
+          details: validationResult.error.errors.map((e) => e.message),
         }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
@@ -107,13 +103,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Get the correct variant ID for the plan
     const variantId = getVariantId(planType);
-    
+
     if (!variantId) {
       console.error("No variant ID found for plan:", planType);
-      return new Response(
-        JSON.stringify({ error: "Plano não encontrado" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Plano não encontrado" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Verify user belongs to this organization
@@ -122,12 +118,12 @@ const handler = async (req: Request): Promise<Response> => {
       .select("organization_id")
       .eq("id", user.id)
       .single();
-    
+
     if (!profile || profile.organization_id !== organizationId) {
-      return new Response(
-        JSON.stringify({ error: "Access denied to this organization" }),
-        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Access denied to this organization" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Get the origin for redirect URL
