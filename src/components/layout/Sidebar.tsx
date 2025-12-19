@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useSubscription } from '@/hooks/useSubscription';
 import {
   LayoutDashboard,
   Building2,
@@ -16,7 +17,11 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
-  HeadphonesIcon
+  HeadphonesIcon,
+  Compass,
+  Target,
+  TrendingUp,
+  Rocket
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,10 +31,18 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
 
+const PLAN_CONFIG = {
+  free: { name: 'Bússola', icon: Compass, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+  starter: { name: 'Lança', icon: Target, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+  pro: { name: 'Arco', icon: TrendingUp, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
+  agency: { name: 'Catapulta', icon: Rocket, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
+};
+
 export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { planType } = useSubscription();
   const { 
     canSeeSalesFunnel, 
     canSeeOperationalFlow, 
@@ -38,6 +51,9 @@ export function Sidebar() {
     canSeeSettings, 
     canSeeSubscription 
   } = useUserRole();
+
+  const currentPlan = PLAN_CONFIG[planType] || PLAN_CONFIG.free;
+  const PlanIcon = currentPlan.icon;
 
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
@@ -228,10 +244,14 @@ export function Sidebar() {
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                   >
-                    <CreditCard className="h-5 w-5" />
+                    <div className={cn("p-1 rounded", currentPlan.bgColor)}>
+                      <PlanIcon className={cn("h-4 w-4", currentPlan.color)} />
+                    </div>
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right">Assinatura</TooltipContent>
+                <TooltipContent side="right">
+                  Plano {currentPlan.name}
+                </TooltipContent>
               </Tooltip>
             ) : (
               <Link
@@ -243,8 +263,10 @@ export function Sidebar() {
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 )}
               >
-                <CreditCard className="h-5 w-5" />
-                Assinatura
+                <div className={cn("p-1 rounded", currentPlan.bgColor)}>
+                  <PlanIcon className={cn("h-4 w-4", currentPlan.color)} />
+                </div>
+                <span>Plano {currentPlan.name}</span>
               </Link>
             )
           )}
