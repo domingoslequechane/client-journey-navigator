@@ -605,6 +605,7 @@ export type Database = {
           nuit: string | null
           owner_id: string
           phone: string | null
+          plan_type: Database["public"]["Enums"]["plan_type"] | null
           representative_name: string | null
           representative_position: string | null
           slug: string
@@ -623,6 +624,7 @@ export type Database = {
           nuit?: string | null
           owner_id: string
           phone?: string | null
+          plan_type?: Database["public"]["Enums"]["plan_type"] | null
           representative_name?: string | null
           representative_position?: string | null
           slug: string
@@ -641,6 +643,7 @@ export type Database = {
           nuit?: string | null
           owner_id?: string
           phone?: string | null
+          plan_type?: Database["public"]["Enums"]["plan_type"] | null
           representative_name?: string | null
           representative_position?: string | null
           slug?: string
@@ -695,6 +698,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plan_limits: {
+        Row: {
+          created_at: string | null
+          id: string
+          max_ai_messages_per_month: number | null
+          max_clients: number | null
+          max_contracts_per_month: number | null
+          max_team_members: number | null
+          plan_type: Database["public"]["Enums"]["plan_type"]
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          max_ai_messages_per_month?: number | null
+          max_clients?: number | null
+          max_contracts_per_month?: number | null
+          max_team_members?: number | null
+          plan_type: Database["public"]["Enums"]["plan_type"]
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          max_ai_messages_per_month?: number | null
+          max_clients?: number | null
+          max_contracts_per_month?: number | null
+          max_team_members?: number | null
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -928,6 +961,47 @@ export type Database = {
           },
         ]
       }
+      usage_tracking: {
+        Row: {
+          created_at: string | null
+          feature_type: string
+          id: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          feature_type: string
+          id?: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          feature_type?: string
+          id?: string
+          organization_id?: string
+          period_end?: string
+          period_start?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_tracking_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -956,6 +1030,10 @@ export type Database = {
     Functions: {
       cleanup_old_support_tickets: { Args: never; Returns: undefined }
       generate_slug: { Args: { name: string }; Returns: string }
+      get_or_create_usage: {
+        Args: { p_feature_type: string; p_organization_id: string }
+        Returns: number
+      }
       get_user_organization_id: { Args: { user_uuid: string }; Returns: string }
       has_active_subscription: { Args: { org_uuid: string }; Returns: boolean }
       has_role: {
@@ -964,6 +1042,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_usage: {
+        Args: { p_feature_type: string; p_organization_id: string }
+        Returns: number
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       user_belongs_to_org: {
@@ -990,6 +1072,7 @@ export type Database = {
         | "retencao"
         | "fidelizacao"
       lead_qualification: "cold" | "warm" | "hot" | "qualified"
+      plan_type: "free" | "starter" | "pro" | "agency"
       subscription_status:
         | "trialing"
         | "active"
@@ -1136,6 +1219,7 @@ export const Constants = {
         "fidelizacao",
       ],
       lead_qualification: ["cold", "warm", "hot", "qualified"],
+      plan_type: ["free", "starter", "pro", "agency"],
       subscription_status: [
         "trialing",
         "active",

@@ -36,6 +36,32 @@ async function verifySignature(payload: string, signature: string, secret: strin
   }
 }
 
+// Get plan type from variant ID
+const getPlanTypeFromVariant = (variantId: string): string => {
+  const normalizeId = (v?: string | null) =>
+    v?.trim().replace(/^["']+|["']+$/g, "");
+    
+  const starterVariant = normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID_STARTER'));
+  const proVariant = normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID_PRO'));
+  const agencyVariant = normalizeId(Deno.env.get('LEMONSQUEEZY_VARIANT_ID_AGENCY'));
+  
+  const normalizedVariantId = normalizeId(variantId);
+  
+  console.log("Mapping variant ID to plan:", { 
+    variantId: normalizedVariantId, 
+    starterVariant, 
+    proVariant, 
+    agencyVariant 
+  });
+  
+  if (normalizedVariantId === starterVariant) return 'starter';
+  if (normalizedVariantId === proVariant) return 'pro';
+  if (normalizedVariantId === agencyVariant) return 'agency';
+  
+  // Default to starter if no match
+  return 'starter';
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -80,11 +106,16 @@ serve(async (req) => {
     console.log("Processing event:", eventName);
     console.log("Custom data:", JSON.stringify(customData));
     console.log("Subscription status:", subscriptionData?.status);
+    console.log("Variant ID:", subscriptionData?.variant_id);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Extract organization_id from custom_data
     const organizationId = customData?.organization_id;
+    
+    // Get plan_type from custom_data or variant_id
+    const planType = customData?.plan_type || 
+      (subscriptionData?.variant_id ? getPlanTypeFromVariant(String(subscriptionData.variant_id)) : 'starter');
 
     if (!organizationId) {
       console.error("No organization_id in custom_data");
@@ -110,7 +141,7 @@ serve(async (req) => {
 
     switch (eventName) {
       case 'subscription_created': {
-        console.log("Creating subscription for organization:", organizationId);
+        console.log("Creating subscription for organization:", organizationId, "with plan:", planType);
         
         const status = mapStatus(subscriptionData.status);
         const isOnTrial = subscriptionData.status === 'on_trial';
@@ -120,22 +151,22 @@ serve(async (req) => {
         if (isOnTrial && subscriptionData.trial_ends_at) {
           trialEndsAt = new Date(subscriptionData.trial_ends_at).toISOString();
         } else if (isOnTrial && subscriptionData.renews_at) {
-          // If no trial_ends_at, use renews_at as the trial end
           trialEndsAt = new Date(subscriptionData.renews_at).toISOString();
         }
         
-        // Update organization's trial_ends_at if on trial
-        if (trialEndsAt) {
-          const { error: orgError } = await supabase
-            .from('organizations')
-            .update({ trial_ends_at: trialEndsAt })
-            .eq('id', organizationId);
-          
-          if (orgError) {
-            console.error("Error updating organization trial_ends_at:", orgError);
-          } else {
-            console.log("Updated organization trial_ends_at:", trialEndsAt);
-          }
+        // Update organization's trial_ends_at and plan_type
+        const { error: orgError } = await supabase
+          .from('organizations')
+          .update({ 
+            trial_ends_at: trialEndsAt || undefined,
+            plan_type: planType
+          })
+          .eq('id', organizationId);
+        
+        if (orgError) {
+          console.error("Error updating organization:", orgError);
+        } else {
+          console.log("Updated organization plan_type:", planType);
         }
         
         const { error } = await supabase
@@ -160,7 +191,7 @@ serve(async (req) => {
           throw error;
         }
         
-        console.log("Subscription created successfully with status:", status);
+        console.log("Subscription created successfully with status:", status, "and plan:", planType);
         break;
       }
 
@@ -182,10 +213,22 @@ serve(async (req) => {
           }
         }
         
+        // Update plan_type if variant changed
+        const newPlanType = getPlanTypeFromVariant(String(subscriptionData.variant_id));
+        const { error: orgError } = await supabase
+          .from('organizations')
+          .update({ plan_type: newPlanType })
+          .eq('id', organizationId);
+        
+        if (orgError) {
+          console.error("Error updating organization plan_type:", orgError);
+        }
+        
         const { error } = await supabase
           .from('subscriptions')
           .update({
             status: status,
+            lemonsqueezy_variant_id: String(subscriptionData.variant_id),
             current_period_start: subscriptionData.renews_at ? new Date(subscriptionData.created_at).toISOString() : null,
             current_period_end: subscriptionData.renews_at ? new Date(subscriptionData.renews_at).toISOString() : null,
             cancel_at_period_end: subscriptionData.cancelled || false,
@@ -198,7 +241,7 @@ serve(async (req) => {
           throw error;
         }
         
-        console.log("Subscription updated successfully");
+        console.log("Subscription updated successfully with plan:", newPlanType);
         break;
       }
 
@@ -219,12 +262,21 @@ serve(async (req) => {
           throw error;
         }
         
-        console.log("Subscription cancelled successfully");
+        // Downgrade to free plan
+        await supabase
+          .from('organizations')
+          .update({ plan_type: 'free' })
+          .eq('id', organizationId);
+        
+        console.log("Subscription cancelled, downgraded to free plan");
         break;
       }
 
       case 'subscription_resumed': {
         console.log("Resuming subscription for organization:", organizationId);
+        
+        // Get plan type from variant
+        const resumedPlanType = getPlanTypeFromVariant(String(subscriptionData.variant_id));
         
         const { error } = await supabase
           .from('subscriptions')
@@ -240,7 +292,13 @@ serve(async (req) => {
           throw error;
         }
         
-        console.log("Subscription resumed successfully");
+        // Restore plan type
+        await supabase
+          .from('organizations')
+          .update({ plan_type: resumedPlanType })
+          .eq('id', organizationId);
+        
+        console.log("Subscription resumed with plan:", resumedPlanType);
         break;
       }
 
@@ -260,7 +318,13 @@ serve(async (req) => {
           throw error;
         }
         
-        console.log("Subscription expired successfully");
+        // Downgrade to free plan
+        await supabase
+          .from('organizations')
+          .update({ plan_type: 'free' })
+          .eq('id', organizationId);
+        
+        console.log("Subscription expired, downgraded to free plan");
         break;
       }
 
@@ -282,7 +346,7 @@ serve(async (req) => {
         }
 
         // Record payment in history
-        const amount = subscriptionData?.first_subscription_item?.price || 700; // Default to $7 in cents
+        const amount = subscriptionData?.first_subscription_item?.price || 1900; // Default to $19 in cents
         const { error: paymentError } = await supabase
           .from('payment_history')
           .insert({
@@ -319,7 +383,7 @@ serve(async (req) => {
         }
 
         // Record failed payment in history
-        const amount = subscriptionData?.first_subscription_item?.price || 700; // Default to $7 in cents
+        const amount = subscriptionData?.first_subscription_item?.price || 1900;
         const { error: paymentError } = await supabase
           .from('payment_history')
           .insert({
