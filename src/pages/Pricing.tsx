@@ -173,7 +173,7 @@ const Pricing = () => {
                 <div>
                   <h3 className="text-xl font-bold text-primary">50% de desconto na primeira assinatura!</h3>
                   <p className="text-muted-foreground">
-                    Use o cupom <code className="px-2 py-1 bg-primary/10 rounded font-mono font-bold text-primary">PRIMEIRAASSINATURA</code> no checkout
+                    Use o cupom <code className="px-2 py-1 bg-primary/10 rounded font-mono font-bold text-primary">IYMDC4NA</code> no checkout (uso único por agência)
                   </p>
                 </div>
               </div>
@@ -287,7 +287,7 @@ const Pricing = () => {
               Todos os planos incluem 50% de desconto na primeira assinatura
             </p>
             <p className="text-sm text-muted-foreground mb-6">
-              Use o cupom <code className="px-2 py-1 bg-primary/10 rounded font-mono font-bold text-primary">PRIMEIRAASSINATURA</code>
+              Use o cupom <code className="px-2 py-1 bg-primary/10 rounded font-mono font-bold text-primary">IYMDC4NA</code> (uso único por agência)
             </p>
             <Link to="/auth">
               <Button size="lg" className="gap-2">

@@ -367,7 +367,7 @@ export default function Upgrade() {
               <div>
                 <span className="font-semibold text-primary">50% de desconto na primeira assinatura!</span>
                 <span className="text-muted-foreground ml-2">
-                  Use o cupom <code className="px-2 py-0.5 bg-primary/10 rounded font-mono font-bold text-primary">PRIMEIRAASSINATURA</code>
+                  Use o cupom <code className="px-2 py-0.5 bg-primary/10 rounded font-mono font-bold text-primary">IYMDC4NA</code> (uso único)
                 </span>
               </div>
             </div>
@@ -616,7 +616,7 @@ export default function Upgrade() {
         {/* Payment Info */}
         <div className="text-center space-y-2">
           <p className="text-sm text-muted-foreground">
-            💡 Lembre-se de usar o cupom <code className="px-2 py-0.5 bg-primary/10 rounded font-mono font-bold text-primary">PRIMEIRAASSINATURA</code> para 50% de desconto!
+            💡 Use o cupom <code className="px-2 py-0.5 bg-primary/10 rounded font-mono font-bold text-primary">IYMDC4NA</code> para 50% de desconto na primeira assinatura!
           </p>
           <p className="text-xs text-muted-foreground">
             Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
