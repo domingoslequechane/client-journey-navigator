@@ -36,12 +36,12 @@ export function FreePlanBanner() {
               50% de desconto na primeira assinatura!
             </h3>
             <Badge variant="secondary" className="text-xs">
-              PRIMEIRAASSINATURA
+              IYMDC4NA
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isAdmin 
-              ? 'Use o cupom no checkout e comece com o plano Bússola por apenas $3/mês.'
+              ? 'Use o cupom no checkout (uso único por agência). Comece com o plano Bússola por apenas $3/mês.'
               : 'Converse com o administrador da sua organização para assinar.'
             }
           </p>
