@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { FreePlanBanner } from '@/components/subscription/FreePlanBanner';
-import { PlanUsageCard } from '@/components/subscription/PlanUsageCard';
 import { OnboardingTutorial } from '@/components/onboarding/OnboardingTutorial';
 import { DashboardSkeleton } from '@/components/ui/loading-skeleton';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -435,11 +434,6 @@ export default function Dashboard() {
           </div>
         </AnimatedContainer>
       </div>
-
-      {/* Plan Usage Card */}
-      <AnimatedContainer animation="fade-up" delay={0.6} className="mt-6">
-        <PlanUsageCard />
-      </AnimatedContainer>
     </div>
   );
 }
