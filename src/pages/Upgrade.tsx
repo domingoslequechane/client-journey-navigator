@@ -365,9 +365,9 @@ export default function Upgrade() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
               <Gift className="h-6 w-6 text-primary" />
               <div>
-                <span className="font-semibold text-primary">50% de desconto na primeira assinatura!</span>
+                <span className="font-semibold text-primary">50% de desconto aplicado automaticamente!</span>
                 <span className="text-muted-foreground ml-2">
-                  Use o cupom <code className="px-2 py-0.5 bg-primary/10 rounded font-mono font-bold text-primary">IYMDC4NA</code> (uso único)
+                  Desconto na primeira assinatura aplicado automaticamente no checkout
                 </span>
               </div>
             </div>
@@ -462,6 +462,12 @@ export default function Upgrade() {
                   </CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="pt-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg line-through text-muted-foreground">
+                        ${plan.price === 3 ? '6' : plan.price === 7.50 ? '15' : plan.price === 19.99 ? '39.98' : '99.98'}
+                      </span>
+                      <Badge variant="secondary" className="text-xs">-50%</Badge>
+                    </div>
                     <span className="text-3xl font-bold" style={{ color: colors.text }}>
                       ${plan.price}
                     </span>
@@ -616,7 +622,7 @@ export default function Upgrade() {
         {/* Payment Info */}
         <div className="text-center space-y-2">
           <p className="text-sm text-muted-foreground">
-            💡 Use o cupom <code className="px-2 py-0.5 bg-primary/10 rounded font-mono font-bold text-primary">IYMDC4NA</code> para 50% de desconto na primeira assinatura!
+            💡 50% de desconto aplicado automaticamente na primeira assinatura!
           </p>
           <p className="text-xs text-muted-foreground">
             Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
