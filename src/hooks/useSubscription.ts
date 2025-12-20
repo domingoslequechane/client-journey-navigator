@@ -18,6 +18,7 @@ interface OrganizationData {
   name: string;
   trialEndsAt: string;
   planType: PlanType;
+  onboardingCompleted: boolean;
 }
 
 interface UseSubscriptionReturn {
@@ -68,7 +69,7 @@ export function useSubscription(): UseSubscriptionReturn {
       // Get organization data
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
-        .select('id, name, trial_ends_at, plan_type')
+        .select('id, name, trial_ends_at, plan_type, onboarding_completed')
         .eq('id', orgId)
         .single();
 
@@ -80,6 +81,7 @@ export function useSubscription(): UseSubscriptionReturn {
           name: orgData.name,
           trialEndsAt: orgData.trial_ends_at,
           planType: (orgData.plan_type as PlanType) || 'free',
+          onboardingCompleted: orgData.onboarding_completed || false,
         });
       }
 

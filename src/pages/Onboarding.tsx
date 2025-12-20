@@ -128,7 +128,7 @@ export default function Onboarding() {
             slug: slug,
             owner_id: sessionUser.id,
             currency: currency,
-            // Plan is set by webhook after checkout
+            onboarding_completed: true,
           })
           .select()
           .single();
@@ -176,7 +176,8 @@ export default function Onboarding() {
           .update({ 
             name: agencyName.trim(),
             slug: slug || `agency-${Date.now()}`,
-            currency: currency
+            currency: currency,
+            onboarding_completed: true,
           })
           .eq('id', organizationId);
 

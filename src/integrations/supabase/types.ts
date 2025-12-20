@@ -650,6 +650,7 @@ export type Database = {
           knowledge_base_url: string | null
           name: string
           nuit: string | null
+          onboarding_completed: boolean | null
           owner_id: string
           phone: string | null
           plan_type: Database["public"]["Enums"]["plan_type"] | null
@@ -669,6 +670,7 @@ export type Database = {
           knowledge_base_url?: string | null
           name: string
           nuit?: string | null
+          onboarding_completed?: boolean | null
           owner_id: string
           phone?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type"] | null
@@ -688,6 +690,7 @@ export type Database = {
           knowledge_base_url?: string | null
           name?: string
           nuit?: string | null
+          onboarding_completed?: boolean | null
           owner_id?: string
           phone?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type"] | null
