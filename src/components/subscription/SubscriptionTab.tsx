@@ -48,8 +48,8 @@ const PLAN_CONFIG = {
     bgColor: 'bg-green-500/10',
     borderColor: 'border-green-500/20',
     image: planBussola,
-    price: 'Grátis',
-    features: ['5 clientes', '1 membro na equipe', '3 contratos/mês', '10 mensagens IA/mês']
+    price: '$3/mês',
+    features: ['6 clientes', '2 usuários', '6 contratos/mês', '150 mensagens IA/mês']
   },
   starter: { 
     name: 'Lança', 
@@ -58,8 +58,8 @@ const PLAN_CONFIG = {
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
     image: planLanca,
-    price: '$19/mês',
-    features: ['15 clientes', '2 membros na equipe', '10 contratos/mês', '50 mensagens IA/mês']
+    price: '$7.50/mês',
+    features: ['15 clientes', '7 usuários', '15 contratos/mês', '500 mensagens IA/mês']
   },
   pro: { 
     name: 'Arco', 
@@ -68,8 +68,8 @@ const PLAN_CONFIG = {
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/20',
     image: planArco,
-    price: '$49/mês',
-    features: ['50 clientes', '5 membros na equipe', 'Contratos ilimitados', 'IA ilimitada']
+    price: '$19.99/mês',
+    features: ['50 clientes', '10 usuários', '50 contratos/mês', '1200 mensagens IA/mês']
   },
   agency: { 
     name: 'Catapulta', 
@@ -78,8 +78,8 @@ const PLAN_CONFIG = {
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/20',
     image: planCatapulta,
-    price: '$129/mês',
-    features: ['Clientes ilimitados', 'Equipe ilimitada', 'Contratos ilimitados', 'IA ilimitada']
+    price: '$49.99/mês',
+    features: ['Clientes ilimitados', '20 usuários', 'Contratos ilimitados', 'IA ilimitada']
   },
 };
 
