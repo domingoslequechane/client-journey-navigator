@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -295,7 +296,16 @@ export function SubscriptionTab() {
       )}
 
       {/* Current Plan Card */}
-      <Card className={cn("border-2", currentPlan.borderColor)}>
+      <Card 
+        className={cn(
+          "border-2", 
+          currentPlan.borderColor,
+          isPaidPlan && isActive && "neon-pulse"
+        )}
+        style={isPaidPlan && isActive ? { 
+          '--neon-color': `hsl(var(--primary))` 
+        } as React.CSSProperties : undefined}
+      >
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -336,18 +346,6 @@ export function SubscriptionTab() {
 
           {/* Management buttons */}
           <div className="flex flex-wrap gap-2 pt-4 border-t">
-            {/* Ver Planos button - always visible */}
-            <Link to="/app/upgrade">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="gap-2"
-              >
-                <Sparkles className="h-4 w-4" />
-                Ver Planos
-              </Button>
-            </Link>
-
             {/* Payment management - only for paid plans */}
             {isPaidPlan && isActive && (
               <>
@@ -524,6 +522,3 @@ export function SubscriptionTab() {
   );
 }
 
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ');
-}

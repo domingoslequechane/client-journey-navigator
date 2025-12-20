@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -383,27 +384,31 @@ export default function Settings() {
 
       <AnimatedContainer animation="fade-up" delay={0.1}>
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className={cn("grid w-full", isAdmin ? "grid-cols-4" : "grid-cols-1")}>
           <TabsTrigger value="profile" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
             <User className="h-3 w-3 md:h-4 md:w-4" />
             <span className="hidden sm:inline">Meu Perfil</span>
             <span className="sm:hidden">Perfil</span>
           </TabsTrigger>
-          <TabsTrigger value="agency" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
-            <Building2 className="h-3 w-3 md:h-4 md:w-4" />
-            <span className="hidden sm:inline">Agência</span>
-            <span className="sm:hidden">Agência</span>
-          </TabsTrigger>
-          <TabsTrigger value="knowledge" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
-            <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
-            <span className="hidden sm:inline">Conhecimento</span>
-            <span className="sm:hidden">Conhec.</span>
-          </TabsTrigger>
-          <TabsTrigger value="contracts" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
-            <FileText className="h-3 w-3 md:h-4 md:w-4" />
-            <span className="hidden sm:inline">Contratos</span>
-            <span className="sm:hidden">Contr.</span>
-          </TabsTrigger>
+          {isAdmin && (
+            <>
+              <TabsTrigger value="agency" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
+                <Building2 className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Agência</span>
+                <span className="sm:hidden">Agência</span>
+              </TabsTrigger>
+              <TabsTrigger value="knowledge" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
+                <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Conhecimento</span>
+                <span className="sm:hidden">Conhec.</span>
+              </TabsTrigger>
+              <TabsTrigger value="contracts" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
+                <FileText className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Contratos</span>
+                <span className="sm:hidden">Contr.</span>
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         {/* Profile Tab */}
