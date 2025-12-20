@@ -41,44 +41,48 @@ import planCatapulta from '@/assets/plans/plan-catapulta.png';
 const planConfig = {
   free: {
     name: 'Bússola',
-    subtitle: 'Grátis',
-    price: 0,
+    subtitle: 'Essencial',
+    price: 2,
+    originalPrice: 4,
     tagline: 'Encontre o caminho certo para começar!',
     image: planBussola,
     color: 'hsl(142, 71%, 45%)',
     bgColor: 'hsl(142, 71%, 45%, 0.1)',
-    features: ['5 clientes', '2 contratos/mês', '1 usuário'],
+    features: ['6 clientes', '6 contratos/mês', '2 usuários'],
   },
   starter: {
     name: 'Lança',
-    subtitle: 'Iniciante',
-    price: 19,
+    subtitle: 'Crescimento',
+    price: 5,
+    originalPrice: 10,
     tagline: 'Lance sua marca no mundo digital!',
     image: planLanca,
     color: 'hsl(217, 91%, 60%)',
     bgColor: 'hsl(217, 91%, 60%, 0.1)',
-    features: ['15 clientes', '10 contratos/mês', '50 msgs IA', '2 usuários'],
+    features: ['15 clientes', '15 contratos/mês', '500 msgs IA', '7 usuários'],
   },
   pro: {
     name: 'Arco',
-    subtitle: 'Pro',
-    price: 49,
+    subtitle: 'Profissional',
+    price: 12,
+    originalPrice: 24,
     tagline: 'Alcance resultados com precisão!',
     image: planArco,
     color: 'hsl(270, 91%, 65%)',
     bgColor: 'hsl(270, 91%, 65%, 0.1)',
-    features: ['50 clientes', 'Contratos ilimitados', 'IA ilimitada', '5 usuários'],
+    features: ['50 clientes', '50 contratos/mês', '1200 msgs IA', '10 usuários'],
     popular: true,
   },
   agency: {
     name: 'Catapulta',
     subtitle: 'Agência',
-    price: 129,
+    price: 30,
+    originalPrice: 60,
     tagline: 'Imponha sua agência no mercado!',
     image: planCatapulta,
     color: 'hsl(25, 95%, 53%)',
     bgColor: 'hsl(25, 95%, 53%, 0.1)',
-    features: ['Clientes ilimitados', 'Tudo ilimitado', '15 usuários', 'Suporte VIP'],
+    features: ['Clientes ilimitados', 'Contratos ilimitados', 'IA ilimitada', '20 usuários'],
   },
 };
 
@@ -671,6 +675,12 @@ export default function LandingPage() {
                   </CardTitle>
                   <CardDescription>{plan.subtitle}</CardDescription>
                   <div className="pt-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg line-through text-muted-foreground">
+                        ${(plan as any).originalPrice ?? plan.price * 2}
+                      </span>
+                      <Badge variant="secondary" className="text-xs">-50%</Badge>
+                    </div>
                     <span className="text-3xl font-bold" style={{ color: plan.color }}>
                       ${plan.price}
                     </span>

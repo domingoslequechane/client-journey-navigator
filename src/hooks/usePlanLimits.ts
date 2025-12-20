@@ -41,7 +41,7 @@ interface UsePlanLimitsReturn {
   refetch: () => Promise<void>;
 }
 
-// Default limits for the Bússola plan ($3/month)
+// Default limits for the Bússola plan ($2/month with 50% discount)
 const DEFAULT_LIMITS: PlanLimits = {
   maxClients: 6,
   maxContractsPerMonth: 6,
