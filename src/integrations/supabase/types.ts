@@ -592,6 +592,53 @@ export type Database = {
           },
         ]
       }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          joined_at: string
+          organization_id: string
+          removed_at: string | null
+          removed_by: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          organization_id: string
+          removed_at?: string | null
+          removed_by?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          organization_id?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -739,6 +786,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          current_organization_id: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -753,6 +801,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          current_organization_id?: string | null
           email?: string | null
           full_name?: string | null
           id: string
@@ -767,6 +816,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          current_organization_id?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -779,6 +829,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_current_organization_id_fkey"
+            columns: ["current_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_organization_id_fkey"
             columns: ["organization_id"]
@@ -1044,6 +1101,14 @@ export type Database = {
         Returns: number
       }
       get_user_organization_id: { Args: { user_uuid: string }; Returns: string }
+      get_user_organizations: {
+        Args: { user_uuid: string }
+        Returns: {
+          organization_id: string
+          organization_name: string
+          role: Database["public"]["Enums"]["user_role"]
+        }[]
+      }
       has_active_subscription: { Args: { org_uuid: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -1057,7 +1122,23 @@ export type Database = {
         Returns: number
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      remove_from_team: {
+        Args: {
+          member_user_id: string
+          org_uuid: string
+          removed_by_user_id: string
+        }
+        Returns: boolean
+      }
+      set_current_organization: {
+        Args: { org_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
       user_belongs_to_org: {
+        Args: { org_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
+      user_is_member_of_org: {
         Args: { org_uuid: string; user_uuid: string }
         Returns: boolean
       }

@@ -14,6 +14,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [isSystemAdmin, setIsSystemAdmin] = useState<boolean | null>(null);
+  const [needsOrgSelection, setNeedsOrgSelection] = useState<boolean | null>(null);
 
   // Check if user is a system admin (app owner)
   useEffect(() => {
@@ -36,6 +37,66 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     checkSystemAdmin();
   }, [user]);
 
+  // Check if user needs to select an organization
+  useEffect(() => {
+    const checkOrgSelection = async () => {
+      if (!user || isSystemAdmin === null) {
+        return;
+      }
+
+      // System admins don't need org selection
+      if (isSystemAdmin) {
+        setNeedsOrgSelection(false);
+        return;
+      }
+
+      // Skip if we're already on the select-organization page
+      if (location.pathname === '/app/select-organization') {
+        setNeedsOrgSelection(false);
+        return;
+      }
+
+      // Check how many organizations user belongs to
+      const { data: orgs } = await supabase.rpc('get_user_organizations', {
+        user_uuid: user.id
+      });
+
+      if (!orgs || orgs.length === 0) {
+        // No organizations - needs onboarding
+        setNeedsOrgSelection(false);
+        setNeedsOnboarding(true);
+        return;
+      }
+
+      // Check if user has a current organization set
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (orgs.length > 1 && !profile?.current_organization_id) {
+        // Multiple orgs but none selected - needs to select
+        setNeedsOrgSelection(true);
+        return;
+      }
+
+      // If only one org and no current set, auto-set it
+      if (orgs.length === 1 && !profile?.current_organization_id) {
+        await supabase.rpc('set_current_organization', {
+          user_uuid: user.id,
+          org_uuid: orgs[0].organization_id
+        });
+      }
+
+      setNeedsOrgSelection(false);
+    };
+
+    if (isSystemAdmin !== null) {
+      checkOrgSelection();
+    }
+  }, [user, isSystemAdmin, location.pathname]);
+
   // Check for pending plan selection or onboarding
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -55,11 +116,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       // Get profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('organization_id')
+        .select('organization_id, current_organization_id')
         .eq('id', user.id)
         .maybeSingle();
       
-      if (!profile?.organization_id) {
+      const orgId = profile?.current_organization_id || profile?.organization_id;
+      
+      if (!orgId) {
         // No organization means needs to select plan
         return;
       }
@@ -68,7 +131,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       const { data: subscription } = await supabase
         .from('subscriptions')
         .select('status')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', orgId)
         .maybeSingle();
       
       // If no subscription or not active, may need plan selection
@@ -78,7 +141,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         const { data: org } = await supabase
           .from('organizations')
           .select('trial_ends_at, name')
-          .eq('id', profile.organization_id)
+          .eq('id', orgId)
           .single();
         
         // If trial is active or org has proper name, allow access
@@ -118,7 +181,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   // Show loading while checking subscription and admin status
-  if (subLoading || isSystemAdmin === null || (needsOnboarding === null && !isSystemAdmin)) {
+  if (subLoading || isSystemAdmin === null || needsOrgSelection === null || (needsOnboarding === null && !isSystemAdmin)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -137,6 +200,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // System admins have full access to admin area
   if (isSystemAdmin) {
     return <>{children}</>;
+  }
+
+  // Redirect to organization selection if needed
+  if (needsOrgSelection) {
+    return <Navigate to="/app/select-organization" replace />;
   }
 
   // Redirect to onboarding if organization needs setup

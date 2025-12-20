@@ -38,15 +38,37 @@ export default function AdminUsers() {
           role,
           suspended,
           created_at,
-          organization:organizations(name)
+          current_organization_id
         `)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching users:', error);
-      } else {
-        setUsers(data || []);
+        setLoading(false);
+        return;
       }
+
+      // Fetch organization names separately to avoid ambiguity
+      const orgIds = [...new Set(data?.filter(u => u.current_organization_id).map(u => u.current_organization_id))];
+      
+      let orgMap: Record<string, string> = {};
+      if (orgIds.length > 0) {
+        const { data: orgs } = await supabase
+          .from('organizations')
+          .select('id, name')
+          .in('id', orgIds);
+        
+        orgMap = Object.fromEntries((orgs || []).map(o => [o.id, o.name]));
+      }
+
+      const usersWithOrg = (data || []).map(user => ({
+        ...user,
+        organization: user.current_organization_id && orgMap[user.current_organization_id] 
+          ? { name: orgMap[user.current_organization_id] } 
+          : null
+      }));
+
+      setUsers(usersWithOrg);
       setLoading(false);
     };
 

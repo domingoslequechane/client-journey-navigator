@@ -1,0 +1,161 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, Building2, ChevronRight } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { PublicBackground } from '@/components/layout/PublicBackground';
+
+interface Organization {
+  organization_id: string;
+  organization_name: string;
+  role: string;
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  sales: 'Vendas',
+  operations: 'Operações',
+  campaign_management: 'Gestão de Campanhas',
+  admin: 'Administrador',
+};
+
+export default function SelectOrganization() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selecting, setSelecting] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchOrganizations();
+    }
+  }, [user]);
+
+  const fetchOrganizations = async () => {
+    if (!user) return;
+
+    try {
+      // Use the database function to get user's organizations
+      const { data, error } = await supabase.rpc('get_user_organizations', {
+        user_uuid: user.id
+      });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        // No organizations - redirect to onboarding
+        navigate('/app/onboarding');
+        return;
+      }
+
+      if (data.length === 1) {
+        // Only one organization - auto-select and redirect
+        await selectOrganization(data[0].organization_id);
+        return;
+      }
+
+      setOrganizations(data);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar suas organizações',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectOrganization = async (orgId: string) => {
+    if (!user) return;
+
+    setSelecting(orgId);
+    try {
+      // Use the database function to set current organization
+      const { data, error } = await supabase.rpc('set_current_organization', {
+        user_uuid: user.id,
+        org_uuid: orgId
+      });
+
+      if (error) throw error;
+
+      if (!data) {
+        throw new Error('Não foi possível selecionar a organização');
+      }
+
+      // Navigate to dashboard
+      navigate('/app');
+    } catch (error) {
+      console.error('Error selecting organization:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível selecionar a organização',
+        variant: 'destructive',
+      });
+      setSelecting(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <PublicBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Carregando suas agências...</p>
+          </div>
+        </div>
+      </PublicBackground>
+    );
+  }
+
+  return (
+    <PublicBackground>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
+              <span className="text-primary-foreground font-bold text-2xl">Q</span>
+            </div>
+            <CardTitle className="text-2xl">Selecione uma Agência</CardTitle>
+            <CardDescription>
+              Você tem acesso a múltiplas agências. Escolha qual deseja acessar agora.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {organizations.map((org) => (
+              <Button
+                key={org.organization_id}
+                variant="outline"
+                className="w-full h-auto py-4 px-4 justify-between"
+                onClick={() => selectOrganization(org.organization_id)}
+                disabled={selecting !== null}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium">{org.organization_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {ROLE_LABELS[org.role] || org.role}
+                    </p>
+                  </div>
+                </div>
+                {selecting === org.organization_id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </PublicBackground>
+  );
+}
