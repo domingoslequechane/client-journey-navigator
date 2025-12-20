@@ -25,6 +25,7 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
+import { PlanUsageCard } from './PlanUsageCard';
 
 import planBussola from '@/assets/plans/plan-bussola.png';
 import planLanca from '@/assets/plans/plan-lanca.png';
@@ -408,6 +409,9 @@ export function SubscriptionTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Plan Usage Card */}
+      <PlanUsageCard />
 
       {/* Upgrade CTA for Free Plan */}
       {!isPaidPlan && (

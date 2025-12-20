@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SubscriptionTab } from '@/components/subscription/SubscriptionTab';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -82,20 +82,28 @@ export default function Subscription() {
             <p className="text-sm text-muted-foreground mt-1">Gerencie sua assinatura do Qualify</p>
           </div>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={syncSubscription}
-          disabled={syncing || !organization?.id}
-          className="gap-2"
-        >
-          {syncing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          Sincronizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link to="/app/upgrade">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Planos
+            </Button>
+          </Link>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={syncSubscription}
+            disabled={syncing || !organization?.id}
+            className="gap-2"
+          >
+            {syncing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            Sincronizar
+          </Button>
+        </div>
       </AnimatedContainer>
 
       {syncing && (
