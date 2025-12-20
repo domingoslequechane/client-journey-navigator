@@ -15,11 +15,14 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CURRENCIES } from '@/lib/currencies';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { useSubscription } from '@/hooks/useSubscription';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
+import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 
 export default function NewClient() {
   const navigate = useNavigate();
   const { loading: planLoading, canAddClient, planType, usage, limits } = usePlanLimits();
+  const { hasActiveSubscription, loading: subLoading } = useSubscription();
   const [saving, setSaving] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   
@@ -122,12 +125,16 @@ export default function NewClient() {
     }
   };
 
-  if (planLoading) {
+  if (planLoading || subLoading) {
     return (
       <div className="p-4 md:p-8 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (!hasActiveSubscription) {
+    return <SubscriptionRequired feature="cadastrar novos clientes" />;
   }
 
   if (!canAddClient) {

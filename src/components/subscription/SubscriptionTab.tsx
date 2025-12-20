@@ -50,7 +50,7 @@ const PLAN_CONFIG = {
     bgColor: 'bg-green-500/10',
     borderColor: 'border-green-500/20',
     image: planBussola,
-    price: '$2/mês',
+    price: '$4/mês',
     features: ['6 clientes', '2 usuários', '6 contratos/mês', '150 mensagens IA/mês']
   },
   starter: { 
@@ -320,7 +320,7 @@ export function SubscriptionTab() {
                   Plano {currentPlan.name}
                 </CardTitle>
                 <CardDescription>
-                  {isPaidPlan ? 'Sua assinatura está ativa' : 'Você está no plano gratuito'}
+                  {isPaidPlan && isActive ? 'Sua assinatura está ativa' : 'Você não possui assinatura ativa'}
                 </CardDescription>
               </div>
             </div>
@@ -383,7 +383,7 @@ export function SubscriptionTab() {
                           Sua assinatura será cancelada no final do período atual 
                           ({subscription?.currentPeriodEnd ? format(new Date(subscription.currentPeriodEnd), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'data não disponível'}).
                           Você continuará tendo acesso aos recursos do plano {currentPlan.name} até essa data.
-                          Após o cancelamento, sua conta será revertida para o plano Bússola.
+                          Após o cancelamento, você perderá o acesso às funcionalidades do sistema.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

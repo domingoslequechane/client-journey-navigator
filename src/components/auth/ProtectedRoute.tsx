@@ -212,7 +212,24 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/app/onboarding" replace />;
   }
 
-  // Freemium model: all authenticated users with organization have access
-  // Feature limitations are handled at the page/component level via usePlanLimits
+  // Redirect to upgrade if user doesn't have active subscription
+  // Allow access to: dashboard (read-only), subscription, upgrade, clients (for export)
+  const allowedPathsWithoutSubscription = [
+    '/app',
+    '/app/subscription',
+    '/app/upgrade',
+    '/app/clients',
+    '/app/settings',
+  ];
+  
+  const isAllowedWithoutSubscription = allowedPathsWithoutSubscription.some(
+    path => location.pathname === path || location.pathname.startsWith(path + '/')
+  );
+
+  if (!hasAccess && !isAllowedWithoutSubscription) {
+    return <Navigate to="/app/upgrade" replace />;
+  }
+
+  // All checks passed - render children
   return <>{children}</>;
 }

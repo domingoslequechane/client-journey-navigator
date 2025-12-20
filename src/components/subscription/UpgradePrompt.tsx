@@ -13,10 +13,10 @@ interface UpgradePromptProps {
 }
 
 const planNames: Record<PlanType, string> = {
-  free: 'Grátis',
-  starter: 'Iniciante',
-  pro: 'Pro',
-  agency: 'Agência',
+  free: 'Bússola',
+  starter: 'Lança',
+  pro: 'Arco',
+  agency: 'Catapulta',
 };
 
 export function UpgradePrompt({ feature, currentPlan, requiredPlan, variant = 'card' }: UpgradePromptProps) {
