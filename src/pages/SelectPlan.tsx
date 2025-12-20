@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, Rocket, ArrowRight } from 'lucide-react';
+import { Check, Loader2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -20,8 +20,7 @@ const plans = [
   {
     key: 'free' as const,
     name: 'Bússola',
-    originalPrice: 4,
-    discountedPrice: 2,
+    price: 4,
     period: '/mês',
     description: 'Para quem está começando',
     features: [
@@ -36,8 +35,7 @@ const plans = [
   {
     key: 'starter' as const,
     name: 'Lança',
-    originalPrice: 10,
-    discountedPrice: 5,
+    price: 10,
     period: '/mês',
     description: 'Para agências em crescimento',
     features: [
@@ -53,8 +51,7 @@ const plans = [
   {
     key: 'pro' as const,
     name: 'Arco',
-    originalPrice: 24,
-    discountedPrice: 12,
+    price: 24,
     period: '/mês',
     description: 'Para agências estabelecidas',
     features: [
@@ -70,8 +67,7 @@ const plans = [
   {
     key: 'agency' as const,
     name: 'Catapulta',
-    originalPrice: 60,
-    discountedPrice: 30,
+    price: 60,
     period: '/mês',
     description: 'Para grandes agências',
     features: [
@@ -240,10 +236,6 @@ export default function SelectPlan() {
       
       <div className="min-h-screen flex flex-col items-center justify-center p-4 py-12">
         <div className="text-center mb-8 max-w-2xl">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
-            <Rocket className="h-4 w-4" />
-            Oferta de Lançamento - 50% OFF
-          </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
             Escolha seu plano
           </h1>
@@ -287,17 +279,9 @@ export default function SelectPlan() {
 
                 <CardContent className="flex-1 flex flex-col">
                   <div className="text-center mb-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-sm text-muted-foreground line-through">
-                        ${plan.originalPrice}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        -50%
-                      </Badge>
-                    </div>
                     <div className="flex items-baseline justify-center gap-1">
                       <span className="text-4xl font-bold" style={{ color: colors.primary }}>
-                        ${plan.discountedPrice}
+                        ${plan.price}
                       </span>
                       <span className="text-muted-foreground">{plan.period}</span>
                     </div>
@@ -343,8 +327,7 @@ export default function SelectPlan() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-8 max-w-lg">
-          Pagamento seguro via LemonSqueezy. Cancele a qualquer momento. 
-          O cupom de 50% é aplicado automaticamente no checkout.
+          Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
         </p>
       </div>
     </PublicBackground>

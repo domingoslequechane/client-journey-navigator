@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, ArrowLeft, Star, Gift } from 'lucide-react';
+import { Check, X, ArrowLeft, Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 
@@ -17,8 +17,7 @@ const plans = [
     key: 'free',
     name: 'Bússola',
     subtitle: 'Essencial',
-    price: 2,
-    originalPrice: 4,
+    price: 4,
     tagline: 'Encontre o caminho certo para começar!',
     image: planBussola,
     color: 'hsl(142, 71%, 45%)',
@@ -30,8 +29,7 @@ const plans = [
     key: 'starter',
     name: 'Lança',
     subtitle: 'Crescimento',
-    price: 5,
-    originalPrice: 10,
+    price: 10,
     tagline: 'Lance sua marca no mundo digital!',
     image: planLanca,
     color: 'hsl(217, 91%, 60%)',
@@ -43,8 +41,7 @@ const plans = [
     key: 'pro',
     name: 'Arco',
     subtitle: 'Profissional',
-    price: 12,
-    originalPrice: 24,
+    price: 24,
     tagline: 'Alcance resultados com precisão!',
     image: planArco,
     color: 'hsl(270, 91%, 65%)',
@@ -57,8 +54,7 @@ const plans = [
     key: 'agency',
     name: 'Catapulta',
     subtitle: 'Agência',
-    price: 30,
-    originalPrice: 60,
+    price: 60,
     tagline: 'Imponha sua agência no mercado!',
     image: planCatapulta,
     color: 'hsl(25, 95%, 53%)',
@@ -163,22 +159,6 @@ const Pricing = () => {
             </p>
           </div>
 
-          {/* Discount Banner */}
-          <Card className="mb-12 border-primary/30 bg-primary/5 overflow-hidden">
-            <CardContent className="py-6">
-              <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-center md:text-left">
-                <div className="p-3 rounded-full bg-primary/10">
-                  <Gift className="h-8 w-8 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-primary">50% de desconto aplicado automaticamente!</h3>
-                  <p className="text-muted-foreground">
-                    Desconto na primeira assinatura aplicado automaticamente no checkout (uso único por agência)
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Plan Cards Summary */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
@@ -207,10 +187,6 @@ const Pricing = () => {
                 </CardHeader>
                 <CardContent className="text-center">
                   <div className="mb-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-lg line-through text-muted-foreground">${plan.originalPrice}</span>
-                      <Badge variant="secondary" className="text-xs">-50%</Badge>
-                    </div>
                     <span className="text-4xl font-bold">${plan.price}</span>
                     <span className="text-muted-foreground">/mês</span>
                   </div>
@@ -283,15 +259,11 @@ const Pricing = () => {
           {/* CTA */}
           <div className="text-center mt-16">
             <h2 className="text-2xl font-bold mb-4">Pronto para começar?</h2>
-            <p className="text-muted-foreground mb-2">
-              Todos os planos incluem 50% de desconto na primeira assinatura
-            </p>
-            <p className="text-sm text-muted-foreground mb-6">
-              Desconto aplicado automaticamente no checkout (uso único por agência)
+            <p className="text-muted-foreground mb-6">
+              Escolha o plano ideal para sua agência e comece a transformar sua gestão
             </p>
             <Link to="/auth">
               <Button size="lg" className="gap-2">
-                <Gift className="h-5 w-5" />
                 Criar Conta e Assinar
               </Button>
             </Link>
