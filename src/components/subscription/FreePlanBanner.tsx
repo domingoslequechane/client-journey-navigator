@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom';
 import { useSubscription, PlanType } from '@/hooks/useSubscription';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Rocket, Sparkles, Info, Gift } from 'lucide-react';
+import { Rocket, Sparkles, Info } from 'lucide-react';
 
 // Plan names mapping
 const planNames: Record<PlanType, string> = {
@@ -27,19 +26,16 @@ export function FreePlanBanner() {
     <div className="rounded-lg p-4 mb-6 bg-primary/5 border border-primary/20">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="p-2 rounded-full bg-primary/10">
-          <Gift className="h-5 w-5 text-primary" />
+          <Rocket className="h-5 w-5 text-primary" />
         </div>
         
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-primary">
-              50% de desconto aplicado automaticamente!
-            </h3>
-            <Badge variant="secondary" className="text-xs">-50%</Badge>
-          </div>
+          <h3 className="font-semibold text-primary">
+            Desbloqueie mais recursos!
+          </h3>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isAdmin 
-              ? 'Desconto na primeira assinatura aplicado automaticamente. Comece com o plano Bússola por apenas $2/mês.'
+              ? 'Assine um plano e tenha acesso a mais clientes, contratos e recursos de IA.'
               : 'Converse com o administrador da sua organização para assinar.'
             }
           </p>

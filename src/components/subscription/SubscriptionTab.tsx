@@ -60,7 +60,7 @@ const PLAN_CONFIG = {
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
     image: planLanca,
-    price: '$7.49/mês',
+    price: '$10/mês',
     features: ['15 clientes', '7 usuários', '15 contratos/mês', '500 mensagens IA/mês']
   },
   pro: { 
@@ -70,7 +70,7 @@ const PLAN_CONFIG = {
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/20',
     image: planArco,
-    price: '$14.99/mês',
+    price: '$24/mês',
     features: ['50 clientes', '10 usuários', '50 contratos/mês', '1200 mensagens IA/mês']
   },
   agency: { 
@@ -80,7 +80,7 @@ const PLAN_CONFIG = {
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/20',
     image: planCatapulta,
-    price: '$37.49/mês',
+    price: '$60/mês',
     features: ['Clientes ilimitados', '20 usuários', 'Contratos ilimitados', 'IA ilimitada']
   },
 };

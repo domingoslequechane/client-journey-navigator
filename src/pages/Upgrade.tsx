@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   CreditCard, CheckCircle2, Loader2, ArrowLeft, X, 
-  Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert, Gift 
+  Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert 
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -98,8 +98,8 @@ interface PlanConfig {
 const plans: Record<PlanType, PlanConfig> = {
   free: {
     name: 'Bússola',
-    price: 2,
-    priceLabel: '$2/mês',
+    price: 4,
+    priceLabel: '$4/mês',
     description: 'Para começar sua jornada',
     features: [
       { text: 'Até 6 clientes', included: true },
@@ -121,8 +121,8 @@ const plans: Record<PlanType, PlanConfig> = {
   },
   starter: {
     name: 'Lança',
-    price: 5,
-    priceLabel: '$5/mês',
+    price: 10,
+    priceLabel: '$10/mês',
     description: 'Para agências em crescimento',
     features: [
       { text: 'Até 15 clientes', included: true },
@@ -144,8 +144,8 @@ const plans: Record<PlanType, PlanConfig> = {
   },
   pro: {
     name: 'Arco',
-    price: 12,
-    priceLabel: '$12/mês',
+    price: 24,
+    priceLabel: '$24/mês',
     description: 'Para agências estabelecidas',
     popular: true,
     features: [
@@ -168,8 +168,8 @@ const plans: Record<PlanType, PlanConfig> = {
   },
   agency: {
     name: 'Catapulta',
-    price: 30,
-    priceLabel: '$30/mês',
+    price: 60,
+    priceLabel: '$60/mês',
     description: 'Para grandes agências',
     features: [
       { text: 'Clientes ilimitados', included: true },
@@ -359,20 +359,6 @@ export default function Upgrade() {
           </p>
         </div>
 
-        {/* Discount Banner */}
-        <Card className="border-primary/30 bg-primary/5 overflow-hidden">
-          <CardContent className="py-4">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
-              <Gift className="h-6 w-6 text-primary" />
-              <div>
-                <span className="font-semibold text-primary">50% de desconto aplicado automaticamente!</span>
-                <span className="text-muted-foreground ml-2">
-                  Desconto na primeira assinatura aplicado automaticamente no checkout
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Current Plan Banner */}
         <Card 
@@ -468,12 +454,6 @@ export default function Upgrade() {
                   </CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="pt-2">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg line-through text-muted-foreground">
-                        ${plan.price === 2 ? '4' : plan.price === 5 ? '10' : plan.price === 12 ? '24' : '60'}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">-50%</Badge>
-                    </div>
                     <span className="text-3xl font-bold" style={{ color: colors.text }}>
                       ${plan.price}
                     </span>
@@ -626,11 +606,8 @@ export default function Upgrade() {
         </Card>
 
         {/* Payment Info */}
-        <div className="text-center space-y-2">
+        <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            💡 50% de desconto aplicado automaticamente na primeira assinatura!
-          </p>
-          <p className="text-xs text-muted-foreground">
             Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
           </p>
         </div>
