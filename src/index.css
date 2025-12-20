@@ -282,14 +282,14 @@ All colors MUST be HSL.
 /* Neon Border Animation for Active Plan */
 @keyframes neonPulse {
   0%, 100% {
+    box-shadow: 0 0 2px var(--neon-color),
+                0 0 5px var(--neon-color),
+                0 0 8px var(--neon-color);
+  }
+  50% {
     box-shadow: 0 0 5px var(--neon-color),
                 0 0 10px var(--neon-color),
                 0 0 15px var(--neon-color);
-  }
-  50% {
-    box-shadow: 0 0 10px var(--neon-color),
-                0 0 20px var(--neon-color),
-                0 0 30px var(--neon-color);
   }
 }
 
