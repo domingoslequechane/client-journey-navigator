@@ -360,33 +360,31 @@ export default function Upgrade() {
         </div>
 
         {/* Current Plan Banner */}
-        {currentPlan !== 'free' && isActive && (
-          <Card 
-            className="border-2"
-            style={{ 
-              borderColor: planColors[currentPlan].border,
-              backgroundColor: planColors[currentPlan].bg 
-            }}
-          >
-            <CardContent className="flex items-center justify-between py-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5" style={{ color: planColors[currentPlan].primary }} />
-                <span>
-                  Você está no plano <strong>{planNames[currentPlan].codename}</strong> ({planNames[currentPlan].name})
-                </span>
-              </div>
-              <Badge 
-                variant="outline" 
-                style={{ 
-                  borderColor: planColors[currentPlan].primary,
-                  color: planColors[currentPlan].text 
-                }}
-              >
-                Ativo
-              </Badge>
-            </CardContent>
-          </Card>
-        )}
+        <Card 
+          className="border-2"
+          style={{ 
+            borderColor: planColors[currentPlan].border,
+            backgroundColor: planColors[currentPlan].bg 
+          }}
+        >
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5" style={{ color: planColors[currentPlan].primary }} />
+              <span>
+                Você está no plano <strong>{planNames[currentPlan].codename}</strong> ({planNames[currentPlan].name})
+              </span>
+            </div>
+            <Badge 
+              variant="outline" 
+              style={{ 
+                borderColor: planColors[currentPlan].primary,
+                color: planColors[currentPlan].text 
+              }}
+            >
+              {isActive && currentPlan !== 'free' ? 'Ativo' : 'Plano Atual'}
+            </Badge>
+          </CardContent>
+        </Card>
 
         {/* Pricing Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -475,7 +473,20 @@ export default function Upgrade() {
                     ))}
                   </ul>
                   
-                  {planKey === 'free' ? (
+                  {isCurrentPlan ? (
+                    <Button 
+                      className="w-full"
+                      variant="outline"
+                      disabled
+                      style={{ 
+                        borderColor: colors.border,
+                        color: colors.text 
+                      }}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Plano Atual
+                    </Button>
+                  ) : planKey === 'free' ? (
                     <Button variant="outline" disabled className="w-full">
                       {isCurrentPlan ? 'Plano Atual' : 'Plano Base'}
                     </Button>

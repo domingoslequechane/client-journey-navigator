@@ -1,9 +1,17 @@
 import { Link } from 'react-router-dom';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscription, PlanType } from '@/hooks/useSubscription';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Rocket, Sparkles, Info, Clock } from 'lucide-react';
+
+// Plan names mapping
+const planNames: Record<PlanType, string> = {
+  free: 'Bússola',
+  starter: 'Lança',
+  pro: 'Arco',
+  agency: 'Catapulta',
+};
 
 export function FreePlanBanner() {
   const { loading, isPaidPlan, isTrialing, trialDaysLeft, planType, isActive } = useSubscription();
@@ -13,6 +21,8 @@ export function FreePlanBanner() {
   if (loading || roleLoading || (isPaidPlan && isActive)) {
     return null;
   }
+
+  const currentPlanName = planNames[planType] || planNames.free;
 
   // Show trial banner if user is in trial period
   if (isTrialing && trialDaysLeft > 0) {
@@ -24,9 +34,9 @@ export function FreePlanBanner() {
           </div>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-primary">
-                Período de Teste - Plano Catapulta
+                Período de Teste - Plano {currentPlanName}
               </h3>
               <Badge variant="secondary" className="text-xs">
                 {trialDaysLeft} {trialDaysLeft === 1 ? 'dia' : 'dias'} restantes
