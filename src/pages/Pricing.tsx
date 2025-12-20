@@ -207,12 +207,11 @@ const Pricing = () => {
                 </CardHeader>
                 <CardContent className="text-center">
                   <div className="mb-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-lg line-through text-muted-foreground">${plan.originalPrice}</span>
-                      <Badge variant="secondary" className="text-xs">-50%</Badge>
+                    <span className="text-lg line-through text-muted-foreground">${plan.originalPrice}</span>
+                    <div>
+                      <span className="text-4xl font-bold">${plan.price}</span>
+                      <span className="text-muted-foreground">/mês</span>
                     </div>
-                    <span className="text-4xl font-bold">${plan.price}</span>
-                    <span className="text-muted-foreground">/mês</span>
                   </div>
                   <Link to="/auth">
                     <Button 
