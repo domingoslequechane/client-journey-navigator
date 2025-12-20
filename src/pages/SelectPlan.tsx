@@ -46,7 +46,6 @@ const plans = [
       '3 modelos de contrato',
     ],
     image: planLanca,
-    popular: true,
   },
   {
     key: 'pro' as const,
@@ -63,6 +62,7 @@ const plans = [
       'Exportação de dados',
     ],
     image: planArco,
+    popular: true,
   },
   {
     key: 'agency' as const,
