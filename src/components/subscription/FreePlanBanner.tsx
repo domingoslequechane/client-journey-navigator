@@ -31,12 +31,15 @@ export function FreePlanBanner() {
         </div>
         
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-primary">
-            50% de desconto aplicado automaticamente!
-          </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-semibold text-primary">
+              50% de desconto aplicado automaticamente!
+            </h3>
+            <Badge variant="secondary" className="text-xs">-50%</Badge>
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isAdmin 
-              ? 'Desconto na primeira assinatura. Comece com o plano Bússola por apenas $3/mês.'
+              ? 'Desconto na primeira assinatura aplicado automaticamente. Comece com o plano Bússola por apenas $3/mês.'
               : 'Converse com o administrador da sua organização para assinar.'
             }
           </p>

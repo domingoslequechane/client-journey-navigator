@@ -462,15 +462,16 @@ export default function Upgrade() {
                   </CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="pt-2">
-                    <span className="text-lg line-through text-muted-foreground">
-                      ${plan.price === 3 ? '6' : plan.price === 7.50 ? '15' : plan.price === 19.99 ? '39.98' : '99.98'}
-                    </span>
-                    <div>
-                      <span className="text-3xl font-bold" style={{ color: colors.text }}>
-                        ${plan.price}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg line-through text-muted-foreground">
+                        ${plan.price === 3 ? '6' : plan.price === 7.50 ? '15' : plan.price === 19.99 ? '39.98' : '99.98'}
                       </span>
-                      <span className="text-muted-foreground">/mês</span>
+                      <Badge variant="secondary" className="text-xs">-50%</Badge>
                     </div>
+                    <span className="text-3xl font-bold" style={{ color: colors.text }}>
+                      ${plan.price}
+                    </span>
+                    <span className="text-muted-foreground">/mês</span>
                   </div>
                   <p className="text-xs italic text-muted-foreground mt-1">
                     {planInfo.tagline}
