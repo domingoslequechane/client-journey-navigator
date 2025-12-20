@@ -29,6 +29,7 @@ import Settings from "./pages/Settings";
 import Upgrade from "./pages/Upgrade";
 import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/Onboarding";
+import SelectPlan from "./pages/SelectPlan";
 import Subscription from "./pages/Subscription";
 import Notifications from "./pages/Notifications";
 import SupportFeedback from "./pages/SupportFeedback";
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/set-password" element={<SetPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/select-plan" element={<SelectPlan />} />
               <Route path="/app/onboarding" element={<Onboarding />} />
               <Route
                 path="/app"

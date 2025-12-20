@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, ArrowRight, Globe, Rocket } from 'lucide-react';
+import { Building2, ArrowRight, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { COUNTRIES } from '@/lib/currencies';
 
@@ -20,14 +20,17 @@ export default function Onboarding() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingOrg, setCheckingOrg] = useState(true);
 
-  // Check if returning from successful payment (for future upgrades)
+  // Check if returning from successful payment
   useEffect(() => {
     const success = searchParams.get('success');
     if (success === 'true') {
-      toast.success('Plano atualizado com sucesso!');
-      navigate('/app');
+      toast.success('Pagamento realizado com sucesso! Configure sua agência.');
+      // Remove success param from URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('success');
+      window.history.replaceState({}, '', url.pathname);
     }
-  }, [searchParams, navigate]);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -125,8 +128,7 @@ export default function Onboarding() {
             slug: slug,
             owner_id: sessionUser.id,
             currency: currency,
-            plan_type: 'agency', // Start with Agency plan for 7-day trial
-            trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            // Plan is set by webhook after checkout
           })
           .select()
           .single();
@@ -241,17 +243,7 @@ export default function Onboarding() {
               </p>
             </div>
 
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                <Rocket className="h-4 w-4" />
-                Período de Teste Gratuito - 7 Dias
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Comece com acesso completo ao plano Catapulta por 7 dias. Após o período de teste, você pode escolher um plano ou continuar gratuitamente.
-              </p>
-            </div>
-
-            <Button 
+            <Button
               type="submit" 
               className="w-full" 
               disabled={isSubmitting || !agencyName.trim()}
