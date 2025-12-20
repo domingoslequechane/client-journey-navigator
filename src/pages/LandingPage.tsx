@@ -412,7 +412,7 @@ export default function LandingPage() {
               <Link to="/auth">
                 <Button size="lg" className="text-lg px-8 py-6 gap-3 shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105">
                   <Rocket className="h-5 w-5" />
-                  Começar com 7 Dias de Teste
+                  Começar Agora
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
@@ -425,7 +425,7 @@ export default function LandingPage() {
             >
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
-                <span>7 dias de teste</span>
+                <span>Sem fidelidade</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -683,12 +683,6 @@ export default function LandingPage() {
                   </CardTitle>
                   <CardDescription>{plan.subtitle}</CardDescription>
                   <div className="pt-2">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg line-through text-muted-foreground">
-                        ${(plan as any).originalPrice ?? plan.price * 2}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">-50%</Badge>
-                    </div>
                     <span className="text-3xl font-bold" style={{ color: plan.color }}>
                       ${plan.price}
                     </span>
@@ -724,7 +718,7 @@ export default function LandingPage() {
 
           <div className="text-center mt-12">
             <p className="text-muted-foreground mb-4">
-              Todos os planos incluem 7 dias de teste. Cancele a qualquer momento.
+              Cancele a qualquer momento. Sem taxas de cancelamento.
             </p>
             <Link to="/pricing">
               <Button variant="outline" size="lg" className="gap-2">
@@ -756,12 +750,12 @@ export default function LandingPage() {
             <Accordion type="single" collapsible className="space-y-4">
               <AccordionItem value="item-1" className="bg-card border rounded-lg px-6">
                 <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                  O que acontece após os 7 dias de teste?
+                  Preciso de cartão de crédito para começar?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Após o período de teste de 7 dias, você precisará escolher um plano pago para continuar 
-                  usando todas as funcionalidades do Qualify. Durante o teste, você tem acesso completo 
-                  ao sistema para avaliar se atende às suas necessidades.
+                  Sim, para começar a usar o Qualify você precisará escolher um plano e adicionar 
+                  uma forma de pagamento. Oferecemos planos a partir de $4/mês para você começar 
+                  a transformar a gestão da sua agência.
                 </AccordionContent>
               </AccordionItem>
 
