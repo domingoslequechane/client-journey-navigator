@@ -36,6 +36,14 @@ async function verifySignature(payload: string, signature: string, secret: strin
   }
 }
 
+// Plan prices in cents (with 50% discount applied)
+const PLAN_PRICES: Record<string, number> = {
+  free: 200,     // $2
+  starter: 500,  // $5
+  pro: 1200,     // $12
+  agency: 3000   // $30
+};
+
 // Get plan type from variant ID
 const getPlanTypeFromVariant = (variantId: string): string => {
   const normalizeId = (v?: string | null) =>
@@ -58,8 +66,31 @@ const getPlanTypeFromVariant = (variantId: string): string => {
   if (normalizedVariantId === proVariant) return 'pro';
   if (normalizedVariantId === agencyVariant) return 'agency';
   
-  // Default to starter if no match
-  return 'starter';
+  // Default to free if no match
+  return 'free';
+};
+
+// Get payment amount from LemonSqueezy data or fallback to plan prices
+const getPaymentAmount = (subscriptionData: any, planType: string): number => {
+  // Try different paths where LemonSqueezy might send the price
+  const possiblePrices = [
+    subscriptionData?.first_subscription_item?.price,
+    subscriptionData?.first_order_item?.price,
+    subscriptionData?.total,
+    subscriptionData?.subtotal,
+  ];
+  
+  for (const price of possiblePrices) {
+    if (price && typeof price === 'number' && price > 0) {
+      console.log("Using price from LemonSqueezy:", price);
+      return price;
+    }
+  }
+  
+  // Fallback: use the price based on plan_type
+  const fallbackPrice = PLAN_PRICES[planType] || PLAN_PRICES.starter;
+  console.log("Using fallback price for plan", planType, ":", fallbackPrice);
+  return fallbackPrice;
 };
 
 serve(async (req) => {
@@ -345,8 +376,8 @@ serve(async (req) => {
           console.error("Error updating subscription after payment:", error);
         }
 
-        // Record payment in history
-        const amount = subscriptionData?.first_subscription_item?.price || 1900; // Default to $19 in cents
+        // Record payment in history with correct amount based on plan
+        const amount = getPaymentAmount(subscriptionData, planType);
         const { error: paymentError } = await supabase
           .from('payment_history')
           .insert({
@@ -382,13 +413,13 @@ serve(async (req) => {
           console.error("Error updating subscription after failed payment:", error);
         }
 
-        // Record failed payment in history
-        const amount = subscriptionData?.first_subscription_item?.price || 1900;
+        // Record failed payment in history with correct amount based on plan
+        const failedAmount = getPaymentAmount(subscriptionData, planType);
         const { error: paymentError } = await supabase
           .from('payment_history')
           .insert({
             organization_id: organizationId,
-            amount: amount / 100,
+            amount: failedAmount / 100,
             currency: 'USD',
             status: 'failed',
             payment_date: new Date().toISOString(),

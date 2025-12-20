@@ -14,7 +14,7 @@ import {
   Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert, Gift 
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { LemonSqueezyDiagnosticsDialog } from '@/components/subscription/LemonSqueezyDiagnosticsDialog';
+
 
 // Plan images
 import planBussola from '@/assets/plans/plan-bussola.png';
@@ -415,18 +415,32 @@ export default function Upgrade() {
             const targetIndex = PLAN_ORDER.indexOf(planKey);
             const isUpgrade = targetIndex > currentIndex;
 
+            const neonColorClass = planKey === 'free' ? 'neon-border-green' : 
+                                   planKey === 'starter' ? 'neon-border-blue' : 
+                                   planKey === 'pro' ? 'neon-border-purple' : 'neon-border-orange';
+
             return (
               <Card 
                 key={planKey} 
                 className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg ${
-                  plan.popular ? 'ring-2' : ''
-                } ${isCurrentPlan ? 'ring-2' : ''}`}
+                  plan.popular && !isCurrentPlan ? 'ring-2' : ''
+                } ${isCurrentPlan ? `neon-pulse ${neonColorClass}` : ''}`}
                 style={{
-                  borderColor: isCurrentPlan || plan.popular ? colors.border : undefined,
-                  ...(plan.popular || isCurrentPlan ? { '--ring-color': colors.primary } as any : {}),
-                  ringColor: isCurrentPlan || plan.popular ? colors.primary : undefined,
+                  borderColor: plan.popular && !isCurrentPlan ? colors.border : undefined,
+                  ...(plan.popular && !isCurrentPlan ? { '--ring-color': colors.primary } as any : {}),
+                  ringColor: plan.popular && !isCurrentPlan ? colors.primary : undefined,
                 }}
               >
+                {/* Current Plan Badge - Top Left Inside Card */}
+                {isCurrentPlan && (
+                  <Badge 
+                    className="absolute top-3 left-3 z-20 shadow-lg text-white"
+                    style={{ backgroundColor: colors.primary }}
+                  >
+                    Plano Atual
+                  </Badge>
+                )}
+
                 {/* Plan Image */}
                 <div 
                   className="relative h-48 overflow-hidden"
@@ -437,21 +451,13 @@ export default function Upgrade() {
                     alt={`Plano ${planInfo.codename}`}
                     className="w-full h-full object-cover"
                   />
-                  {plan.popular && (
+                  {plan.popular && !isCurrentPlan && (
                     <Badge 
                       className="absolute top-3 right-3 shadow-lg"
                       style={{ backgroundColor: colors.primary }}
                     >
                       <Sparkles className="h-3 w-3 mr-1" />
                       Mais Popular
-                    </Badge>
-                  )}
-                  {isCurrentPlan && !plan.popular && (
-                    <Badge 
-                      className="absolute top-3 right-3 shadow-lg"
-                      style={{ backgroundColor: colors.primary }}
-                    >
-                      Plano Atual
                     </Badge>
                   )}
                 </div>
@@ -629,10 +635,6 @@ export default function Upgrade() {
           </p>
         </div>
 
-        {/* Diagnostics for admins */}
-        <div className="flex justify-center pt-4">
-          <LemonSqueezyDiagnosticsDialog />
-        </div>
       </div>
     </div>
   );
