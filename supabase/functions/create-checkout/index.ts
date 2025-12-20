@@ -190,6 +190,21 @@ const handler = async (req: Request): Promise<Response> => {
       redirectUrl,
     });
 
+    // Build checkout_data - only include fields that have values
+    const checkoutDataPayload: Record<string, unknown> = {
+      email: userEmail || user.email,
+      custom: {
+        organization_id: organizationId,
+        user_id: user.id,
+        plan_type: planType,
+      },
+    };
+    
+    // Only add name if it's provided and not empty
+    if (userName && userName.trim()) {
+      checkoutDataPayload.name = userName.trim();
+    }
+
     // Create checkout session with LemonSqueezy API
     const checkoutResponse = await fetch("https://api.lemonsqueezy.com/v1/checkouts", {
       method: "POST",
@@ -203,16 +218,7 @@ const handler = async (req: Request): Promise<Response> => {
           type: "checkouts",
           attributes: {
             test_mode: testMode,
-            discount_code: "IYMDC4NA", // Apply 50% discount automatically
-            checkout_data: {
-              email: userEmail || user.email,
-              name: userName,
-              custom: {
-                organization_id: organizationId,
-                user_id: user.id,
-                plan_type: planType,
-              },
-            },
+            checkout_data: checkoutDataPayload,
             product_options: {
               redirect_url: redirectUrl,
             },
