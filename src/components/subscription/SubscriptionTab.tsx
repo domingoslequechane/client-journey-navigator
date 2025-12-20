@@ -333,64 +333,79 @@ export function SubscriptionTab() {
             ))}
           </div>
 
-          {/* Management buttons for paid plans */}
-          {isPaidPlan && isActive && (
-            <div className="flex flex-wrap gap-2 pt-4 border-t">
+          {/* Management buttons */}
+          <div className="flex flex-wrap gap-2 pt-4 border-t">
+            {/* Ver Planos button - always visible */}
+            <Link to="/app/upgrade">
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={handleManagePayment}
-                disabled={actionLoading === 'portal'}
                 className="gap-2"
               >
-                {actionLoading === 'portal' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ExternalLink className="h-4 w-4" />
-                )}
-                Gerenciar Pagamento
+                <Sparkles className="h-4 w-4" />
+                Ver Planos
               </Button>
+            </Link>
 
-              {!cancelAtPeriodEnd && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="gap-2 text-destructive hover:text-destructive"
-                    >
-                      <XCircle className="h-4 w-4" />
-                      Cancelar Assinatura
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Tem certeza que deseja cancelar?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Sua assinatura será cancelada no final do período atual 
-                        ({subscription?.currentPeriodEnd ? format(new Date(subscription.currentPeriodEnd), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'data não disponível'}).
-                        Você continuará tendo acesso aos recursos do plano {currentPlan.name} até essa data.
-                        Após o cancelamento, sua conta será revertida para o plano gratuito.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Manter Assinatura</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleCancelSubscription}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        disabled={actionLoading === 'cancel'}
+            {/* Payment management - only for paid plans */}
+            {isPaidPlan && isActive && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleManagePayment}
+                  disabled={actionLoading === 'portal'}
+                  className="gap-2"
+                >
+                  {actionLoading === 'portal' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="h-4 w-4" />
+                  )}
+                  Gerenciar Pagamento
+                </Button>
+
+                {!cancelAtPeriodEnd && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="gap-2 text-destructive hover:text-destructive"
                       >
-                        {actionLoading === 'cancel' ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : null}
-                        Confirmar Cancelamento
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
-          )}
+                        <XCircle className="h-4 w-4" />
+                        Cancelar Assinatura
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Tem certeza que deseja cancelar?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Sua assinatura será cancelada no final do período atual 
+                          ({subscription?.currentPeriodEnd ? format(new Date(subscription.currentPeriodEnd), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'data não disponível'}).
+                          Você continuará tendo acesso aos recursos do plano {currentPlan.name} até essa data.
+                          Após o cancelamento, sua conta será revertida para o plano gratuito.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Manter Assinatura</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleCancelSubscription}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          disabled={actionLoading === 'cancel'}
+                        >
+                          {actionLoading === 'cancel' ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : null}
+                          Confirmar Cancelamento
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </>
+            )}
+          </div>
         </CardContent>
       </Card>
 
