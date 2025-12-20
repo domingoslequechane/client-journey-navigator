@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-
-const TUTORIAL_COMPLETED_KEY = 'qualify_tutorial_completed';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TutorialStep {
   target: string; // CSS selector for the element to highlight
@@ -52,22 +52,44 @@ interface TooltipPosition {
 }
 
 export function OnboardingTutorial() {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition | null>(null);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [loading, setLoading] = useState(true);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
+  // Check tutorial status from database
   useEffect(() => {
-    const completed = localStorage.getItem(TUTORIAL_COMPLETED_KEY);
-    if (!completed) {
-      // Delay to let the page render
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, []);
+    const checkTutorialStatus = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('tutorial_completed')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && !profile.tutorial_completed) {
+          // Delay to let the page render
+          setTimeout(() => {
+            setIsVisible(true);
+          }, 500);
+        }
+      } catch (error) {
+        console.error('Error checking tutorial status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkTutorialStatus();
+  }, [user]);
 
   useEffect(() => {
     if (!isVisible) return;
@@ -130,12 +152,21 @@ export function OnboardingTutorial() {
     }
   };
 
-  const handleComplete = () => {
-    localStorage.setItem(TUTORIAL_COMPLETED_KEY, 'true');
+  const handleComplete = async () => {
+    if (user) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ tutorial_completed: true })
+          .eq('id', user.id);
+      } catch (error) {
+        console.error('Error updating tutorial status:', error);
+      }
+    }
     setIsVisible(false);
   };
 
-  if (!isVisible || !tooltipPosition || !targetRect) return null;
+  if (loading || !isVisible || !tooltipPosition || !targetRect) return null;
 
   const step = tutorialSteps[currentStep];
 

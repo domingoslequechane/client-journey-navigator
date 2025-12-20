@@ -334,7 +334,9 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/app`,
+        // Google login redirects to select-plan for new users
+        // Existing users with org will be redirected by ProtectedRoute
+        redirectTo: `${window.location.origin}/select-plan`,
       },
     });
     

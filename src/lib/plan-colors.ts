@@ -98,3 +98,12 @@ export const PLAN_COLORS: Record<PlanType, PlanColorConfig> = {
     chart1Dark: '25 95% 60%',
   },
 };
+
+// Helper function to get plan colors as CSS-ready values
+export function getPlanColors(planType: PlanType): { primary: string; accent: string } {
+  const colors = PLAN_COLORS[planType] || PLAN_COLORS.free;
+  return {
+    primary: `hsl(${colors.primary})`,
+    accent: `hsl(${colors.accent})`,
+  };
+}

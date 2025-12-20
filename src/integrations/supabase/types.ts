@@ -747,6 +747,7 @@ export type Database = {
           suspended: boolean
           suspended_at: string | null
           suspended_by: string | null
+          tutorial_completed: boolean
           updated_at: string | null
         }
         Insert: {
@@ -760,6 +761,7 @@ export type Database = {
           suspended?: boolean
           suspended_at?: string | null
           suspended_by?: string | null
+          tutorial_completed?: boolean
           updated_at?: string | null
         }
         Update: {
@@ -773,6 +775,7 @@ export type Database = {
           suspended?: boolean
           suspended_at?: string | null
           suspended_by?: string | null
+          tutorial_completed?: boolean
           updated_at?: string | null
         }
         Relationships: [

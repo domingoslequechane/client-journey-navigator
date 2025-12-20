@@ -68,7 +68,8 @@ export default function VerifyEmail() {
         toast({ title: 'Conta criada', description: 'Faça login para continuar' });
         setTimeout(() => navigate('/auth'), 2000);
       } else {
-        setTimeout(() => navigate('/app'), 1500);
+        // Redirect to plan selection after email verification
+        setTimeout(() => navigate('/select-plan'), 1500);
       }
     } catch (error: any) {
       console.error('Verification error:', error);
@@ -118,7 +119,7 @@ export default function VerifyEmail() {
                 </div>
                 <h3 className="font-semibold text-xl">Conta verificada!</h3>
                 <p className="text-sm text-muted-foreground">
-                  Redirecionando para o dashboard...
+                  Redirecionando para seleção de plano...
                 </p>
                 <Loader2 className="h-5 w-5 mx-auto animate-spin text-muted-foreground" />
               </div>
