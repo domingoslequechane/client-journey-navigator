@@ -39,7 +39,7 @@ export function FreePlanBanner() {
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isAdmin 
-              ? 'Desconto na primeira assinatura aplicado automaticamente. Comece com o plano Bússola por apenas $3/mês.'
+              ? 'Desconto na primeira assinatura aplicado automaticamente. Comece com o plano Bússola por apenas $2/mês.'
               : 'Converse com o administrador da sua organização para assinar.'
             }
           </p>

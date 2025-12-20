@@ -98,8 +98,8 @@ interface PlanConfig {
 const plans: Record<PlanType, PlanConfig> = {
   free: {
     name: 'Bússola',
-    price: 3,
-    priceLabel: '$3/mês',
+    price: 2,
+    priceLabel: '$2/mês',
     description: 'Para começar sua jornada',
     features: [
       { text: 'Até 6 clientes', included: true },
@@ -121,8 +121,8 @@ const plans: Record<PlanType, PlanConfig> = {
   },
   starter: {
     name: 'Lança',
-    price: 7.50,
-    priceLabel: '$7.50/mês',
+    price: 5,
+    priceLabel: '$5/mês',
     description: 'Para agências em crescimento',
     features: [
       { text: 'Até 15 clientes', included: true },
@@ -144,8 +144,8 @@ const plans: Record<PlanType, PlanConfig> = {
   },
   pro: {
     name: 'Arco',
-    price: 19.99,
-    priceLabel: '$19.99/mês',
+    price: 12,
+    priceLabel: '$12/mês',
     description: 'Para agências estabelecidas',
     popular: true,
     features: [
@@ -168,8 +168,8 @@ const plans: Record<PlanType, PlanConfig> = {
   },
   agency: {
     name: 'Catapulta',
-    price: 49.99,
-    priceLabel: '$49.99/mês',
+    price: 30,
+    priceLabel: '$30/mês',
     description: 'Para grandes agências',
     features: [
       { text: 'Clientes ilimitados', included: true },
@@ -464,7 +464,7 @@ export default function Upgrade() {
                   <div className="pt-2">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-lg line-through text-muted-foreground">
-                        ${plan.price === 3 ? '6' : plan.price === 7.50 ? '15' : plan.price === 19.99 ? '39.98' : '99.98'}
+                        ${plan.price === 2 ? '4' : plan.price === 5 ? '10' : plan.price === 12 ? '24' : '60'}
                       </span>
                       <Badge variant="secondary" className="text-xs">-50%</Badge>
                     </div>
