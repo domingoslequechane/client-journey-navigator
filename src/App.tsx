@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { PlanThemeProvider } from "@/components/theme/PlanThemeProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RoleProtectedRoute } from "@/components/auth/RoleProtectedRoute";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import LandingPage from "./pages/LandingPage";
@@ -61,6 +62,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <AuthProvider>
             <PlanThemeProvider>
               <Routes>
