@@ -3,6 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { 
   ArrowRight, 
   CheckCircle2, 
   BarChart3, 
@@ -25,7 +31,8 @@ import {
   Bot,
   Layers,
   PieChart,
-  CreditCard
+  CreditCard,
+  HelpCircle
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -42,8 +49,8 @@ const planConfig = {
   free: {
     name: 'Bússola',
     subtitle: 'Essencial',
-    price: 2,
-    originalPrice: 4,
+    price: 4,
+    originalPrice: null,
     tagline: 'Encontre o caminho certo para começar!',
     image: planBussola,
     color: 'hsl(142, 71%, 45%)',
@@ -53,8 +60,8 @@ const planConfig = {
   starter: {
     name: 'Lança',
     subtitle: 'Crescimento',
-    price: 5,
-    originalPrice: 10,
+    price: 10,
+    originalPrice: null,
     tagline: 'Lance sua marca no mundo digital!',
     image: planLanca,
     color: 'hsl(217, 91%, 60%)',
@@ -64,8 +71,8 @@ const planConfig = {
   pro: {
     name: 'Arco',
     subtitle: 'Profissional',
-    price: 12,
-    originalPrice: 24,
+    price: 24,
+    originalPrice: null,
     tagline: 'Alcance resultados com precisão!',
     image: planArco,
     color: 'hsl(270, 91%, 65%)',
@@ -76,8 +83,8 @@ const planConfig = {
   agency: {
     name: 'Catapulta',
     subtitle: 'Agência',
-    price: 30,
-    originalPrice: 60,
+    price: 60,
+    originalPrice: null,
     tagline: 'Imponha sua agência no mercado!',
     image: planCatapulta,
     color: 'hsl(25, 95%, 53%)',
@@ -333,6 +340,7 @@ export default function LandingPage() {
             <a href="#jornada" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Jornada</a>
             <a href="#planos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Planos</a>
             <a href="#depoimentos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Depoimentos</a>
+            <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center gap-3">
             <ThemeToggle />
@@ -341,7 +349,7 @@ export default function LandingPage() {
             </Link>
             <Link to="/auth">
               <Button size="sm" className="gap-2 shadow-lg shadow-primary/25">
-                Testar Grátis
+                Começar Agora
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -404,7 +412,7 @@ export default function LandingPage() {
               <Link to="/auth">
                 <Button size="lg" className="text-lg px-8 py-6 gap-3 shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105">
                   <Rocket className="h-5 w-5" />
-                  Começar 7 Dias Grátis
+                  Começar com 7 Dias de Teste
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
@@ -417,7 +425,7 @@ export default function LandingPage() {
             >
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
-                <span>7 dias grátis</span>
+                <span>7 dias de teste</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -706,7 +714,7 @@ export default function LandingPage() {
                       style={{ backgroundColor: plan.color }}
                     >
                       <CreditCard className="h-4 w-4" />
-                      {plan.price === 0 ? 'Começar Grátis' : 'Assinar Agora'}
+                      Assinar Agora
                     </Button>
                   </Link>
                 </CardContent>
@@ -716,11 +724,129 @@ export default function LandingPage() {
 
           <div className="text-center mt-12">
             <p className="text-muted-foreground mb-4">
-              Todos os planos incluem 7 dias de teste grátis. Cancele a qualquer momento.
+              Todos os planos incluem 7 dias de teste. Cancele a qualquer momento.
             </p>
             <Link to="/pricing">
               <Button variant="outline" size="lg" className="gap-2">
                 Ver comparação completa
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-20 md:py-32 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 gap-2">
+              <HelpCircle className="h-4 w-4" />
+              Perguntas Frequentes
+            </Badge>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+              Tem alguma dúvida?
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Respondemos as perguntas mais comuns sobre o Qualify
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <Accordion type="single" collapsible className="space-y-4">
+              <AccordionItem value="item-1" className="bg-card border rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                  O que acontece após os 7 dias de teste?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  Após o período de teste de 7 dias, você precisará escolher um plano pago para continuar 
+                  usando todas as funcionalidades do Qualify. Durante o teste, você tem acesso completo 
+                  ao sistema para avaliar se atende às suas necessidades.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-2" className="bg-card border rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                  Posso cancelar minha assinatura a qualquer momento?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  Sim! Você pode cancelar sua assinatura a qualquer momento diretamente nas configurações 
+                  da sua conta. Após o cancelamento, você continua com acesso até o final do período já pago.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-3" className="bg-card border rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                  Posso mudar de plano depois?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  Claro! Você pode fazer upgrade ou downgrade do seu plano a qualquer momento. 
+                  As mudanças são aplicadas imediatamente e o valor é ajustado proporcionalmente.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-4" className="bg-card border rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                  O que é a IA do Qualify e como ela funciona?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  A IA do Qualify é um assistente inteligente que conhece profundamente cada cliente da sua 
+                  agência. Ela sugere estratégias personalizadas, ajuda a criar propostas e oferece insights 
+                  baseados nos dados do cliente e no histórico de interações.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-5" className="bg-card border rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                  Quantos usuários posso adicionar à minha equipe?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  O número de usuários varia conforme o plano: Bússola (2 usuários), Lança (7 usuários), 
+                  Arco (10 usuários) e Catapulta (20 usuários). Cada membro pode ter um perfil específico: 
+                  Vendas, Operações, Campanhas ou Admin.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-6" className="bg-card border rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                  Meus dados estão seguros?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  Sim! Utilizamos criptografia de ponta a ponta e seguimos as melhores práticas de segurança. 
+                  Seus dados são armazenados em servidores seguros e nunca são compartilhados com terceiros.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-7" className="bg-card border rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                  Posso exportar meus dados?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  Sim! Mesmo que você decida não continuar com uma assinatura ativa, você sempre pode 
+                  exportar seus dados de clientes. A exportação está disponível em todos os planos.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-8" className="bg-card border rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                  Como funciona o suporte?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  Oferecemos suporte por email para todos os planos. Planos Pro (Arco) e Agência (Catapulta) 
+                  têm acesso a suporte prioritário com tempos de resposta mais rápidos. O plano Catapulta 
+                  também inclui suporte VIP dedicado.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-muted-foreground mb-4">
+              Ainda tem dúvidas? Entre em contato conosco!
+            </p>
+            <Link to="/auth">
+              <Button variant="outline" size="lg" className="gap-2">
+                Fale Conosco
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -743,14 +869,14 @@ export default function LandingPage() {
             <Link to="/auth">
               <Button size="lg" variant="secondary" className="text-lg px-10 py-6 gap-3 shadow-xl hover:scale-105 transition-all">
                 <Rocket className="h-5 w-5" />
-                Criar Conta Grátis
+                Criar Conta Agora
                 <ArrowRight className="h-5 w-5" />
               </Button>
             </Link>
           </div>
           
           <p className="mt-8 text-primary-foreground/60 text-sm">
-            7 dias grátis • Setup em 5 minutos • Suporte em português
+            7 dias de teste • Setup em 5 minutos • Suporte em português
           </p>
         </div>
       </section>
@@ -768,7 +894,8 @@ export default function LandingPage() {
             
             <div className="flex items-center gap-8 text-sm text-muted-foreground">
               <a href="#funcionalidades" className="hover:text-foreground transition-colors">Funcionalidades</a>
-              <a href="#depoimentos" className="hover:text-foreground transition-colors">Depoimentos</a>
+              <a href="#planos" className="hover:text-foreground transition-colors">Planos</a>
+              <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
               <Link to="/auth" className="hover:text-foreground transition-colors">Login</Link>
             </div>
             
