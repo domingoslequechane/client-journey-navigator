@@ -236,7 +236,7 @@ export default function Onboarding() {
           </div>
           <CardTitle className="text-2xl">Configure sua Agência</CardTitle>
           <CardDescription>
-            Configure sua agência e comece a usar gratuitamente
+            Configure sua agência para começar a usar o Qualify
           </CardDescription>
         </CardHeader>
         <CardContent>
