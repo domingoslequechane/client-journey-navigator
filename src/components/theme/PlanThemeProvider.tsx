@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useSubscription, PlanType } from '@/hooks/useSubscription';
 import { PLAN_COLORS } from '@/lib/plan-colors';
 import { useTheme } from 'next-themes';
@@ -28,6 +29,22 @@ function applyPlanTheme(planType: PlanType, isDark: boolean) {
   }
 }
 
+function resetToDefaultTheme(isDark: boolean) {
+  const root = document.documentElement;
+  
+  // Reset to default orange theme (from index.css)
+  root.style.removeProperty('--primary');
+  root.style.removeProperty('--primary-foreground');
+  root.style.removeProperty('--ring');
+  root.style.removeProperty('--sidebar-primary');
+  root.style.removeProperty('--sidebar-ring');
+  root.style.removeProperty('--chart-1');
+  root.style.removeProperty('--accent');
+  root.style.removeProperty('--accent-foreground');
+  root.style.removeProperty('--sidebar-accent');
+  root.style.removeProperty('--sidebar-accent-foreground');
+}
+
 interface PlanThemeProviderProps {
   children: React.ReactNode;
 }
@@ -35,13 +52,22 @@ interface PlanThemeProviderProps {
 export function PlanThemeProvider({ children }: PlanThemeProviderProps) {
   const { planType, loading } = useSubscription();
   const { resolvedTheme } = useTheme();
+  const location = useLocation();
+
+  // Check if we're inside the app dashboard routes
+  const isInsideApp = location.pathname.startsWith('/app');
 
   useEffect(() => {
-    if (loading) return;
-    
     const isDark = resolvedTheme === 'dark';
-    applyPlanTheme(planType, isDark);
-  }, [planType, loading, resolvedTheme]);
+    
+    if (isInsideApp && !loading) {
+      // Apply plan-based theme only inside the dashboard
+      applyPlanTheme(planType, isDark);
+    } else {
+      // Reset to default system theme on public pages
+      resetToDefaultTheme(isDark);
+    }
+  }, [planType, loading, resolvedTheme, isInsideApp]);
 
   return <>{children}</>;
 }
