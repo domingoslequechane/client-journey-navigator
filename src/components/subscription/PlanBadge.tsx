@@ -9,7 +9,7 @@ interface PlanBadgeProps {
 
 const planConfig: Record<PlanType, { label: string; codename: string; color: string; bgColor: string }> = {
   free: { 
-    label: 'Grátis', 
+    label: 'Bússola', 
     codename: 'Bússola',
     color: 'hsl(142, 71%, 35%)',
     bgColor: 'hsl(142, 71%, 45%, 0.15)',

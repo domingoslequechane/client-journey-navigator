@@ -15,7 +15,9 @@ import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useRateLimit } from '@/hooks/useRateLimit';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { useSubscription } from '@/hooks/useSubscription';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
+import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 
 // DOMPurify sanitization config to prevent XSS
 const SANITIZE_CONFIG = {
@@ -73,6 +75,7 @@ export default function AIAssistant() {
   const { currencySymbol } = useOrganizationCurrency();
   const isMobile = useIsMobile();
   const { canAccessAI, planType, usage, limits, incrementUsage, loading: planLoading } = usePlanLimits();
+  const { hasActiveSubscription, loading: subLoading } = useSubscription();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -745,6 +748,19 @@ export default function AIAssistant() {
       </div>
     </>
   );
+
+  // Check subscription access
+  if (subLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!hasActiveSubscription) {
+    return <SubscriptionRequired feature="o Assistente de IA" />;
+  }
 
   // Mobile Layout
   if (isMobile) {

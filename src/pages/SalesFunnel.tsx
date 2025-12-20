@@ -13,6 +13,8 @@ import { SalesFunnelSkeleton } from '@/components/ui/loading-skeleton';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPhoneNumber } from '@/lib/phone-utils';
+import { useSubscription } from '@/hooks/useSubscription';
+import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 
 const stageIcons = { prospecting: Search, qualification: Target, closing: FileCheck };
 
@@ -20,6 +22,7 @@ export default function SalesFunnel() {
   const navigate = useNavigate();
   const { currencySymbol } = useOrganizationCurrency();
   const { user } = useAuth();
+  const { hasActiveSubscription, loading: subLoading } = useSubscription();
 
   // Fetch clients from Supabase
   const { data: clients = [], isLoading, refetch } = useQuery({
@@ -58,8 +61,12 @@ export default function SalesFunnel() {
     navigate(`/app/clients/${clientId}`);
   };
 
-  if (isLoading) {
+  if (isLoading || subLoading) {
     return <SalesFunnelSkeleton />;
+  }
+
+  if (!hasActiveSubscription) {
+    return <SubscriptionRequired feature="o Funil de Vendas" />;
   }
 
   return (

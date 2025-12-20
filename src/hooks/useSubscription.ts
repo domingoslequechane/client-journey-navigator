@@ -33,6 +33,7 @@ interface UseSubscriptionReturn {
   cancelAtPeriodEnd: boolean;
   trialDaysLeft: number;
   hasAccess: boolean;
+  hasActiveSubscription: boolean;
   refetch: () => Promise<void>;
 }
 
@@ -128,8 +129,9 @@ export function useSubscription(): UseSubscriptionReturn {
   const isCancelled = subscription?.status === 'cancelled' || subscription?.status === 'expired';
   const cancelAtPeriodEnd = subscription?.cancelAtPeriodEnd || false;
   
-  // Freemium model: everyone has access, limitations are per-feature via usePlanLimits
-  const hasAccess = true;
+  // User has access only if they have an active subscription or are in trial
+  const hasActiveSubscription = isActive || isTrialing;
+  const hasAccess = hasActiveSubscription;
 
   return {
     loading,
@@ -144,6 +146,7 @@ export function useSubscription(): UseSubscriptionReturn {
     cancelAtPeriodEnd,
     trialDaysLeft,
     hasAccess,
+    hasActiveSubscription,
     refetch: fetchSubscriptionData,
   };
 }

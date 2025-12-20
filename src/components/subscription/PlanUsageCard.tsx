@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, Loader2, Clock } from 'lucide-react';
 
 const PLAN_NAMES: Record<PlanType, string> = {
-  free: 'Gratuito',
+  free: 'Bússola',
   starter: 'Lança',
   pro: 'Arco',
   agency: 'Catapulta',
