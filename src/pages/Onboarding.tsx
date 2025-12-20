@@ -146,11 +146,27 @@ export default function Onboarding() {
               email: sessionUser.email,
               full_name: (sessionUser.user_metadata as any)?.full_name ?? null,
               organization_id: organizationId,
+              current_organization_id: organizationId,
             },
             { onConflict: 'id' }
           );
 
         if (profileUpsertError) throw profileUpsertError;
+
+        // Add user to organization_members
+        const { error: memberError } = await supabase
+          .from('organization_members')
+          .upsert(
+            {
+              user_id: sessionUser.id,
+              organization_id: organizationId,
+              role: 'admin',
+              is_active: true,
+            },
+            { onConflict: 'user_id,organization_id' }
+          );
+
+        if (memberError) throw memberError;
       } else {
         // Update existing organization with name and currency
         const { data: slug } = await supabase.rpc('generate_slug', { name: agencyName.trim() });
@@ -165,6 +181,27 @@ export default function Onboarding() {
           .eq('id', organizationId);
 
         if (error) throw error;
+
+        // Ensure user is in organization_members
+        const { error: memberError } = await supabase
+          .from('organization_members')
+          .upsert(
+            {
+              user_id: sessionUser.id,
+              organization_id: organizationId,
+              role: 'admin',
+              is_active: true,
+            },
+            { onConflict: 'user_id,organization_id' }
+          );
+
+        if (memberError) throw memberError;
+
+        // Ensure current_organization_id is set
+        await supabase
+          .from('profiles')
+          .update({ current_organization_id: organizationId })
+          .eq('id', sessionUser.id);
       }
 
       // Organization already has plan_type set (agency for trial or existing)

@@ -61,19 +61,45 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         user_uuid: user.id
       });
 
+      // Check if user has a current organization set
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_organization_id, organization_id')
+        .eq('id', user.id)
+        .single();
+
       if (!orgs || orgs.length === 0) {
+        // Fallback: check profiles.organization_id for users not in organization_members
+        if (profile?.organization_id) {
+          // Auto-create organization_members entry
+          await supabase.from('organization_members').upsert(
+            {
+              user_id: user.id,
+              organization_id: profile.organization_id,
+              role: 'admin',
+              is_active: true,
+            },
+            { onConflict: 'user_id,organization_id' }
+          );
+
+          // Set current_organization_id if not set
+          if (!profile.current_organization_id) {
+            await supabase
+              .from('profiles')
+              .update({ current_organization_id: profile.organization_id })
+              .eq('id', user.id);
+          }
+
+          setNeedsOrgSelection(false);
+          setNeedsOnboarding(false);
+          return;
+        }
+
         // No organizations - needs onboarding
         setNeedsOrgSelection(false);
         setNeedsOnboarding(true);
         return;
       }
-
-      // Check if user has a current organization set
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('current_organization_id')
-        .eq('id', user.id)
-        .single();
 
       if (orgs.length > 1 && !profile?.current_organization_id) {
         // Multiple orgs but none selected - needs to select
