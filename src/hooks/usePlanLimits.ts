@@ -74,25 +74,27 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     try {
       setLoading(true);
 
-      // Get user's organization and plan type
+      // Get user's organization and plan type (prefer current_organization_id)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('organization_id')
+        .select('organization_id, current_organization_id')
         .eq('id', user.id)
         .single();
 
-      if (!profile?.organization_id) {
+      const orgId = profile?.current_organization_id || profile?.organization_id;
+
+      if (!orgId) {
         setLoading(false);
         return;
       }
 
-      setOrganizationId(profile.organization_id);
+      setOrganizationId(orgId);
 
       // Get organization with plan_type
       const { data: organization } = await supabase
         .from('organizations')
         .select('plan_type')
-        .eq('id', profile.organization_id)
+        .eq('id', orgId)
         .single();
 
       const currentPlanType = (organization?.plan_type as PlanType) || 'free';
@@ -122,17 +124,18 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         supabase
           .from('clients')
           .select('id', { count: 'exact', head: true })
-          .eq('organization_id', profile.organization_id),
-        // Count team members
+          .eq('organization_id', orgId),
+        // Count active team members from organization_members
         supabase
-          .from('profiles')
+          .from('organization_members')
           .select('id', { count: 'exact', head: true })
-          .eq('organization_id', profile.organization_id),
+          .eq('organization_id', orgId)
+          .eq('is_active', true),
         // Get contracts usage this month
         supabase
           .from('usage_tracking')
           .select('usage_count')
-          .eq('organization_id', profile.organization_id)
+          .eq('organization_id', orgId)
           .eq('feature_type', 'contracts')
           .gte('period_start', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
           .maybeSingle(),
@@ -140,7 +143,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         supabase
           .from('usage_tracking')
           .select('usage_count')
-          .eq('organization_id', profile.organization_id)
+          .eq('organization_id', orgId)
           .eq('feature_type', 'ai_messages')
           .gte('period_start', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
           .maybeSingle(),
@@ -148,7 +151,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         supabase
           .from('contract_templates')
           .select('id', { count: 'exact', head: true })
-          .eq('organization_id', profile.organization_id),
+          .eq('organization_id', orgId),
       ]);
 
       setUsage({

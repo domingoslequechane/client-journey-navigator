@@ -106,7 +106,7 @@ export default function Team() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, organization_id')
+        .select('role, organization_id, current_organization_id')
         .eq('id', user.id)
         .single();
 
@@ -119,7 +119,8 @@ export default function Team() {
         .maybeSingle();
 
       setIsProprietor(roleData?.role === 'proprietor');
-      setCurrentUserOrgId(profile?.organization_id || null);
+      // Use current_organization_id if available, fallback to organization_id
+      setCurrentUserOrgId(profile?.current_organization_id || profile?.organization_id || null);
       setIsCurrentUserAdmin(profile?.role === 'admin' || roleData?.role === 'proprietor');
     } catch (error) {
       console.error('Error checking admin status:', error);
@@ -136,14 +137,29 @@ export default function Team() {
         return;
       }
 
-      // Fetch profiles from the same organization
-      const { data: profiles, error } = await supabase
+      // Fetch active members from organization_members table
+      const { data: orgMembers, error: membersError } = await supabase
+        .from('organization_members')
+        .select('user_id, role')
+        .eq('organization_id', currentUserOrgId)
+        .eq('is_active', true);
+
+      if (membersError) throw membersError;
+
+      if (!orgMembers || orgMembers.length === 0) {
+        setMembers([]);
+        return;
+      }
+
+      const memberUserIds = orgMembers.map(m => m.user_id);
+
+      // Fetch profiles for these members
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('organization_id', currentUserOrgId)
-        .order('created_at', { ascending: true });
+        .in('id', memberUserIds);
 
-      if (error) throw error;
+      if (profilesError) throw profilesError;
 
       // Fetch proprietor user IDs to filter them out (unless current user is proprietor)
       const { data: proprietorRoles } = await supabase
@@ -155,11 +171,9 @@ export default function Team() {
 
       // Filter out proprietors unless the current user is a proprietor
       const filteredProfiles = profiles?.filter(profile => {
-        // If current user is proprietor, show all including themselves
         if (isProprietor) {
           return true;
         }
-        // Otherwise, hide all proprietors
         return !proprietorIds.has(profile.id);
       }) || [];
 
@@ -172,16 +186,20 @@ export default function Team() {
 
       const usersWithLogins = new Set(loginHistory?.map(l => l.user_id) || []);
 
+      // Create a map of user_id to role from organization_members
+      const memberRoleMap = new Map(orgMembers.map(m => [m.user_id, m.role]));
+
       const membersWithStatus = filteredProfiles.map(member => {
         let status: 'active' | 'pending' | 'suspended' = 'active';
         if ((member as any).suspended) {
           status = 'suspended';
         } else if (!usersWithLogins.has(member.id)) {
-          // User has never logged in - invite is pending
           status = 'pending';
         }
         return {
           ...member,
+          // Use role from organization_members for this specific org
+          role: memberRoleMap.get(member.id) || member.role,
           status,
         };
       });
@@ -288,32 +306,36 @@ export default function Team() {
   };
 
   const handleRemoveMember = async () => {
-    if (!memberToRemove) return;
+    if (!memberToRemove || !currentUserOrgId) return;
     
     setActionLoading(memberToRemove.id);
     try {
-      const response = await supabase.functions.invoke('delete-user', {
-        body: { userId: memberToRemove.id },
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // Use the database function to remove from team (not delete user)
+      const { data, error } = await supabase.rpc('remove_from_team', {
+        member_user_id: memberToRemove.id,
+        org_uuid: currentUserOrgId,
+        removed_by_user_id: user.id
       });
 
-      if (response.error) {
-        throw new Error(response.error.message || 'Erro ao remover usuário');
-      }
+      if (error) throw error;
 
-      if (response.data?.error) {
-        throw new Error(response.data.error);
+      if (!data) {
+        throw new Error('Não foi possível remover o membro da equipe');
       }
 
       toast({ 
         title: 'Sucesso!', 
-        description: 'Usuário removido com sucesso' 
+        description: 'Membro removido da equipe com sucesso' 
       });
       fetchMembers();
     } catch (error) {
       console.error('Error removing member:', error);
       toast({ 
         title: 'Erro', 
-        description: error instanceof Error ? error.message : 'Não foi possível remover o usuário', 
+        description: error instanceof Error ? error.message : 'Não foi possível remover o membro', 
         variant: 'destructive' 
       });
     } finally {
@@ -557,9 +579,11 @@ export default function Team() {
       <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover Membro</AlertDialogTitle>
+            <AlertDialogTitle>Remover da Equipe</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover {memberToRemove?.full_name || 'este membro'}? Esta ação é irreversível.
+              Tem certeza que deseja remover {memberToRemove?.full_name || 'este membro'} da equipe? 
+              O usuário perderá acesso a esta agência, mas sua conta permanecerá ativa caso esteja 
+              em outras organizações.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -571,7 +595,7 @@ export default function Team() {
               {actionLoading === memberToRemove?.id ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                'Remover'
+                'Remover da Equipe'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -733,7 +757,7 @@ export default function Team() {
                             className="text-destructive"
                           >
                             <UserX className="h-4 w-4 mr-2" />
-                            Remover
+                            Remover da Equipe
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

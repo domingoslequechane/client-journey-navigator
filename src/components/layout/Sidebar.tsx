@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
 import {
   LayoutDashboard,
   Building2,
@@ -21,7 +22,8 @@ import {
   Compass,
   Target,
   TrendingUp,
-  Rocket
+  Rocket,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -60,9 +62,26 @@ export function Sidebar() {
     return saved === 'true';
   });
 
+  const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
+
   useEffect(() => {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
   }, [collapsed]);
+
+  // Check if user has multiple organizations
+  useEffect(() => {
+    const checkMultipleOrgs = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase.rpc('get_user_organizations', {
+        user_uuid: user.id
+      });
+      
+      setHasMultipleOrgs(data && data.length > 1);
+    };
+    
+    checkMultipleOrgs();
+  }, [user]);
 
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
@@ -84,6 +103,11 @@ export function Sidebar() {
     await signOut();
     setLogoutDialogOpen(false);
     navigate('/auth');
+  };
+
+  const handleSwitchOrganization = () => {
+    setLogoutDialogOpen(false);
+    navigate('/app/select-organization');
   };
 
   const NavItem = ({ item, isActive }: { item: typeof navigation[0]; isActive: boolean }) => {
@@ -318,17 +342,40 @@ export function Sidebar() {
           <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Confirmar Saída</DialogTitle>
+                <DialogTitle>O que deseja fazer?</DialogTitle>
                 <DialogDescription>
-                  Tem certeza que deseja sair da sua conta?
+                  Escolha uma opção abaixo para continuar.
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>
-                  Cancelar
+              <div className="flex flex-col gap-3 py-4">
+                {hasMultipleOrgs && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-3 h-auto py-3"
+                    onClick={handleSwitchOrganization}
+                  >
+                    <RefreshCw className="h-5 w-5" />
+                    <div className="text-left">
+                      <p className="font-medium">Mudar de Agência</p>
+                      <p className="text-xs text-muted-foreground">Trocar para outra agência que você tem acesso</p>
+                    </div>
+                  </Button>
+                )}
+                <Button 
+                  variant="destructive" 
+                  className="w-full justify-start gap-3 h-auto py-3"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-5 w-5" />
+                  <div className="text-left">
+                    <p className="font-medium">Sair da Aplicação</p>
+                    <p className="text-xs text-destructive-foreground/70">Encerrar sua sessão completamente</p>
+                  </div>
                 </Button>
-                <Button variant="destructive" onClick={handleSignOut}>
-                  Sair
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setLogoutDialogOpen(false)}>
+                  Cancelar
                 </Button>
               </DialogFooter>
             </DialogContent>

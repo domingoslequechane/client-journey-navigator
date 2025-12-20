@@ -49,14 +49,16 @@ export function useSubscription(): UseSubscriptionReturn {
     }
 
     try {
-      // Get user's profile to find organization
+      // Get user's profile to find organization (prefer current_organization_id)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('organization_id')
+        .select('organization_id, current_organization_id')
         .eq('id', user.id)
         .single();
 
-      if (profileError || !profile?.organization_id) {
+      const orgId = profile?.current_organization_id || profile?.organization_id;
+
+      if (profileError || !orgId) {
         console.log('No organization found for user');
         setLoading(false);
         return;
@@ -66,7 +68,7 @@ export function useSubscription(): UseSubscriptionReturn {
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .select('id, name, trial_ends_at, plan_type')
-        .eq('id', profile.organization_id)
+        .eq('id', orgId)
         .single();
 
       if (orgError) {
@@ -84,7 +86,7 @@ export function useSubscription(): UseSubscriptionReturn {
       const { data: subData, error: subError } = await supabase
         .from('subscriptions')
         .select('id, status, current_period_end, current_period_start, cancel_at_period_end, lemonsqueezy_subscription_id')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', orgId)
         .single();
 
       if (subError && subError.code !== 'PGRST116') {

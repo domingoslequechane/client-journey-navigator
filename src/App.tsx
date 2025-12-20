@@ -30,6 +30,7 @@ import Upgrade from "./pages/Upgrade";
 import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/Onboarding";
 import SelectPlan from "./pages/SelectPlan";
+import SelectOrganization from "./pages/SelectOrganization";
 import Subscription from "./pages/Subscription";
 import Notifications from "./pages/Notifications";
 import SupportFeedback from "./pages/SupportFeedback";
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/select-plan" element={<SelectPlan />} />
               <Route path="/app/onboarding" element={<Onboarding />} />
+              <Route path="/app/select-organization" element={<SelectOrganization />} />
               <Route
                 path="/app"
                 element={

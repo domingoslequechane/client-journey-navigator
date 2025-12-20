@@ -169,20 +169,39 @@ serve(async (req) => {
 
     console.log("Invite link generated for:", email);
 
-    // Update the invited user's profile with the admin's organization_id
+    // Add user to organization_members and update profile
     if (linkData.user?.id) {
+      // Insert into organization_members
+      const { error: memberError } = await supabaseAdmin
+        .from("organization_members")
+        .upsert({ 
+          user_id: linkData.user.id,
+          organization_id: adminOrgId,
+          role: role as any,
+          is_active: true,
+        }, {
+          onConflict: 'user_id,organization_id'
+        });
+
+      if (memberError) {
+        console.error("Error adding to organization_members:", memberError);
+      } else {
+        console.log(`User added to organization_members for org: ${adminOrgId}`);
+      }
+
+      // Update profile with current_organization_id and legacy organization_id
       const { error: profileUpdateError } = await supabaseAdmin
         .from("profiles")
         .update({ 
           organization_id: adminOrgId,
+          current_organization_id: adminOrgId,
           role: role as any,
           full_name: fullName,
         })
         .eq("id", linkData.user.id);
 
       if (profileUpdateError) {
-        console.error("Error updating profile with organization_id:", profileUpdateError);
-        // Continue anyway - the user was created, just without org assignment
+        console.error("Error updating profile:", profileUpdateError);
       } else {
         console.log(`Profile updated with organization_id: ${adminOrgId}`);
       }
