@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,8 @@ export default function Settings() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'profile' | 'agency' | 'knowledge' | 'contracts'>('profile');
 
   const [settings, setSettings] = useState<AgencySettings>({
     id: '',
@@ -79,101 +81,129 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    fetchSettings();
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const fetchSettings = async () => {
+
+  const fetchProfile = async () => {
+    if (!user) return;
+
+    setLoading(true);
+
     try {
       const { data, error } = await supabase
-        .from('agency_settings')
-        .select('*')
-        .limit(1)
+        .from('profiles')
+        .select('full_name, avatar_url, role, organization_id, current_organization_id')
+        .eq('id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
-      
+      if (error) throw error;
+
       if (data) {
-        setSettings(data);
+        setProfile(data);
+        setIsAdmin(data.role === 'admin');
+
+        const orgId = data.current_organization_id || data.organization_id;
+
+        if (!orgId) {
+          setOrganizationId(null);
+          return;
+        }
+
+        setOrganizationId(orgId);
+
+        const { data: orgData, error: orgError } = await supabase
+          .from('organizations')
+          .select(
+            'id, phone, name, owner_id, headquarters, nuit, representative_name, representative_position, knowledge_base_url, knowledge_base_name, knowledge_base_text'
+          )
+          .eq('id', orgId)
+          .single();
+
+        if (orgError) throw orgError;
+
+        if (orgData) {
+          setOrganizationPhone(orgData.phone || '');
+          setOrganizationName(orgData.name || '');
+          setIsOwner(orgData.owner_id === user.id);
+
+          setSettings(prev => ({
+            ...prev,
+            id: orgData.id,
+            agency_name: orgData.name || '',
+            headquarters: orgData.headquarters || '',
+            nuit: orgData.nuit || '',
+            representative_name: orgData.representative_name || '',
+            representative_position: orgData.representative_position || '',
+            knowledge_base_url: orgData.knowledge_base_url || null,
+            knowledge_base_name: orgData.knowledge_base_name || null,
+            knowledge_base_text: orgData.knowledge_base_text || null,
+          }));
+        }
       }
     } catch (error) {
-      console.error('Error fetching settings:', error);
-      toast({ title: 'Erro', description: 'Não foi possível carregar as configurações', variant: 'destructive' });
+      console.error('Error fetching profile:', error);
+      toast({ title: 'Erro', description: 'Não foi possível carregar o perfil', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchProfile = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url, role, organization_id')
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-      
-      if (data) {
-        setProfile(data);
-        setIsAdmin(data.role === 'admin');
-        
-        // Fetch organization data
-        if (data.organization_id) {
-          setOrganizationId(data.organization_id);
-          const { data: orgData } = await supabase
-            .from('organizations')
-            .select('phone, name, owner_id')
-            .eq('id', data.organization_id)
-            .single();
-          
-          if (orgData) {
-            if (orgData.phone) setOrganizationPhone(orgData.phone);
-            if (orgData.name) setOrganizationName(orgData.name);
-            setIsOwner(orgData.owner_id === user.id);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
-
   const handleSaveAgency = async () => {
     if (!isAdmin) {
-      toast({ title: 'Acesso negado', description: 'Apenas administradores podem alterar as configurações da agência', variant: 'destructive' });
+      toast({
+        title: 'Acesso negado',
+        description: 'Apenas administradores podem alterar as configurações da agência',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!organizationId) {
+      toast({ title: 'Erro', description: 'Organização não encontrada', variant: 'destructive' });
       return;
     }
 
     setSaving(true);
     try {
-      // Save agency settings
+      const isComplete = Boolean(
+        settings.agency_name?.trim() &&
+          settings.headquarters?.trim() &&
+          settings.nuit?.trim() &&
+          organizationPhone?.trim() &&
+          settings.representative_name?.trim() &&
+          settings.representative_position?.trim()
+      );
+
       const { error } = await supabase
-        .from('agency_settings')
+        .from('organizations')
         .update({
-          agency_name: settings.agency_name,
-          headquarters: settings.headquarters,
-          nuit: settings.nuit,
-          representative_name: settings.representative_name,
-          representative_position: settings.representative_position,
+          name: settings.agency_name.trim(),
+          headquarters: settings.headquarters?.trim() || null,
+          nuit: settings.nuit?.trim() || null,
+          phone: organizationPhone?.trim() || null,
+          representative_name: settings.representative_name?.trim() || null,
+          representative_position: settings.representative_position?.trim() || null,
+          onboarding_completed: isComplete,
         })
-        .eq('id', settings.id);
+        .eq('id', organizationId);
 
       if (error) throw error;
 
-      // Save organization phone
-      if (organizationId) {
-        const { error: orgError } = await supabase
-          .from('organizations')
-          .update({ phone: organizationPhone })
-          .eq('id', organizationId);
-        
-        if (orgError) throw orgError;
-      }
+      setOrganizationName(settings.agency_name.trim());
 
-      toast({ title: 'Sucesso!', description: 'Configurações da agência salvas' });
+      toast({
+        title: 'Sucesso!',
+        description: isComplete
+          ? 'Configuração da agência concluída.'
+          : 'Configurações salvas. Preencha todos os campos para concluir o onboarding.',
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({ title: 'Erro', description: 'Não foi possível salvar as configurações', variant: 'destructive' });
@@ -204,13 +234,17 @@ export default function Settings() {
 
       if (uploadError) throw uploadError;
 
+      if (!organizationId) {
+        throw new Error('Organização não encontrada');
+      }
+
       const { error: updateError } = await supabase
-        .from('agency_settings')
+        .from('organizations')
         .update({
           knowledge_base_url: filePath,
           knowledge_base_name: file.name,
         })
-        .eq('id', settings.id);
+        .eq('id', organizationId);
 
       if (updateError) throw updateError;
 
@@ -239,13 +273,17 @@ export default function Settings() {
         .from('knowledge-base')
         .remove([settings.knowledge_base_url]);
 
+      if (!organizationId) {
+        throw new Error('Organização não encontrada');
+      }
+
       const { error } = await supabase
-        .from('agency_settings')
+        .from('organizations')
         .update({
           knowledge_base_url: null,
           knowledge_base_name: null,
         })
-        .eq('id', settings.id);
+        .eq('id', organizationId);
 
       if (error) throw error;
 
@@ -269,12 +307,16 @@ export default function Settings() {
 
     setSaving(true);
     try {
+      if (!organizationId) {
+        throw new Error('Organização não encontrada');
+      }
+
       const { error } = await supabase
-        .from('agency_settings')
+        .from('organizations')
         .update({
           knowledge_base_text: settings.knowledge_base_text,
         })
-        .eq('id', settings.id);
+        .eq('id', organizationId);
 
       if (error) throw error;
 
@@ -362,6 +404,32 @@ export default function Settings() {
     return labels[role] || role;
   };
 
+  const coerceTab = (tab: string | null) => {
+    const allowed: Array<'profile' | 'agency' | 'knowledge' | 'contracts'> = isAdmin
+      ? ['profile', 'agency', 'knowledge', 'contracts']
+      : ['profile'];
+
+    if (tab && (allowed as string[]).includes(tab)) {
+      return tab as (typeof allowed)[number];
+    }
+
+    return 'profile' as const;
+  };
+
+  const handleTabChange = (next: string) => {
+    const nextTab = coerceTab(next);
+    setActiveTab(nextTab);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', nextTab);
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  useEffect(() => {
+    setActiveTab(coerceTab(searchParams.get('tab')));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, searchParams]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full p-8">
@@ -383,7 +451,7 @@ export default function Settings() {
       </AnimatedContainer>
 
       <AnimatedContainer animation="fade-up" delay={0.1}>
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className={cn("grid w-full", isAdmin ? "grid-cols-4" : "grid-cols-1")}>
           <TabsTrigger value="profile" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
             <User className="h-3 w-3 md:h-4 md:w-4" />

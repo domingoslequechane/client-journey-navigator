@@ -15,6 +15,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [isSystemAdmin, setIsSystemAdmin] = useState<boolean | null>(null);
   const [needsOrgSelection, setNeedsOrgSelection] = useState<boolean | null>(null);
+  const [isOrgAdmin, setIsOrgAdmin] = useState<boolean | null>(null);
 
   // Check if user is a system admin (app owner)
   useEffect(() => {
@@ -128,11 +129,52 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const checkOnboarding = async () => {
       if (!user || !organization) {
         setNeedsOnboarding(null);
+        setIsOrgAdmin(null);
         return;
       }
-      
-      // Check if onboarding was completed
-      setNeedsOnboarding(!organization.onboardingCompleted);
+
+      try {
+        const [{ data: membership }, { data: orgData }] = await Promise.all([
+          supabase
+            .from('organization_members')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('organization_id', organization.id)
+            .eq('is_active', true)
+            .maybeSingle(),
+          supabase
+            .from('organizations')
+            .select(
+              'onboarding_completed, name, headquarters, nuit, phone, representative_name, representative_position, owner_id'
+            )
+            .eq('id', organization.id)
+            .single(),
+        ]);
+
+        const isAdminForOrg = orgData?.owner_id === user.id || membership?.role === 'admin';
+        setIsOrgAdmin(isAdminForOrg);
+
+        // Apenas admins/owners são obrigados a concluir a configuração da agência
+        if (!isAdminForOrg) {
+          setNeedsOnboarding(false);
+          return;
+        }
+
+        const hasRequiredFields = Boolean(
+          orgData?.name?.trim() &&
+            orgData?.headquarters?.trim() &&
+            orgData?.nuit?.trim() &&
+            orgData?.phone?.trim() &&
+            orgData?.representative_name?.trim() &&
+            orgData?.representative_position?.trim()
+        );
+
+        const isComplete = orgData?.onboarding_completed === true && hasRequiredFields;
+        setNeedsOnboarding(!isComplete);
+      } catch (e) {
+        console.error('Error checking onboarding completion:', e);
+        setNeedsOnboarding(false);
+      }
     };
 
     const checkPlanSelection = async () => {
@@ -232,9 +274,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/app/select-organization" replace />;
   }
 
-  // Redirect to onboarding if organization needs setup
+  // Redirect to onboarding/configuração da agência se necessário
   if (needsOnboarding) {
-    return <Navigate to="/app/onboarding" replace />;
+    const target = organization ? '/app/settings?tab=agency' : '/app/onboarding';
+    const current = `${location.pathname}${location.search}`;
+
+    if (current !== target) {
+      return <Navigate to={target} replace />;
+    }
   }
 
   // Redirect to upgrade if user doesn't have active subscription

@@ -53,14 +53,12 @@ export default function Onboarding() {
           // Check if org has a proper name
           const { data: org } = await supabase
             .from('organizations')
-            .select('name')
+            .select('onboarding_completed')
             .eq('id', profile.organization_id)
             .single();
           
-          // If organization has a real name, redirect to dashboard
-          const hasProperName = org && !org.name.includes("'s Agency") && org.name !== 'Agency';
-          
-          if (hasProperName) {
+          // If onboarding was completed, redirect to dashboard
+          if (org?.onboarding_completed) {
             navigate('/app');
           }
         }
@@ -128,7 +126,8 @@ export default function Onboarding() {
             slug: slug,
             owner_id: sessionUser.id,
             currency: currency,
-            onboarding_completed: true,
+            // onboarding_completed será marcado ao finalizar a configuração da agência
+            // Plan is set by webhook after checkout
           })
           .select()
           .single();
@@ -177,7 +176,7 @@ export default function Onboarding() {
             name: agencyName.trim(),
             slug: slug || `agency-${Date.now()}`,
             currency: currency,
-            onboarding_completed: true,
+            // onboarding_completed será marcado ao finalizar a configuração da agência
           })
           .eq('id', organizationId);
 
