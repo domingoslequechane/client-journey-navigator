@@ -58,3 +58,6 @@ verify_jwt = false
 
 [functions.manage-subscription]
 verify_jwt = true
+
+[functions.sync-subscription]
+verify_jwt = true

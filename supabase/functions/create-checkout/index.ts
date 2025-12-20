@@ -173,9 +173,9 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Get the origin for redirect URL
+    // Get the origin for redirect URL - redirect to subscription page with success param
     const origin = req.headers.get("origin") || "https://qualify.onixagence.com";
-    const redirectUrl = `${origin}/app/onboarding?success=true`;
+    const redirectUrl = `${origin}/app/subscription?success=true`;
 
     console.log("Creating checkout", {
       organizationId,
