@@ -203,6 +203,7 @@ const handler = async (req: Request): Promise<Response> => {
           type: "checkouts",
           attributes: {
             test_mode: testMode,
+            discount_code: "IYMDC4NA", // Apply 50% discount automatically
             checkout_data: {
               email: userEmail || user.email,
               name: userName,
