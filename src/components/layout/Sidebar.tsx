@@ -94,7 +94,7 @@ export function Sidebar() {
         className={cn(
           'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
           isActive
-            ? 'bg-primary text-primary-foreground'
+            ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
           collapsed && 'justify-center px-2'
         )}
@@ -166,7 +166,7 @@ export function Sidebar() {
                   className={cn(
                     'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     location.pathname === '/app/support'
-                      ? 'bg-primary text-primary-foreground'
+                      ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
                       : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
                 >
@@ -181,7 +181,7 @@ export function Sidebar() {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 location.pathname === '/app/support'
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
             >
@@ -193,41 +193,39 @@ export function Sidebar() {
           {/* Notifications */}
           <NotificationBell collapsed={collapsed} />
 
-          {/* Settings - Admin only */}
-          {canSeeSettings && (
-            collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    to="/app/settings"
-                    data-tutorial="sidebar-settings"
-                    className={cn(
-                      'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                      location.pathname === '/app/settings'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    )}
-                  >
-                    <Settings className="h-5 w-5" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Configurações</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
-                to="/app/settings"
-                data-tutorial="sidebar-settings"
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                  location.pathname === '/app/settings'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                )}
-              >
-                <Settings className="h-5 w-5" />
-                Configurações
-              </Link>
-            )
+          {/* Settings - Available to all users */}
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/app/settings"
+                  data-tutorial="sidebar-settings"
+                  className={cn(
+                    'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    location.pathname === '/app/settings'
+                      ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )}
+                >
+                  <Settings className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Configurações</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Link
+              to="/app/settings"
+              data-tutorial="sidebar-settings"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                location.pathname === '/app/settings'
+                  ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              )}
+            >
+              <Settings className="h-5 w-5" />
+              Configurações
+            </Link>
           )}
 
           {/* Subscription - Admin only */}
@@ -240,12 +238,18 @@ export function Sidebar() {
                     className={cn(
                       'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
                       location.pathname === '/app/subscription'
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                   >
-                    <div className="p-1 rounded bg-primary/10">
-                      <PlanIcon className="h-4 w-4 text-primary" />
+                    <div className={cn(
+                      "p-1 rounded",
+                      location.pathname === '/app/subscription' ? 'bg-primary-foreground/20' : 'bg-primary/10'
+                    )}>
+                      <PlanIcon className={cn(
+                        "h-4 w-4",
+                        location.pathname === '/app/subscription' ? 'text-primary-foreground' : 'text-primary'
+                      )} />
                     </div>
                   </Link>
                 </TooltipTrigger>
@@ -259,12 +263,18 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   location.pathname === '/app/subscription'
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 )}
               >
-                <div className="p-1 rounded bg-primary/10">
-                  <PlanIcon className="h-4 w-4 text-primary" />
+                <div className={cn(
+                  "p-1 rounded",
+                  location.pathname === '/app/subscription' ? 'bg-primary-foreground/20' : 'bg-primary/10'
+                )}>
+                  <PlanIcon className={cn(
+                    "h-4 w-4",
+                    location.pathname === '/app/subscription' ? 'text-primary-foreground' : 'text-primary'
+                  )} />
                 </div>
                 <span>Plano {currentPlan.name}</span>
               </Link>

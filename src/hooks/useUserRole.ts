@@ -53,7 +53,7 @@ export function useUserRole() {
       canSeeOperationalFlow: isAdmin || isOperations || isCampaigns,
       canSeeClients: isAdmin || isSales,
       canSeeTeam: isAdmin,
-      canSeeSettings: isAdmin,
+      canSeeSettings: true, // All users can see settings, but tabs are restricted
       canSeeSubscription: isAdmin,
       
       // Dashboard visibility
