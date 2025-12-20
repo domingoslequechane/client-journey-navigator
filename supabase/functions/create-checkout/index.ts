@@ -8,10 +8,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Input validation schema
+// Input validation schema - now includes "free" as bussola plan
 const CheckoutRequestSchema = z.object({
   organizationId: z.string().uuid("ID da organização inválido"),
-  planType: z.enum(["starter", "pro", "agency"]),
+  planType: z.enum(["free", "starter", "pro", "agency"]),
   userEmail: z.string().email("Email inválido").max(255, "Email muito longo").optional(),
   userName: z.string().max(100, "Nome muito longo").optional(),
 });
@@ -21,6 +21,8 @@ const getVariantId = (planType: string): string | undefined => {
   const normalizeId = (v?: string | null) => v?.trim().replace(/^["']+|["']+$/g, "");
 
   const variants: Record<string, string | undefined> = {
+    // "free" now maps to the Bússola paid plan ($3/month)
+    free: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_BUSSOLA")) || normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID")),
     starter: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_STARTER")),
     pro: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_PRO")),
     agency: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_AGENCY")),

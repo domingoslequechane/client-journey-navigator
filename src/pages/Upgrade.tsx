@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   CreditCard, CheckCircle2, Loader2, ArrowLeft, X, 
-  Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert 
+  Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert, Gift 
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { LemonSqueezyDiagnosticsDialog } from '@/components/subscription/LemonSqueezyDiagnosticsDialog';
@@ -73,9 +73,9 @@ export const planImages: Record<PlanType, string> = {
 };
 
 export const planNames: Record<PlanType, { name: string; codename: string; tagline: string }> = {
-  free: { name: 'Grátis', codename: 'Bússola', tagline: 'Encontre o caminho certo para começar!' },
-  starter: { name: 'Iniciante', codename: 'Lança', tagline: 'Lance sua marca no mundo digital!' },
-  pro: { name: 'Pro', codename: 'Arco', tagline: 'Alcance resultados com precisão!' },
+  free: { name: 'Essencial', codename: 'Bússola', tagline: 'Encontre o caminho certo para começar!' },
+  starter: { name: 'Crescimento', codename: 'Lança', tagline: 'Lance sua marca no mundo digital!' },
+  pro: { name: 'Profissional', codename: 'Arco', tagline: 'Alcance resultados com precisão!' },
   agency: { name: 'Agência', codename: 'Catapulta', tagline: 'Imponha sua agência no mercado!' },
 };
 
@@ -91,99 +91,103 @@ interface PlanConfig {
     contracts: string;
     ai: string;
     team: string;
+    templates: string;
   };
 }
 
-const plans: Record<Exclude<PlanType, 'free'>, PlanConfig> = {
+const plans: Record<PlanType, PlanConfig> = {
+  free: {
+    name: 'Bússola',
+    price: 3,
+    priceLabel: '$3/mês',
+    description: 'Para começar sua jornada',
+    features: [
+      { text: 'Até 6 clientes', included: true },
+      { text: '6 contratos/mês', included: true },
+      { text: '150 mensagens IA/mês', included: true },
+      { text: '2 usuários', included: true },
+      { text: '1 template de contrato', included: true },
+      { text: 'Suporte por email', included: true },
+      { text: 'Exportação de dados', included: false },
+      { text: 'Suporte prioritário', included: false },
+    ],
+    limits: {
+      clients: '6',
+      contracts: '6/mês',
+      ai: '150 msgs/mês',
+      team: '2 usuários',
+      templates: '1 template',
+    },
+  },
   starter: {
-    name: 'Iniciante',
-    price: 19,
-    priceLabel: '$19/mês',
+    name: 'Lança',
+    price: 7.50,
+    priceLabel: '$7.50/mês',
     description: 'Para agências em crescimento',
     features: [
       { text: 'Até 15 clientes', included: true },
-      { text: '10 contratos/mês', included: true },
-      { text: '50 mensagens IA/mês', included: true },
-      { text: '2 usuários', included: true },
-      { text: 'Funil de vendas', included: true },
-      { text: 'Fluxo operacional', included: true },
-      { text: 'Checklists personalizados', included: true },
+      { text: '15 contratos/mês', included: true },
+      { text: '500 mensagens IA/mês', included: true },
+      { text: '7 usuários', included: true },
+      { text: '3 templates de contrato', included: true },
+      { text: 'Exportação de dados', included: true },
       { text: 'Suporte por email', included: true },
+      { text: 'Suporte prioritário', included: false },
     ],
     limits: {
       clients: '15',
-      contracts: '10/mês',
-      ai: '50 msgs/mês',
-      team: '2 usuários',
+      contracts: '15/mês',
+      ai: '500 msgs/mês',
+      team: '7 usuários',
+      templates: '3 templates',
     },
   },
   pro: {
-    name: 'Pro',
-    price: 49,
-    priceLabel: '$49/mês',
+    name: 'Arco',
+    price: 19.99,
+    priceLabel: '$19.99/mês',
     description: 'Para agências estabelecidas',
     popular: true,
     features: [
       { text: 'Até 50 clientes', included: true },
-      { text: 'Contratos ilimitados', included: true },
-      { text: 'Mensagens IA ilimitadas', included: true },
-      { text: '5 usuários', included: true },
-      { text: 'Funil de vendas', included: true },
-      { text: 'Fluxo operacional', included: true },
-      { text: 'Checklists personalizados', included: true },
+      { text: '50 contratos/mês', included: true },
+      { text: '1200 mensagens IA/mês', included: true },
+      { text: '10 usuários', included: true },
+      { text: '10 templates de contrato', included: true },
+      { text: 'Exportação de dados', included: true },
+      { text: 'Auditoria de ações', included: true },
       { text: 'Suporte prioritário', included: true },
     ],
     limits: {
       clients: '50',
-      contracts: 'Ilimitado',
-      ai: 'Ilimitado',
-      team: '5 usuários',
+      contracts: '50/mês',
+      ai: '1200 msgs/mês',
+      team: '10 usuários',
+      templates: '10 templates',
     },
   },
   agency: {
-    name: 'Agência',
-    price: 129,
-    priceLabel: '$129/mês',
+    name: 'Catapulta',
+    price: 49.99,
+    priceLabel: '$49.99/mês',
     description: 'Para grandes agências',
     features: [
       { text: 'Clientes ilimitados', included: true },
       { text: 'Contratos ilimitados', included: true },
       { text: 'Mensagens IA ilimitadas', included: true },
-      { text: 'Usuários ilimitados', included: true },
-      { text: 'Funil de vendas', included: true },
-      { text: 'Fluxo operacional', included: true },
-      { text: 'Checklists personalizados', included: true },
-      { text: 'Suporte VIP', included: true },
+      { text: '20 usuários', included: true },
+      { text: 'Templates ilimitados', included: true },
+      { text: 'Exportação de dados', included: true },
+      { text: 'Auditoria de ações', included: true },
+      { text: 'Suporte VIP dedicado', included: true },
     ],
     limits: {
       clients: 'Ilimitado',
       contracts: 'Ilimitado',
       ai: 'Ilimitado',
-      team: 'Ilimitado',
+      team: '20 usuários',
+      templates: 'Ilimitado',
     },
-  },
-};
-
-const freePlan: PlanConfig = {
-  name: 'Grátis',
-  price: 0,
-  priceLabel: '$0/mês',
-  description: 'Para testar a plataforma',
-  features: [
-    { text: 'Até 5 clientes', included: true },
-    { text: '2 contratos/mês', included: true },
-    { text: 'Sem acesso à IA', included: false },
-    { text: '1 usuário', included: true },
-    { text: 'Funil de vendas', included: true },
-    { text: 'Fluxo operacional', included: true },
-    { text: 'Checklists básicos', included: true },
-    { text: 'Suporte comunidade', included: true },
-  ],
-  limits: {
-    clients: '5',
-    contracts: '2/mês',
-    ai: 'Bloqueado',
-    team: '1 usuário',
   },
 };
 
@@ -195,7 +199,7 @@ export default function Upgrade() {
   const [creatingCheckout, setCreatingCheckout] = useState<PlanType | null>(null);
   const [changingPlan, setChangingPlan] = useState<PlanType | null>(null);
 
-  const handleSubscribe = async (planType: Exclude<PlanType, 'free'>) => {
+  const handleSubscribe = async (planType: PlanType) => {
     if (!organization?.id || !user?.email) {
       toast({
         title: 'Erro',
@@ -239,7 +243,7 @@ export default function Upgrade() {
     }
   };
 
-  const handleChangePlan = async (newPlanType: Exclude<PlanType, 'free'>) => {
+  const handleChangePlan = async (newPlanType: PlanType) => {
     if (!organization?.id) {
       toast({
         title: 'Erro',
@@ -333,7 +337,7 @@ export default function Upgrade() {
   const currentPlan = activePlanType || currentPlanType || 'free';
 
   const allPlans: { key: PlanType; config: PlanConfig }[] = [
-    { key: 'free', config: freePlan },
+    { key: 'free', config: plans.free },
     { key: 'starter', config: plans.starter },
     { key: 'pro', config: plans.pro },
     { key: 'agency', config: plans.agency },
@@ -351,13 +355,24 @@ export default function Upgrade() {
           
           <h1 className="text-3xl font-bold">Escolha o plano ideal para sua agência</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            {isTrialing && trialDaysLeft > 0 ? (
-              <>Você tem <strong>{trialDaysLeft} dias</strong> restantes do período de teste. Assine agora para continuar usando o Qualify.</>
-            ) : (
-              'Escale suas operações com o plano que melhor se adapta às suas necessidades.'
-            )}
+            Escale suas operações com o plano que melhor se adapta às suas necessidades.
           </p>
         </div>
+
+        {/* Discount Banner */}
+        <Card className="border-primary/30 bg-primary/5 overflow-hidden">
+          <CardContent className="py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
+              <Gift className="h-6 w-6 text-primary" />
+              <div>
+                <span className="font-semibold text-primary">50% de desconto na primeira assinatura!</span>
+                <span className="text-muted-foreground ml-2">
+                  Use o cupom <code className="px-2 py-0.5 bg-primary/10 rounded font-mono font-bold text-primary">PRIMEIRAASSINATURA</code>
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Current Plan Banner */}
         <Card 
@@ -381,7 +396,7 @@ export default function Upgrade() {
                 color: planColors[currentPlan].text 
               }}
             >
-              {isActive && currentPlan !== 'free' ? 'Ativo' : 'Plano Atual'}
+              {isActive ? 'Ativo' : 'Plano Atual'}
             </Badge>
           </CardContent>
         </Card>
@@ -389,7 +404,7 @@ export default function Upgrade() {
         {/* Pricing Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {allPlans.map(({ key: planKey, config: plan }) => {
-            const isCurrentPlan = currentPlan === planKey && (planKey === 'free' ? !isActive : isActive);
+            const isCurrentPlan = currentPlan === planKey && isActive;
             const isLoading = creatingCheckout === planKey || changingPlan === planKey;
             const colors = planColors[planKey];
             const planInfo = planNames[planKey];
@@ -399,7 +414,6 @@ export default function Upgrade() {
             const currentIndex = PLAN_ORDER.indexOf(currentPlan);
             const targetIndex = PLAN_ORDER.indexOf(planKey);
             const isUpgrade = targetIndex > currentIndex;
-            const isDowngrade = targetIndex < currentIndex;
 
             return (
               <Card 
@@ -486,14 +500,6 @@ export default function Upgrade() {
                       <CheckCircle2 className="h-4 w-4 mr-2" />
                       Plano Atual
                     </Button>
-                  ) : planKey === 'free' ? (
-                    <Button variant="outline" disabled className="w-full">
-                      {isCurrentPlan ? 'Plano Atual' : 'Plano Base'}
-                    </Button>
-                  ) : isCurrentPlan ? (
-                    <Button variant="outline" disabled className="w-full">
-                      Plano Atual
-                    </Button>
                   ) : hasActiveSubscription ? (
                     // User has active subscription - use change-plan API
                     <Button 
@@ -568,31 +574,38 @@ export default function Upgrade() {
                 <tbody>
                   <tr className="border-b">
                     <td className="py-3 px-4">Clientes</td>
-                    <td className="text-center py-3 px-4">{freePlan.limits.clients}</td>
+                    <td className="text-center py-3 px-4">{plans.free.limits.clients}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.clients}</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.clients}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.clients}</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Contratos</td>
-                    <td className="text-center py-3 px-4">{freePlan.limits.contracts}</td>
+                    <td className="text-center py-3 px-4">{plans.free.limits.contracts}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.contracts}</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.contracts}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.contracts}</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Assistente IA</td>
-                    <td className="text-center py-3 px-4">{freePlan.limits.ai}</td>
+                    <td className="text-center py-3 px-4">{plans.free.limits.ai}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.ai}</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.ai}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.ai}</td>
                   </tr>
-                  <tr>
+                  <tr className="border-b">
                     <td className="py-3 px-4">Equipe</td>
-                    <td className="text-center py-3 px-4">{freePlan.limits.team}</td>
+                    <td className="text-center py-3 px-4">{plans.free.limits.team}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.team}</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.team}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.team}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4">Templates</td>
+                    <td className="text-center py-3 px-4">{plans.free.limits.templates}</td>
+                    <td className="text-center py-3 px-4">{plans.starter.limits.templates}</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.templates}</td>
+                    <td className="text-center py-3 px-4">{plans.agency.limits.templates}</td>
                   </tr>
                 </tbody>
               </table>
@@ -600,19 +613,15 @@ export default function Upgrade() {
           </CardContent>
         </Card>
 
-        {/* Back Link */}
-        {isTrialing && trialDaysLeft > 0 && (
-          <div className="text-center">
-            <Link to="/app" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Continuar usando o período de teste
-            </Link>
-          </div>
-        )}
-
         {/* Payment Info */}
-        <p className="text-xs text-center text-muted-foreground">
-          Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
-        </p>
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            💡 Lembre-se de usar o cupom <code className="px-2 py-0.5 bg-primary/10 rounded font-mono font-bold text-primary">PRIMEIRAASSINATURA</code> para 50% de desconto!
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
+          </p>
+        </div>
 
         {/* Diagnostics for admins */}
         <div className="flex justify-center pt-4">
