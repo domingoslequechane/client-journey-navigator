@@ -13,11 +13,11 @@ const planNames: Record<PlanType, string> = {
 };
 
 export function FreePlanBanner() {
-  const { loading, isPaidPlan, isActive } = useSubscription();
+  const { loading, isPaidPlan, isActive, isTrialing, hasAccess } = useSubscription();
   const { isAdmin, loading: roleLoading } = useUserRole();
 
-  // Don't show if loading or user has an active paid subscription
-  if (loading || roleLoading || (isPaidPlan && isActive)) {
+  // Don't show if loading, or user has access (active subscription or valid trial), or paid plan is active
+  if (loading || roleLoading || hasAccess || (isPaidPlan && isActive)) {
     return null;
   }
 
