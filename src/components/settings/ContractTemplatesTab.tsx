@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
+import { usePlanLimits, PlanType } from '@/hooks/usePlanLimits';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,11 +10,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Loader2, Save, Edit2, X, FileText, Star } from 'lucide-react';
+import { Plus, Trash2, Loader2, Save, Edit2, X, FileText, Star, Lock, ArrowUpRight } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
 
+const PLAN_NAMES: Record<PlanType, string> = {
+  free: 'Bússola',
+  starter: 'Lança',
+  pro: 'Arco',
+  agency: 'Catapulta',
+};
 interface ContractTemplate {
   id: string;
   name: string;
@@ -86,6 +95,8 @@ CONTRATANTE`;
 
 export function ContractTemplatesTab() {
   const { organization } = useSubscription();
+  const { canAddContractTemplate, planType, limits } = usePlanLimits();
+  const { isAdmin } = useUserRole();
   const [templates, setTemplates] = useState<ContractTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -99,6 +110,10 @@ export function ContractTemplatesTab() {
     content: '',
     is_default: false,
   });
+
+  const maxTemplates = limits.maxContractTemplates;
+  const isUnlimited = maxTemplates === null;
+  const limitReached = !canAddContractTemplate && !editingId;
 
   useEffect(() => {
     if (organization?.id) {
@@ -248,12 +263,54 @@ export function ContractTemplatesTab() {
                 </CardDescription>
               </div>
               {!showForm && (
-                <Button onClick={handleNewTemplate} className="gap-2 shrink-0 w-full sm:w-auto">
-                  <Plus className="h-4 w-4" />
+                <Button 
+                  onClick={handleNewTemplate} 
+                  className="gap-2 shrink-0 w-full sm:w-auto"
+                  disabled={limitReached}
+                >
+                  {limitReached ? <Lock className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                   Novo Template
                 </Button>
               )}
             </div>
+            
+            {/* Usage counter */}
+            {!isUnlimited && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>
+                  {templates.length}/{maxTemplates} templates utilizados
+                </span>
+                {limitReached && (
+                  <Badge variant="destructive" className="gap-1">
+                    <Lock className="h-3 w-3" />
+                    Limite atingido
+                  </Badge>
+                )}
+              </div>
+            )}
+            
+            {/* Upgrade prompt when limit reached */}
+            {limitReached && (
+              <div className="bg-muted/50 border border-border rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <Lock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm">Limite de templates atingido</p>
+                    <p className="text-sm text-muted-foreground">
+                      O plano {PLAN_NAMES[planType]} permite até {maxTemplates} {maxTemplates === 1 ? 'template' : 'templates'}. Faça upgrade para criar mais.
+                    </p>
+                  </div>
+                </div>
+                {isAdmin && (
+                  <Button asChild variant="default" size="sm" className="gap-2 shrink-0">
+                    <Link to="/app/subscription">
+                      Fazer Upgrade
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             {showForm && (
@@ -323,7 +380,9 @@ export function ContractTemplatesTab() {
 
             {/* List of templates */}
             <div className="space-y-2">
-              <h4 className="font-medium">Seus Templates ({templates.length})</h4>
+              <h4 className="font-medium">
+                Seus Templates ({templates.length}{!isUnlimited ? `/${maxTemplates}` : ''})
+              </h4>
               {templates.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">
                   Nenhum template criado ainda
