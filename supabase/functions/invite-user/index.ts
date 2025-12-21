@@ -345,7 +345,10 @@ serve(async (req) => {
               }
               .button:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.5);
+                box-shadow: 0 6px 20px 0 rgba(249, 115, 22, 0.5);
+              }
+              .link-fallback a {
+                color: #f97316;
               }
               .link-fallback {
                 background: #f8fafc;
@@ -418,7 +421,7 @@ serve(async (req) => {
                 
                 <div class="link-fallback">
                   <strong>Link alternativo:</strong>
-                  ${inviteLink}
+                  <a href="${inviteLink}">${inviteLink}</a>
                 </div>
               </div>
               <div class="footer">
