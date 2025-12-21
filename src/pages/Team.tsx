@@ -144,16 +144,27 @@ export default function Team() {
         .eq('organization_id', currentUserOrgId)
         .eq('is_active', true);
 
-      if (membersError) throw membersError;
+      if (membersError) {
+        console.error('Error fetching organization members:', membersError);
+      }
 
-      // Fetch pending invites from organization_invites table
-      const { data: pendingInvites, error: invitesError } = await supabase
-        .from('organization_invites')
-        .select('id, email, full_name, role, created_at, status')
-        .eq('organization_id', currentUserOrgId)
-        .eq('status', 'pending');
+      // Fetch pending invites - handle separately so it doesn't break the page
+      let pendingInvites: any[] = [];
+      try {
+        const { data: invitesData, error: invitesError } = await supabase
+          .from('organization_invites')
+          .select('id, email, full_name, role, created_at, status')
+          .eq('organization_id', currentUserOrgId)
+          .eq('status', 'pending');
 
-      if (invitesError) throw invitesError;
+        if (invitesError) {
+          console.warn('Could not fetch pending invites:', invitesError);
+        } else {
+          pendingInvites = invitesData || [];
+        }
+      } catch (e) {
+        console.warn('Error fetching invites:', e);
+      }
 
       // Fetch profiles for active members
       const memberUserIds = orgMembers?.map(m => m.user_id) || [];
@@ -165,8 +176,11 @@ export default function Team() {
           .select('*')
           .in('id', memberUserIds);
 
-        if (profilesError) throw profilesError;
-        profiles = profilesData || [];
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+        } else {
+          profiles = profilesData || [];
+        }
       }
 
       // Fetch proprietor user IDs to filter them out
@@ -199,7 +213,7 @@ export default function Team() {
       }));
 
       // Map pending invites
-      const pendingMembers: TeamMember[] = (pendingInvites || []).map(invite => ({
+      const pendingMembers: TeamMember[] = pendingInvites.map(invite => ({
         id: invite.id,
         full_name: invite.full_name,
         avatar_url: null,
