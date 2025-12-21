@@ -128,9 +128,53 @@ serve(async (req) => {
     const existingUserRecord = existingUser?.users?.find(u => u.email === email);
     
     if (existingUserRecord && !isResend) {
+      // Check if user is already a member of THIS organization
+      const { data: existingMember } = await supabaseAdmin
+        .from("organization_members")
+        .select("id, is_active")
+        .eq("user_id", existingUserRecord.id)
+        .eq("organization_id", adminOrgId)
+        .single();
+      
+      if (existingMember?.is_active) {
+        return new Response(
+          JSON.stringify({ error: "Este usuário já faz parte desta organização" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // User exists but not in this org - add them directly
+      console.log("User exists, adding to organization:", existingUserRecord.id);
+      
+      // Add to organization_members
+      const { error: memberError } = await supabaseAdmin
+        .from("organization_members")
+        .upsert({ 
+          user_id: existingUserRecord.id,
+          organization_id: adminOrgId,
+          role: role as any,
+          is_active: true,
+        }, {
+          onConflict: 'user_id,organization_id'
+        });
+
+      if (memberError) {
+        console.error("Error adding existing user to organization:", memberError);
+        return new Response(
+          JSON.stringify({ error: "Erro ao adicionar usuário à organização" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`Existing user ${email} added to organization ${adminOrgId}`);
+      
       return new Response(
-        JSON.stringify({ error: "Este email já está cadastrado no sistema" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          success: true, 
+          message: "Usuário existente adicionado à organização com sucesso",
+          userId: existingUserRecord.id
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
