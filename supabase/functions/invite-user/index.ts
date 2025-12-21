@@ -227,35 +227,192 @@ serve(async (req) => {
           <!DOCTYPE html>
           <html>
           <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }
-              .content { background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; }
-              .button { display: inline-block; background: #6366f1; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
-              .footer { text-align: center; margin-top: 20px; color: #64748b; font-size: 14px; }
-              .role-badge { display: inline-block; background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 20px; font-size: 14px; }
-              .org-name { font-weight: 600; color: #4338ca; }
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; 
+                line-height: 1.6; 
+                color: #1e293b; 
+                background-color: #f1f5f9;
+                margin: 0;
+                padding: 20px;
+              }
+              .email-wrapper {
+                max-width: 600px; 
+                margin: 0 auto;
+                background: #ffffff;
+                border-radius: 16px;
+                overflow: hidden;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+              }
+              .header { 
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%); 
+                color: white; 
+                padding: 40px 30px; 
+                text-align: center; 
+              }
+              .logo-container {
+                display: inline-block;
+                width: 64px;
+                height: 64px;
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 16px;
+                margin-bottom: 16px;
+                line-height: 64px;
+                font-size: 32px;
+                font-weight: 700;
+              }
+              .header h1 {
+                margin: 0;
+                font-size: 28px;
+                font-weight: 700;
+                letter-spacing: -0.5px;
+              }
+              .header p {
+                margin: 8px 0 0;
+                opacity: 0.9;
+                font-size: 15px;
+              }
+              .content { 
+                padding: 40px 30px; 
+              }
+              .greeting {
+                font-size: 22px;
+                font-weight: 600;
+                color: #1e293b;
+                margin: 0 0 20px;
+              }
+              .invite-text {
+                font-size: 16px;
+                color: #475569;
+                margin: 0 0 24px;
+              }
+              .invite-text strong {
+                color: #6366f1;
+              }
+              .org-card {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+                border: 1px solid #c7d2fe;
+                border-radius: 12px;
+                padding: 20px;
+                margin: 24px 0;
+                text-align: center;
+              }
+              .org-icon {
+                font-size: 32px;
+                margin-bottom: 8px;
+              }
+              .org-name { 
+                font-weight: 700; 
+                color: #4338ca;
+                font-size: 20px;
+                display: block;
+              }
+              .role-section {
+                text-align: center;
+                margin: 24px 0;
+              }
+              .role-label {
+                font-size: 14px;
+                color: #64748b;
+                margin-bottom: 8px;
+              }
+              .role-badge { 
+                display: inline-block; 
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); 
+                color: white; 
+                padding: 8px 20px; 
+                border-radius: 24px; 
+                font-size: 15px;
+                font-weight: 600;
+              }
+              .cta-section {
+                text-align: center;
+                margin: 32px 0;
+              }
+              .button { 
+                display: inline-block; 
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); 
+                color: white !important; 
+                padding: 16px 40px; 
+                border-radius: 12px; 
+                text-decoration: none; 
+                font-weight: 600;
+                font-size: 16px;
+                box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.4);
+                transition: transform 0.2s, box-shadow 0.2s;
+              }
+              .button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.5);
+              }
+              .link-fallback {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 16px;
+                margin-top: 24px;
+                font-size: 13px;
+                color: #64748b;
+                word-break: break-all;
+              }
+              .link-fallback strong {
+                color: #475569;
+                display: block;
+                margin-bottom: 8px;
+              }
+              .footer { 
+                background: #f8fafc;
+                border-top: 1px solid #e2e8f0;
+                text-align: center; 
+                padding: 24px 30px; 
+                color: #94a3b8; 
+                font-size: 13px; 
+              }
+              .footer p {
+                margin: 0;
+              }
+              .footer-logo {
+                font-weight: 700;
+                color: #6366f1;
+              }
             </style>
           </head>
           <body>
-            <div class="container">
+            <div class="email-wrapper">
               <div class="header">
-                <h1 style="margin: 0; font-size: 28px;">Bem-vindo ao Qualify!</h1>
-                <p style="margin: 10px 0 0; opacity: 0.9;">Sistema de Gestão de Clientes</p>
+                <div class="logo-container">Q</div>
+                <h1>Qualify</h1>
+                <p>Gestão Inteligente de Clientes</p>
               </div>
               <div class="content">
-                <h2>Olá, ${fullName}!</h2>
-                <p><strong>${inviterName}</strong> convidou você para fazer parte da equipe <span class="org-name">${organizationName}</span> no Qualify como:</p>
-                <p><span class="role-badge">${ROLE_LABELS[role]}</span></p>
-                <p>Clique no botão abaixo para criar sua senha e acessar o sistema:</p>
-                <p style="text-align: center;">
-                  <a href="${inviteLink}" class="button">Criar Minha Senha</a>
+                <h2 class="greeting">Olá, ${fullName}! 👋</h2>
+                <p class="invite-text">
+                  <strong>${inviterName}</strong> convidou você para fazer parte da equipe no Qualify.
                 </p>
-                <p style="color: #64748b; font-size: 14px;">Se o botão não funcionar, copie e cole este link no navegador:<br/>${inviteLink}</p>
+                
+                <div class="org-card">
+                  <div class="org-icon">🏢</div>
+                  <span class="org-name">${organizationName}</span>
+                </div>
+                
+                <div class="role-section">
+                  <p class="role-label">Você foi convidado como:</p>
+                  <span class="role-badge">✨ ${ROLE_LABELS[role]}</span>
+                </div>
+                
+                <div class="cta-section">
+                  <a href="${inviteLink}" class="button">✓ Aceitar Convite</a>
+                </div>
+                
+                <div class="link-fallback">
+                  <strong>Link alternativo:</strong>
+                  ${inviteLink}
+                </div>
               </div>
               <div class="footer">
-                <p>© ${new Date().getFullYear()} Qualify - Onix Agency</p>
+                <p>© ${new Date().getFullYear()} <span class="footer-logo">Qualify</span> by Onix Agency</p>
               </div>
             </div>
           </body>
