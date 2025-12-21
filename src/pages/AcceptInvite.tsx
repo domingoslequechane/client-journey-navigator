@@ -124,9 +124,9 @@ export default function AcceptInvite() {
         description: `Você agora faz parte de ${invite.organizations?.name || 'a organização'}`,
       });
 
-      // Redirect after a short delay
+      // Redirect after a short delay - go directly to app (accept-invite already set current_organization_id)
       setTimeout(() => {
-        navigate('/select-organization');
+        navigate('/app');
       }, 2000);
 
     } catch (err) {

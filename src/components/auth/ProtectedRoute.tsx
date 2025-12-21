@@ -124,6 +124,20 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
   }, [user, isSystemAdmin, location.pathname]);
 
+  // Safety timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (needsOnboarding === null && !subLoading && isSystemAdmin === false) {
+        setNeedsOnboarding(false);
+      }
+      if (needsOrgSelection === null && !authLoading && isSystemAdmin === false) {
+        setNeedsOrgSelection(false);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [needsOnboarding, needsOrgSelection, subLoading, authLoading, isSystemAdmin]);
+
   // Check for pending plan selection or onboarding
   useEffect(() => {
     const checkOnboarding = async () => {
