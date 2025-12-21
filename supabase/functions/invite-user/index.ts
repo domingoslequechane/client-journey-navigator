@@ -70,7 +70,7 @@ serve(async (req) => {
     // Also check profiles table for admin role (organization admin support)
     const { data: profileData } = await supabaseAdmin
       .from("profiles")
-      .select("role, organization_id")
+      .select("role, organization_id, full_name")
       .eq("id", user.id)
       .single();
 
@@ -93,6 +93,16 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Fetch organization name for the email
+    const { data: orgData } = await supabaseAdmin
+      .from("organizations")
+      .select("name")
+      .eq("id", adminOrgId)
+      .single();
+
+    const organizationName = orgData?.name || "a equipe";
+    const inviterName = profileData?.full_name || "Um administrador";
 
     const body = await req.json();
 
@@ -212,7 +222,7 @@ serve(async (req) => {
       await resend.emails.send({
         from: "Qualify <no-reply@onixagence.com>",
         to: [email],
-        subject: "Você foi convidado para o Qualify!",
+        subject: `${inviterName} convidou você para ${organizationName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -225,6 +235,7 @@ serve(async (req) => {
               .button { display: inline-block; background: #6366f1; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
               .footer { text-align: center; margin-top: 20px; color: #64748b; font-size: 14px; }
               .role-badge { display: inline-block; background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 20px; font-size: 14px; }
+              .org-name { font-weight: 600; color: #4338ca; }
             </style>
           </head>
           <body>
@@ -235,7 +246,7 @@ serve(async (req) => {
               </div>
               <div class="content">
                 <h2>Olá, ${fullName}!</h2>
-                <p>Você foi convidado para fazer parte da equipe no Qualify como:</p>
+                <p><strong>${inviterName}</strong> convidou você para fazer parte da equipe <span class="org-name">${organizationName}</span> no Qualify como:</p>
                 <p><span class="role-badge">${ROLE_LABELS[role]}</span></p>
                 <p>Clique no botão abaixo para criar sua senha e acessar o sistema:</p>
                 <p style="text-align: center;">
