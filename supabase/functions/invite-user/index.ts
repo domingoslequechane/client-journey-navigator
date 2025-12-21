@@ -384,7 +384,7 @@ serve(async (req) => {
                 color: #f97316;
               }
               .footer-link {
-                color: #64748b;
+                color: #f97316;
                 font-weight: 500;
               }
               .footer a:hover {
