@@ -72,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Verify organization ownership
     const { data: org } = await supabase
       .from("organizations")
-      .select("owner_id, name")
+      .select("owner_id, name, deleted_at")
       .eq("id", organizationId)
       .single();
 
@@ -80,6 +80,14 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(
         JSON.stringify({ error: "Apenas o proprietário pode apagar a agência" }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Check if already scheduled for deletion
+    if (org.deleted_at) {
+      return new Response(
+        JSON.stringify({ error: "Esta agência já está agendada para exclusão" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -110,127 +118,38 @@ const handler = async (req: Request): Promise<Response> => {
     // Delete the OTP
     await supabase.from("email_otps").delete().eq("id", otpRecord.id);
 
-    console.log(`Starting deletion of organization ${organizationId} (${org.name}) by user ${user.id}`);
+    console.log(`Scheduling soft deletion of organization ${organizationId} (${org.name}) by user ${user.id}`);
 
-    // Get all clients for this organization (to delete related data)
-    const { data: clients } = await supabase
-      .from("clients")
-      .select("id")
-      .eq("organization_id", organizationId);
+    // Calculate deletion date (30 days from now)
+    const deleteScheduledFor = new Date();
+    deleteScheduledFor.setDate(deleteScheduledFor.getDate() + 30);
 
-    const clientIds = clients?.map(c => c.id) || [];
-
-    // Delete in order to respect foreign key constraints
-    
-    // 1. Delete AI messages (via conversations)
-    if (clientIds.length > 0) {
-      const { data: conversations } = await supabase
-        .from("ai_conversations")
-        .select("id")
-        .in("client_id", clientIds);
-      
-      const conversationIds = conversations?.map(c => c.id) || [];
-      if (conversationIds.length > 0) {
-        await supabase.from("ai_messages").delete().in("conversation_id", conversationIds);
-      }
-      
-      // 2. Delete AI conversations
-      await supabase.from("ai_conversations").delete().in("client_id", clientIds);
-      
-      // 3. Delete activities
-      await supabase.from("activities").delete().in("client_id", clientIds);
-      
-      // 4. Delete checklist items
-      await supabase.from("checklist_items").delete().in("client_id", clientIds);
-    }
-
-    // 5. Delete clients
-    await supabase.from("clients").delete().eq("organization_id", organizationId);
-
-    // 6. Delete checklist templates
-    await supabase.from("checklist_templates").delete().eq("organization_id", organizationId);
-
-    // 7. Delete contract templates
-    await supabase.from("contract_templates").delete().eq("organization_id", organizationId);
-
-    // 8. Delete study suggestions
-    await supabase.from("study_suggestions").delete().eq("organization_id", organizationId);
-
-    // 9. Delete support messages (via tickets)
-    const { data: tickets } = await supabase
-      .from("support_tickets")
-      .select("id")
-      .eq("organization_id", organizationId);
-    
-    const ticketIds = tickets?.map(t => t.id) || [];
-    if (ticketIds.length > 0) {
-      await supabase.from("support_messages").delete().in("ticket_id", ticketIds);
-    }
-
-    // 10. Delete support tickets
-    await supabase.from("support_tickets").delete().eq("organization_id", organizationId);
-
-    // 11. Delete feedbacks
-    await supabase.from("feedbacks").delete().eq("organization_id", organizationId);
-
-    // 12. Delete payment history
-    await supabase.from("payment_history").delete().eq("organization_id", organizationId);
-
-    // 13. Delete subscription
-    await supabase.from("subscriptions").delete().eq("organization_id", organizationId);
-
-    // 14. Get all user IDs in this organization for cleanup
-    const { data: orgProfiles } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("organization_id", organizationId);
-    
-    const userIds = orgProfiles?.map(p => p.id) || [];
-
-    // 15. Delete login history for these users
-    if (userIds.length > 0) {
-      await supabase.from("login_history").delete().in("user_id", userIds);
-      
-      // 16. Delete notification reads for these users
-      await supabase.from("notification_reads").delete().in("user_id", userIds);
-    }
-
-    // 17. Update profiles to remove organization reference (except owner who will be deleted)
-    await supabase
-      .from("profiles")
-      .update({ organization_id: null })
-      .eq("organization_id", organizationId)
-      .neq("id", user.id);
-
-    // 18. Delete owner's profile
-    await supabase.from("profiles").delete().eq("id", user.id);
-
-    // 19. Delete the organization
-    const { error: deleteOrgError } = await supabase
+    // SOFT DELETE: Mark organization as deleted instead of actually deleting
+    const { error: softDeleteError } = await supabase
       .from("organizations")
-      .delete()
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: user.id,
+        delete_scheduled_for: deleteScheduledFor.toISOString(),
+      })
       .eq("id", organizationId);
 
-    if (deleteOrgError) {
-      console.error("Error deleting organization:", deleteOrgError);
+    if (softDeleteError) {
+      console.error("Error scheduling organization deletion:", softDeleteError);
       return new Response(
-        JSON.stringify({ error: "Erro ao apagar organização" }),
+        JSON.stringify({ error: "Erro ao agendar exclusão da organização" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // 20. Delete the user from auth (this will sign them out)
-    const { error: deleteUserError } = await supabase.auth.admin.deleteUser(user.id);
-    
-    if (deleteUserError) {
-      console.error("Error deleting user:", deleteUserError);
-      // Continue even if user deletion fails - org is already deleted
-    }
-
-    console.log(`Successfully deleted organization ${organizationId}`);
+    console.log(`Successfully scheduled soft deletion of organization ${organizationId}. Permanent deletion on: ${deleteScheduledFor.toISOString()}`);
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true,
+        message: "Agência agendada para exclusão. Você tem 30 dias para restaurar.",
+        delete_scheduled_for: deleteScheduledFor.toISOString()
+      }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
