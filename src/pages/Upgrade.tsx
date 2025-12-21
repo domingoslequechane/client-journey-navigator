@@ -504,19 +504,26 @@ export default function Upgrade() {
                       Plano Atual
                     </Button>
                   ) : hasActiveSubscription ? (
-                    // User has active subscription - use change-plan API (but not for free plan)
+                    // User has active subscription - use change-plan API (but free plan needs checkout since it's $0 on LemonSqueezy)
                     planKey === 'free' ? (
-                      // Free plan requires cancellation, not change-plan
+                      // Free plan requires checkout to capture payment info (even at $0)
                       <Button 
-                        asChild
-                        variant="outline"
-                        className="w-full gap-2"
-                        style={{ borderColor: colors.border, color: colors.text }}
+                        onClick={() => handleSubscribe(planKey)}
+                        disabled={isLoading || creatingCheckout !== null || changingPlan !== null}
+                        className="w-full gap-2 text-white"
+                        style={{ backgroundColor: colors.primary }}
                       >
-                        <Link to="/app/settings?tab=subscription">
-                          <CreditCard className="h-4 w-4" />
-                          Cancelar Assinatura
-                        </Link>
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Processando...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="h-4 w-4" />
+                            Mudar para Grátis
+                          </>
+                        )}
                       </Button>
                     ) : (
                       <Button 
