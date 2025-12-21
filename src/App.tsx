@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
 import SetPassword from "./pages/SetPassword";
 import ResetPassword from "./pages/ResetPassword";
+import AcceptInvite from "./pages/AcceptInvite";
 import Dashboard from "./pages/Dashboard";
 import SalesFunnel from "./pages/SalesFunnel";
 import OperationalFlow from "./pages/OperationalFlow";
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/set-password" element={<SetPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/select-plan" element={<SelectPlan />} />
+              <Route path="/accept-invite" element={<AcceptInvite />} />
               <Route path="/app/onboarding" element={<Onboarding />} />
               <Route path="/app/select-organization" element={<SelectOrganization />} />
               <Route
