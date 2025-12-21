@@ -221,7 +221,7 @@ export function SubscriptionTab() {
   const getPaymentStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Confirmado</Badge>;
+        return <Badge className={cn(currentPlan.bgColor, currentPlan.color, currentPlan.borderColor)}>Confirmado</Badge>;
       case 'pending':
         return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Pendente</Badge>;
       case 'failed':
@@ -438,14 +438,14 @@ export function SubscriptionTab() {
 
       {/* Active Subscription Info */}
       {isActive && !cancelAtPeriodEnd && !isPastDue && isPaidPlan && (
-        <Card className="border-green-500/20 bg-green-500/5">
+        <Card className={cn(currentPlan.borderColor, currentPlan.bgColor)}>
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-green-500/10 rounded-full">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
+              <div className={cn("p-3 rounded-full", currentPlan.bgColor)}>
+                <CheckCircle2 className={cn("h-6 w-6", currentPlan.color)} />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-green-600">Assinatura Ativa</h3>
+                <h3 className={cn("font-semibold", currentPlan.color)}>Assinatura Ativa</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   Sua assinatura está ativa. Você tem acesso a todas as funcionalidades do plano {currentPlan.name}.
                 </p>
@@ -493,7 +493,7 @@ export function SubscriptionTab() {
                 >
                   <div className="flex items-center gap-3">
                     {payment.status === 'confirmed' ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <CheckCircle2 className={cn("h-5 w-5", currentPlan.color)} />
                     ) : payment.status === 'failed' ? (
                       <XCircle className="h-5 w-5 text-destructive" />
                     ) : (
