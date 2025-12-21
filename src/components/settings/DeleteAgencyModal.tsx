@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Trash2, AlertTriangle, Mail } from 'lucide-react';
+import { Loader2, Trash2, AlertTriangle, Mail, Calendar } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -117,22 +117,22 @@ export function DeleteAgencyModal({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao apagar agência');
+        throw new Error(data.error || 'Erro ao agendar exclusão');
       }
 
       toast({
-        title: 'Agência apagada',
-        description: 'Todos os dados foram removidos permanentemente',
+        title: 'Agência agendada para exclusão',
+        description: 'Você tem 30 dias para restaurar sua agência. Após esse período, os dados serão removidos permanentemente.',
       });
 
       // Sign out and redirect
       await signOut();
       window.location.href = '/';
     } catch (error: any) {
-      console.error('Error deleting agency:', error);
+      console.error('Error scheduling agency deletion:', error);
       toast({
         title: 'Erro',
-        description: error.message || 'Não foi possível apagar a agência',
+        description: error.message || 'Não foi possível agendar a exclusão',
         variant: 'destructive',
       });
     } finally {
@@ -156,13 +156,22 @@ export function DeleteAgencyModal({
                 <AlertTriangle className="h-6 w-6 text-destructive" />
               </div>
             </div>
-            <AlertDialogTitle>Apagar Agência Permanentemente</AlertDialogTitle>
+            <AlertDialogTitle>Apagar Agência</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>
-                Você está prestes a apagar <strong>{organizationName}</strong> e todos os dados associados.
+                Você está prestes a agendar a exclusão de <strong>{organizationName}</strong>.
               </p>
-              <p className="font-medium text-destructive">
-                Esta ação é irreversível! Serão apagados:
+              <div className="bg-muted p-3 rounded-lg flex items-start gap-2 mt-3">
+                <Calendar className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-foreground">Período de recuperação de 30 dias</p>
+                  <p className="text-muted-foreground">
+                    Você terá 30 dias para restaurar sua agência caso mude de ideia. Após esse período, todos os dados serão removidos permanentemente.
+                  </p>
+                </div>
+              </div>
+              <p className="font-medium text-muted-foreground mt-3">
+                Após 30 dias, serão apagados:
               </p>
               <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
                 <li>Todos os clientes e seus dados</li>
@@ -243,12 +252,12 @@ export function DeleteAgencyModal({
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Apagando...
+                Agendando...
               </>
             ) : (
               <>
                 <Trash2 className="h-4 w-4 mr-2" />
-                Apagar Agência
+                Agendar Exclusão
               </>
             )}
           </Button>

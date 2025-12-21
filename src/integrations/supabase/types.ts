@@ -643,6 +643,9 @@ export type Database = {
         Row: {
           created_at: string
           currency: string
+          delete_scheduled_for: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           headquarters: string | null
           id: string
           knowledge_base_name: string | null
@@ -663,6 +666,9 @@ export type Database = {
         Insert: {
           created_at?: string
           currency?: string
+          delete_scheduled_for?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           headquarters?: string | null
           id?: string
           knowledge_base_name?: string | null
@@ -683,6 +689,9 @@ export type Database = {
         Update: {
           created_at?: string
           currency?: string
+          delete_scheduled_for?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           headquarters?: string | null
           id?: string
           knowledge_base_name?: string | null
@@ -1131,6 +1140,14 @@ export type Database = {
           org_uuid: string
           removed_by_user_id: string
         }
+        Returns: boolean
+      }
+      restore_organization: {
+        Args: { org_id: string; user_id: string }
+        Returns: boolean
+      }
+      schedule_organization_deletion: {
+        Args: { org_id: string; user_id: string }
         Returns: boolean
       }
       set_current_organization: {
