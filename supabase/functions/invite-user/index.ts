@@ -373,9 +373,19 @@ serve(async (req) => {
               .footer p {
                 margin: 0;
               }
+              .footer a {
+                text-decoration: none;
+              }
               .footer-logo {
                 font-weight: 700;
                 color: #6366f1;
+              }
+              .footer-link {
+                color: #64748b;
+                font-weight: 500;
+              }
+              .footer a:hover {
+                text-decoration: underline;
               }
             </style>
           </head>
@@ -412,7 +422,7 @@ serve(async (req) => {
                 </div>
               </div>
               <div class="footer">
-                <p>© ${new Date().getFullYear()} <span class="footer-logo">Qualify</span> by Onix Agency</p>
+                <p>© ${new Date().getFullYear()} <a href="https://qualify.onixagence.com" class="footer-logo">Qualify</a> - <a href="https://onixagence.com" class="footer-link">Onix Agence</a></p>
               </div>
             </div>
           </body>
