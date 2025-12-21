@@ -20,14 +20,15 @@ const plans = [
   {
     key: 'free' as const,
     name: 'Bússola',
-    price: 4,
-    period: '/mês',
+    price: 0,
+    period: '',
+    isFree: true,
     description: 'Para quem está começando',
     features: [
-      '6 clientes',
-      '2 membros de equipe',
-      '150 mensagens de IA/mês',
-      '6 contratos/mês',
+      '3 clientes',
+      '1 membro de equipe',
+      '90 mensagens de IA/mês',
+      '3 contratos/mês',
       '1 modelo de contrato',
     ],
     image: planBussola,
@@ -40,7 +41,7 @@ const plans = [
     description: 'Para agências em crescimento',
     features: [
       '15 clientes',
-      '7 membros de equipe',
+      '5 membros de equipe',
       '500 mensagens de IA/mês',
       '15 contratos/mês',
       '3 modelos de contrato',
@@ -279,12 +280,21 @@ export default function SelectPlan() {
 
                 <CardContent className="flex-1 flex flex-col">
                   <div className="text-center mb-4">
-                    <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-4xl font-bold" style={{ color: colors.primary }}>
-                        ${plan.price}
-                      </span>
-                      <span className="text-muted-foreground">{plan.period}</span>
-                    </div>
+                    {plan.isFree ? (
+                      <div className="flex flex-col items-center">
+                        <span className="text-4xl font-bold" style={{ color: colors.primary }}>
+                          Grátis
+                        </span>
+                        <span className="text-sm text-muted-foreground">para sempre</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-4xl font-bold" style={{ color: colors.primary }}>
+                          ${plan.price}
+                        </span>
+                        <span className="text-muted-foreground">{plan.period}</span>
+                      </div>
+                    )}
                   </div>
 
                   <ul className="space-y-2 mb-6 flex-1">
