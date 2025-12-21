@@ -117,17 +117,25 @@ serve(async (req) => {
 
     console.log("Received webhook, event signature present:", !!signature);
 
-    // Verify signature
-    if (signature) {
-      const isValid = await verifySignature(payload, signature, webhookSecret);
-      if (!isValid) {
-        console.error("Invalid webhook signature");
-        return new Response(JSON.stringify({ error: "Invalid signature" }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    // Verify signature - MANDATORY for security
+    if (!signature) {
+      console.error("Missing webhook signature - rejecting request");
+      return new Response(JSON.stringify({ error: "Missing signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    const isValid = await verifySignature(payload, signature, webhookSecret);
+    if (!isValid) {
+      console.error("Invalid webhook signature - rejecting request");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log("Webhook signature verified successfully");
 
     const event = JSON.parse(payload);
     const eventName = event.meta?.event_name;
