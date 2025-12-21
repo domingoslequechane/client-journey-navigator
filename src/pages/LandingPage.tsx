@@ -865,16 +865,15 @@ export default function LandingPage() {
             <p className="text-muted-foreground mb-4">
               Ainda tem dúvidas? Entre em contato conosco!
             </p>
-            <a 
-              href="https://wa.me/258868499221" 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="gap-2"
+              onClick={() => window.open('https://wa.me/258868499221', '_blank', 'noopener,noreferrer')}
             >
-              <Button variant="outline" size="lg" className="gap-2">
-                Fale Conosco
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </a>
+              Fale Conosco
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </section>
