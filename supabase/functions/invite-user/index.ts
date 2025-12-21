@@ -247,9 +247,9 @@ serve(async (req) => {
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
               }
               .header { 
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%); 
+                background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%); 
                 color: white; 
-                padding: 40px 30px; 
+                padding: 40px 30px;
                 text-align: center; 
               }
               .logo-container {
@@ -289,11 +289,11 @@ serve(async (req) => {
                 margin: 0 0 24px;
               }
               .invite-text strong {
-                color: #6366f1;
+                color: #f97316;
               }
               .org-card {
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
-                border: 1px solid #c7d2fe;
+                background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+                border: 1px solid #fed7aa;
                 border-radius: 12px;
                 padding: 20px;
                 margin: 24px 0;
@@ -305,7 +305,7 @@ serve(async (req) => {
               }
               .org-name { 
                 font-weight: 700; 
-                color: #4338ca;
+                color: #c2410c;
                 font-size: 20px;
                 display: block;
               }
@@ -320,7 +320,7 @@ serve(async (req) => {
               }
               .role-badge { 
                 display: inline-block; 
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); 
+                background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
                 color: white; 
                 padding: 8px 20px; 
                 border-radius: 24px; 
@@ -333,11 +333,11 @@ serve(async (req) => {
               }
               .button { 
                 display: inline-block; 
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); 
+                background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
                 color: white !important; 
                 padding: 16px 40px; 
                 border-radius: 12px; 
-                text-decoration: none; 
+                text-decoration: none;
                 font-weight: 600;
                 font-size: 16px;
                 box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.4);
@@ -378,7 +378,7 @@ serve(async (req) => {
               }
               .footer-logo {
                 font-weight: 700;
-                color: #6366f1;
+                color: #f97316;
               }
               .footer-link {
                 color: #64748b;
