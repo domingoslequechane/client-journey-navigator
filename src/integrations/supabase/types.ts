@@ -1158,6 +1158,7 @@ export type Database = {
     Functions: {
       cleanup_old_support_tickets: { Args: never; Returns: undefined }
       generate_slug: { Args: { name: string }; Returns: string }
+      get_current_user_email: { Args: never; Returns: string }
       get_or_create_usage: {
         Args: { p_feature_type: string; p_organization_id: string }
         Returns: number
