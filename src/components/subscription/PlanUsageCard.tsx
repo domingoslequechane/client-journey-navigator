@@ -71,7 +71,7 @@ export function PlanUsageCard() {
           <UsageIndicator
             current={usage.clientsCount}
             max={limits.maxClients}
-            label="Clientes"
+            label="Clientes Ativos"
           />
         )}
         

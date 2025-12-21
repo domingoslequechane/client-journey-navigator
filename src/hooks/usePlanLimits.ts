@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Stages that count towards client limits (operational stages)
+// Sales funnel stages (prospeccao, reuniao, contratacao) are unlimited
+const OPERATIONAL_STAGES = ['producao', 'trafego', 'retencao', 'fidelizacao'] as const;
+
 export type PlanType = 'free' | 'starter' | 'pro' | 'agency';
 
 interface PlanLimits {
@@ -120,11 +124,13 @@ export function usePlanLimits(): UsePlanLimitsReturn {
 
       // Get current usage counts
       const [clientsResult, teamResult, contractsUsage, aiUsage, templatesResult] = await Promise.all([
-        // Count clients
+        // Count only operational clients (production, campaigns, retention, loyalty)
+        // Sales funnel clients (prospecting, qualification, closing) are unlimited
         supabase
           .from('clients')
           .select('id', { count: 'exact', head: true })
-          .eq('organization_id', orgId),
+          .eq('organization_id', orgId)
+          .in('current_stage', OPERATIONAL_STAGES),
         // Count active team members from organization_members
         supabase
           .from('organization_members')
