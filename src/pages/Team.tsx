@@ -11,8 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw, Lock } from 'lucide-react';
+import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw, Lock, Ban } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { z } from 'zod';
@@ -26,9 +25,10 @@ interface TeamMember {
   role: 'sales' | 'operations' | 'campaign_management' | 'admin';
   created_at: string | null;
   email?: string | null;
-  status?: 'active' | 'pending' | 'suspended';
+  status: 'active' | 'pending' | 'suspended';
+  type: 'member' | 'invite';
+  inviteId?: string;
 }
-
 
 const ROLE_LABELS: Record<string, string> = {
   sales: 'Vendas',
@@ -78,6 +78,8 @@ export default function Team() {
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [adminPromotionDialogOpen, setAdminPromotionDialogOpen] = useState(false);
   const [pendingAdminPromotion, setPendingAdminPromotion] = useState<{ member: TeamMember; role: string } | null>(null);
+  const [cancelInviteDialogOpen, setCancelInviteDialogOpen] = useState(false);
+  const [inviteToCancel, setInviteToCancel] = useState<TeamMember | null>(null);
 
   useEffect(() => {
     checkAdminStatus();
@@ -110,7 +112,6 @@ export default function Team() {
         .eq('id', user.id)
         .single();
 
-      // Check if user is proprietor
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
@@ -119,7 +120,6 @@ export default function Team() {
         .maybeSingle();
 
       setIsProprietor(roleData?.role === 'proprietor');
-      // Use current_organization_id if available, fallback to organization_id
       setCurrentUserOrgId(profile?.current_organization_id || profile?.organization_id || null);
       setIsCurrentUserAdmin(profile?.role === 'admin' || roleData?.role === 'proprietor');
     } catch (error) {
@@ -146,22 +146,30 @@ export default function Team() {
 
       if (membersError) throw membersError;
 
-      if (!orgMembers || orgMembers.length === 0) {
-        setMembers([]);
-        return;
+      // Fetch pending invites from organization_invites table
+      const { data: pendingInvites, error: invitesError } = await supabase
+        .from('organization_invites')
+        .select('id, email, full_name, role, created_at, status')
+        .eq('organization_id', currentUserOrgId)
+        .eq('status', 'pending');
+
+      if (invitesError) throw invitesError;
+
+      // Fetch profiles for active members
+      const memberUserIds = orgMembers?.map(m => m.user_id) || [];
+      let profiles: any[] = [];
+      
+      if (memberUserIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', memberUserIds);
+
+        if (profilesError) throw profilesError;
+        profiles = profilesData || [];
       }
 
-      const memberUserIds = orgMembers.map(m => m.user_id);
-
-      // Fetch profiles for these members
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('id', memberUserIds);
-
-      if (profilesError) throw profilesError;
-
-      // Fetch proprietor user IDs to filter them out (unless current user is proprietor)
+      // Fetch proprietor user IDs to filter them out
       const { data: proprietorRoles } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -170,41 +178,42 @@ export default function Team() {
       const proprietorIds = new Set(proprietorRoles?.map(r => r.user_id) || []);
 
       // Filter out proprietors unless the current user is a proprietor
-      const filteredProfiles = profiles?.filter(profile => {
-        if (isProprietor) {
-          return true;
-        }
+      const filteredProfiles = profiles.filter(profile => {
+        if (isProprietor) return true;
         return !proprietorIds.has(profile.id);
-      }) || [];
-
-      // Fetch login history to determine if users have accepted their invite
-      const userIds = filteredProfiles.map(p => p.id);
-      const { data: loginHistory } = await supabase
-        .from('login_history')
-        .select('user_id')
-        .in('user_id', userIds);
-
-      const usersWithLogins = new Set(loginHistory?.map(l => l.user_id) || []);
-
-      // Create a map of user_id to role from organization_members
-      const memberRoleMap = new Map(orgMembers.map(m => [m.user_id, m.role]));
-
-      const membersWithStatus = filteredProfiles.map(member => {
-        let status: 'active' | 'pending' | 'suspended' = 'active';
-        if ((member as any).suspended) {
-          status = 'suspended';
-        } else if (!usersWithLogins.has(member.id)) {
-          status = 'pending';
-        }
-        return {
-          ...member,
-          // Use role from organization_members for this specific org
-          role: memberRoleMap.get(member.id) || member.role,
-          status,
-        };
       });
 
-      setMembers(membersWithStatus);
+      // Create a map of user_id to role from organization_members
+      const memberRoleMap = new Map(orgMembers?.map(m => [m.user_id, m.role]) || []);
+
+      // Map active members
+      const activeMembers: TeamMember[] = filteredProfiles.map(member => ({
+        id: member.id,
+        full_name: member.full_name,
+        avatar_url: member.avatar_url,
+        role: memberRoleMap.get(member.id) || member.role,
+        created_at: member.created_at,
+        email: member.email,
+        status: member.suspended ? 'suspended' : 'active',
+        type: 'member' as const,
+      }));
+
+      // Map pending invites
+      const pendingMembers: TeamMember[] = (pendingInvites || []).map(invite => ({
+        id: invite.id,
+        full_name: invite.full_name,
+        avatar_url: null,
+        role: invite.role as any,
+        created_at: invite.created_at,
+        email: invite.email,
+        status: 'pending' as const,
+        type: 'invite' as const,
+        inviteId: invite.id,
+      }));
+
+      // Combine and sort: active first, then pending
+      const allMembers = [...activeMembers, ...pendingMembers];
+      setMembers(allMembers);
     } catch (error) {
       console.error('Error fetching members:', error);
       toast({ title: 'Erro', description: 'Não foi possível carregar a equipe', variant: 'destructive' });
@@ -240,14 +249,13 @@ export default function Team() {
         throw new Error(response.error.message || 'Erro ao enviar convite');
       }
 
-      // Check if this was an existing user being added to the org
-      const isExistingUser = response.data?.isExistingUser;
-      
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
       toast({ 
-        title: isExistingUser ? 'Membro adicionado!' : 'Convite enviado!', 
-        description: isExistingUser 
-          ? `${fullName} foi adicionado à equipe e recebeu uma notificação por e-mail.`
-          : `Um e-mail de convite foi enviado para ${email}` 
+        title: 'Convite enviado!', 
+        description: `Um e-mail de convite foi enviado para ${email}` 
       });
       setInviteOpen(false);
       setEmail('');
@@ -269,7 +277,6 @@ export default function Team() {
   const handleChangeRole = async () => {
     if (!selectedMember || !newRole) return;
     
-    // If promoting to admin, show special confirmation dialog
     if (newRole === 'admin' && selectedMember.role !== 'admin') {
       setPendingAdminPromotion({ member: selectedMember, role: newRole });
       setAdminPromotionDialogOpen(true);
@@ -289,6 +296,15 @@ export default function Team() {
         .eq('id', memberId);
 
       if (error) throw error;
+
+      // Also update organization_members
+      if (currentUserOrgId) {
+        await supabase
+          .from('organization_members')
+          .update({ role: role as any })
+          .eq('user_id', memberId)
+          .eq('organization_id', currentUserOrgId);
+      }
 
       toast({ title: 'Sucesso!', description: 'Função alterada com sucesso' });
       setRoleDialogOpen(false);
@@ -318,7 +334,6 @@ export default function Team() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
-      // Use the database function to remove from team (not delete user)
       const { data, error } = await supabase.rpc('remove_from_team', {
         member_user_id: memberToRemove.id,
         org_uuid: currentUserOrgId,
@@ -409,6 +424,10 @@ export default function Team() {
         throw new Error(response.error.message || 'Erro ao reenviar convite');
       }
 
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
       toast({ 
         title: 'Convite reenviado!', 
         description: `Um novo e-mail foi enviado para ${member.email}` 
@@ -425,7 +444,37 @@ export default function Team() {
     }
   };
 
-  // Show loading while checking admin status
+  const handleCancelInvite = async () => {
+    if (!inviteToCancel?.inviteId) return;
+
+    setActionLoading(inviteToCancel.id);
+    try {
+      const { error } = await supabase
+        .from('organization_invites')
+        .update({ status: 'cancelled' })
+        .eq('id', inviteToCancel.inviteId);
+
+      if (error) throw error;
+
+      toast({ 
+        title: 'Convite cancelado', 
+        description: 'O convite foi cancelado com sucesso' 
+      });
+      fetchMembers();
+    } catch (error) {
+      console.error('Error cancelling invite:', error);
+      toast({ 
+        title: 'Erro', 
+        description: 'Não foi possível cancelar o convite', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setActionLoading(null);
+      setCancelInviteDialogOpen(false);
+      setInviteToCancel(null);
+    }
+  };
+
   if (isCurrentUserAdmin === null) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -434,7 +483,6 @@ export default function Team() {
     );
   }
 
-  // Don't render if not admin (redirect will happen)
   if (!isCurrentUserAdmin) {
     return null;
   }
@@ -607,6 +655,32 @@ export default function Team() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Cancel Invite Confirmation Dialog */}
+      <AlertDialog open={cancelInviteDialogOpen} onOpenChange={setCancelInviteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar Convite</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar o convite para {inviteToCancel?.full_name || inviteToCancel?.email}? 
+              O link de convite será invalidado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelInvite}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {actionLoading === inviteToCancel?.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Cancelar Convite'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Admin Promotion Confirmation Dialog */}
       <AlertDialog open={adminPromotionDialogOpen} onOpenChange={setAdminPromotionDialogOpen}>
         <AlertDialogContent>
@@ -672,8 +746,8 @@ export default function Team() {
               </TableRow>
             ) : (
               members.map(member => {
-                const StatusIcon = STATUS_CONFIG[member.status || 'active'].icon;
-                const hasAcceptedInvite = member.status !== 'pending' && member.full_name;
+                const StatusIcon = STATUS_CONFIG[member.status].icon;
+                const isPending = member.type === 'invite';
                 return (
                   <TableRow key={member.id}>
                     <TableCell>
@@ -698,15 +772,10 @@ export default function Team() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant="secondary" className={`gap-1 ${STATUS_CONFIG[member.status || 'active'].color}`}>
-                          <StatusIcon className="h-3 w-3" />
-                          {STATUS_CONFIG[member.status || 'active'].label}
-                        </Badge>
-                        {member.status === 'pending' && (
-                          <span className="text-xs text-muted-foreground">Convite pendente</span>
-                        )}
-                      </div>
+                      <Badge variant="secondary" className={`gap-1 ${STATUS_CONFIG[member.status].color}`}>
+                        <StatusIcon className="h-3 w-3" />
+                        {STATUS_CONFIG[member.status].label}
+                      </Badge>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-muted-foreground">
                       {member.created_at 
@@ -726,44 +795,57 @@ export default function Team() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {member.status === 'pending' && (
+                          {isPending ? (
                             <>
                               <DropdownMenuItem onClick={() => handleResendInvite(member)}>
                                 <RefreshCw className="h-4 w-4 mr-2" />
                                 Reenviar Convite
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setInviteToCancel(member);
+                                  setCancelInviteDialogOpen(true);
+                                }}
+                                className="text-destructive"
+                              >
+                                <Ban className="h-4 w-4 mr-2" />
+                                Cancelar Convite
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            <>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedMember(member);
+                                setNewRole(member.role);
+                                setRoleDialogOpen(true);
+                              }}>
+                                <Shield className="h-4 w-4 mr-2" />
+                                Alterar Privilégios
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleSuspend(member)}>
+                                {member.status === 'suspended' ? (
+                                  <>
+                                    <UserCheck className="h-4 w-4 mr-2" />
+                                    Ativar
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserX className="h-4 w-4 mr-2" />
+                                    Suspender
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => openRemoveDialog(member)}
+                                className="text-destructive"
+                              >
+                                <UserX className="h-4 w-4 mr-2" />
+                                Remover da Equipe
+                              </DropdownMenuItem>
                             </>
                           )}
-                          <DropdownMenuItem onClick={() => {
-                            setSelectedMember(member);
-                            setNewRole(member.role);
-                            setRoleDialogOpen(true);
-                          }}>
-                            <Shield className="h-4 w-4 mr-2" />
-                            Alterar Privilégios
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggleSuspend(member)}>
-                            {member.status === 'suspended' ? (
-                              <>
-                                <UserCheck className="h-4 w-4 mr-2" />
-                                Ativar
-                              </>
-                            ) : (
-                              <>
-                                <UserX className="h-4 w-4 mr-2" />
-                                Suspender
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => openRemoveDialog(member)}
-                            className="text-destructive"
-                          >
-                            <UserX className="h-4 w-4 mr-2" />
-                            Remover da Equipe
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -774,7 +856,6 @@ export default function Team() {
           </TableBody>
         </Table>
       </AnimatedContainer>
-
     </div>
   );
 }
