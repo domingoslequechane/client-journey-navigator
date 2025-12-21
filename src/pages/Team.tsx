@@ -345,24 +345,24 @@ export default function Team() {
     
     setActionLoading(memberToRemove.id);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
-      const { data, error } = await supabase.rpc('remove_from_team', {
-        member_user_id: memberToRemove.id,
-        org_uuid: currentUserOrgId,
-        removed_by_user_id: user.id
+      const { data, error } = await supabase.functions.invoke('remove-member', {
+        body: {
+          memberId: memberToRemove.id,
+          memberEmail: memberToRemove.email,
+          memberName: memberToRemove.full_name,
+          organizationId: currentUserOrgId,
+        },
       });
 
       if (error) throw error;
 
-      if (!data) {
-        throw new Error('Não foi possível remover o membro da equipe');
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       toast({ 
         title: 'Sucesso!', 
-        description: 'Membro removido da equipe com sucesso' 
+        description: 'Membro removido da equipe e notificado por email' 
       });
       fetchMembers();
     } catch (error) {
