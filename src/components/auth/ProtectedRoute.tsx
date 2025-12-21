@@ -218,9 +218,27 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     if (!subLoading && organization) {
       checkOnboarding();
     } else if (!subLoading && !organization && isSystemAdmin === false) {
-      // No organization and not system admin - needs onboarding
-      setNeedsOnboarding(true);
-      checkPlanSelection();
+      // Verificar se o usuário realmente não tem organização antes de definir needsOnboarding
+      const checkIfTrulyNoOrg = async () => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id, current_organization_id')
+          .eq('id', user?.id)
+          .maybeSingle();
+        
+        const orgId = profile?.current_organization_id || profile?.organization_id;
+        
+        if (!orgId) {
+          // Realmente não tem organização - precisa de onboarding
+          setNeedsOnboarding(true);
+          checkPlanSelection();
+        }
+        // Se tem orgId, aguardar o useSubscription carregar a organization
+      };
+      
+      if (user) {
+        checkIfTrulyNoOrg();
+      }
     }
   }, [user, organization, subLoading, isSystemAdmin]);
 
