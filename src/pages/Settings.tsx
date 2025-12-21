@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone, AlertTriangle, Sparkles } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { useAuth } from '@/contexts/AuthContext';
@@ -67,6 +68,7 @@ export default function Settings() {
   const [organizationName, setOrganizationName] = useState('');
   const [isOwner, setIsOwner] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(true);
 
   const [profile, setProfile] = useState<UserProfile>({
     full_name: '',
@@ -121,7 +123,7 @@ export default function Settings() {
         const { data: orgData, error: orgError } = await supabase
           .from('organizations')
           .select(
-            'id, phone, name, owner_id, headquarters, nuit, representative_name, representative_position, knowledge_base_url, knowledge_base_name, knowledge_base_text'
+            'id, phone, name, owner_id, headquarters, nuit, representative_name, representative_position, knowledge_base_url, knowledge_base_name, knowledge_base_text, onboarding_completed'
           )
           .eq('id', orgId)
           .single();
@@ -132,6 +134,7 @@ export default function Settings() {
           setOrganizationPhone(orgData.phone || '');
           setOrganizationName(orgData.name || '');
           setIsOwner(orgData.owner_id === user.id);
+          setOnboardingCompleted(orgData.onboarding_completed ?? false);
 
           setSettings(prev => ({
             ...prev,
@@ -172,14 +175,8 @@ export default function Settings() {
 
     setSaving(true);
     try {
-      const isComplete = Boolean(
-        settings.agency_name?.trim() &&
-          settings.headquarters?.trim() &&
-          settings.nuit?.trim() &&
-          organizationPhone?.trim() &&
-          settings.representative_name?.trim() &&
-          settings.representative_position?.trim()
-      );
+      // Apenas o nome da agência é obrigatório para o onboarding inicial
+      const isComplete = Boolean(settings.agency_name?.trim());
 
       const { error } = await supabase
         .from('organizations')
@@ -197,12 +194,11 @@ export default function Settings() {
       if (error) throw error;
 
       setOrganizationName(settings.agency_name.trim());
+      setOnboardingCompleted(isComplete);
 
       toast({
         title: 'Sucesso!',
-        description: isComplete
-          ? 'Configuração da agência concluída.'
-          : 'Configurações salvas. Preencha todos os campos para concluir o onboarding.',
+        description: 'Configurações da agência salvas com sucesso.',
       });
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -610,6 +606,16 @@ export default function Settings() {
 
         {/* Agency Tab */}
         <TabsContent value="agency">
+          {!onboardingCompleted && isAdmin && (
+            <Alert className="mb-6 border-primary/50 bg-primary/5">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <AlertTitle className="text-primary">Bem-vindo! Configure sua agência</AlertTitle>
+              <AlertDescription className="text-muted-foreground">
+                Para começar a usar o sistema, preencha pelo menos o <strong>nome da sua agência</strong> abaixo. 
+                Os demais campos são opcionais e podem ser preenchidos depois.
+              </AlertDescription>
+            </Alert>
+          )}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -625,14 +631,21 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="agency_name">Nome da Agência</Label>
+                <Label htmlFor="agency_name" className="flex items-center gap-1">
+                  Nome da Agência
+                  <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="agency_name"
                   placeholder="Ex: Onix Agence"
                   value={settings.agency_name}
                   onChange={(e) => setSettings(prev => ({ ...prev, agency_name: e.target.value }))}
                   disabled={!isAdmin}
+                  className={!settings.agency_name?.trim() && !onboardingCompleted ? 'border-destructive' : ''}
                 />
+                {!settings.agency_name?.trim() && !onboardingCompleted && (
+                  <p className="text-xs text-destructive">Campo obrigatório</p>
+                )}
               </div>
 
               <div className="space-y-2">

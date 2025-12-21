@@ -160,14 +160,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           return;
         }
 
-        const hasRequiredFields = Boolean(
-          orgData?.name?.trim() &&
-            orgData?.headquarters?.trim() &&
-            orgData?.nuit?.trim() &&
-            orgData?.phone?.trim() &&
-            orgData?.representative_name?.trim() &&
-            orgData?.representative_position?.trim()
-        );
+        // Apenas o nome da agência é obrigatório para o onboarding inicial
+        const hasRequiredFields = Boolean(orgData?.name?.trim());
 
         const isComplete = orgData?.onboarding_completed === true && hasRequiredFields;
         setNeedsOnboarding(!isComplete);
