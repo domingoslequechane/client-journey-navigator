@@ -41,12 +41,12 @@ interface UsePlanLimitsReturn {
   refetch: () => Promise<void>;
 }
 
-// Default limits for the Bússola plan ($4/month)
+// Default limits for the Bússola plan (Free forever)
 const DEFAULT_LIMITS: PlanLimits = {
-  maxClients: 6,
-  maxContractsPerMonth: 6,
-  maxAIMessagesPerMonth: 150,
-  maxTeamMembers: 2,
+  maxClients: 3,
+  maxContractsPerMonth: 3,
+  maxAIMessagesPerMonth: 90,
+  maxTeamMembers: 1,
   maxContractTemplates: 1,
   canExportData: false,
 };

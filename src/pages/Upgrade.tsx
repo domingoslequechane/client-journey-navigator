@@ -98,24 +98,24 @@ interface PlanConfig {
 const plans: Record<PlanType, PlanConfig> = {
   free: {
     name: 'Bússola',
-    price: 4,
-    priceLabel: '$4/mês',
+    price: 0,
+    priceLabel: 'Grátis',
     description: 'Para começar sua jornada',
     features: [
-      { text: 'Até 6 clientes', included: true },
-      { text: '6 contratos/mês', included: true },
-      { text: '150 mensagens IA/mês', included: true },
-      { text: '2 usuários', included: true },
+      { text: 'Até 3 clientes', included: true },
+      { text: '3 contratos/mês', included: true },
+      { text: '90 mensagens IA/mês', included: true },
+      { text: '1 usuário', included: true },
       { text: '1 template de contrato', included: true },
       { text: 'Suporte por email', included: true },
       { text: 'Exportação de dados', included: false },
       { text: 'Suporte prioritário', included: false },
     ],
     limits: {
-      clients: '6',
-      contracts: '6/mês',
-      ai: '150 msgs/mês',
-      team: '2 usuários',
+      clients: '3',
+      contracts: '3/mês',
+      ai: '90 msgs/mês',
+      team: '1 usuário',
       templates: '1 template',
     },
   },
@@ -128,7 +128,7 @@ const plans: Record<PlanType, PlanConfig> = {
       { text: 'Até 15 clientes', included: true },
       { text: '15 contratos/mês', included: true },
       { text: '500 mensagens IA/mês', included: true },
-      { text: '7 usuários', included: true },
+      { text: '5 usuários', included: true },
       { text: '3 templates de contrato', included: true },
       { text: 'Exportação de dados', included: true },
       { text: 'Suporte por email', included: true },
@@ -138,7 +138,7 @@ const plans: Record<PlanType, PlanConfig> = {
       clients: '15',
       contracts: '15/mês',
       ai: '500 msgs/mês',
-      team: '7 usuários',
+      team: '5 usuários',
       templates: '3 templates',
     },
   },
@@ -454,10 +454,21 @@ export default function Upgrade() {
                   </CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="pt-2">
-                    <span className="text-3xl font-bold" style={{ color: colors.text }}>
-                      ${plan.price}
-                    </span>
-                    <span className="text-muted-foreground">/mês</span>
+                    {planKey === 'free' ? (
+                      <>
+                        <span className="text-3xl font-bold" style={{ color: colors.text }}>
+                          Grátis
+                        </span>
+                        <p className="text-xs text-muted-foreground">para sempre</p>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold" style={{ color: colors.text }}>
+                          ${plan.price}
+                        </span>
+                        <span className="text-muted-foreground">/mês</span>
+                      </>
+                    )}
                   </div>
                   <p className="text-xs italic text-muted-foreground mt-1">
                     {planInfo.tagline}

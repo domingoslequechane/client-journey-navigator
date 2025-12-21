@@ -50,8 +50,8 @@ const PLAN_CONFIG = {
     bgColor: 'bg-green-500/10',
     borderColor: 'border-green-500/20',
     image: planBussola,
-    price: '$4/mês',
-    features: ['6 clientes', '2 usuários', '6 contratos/mês', '150 mensagens IA/mês']
+    price: 'Grátis',
+    features: ['3 clientes', '1 usuário', '3 contratos/mês', '90 mensagens IA/mês']
   },
   starter: { 
     name: 'Lança', 
@@ -61,7 +61,7 @@ const PLAN_CONFIG = {
     borderColor: 'border-blue-500/20',
     image: planLanca,
     price: '$10/mês',
-    features: ['15 clientes', '7 usuários', '15 contratos/mês', '500 mensagens IA/mês']
+    features: ['15 clientes', '5 usuários', '15 contratos/mês', '500 mensagens IA/mês']
   },
   pro: { 
     name: 'Arco', 

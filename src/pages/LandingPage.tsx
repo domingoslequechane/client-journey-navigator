@@ -49,13 +49,14 @@ const planConfig = {
   free: {
     name: 'Bússola',
     subtitle: 'Essencial',
-    price: 4,
+    price: 0,
     originalPrice: null,
+    isFree: true,
     tagline: 'Encontre o caminho certo para começar!',
     image: planBussola,
     color: 'hsl(142, 71%, 45%)',
     bgColor: 'hsl(142, 71%, 45%, 0.1)',
-    features: ['6 clientes', '6 contratos/mês', '2 usuários'],
+    features: ['3 clientes', '3 contratos/mês', '90 msgs IA', '1 usuário'],
   },
   starter: {
     name: 'Lança',
@@ -66,7 +67,7 @@ const planConfig = {
     image: planLanca,
     color: 'hsl(217, 91%, 60%)',
     bgColor: 'hsl(217, 91%, 60%, 0.1)',
-    features: ['15 clientes', '15 contratos/mês', '500 msgs IA', '7 usuários'],
+    features: ['15 clientes', '15 contratos/mês', '500 msgs IA', '5 usuários'],
   },
   pro: {
     name: 'Arco',
@@ -683,10 +684,21 @@ export default function LandingPage() {
                   </CardTitle>
                   <CardDescription>{plan.subtitle}</CardDescription>
                   <div className="pt-2">
-                    <span className="text-3xl font-bold" style={{ color: plan.color }}>
-                      ${plan.price}
-                    </span>
-                    <span className="text-muted-foreground">/mês</span>
+                    {'isFree' in plan && plan.isFree ? (
+                      <>
+                        <span className="text-3xl font-bold" style={{ color: plan.color }}>
+                          Grátis
+                        </span>
+                        <p className="text-xs text-muted-foreground">para sempre</p>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold" style={{ color: plan.color }}>
+                          ${plan.price}
+                        </span>
+                        <span className="text-muted-foreground">/mês</span>
+                      </>
+                    )}
                   </div>
                   <p className="text-xs italic text-muted-foreground mt-1">
                     {plan.tagline}
@@ -708,7 +720,7 @@ export default function LandingPage() {
                       style={{ backgroundColor: plan.color }}
                     >
                       <CreditCard className="h-4 w-4" />
-                      Assinar Agora
+                      {'isFree' in plan && plan.isFree ? 'Começar Grátis' : 'Assinar Agora'}
                     </Button>
                   </Link>
                 </CardContent>

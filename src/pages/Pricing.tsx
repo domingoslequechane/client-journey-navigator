@@ -17,7 +17,8 @@ const plans = [
     key: 'free',
     name: 'Bússola',
     subtitle: 'Essencial',
-    price: 4,
+    price: 0,
+    isFree: true,
     tagline: 'Encontre o caminho certo para começar!',
     image: planBussola,
     color: 'hsl(142, 71%, 45%)',
@@ -68,7 +69,7 @@ const comparisonFeatures = [
   {
     category: 'Gestão de Clientes',
     features: [
-      { name: 'Número de clientes', free: '6', starter: '15', pro: '50', agency: 'Ilimitado' },
+      { name: 'Número de clientes', free: '3', starter: '15', pro: '50', agency: 'Ilimitado' },
       { name: 'Pipeline Kanban', free: true, starter: true, pro: true, agency: true },
       { name: 'Qualificação BANT', free: true, starter: true, pro: true, agency: true },
       { name: 'Histórico de atividades', free: true, starter: true, pro: true, agency: true },
@@ -78,7 +79,7 @@ const comparisonFeatures = [
   {
     category: 'Contratos & Documentos',
     features: [
-      { name: 'Contratos por mês', free: '6', starter: '15', pro: '50', agency: 'Ilimitado' },
+      { name: 'Contratos por mês', free: '3', starter: '15', pro: '50', agency: 'Ilimitado' },
       { name: 'Templates de contrato', free: '1', starter: '3', pro: '10', agency: 'Ilimitado' },
       { name: 'Geração automática', free: true, starter: true, pro: true, agency: true },
       { name: 'Personalização avançada', free: true, starter: true, pro: true, agency: true },
@@ -87,7 +88,7 @@ const comparisonFeatures = [
   {
     category: 'Inteligência Artificial',
     features: [
-      { name: 'Mensagens IA por mês', free: '150', starter: '500', pro: '1200', agency: 'Ilimitado' },
+      { name: 'Mensagens IA por mês', free: '90', starter: '500', pro: '1200', agency: 'Ilimitado' },
       { name: 'Assistente de estratégia', free: true, starter: true, pro: true, agency: true },
       { name: 'Análise de cliente', free: true, starter: true, pro: true, agency: true },
       { name: 'Sugestões personalizadas', free: true, starter: true, pro: true, agency: true },
@@ -96,7 +97,7 @@ const comparisonFeatures = [
   {
     category: 'Equipe & Colaboração',
     features: [
-      { name: 'Usuários inclusos', free: '2', starter: '7', pro: '10', agency: '20' },
+      { name: 'Usuários inclusos', free: '1', starter: '5', pro: '10', agency: '20' },
       { name: 'Papéis e permissões', free: true, starter: true, pro: true, agency: true },
       { name: 'Gestão de equipe', free: true, starter: true, pro: true, agency: true },
       { name: 'Auditoria de ações', free: false, starter: false, pro: true, agency: true },
@@ -187,8 +188,17 @@ const Pricing = () => {
                 </CardHeader>
                 <CardContent className="text-center">
                   <div className="mb-4">
-                    <span className="text-4xl font-bold">${plan.price}</span>
-                    <span className="text-muted-foreground">/mês</span>
+                    {plan.isFree ? (
+                      <>
+                        <span className="text-4xl font-bold">Grátis</span>
+                        <p className="text-sm text-muted-foreground">para sempre</p>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-bold">${plan.price}</span>
+                        <span className="text-muted-foreground">/mês</span>
+                      </>
+                    )}
                   </div>
                   <Link to="/auth">
                     <Button 
