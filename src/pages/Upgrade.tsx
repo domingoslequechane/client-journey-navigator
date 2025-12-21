@@ -493,29 +493,44 @@ export default function Upgrade() {
                       Plano Atual
                     </Button>
                   ) : hasActiveSubscription ? (
-                    // User has active subscription - use change-plan API
-                    <Button 
-                      onClick={() => handleChangePlan(planKey)}
-                      disabled={isLoading || creatingCheckout !== null || changingPlan !== null}
-                      className="w-full gap-2 text-white"
-                      style={{ backgroundColor: colors.primary }}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          {isUpgrade ? 'Fazendo Upgrade...' : 'Fazendo Downgrade...'}
-                        </>
-                      ) : (
-                        <>
-                          {isUpgrade ? (
-                            <Crown className="h-4 w-4" />
-                          ) : (
-                            <CreditCard className="h-4 w-4" />
-                          )}
-                          {getButtonLabel(planKey, currentPlan)}
-                        </>
-                      )}
-                    </Button>
+                    // User has active subscription - use change-plan API (but not for free plan)
+                    planKey === 'free' ? (
+                      // Free plan requires cancellation, not change-plan
+                      <Button 
+                        asChild
+                        variant="outline"
+                        className="w-full gap-2"
+                        style={{ borderColor: colors.border, color: colors.text }}
+                      >
+                        <Link to="/app/settings?tab=subscription">
+                          <CreditCard className="h-4 w-4" />
+                          Cancelar Assinatura
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={() => handleChangePlan(planKey)}
+                        disabled={isLoading || creatingCheckout !== null || changingPlan !== null}
+                        className="w-full gap-2 text-white"
+                        style={{ backgroundColor: colors.primary }}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            {isUpgrade ? 'Fazendo Upgrade...' : 'Fazendo Downgrade...'}
+                          </>
+                        ) : (
+                          <>
+                            {isUpgrade ? (
+                              <Crown className="h-4 w-4" />
+                            ) : (
+                              <CreditCard className="h-4 w-4" />
+                            )}
+                            {getButtonLabel(planKey, currentPlan)}
+                          </>
+                        )}
+                      </Button>
+                    )
                   ) : (
                     // No subscription - create new checkout
                     <Button 
