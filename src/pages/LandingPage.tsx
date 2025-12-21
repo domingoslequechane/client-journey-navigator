@@ -56,7 +56,7 @@ const planConfig = {
     image: planBussola,
     color: 'hsl(142, 71%, 45%)',
     bgColor: 'hsl(142, 71%, 45%, 0.1)',
-    features: ['3 clientes', '3 contratos/mês', '90 msgs IA', '1 usuário'],
+    features: ['3 clientes ativos', 'Funil ilimitado', '90 msgs IA', '1 usuário'],
   },
   starter: {
     name: 'Lança',
@@ -67,7 +67,7 @@ const planConfig = {
     image: planLanca,
     color: 'hsl(217, 91%, 60%)',
     bgColor: 'hsl(217, 91%, 60%, 0.1)',
-    features: ['15 clientes', '15 contratos/mês', '500 msgs IA', '5 usuários'],
+    features: ['15 clientes ativos', 'Funil ilimitado', '500 msgs IA', '5 usuários'],
   },
   pro: {
     name: 'Arco',
@@ -78,7 +78,7 @@ const planConfig = {
     image: planArco,
     color: 'hsl(270, 91%, 65%)',
     bgColor: 'hsl(270, 91%, 65%, 0.1)',
-    features: ['50 clientes', '50 contratos/mês', '1200 msgs IA', '10 usuários'],
+    features: ['50 clientes ativos', 'Funil ilimitado', '1200 msgs IA', '10 usuários'],
     popular: true,
   },
   agency: {
@@ -90,7 +90,7 @@ const planConfig = {
     image: planCatapulta,
     color: 'hsl(25, 95%, 53%)',
     bgColor: 'hsl(25, 95%, 53%, 0.1)',
-    features: ['Clientes ilimitados', 'Contratos ilimitados', 'IA ilimitada', '20 usuários'],
+    features: ['Clientes ilimitados', 'Funil ilimitado', 'IA ilimitada', '20 usuários'],
   },
 };
 

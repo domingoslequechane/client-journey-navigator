@@ -69,7 +69,8 @@ const comparisonFeatures = [
   {
     category: 'Gestão de Clientes',
     features: [
-      { name: 'Número de clientes', free: '3', starter: '15', pro: '50', agency: 'Ilimitado' },
+      { name: 'Clientes ativos (operacionais)', free: '3', starter: '15', pro: '50', agency: 'Ilimitado' },
+      { name: 'Funil de vendas (prospectos)', free: 'Ilimitado', starter: 'Ilimitado', pro: 'Ilimitado', agency: 'Ilimitado' },
       { name: 'Pipeline Kanban', free: true, starter: true, pro: true, agency: true },
       { name: 'Qualificação BANT', free: true, starter: true, pro: true, agency: true },
       { name: 'Histórico de atividades', free: true, starter: true, pro: true, agency: true },
