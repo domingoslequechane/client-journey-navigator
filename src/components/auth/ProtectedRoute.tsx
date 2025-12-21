@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { session, user, loading: authLoading } = useAuth();
+  const { session, user, loading: authLoading, isNewLogin, clearNewLoginFlag } = useAuth();
   const { loading: subLoading, hasAccess, organization } = useSubscription();
   const location = useLocation();
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
@@ -102,8 +102,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         return;
       }
 
-      if (orgs.length > 1 && !profile?.current_organization_id) {
-        // Multiple orgs but none selected - needs to select
+      if (orgs.length > 1 && (isNewLogin || !profile?.current_organization_id)) {
+        // Multiple orgs - force selection on new login or if none selected
         setNeedsOrgSelection(true);
         return;
       }
