@@ -64,3 +64,6 @@ verify_jwt = true
 
 [functions.accept-invite]
 verify_jwt = true
+
+[functions.remove-member]
+verify_jwt = true
