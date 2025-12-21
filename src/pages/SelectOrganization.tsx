@@ -23,7 +23,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function SelectOrganization() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, clearNewLoginFlag } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [selecting, setSelecting] = useState<string | null>(null);
@@ -104,6 +104,9 @@ export default function SelectOrganization() {
       if (!data) {
         throw new Error('Não foi possível selecionar a organização');
       }
+
+      // Clear the new login flag so user won't be redirected back here
+      clearNewLoginFlag();
 
       // Navigate to dashboard
       navigate('/app');

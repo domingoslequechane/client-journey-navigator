@@ -7,6 +7,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  isNewLogin: boolean;
+  clearNewLoginFlag: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,6 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isNewLogin, setIsNewLogin] = useState(false);
   const loginRecordedRef = useRef<string | null>(null);
 
   const recordLogin = async (userId: string, provider: string = 'email') => {
@@ -33,6 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const clearNewLoginFlag = () => {
+    setIsNewLogin(false);
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -41,15 +48,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Record login on SIGNED_IN event
+        // Record login and set new login flag on SIGNED_IN event
         if (event === 'SIGNED_IN' && session?.user) {
           const provider = session.user.app_metadata?.provider || 'email';
           recordLogin(session.user.id, provider);
+          setIsNewLogin(true);
         }
 
         // Reset ref on sign out
         if (event === 'SIGNED_OUT') {
           loginRecordedRef.current = null;
+          setIsNewLogin(false);
         }
       }
     );
@@ -69,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signOut, isNewLogin, clearNewLoginFlag }}>
       {children}
     </AuthContext.Provider>
   );
