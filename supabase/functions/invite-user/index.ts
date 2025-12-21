@@ -167,12 +167,221 @@ serve(async (req) => {
       }
 
       console.log(`Existing user ${email} added to organization ${adminOrgId}`);
+
+      // Send notification email to existing user about being added to a new organization
+      const baseUrl = "https://qualify.onixagence.com";
+      try {
+        await resend.emails.send({
+          from: "Qualify <no-reply@onixagence.com>",
+          to: [email],
+          subject: `Você foi adicionado à equipe ${organizationName}`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body { 
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; 
+                  line-height: 1.6; 
+                  color: #1e293b; 
+                  background-color: #f1f5f9;
+                  margin: 0;
+                  padding: 20px;
+                }
+                .email-wrapper {
+                  max-width: 600px; 
+                  margin: 0 auto;
+                  background: #ffffff;
+                  border-radius: 16px;
+                  overflow: hidden;
+                  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+                }
+                .header { 
+                  background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%); 
+                  color: white; 
+                  padding: 40px 30px;
+                  text-align: center; 
+                }
+                .logo-container {
+                  display: inline-block;
+                  width: 64px;
+                  height: 64px;
+                  background: rgba(255, 255, 255, 0.2);
+                  border-radius: 16px;
+                  margin-bottom: 16px;
+                  line-height: 64px;
+                  font-size: 32px;
+                  font-weight: 700;
+                }
+                .header h1 {
+                  margin: 0;
+                  font-size: 28px;
+                  font-weight: 700;
+                  letter-spacing: -0.5px;
+                }
+                .header p {
+                  margin: 8px 0 0;
+                  opacity: 0.9;
+                  font-size: 15px;
+                }
+                .content { 
+                  padding: 40px 30px; 
+                }
+                .greeting {
+                  font-size: 22px;
+                  font-weight: 600;
+                  color: #1e293b;
+                  margin: 0 0 20px;
+                }
+                .invite-text {
+                  font-size: 16px;
+                  color: #475569;
+                  margin: 0 0 24px;
+                }
+                .invite-text strong {
+                  color: #f97316;
+                }
+                .org-card {
+                  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+                  border: 1px solid #fed7aa;
+                  border-radius: 12px;
+                  padding: 20px;
+                  margin: 24px 0;
+                  text-align: center;
+                }
+                .org-icon {
+                  font-size: 32px;
+                  margin-bottom: 8px;
+                }
+                .org-name { 
+                  font-weight: 700; 
+                  color: #c2410c;
+                  font-size: 20px;
+                  display: block;
+                }
+                .role-section {
+                  text-align: center;
+                  margin: 24px 0;
+                }
+                .role-label {
+                  font-size: 14px;
+                  color: #64748b;
+                  margin-bottom: 8px;
+                }
+                .role-badge { 
+                  display: inline-block; 
+                  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
+                  color: white; 
+                  padding: 8px 20px; 
+                  border-radius: 24px; 
+                  font-size: 15px;
+                  font-weight: 600;
+                }
+                .info-box {
+                  background: #f0fdf4;
+                  border: 1px solid #bbf7d0;
+                  border-radius: 12px;
+                  padding: 16px;
+                  margin: 24px 0;
+                  text-align: center;
+                }
+                .info-box p {
+                  margin: 0;
+                  color: #166534;
+                  font-size: 14px;
+                }
+                .cta-section {
+                  text-align: center;
+                  margin: 32px 0;
+                }
+                .button { 
+                  display: inline-block; 
+                  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
+                  color: white !important; 
+                  padding: 16px 40px; 
+                  border-radius: 12px; 
+                  text-decoration: none;
+                  font-weight: 600;
+                  font-size: 16px;
+                  box-shadow: 0 4px 14px 0 rgba(249, 115, 22, 0.4);
+                }
+                .footer { 
+                  background: #f8fafc;
+                  border-top: 1px solid #e2e8f0;
+                  text-align: center; 
+                  padding: 24px 30px; 
+                  color: #94a3b8; 
+                  font-size: 13px; 
+                }
+                .footer p {
+                  margin: 0;
+                }
+                .footer a {
+                  text-decoration: none;
+                }
+                .footer-logo {
+                  font-weight: 700;
+                  color: #f97316;
+                }
+                .footer-link {
+                  color: #f97316;
+                  font-weight: 500;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="email-wrapper">
+                <div class="header">
+                  <div class="logo-container">Q</div>
+                  <h1>Qualify</h1>
+                  <p>Gestão Inteligente de Clientes</p>
+                </div>
+                <div class="content">
+                  <h2 class="greeting">Olá! 👋</h2>
+                  <p class="invite-text">
+                    <strong>${inviterName}</strong> adicionou você a uma nova equipe no Qualify.
+                  </p>
+                  
+                  <div class="org-card">
+                    <div class="org-icon">🏢</div>
+                    <span class="org-name">${organizationName}</span>
+                  </div>
+                  
+                  <div class="role-section">
+                    <p class="role-label">Sua função nesta equipe:</p>
+                    <span class="role-badge">✨ ${ROLE_LABELS[role]}</span>
+                  </div>
+
+                  <div class="info-box">
+                    <p>✓ Você já possui uma conta no Qualify. Basta fazer login e selecionar a organização para começar.</p>
+                  </div>
+                  
+                  <div class="cta-section">
+                    <a href="${baseUrl}/select-organization" class="button">Acessar Qualify</a>
+                  </div>
+                </div>
+                <div class="footer">
+                  <p>© ${new Date().getFullYear()} <a href="https://qualify.onixagence.com" class="footer-logo">Qualify</a> - <a href="https://onixagence.com" class="footer-link">Onix Agence</a></p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `,
+        });
+        console.log("Notification email sent to existing user:", email);
+      } catch (emailError) {
+        console.error("Error sending notification email to existing user:", emailError);
+        // Don't fail the operation if email fails
+      }
       
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: "Usuário existente adicionado à organização com sucesso",
-          userId: existingUserRecord.id
+          userId: existingUserRecord.id,
+          isExistingUser: true
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

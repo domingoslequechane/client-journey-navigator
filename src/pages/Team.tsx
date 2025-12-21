@@ -240,9 +240,14 @@ export default function Team() {
         throw new Error(response.error.message || 'Erro ao enviar convite');
       }
 
+      // Check if this was an existing user being added to the org
+      const isExistingUser = response.data?.isExistingUser;
+      
       toast({ 
-        title: 'Convite enviado!', 
-        description: `Um e-mail foi enviado para ${email}` 
+        title: isExistingUser ? 'Membro adicionado!' : 'Convite enviado!', 
+        description: isExistingUser 
+          ? `${fullName} foi adicionado à equipe e recebeu uma notificação por e-mail.`
+          : `Um e-mail de convite foi enviado para ${email}` 
       });
       setInviteOpen(false);
       setEmail('');
