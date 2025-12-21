@@ -44,7 +44,7 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { planType } = useSubscription();
+  const { planType, organization } = useSubscription();
   const { 
     canSeeSalesFunnel, 
     canSeeOperationalFlow, 
@@ -155,6 +155,32 @@ export function Sidebar() {
           </div>
           {!collapsed && <span className="font-bold text-xl">Qualify</span>}
         </div>
+
+        {/* Organization Name with Plan Color */}
+        {organization && (
+          collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="px-2 py-3 border-b border-border flex justify-center">
+                  <Building2 
+                    className="h-5 w-5"
+                    style={{ color: `hsl(var(--plan-${planType}-primary, var(--primary)))` }}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">{organization.name}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <div className="px-4 py-3 border-b border-border">
+              <p 
+                className="text-sm font-medium truncate"
+                style={{ color: `hsl(var(--plan-${planType}-primary, var(--primary)))` }}
+              >
+                {organization.name}
+              </p>
+            </div>
+          )
+        )}
         
         <nav className="flex-1 px-2 py-4 space-y-1">
           {navigation.map((item) => {

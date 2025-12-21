@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Building2, ChevronRight } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, Building2, ChevronRight, LogOut } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 
@@ -23,10 +23,28 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function SelectOrganization() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [selecting, setSelecting] = useState<string | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível sair da aplicação',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -133,7 +151,7 @@ export default function SelectOrganization() {
                 variant="outline"
                 className="w-full h-auto py-4 px-4 justify-between"
                 onClick={() => selectOrganization(org.organization_id)}
-                disabled={selecting !== null}
+                disabled={selecting !== null || loggingOut}
               >
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -154,6 +172,21 @@ export default function SelectOrganization() {
               </Button>
             ))}
           </CardContent>
+          <CardFooter className="flex justify-center pt-4 border-t">
+            <Button
+              variant="ghost"
+              className="text-muted-foreground hover:text-destructive gap-2"
+              onClick={handleLogout}
+              disabled={loggingOut || selecting !== null}
+            >
+              {loggingOut ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <LogOut className="h-4 w-4" />
+              )}
+              Sair da Aplicação
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     </PublicBackground>
