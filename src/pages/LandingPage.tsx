@@ -765,13 +765,28 @@ export default function LandingPage() {
                   Preciso de cartão de crédito para começar?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Sim, para começar a usar o Qualify você precisará escolher um plano e adicionar 
-                  uma forma de pagamento. Oferecemos planos a partir de $4/mês para você começar 
-                  a transformar a gestão da sua agência.
+                  Não! Oferecemos o plano <strong>Bússola</strong> completamente gratuito para sempre, 
+                  sem necessidade de cartão de crédito. Você pode começar agora e fazer upgrade quando 
+                  precisar de mais recursos.
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-2" className="bg-card border rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                  O que são clientes ativos e prospectos?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  <p className="mb-2">No Qualify, os clientes são divididos em duas categorias:</p>
+                  <p className="mb-2"><strong>Prospectos (Funil de Vendas):</strong> Clientes nos estágios de 
+                  Prospecção, Reunião e Contratação. Estes são <strong>ILIMITADOS</strong> em todos os planos! 
+                  Prospecte à vontade.</p>
+                  <p><strong>Clientes Ativos (Operacionais):</strong> Clientes nos estágios de Produção, 
+                  Tráfego, Retenção e Fidelização. Estes contam no limite do seu plano (ex: 3 no Bússola, 
+                  15 no Lança).</p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-3" className="bg-card border rounded-lg px-6">
                 <AccordionTrigger className="text-left font-semibold hover:no-underline">
                   Posso cancelar minha assinatura a qualquer momento?
                 </AccordionTrigger>
@@ -781,7 +796,7 @@ export default function LandingPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-3" className="bg-card border rounded-lg px-6">
+              <AccordionItem value="item-4" className="bg-card border rounded-lg px-6">
                 <AccordionTrigger className="text-left font-semibold hover:no-underline">
                   Posso mudar de plano depois?
                 </AccordionTrigger>
@@ -791,7 +806,7 @@ export default function LandingPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-4" className="bg-card border rounded-lg px-6">
+              <AccordionItem value="item-5" className="bg-card border rounded-lg px-6">
                 <AccordionTrigger className="text-left font-semibold hover:no-underline">
                   O que é a IA do Qualify e como ela funciona?
                 </AccordionTrigger>
@@ -802,12 +817,12 @@ export default function LandingPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-5" className="bg-card border rounded-lg px-6">
+              <AccordionItem value="item-6" className="bg-card border rounded-lg px-6">
                 <AccordionTrigger className="text-left font-semibold hover:no-underline">
                   Quantos usuários posso adicionar à minha equipe?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  O número de usuários varia conforme o plano: Bússola (2 usuários), Lança (7 usuários), 
+                  O número de usuários varia conforme o plano: Bússola (1 usuário), Lança (5 usuários), 
                   Arco (10 usuários) e Catapulta (20 usuários). Cada membro pode ter um perfil específico: 
                   Vendas, Operações, Campanhas ou Admin.
                 </AccordionContent>
