@@ -118,6 +118,71 @@ function LossIllustration() {
   );
 }
 
+// Dashboard Illustration - Revenue, Leads & AI Suggestions
+function DashboardIllustration() {
+  return (
+    <div className="w-full h-full bg-[#1a1a1a] rounded-xl overflow-hidden p-4 min-h-[280px]">
+      {/* Window Header */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-destructive/80" />
+          <div className="w-3 h-3 rounded-full bg-warning/80" />
+          <div className="w-3 h-3 rounded-full bg-success/80" />
+        </div>
+        <span className="text-xs text-muted-foreground ml-2">Qualify — Dashboard</span>
+      </div>
+      
+      {/* Dashboard Content */}
+      <div className="flex gap-3">
+        {/* Left Column - Stats */}
+        <div className="flex flex-col gap-3 w-[140px]">
+          {/* Revenue Card */}
+          <div className="bg-[#2a2a2a] rounded-lg p-3">
+            <div className="text-[10px] text-muted-foreground mb-1">Receita Prevista</div>
+            <div className="text-lg font-bold text-primary">R$ 47.500</div>
+            <div className="text-[10px] text-success">↑ 23% vs mês anterior</div>
+          </div>
+          
+          {/* Leads Card */}
+          <div className="bg-[#2a2a2a] rounded-lg p-3">
+            <div className="text-[10px] text-muted-foreground mb-1">Leads Quentes</div>
+            <div className="text-xl font-bold text-foreground">12</div>
+            <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
+              <div className="w-3/4 h-full bg-primary rounded-full" />
+            </div>
+          </div>
+        </div>
+        
+        {/* Right Column - Client Card */}
+        <div className="flex-1 bg-[#2a2a2a] rounded-lg p-3">
+          {/* Client Header */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">MC</div>
+              <div>
+                <div className="text-sm font-medium text-foreground">Marketing Corp</div>
+                <div className="text-[10px] text-muted-foreground">Última interação: há 2 dias</div>
+              </div>
+            </div>
+            <span className="text-[9px] px-2 py-0.5 rounded border border-primary text-primary">Lead Quente</span>
+          </div>
+          
+          {/* AI Suggestion */}
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-2.5">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="text-[10px]">✨</span>
+              <span className="text-[10px] font-medium text-primary">Sugestão da IA</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              "Este cliente não responde há 48h. Baseado no histórico, uma ligação agora tem 73% de chance de conversão."
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Pipeline Illustration - Organized Kanban
 function PipelineIllustration() {
   return (
@@ -237,8 +302,9 @@ export function AnimatedIllustration({
         return <ChaosIllustration />;
       case 'custo':
         return <LossIllustration />;
-      case 'solucao':
       case 'esperanca':
+        return <DashboardIllustration />;
+      case 'solucao':
         return <PipelineIllustration />;
       default:
         return <PipelineIllustration />;
