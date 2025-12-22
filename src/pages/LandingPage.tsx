@@ -16,12 +16,12 @@ import {
   Shield,
   Clock,
   TrendingUp,
+  TrendingDown,
   Star,
   CreditCard,
   HelpCircle,
   Bot,
   LayoutGrid,
-  DollarSign,
   AlertTriangle,
   Timer,
   UserX,
@@ -343,10 +343,10 @@ export default function LandingPage() {
               {/* Custo 1 */}
               <div className="bg-card border border-border rounded-2xl p-8 text-center hover:border-destructive/50 transition-all duration-300 hover:shadow-lg group">
                 <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <DollarSign className="h-8 w-8 text-destructive" />
+                  <TrendingDown className="h-8 w-8 text-destructive" />
                 </div>
-                <div className="text-4xl font-bold text-destructive mb-2">$2,000+</div>
-                <div className="text-sm text-muted-foreground mb-4">por mês em vendas perdidas</div>
+                <div className="text-3xl font-bold text-destructive mb-2">Perda de Receita</div>
+                <div className="text-sm text-muted-foreground mb-4">leads que nunca fecharam</div>
                 <p className="text-muted-foreground text-sm">
                   Leads esquecidos = contratos perdidos.
                 </p>
