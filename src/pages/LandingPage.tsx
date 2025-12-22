@@ -423,8 +423,8 @@ export default function LandingPage() {
                 Isso é o <span className="text-primary">Qualify</span>.
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Um quadro visual onde você vê exatamente onde cada cliente está — 
-                do primeiro contacto até a fidelização. Simples assim.
+                O CRM que <span className="text-foreground font-medium">pensa com você</span>. 
+                Veja cada cliente, preveja seu faturamento e deixe a IA sugerir sua próxima jogada.
               </p>
             </div>
             
