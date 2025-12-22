@@ -428,23 +428,37 @@ export default function LandingPage() {
               </p>
             </div>
             
-            {/* Mockup visual simples */}
-            <div className="bg-card border border-border rounded-2xl p-6 md:p-8 mb-16 shadow-xl">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="h-3 w-3 rounded-full bg-destructive/50" />
-                <div className="h-3 w-3 rounded-full bg-warning/50" />
-                <div className="h-3 w-3 rounded-full bg-primary/50" />
-                <span className="text-sm text-muted-foreground ml-2">Qualify — Pipeline</span>
+            {/* Mockup visual do Pipeline */}
+            <div className="bg-[#1a1a1a] border border-border/50 rounded-2xl p-6 md:p-8 mb-16 shadow-2xl">
+              <div className="flex items-center gap-2 mb-8">
+                <div className="h-3 w-3 rounded-full bg-red-500" />
+                <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                <div className="h-3 w-3 rounded-full bg-primary" />
+                <span className="text-sm text-muted-foreground ml-3">Qualify — Pipeline</span>
               </div>
               
-              <div className="grid grid-cols-4 md:grid-cols-7 gap-2 md:gap-4">
-                {['Prospecção', 'Reunião', 'Contratação', 'Produção', 'Tráfego', 'Retenção', 'Fidelização'].map((stage, i) => (
-                  <div key={stage} className="text-center">
-                    <div className="bg-muted rounded-lg p-2 md:p-3 mb-2 h-24 md:h-32 flex flex-col justify-between">
-                      <div className="text-xs font-medium text-muted-foreground truncate">{stage}</div>
-                      <div className="space-y-1">
-                        {[...Array(Math.max(1, 3 - i))].map((_, j) => (
-                          <div key={j} className="h-3 md:h-4 bg-primary/20 rounded animate-pulse" />
+              <div className="grid grid-cols-4 md:grid-cols-7 gap-3 md:gap-4">
+                {[
+                  { name: 'Prospecção', cards: 3 },
+                  { name: 'Reunião', cards: 2 },
+                  { name: 'Contratação', cards: 1 },
+                  { name: 'Produção', cards: 1 },
+                  { name: 'Tráfego', cards: 1 },
+                  { name: 'Retenção', cards: 1 },
+                  { name: 'Fidelização', cards: 1 }
+                ].map((stage) => (
+                  <div key={stage.name} className="flex flex-col">
+                    <div className="bg-[#2a2a2a] rounded-xl p-3 md:p-4 min-h-[140px] md:min-h-[160px] flex flex-col">
+                      <span className="text-xs md:text-sm font-medium text-foreground/80 mb-3 text-center truncate">
+                        {stage.name}
+                      </span>
+                      <div className="flex-1 flex flex-col justify-end gap-2">
+                        {[...Array(stage.cards)].map((_, j) => (
+                          <div 
+                            key={j} 
+                            className="h-4 md:h-5 bg-primary/60 rounded-md"
+                            style={{ opacity: 1 - (j * 0.15) }}
+                          />
                         ))}
                       </div>
                     </div>
