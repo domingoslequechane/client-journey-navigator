@@ -29,6 +29,7 @@ import {
   CalendarCheck,
   Wallet
 } from 'lucide-react';
+import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration';
 import { useEffect, useState, useRef } from 'react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
@@ -286,37 +287,34 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* IDENTIFICAÇÃO - Abertura da Ferida */}
+      {/* IDENTIFICAÇÃO - Abertura da Ferida (Condensado) */}
       <section id="problema" className="py-20 md:py-32">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-12 text-center">
-              Você conhece bem{' '}
-              <span className="text-destructive">essa rotina</span>.
-            </h2>
-            
-            <div className="space-y-8 text-lg md:text-xl text-muted-foreground leading-relaxed">
-              <p>
-                São <strong className="text-foreground">23h de uma quarta-feira</strong>. 
-                Você está tentando lembrar qual era o status daquele cliente que mandou mensagem 
-                no WhatsApp há 3 dias. Onde foi que você anotou mesmo?
-              </p>
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
+                  Você conhece bem{' '}
+                  <span className="text-destructive">essa rotina</span>.
+                </h2>
+                
+                <div className="space-y-6 text-lg md:text-xl text-muted-foreground leading-relaxed">
+                  <p>
+                    Leads perdidos no WhatsApp. Planilhas que ninguém entende. 
+                    Equipe sem saber o que fazer.
+                  </p>
+                  
+                  <p className="text-foreground font-medium">
+                    E você, no meio do caos, <span className="text-destructive">perdendo vendas todos os dias</span>.
+                  </p>
+                </div>
+              </div>
               
-              <p>
-                Enquanto isso, tem uma planilha aberta com <strong className="text-foreground">47 linhas desatualizadas</strong>, 
-                um Trello que ninguém da equipe usa direito, e aquele lead quente que você 
-                prometeu ligar "amanhã"... <span className="text-destructive">há duas semanas</span>.
-              </p>
-              
-              <p>
-                Sua equipe? Cada um faz do seu jeito. Um anota no caderno, outro no Notes do celular, 
-                outro simplesmente <strong className="text-foreground">não anota</strong>. 
-                E você, no meio de tudo, tentando fazer malabarismo com clientes, propostas e campanhas.
-              </p>
-              
-              <p className="text-center pt-8 text-foreground font-medium">
-                E você sabe que <span className="text-destructive">isso está te custando dinheiro</span>.
-              </p>
+              <AnimatedIllustration 
+                section="problema" 
+                animationDirection="right"
+                className="h-64 md:h-80"
+              />
             </div>
           </div>
         </div>
@@ -325,14 +323,21 @@ export default function LandingPage() {
       {/* AGITAÇÃO - O Custo de Continuar Assim */}
       <section className="py-20 md:py-32 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-center">
-              O preço de{' '}
-              <span className="text-destructive">continuar assim</span>.
-            </h2>
-            <p className="text-center text-muted-foreground text-lg mb-16">
-              Cada dia sem organização custa mais do que você imagina.
-            </p>
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
+              <AnimatedIllustration 
+                section="custo" 
+                animationDirection="left"
+                className="h-64 md:h-80 order-2 md:order-1"
+              />
+              
+              <div className="order-1 md:order-2">
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+                  O preço de{' '}
+                  <span className="text-destructive">continuar assim</span>.
+                </h2>
+              </div>
+            </div>
             
             <div className="grid md:grid-cols-3 gap-8">
               {/* Custo 1 */}
@@ -340,10 +345,10 @@ export default function LandingPage() {
                 <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                   <DollarSign className="h-8 w-8 text-destructive" />
                 </div>
-                <div className="text-4xl font-bold text-destructive mb-2">R$ 2.000+</div>
+                <div className="text-4xl font-bold text-destructive mb-2">$2,000+</div>
                 <div className="text-sm text-muted-foreground mb-4">por mês em vendas perdidas</div>
                 <p className="text-muted-foreground text-sm">
-                  Leads esquecidos no WhatsApp = contratos que nunca fecharam.
+                  Leads esquecidos = contratos perdidos.
                 </p>
               </div>
               
@@ -355,7 +360,7 @@ export default function LandingPage() {
                 <div className="text-4xl font-bold text-destructive mb-2">120h</div>
                 <div className="text-sm text-muted-foreground mb-4">desperdiçadas por mês</div>
                 <p className="text-muted-foreground text-sm">
-                  Tempo gasto organizando planilhas que deveria estar fechando negócios.
+                  Tempo em planilhas, não em vendas.
                 </p>
               </div>
               
@@ -367,62 +372,44 @@ export default function LandingPage() {
                 <div className="text-4xl font-bold text-destructive mb-2">40%</div>
                 <div className="text-sm text-muted-foreground mb-4">dos leads vão para concorrente</div>
                 <p className="text-muted-foreground text-sm">
-                  Enquanto você organiza, alguém mais rápido fecha o negócio.
+                  Quem responde primeiro, ganha.
                 </p>
               </div>
             </div>
             
-            <p className="text-center mt-16 text-lg text-foreground font-medium">
+            <p className="text-center mt-12 text-lg text-foreground font-medium">
               Não é falta de esforço. <span className="text-primary">É falta de sistema.</span>
             </p>
           </div>
         </div>
       </section>
 
-      {/* ESPERANÇA - A Virada */}
+      {/* ESPERANÇA - A Virada (Condensado) */}
       <section className="py-20 md:py-32">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-12">
-              Imagine abrir o computador e{' '}
-              <span className="text-primary">ver tudo no lugar</span>.
-            </h2>
-            
-            <div className="space-y-6 text-lg md:text-xl text-muted-foreground">
-              <div className="flex items-center gap-4 bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Eye className="h-6 w-6 text-primary" />
-                </div>
-                <p>
-                  <strong className="text-foreground">Ver em segundos</strong> onde está cada cliente 
-                  — quem precisa de follow-up, quem está pronto para fechar.
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <div className="text-center md:text-left">
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
+                  Imagine abrir o computador e{' '}
+                  <span className="text-primary">ver tudo no lugar</span>.
+                </h2>
+                
+                <p className="text-lg md:text-xl text-muted-foreground mb-6">
+                  Ver cada cliente. Saber o próximo passo. Prever quanto vai faturar.
+                </p>
+                
+                <p className="text-xl text-foreground font-medium">
+                  Sem planilhas. Sem WhatsApp. Sem caos.
                 </p>
               </div>
               
-              <div className="flex items-center gap-4 bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <CalendarCheck className="h-6 w-6 text-primary" />
-                </div>
-                <p>
-                  <strong className="text-foreground">Sua equipe saber exatamente</strong> o que fazer 
-                  com cada cliente, sem você ter que explicar.
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-4 bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Wallet className="h-6 w-6 text-primary" />
-                </div>
-                <p>
-                  <strong className="text-foreground">Saber quanto vai faturar</strong> este mês 
-                  — e ter previsibilidade para crescer.
-                </p>
-              </div>
+              <AnimatedIllustration 
+                section="esperanca" 
+                animationDirection="right"
+                className="h-64 md:h-80"
+              />
             </div>
-            
-            <p className="mt-12 text-xl text-foreground font-medium">
-              Sem planilhas. Sem WhatsApp. Sem caos.
-            </p>
           </div>
         </div>
       </section>
@@ -547,7 +534,7 @@ export default function LandingPage() {
             {/* Stats secundários */}
             <div className="grid grid-cols-3 gap-6 mt-12">
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">500+</div>
+                <div className="text-3xl font-bold text-primary mb-1">100+</div>
                 <div className="text-sm text-muted-foreground">Agências usando</div>
               </div>
               <div className="text-center">
@@ -555,7 +542,7 @@ export default function LandingPage() {
                 <div className="text-sm text-muted-foreground">Por dia economizadas</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">12k+</div>
+                <div className="text-3xl font-bold text-primary mb-1">1k+</div>
                 <div className="text-sm text-muted-foreground">Clientes gerenciados</div>
               </div>
             </div>
@@ -740,7 +727,7 @@ export default function LandingPage() {
           </Link>
           
           <p className="mt-10 text-primary-foreground/60 text-sm">
-            Junte-se a 500+ agências que pararam de perder vendas.
+            Junte-se a 100+ agências que pararam de perder vendas.
           </p>
         </div>
       </section>
