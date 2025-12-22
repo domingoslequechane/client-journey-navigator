@@ -1,6 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+
+// Static images - pre-generated for fast loading
+import illustrationProblema from '@/assets/landing/illustration-problema.png';
+import illustrationCusto from '@/assets/landing/illustration-custo.png';
+import illustrationEsperanca from '@/assets/landing/illustration-esperanca.png';
 
 type SectionType = 'problema' | 'custo' | 'solucao' | 'esperanca';
 
@@ -10,14 +13,18 @@ interface AnimatedIllustrationProps {
   animationDirection?: 'left' | 'right' | 'scale' | 'fade';
 }
 
+const sectionImages: Record<SectionType, string> = {
+  problema: illustrationProblema,
+  custo: illustrationCusto,
+  solucao: illustrationEsperanca, // Reuse esperanca for solucao
+  esperanca: illustrationEsperanca,
+};
+
 export function AnimatedIllustration({ 
   section, 
   className = '',
   animationDirection = 'fade'
 }: AnimatedIllustrationProps) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -39,39 +46,6 @@ export function AnimatedIllustration({
     return () => observer.disconnect();
   }, []);
 
-  // Fetch image from edge function
-  useEffect(() => {
-    const fetchImage = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const { data, error: fetchError } = await supabase.functions.invoke('generate-landing-image', {
-          body: { section }
-        });
-
-        if (fetchError) {
-          console.error('Error fetching image:', fetchError);
-          setError('Failed to load illustration');
-          return;
-        }
-
-        if (data?.imageUrl) {
-          setImageUrl(data.imageUrl);
-        } else if (data?.error) {
-          setError(data.error);
-        }
-      } catch (err) {
-        console.error('Error:', err);
-        setError('Failed to load illustration');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchImage();
-  }, [section]);
-
   // Animation classes based on direction
   const getAnimationClasses = () => {
     const baseClasses = 'transition-all duration-1000 ease-out';
@@ -92,33 +66,18 @@ export function AnimatedIllustration({
     return `${baseClasses} opacity-100 translate-x-0 translate-y-0 scale-100`;
   };
 
+  const imageUrl = sectionImages[section];
+
   return (
     <div 
       ref={ref}
-      className={`relative overflow-hidden rounded-2xl bg-muted/50 ${className} ${getAnimationClasses()}`}
+      className={`relative overflow-hidden rounded-2xl ${className} ${getAnimationClasses()}`}
     >
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      )}
-      
-      {error && !imageUrl && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
-          <div className="text-center text-muted-foreground text-sm px-4">
-            <p>{error}</p>
-          </div>
-        </div>
-      )}
-      
-      {imageUrl && (
-        <img 
-          src={imageUrl} 
-          alt={`Ilustração ${section}`}
-          className="w-full h-full object-cover"
-          onLoad={() => setIsLoading(false)}
-        />
-      )}
+      <img 
+        src={imageUrl} 
+        alt={`Ilustração ${section}`}
+        className="w-full h-full object-cover"
+      />
     </div>
   );
 }
