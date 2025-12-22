@@ -16,7 +16,6 @@ import {
   Shield,
   Clock,
   TrendingUp,
-  TrendingDown,
   Star,
   CreditCard,
   HelpCircle,
@@ -27,7 +26,8 @@ import {
   UserX,
   Eye,
   CalendarCheck,
-  Wallet
+  Wallet,
+  TrendingDown
 } from 'lucide-react';
 import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration';
 import { useEffect, useState, useRef } from 'react';
