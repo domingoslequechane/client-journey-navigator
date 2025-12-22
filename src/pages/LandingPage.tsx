@@ -428,42 +428,60 @@ export default function LandingPage() {
               </p>
             </div>
             
-            {/* Mockup visual do Pipeline */}
+            {/* Mockup visual - Dashboard Inteligente */}
             <div className="bg-[#1a1a1a] border border-border/50 rounded-2xl p-6 md:p-8 mb-16 shadow-2xl">
-              <div className="flex items-center gap-2 mb-8">
+              <div className="flex items-center gap-2 mb-6">
                 <div className="h-3 w-3 rounded-full bg-red-500" />
                 <div className="h-3 w-3 rounded-full bg-yellow-500" />
                 <div className="h-3 w-3 rounded-full bg-primary" />
-                <span className="text-sm text-muted-foreground ml-3">Qualify — Pipeline</span>
+                <span className="text-sm text-muted-foreground ml-3">Qualify — Dashboard</span>
               </div>
               
-              <div className="grid grid-cols-4 md:grid-cols-7 gap-3 md:gap-4">
-                {[
-                  { name: 'Prospecção', cards: 3 },
-                  { name: 'Reunião', cards: 2 },
-                  { name: 'Contratação', cards: 1 },
-                  { name: 'Produção', cards: 1 },
-                  { name: 'Tráfego', cards: 1 },
-                  { name: 'Retenção', cards: 1 },
-                  { name: 'Fidelização', cards: 1 }
-                ].map((stage) => (
-                  <div key={stage.name} className="flex flex-col">
-                    <div className="bg-[#2a2a2a] rounded-xl p-3 md:p-4 min-h-[140px] md:min-h-[160px] flex flex-col">
-                      <span className="text-xs md:text-sm font-medium text-foreground/80 mb-3 text-center truncate">
-                        {stage.name}
-                      </span>
-                      <div className="flex-1 flex flex-col justify-end gap-2">
-                        {[...Array(stage.cards)].map((_, j) => (
-                          <div 
-                            key={j} 
-                            className="h-4 md:h-5 bg-primary/60 rounded-md"
-                            style={{ opacity: 1 - (j * 0.15) }}
-                          />
-                        ))}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                {/* Métricas */}
+                <div className="space-y-4">
+                  <div className="bg-[#2a2a2a] rounded-xl p-4">
+                    <div className="text-xs text-muted-foreground mb-1">Receita Prevista</div>
+                    <div className="text-2xl font-bold text-primary">R$ 47.500</div>
+                    <div className="text-xs text-green-500 mt-1">↑ 23% vs mês anterior</div>
+                  </div>
+                  <div className="bg-[#2a2a2a] rounded-xl p-4">
+                    <div className="text-xs text-muted-foreground mb-1">Leads Quentes</div>
+                    <div className="text-2xl font-bold text-foreground">12</div>
+                    <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden">
+                      <div className="h-full bg-primary rounded-full w-3/4" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card de Cliente com IA */}
+                <div className="bg-[#2a2a2a] rounded-xl p-4 md:col-span-2">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-primary font-medium">MC</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-foreground">Marketing Corp</div>
+                      <div className="text-xs text-muted-foreground">Última interação: há 2 dias</div>
+                    </div>
+                    <div className="ml-auto">
+                      <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">Lead Quente</span>
+                    </div>
+                  </div>
+                  
+                  {/* Sugestão de IA */}
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <Bot className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="text-xs font-medium text-primary mb-1">Sugestão da IA</div>
+                        <div className="text-sm text-foreground/80">
+                          "Este cliente não responde há 48h. Baseado no histórico, uma ligação agora tem 73% de chance de conversão."
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
             </div>
             
