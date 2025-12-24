@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SnowEffect } from '@/components/effects/SnowEffect';
 import { 
   Accordion,
   AccordionContent,
@@ -129,6 +130,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden relative">
+      <SnowEffect />
       {/* Inline keyframes for animations */}
       <style>{`
         @keyframes shimmer {
@@ -644,9 +646,17 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <p className="text-center text-muted-foreground mt-12">
-            Cancele a qualquer momento. Sem taxas de cancelamento.
-          </p>
+          <div className="text-center mt-12 space-y-4">
+            <p className="text-muted-foreground">
+              Cancele a qualquer momento. Sem taxas de cancelamento.
+            </p>
+            <Link to="/pricing">
+              <Button variant="outline" size="lg" className="gap-2">
+                <Eye className="h-5 w-5" />
+                Comparar Planos em Detalhe
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
