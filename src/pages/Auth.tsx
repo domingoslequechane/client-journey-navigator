@@ -13,6 +13,7 @@ import { ArrowLeft, Mail, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { SnowEffect } from '@/components/effects/SnowEffect';
 
 const authSchema = z.object({
   email: z.string().email({ message: 'E-mail inválido' }),
@@ -348,6 +349,7 @@ export default function Auth() {
 
   return (
     <PublicBackground>
+      <SnowEffect />
       <div className="absolute top-4 right-4 z-50">
         <ThemeToggle />
       </div>
