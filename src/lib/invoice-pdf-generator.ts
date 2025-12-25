@@ -45,6 +45,7 @@ interface InvoiceData {
   primaryColor?: string;
   showWatermark?: boolean;
   customLayout?: InvoiceSection[];
+  footerText?: string;
 }
 
 // Parse hex color to RGB
