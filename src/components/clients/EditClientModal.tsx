@@ -21,12 +21,37 @@ interface EditClientModalProps {
   onClientUpdated: () => void;
 }
 
+interface FieldChange {
+  field: string;
+  label: string;
+  oldValue: string | number | null;
+  newValue: string | number | null;
+}
+
 const QUALIFICATION_OPTIONS = [
   { value: 'cold', label: 'Frio' },
   { value: 'warm', label: 'Morno' },
   { value: 'hot', label: 'Quente' },
   { value: 'qualified', label: 'Qualificado' },
 ];
+
+const FIELD_LABELS: Record<string, string> = {
+  company_name: 'Nome da Empresa',
+  contact_name: 'Nome do Contato',
+  email: 'Email',
+  phone: 'Telefone',
+  website: 'Website',
+  address: 'Endereço',
+  source: 'Fonte',
+  qualification: 'Qualificação',
+  notes: 'Observações',
+  monthly_budget: 'Orçamento Mensal',
+  paid_traffic_budget: 'Orçamento Tráfego',
+  bant_budget: 'BANT Budget',
+  bant_authority: 'BANT Authority',
+  bant_need: 'BANT Need',
+  bant_timeline: 'BANT Timeline',
+};
 
 export function EditClientModal({ open, onOpenChange, client, onClientUpdated }: EditClientModalProps) {
   const [saving, setSaving] = useState(false);
@@ -98,6 +123,81 @@ export function EditClientModal({ open, onOpenChange, client, onClientUpdated }:
     }
   };
 
+  const detectChanges = (): FieldChange[] => {
+    const changes: FieldChange[] = [];
+    
+    if (client.companyName !== companyName) {
+      changes.push({ field: 'company_name', label: FIELD_LABELS.company_name, oldValue: client.companyName, newValue: companyName });
+    }
+    if (client.contactName !== contactName) {
+      changes.push({ field: 'contact_name', label: FIELD_LABELS.contact_name, oldValue: client.contactName, newValue: contactName });
+    }
+    if ((client.email || '') !== email) {
+      changes.push({ field: 'email', label: FIELD_LABELS.email, oldValue: client.email, newValue: email || null });
+    }
+    if ((client.phone || '') !== phone) {
+      changes.push({ field: 'phone', label: FIELD_LABELS.phone, oldValue: client.phone, newValue: phone || null });
+    }
+    if ((client.website || '') !== website) {
+      changes.push({ field: 'website', label: FIELD_LABELS.website, oldValue: client.website, newValue: website || null });
+    }
+    if ((client.address || '') !== address) {
+      changes.push({ field: 'address', label: FIELD_LABELS.address, oldValue: client.address, newValue: address || null });
+    }
+    if ((client.source || '') !== source) {
+      changes.push({ field: 'source', label: FIELD_LABELS.source, oldValue: client.source, newValue: source || null });
+    }
+    if ((client.temperature || 'cold') !== qualification) {
+      changes.push({ field: 'qualification', label: FIELD_LABELS.qualification, oldValue: client.temperature, newValue: qualification });
+    }
+    if ((client.notes || '') !== notes) {
+      changes.push({ field: 'notes', label: FIELD_LABELS.notes, oldValue: client.notes, newValue: notes || null });
+    }
+    
+    const oldMonthly = client.monthlyBudget?.toString() || '';
+    if (oldMonthly !== monthlyBudget) {
+      changes.push({ field: 'monthly_budget', label: FIELD_LABELS.monthly_budget, oldValue: client.monthlyBudget, newValue: monthlyBudget ? parseFloat(monthlyBudget) : null });
+    }
+    
+    const oldTraffic = client.trafficBudget?.toString() || '';
+    if (oldTraffic !== trafficBudget) {
+      changes.push({ field: 'paid_traffic_budget', label: FIELD_LABELS.paid_traffic_budget, oldValue: client.trafficBudget, newValue: trafficBudget ? parseFloat(trafficBudget) : null });
+    }
+    
+    if (client.bant.budget !== bant.budget) {
+      changes.push({ field: 'bant_budget', label: FIELD_LABELS.bant_budget, oldValue: client.bant.budget, newValue: bant.budget });
+    }
+    if (client.bant.authority !== bant.authority) {
+      changes.push({ field: 'bant_authority', label: FIELD_LABELS.bant_authority, oldValue: client.bant.authority, newValue: bant.authority });
+    }
+    if (client.bant.need !== bant.need) {
+      changes.push({ field: 'bant_need', label: FIELD_LABELS.bant_need, oldValue: client.bant.need, newValue: bant.need });
+    }
+    if (client.bant.timeline !== bant.timeline) {
+      changes.push({ field: 'bant_timeline', label: FIELD_LABELS.bant_timeline, oldValue: client.bant.timeline, newValue: bant.timeline });
+    }
+    
+    return changes;
+  };
+
+  const logChanges = async (changes: FieldChange[], userId: string, orgId: string | null) => {
+    if (changes.length === 0) return;
+    
+    const activities = changes.map(change => ({
+      client_id: client.id,
+      type: 'field_change' as const,
+      title: `Alterou ${change.label}`,
+      description: `De "${change.oldValue ?? 'vazio'}" para "${change.newValue ?? 'vazio'}"`,
+      organization_id: orgId,
+      changed_by: userId,
+      field_name: change.field,
+      old_value: change.oldValue?.toString() || null,
+      new_value: change.newValue?.toString() || null,
+    }));
+    
+    await supabase.from('activities').insert(activities);
+  };
+
   const handleSave = async () => {
     if (!companyName || !contactName || !phone) {
       toast({ title: 'Erro', description: 'Preencha os campos obrigatórios', variant: 'destructive' });
@@ -106,6 +206,20 @@ export function EditClientModal({ open, onOpenChange, client, onClientUpdated }:
 
     setSaving(true);
     try {
+      // Get user and org info
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+      
+      // Detect changes before updating
+      const changes = detectChanges();
+      
+      // Update client
       const { error } = await supabase
         .from('clients')
         .update({
@@ -128,6 +242,9 @@ export function EditClientModal({ open, onOpenChange, client, onClientUpdated }:
         .eq('id', client.id);
 
       if (error) throw error;
+
+      // Log changes to activities
+      await logChanges(changes, user.id, profile?.organization_id || null);
 
       toast({ title: 'Sucesso!', description: 'Cliente atualizado com sucesso' });
       onOpenChange(false);
