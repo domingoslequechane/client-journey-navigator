@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, FileText, Palette, Check, PenSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { InvoiceTemplateEditor } from '@/components/invoice-editor/InvoiceTemplateEditor';
+import { SimplifiedEditor } from '@/components/invoice-editor/SimplifiedEditor';
 
 interface InvoiceTemplateSettingsProps {
   organizationId: string | null;
@@ -273,10 +273,10 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
               className="w-full gap-2"
             >
               <PenSquare className="h-4 w-4" />
-              Abrir Editor Visual (Drag & Drop)
+              Personalizar Layout da Factura
             </Button>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Crie um template personalizado arrastando variáveis para o canvas
+              Reorganize secções, mostre/oculte elementos e personalize cada parte
             </p>
           </div>
         )}
@@ -300,13 +300,15 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
       </CardContent>
 
       {/* Template Editor Modal */}
-      <InvoiceTemplateEditor
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        organizationId={organizationId}
-        primaryColor={settings.primary_color}
-        settingsId={settings.id}
-      />
+      {organizationId && (
+        <SimplifiedEditor
+          open={editorOpen}
+          onOpenChange={setEditorOpen}
+          organizationId={organizationId}
+          primaryColor={settings.primary_color}
+          settingsId={settings.id}
+        />
+      )}
     </Card>
   );
 }
