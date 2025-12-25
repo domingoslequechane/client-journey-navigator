@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Bar, BarChart, XAxis, YAxis, Cell } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, Cell, Legend } from 'recharts';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,30 +22,28 @@ const STAGE_CONFIG = [
   { id: 'fidelizacao', name: 'Fidelização', color: 'hsl(var(--primary))' },
 ];
 
-const chartConfig = STAGE_CONFIG.reduce((acc, stage) => {
-  acc[stage.id] = { label: stage.name, color: stage.color };
-  return acc;
-}, {} as ChartConfig);
+const chartConfig: ChartConfig = {
+  active: { label: 'Activos', color: 'hsl(var(--primary))' },
+  suspended: { label: 'Suspensos', color: 'hsl(var(--warning))' },
+};
 
 export function FunnelChart({ clients }: FunnelChartProps) {
-  const { chartData, suspendedByStage, totalSuspended } = useMemo(() => {
-    const activeClients = clients.filter(c => !c.paused);
-    const suspended: Record<string, number> = {};
-    
-    // Count suspended clients per stage
-    STAGE_CONFIG.forEach(stage => {
-      suspended[stage.id] = clients.filter(c => c.paused && c.current_stage === stage.id).length;
+  const { chartData, totalSuspended } = useMemo(() => {
+    const data = STAGE_CONFIG.map((stage) => {
+      const stageClients = clients.filter(c => c.current_stage === stage.id);
+      const activeCount = stageClients.filter(c => !c.paused).length;
+      const suspendedCount = stageClients.filter(c => c.paused).length;
+      
+      return {
+        stage: stage.name,
+        active: activeCount,
+        suspended: suspendedCount,
+        fill: stage.color,
+      };
     });
-    
-    const data = STAGE_CONFIG.map((stage) => ({
-      stage: stage.name,
-      count: activeClients.filter((c) => c.current_stage === stage.id).length,
-      fill: stage.color,
-    }));
     
     return {
       chartData: data,
-      suspendedByStage: suspended,
       totalSuspended: clients.filter(c => c.paused).length,
     };
   }, [clients]);
@@ -54,21 +52,19 @@ export function FunnelChart({ clients }: FunnelChartProps) {
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
     
-    const data = payload[0];
-    const stageName = data.payload.stage;
-    const stageConfig = STAGE_CONFIG.find(s => s.name === stageName);
-    const suspendedCount = stageConfig ? suspendedByStage[stageConfig.id] : 0;
+    const data = payload[0]?.payload;
+    if (!data) return null;
     
     return (
       <div className="rounded-lg border bg-background p-2 shadow-sm">
-        <div className="font-medium">{stageName}</div>
+        <div className="font-medium">{data.stage}</div>
         <div className="text-sm text-muted-foreground">
-          Activos: {data.value}
+          Activos: {data.active}
         </div>
-        {suspendedCount > 0 && (
+        {data.suspended > 0 && (
           <div className="text-sm text-warning flex items-center gap-1">
             <PauseCircle className="h-3 w-3" />
-            Suspensos: {suspendedCount}
+            Suspensos: {data.suspended}
           </div>
         )}
       </div>
@@ -106,14 +102,23 @@ export function FunnelChart({ clients }: FunnelChartProps) {
             />
             <ChartTooltip content={<CustomTooltip />} />
             <Bar 
-              dataKey="count" 
-              radius={[0, 4, 4, 0]}
+              dataKey="active" 
+              stackId="stack"
+              radius={[0, 0, 0, 0]}
               barSize={16}
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
+                <Cell key={`active-${index}`} fill={entry.fill} />
               ))}
             </Bar>
+            <Bar 
+              dataKey="suspended" 
+              stackId="stack"
+              radius={[0, 4, 4, 0]}
+              barSize={16}
+              fill="hsl(var(--warning))"
+              opacity={0.7}
+            />
           </BarChart>
         </ChartContainer>
       </CardContent>
