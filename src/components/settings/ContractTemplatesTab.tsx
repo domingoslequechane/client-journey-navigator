@@ -9,12 +9,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Loader2, Save, Edit2, X, FileText, Star, Lock, ArrowUpRight } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
+import { DocumentType, DOCUMENT_TYPE_LABELS } from '@/types';
 
 const PLAN_NAMES: Record<PlanType, string> = {
   free: 'Bússola',
@@ -22,11 +24,13 @@ const PLAN_NAMES: Record<PlanType, string> = {
   pro: 'Arco',
   agency: 'Catapulta',
 };
+
 interface ContractTemplate {
   id: string;
   name: string;
   content: string;
   is_default: boolean;
+  document_type: DocumentType;
 }
 
 const DEFAULT_TEMPLATE = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE MARKETING DIGITAL
@@ -109,6 +113,7 @@ export function ContractTemplatesTab() {
     name: '',
     content: '',
     is_default: false,
+    document_type: 'contract' as DocumentType,
   });
 
   const maxTemplates = limits.maxContractTemplates;
@@ -133,7 +138,10 @@ export function ContractTemplatesTab() {
         .order('name');
 
       if (error) throw error;
-      setTemplates(data || []);
+      setTemplates((data || []).map(t => ({
+        ...t,
+        document_type: (t.document_type || 'contract') as DocumentType
+      })));
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast({ title: 'Erro', description: 'Não foi possível carregar os templates', variant: 'destructive' });
@@ -165,6 +173,7 @@ export function ContractTemplatesTab() {
             name: formData.name.trim(),
             content: formData.content.trim(),
             is_default: formData.is_default,
+            document_type: formData.document_type,
           })
           .eq('id', editingId);
 
@@ -178,6 +187,7 @@ export function ContractTemplatesTab() {
             name: formData.name.trim(),
             content: formData.content.trim(),
             is_default: formData.is_default || templates.length === 0,
+            document_type: formData.document_type,
           });
 
         if (error) throw error;
@@ -195,7 +205,7 @@ export function ContractTemplatesTab() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', content: '', is_default: false });
+    setFormData({ name: '', content: '', is_default: false, document_type: 'contract' });
     setEditingId(null);
     setShowForm(false);
   };
@@ -206,6 +216,7 @@ export function ContractTemplatesTab() {
       name: template.name,
       content: template.content,
       is_default: template.is_default,
+      document_type: template.document_type,
     });
     setShowForm(true);
   };
@@ -315,8 +326,24 @@ export function ContractTemplatesTab() {
           <CardContent className="space-y-6">
             {showForm && (
               <div className="border border-border rounded-lg p-4 space-y-4">
-                <h4 className="font-medium">{editingId ? 'Editar Template' : 'Novo Template de Contrato'}</h4>
+                <h4 className="font-medium">{editingId ? 'Editar Template' : 'Novo Template de Documento'}</h4>
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Tipo de Documento *</Label>
+                    <Select 
+                      value={formData.document_type} 
+                      onValueChange={value => setFormData(prev => ({ ...prev, document_type: value as DocumentType }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-2">
                     <Label>Nome do Template *</Label>
                     <Input
@@ -326,14 +353,14 @@ export function ContractTemplatesTab() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Conteúdo do Contrato *</Label>
+                    <Label>Conteúdo do Documento *</Label>
                     <p className="text-xs text-muted-foreground mb-2">
                       Use variáveis como {'{{empresa_cliente}}'}, {'{{nome_contato}}'}, {'{{email_cliente}}'}, etc.
                     </p>
                     <Textarea
                       value={formData.content}
                       onChange={e => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                      placeholder="Conteúdo do contrato..."
+                      placeholder="Conteúdo do documento..."
                       rows={15}
                       className="font-mono text-sm"
                     />
@@ -343,7 +370,7 @@ export function ContractTemplatesTab() {
                       checked={formData.is_default}
                       onCheckedChange={checked => setFormData(prev => ({ ...prev, is_default: checked }))}
                     />
-                    <Label>Definir como template padrão</Label>
+                    <Label>Definir como template padrão para este tipo</Label>
                   </div>
                   <div className="flex gap-2">
                     <Button onClick={handleSaveTemplate} disabled={saving} className="gap-2">
@@ -397,6 +424,9 @@ export function ContractTemplatesTab() {
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-medium truncate">{template.name}</p>
+                              <Badge variant="outline" className="shrink-0">
+                                {DOCUMENT_TYPE_LABELS[template.document_type]}
+                              </Badge>
                               {template.is_default && (
                                 <Badge variant="secondary" className="gap-1 shrink-0">
                                   <Star className="h-3 w-3" />

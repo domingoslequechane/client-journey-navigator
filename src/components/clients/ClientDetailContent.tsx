@@ -1,4 +1,4 @@
-import { Client, ALL_STAGES, SOURCE_LABELS } from '@/types';
+import { Client, ALL_STAGES, SOURCE_LABELS, DocumentType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,15 +21,21 @@ import {
   Pencil,
   User,
   ClipboardList,
-  History
+  History,
+  ChevronDown,
+  Receipt,
+  Calculator,
+  FileCheck
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { ContractModal } from './ContractModal';
 import { EditClientModal } from './EditClientModal';
 import { GenerateContractModal } from './GenerateContractModal';
+import { GenerateDocumentModal } from './GenerateDocumentModal';
 import { ReportModal } from './ReportModal';
 import { DeleteClientModal } from './DeleteClientModal';
 import { ClientHistoryTab } from './ClientHistoryTab';
@@ -67,6 +73,8 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [contractUrl, setContractUrl] = useState<string | null>(null);
   const [contractName, setContractName] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('checklist');
+  const [documentModalOpen, setDocumentModalOpen] = useState(false);
+  const [selectedDocumentType, setSelectedDocumentType] = useState<DocumentType>('proforma_invoice');
   
   // Report modal state
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -620,7 +628,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         </div>
       </div>
 
-      {/* Action Buttons - Contract only */}
+      {/* Action Buttons - Contract and Documents */}
       {canSeeContract && (
         <div className="flex flex-wrap gap-2">
           <Button 
@@ -644,6 +652,41 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               Gerar Contrato
             </Button>
           )}
+          
+          {/* Documents Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2" disabled={isPaused}>
+                {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                Documentos
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => {
+                setSelectedDocumentType('proforma_invoice');
+                setDocumentModalOpen(true);
+              }}>
+                <Receipt className="h-4 w-4 mr-2" />
+                Factura Proforma
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setSelectedDocumentType('budget');
+                setDocumentModalOpen(true);
+              }}>
+                <Calculator className="h-4 w-4 mr-2" />
+                Orçamento
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setSelectedDocumentType('commercial_proposal');
+                setDocumentModalOpen(true);
+              }}>
+                <FileCheck className="h-4 w-4 mr-2" />
+                Proposta Comercial
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <ContractModal
             open={contractDialogOpen}
             onOpenChange={setContractDialogOpen}
@@ -655,6 +698,22 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           <GenerateContractModal
             open={generateContractOpen}
             onOpenChange={setGenerateContractOpen}
+            client={{
+              id: client.id,
+              company_name: client.companyName,
+              contact_name: client.contactName,
+              email: client.email,
+              phone: client.phone,
+              address: client.address || null,
+              services: client.services,
+              monthly_budget: client.monthlyBudget,
+              paid_traffic_budget: client.trafficBudget || null,
+            }}
+          />
+          <GenerateDocumentModal
+            open={documentModalOpen}
+            onOpenChange={setDocumentModalOpen}
+            documentType={selectedDocumentType}
             client={{
               id: client.id,
               company_name: client.companyName,
