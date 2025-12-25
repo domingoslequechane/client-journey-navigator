@@ -13,11 +13,13 @@ import {
   ChevronLeft, 
   ChevronRight,
   Receipt,
-  FileText
+  FileText,
+  Eye,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { downloadInvoicePDF } from '@/lib/invoice-pdf-generator';
+import { downloadInvoicePDF, generateInvoicePDF } from '@/lib/invoice-pdf-generator';
 import { SERVICE_LABELS, ServiceType } from '@/types';
 
 interface ServiceInvoiceModalProps {
@@ -87,6 +89,11 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
   const [agencyInfo, setAgencyInfo] = useState<AgencyInfo | null>(null);
   const [templateSettings, setTemplateSettings] = useState<TemplateSettings | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  
+  // Preview state
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [generatingPreview, setGeneratingPreview] = useState(false);
   
   // Form state
   const [formServices, setFormServices] = useState<InvoiceService[]>([
@@ -253,6 +260,60 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
     return { subtotal, taxAmount, total };
   };
 
+  const handleGeneratePreview = () => {
+    if (!agencyInfo) {
+      toast({ title: 'Erro', description: 'Informações da organização não encontradas', variant: 'destructive' });
+      return;
+    }
+
+    const validServices = formServices.filter(s => s.description && s.total > 0);
+    if (validServices.length === 0) {
+      toast({ title: 'Erro', description: 'Adicione pelo menos um serviço válido', variant: 'destructive' });
+      return;
+    }
+
+    setGeneratingPreview(true);
+    try {
+      const { subtotal, taxAmount, total } = calculateTotals();
+      const issueDate = new Date().toISOString().split('T')[0];
+
+      const pdf = generateInvoicePDF({
+        invoiceNumber: 'FAC-XXX',
+        issueDate,
+        dueDate: dueDate || undefined,
+        client: {
+          companyName: client.companyName,
+          contactName: client.contactName,
+          email: client.email,
+          phone: client.phone,
+          address: client.address,
+        },
+        agency: agencyInfo,
+        services: validServices,
+        subtotal,
+        taxPercentage,
+        taxAmount,
+        total,
+        currency: agencyInfo.currency,
+        notes: notes || undefined,
+        templateStyle: templateSettings?.template_style || 'onix',
+        primaryColor: templateSettings?.primary_color || '#C5E86C',
+        showWatermark: templateSettings?.show_watermark,
+        customLayout: templateSettings?.custom_layout,
+        footerText: templateSettings?.footer_text,
+      });
+
+      const dataUri = pdf.output('datauristring');
+      setPreviewUrl(dataUri);
+      setShowPreview(true);
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      toast({ title: 'Erro', description: 'Não foi possível gerar a pré-visualização', variant: 'destructive' });
+    } finally {
+      setGeneratingPreview(false);
+    }
+  };
+
   const generateInvoiceNumber = async () => {
     if (!organizationId) return 'FAC-001';
     
@@ -396,8 +457,14 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(value) => {
+      if (!value) {
+        setShowPreview(false);
+        setPreviewUrl(null);
+      }
+      onOpenChange(value);
+    }}>
+      <DialogContent className={`max-h-[90vh] overflow-y-auto ${showPreview ? 'max-w-6xl' : 'max-w-2xl'}`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
@@ -413,13 +480,19 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : showForm ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">Nova Factura</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>
-                Cancelar
-              </Button>
-            </div>
+          <div className={`${showPreview ? 'grid grid-cols-2 gap-6' : ''}`}>
+            {/* Form Column */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">Nova Factura</h3>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setShowForm(false);
+                  setShowPreview(false);
+                  setPreviewUrl(null);
+                }}>
+                  Cancelar
+                </Button>
+              </div>
 
             {/* Services */}
             <div className="space-y-3">
@@ -522,20 +595,83 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
               </div>
             </div>
 
-            {/* Generate Button */}
-            <Button onClick={handleGenerateInvoice} disabled={generating} className="w-full gap-2">
-              {generating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Gerando...
-                </>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              {!showPreview ? (
+                <Button 
+                  variant="outline" 
+                  onClick={handleGeneratePreview} 
+                  disabled={generatingPreview} 
+                  className="flex-1 gap-2"
+                >
+                  {generatingPreview ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4" />
+                      Pré-visualizar
+                    </>
+                  )}
+                </Button>
               ) : (
-                <>
-                  <FileText className="h-4 w-4" />
-                  Gerar Factura
-                </>
+                <Button 
+                  variant="outline" 
+                  onClick={handleGeneratePreview} 
+                  disabled={generatingPreview} 
+                  className="flex-1 gap-2"
+                >
+                  {generatingPreview ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Actualizar
+                </Button>
               )}
-            </Button>
+              <Button onClick={handleGenerateInvoice} disabled={generating} className="flex-1 gap-2">
+                {generating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4" />
+                    Gerar Factura
+                  </>
+                )}
+              </Button>
+            </div>
+            </div>
+
+            {/* Preview Column */}
+            {showPreview && previewUrl && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">Pré-Visualização</h3>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setShowPreview(false);
+                      setPreviewUrl(null);
+                    }}
+                  >
+                    Fechar Preview
+                  </Button>
+                </div>
+                <div className="border rounded-lg overflow-hidden bg-muted/30">
+                  <iframe
+                    src={previewUrl}
+                    className="w-full h-[600px]"
+                    title="Pré-visualização da Factura"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
