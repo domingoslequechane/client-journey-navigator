@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -734,7 +735,7 @@ export default function AIAssistant() {
               <Paperclip className="h-4 w-4" />
             )}
           </Button>
-          <Input
+          <AutoResizeTextarea
             placeholder="Escreva sua mensagem..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -746,6 +747,7 @@ export default function AIAssistant() {
             }}
             className="flex-1"
             disabled={isLoading || isTyping}
+            maxHeight={200}
           />
           <Button 
             type="button"
