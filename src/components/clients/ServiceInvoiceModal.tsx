@@ -648,7 +648,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
             </div>
 
             {/* Preview Column */}
-            {showPreview && previewUrl && (
+            {showPreview && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium">Pré-Visualização</h3>
@@ -663,12 +663,21 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
                     Fechar Preview
                   </Button>
                 </div>
-                <div className="border rounded-lg overflow-hidden bg-muted/30">
-                  <iframe
-                    src={previewUrl}
-                    className="w-full h-[600px]"
-                    title="Pré-visualização da Factura"
-                  />
+                <div className="border rounded-lg overflow-hidden bg-muted/30 h-[600px]">
+                  {previewUrl ? (
+                    <iframe
+                      src={previewUrl}
+                      className="w-full h-full"
+                      title="Pré-visualização da Factura"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      <div className="text-center">
+                        <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>Clique em "Actualizar" para gerar o preview</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
