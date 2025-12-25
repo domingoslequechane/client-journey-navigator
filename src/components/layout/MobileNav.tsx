@@ -55,7 +55,7 @@ export function MobileNav() {
     }
 
     // AI Assistant for everyone
-    items.push({ name: 'IA', href: '/app/ai-assistant', icon: Sparkles, show: true });
+    items.push({ name: 'QIA', href: '/app/ai-assistant', icon: Sparkles, show: true });
 
     return items;
   }, [canSeeSalesFunnel, canSeeOperationalFlow]);

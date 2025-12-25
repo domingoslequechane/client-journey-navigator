@@ -92,7 +92,7 @@ export function Sidebar() {
       { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel', show: canSeeSalesFunnel },
       { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational', show: canSeeOperationalFlow },
       { name: 'Clientes', href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
-      { name: 'Assistente IA', href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
+      { name: 'QIA', href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
       { name: 'Academia', href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
       { name: 'Equipe', href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam },
     ];

@@ -57,7 +57,7 @@ export function AISuggestionCard({ clients }: AISuggestionCardProps) {
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-          <CardDescription>Powered by OpenAI</CardDescription>
+          <CardDescription>Powered by QIA</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-[120px]">
           <p className="text-muted-foreground text-sm text-center">
@@ -89,7 +89,7 @@ export function AISuggestionCard({ clients }: AISuggestionCardProps) {
             </Button>
           </div>
         </div>
-        <CardDescription>Powered by OpenAI</CardDescription>
+        <CardDescription>Powered by QIA</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground leading-relaxed">

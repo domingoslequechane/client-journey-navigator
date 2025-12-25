@@ -86,7 +86,7 @@ serve(async (req) => {
       };
     });
 
-    const systemPrompt = `Você é um consultor de vendas especializado em marketing digital e gestão de agências.
+    const systemPrompt = `Sou a QIA, assistente inteligente de vendas especializada em marketing digital e gestão de agências.
 Analise os dados dos clientes e sugira a MELHOR ação a ser tomada agora para maximizar conversões.
 
 Considere:
