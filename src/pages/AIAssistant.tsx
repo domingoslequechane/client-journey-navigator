@@ -710,7 +710,7 @@ export default function AIAssistant() {
                   <div
                     key={message.id}
                     className={cn(
-                      'flex gap-2 md:gap-3 animate-fade-in',
+                      'flex gap-2 md:gap-3 animate-fade-in group',
                       message.role === 'user' ? 'justify-end' : 'justify-start'
                     )}
                     style={{ animationDelay: `${Math.min(index * 50, 200)}ms` }}
@@ -718,57 +718,70 @@ export default function AIAssistant() {
                     {message.role === 'assistant' && (
                       <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
                     )}
-                    <div
-                      className={cn(
-                        'relative group max-w-[85%] md:max-w-[80%] rounded-xl px-3 py-2.5 md:px-4 md:py-3 transition-all duration-200',
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      )}
-                    >
-                      {message.role === 'assistant' ? (
-                        <div className="text-sm max-w-none [&>p]:leading-relaxed [&>ul]:space-y-0.5 [&>ol]:space-y-0.5">
-                          <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }} />
-                          {/* Blinking cursor while streaming */}
-                          {streamingMessageId === message.id && (
-                            <span className="inline-block w-[2px] h-4 bg-primary animate-pulse ml-0.5 align-middle" />
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm whitespace-pre-line">{message.content}</p>
-                      )}
-                      {message.file_url && (
-                        <a 
-                          href={message.file_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className={cn(
-                            "flex items-center gap-2 mt-2 text-xs underline",
-                            message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'
-                          )}
-                        >
-                          {getFileIcon(message.file_type)}
-                          {message.file_name}
-                        </a>
-                      )}
-                      <p className={cn(
-                        'text-xs mt-2 opacity-70',
-                        message.role === 'user' ? 'text-right' : ''
-                      )}>
-                        {new Date(message.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                    <div className="flex flex-col max-w-[85%] md:max-w-[80%]">
+                      {/* Message container */}
+                      <div
+                        className={cn(
+                          'rounded-xl px-3 py-2.5 md:px-4 md:py-3 transition-all duration-200',
+                          message.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        )}
+                      >
+                        {message.role === 'assistant' ? (
+                          <div className="text-sm max-w-none [&>p]:leading-relaxed [&>ul]:space-y-0.5 [&>ol]:space-y-0.5">
+                            <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }} />
+                            {/* Blinking cursor while streaming */}
+                            {streamingMessageId === message.id && (
+                              <span className="inline-block w-[2px] h-4 bg-primary animate-pulse ml-0.5 align-middle" />
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm whitespace-pre-line">{message.content}</p>
+                        )}
+                        {message.file_url && (
+                          <a 
+                            href={message.file_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className={cn(
+                              "flex items-center gap-2 mt-2 text-xs underline",
+                              message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                            )}
+                          >
+                            {getFileIcon(message.file_type)}
+                            {message.file_name}
+                          </a>
+                        )}
+                        <p className={cn(
+                          'text-xs mt-2 opacity-70',
+                          message.role === 'user' ? 'text-right' : ''
+                        )}>
+                          {new Date(message.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
                       
-                      {/* Action buttons for assistant messages (Copy + Favorite) */}
-                      {message.role === 'assistant' && message.id !== 'welcome' && !message.id.startsWith('temp-') && (
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      {/* Action buttons BELOW message (ChatGPT style) */}
+                      {message.role === 'assistant' && message.id !== 'welcome' && !message.id.startsWith('temp-') && streamingMessageId !== message.id && (
+                        <div className="flex gap-1 mt-1 ml-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                          {/* Copy button */}
+                          <button
+                            onClick={() => copyToClipboard(message.id, message.content)}
+                            className="p-1.5 rounded-md hover:bg-muted/80 transition-colors"
+                            title="Copiar mensagem"
+                            aria-label="Copiar mensagem"
+                          >
+                            {copiedMessageId === message.id ? (
+                              <Check className="h-3.5 w-3.5 text-primary" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                            )}
+                          </button>
                           {/* Favorite button */}
                           <button
                             onClick={() => user && toggleFavorite(message.id, user.id)}
                             disabled={isToggling}
-                            className={cn(
-                              "p-1.5 rounded-md bg-background/80 hover:bg-background border border-border/50 transition-all",
-                              isFavorited(message.id) && "text-yellow-500"
-                            )}
+                            className="p-1.5 rounded-md hover:bg-muted/80 transition-colors"
                             title={isFavorited(message.id) ? "Remover dos favoritos" : "Adicionar aos favoritos (visível para a equipe)"}
                             aria-label={isFavorited(message.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                           >
@@ -779,26 +792,6 @@ export default function AIAssistant() {
                               )} 
                             />
                           </button>
-                          {/* Copy button */}
-                          <button
-                            onClick={() => copyToClipboard(message.id, message.content)}
-                            className="p-1.5 rounded-md bg-background/80 hover:bg-background border border-border/50 transition-all"
-                            title="Copiar mensagem"
-                            aria-label="Copiar mensagem"
-                          >
-                            {copiedMessageId === message.id ? (
-                              <Check className="h-3.5 w-3.5 text-primary" />
-                            ) : (
-                              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                            )}
-                          </button>
-                        </div>
-                      )}
-                      
-                      {/* Favorite indicator badge */}
-                      {message.role === 'assistant' && isFavorited(message.id) && (
-                        <div className="absolute -top-2 -right-2 bg-yellow-500 text-yellow-950 rounded-full p-1 animate-scale-in">
-                          <Star className="h-2.5 w-2.5 fill-current" />
                         </div>
                       )}
                     </div>
