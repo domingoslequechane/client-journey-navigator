@@ -552,9 +552,11 @@ export type Database = {
       invoice_template_settings: {
         Row: {
           created_at: string | null
+          custom_layout: Json | null
           footer_text: string | null
           id: string
           organization_id: string
+          paper_size: string | null
           primary_color: string | null
           show_logo: boolean | null
           show_watermark: boolean | null
@@ -563,9 +565,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          custom_layout?: Json | null
           footer_text?: string | null
           id?: string
           organization_id: string
+          paper_size?: string | null
           primary_color?: string | null
           show_logo?: boolean | null
           show_watermark?: boolean | null
@@ -574,9 +578,11 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          custom_layout?: Json | null
           footer_text?: string | null
           id?: string
           organization_id?: string
+          paper_size?: string | null
           primary_color?: string | null
           show_logo?: boolean | null
           show_watermark?: boolean | null
