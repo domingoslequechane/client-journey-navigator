@@ -89,6 +89,7 @@ export default function AIAssistant() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [pendingFile, setPendingFile] = useState<{ url: string; type: string; name: string } | null>(null);
@@ -274,6 +275,10 @@ export default function AIAssistant() {
     // Show typing animation
     setIsTyping(true);
 
+    // Prepare streaming message ID
+    const assistantId = `msg-${Date.now()}`;
+    let hasReceivedFirstToken = false;
+
     try {
       // Get the authenticated user's session token
       const { data: { session } } = await supabase.auth.getSession();
@@ -355,7 +360,32 @@ export default function AIAssistant() {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
+              // First token received - hide typing, show streaming message
+              if (!hasReceivedFirstToken) {
+                hasReceivedFirstToken = true;
+                setIsTyping(false);
+                setStreamingMessageId(assistantId);
+                setMessages(prev => [...prev, {
+                  id: assistantId,
+                  role: 'assistant',
+                  content: '',
+                  created_at: new Date().toISOString()
+                }]);
+              }
+              
+              // Update message content with each token
               assistantContent += content;
+              setMessages(prev => {
+                const updated = [...prev];
+                const lastIndex = updated.length - 1;
+                if (updated[lastIndex]?.id === assistantId) {
+                  updated[lastIndex] = {
+                    ...updated[lastIndex],
+                    content: assistantContent
+                  };
+                }
+                return updated;
+              });
             }
           } catch {
             textBuffer = line + "\n" + textBuffer;
@@ -378,22 +408,26 @@ export default function AIAssistant() {
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantContent += content;
+              // Update the streaming message
+              setMessages(prev => {
+                const updated = [...prev];
+                const lastIndex = updated.length - 1;
+                if (updated[lastIndex]?.id === assistantId) {
+                  updated[lastIndex] = {
+                    ...updated[lastIndex],
+                    content: assistantContent
+                  };
+                }
+                return updated;
+              });
             }
           } catch { /* ignore */ }
         }
       }
 
-      // Hide typing animation and show complete message
+      // Streaming complete - clear streaming state
       setIsTyping(false);
-      
-      // Add complete assistant message to UI
-      const assistantId = `msg-${Date.now()}`;
-      setMessages(prev => [...prev, {
-        id: assistantId,
-        role: 'assistant',
-        content: assistantContent,
-        created_at: new Date().toISOString()
-      }]);
+      setStreamingMessageId(null);
 
       // Save assistant message to database
       await saveMessage(conversationId, {
@@ -407,6 +441,7 @@ export default function AIAssistant() {
     } catch (error) {
       console.error('Chat error:', error);
       setIsTyping(false);
+      setStreamingMessageId(null);
       toast({ title: 'Erro', description: 'Não foi possível conectar ao assistente', variant: 'destructive' });
     }
   };
@@ -692,10 +727,13 @@ export default function AIAssistant() {
                       )}
                     >
                       {message.role === 'assistant' ? (
-                        <div 
-                          className="text-sm max-w-none [&>p]:leading-relaxed [&>ul]:space-y-0.5 [&>ol]:space-y-0.5"
-                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }}
-                        />
+                        <div className="text-sm max-w-none [&>p]:leading-relaxed [&>ul]:space-y-0.5 [&>ol]:space-y-0.5">
+                          <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }} />
+                          {/* Blinking cursor while streaming */}
+                          {streamingMessageId === message.id && (
+                            <span className="inline-block w-[2px] h-4 bg-primary animate-pulse ml-0.5 align-middle" />
+                          )}
+                        </div>
                       ) : (
                         <p className="text-sm whitespace-pre-line">{message.content}</p>
                       )}
