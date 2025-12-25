@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Pencil, ArrowRight, Pause, FileText, CheckCircle, Clock, Square, CheckCircle2 } from 'lucide-react';
+import { Loader2, Pencil, ArrowRight, Pause, FileText, CheckCircle, Clock, Square, CheckCircle2, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import { HistoryChangesModal } from './HistoryChangesModal';
 
 interface Activity {
   id: string;
@@ -22,6 +24,14 @@ interface Profile {
 
 interface ClientHistoryTabProps {
   clientId: string;
+}
+
+interface GroupedActivity {
+  id: string;
+  changed_by: string | null;
+  profile?: Profile;
+  created_at: string;
+  activities: Activity[];
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -53,11 +63,17 @@ const TYPE_ICONS: Record<string, { icon: typeof Pencil; color: string }> = {
   task_completed: { icon: CheckCircle2, color: 'text-green-500' },
   task_uncompleted: { icon: Square, color: 'text-muted-foreground' },
   milestone: { icon: FileText, color: 'text-purple-500' },
+  grouped: { icon: Layers, color: 'text-blue-500' },
 };
+
+const ITEMS_PER_PAGE = 5;
 
 export function ClientHistoryTab({ clientId }: ClientHistoryTabProps) {
   const [activities, setActivities] = useState<(Activity & { profile?: Profile })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedGroup, setSelectedGroup] = useState<GroupedActivity | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     fetchHistory();
@@ -66,7 +82,6 @@ export function ClientHistoryTab({ clientId }: ClientHistoryTabProps) {
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      // Fetch activities
       const { data: activitiesData, error } = await supabase
         .from('activities')
         .select('*')
@@ -75,7 +90,6 @@ export function ClientHistoryTab({ clientId }: ClientHistoryTabProps) {
 
       if (error) throw error;
 
-      // Fetch profiles for changed_by users
       const changedByIds = [...new Set(activitiesData?.filter(a => a.changed_by).map(a => a.changed_by))] as string[];
       
       let profilesMap: Record<string, Profile> = {};
@@ -94,7 +108,6 @@ export function ClientHistoryTab({ clientId }: ClientHistoryTabProps) {
         }
       }
 
-      // Merge profiles with activities
       const activitiesWithProfiles = activitiesData?.map(activity => ({
         ...activity,
         profile: activity.changed_by ? profilesMap[activity.changed_by] : undefined,
@@ -108,6 +121,41 @@ export function ClientHistoryTab({ clientId }: ClientHistoryTabProps) {
     }
   };
 
+  // Group activities by user and timestamp (within 5 seconds)
+  const groupActivities = (): GroupedActivity[] => {
+    const groups: GroupedActivity[] = [];
+    
+    activities.forEach((activity) => {
+      const activityTime = new Date(activity.created_at).getTime();
+      
+      // Check if this activity can be added to an existing group
+      const existingGroup = groups.find(group => {
+        const groupTime = new Date(group.created_at).getTime();
+        const timeDiff = Math.abs(activityTime - groupTime);
+        return group.changed_by === activity.changed_by && timeDiff < 5000; // 5 seconds
+      });
+      
+      if (existingGroup) {
+        existingGroup.activities.push(activity);
+      } else {
+        groups.push({
+          id: activity.id,
+          changed_by: activity.changed_by,
+          profile: activity.profile,
+          created_at: activity.created_at,
+          activities: [activity],
+        });
+      }
+    });
+    
+    return groups;
+  };
+
+  const groupedActivities = groupActivities();
+  const totalPages = Math.ceil(groupedActivities.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentItems = groupedActivities.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const getIcon = (type: string) => {
     const config = TYPE_ICONS[type] || TYPE_ICONS.task;
     const IconComponent = config.icon;
@@ -117,7 +165,6 @@ export function ClientHistoryTab({ clientId }: ClientHistoryTabProps) {
   const formatValue = (value: string | null, fieldName: string | null): string => {
     if (!value) return 'vazio';
     
-    // Handle specific field formatting
     if (fieldName === 'paused') {
       return value === 'true' ? 'Suspenso' : 'Ativo';
     }
@@ -140,6 +187,13 @@ export function ClientHistoryTab({ clientId }: ClientHistoryTabProps) {
     return value;
   };
 
+  const handleGroupClick = (group: GroupedActivity) => {
+    if (group.activities.length > 1) {
+      setSelectedGroup(group);
+      setModalOpen(true);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -160,79 +214,146 @@ export function ClientHistoryTab({ clientId }: ClientHistoryTabProps) {
 
   return (
     <div className="space-y-1">
-      {activities.map((activity, index) => (
-        <div key={activity.id} className="relative">
-          {/* Timeline line */}
-          {index < activities.length - 1 && (
-            <div className="absolute left-[18px] top-10 bottom-0 w-px bg-border" />
-          )}
-          
-          <div className="flex gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-            {/* Icon */}
-            <div className="shrink-0 w-9 h-9 rounded-full bg-muted flex items-center justify-center">
-              {getIcon(activity.type)}
-            </div>
+      {currentItems.map((group, index) => {
+        const isGrouped = group.activities.length > 1;
+        const firstActivity = group.activities[0];
+        
+        return (
+          <div key={group.id} className="relative">
+            {/* Timeline line */}
+            {index < currentItems.length - 1 && (
+              <div className="absolute left-[18px] top-10 bottom-0 w-px bg-border" />
+            )}
             
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium">
-                    {activity.profile?.full_name || 'Sistema'}
-                    <span className="font-normal text-muted-foreground ml-1">
-                      {activity.title.toLowerCase()}
-                    </span>
-                  </p>
-                  
-                  {/* Show old -> new value for field changes */}
-                  {activity.type === 'field_change' && activity.field_name && (
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      <span className="text-foreground/60">
-                        {FIELD_LABELS[activity.field_name] || activity.field_name}:
-                      </span>{' '}
-                      <span className="line-through text-destructive/70">
-                        {formatValue(activity.old_value, activity.field_name)}
-                      </span>
-                      {' → '}
-                      <span className="text-success">
-                        {formatValue(activity.new_value, activity.field_name)}
+            <div 
+              className={`flex gap-3 p-3 rounded-lg transition-colors ${isGrouped ? 'cursor-pointer hover:bg-muted' : 'hover:bg-muted/50'}`}
+              onClick={() => handleGroupClick(group)}
+            >
+              {/* Icon */}
+              <div className="shrink-0 w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                {isGrouped ? getIcon('grouped') : getIcon(firstActivity.type)}
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {group.profile?.full_name || 'Sistema'}
+                      <span className="font-normal text-muted-foreground ml-1">
+                        {isGrouped 
+                          ? `alterou ${group.activities.length} campos`
+                          : firstActivity.title.toLowerCase()
+                        }
                       </span>
                     </p>
-                  )}
+                    
+                    {/* Show single change details inline */}
+                    {!isGrouped && firstActivity.type === 'field_change' && firstActivity.field_name && (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        <span className="text-foreground/60">
+                          {FIELD_LABELS[firstActivity.field_name] || firstActivity.field_name}:
+                        </span>{' '}
+                        <span className="line-through text-destructive/70">
+                          {formatValue(firstActivity.old_value, firstActivity.field_name)}
+                        </span>
+                        {' → '}
+                        <span className="text-success">
+                          {formatValue(firstActivity.new_value, firstActivity.field_name)}
+                        </span>
+                      </p>
+                    )}
+                    
+                    {/* Show description for stage changes */}
+                    {!isGrouped && firstActivity.type === 'stage_change' && firstActivity.description && (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {firstActivity.description}
+                      </p>
+                    )}
+                    
+                    {/* Show description for task changes */}
+                    {!isGrouped && ['task_completed', 'task_uncompleted'].includes(firstActivity.type) && firstActivity.description && (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {firstActivity.description}
+                      </p>
+                    )}
+                    
+                    {/* Show description for other types */}
+                    {!isGrouped && !['field_change', 'stage_change', 'task_completed', 'task_uncompleted'].includes(firstActivity.type) && firstActivity.description && (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {firstActivity.description}
+                      </p>
+                    )}
+
+                    {/* Grouped indicator */}
+                    {isGrouped && (
+                      <p className="text-xs text-primary mt-0.5">
+                        Clique para ver detalhes
+                      </p>
+                    )}
+                  </div>
                   
-                  {/* Show description for stage changes */}
-                  {activity.type === 'stage_change' && activity.description && (
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {activity.description}
-                    </p>
-                  )}
-                  
-                  {/* Show description for task changes */}
-                  {['task_completed', 'task_uncompleted'].includes(activity.type) && activity.description && (
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {activity.description}
-                    </p>
-                  )}
-                  
-                  {/* Show description for other types */}
-                  {!['field_change', 'stage_change', 'task_completed', 'task_uncompleted'].includes(activity.type) && activity.description && (
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {activity.description}
-                    </p>
-                  )}
+                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                    {formatDistanceToNow(new Date(group.created_at), { 
+                      addSuffix: true, 
+                      locale: pt 
+                    })}
+                  </span>
                 </div>
-                
-                <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                  {formatDistanceToNow(new Date(activity.created_at), { 
-                    addSuffix: true, 
-                    locale: pt 
-                  })}
-                </span>
               </div>
             </div>
           </div>
+        );
+      })}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4 border-t mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="gap-1"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Mais recentes
+          </Button>
+          
+          <span className="text-xs text-muted-foreground">
+            Página {currentPage} de {totalPages}
+          </span>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="gap-1"
+          >
+            Mais antigos
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
-      ))}
+      )}
+
+      {/* Changes Modal */}
+      {selectedGroup && (
+        <HistoryChangesModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          userName={selectedGroup.profile?.full_name || 'Sistema'}
+          timestamp={selectedGroup.created_at}
+          changes={selectedGroup.activities.map(a => ({
+            field_name: a.field_name,
+            old_value: a.old_value,
+            new_value: a.new_value,
+            title: a.title,
+            type: a.type,
+            description: a.description,
+          }))}
+        />
+      )}
     </div>
   );
 }
