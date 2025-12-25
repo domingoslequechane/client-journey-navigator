@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,10 @@ import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen, ArrowLeft, Users, Lock, Copy, Check } from 'lucide-react';
+import { Send, Sparkles, User, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen, ArrowLeft, Copy, Check, Star } from 'lucide-react';
 import QIAAvatar from '@/components/ai/QIAAvatar';
+import { ChatMessagesSkeleton } from '@/components/ai/ChatMessagesSkeleton';
+import { ScrollToBottomButton } from '@/components/ai/ScrollToBottomButton';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,8 +20,10 @@ import { useRateLimit } from '@/hooks/useRateLimit';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useMessageFavorites } from '@/hooks/useMessageFavorites';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
+import { useAuth } from '@/contexts/AuthContext';
 
 // DOMPurify sanitization config to prevent XSS
 const SANITIZE_CONFIG = {
@@ -74,15 +78,18 @@ const AI_SIDEBAR_COLLAPSED_KEY = 'qualify-ai-sidebar-collapsed';
 
 export default function AIAssistant() {
   const queryClient = useQueryClient();
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol, organizationId } = useOrganizationCurrency();
+  const { user } = useAuth();
   const isMobile = useIsMobile();
   const { canAccessAI, planType, usage, limits, incrementUsage, loading: planLoading } = usePlanLimits();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
+  const { favorites, isFavorited, toggleFavorite, isToggling } = useMessageFavorites(organizationId);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [pendingFile, setPendingFile] = useState<{ url: string; type: string; name: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -94,7 +101,9 @@ export default function AIAssistant() {
   // On mobile, when no client selected, show client list
   const [showClientList, setShowClientList] = useState(true);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sendingRef = useRef(false);
   const { checkRateLimit, isRateLimited } = useRateLimit({ maxRequests: 15, windowMs: 60000 });
@@ -182,13 +191,21 @@ export default function AIAssistant() {
     }
   }, [selectedClient?.conversation_id, conversationMessages, selectedClientId, selectedClient?.company_name, currencySymbol]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToBottom = useCallback((smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+    setShowScrollButton(false);
+  }, []);
+
+  // Handle scroll to detect when user scrolls up
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
+    setShowScrollButton(!isNearBottom);
+  }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    scrollToBottom(false);
+  }, [messages, scrollToBottom]);
 
   // Create or get conversation
   const getOrCreateConversation = async (clientId: string): Promise<string> => {
@@ -518,10 +535,18 @@ export default function AIAssistant() {
 
   // Handle client selection - on mobile, hide client list after selection
   const handleSelectClient = (clientId: string) => {
+    if (clientId !== selectedClientId) {
+      setIsLoadingMessages(true);
+      setMessages([]);
+    }
     setSelectedClientId(clientId);
     if (isMobile) {
       setShowClientList(false);
     }
+    // Smooth transition delay
+    setTimeout(() => {
+      setIsLoadingMessages(false);
+    }, 400);
   };
 
   // Handle back to client list on mobile
@@ -610,7 +635,7 @@ export default function AIAssistant() {
   const renderChatContent = () => (
     <>
       {/* Header */}
-      <div className="h-14 md:h-16 px-3 md:px-4 border-b border-border bg-background flex items-center gap-2">
+      <div className="h-14 md:h-16 px-3 md:px-4 border-b border-border bg-background flex items-center gap-2 transition-all duration-300">
         {isMobile && (
           <Button
             variant="ghost"
@@ -634,102 +659,148 @@ export default function AIAssistant() {
         </div>
       </div>
 
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-3 md:p-4">
-        <div className="space-y-4 max-w-3xl mx-auto">
-          {messages.map((message, index) => (
-            <div
-              key={message.id}
-              className={cn(
-                'flex gap-2 md:gap-3 animate-fade-in',
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              )}
-              style={{ animationDelay: `${Math.min(index * 50, 200)}ms` }}
-            >
-              {message.role === 'assistant' && (
-                <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
-              )}
-              <div
-                className={cn(
-                  'relative group max-w-[85%] md:max-w-[80%] rounded-xl px-3 py-2.5 md:px-4 md:py-3',
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                )}
-              >
-                {message.role === 'assistant' ? (
-                  <div 
-                    className="text-sm max-w-none [&>p]:leading-relaxed [&>ul]:space-y-0.5 [&>ol]:space-y-0.5"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }}
-                  />
-                ) : (
-                  <p className="text-sm whitespace-pre-line">{message.content}</p>
-                )}
-                {message.file_url && (
-                  <a 
-                    href={message.file_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+      {/* Messages with scroll area */}
+      <div className="flex-1 relative overflow-hidden">
+        <ScrollArea 
+          className="h-full p-3 md:p-4"
+          onScrollCapture={handleScroll}
+        >
+          <div className="space-y-4 max-w-3xl mx-auto">
+            {/* Show skeleton while loading messages */}
+            {isLoadingMessages ? (
+              <ChatMessagesSkeleton />
+            ) : (
+              <>
+                {messages.map((message, index) => (
+                  <div
+                    key={message.id}
                     className={cn(
-                      "flex items-center gap-2 mt-2 text-xs underline",
-                      message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                      'flex gap-2 md:gap-3 animate-fade-in',
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
                     )}
+                    style={{ animationDelay: `${Math.min(index * 50, 200)}ms` }}
                   >
-                    {getFileIcon(message.file_type)}
-                    {message.file_name}
-                  </a>
-                )}
-                <p className={cn(
-                  'text-xs mt-2 opacity-70',
-                  message.role === 'user' ? 'text-right' : ''
-                )}>
-                  {new Date(message.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-                
-                {/* Copy button for assistant messages */}
-                {message.role === 'assistant' && message.id !== 'welcome' && (
-                  <button
-                    onClick={() => copyToClipboard(message.id, message.content)}
-                    className="absolute top-2 right-2 p-1.5 rounded-md bg-background/80 hover:bg-background border border-border/50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
-                    title="Copiar mensagem"
-                    aria-label="Copiar mensagem"
-                  >
-                    {copiedMessageId === message.id ? (
-                      <Check className="h-3.5 w-3.5 text-primary" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                    {message.role === 'assistant' && (
+                      <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
                     )}
-                  </button>
-                )}
-              </div>
-              {message.role === 'user' && (
-                <div className="h-7 w-7 md:h-8 md:w-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                  <User className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Typing Animation */}
-          {isTyping && (
-            <div className="flex gap-2 md:gap-3 animate-fade-in">
-              <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
-              <div className="bg-muted rounded-xl px-3 py-2.5 md:px-4 md:py-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">digitando</span>
-                  <div className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div
+                      className={cn(
+                        'relative group max-w-[85%] md:max-w-[80%] rounded-xl px-3 py-2.5 md:px-4 md:py-3 transition-all duration-200',
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      )}
+                    >
+                      {message.role === 'assistant' ? (
+                        <div 
+                          className="text-sm max-w-none [&>p]:leading-relaxed [&>ul]:space-y-0.5 [&>ol]:space-y-0.5"
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }}
+                        />
+                      ) : (
+                        <p className="text-sm whitespace-pre-line">{message.content}</p>
+                      )}
+                      {message.file_url && (
+                        <a 
+                          href={message.file_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={cn(
+                            "flex items-center gap-2 mt-2 text-xs underline",
+                            message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                          )}
+                        >
+                          {getFileIcon(message.file_type)}
+                          {message.file_name}
+                        </a>
+                      )}
+                      <p className={cn(
+                        'text-xs mt-2 opacity-70',
+                        message.role === 'user' ? 'text-right' : ''
+                      )}>
+                        {new Date(message.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      
+                      {/* Action buttons for assistant messages (Copy + Favorite) */}
+                      {message.role === 'assistant' && message.id !== 'welcome' && !message.id.startsWith('temp-') && (
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                          {/* Favorite button */}
+                          <button
+                            onClick={() => user && toggleFavorite(message.id, user.id)}
+                            disabled={isToggling}
+                            className={cn(
+                              "p-1.5 rounded-md bg-background/80 hover:bg-background border border-border/50 transition-all",
+                              isFavorited(message.id) && "text-yellow-500"
+                            )}
+                            title={isFavorited(message.id) ? "Remover dos favoritos" : "Adicionar aos favoritos (visível para a equipe)"}
+                            aria-label={isFavorited(message.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                          >
+                            <Star 
+                              className={cn(
+                                "h-3.5 w-3.5 transition-all",
+                                isFavorited(message.id) ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground"
+                              )} 
+                            />
+                          </button>
+                          {/* Copy button */}
+                          <button
+                            onClick={() => copyToClipboard(message.id, message.content)}
+                            className="p-1.5 rounded-md bg-background/80 hover:bg-background border border-border/50 transition-all"
+                            title="Copiar mensagem"
+                            aria-label="Copiar mensagem"
+                          >
+                            {copiedMessageId === message.id ? (
+                              <Check className="h-3.5 w-3.5 text-primary" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Favorite indicator badge */}
+                      {message.role === 'assistant' && isFavorited(message.id) && (
+                        <div className="absolute -top-2 -right-2 bg-yellow-500 text-yellow-950 rounded-full p-1 animate-scale-in">
+                          <Star className="h-2.5 w-2.5 fill-current" />
+                        </div>
+                      )}
+                    </div>
+                    {message.role === 'user' && (
+                      <div className="h-7 w-7 md:h-8 md:w-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                        <User className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
-            </div>
-          )}
+                ))}
 
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
+                {/* Typing Animation */}
+                {isTyping && (
+                  <div className="flex gap-2 md:gap-3 animate-fade-in">
+                    <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
+                    <div className="bg-muted rounded-xl px-3 py-2.5 md:px-4 md:py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">digitando</span>
+                        <div className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+
+        {/* Scroll to bottom button */}
+        <ScrollToBottomButton 
+          visible={showScrollButton} 
+          onClick={() => scrollToBottom(true)} 
+        />
+      </div>
 
       {/* Pending File */}
       {pendingFile && (

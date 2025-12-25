@@ -5,6 +5,7 @@ import { getCurrencySymbol } from '@/lib/currencies';
 export function useOrganizationCurrency() {
   const [currency, setCurrency] = useState('MZN');
   const [currencySymbol, setCurrencySymbol] = useState('MT');
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,15 +19,19 @@ export function useOrganizationCurrency() {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('organization_id')
+          .select('organization_id, current_organization_id')
           .eq('id', user.id)
           .single();
 
-        if (profile?.organization_id) {
+        const orgId = profile?.current_organization_id || profile?.organization_id;
+        
+        if (orgId) {
+          setOrganizationId(orgId);
+          
           const { data: org } = await supabase
             .from('organizations')
             .select('currency')
-            .eq('id', profile.organization_id)
+            .eq('id', orgId)
             .single();
 
           if (org?.currency) {
@@ -44,5 +49,5 @@ export function useOrganizationCurrency() {
     fetchCurrency();
   }, []);
 
-  return { currency, currencySymbol, loading };
+  return { currency, currencySymbol, organizationId, loading };
 }
