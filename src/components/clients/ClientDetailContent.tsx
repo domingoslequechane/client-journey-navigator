@@ -1,10 +1,7 @@
 import { Client, ALL_STAGES, SOURCE_LABELS } from '@/types';
 import { Button } from '@/components/ui/button';
-import { AIButton } from '@/components/ui/ai-button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { 
   Mail, 
@@ -59,8 +56,6 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   // Permission checks
   const canEditClient = userRole === 'admin' || userRole === 'sales' || isAdmin;
   const canSeeContracts = userRole === 'admin' || userRole === 'sales' || isAdmin;
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
-  const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
   const [isLoadingStage, setIsLoadingStage] = useState<'next' | 'prev' | null>(null);
   const [pauseDialogOpen, setPauseDialogOpen] = useState(false);
@@ -71,6 +66,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contractUrl, setContractUrl] = useState<string | null>(null);
   const [contractName, setContractName] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('checklist');
   
   // Report modal state
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -438,33 +434,8 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
     }
   };
 
-
-  const handleAIAnalysis = () => {
-    setIsLoadingAi(true);
-    setTimeout(() => {
-      const suggestions: Record<string, string> = {
-        prospecting: `Sugestões para "${client.companyName}" na Prospecção:\n\nPrepare uma apresentação personalizada focando nos problemas específicos do setor.\n\nPesquise cases de sucesso de empresas similares para usar como prova social.\n\nAgende a reunião para os próximos 2-3 dias para manter o interesse aquecido.`,
-        qualification: `Sugestões para "${client.companyName}" na Qualificação:\n\nNa proposta, destaque o ROI esperado com números concretos.\n\nInclua um caso de sucesso do setor com resultados mensuráveis.\n\nOfereça um diagnóstico gratuito de 30 minutos das redes sociais atuais.`,
-        closing: `Sugestões para "${client.companyName}" no Fechamento:\n\nColete todos os acessos às redes sociais nas próximas 48h.\n\nCrie um documento de onboarding personalizado com as cores e tom da marca.\n\nAgende uma reunião de kick-off para alinhar expectativas.`,
-        production: `Sugestões para "${client.companyName}" na Produção:\n\nPublique conteúdo 5x por semana para máximo alcance.\n\nCrie vídeos curtos (Reels/TikTok) mostrando os bastidores do negócio.\n\nEnvie relatório semanal nas primeiras 4 semanas para mostrar progresso.`,
-        campaigns: `Sugestões para "${client.companyName}" em Campanhas:\n\nInicie campanhas de tráfego pago com orçamento teste de 500MT.\n\nTeste pelo menos 3 criativos diferentes.\n\nMonitore ROAS diariamente na primeira semana.`,
-        retention: `Sugestões para "${client.companyName}" na Fidelização:\n\nSolicite um depoimento em vídeo de 30 segundos sobre os resultados.\n\nPeça indicação de 3 parceiros comerciais que poderiam se beneficiar.\n\nProponha upgrade para gestão completa (Instagram + TikTok + Tráfego).`
-      };
-      setAiSuggestion(suggestions[client.stage]);
-      setIsLoadingAi(false);
-    }, 1500);
-  };
-
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // Calculate BANT score
+  const bantScore = (client.bant.budget + client.bant.authority + client.bant.need + client.bant.timeline) * 2.5;
 
   return (
     <div className="space-y-6">
@@ -628,109 +599,87 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         )}
       </div>
 
-      {/* BANT Score */}
-      <div className={`bg-muted/50 rounded-lg p-3 md:p-4 relative ${isPaused ? 'opacity-60' : ''}`}>
-        {isPaused && <Lock className="h-4 w-4 text-destructive absolute top-3 right-3" />}
-        <h4 className="font-semibold text-sm mb-3">Qualificação BANT</h4>
-        <div className="grid grid-cols-4 gap-2 md:gap-4">
-          {[
-            { label: 'Budget', value: client.bant.budget },
-            { label: 'Authority', value: client.bant.authority },
-            { label: 'Need', value: client.bant.need },
-            { label: 'Timeline', value: client.bant.timeline }
-          ].map((item) => (
-            <div key={item.label} className="text-center">
-              <div className="text-lg md:text-2xl font-bold text-primary">{item.value}</div>
-              <div className="text-[10px] md:text-xs text-muted-foreground">{item.label}</div>
-            </div>
-          ))}
+      {/* Compact BANT Score - integrated with client info */}
+      <div className={`flex items-center gap-4 p-3 bg-muted/50 rounded-lg ${isPaused ? 'opacity-60' : ''}`}>
+        {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
+        <span className="text-xs text-muted-foreground font-medium">BANT:</span>
+        <div className="flex gap-3 text-sm">
+          <span className="font-medium">B: <span className="text-primary">{client.bant.budget}</span></span>
+          <span className="font-medium">A: <span className="text-primary">{client.bant.authority}</span></span>
+          <span className="font-medium">N: <span className="text-primary">{client.bant.need}</span></span>
+          <span className="font-medium">T: <span className="text-primary">{client.bant.timeline}</span></span>
         </div>
-        <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-primary rounded-full transition-all"
-            style={{ width: `${client.score}%` }}
-          />
+        <div className="flex-1 flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary rounded-full transition-all"
+              style={{ width: `${bantScore}%` }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">{Math.round(bantScore)}/100</span>
         </div>
-        <p className="text-xs text-center text-muted-foreground mt-1">
-          Score Total: {client.score}/100
-        </p>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2">
-        <AIButton onClick={handleAIAnalysis} isLoading={isLoadingAi} className="flex-1 min-w-[120px]" disabled={isPaused}>
-          {isPaused && <Lock className="h-4 w-4 mr-1" />}
-          Sugestões IA
-        </AIButton>
-        
-        {/* Contract Button - Only visible in closing stage for sales/admin */}
-        {canSeeContract && (
-          <>
+      {/* Action Buttons - Contract only */}
+      {canSeeContract && (
+        <div className="flex flex-wrap gap-2">
+          <Button 
+            variant="outline" 
+            className="gap-2" 
+            disabled={isPaused}
+            onClick={() => setContractDialogOpen(true)}
+          >
+            {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+            {contractUrl ? 'Ver Contrato' : 'Adicionar Contrato'}
+          </Button>
+          {/* Show Generate Contract button only in contratacao stage and when no contract exists */}
+          {client.stage === 'closing' && !contractUrl && (
             <Button 
               variant="outline" 
               className="gap-2" 
               disabled={isPaused}
-              onClick={() => setContractDialogOpen(true)}
+              onClick={() => setGenerateContractOpen(true)}
             >
               {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-              {contractUrl ? 'Ver Contrato' : 'Adicionar Contrato'}
+              Gerar Contrato
             </Button>
-            {/* Show Generate Contract button only in contratacao stage and when no contract exists */}
-            {client.stage === 'closing' && !contractUrl && (
-              <Button 
-                variant="outline" 
-                className="gap-2" 
-                disabled={isPaused}
-                onClick={() => setGenerateContractOpen(true)}
-              >
-                {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                Gerar Contrato
-              </Button>
-            )}
-            <ContractModal
-              open={contractDialogOpen}
-              onOpenChange={setContractDialogOpen}
-              clientId={client.id}
-              contractUrl={contractUrl}
-              contractName={contractName}
-              onContractUpdated={handleContractUpdated}
-            />
-            <GenerateContractModal
-              open={generateContractOpen}
-              onOpenChange={setGenerateContractOpen}
-              client={{
-                id: client.id,
-                company_name: client.companyName,
-                contact_name: client.contactName,
-                email: client.email,
-                phone: client.phone,
-                address: client.address || null,
-                services: client.services,
-                monthly_budget: client.monthlyBudget,
-                paid_traffic_budget: client.trafficBudget || null,
-              }}
-            />
-          </>
-        )}
-
-        {/* Edit Client Modal */}
-        <EditClientModal
-          open={editClientOpen}
-          onOpenChange={setEditClientOpen}
-          client={client}
-          onClientUpdated={() => onUpdate({ ...client, stage: client.stage })}
-        />
-      </div>
-
-      {/* AI Suggestion */}
-      {aiSuggestion && (
-        <div className="bg-gradient-to-r from-primary/10 to-chart-5/10 border border-primary/20 rounded-lg p-4">
-          <div className="text-sm whitespace-pre-line">{aiSuggestion}</div>
+          )}
+          <ContractModal
+            open={contractDialogOpen}
+            onOpenChange={setContractDialogOpen}
+            clientId={client.id}
+            contractUrl={contractUrl}
+            contractName={contractName}
+            onContractUpdated={handleContractUpdated}
+          />
+          <GenerateContractModal
+            open={generateContractOpen}
+            onOpenChange={setGenerateContractOpen}
+            client={{
+              id: client.id,
+              company_name: client.companyName,
+              contact_name: client.contactName,
+              email: client.email,
+              phone: client.phone,
+              address: client.address || null,
+              services: client.services,
+              monthly_budget: client.monthlyBudget,
+              paid_traffic_budget: client.trafficBudget || null,
+            }}
+          />
         </div>
       )}
 
+      {/* Edit Client Modal */}
+      <EditClientModal
+        open={editClientOpen}
+        onOpenChange={setEditClientOpen}
+        client={client}
+        onClientUpdated={() => onUpdate({ ...client, stage: client.stage })}
+      />
+
       {/* Tabs */}
-      <Tabs defaultValue="checklist">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full">
           <TabsTrigger value="checklist" className="flex-1 gap-2" disabled={isPaused}>
             {isPaused ? <Lock className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
@@ -824,6 +773,65 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               onUncomplete={handleUncompleteTask}
             />
           )}
+
+          {/* Stage Navigation Buttons - Only in Checklist tab */}
+          <div className={`flex gap-2 mt-6 pt-4 border-t ${isPaused ? 'opacity-50' : ''}`}>
+            {prevStage && (
+              <Button 
+                variant="outline"
+                onClick={handleMoveToPrevStage}
+                disabled={isLoadingStage !== null || isPaused}
+                className="flex-1 gap-2"
+              >
+                {isPaused ? (
+                  <Lock className="h-4 w-4" />
+                ) : isLoadingStage === 'prev' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowLeft className="h-4 w-4" />
+                )}
+                {prevStage.name}
+              </Button>
+            )}
+            
+            {nextStage && (
+              <Button 
+                onClick={handleMoveToNextStage}
+                disabled={!allRequiredCompleted || isLoadingStage !== null || isPaused}
+                className="flex-1 gap-2"
+                title={isPaused ? 'Cliente bloqueado' : !allRequiredCompleted ? 'Complete todos os itens obrigatórios (*) para avançar' : ''}
+              >
+                {isPaused ? (
+                  <>
+                    <Lock className="h-4 w-4" />
+                    Bloqueado
+                  </>
+                ) : isLoadingStage === 'next' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    {nextStage.name}
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          {/* Helper text for disabled advance button */}
+          {isPaused ? (
+            <p className="text-xs text-destructive text-center flex items-center justify-center gap-1">
+              <Lock className="h-3 w-3" />
+              Cliente suspenso. Todas as atividades estão bloqueadas.
+            </p>
+          ) : !allRequiredCompleted && nextStage && (
+            <p className="text-xs text-muted-foreground text-center">
+              Complete todos os itens obrigatórios (*) para avançar para a próxima fase
+            </p>
+          )}
         </TabsContent>
 
 
@@ -837,64 +845,6 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           <ClientHistoryTab clientId={client.id} />
         </TabsContent>
       </Tabs>
-
-      {/* Stage Navigation Buttons */}
-      <div className={`flex gap-2 ${isPaused ? 'opacity-50' : ''}`}>
-        {prevStage && (
-          <Button 
-            variant="outline"
-            onClick={handleMoveToPrevStage}
-            disabled={isLoadingStage !== null || isPaused}
-            className="flex-1 gap-2"
-          >
-            {isPaused ? (
-              <Lock className="h-4 w-4" />
-            ) : isLoadingStage === 'prev' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowLeft className="h-4 w-4" />
-            )}
-            {prevStage.name}
-          </Button>
-        )}
-        
-        {nextStage && (
-          <Button 
-            onClick={handleMoveToNextStage}
-            disabled={!allRequiredCompleted || isLoadingStage !== null || isPaused}
-            className="flex-1 gap-2"
-            title={isPaused ? 'Cliente bloqueado' : !allRequiredCompleted ? 'Complete todos os itens obrigatórios (*) para avançar' : ''}
-          >
-            {isPaused ? (
-              <>
-                <Lock className="h-4 w-4" />
-                Bloqueado
-              </>
-            ) : isLoadingStage === 'next' ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Processando...
-              </>
-            ) : (
-              <>
-                {nextStage.name}
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </Button>
-        )}
-      </div>
-
-      {/* Helper text for disabled advance button */}
-      {isPaused ? (
-        <p className="text-xs text-destructive text-center flex items-center justify-center gap-1">
-          <Lock className="h-3 w-3" /> Cliente bloqueado - Contacte um administrador para reativar
-        </p>
-      ) : nextStage && !allRequiredCompleted && (
-        <p className="text-xs text-muted-foreground text-center">
-          Complete todos os itens obrigatórios (*) para avançar para a próxima fase
-        </p>
-      )}
     </div>
   );
 }
