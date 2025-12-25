@@ -18,6 +18,7 @@ import {
   MapPin,
   FileText,
   Pause,
+  Trash2,
   Play,
   Lock,
   Pencil,
@@ -32,7 +33,9 @@ import { ContractModal } from './ContractModal';
 import { EditClientModal } from './EditClientModal';
 import { GenerateContractModal } from './GenerateContractModal';
 import { ReportModal } from './ReportModal';
+import { DeleteClientModal } from './DeleteClientModal';
 import { formatPhoneNumber } from '@/lib/phone-utils';
+import { useNavigate } from 'react-router-dom';
 
 
 interface ClientDetailContentProps {
@@ -50,6 +53,7 @@ interface ChecklistReport {
 }
 
 export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRole = 'sales', userId }: ClientDetailContentProps) {
+  const navigate = useNavigate();
   // Permission checks
   const canEditClient = userRole === 'admin' || userRole === 'sales' || isAdmin;
   const canSeeContracts = userRole === 'admin' || userRole === 'sales' || isAdmin;
@@ -62,6 +66,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [generateContractOpen, setGenerateContractOpen] = useState(false);
   const [editClientOpen, setEditClientOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contractUrl, setContractUrl] = useState<string | null>(null);
   const [contractName, setContractName] = useState<string | null>(null);
   
@@ -583,6 +588,28 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               </DialogFooter>
             </DialogContent>
           </Dialog>
+        )}
+
+        {/* Delete Button - Only for Admins */}
+        {isAdmin && (
+          <>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar
+            </Button>
+            <DeleteClientModal
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              clientId={client.id}
+              clientName={client.companyName}
+              onDeleted={() => navigate('/app/clients')}
+            />
+          </>
         )}
 
         {/* Edit Client Modal */}
