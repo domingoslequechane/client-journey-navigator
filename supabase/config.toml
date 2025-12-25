@@ -70,3 +70,6 @@ verify_jwt = true
 
 [functions.generate-landing-image]
 verify_jwt = false
+
+[functions.generate-ai-suggestion]
+verify_jwt = true
