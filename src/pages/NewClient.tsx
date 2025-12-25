@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Building2, User, Globe, DollarSign, Loader2 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatedContainer } from '@/components/ui/animated-container';
-import { SERVICE_LABELS, SOURCE_LABELS, ServiceType, SALES_FUNNEL_STAGES } from '@/types';
+import { SERVICE_LABELS, SOURCE_LABELS, ServiceType } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CURRENCIES } from '@/lib/currencies';
@@ -21,9 +21,13 @@ import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequ
 
 export default function NewClient() {
   const navigate = useNavigate();
+  const { clientId } = useParams<{ clientId?: string }>();
+  const isEditMode = !!clientId;
+  
   const { loading: planLoading, canAddClient, planType, usage, limits } = usePlanLimits();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
   const [saving, setSaving] = useState(false);
+  const [loadingClient, setLoadingClient] = useState(isEditMode);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   
   // Form state
@@ -47,28 +51,76 @@ export default function NewClient() {
     loadOrganizationData();
   }, []);
 
+  useEffect(() => {
+    if (clientId) {
+      loadClientData(clientId);
+    }
+  }, [clientId]);
+
   const loadOrganizationData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     
     const { data: profile } = await supabase
       .from('profiles')
-      .select('organization_id')
+      .select('organization_id, current_organization_id')
       .eq('id', user.id)
       .single();
     
-    if (profile?.organization_id) {
-      setOrganizationId(profile.organization_id);
+    const orgId = profile?.current_organization_id || profile?.organization_id;
+    if (orgId) {
+      setOrganizationId(orgId);
       
       const { data: org } = await supabase
         .from('organizations')
         .select('currency')
-        .eq('id', profile.organization_id)
+        .eq('id', orgId)
         .single();
       
       if (org?.currency) {
         setBudgetCurrency(org.currency);
       }
+    }
+  };
+
+  const loadClientData = async (id: string) => {
+    setLoadingClient(true);
+    try {
+      const { data: client, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      if (client) {
+        setCompanyName(client.company_name || '');
+        setContactName(client.contact_name || '');
+        setEmail(client.email || '');
+        setPhone(client.phone || '');
+        setWebsite(client.website || '');
+        setAddress(client.address || '');
+        setSource(client.source || '');
+        setQualification(client.qualification || 'cold');
+        setNotes(client.notes || '');
+        setServices((client.services as ServiceType[]) || []);
+        setMonthlyBudget(client.monthly_budget ? String(client.monthly_budget) : '');
+        setTrafficBudget(client.paid_traffic_budget ? String(client.paid_traffic_budget) : '');
+        setBant({
+          budget: client.bant_budget || 0,
+          authority: client.bant_authority || 0,
+          need: client.bant_need || 0,
+          timeline: client.bant_timeline || 0,
+        });
+        setOrganizationId(client.organization_id);
+      }
+    } catch (error) {
+      console.error('Error loading client:', error);
+      toast({ title: 'Erro', description: 'Não foi possível carregar os dados do cliente', variant: 'destructive' });
+      navigate('/app/clients');
+    } finally {
+      setLoadingClient(false);
     }
   };
 
@@ -89,43 +141,61 @@ export default function NewClient() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
-      const { error } = await supabase
-        .from('clients')
-        .insert({
-          company_name: companyName,
-          contact_name: contactName,
-          email: email || null,
-          phone,
-          website: website || null,
-          address: address || null,
-          source: source || null,
-          notes: notes || null,
-          qualification: qualification as 'cold' | 'warm' | 'hot' | 'qualified',
-          services: services.length > 0 ? services : null,
-          monthly_budget: monthlyBudget ? parseFloat(monthlyBudget) : null,
-          paid_traffic_budget: trafficBudget ? parseFloat(trafficBudget) : null,
-          bant_budget: bant.budget,
-          bant_authority: bant.authority,
-          bant_need: bant.need,
-          bant_timeline: bant.timeline,
-          user_id: user.id,
-          organization_id: organizationId,
-          current_stage: 'prospeccao',
-        });
+      const clientData = {
+        company_name: companyName,
+        contact_name: contactName,
+        email: email || null,
+        phone,
+        website: website || null,
+        address: address || null,
+        source: source || null,
+        notes: notes || null,
+        qualification: qualification as 'cold' | 'warm' | 'hot' | 'qualified',
+        services: services.length > 0 ? services : null,
+        monthly_budget: monthlyBudget ? parseFloat(monthlyBudget) : null,
+        paid_traffic_budget: trafficBudget ? parseFloat(trafficBudget) : null,
+        bant_budget: bant.budget,
+        bant_authority: bant.authority,
+        bant_need: bant.need,
+        bant_timeline: bant.timeline,
+      };
 
-      if (error) throw error;
+      if (isEditMode && clientId) {
+        // Update existing client
+        const { error } = await supabase
+          .from('clients')
+          .update(clientData)
+          .eq('id', clientId);
 
-      toast({ title: 'Sucesso!', description: 'Cliente cadastrado com sucesso' });
-      navigate('/app/clients');
+        if (error) throw error;
+
+        toast({ title: 'Sucesso!', description: 'Cliente atualizado com sucesso' });
+        navigate(`/app/clients/${clientId}`);
+      } else {
+        // Create new client
+        const { error } = await supabase
+          .from('clients')
+          .insert({
+            ...clientData,
+            user_id: user.id,
+            organization_id: organizationId,
+            current_stage: 'prospeccao',
+          });
+
+        if (error) throw error;
+
+        toast({ title: 'Sucesso!', description: 'Cliente cadastrado com sucesso' });
+        navigate('/app/clients');
+      }
     } catch (error) {
-      console.error('Error creating client:', error);
-      toast({ title: 'Erro', description: 'Não foi possível cadastrar o cliente', variant: 'destructive' });
+      console.error('Error saving client:', error);
+      toast({ title: 'Erro', description: `Não foi possível ${isEditMode ? 'atualizar' : 'cadastrar'} o cliente`, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
-  if (planLoading || subLoading) {
+  if (planLoading || subLoading || loadingClient) {
     return (
       <div className="p-4 md:p-8 max-w-4xl mx-auto flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -133,11 +203,11 @@ export default function NewClient() {
     );
   }
 
-  if (!hasActiveSubscription) {
+  if (!isEditMode && !hasActiveSubscription) {
     return <SubscriptionRequired feature="cadastrar novos clientes" />;
   }
 
-  if (!canAddClient) {
+  if (!isEditMode && !canAddClient) {
     return (
       <div className="p-4 md:p-8 max-w-4xl mx-auto">
         <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
@@ -159,15 +229,19 @@ export default function NewClient() {
     );
   }
 
+  const backLink = isEditMode && clientId ? `/app/clients/${clientId}` : '/app/clients';
+
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto">
       <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
-        <Link to="/app/clients">
+        <Link to={backLink}>
           <Button variant="ghost" size="icon" className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
         </Link>
         <div className="min-w-0">
-          <h1 className="text-xl md:text-3xl font-bold">Novo Cliente</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Cadastre um novo lead ou cliente</p>
+          <h1 className="text-xl md:text-3xl font-bold">{isEditMode ? 'Editar Cliente' : 'Novo Cliente'}</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            {isEditMode ? 'Atualize as informações do cliente' : 'Cadastre um novo lead ou cliente'}
+          </p>
         </div>
       </AnimatedContainer>
 
@@ -372,11 +446,11 @@ export default function NewClient() {
         </AnimatedContainer>
 
         <AnimatedContainer animation="fade-up" delay={0.35} className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-end">
-          <Link to="/app/clients" className="w-full sm:w-auto">
+          <Link to={backLink} className="w-full sm:w-auto">
             <Button variant="outline" className="w-full">Cancelar</Button>
           </Link>
           <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
-            {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</> : 'Cadastrar Cliente'}
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</> : isEditMode ? 'Salvar Alterações' : 'Cadastrar Cliente'}
           </Button>
         </AnimatedContainer>
       </form>

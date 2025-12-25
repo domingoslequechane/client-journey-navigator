@@ -104,6 +104,11 @@ const App = () => (
                   </RoleProtectedRoute>
                 } />
                 <Route path="clients/:clientId" element={<ClientDetail />} />
+                <Route path="clients/edit/:clientId" element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'sales']}>
+                    <NewClient />
+                  </RoleProtectedRoute>
+                } />
                 <Route path="new-client" element={
                   <RoleProtectedRoute allowedRoles={['admin', 'sales']}>
                     <NewClient />
