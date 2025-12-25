@@ -129,6 +129,7 @@ export function SimplifiedEditor({
         organization_id: organizationId,
         custom_layout: layoutData as any,
         paper_size: paperSize,
+        template_style: 'onix',
         updated_at: new Date().toISOString(),
       };
 
