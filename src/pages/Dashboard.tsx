@@ -180,9 +180,9 @@ export default function Dashboard() {
         </AnimatedContainer>
         <AnimatedContainer animation="fade-up" delay={0.1}>
           <StatsCard 
-            title="Receita Fixa" 
+            title="Receita Prevista" 
             value={`${currencySymbol} ${fixedRevenue.toLocaleString()}`}
-            description="Contratos fechados"
+            description="Este mês"
             icon={DollarSign}
             variant="success"
           />

@@ -253,3 +253,13 @@ export const TEMPERATURE_LABELS: Record<LeadTemperature, string> = {
   warm: 'Morno',
   hot: 'Quente',
 };
+
+// ============= Document Types =============
+export type DocumentType = 'contract' | 'proforma_invoice' | 'budget' | 'commercial_proposal';
+
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  contract: 'Contrato',
+  proforma_invoice: 'Factura Proforma',
+  budget: 'Orçamento',
+  commercial_proposal: 'Proposta Comercial',
+};

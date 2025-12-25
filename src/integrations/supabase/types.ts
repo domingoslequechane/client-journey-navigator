@@ -435,6 +435,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          document_type: string
           id: string
           is_default: boolean
           name: string
@@ -444,6 +445,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          document_type?: string
           id?: string
           is_default?: boolean
           name: string
@@ -453,6 +455,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          document_type?: string
           id?: string
           is_default?: boolean
           name?: string

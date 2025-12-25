@@ -77,8 +77,8 @@ export function RevenueChart({ clients, currencySymbol }: RevenueChartProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base font-semibold">Receita Fixa</CardTitle>
-            <CardDescription>Contratos fechados</CardDescription>
+            <CardTitle className="text-base font-semibold">Histórico de Receita</CardTitle>
+            <CardDescription>Evolução mensal</CardDescription>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <TrendingUp className="h-4 w-4 text-success" />
