@@ -16,28 +16,40 @@ export type Database = {
     Tables: {
       activities: {
         Row: {
+          changed_by: string | null
           client_id: string
           created_at: string
           description: string | null
+          field_name: string | null
           id: string
+          new_value: string | null
+          old_value: string | null
           organization_id: string | null
           title: string
           type: Database["public"]["Enums"]["activity_type"]
         }
         Insert: {
+          changed_by?: string | null
           client_id: string
           created_at?: string
           description?: string | null
+          field_name?: string | null
           id?: string
+          new_value?: string | null
+          old_value?: string | null
           organization_id?: string | null
           title: string
           type: Database["public"]["Enums"]["activity_type"]
         }
         Update: {
+          changed_by?: string | null
           client_id?: string
           created_at?: string
           description?: string | null
+          field_name?: string | null
           id?: string
+          new_value?: string | null
+          old_value?: string | null
           organization_id?: string | null
           title?: string
           type?: Database["public"]["Enums"]["activity_type"]
@@ -1262,6 +1274,9 @@ export type Database = {
         | "note"
         | "task"
         | "milestone"
+        | "field_change"
+        | "stage_change"
+        | "status_change"
       app_role: "admin" | "moderator" | "user" | "proprietor"
       journey_stage:
         | "prospeccao"
@@ -1407,7 +1422,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      activity_type: ["call", "email", "meeting", "note", "task", "milestone"],
+      activity_type: [
+        "call",
+        "email",
+        "meeting",
+        "note",
+        "task",
+        "milestone",
+        "field_change",
+        "stage_change",
+        "status_change",
+      ],
       app_role: ["admin", "moderator", "user", "proprietor"],
       journey_stage: [
         "prospeccao",

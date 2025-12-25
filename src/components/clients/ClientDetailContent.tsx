@@ -23,7 +23,8 @@ import {
   Lock,
   Pencil,
   User,
-  ClipboardList
+  ClipboardList,
+  History
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -34,6 +35,7 @@ import { EditClientModal } from './EditClientModal';
 import { GenerateContractModal } from './GenerateContractModal';
 import { ReportModal } from './ReportModal';
 import { DeleteClientModal } from './DeleteClientModal';
+import { ClientHistoryTab } from './ClientHistoryTab';
 import { formatPhoneNumber } from '@/lib/phone-utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -287,6 +289,28 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
     if (nextStage && allRequiredCompleted) {
       setIsLoadingStage('next');
       try {
+        // Log stage change
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('id', user.id)
+            .single();
+          
+          await supabase.from('activities').insert({
+            client_id: client.id,
+            type: 'stage_change' as const,
+            title: 'Avançou de etapa',
+            description: `De "${currentStage?.name}" para "${nextStage.name}"`,
+            organization_id: profile?.organization_id || null,
+            changed_by: user.id,
+            field_name: 'current_stage',
+            old_value: client.stage,
+            new_value: nextStage.id,
+          });
+        }
+        
         await onUpdate({ ...client, stage: nextStage.id });
       } finally {
         setIsLoadingStage(null);
@@ -303,6 +327,28 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
     if (prevStage) {
       setIsLoadingStage('prev');
       try {
+        // Log stage change
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('id', user.id)
+            .single();
+          
+          await supabase.from('activities').insert({
+            client_id: client.id,
+            type: 'stage_change' as const,
+            title: 'Retrocedeu de etapa',
+            description: `De "${currentStage?.name}" para "${prevStage.name}"`,
+            organization_id: profile?.organization_id || null,
+            changed_by: user.id,
+            field_name: 'current_stage',
+            old_value: client.stage,
+            new_value: prevStage.id,
+          });
+        }
+        
         await onUpdate({ ...client, stage: prevStage.id });
       } finally {
         setIsLoadingStage(null);
@@ -639,6 +685,10 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             <MessageSquare className="h-4 w-4" />
             Notas
           </TabsTrigger>
+          <TabsTrigger value="history" className="flex-1 gap-2">
+            <History className="h-4 w-4" />
+            Histórico
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="checklist" className={`mt-4 space-y-3 ${isPaused ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -726,6 +776,10 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           <div className="p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">{client.notes || 'Nenhuma nota registrada.'}</p>
           </div>
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4">
+          <ClientHistoryTab clientId={client.id} />
         </TabsContent>
       </Tabs>
 
