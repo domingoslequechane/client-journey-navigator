@@ -1,12 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { StatsCard } from '@/components/dashboard/StatsCard';
+import { 
+  StatsCard, 
+  RevenueChart, 
+  FunnelChart, 
+  SourcePieChart, 
+  HighlightClientCard, 
+  AISuggestionCard 
+} from '@/components/dashboard';
 import { FreePlanBanner } from '@/components/subscription/FreePlanBanner';
 import { OnboardingTutorial } from '@/components/onboarding/OnboardingTutorial';
 import { DashboardSkeleton } from '@/components/ui/loading-skeleton';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SALES_FUNNEL_STAGES, OPERATIONAL_FLOW_STAGES, ALL_STAGES } from '@/types';
-import { Users, TrendingUp, Target, Award, ArrowRight, UserPlus, Kanban, Workflow, Phone, Loader2 } from 'lucide-react';
+import { Users, TrendingUp, Target, Award, ArrowRight, UserPlus, Kanban, Workflow, Phone, Loader2, DollarSign, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -101,6 +108,7 @@ export default function Dashboard() {
   const totalClients = clients.length;
   const activeClients = clients.filter(c => ['producao', 'trafego', 'retencao', 'fidelizacao'].includes(c.current_stage)).length;
   const qualifiedLeads = clients.filter(c => c.qualification === 'qualified' || c.qualification === 'hot').length;
+  const hotLeads = clients.filter(c => c.qualification === 'hot').length;
   const conversionRate = totalClients > 0 ? Math.round((activeClients / totalClients) * 100) : 0;
   
   // Sales funnel clients
@@ -108,6 +116,13 @@ export default function Dashboard() {
   
   // Operational flow clients
   const operationalClients = clients.filter(c => ['producao', 'trafego', 'retencao', 'fidelizacao'].includes(c.current_stage)).length;
+
+  // Calculate predicted revenue
+  const predictedRevenue = useMemo(() => {
+    return clients
+      .filter(c => c.monthly_budget && ['producao', 'trafego', 'retencao', 'fidelizacao'].includes(c.current_stage))
+      .reduce((sum, c) => sum + Number(c.monthly_budget || 0), 0);
+  }, [clients]);
 
   // Quick actions based on role
   const quickActions = useMemo(() => {
@@ -147,186 +162,67 @@ export default function Dashboard() {
 
       {/* Stats Cards - Show relevant stats based on role */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-        {canSeeSales && (
-          <>
-            <AnimatedContainer animation="fade-up" delay={0.05}>
-              <StatsCard 
-                title="Total de Clientes" 
-                value={totalClients}
-                description="Na base de dados"
-                icon={Users}
-                variant="info"
-              />
-            </AnimatedContainer>
-            <AnimatedContainer animation="fade-up" delay={0.1}>
-              <StatsCard 
-                title="Leads Qualificados" 
-                value={qualifiedLeads}
-                description="Prontos para fechamento"
-                icon={Target}
-                variant="warning"
-              />
-            </AnimatedContainer>
-          </>
-        )}
-        {canSeeOperations && (
-          <>
-            <AnimatedContainer animation="fade-up" delay={canSeeSales ? 0.15 : 0.05}>
-              <StatsCard 
-                title="Clientes Ativos" 
-                value={activeClients}
-                description="Em execução ou fidelização"
-                icon={TrendingUp}
-                variant="success"
-              />
-            </AnimatedContainer>
-            <AnimatedContainer animation="fade-up" delay={canSeeSales ? 0.2 : 0.1}>
-              <StatsCard 
-                title="Taxa de Conversão" 
-                value={`${conversionRate}%`}
-                description="Leads → Clientes"
-                icon={Award}
-                variant="primary"
-              />
-            </AnimatedContainer>
-          </>
-        )}
-        {/* If only sales role, fill remaining slots */}
-        {canSeeSales && !canSeeOperations && (
-          <>
-            <AnimatedContainer animation="fade-up" delay={0.15}>
-              <StatsCard 
-                title="No Funil de Vendas" 
-                value={salesFunnelClients}
-                description="Em prospecção a fechamento"
-                icon={Kanban}
-                variant="success"
-              />
-            </AnimatedContainer>
-            <AnimatedContainer animation="fade-up" delay={0.2}>
-              <StatsCard 
-                title="Taxa de Conversão" 
-                value={`${conversionRate}%`}
-                description="Leads → Clientes"
-                icon={Award}
-                variant="primary"
-              />
-            </AnimatedContainer>
-          </>
-        )}
-        {/* If only operations role, fill remaining slots */}
-        {!canSeeSales && canSeeOperations && (
-          <>
-            <AnimatedContainer animation="fade-up" delay={0.15}>
-              <StatsCard 
-                title="Em Produção" 
-                value={clients.filter(c => c.current_stage === 'producao').length}
-                description="Configurações iniciais"
-                icon={Kanban}
-                variant="info"
-              />
-            </AnimatedContainer>
-            <AnimatedContainer animation="fade-up" delay={0.2}>
-              <StatsCard 
-                title="Em Campanhas" 
-                value={clients.filter(c => c.current_stage === 'trafego').length}
-                description="Gestão de campanhas"
-                icon={Target}
-                variant="warning"
-              />
-            </AnimatedContainer>
-          </>
-        )}
+        <AnimatedContainer animation="fade-up" delay={0.05}>
+          <StatsCard 
+            title="Total de Clientes" 
+            value={totalClients}
+            description="Na base de dados"
+            icon={Users}
+            variant="info"
+          />
+        </AnimatedContainer>
+        <AnimatedContainer animation="fade-up" delay={0.1}>
+          <StatsCard 
+            title="Receita Prevista" 
+            value={`${currencySymbol} ${predictedRevenue.toLocaleString()}`}
+            description="Clientes ativos"
+            icon={DollarSign}
+            variant="success"
+          />
+        </AnimatedContainer>
+        <AnimatedContainer animation="fade-up" delay={0.15}>
+          <StatsCard 
+            title="Leads Quentes" 
+            value={hotLeads}
+            description="Prontos para fechar"
+            icon={Flame}
+            variant="warning"
+          />
+        </AnimatedContainer>
+        <AnimatedContainer animation="fade-up" delay={0.2}>
+          <StatsCard 
+            title="Taxa de Conversão" 
+            value={`${conversionRate}%`}
+            description="Leads → Clientes"
+            icon={Award}
+            variant="primary"
+          />
+        </AnimatedContainer>
       </div>
 
-      {/* Sales Funnel Overview - Only for sales/admin */}
-      {canSeeSales && (
-        <AnimatedContainer animation="fade-up" delay={0.25} className="bg-card border border-border rounded-xl p-4 md:p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-6">
-            <div>
-              <h2 className="text-base md:text-lg font-semibold">Funil de Vendas por Fase</h2>
-              <p className="text-xs md:text-sm text-muted-foreground">Distribuição dos clientes no funil de vendas</p>
-            </div>
-            <Link to="/app/sales-funnel">
-              <Button variant="ghost" size="sm" className="gap-2 w-full sm:w-auto">
-                Ver Funil
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-2 md:gap-4">
-            {SALES_FUNNEL_STAGES.map((stage, index) => {
-              const dbStages: Record<string, string> = {
-                prospecting: 'prospeccao',
-                qualification: 'reuniao',
-                closing: 'contratacao',
-              };
-              const count = clients.filter(c => c.current_stage === dbStages[stage.id]).length;
-              return (
-                <AnimatedContainer 
-                  key={stage.id}
-                  animation="scale-in"
-                  delay={0.3 + (index * 0.1)}
-                  className={cn(
-                    "p-3 md:p-6 rounded-xl border-2 text-center transition-all hover:scale-105",
-                    stage.borderColor,
-                    stage.color
-                  )}
-                >
-                  <div className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{count}</div>
-                  <div className="text-xs md:text-sm font-medium">{stage.name}</div>
-                </AnimatedContainer>
-              );
-            })}
-          </div>
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+        <AnimatedContainer animation="fade-up" delay={0.25}>
+          <RevenueChart clients={clients} currencySymbol={currencySymbol} />
         </AnimatedContainer>
-      )}
+        <AnimatedContainer animation="fade-up" delay={0.3}>
+          <FunnelChart clients={clients} />
+        </AnimatedContainer>
+      </div>
 
-      {/* Operational Flow Overview - Only for operations/campaign_management/admin */}
-      {canSeeOperations && (
-        <AnimatedContainer animation="fade-up" delay={canSeeSales ? 0.35 : 0.25} className="bg-card border border-border rounded-xl p-4 md:p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-6">
-            <div>
-              <h2 className="text-base md:text-lg font-semibold">Fluxo Operacional por Fase</h2>
-              <p className="text-xs md:text-sm text-muted-foreground">Distribuição dos clientes no fluxo operacional</p>
-            </div>
-            <Link to="/app/operational-flow">
-              <Button variant="ghost" size="sm" className="gap-2 w-full sm:w-auto">
-                Ver Fluxo
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
-            {OPERATIONAL_FLOW_STAGES.map((stage, index) => {
-              const dbStages: Record<string, string> = {
-                production: 'producao',
-                campaigns: 'trafego',
-                retention: 'retencao',
-                loyalty: 'fidelizacao',
-              };
-              const count = clients.filter(c => c.current_stage === dbStages[stage.id]).length;
-              return (
-                <AnimatedContainer 
-                  key={stage.id}
-                  animation="scale-in"
-                  delay={(canSeeSales ? 0.4 : 0.3) + (index * 0.1)}
-                  className={cn(
-                    "p-3 md:p-6 rounded-xl border-2 text-center transition-all hover:scale-105",
-                    stage.borderColor,
-                    stage.color
-                  )}
-                >
-                  <div className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{count}</div>
-                  <div className="text-xs md:text-sm font-medium">{stage.name}</div>
-                </AnimatedContainer>
-              );
-            })}
-          </div>
+      {/* Insights Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+        <AnimatedContainer animation="fade-up" delay={0.35}>
+          <SourcePieChart clients={clients} />
         </AnimatedContainer>
-      )}
+        <AnimatedContainer animation="fade-up" delay={0.4}>
+          <HighlightClientCard clients={clients} currencySymbol={currencySymbol} />
+        </AnimatedContainer>
+        <AnimatedContainer animation="fade-up" delay={0.45}>
+          <AISuggestionCard clients={clients} />
+        </AnimatedContainer>
+      </div>
+
 
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
