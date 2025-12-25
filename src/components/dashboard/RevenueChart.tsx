@@ -20,15 +20,16 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function RevenueChart({ clients, currencySymbol }: RevenueChartProps) {
-  const chartData = useMemo(() => {
-    // Group clients by month and sum their monthly_budget
-    const monthlyData: Record<string, number> = {};
+  const { chartData, monthlyData, currentMonthKey, previousMonthKey } = useMemo(() => {
+    // Filter only non-paused clients and group by month
+    const activeClients = clients.filter(c => !c.paused);
+    const monthlyRevenue: Record<string, number> = {};
     
-    clients.forEach((client) => {
+    activeClients.forEach((client) => {
       if (client.monthly_budget && client.created_at) {
         const date = new Date(client.created_at);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + Number(client.monthly_budget);
+        monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + Number(client.monthly_budget);
       }
     });
 
@@ -42,22 +43,33 @@ export function RevenueChart({ clients, currencySymbol }: RevenueChartProps) {
 
     // Build cumulative data
     let cumulative = 0;
-    return months.map((month) => {
-      cumulative += monthlyData[month] || 0;
-      const [year, m] = month.split('-');
-      const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const data = months.map((month) => {
+      cumulative += monthlyRevenue[month] || 0;
+      const [, m] = month.split('-');
       return {
         month: monthNames[parseInt(m) - 1],
         revenue: cumulative,
+        monthlyRevenue: monthlyRevenue[month] || 0,
       };
     });
+
+    return {
+      chartData: data,
+      monthlyData: monthlyRevenue,
+      currentMonthKey: months[months.length - 1],
+      previousMonthKey: months[months.length - 2],
+    };
   }, [clients]);
 
   const totalRevenue = chartData[chartData.length - 1]?.revenue || 0;
-  const previousRevenue = chartData[chartData.length - 2]?.revenue || 0;
-  const growthPercent = previousRevenue > 0 
-    ? Math.round(((totalRevenue - previousRevenue) / previousRevenue) * 100) 
-    : 0;
+  
+  // Calculate month-over-month growth (not cumulative)
+  const currentMonthRevenue = monthlyData[currentMonthKey] || 0;
+  const previousMonthRevenue = monthlyData[previousMonthKey] || 0;
+  const growthPercent = previousMonthRevenue > 0 
+    ? Math.round(((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100) 
+    : currentMonthRevenue > 0 ? 100 : 0;
 
   return (
     <Card className="border-border">
