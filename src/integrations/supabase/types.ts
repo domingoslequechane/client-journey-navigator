@@ -1277,6 +1277,8 @@ export type Database = {
         | "field_change"
         | "stage_change"
         | "status_change"
+        | "task_completed"
+        | "task_uncompleted"
       app_role: "admin" | "moderator" | "user" | "proprietor"
       journey_stage:
         | "prospeccao"
@@ -1432,6 +1434,8 @@ export const Constants = {
         "field_change",
         "stage_change",
         "status_change",
+        "task_completed",
+        "task_uncompleted",
       ],
       app_role: ["admin", "moderator", "user", "proprietor"],
       journey_stage: [

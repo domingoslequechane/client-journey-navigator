@@ -230,6 +230,32 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       return [...prev, { itemId: selectedChecklistItem.title, report, completedAt: new Date().toISOString() }];
     });
 
+    // Log task completion to activity history
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .single();
+        
+        await supabase.from('activities').insert({
+          client_id: client.id,
+          type: 'task_completed' as const,
+          title: `Completou tarefa: ${selectedChecklistItem.title}`,
+          description: `Etapa: ${currentStage?.name}`,
+          organization_id: profile?.organization_id || null,
+          changed_by: user.id,
+          field_name: 'checklist_item',
+          old_value: 'incompleto',
+          new_value: 'completo',
+        });
+      }
+    } catch (err) {
+      console.error('Error logging task completion:', err);
+    }
+
     try {
       await onUpdate({ ...client, tasks: updatedTasks });
       toast({ title: 'Tarefa concluída!', description: 'O relatório foi salvo com sucesso.' });
@@ -267,6 +293,32 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       .eq('client_id', client.id)
       .eq('stage', stageDbName as any)
       .eq('title', selectedChecklistItem.title);
+
+    // Log task uncomplete to activity history
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .single();
+        
+        await supabase.from('activities').insert({
+          client_id: client.id,
+          type: 'task_uncompleted' as const,
+          title: `Reabriu tarefa: ${selectedChecklistItem.title}`,
+          description: `Etapa: ${currentStage?.name}`,
+          organization_id: profile?.organization_id || null,
+          changed_by: user.id,
+          field_name: 'checklist_item',
+          old_value: 'completo',
+          new_value: 'incompleto',
+        });
+      }
+    } catch (err) {
+      console.error('Error logging task uncomplete:', err);
+    }
 
     try {
       await onUpdate({ ...client, tasks: updatedTasks });
@@ -439,18 +491,88 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       {/* All Client Info */}
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold text-sm">Informações do Cliente</h4>
-        {canEditClient && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2" 
-            disabled={isPaused}
-            onClick={() => setEditClientOpen(true)}
-          >
-            {isPaused ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
-            Editar
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canEditClient && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2" 
+              disabled={isPaused}
+              onClick={() => setEditClientOpen(true)}
+            >
+              {isPaused ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+              Editar
+            </Button>
+          )}
+          
+          {/* Suspend Button - Only for Admins */}
+          {isAdmin && (
+            <Dialog open={pauseDialogOpen} onOpenChange={setPauseDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant={isPaused ? "outline" : "secondary"} 
+                  size="sm"
+                  className={`gap-2 ${isPaused ? 'border-green-500 text-green-500 hover:bg-green-500 hover:text-white' : ''}`}
+                >
+                  {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+                  {isPaused ? 'Reativar' : 'Suspender'}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{isPaused ? 'Reativar Cliente' : 'Suspender Cliente'}</DialogTitle>
+                  <DialogDescription>
+                    {isPaused 
+                      ? 'Deseja reativar este cliente? Todas as atividades serão desbloqueadas.'
+                      : 'Tem certeza que deseja suspender este cliente? Todas as atividades serão bloqueadas até que um administrador o reative.'
+                    }
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPauseDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button 
+                    variant={isPaused ? "default" : "destructive"} 
+                    onClick={handleTogglePause}
+                    disabled={isPausing}
+                  >
+                    {isPausing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      isPaused ? 'Reativar' : 'Suspender Cliente'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {/* Delete Button - Only for Admins */}
+          {isAdmin && (
+            <>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-3 w-3" />
+                Eliminar
+              </Button>
+              <DeleteClientModal
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                clientId={client.id}
+                clientName={client.companyName}
+                onDeleted={() => navigate('/app/clients')}
+              />
+            </>
+          )}
+        </div>
       </div>
       <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 ${isPaused ? 'opacity-60' : ''}`}>
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
@@ -587,73 +709,6 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                 monthly_budget: client.monthlyBudget,
                 paid_traffic_budget: client.trafficBudget || null,
               }}
-            />
-          </>
-        )}
-
-        {/* Suspend Button - Only for Admins */}
-        {isAdmin && (
-          <Dialog open={pauseDialogOpen} onOpenChange={setPauseDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                variant={isPaused ? "outline" : "destructive"} 
-                className={`gap-2 ${isPaused ? 'border-success text-success hover:bg-success hover:text-success-foreground' : ''}`}
-              >
-                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                {isPaused ? 'Reativar' : 'Suspender'}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{isPaused ? 'Reativar Cliente' : 'Suspender Cliente'}</DialogTitle>
-                <DialogDescription>
-                  {isPaused 
-                    ? 'Deseja reativar este cliente? Todas as atividades serão desbloqueadas.'
-                    : 'Tem certeza que deseja suspender este cliente? Todas as atividades serão bloqueadas até que um administrador o reative.'
-                  }
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setPauseDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button 
-                  variant={isPaused ? "default" : "destructive"} 
-                  onClick={handleTogglePause}
-                  disabled={isPausing}
-                >
-                  {isPausing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processando...
-                    </>
-                  ) : (
-                    isPaused ? 'Reativar' : 'Suspender Cliente'
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        {/* Delete Button - Only for Admins */}
-        {isAdmin && (
-          <>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-              Eliminar
-            </Button>
-            <DeleteClientModal
-              open={deleteDialogOpen}
-              onOpenChange={setDeleteDialogOpen}
-              clientId={client.id}
-              clientName={client.companyName}
-              onDeleted={() => navigate('/app/clients')}
             />
           </>
         )}
