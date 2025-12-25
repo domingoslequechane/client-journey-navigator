@@ -7,7 +7,8 @@ import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen, ArrowLeft, Users, Lock } from 'lucide-react';
+import { Send, Sparkles, User, Bot, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen, ArrowLeft, Users, Lock, Copy, Check } from 'lucide-react';
+import QIAAvatar from '@/components/ai/QIAAvatar';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,6 +93,7 @@ export default function AIAssistant() {
   });
   // On mobile, when no client selected, show client list
   const [showClientList, setShowClientList] = useState(true);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { checkRateLimit, isRateLimited } = useRateLimit({ maxRequests: 15, windowMs: 60000 });
@@ -490,6 +492,19 @@ export default function AIAssistant() {
     return labels[stage] || stage;
   };
 
+  const copyToClipboard = async (messageId: string, content: string) => {
+    try {
+      // Strip HTML tags to get plain text
+      const plainText = content.replace(/<[^>]*>/g, '');
+      await navigator.clipboard.writeText(plainText);
+      setCopiedMessageId(messageId);
+      toast({ title: 'Copiado!', description: 'Texto copiado para a área de transferência' });
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (err) {
+      toast({ title: 'Erro', description: 'Não foi possível copiar o texto', variant: 'destructive' });
+    }
+  };
+
   // Handle client selection - on mobile, hide client list after selection
   const handleSelectClient = (clientId: string) => {
     setSelectedClientId(clientId);
@@ -620,13 +635,11 @@ export default function AIAssistant() {
               )}
             >
               {message.role === 'assistant' && (
-                <div className="h-7 w-7 md:h-8 md:w-8 rounded-lg bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center shrink-0">
-                  <Bot className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary-foreground" />
-                </div>
+                <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
               )}
               <div
                 className={cn(
-                  'max-w-[85%] md:max-w-[80%] rounded-xl px-3 py-2.5 md:px-4 md:py-3',
+                  'relative group max-w-[85%] md:max-w-[80%] rounded-xl px-3 py-2.5 md:px-4 md:py-3',
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted'
@@ -660,6 +673,22 @@ export default function AIAssistant() {
                 )}>
                   {new Date(message.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                 </p>
+                
+                {/* Copy button for assistant messages */}
+                {message.role === 'assistant' && message.id !== 'welcome' && (
+                  <button
+                    onClick={() => copyToClipboard(message.id, message.content)}
+                    className="absolute top-2 right-2 p-1.5 rounded-md bg-background/80 hover:bg-background border border-border/50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title="Copiar mensagem"
+                    aria-label="Copiar mensagem"
+                  >
+                    {copiedMessageId === message.id ? (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </button>
+                )}
               </div>
               {message.role === 'user' && (
                 <div className="h-7 w-7 md:h-8 md:w-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
@@ -672,9 +701,7 @@ export default function AIAssistant() {
           {/* Typing Animation */}
           {isTyping && (
             <div className="flex gap-2 md:gap-3">
-              <div className="h-7 w-7 md:h-8 md:w-8 rounded-lg bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
-                <Bot className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary-foreground" />
-              </div>
+              <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
               <div className="bg-muted rounded-xl px-3 py-2.5 md:px-4 md:py-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">digitando</span>
