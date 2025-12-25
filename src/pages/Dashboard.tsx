@@ -106,10 +106,16 @@ export default function Dashboard() {
   }, [clients, getVisibleStages]);
 
   const totalClients = clients.length;
-  const activeClients = clients.filter(c => ['producao', 'trafego', 'retencao', 'fidelizacao'].includes(c.current_stage)).length;
+  // Clientes activos = não pausados
+  const activeClients = clients.filter(c => !c.paused).length;
   const qualifiedLeads = clients.filter(c => c.qualification === 'qualified' || c.qualification === 'hot').length;
   const hotLeads = clients.filter(c => c.qualification === 'hot').length;
-  const conversionRate = totalClients > 0 ? Math.round((activeClients / totalClients) * 100) : 0;
+  
+  // Taxa de conversão = clientes que chegaram a contratação ou além
+  const convertedClients = clients.filter(c => 
+    ['contratacao', 'producao', 'trafego', 'retencao', 'fidelizacao'].includes(c.current_stage)
+  ).length;
+  const conversionRate = totalClients > 0 ? Math.round((convertedClients / totalClients) * 100) : 0;
   
   // Sales funnel clients
   const salesFunnelClients = clients.filter(c => ['prospeccao', 'reuniao', 'contratacao'].includes(c.current_stage)).length;
@@ -117,10 +123,10 @@ export default function Dashboard() {
   // Operational flow clients
   const operationalClients = clients.filter(c => ['producao', 'trafego', 'retencao', 'fidelizacao'].includes(c.current_stage)).length;
 
-  // Calculate predicted revenue
+  // Calculate predicted revenue - todos os clientes não pausados com budget
   const predictedRevenue = useMemo(() => {
     return clients
-      .filter(c => c.monthly_budget && ['producao', 'trafego', 'retencao', 'fidelizacao'].includes(c.current_stage))
+      .filter(c => c.monthly_budget && !c.paused)
       .reduce((sum, c) => sum + Number(c.monthly_budget || 0), 0);
   }, [clients]);
 
