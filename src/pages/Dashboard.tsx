@@ -123,10 +123,11 @@ export default function Dashboard() {
   // Operational flow clients
   const operationalClients = clients.filter(c => ['producao', 'trafego', 'retencao', 'fidelizacao'].includes(c.current_stage)).length;
 
-  // Calculate predicted revenue - todos os clientes não pausados com budget
-  const predictedRevenue = useMemo(() => {
+  // Calculate fixed revenue - apenas clientes operacionais (contratos fechados) não pausados
+  const operationalStages = ['producao', 'trafego', 'retencao', 'fidelizacao'];
+  const fixedRevenue = useMemo(() => {
     return clients
-      .filter(c => c.monthly_budget && !c.paused)
+      .filter(c => c.monthly_budget && !c.paused && operationalStages.includes(c.current_stage))
       .reduce((sum, c) => sum + Number(c.monthly_budget || 0), 0);
   }, [clients]);
 
@@ -179,9 +180,9 @@ export default function Dashboard() {
         </AnimatedContainer>
         <AnimatedContainer animation="fade-up" delay={0.1}>
           <StatsCard 
-            title="Receita Prevista" 
-            value={`${currencySymbol} ${predictedRevenue.toLocaleString()}`}
-            description="Clientes ativos"
+            title="Receita Fixa" 
+            value={`${currencySymbol} ${fixedRevenue.toLocaleString()}`}
+            description="Contratos fechados"
             icon={DollarSign}
             variant="success"
           />
