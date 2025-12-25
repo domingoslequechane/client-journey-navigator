@@ -69,9 +69,12 @@ interface AgencyInfo {
 }
 
 interface TemplateSettings {
-  template_style: 'modern' | 'classic' | 'minimal';
+  template_style: 'modern' | 'classic' | 'minimal' | 'onix';
   primary_color: string;
   show_watermark: boolean;
+  custom_layout?: any[];
+  paper_size?: string;
+  footer_text?: string;
 }
 
 export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoiceModalProps) {
@@ -141,15 +144,25 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
       // Fetch template settings
       const { data: templateData } = await supabase
         .from('invoice_template_settings')
-        .select('template_style, primary_color, show_watermark')
+        .select('template_style, primary_color, show_watermark, custom_layout, paper_size, footer_text')
         .eq('organization_id', orgId)
         .maybeSingle();
 
       if (templateData) {
         setTemplateSettings({
-          template_style: templateData.template_style as 'modern' | 'classic' | 'minimal',
-          primary_color: templateData.primary_color || '#2962FF',
+          template_style: (templateData.template_style as 'modern' | 'classic' | 'minimal' | 'onix') || 'onix',
+          primary_color: templateData.primary_color || '#C5E86C',
           show_watermark: templateData.show_watermark ?? false,
+          custom_layout: templateData.custom_layout as any[] | undefined,
+          paper_size: templateData.paper_size || undefined,
+          footer_text: templateData.footer_text || undefined,
+        });
+      } else {
+        // Default to onix style if no settings exist
+        setTemplateSettings({
+          template_style: 'onix',
+          primary_color: '#C5E86C',
+          show_watermark: false,
         });
       }
 
@@ -304,9 +317,11 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
         total,
         currency: agencyInfo.currency,
         notes: notes || undefined,
-        templateStyle: templateSettings?.template_style,
-        primaryColor: templateSettings?.primary_color,
+        templateStyle: templateSettings?.template_style || 'onix',
+        primaryColor: templateSettings?.primary_color || '#C5E86C',
         showWatermark: templateSettings?.show_watermark,
+        customLayout: templateSettings?.custom_layout,
+        footerText: templateSettings?.footer_text,
       });
 
       toast({ title: 'Sucesso!', description: 'Factura gerada e guardada com sucesso' });
@@ -348,9 +363,11 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
       total: invoice.total,
       currency: agencyInfo.currency,
       notes: invoice.notes || undefined,
-      templateStyle: templateSettings?.template_style,
-      primaryColor: templateSettings?.primary_color,
+      templateStyle: templateSettings?.template_style || 'onix',
+      primaryColor: templateSettings?.primary_color || '#C5E86C',
       showWatermark: templateSettings?.show_watermark,
+      customLayout: templateSettings?.custom_layout,
+      footerText: templateSettings?.footer_text,
     });
   };
 
