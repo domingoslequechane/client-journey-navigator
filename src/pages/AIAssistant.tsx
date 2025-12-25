@@ -96,6 +96,7 @@ export default function AIAssistant() {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sendingRef = useRef(false);
   const { checkRateLimit, isRateLimited } = useRateLimit({ maxRequests: 15, windowMs: 60000 });
 
   useEffect(() => {
@@ -163,7 +164,10 @@ export default function AIAssistant() {
 
   // Update local messages when conversation changes
   useEffect(() => {
-    if (selectedClient?.conversation_id) {
+    // Don't overwrite local state while sending a message
+    if (sendingRef.current) return;
+    
+    if (selectedClient?.conversation_id && conversationMessages.length > 0) {
       setMessages(conversationMessages);
     } else if (selectedClientId && selectedClient) {
       // New conversation - show welcome message with full client context
@@ -173,7 +177,7 @@ export default function AIAssistant() {
         content: `Olá! Sou a **QIA**, a tua assistente inteligente de marketing digital. Estou aqui para ajudar com o cliente **${selectedClient.company_name}**.\n\n**Contexto do Cliente:**\n- Contato: ${selectedClient.contact_name}\n- Fase atual: ${getStageLabel(selectedClient.current_stage)}\n- Qualificação: ${selectedClient.qualification}\n- Orçamento mensal: ${selectedClient.monthly_budget ? `${currencySymbol} ${selectedClient.monthly_budget.toLocaleString()}` : 'Não informado'}\n\nComo posso auxiliar hoje?`,
         created_at: new Date().toISOString()
       }]);
-    } else {
+    } else if (!selectedClientId) {
       setMessages([]);
     }
   }, [selectedClient?.conversation_id, conversationMessages, selectedClientId, selectedClient?.company_name, currencySymbol]);
@@ -380,9 +384,8 @@ export default function AIAssistant() {
         content: assistantContent
       });
 
-      // Refresh data
+      // Refresh clients list (not messages, as we're managing local state)
       queryClient.invalidateQueries({ queryKey: ['clients-with-conversations'] });
-      queryClient.invalidateQueries({ queryKey: ['conversation-messages', conversationId] });
 
     } catch (error) {
       console.error('Chat error:', error);
@@ -450,6 +453,9 @@ export default function AIAssistant() {
     // Check rate limit before sending
     if (!checkRateLimit()) return;
 
+    // Mark as sending to prevent useEffect from overwriting local state
+    sendingRef.current = true;
+
     const userMessage: Message = {
       id: `temp-user-${Date.now()}`,
       role: 'user',
@@ -473,6 +479,11 @@ export default function AIAssistant() {
     await incrementUsage('ai_messages');
     
     setIsLoading(false);
+    
+    // Allow useEffect to sync again after a delay
+    setTimeout(() => {
+      sendingRef.current = false;
+    }, 500);
   };
 
   const getFileIcon = (type?: string | null) => {
@@ -626,13 +637,14 @@ export default function AIAssistant() {
       {/* Messages */}
       <ScrollArea className="flex-1 p-3 md:p-4">
         <div className="space-y-4 max-w-3xl mx-auto">
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <div
               key={message.id}
               className={cn(
-                'flex gap-2 md:gap-3',
+                'flex gap-2 md:gap-3 animate-fade-in',
                 message.role === 'user' ? 'justify-end' : 'justify-start'
               )}
+              style={{ animationDelay: `${Math.min(index * 50, 200)}ms` }}
             >
               {message.role === 'assistant' && (
                 <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
@@ -700,7 +712,7 @@ export default function AIAssistant() {
 
           {/* Typing Animation */}
           {isTyping && (
-            <div className="flex gap-2 md:gap-3">
+            <div className="flex gap-2 md:gap-3 animate-fade-in">
               <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
               <div className="bg-muted rounded-xl px-3 py-2.5 md:px-4 md:py-3">
                 <div className="flex items-center gap-2">
