@@ -168,7 +168,7 @@ export default function AIAssistant() {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Olá! Sou o assistente de marketing do Qualify. Estou aqui para ajudar com o cliente **${selectedClient.company_name}**.\n\n**Contexto do Cliente:**\n- Contato: ${selectedClient.contact_name}\n- Fase atual: ${getStageLabel(selectedClient.current_stage)}\n- Qualificação: ${selectedClient.qualification}\n- Orçamento mensal: ${selectedClient.monthly_budget ? `${currencySymbol} ${selectedClient.monthly_budget.toLocaleString()}` : 'Não informado'}\n\nComo posso auxiliar hoje?`,
+        content: `Olá! Sou a **QIA**, a tua assistente inteligente de marketing digital. Estou aqui para ajudar com o cliente **${selectedClient.company_name}**.\n\n**Contexto do Cliente:**\n- Contato: ${selectedClient.contact_name}\n- Fase atual: ${getStageLabel(selectedClient.current_stage)}\n- Qualificação: ${selectedClient.qualification}\n- Orçamento mensal: ${selectedClient.monthly_budget ? `${currencySymbol} ${selectedClient.monthly_budget.toLocaleString()}` : 'Não informado'}\n\nComo posso auxiliar hoje?`,
         created_at: new Date().toISOString()
       }]);
     } else {

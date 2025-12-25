@@ -33,8 +33,8 @@ const tutorialSteps: TutorialStep[] = [
   },
   {
     target: '[data-tutorial="sidebar-ai"]',
-    title: 'Assistente de IA',
-    description: 'Use nosso assistente inteligente para obter insights sobre seus clientes. A IA conhece todos os detalhes!',
+    title: 'QIA - Assistente Inteligente',
+    description: 'Conheça a QIA, sua assistente de marketing digital! Ela conhece todos os detalhes dos seus clientes e pode ajudar com estratégias.',
     position: 'right',
   },
   {
