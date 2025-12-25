@@ -921,6 +921,47 @@ export type Database = {
           },
         ]
       }
+      payment_methods: {
+        Row: {
+          account_number: string
+          created_at: string
+          id: string
+          is_default: boolean
+          organization_id: string
+          provider_name: string
+          recipient_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          organization_id: string
+          provider_name: string
+          recipient_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          organization_id?: string
+          provider_name?: string
+          recipient_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_methods_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_limits: {
         Row: {
           can_export_data: boolean | null

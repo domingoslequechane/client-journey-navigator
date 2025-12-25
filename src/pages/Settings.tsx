@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone, AlertTriangle, Sparkles, CreditCard } from 'lucide-react';
+import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone, AlertTriangle, Sparkles, CreditCard, Plus, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -17,6 +17,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { DocumentTemplatesTab } from '@/components/settings/DocumentTemplatesTab';
 import { InvoiceTemplateSettings } from '@/components/settings/InvoiceTemplateSettings';
 import { DeleteAgencyModal } from '@/components/settings/DeleteAgencyModal';
+
+interface PaymentMethod {
+  id: string;
+  provider_name: string;
+  account_number: string;
+  recipient_name: string;
+  is_default: boolean;
+}
 
 interface AgencySettings {
   id: string;
@@ -28,9 +36,6 @@ interface AgencySettings {
   knowledge_base_url: string | null;
   knowledge_base_name: string | null;
   knowledge_base_text: string | null;
-  payment_provider_name: string | null;
-  payment_account_number: string | null;
-  payment_recipient_name: string | null;
 }
 
 interface UserProfile {
@@ -64,10 +69,10 @@ export default function Settings() {
     knowledge_base_url: null,
     knowledge_base_name: null,
     knowledge_base_text: null,
-    payment_provider_name: null,
-    payment_account_number: null,
-    payment_recipient_name: null,
   });
+
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [savingPayment, setSavingPayment] = useState(false);
 
   // Organization state
   const [organizationId, setOrganizationId] = useState<string | null>(null);
@@ -130,12 +135,23 @@ export default function Settings() {
         const { data: orgData, error: orgError } = await supabase
           .from('organizations')
           .select(
-            'id, phone, name, owner_id, headquarters, nuit, representative_name, representative_position, knowledge_base_url, knowledge_base_name, knowledge_base_text, onboarding_completed, payment_provider_name, payment_account_number, payment_recipient_name'
+            'id, phone, name, owner_id, headquarters, nuit, representative_name, representative_position, knowledge_base_url, knowledge_base_name, knowledge_base_text, onboarding_completed'
           )
           .eq('id', orgId)
           .single();
 
         if (orgError) throw orgError;
+
+        // Fetch payment methods
+        const { data: paymentData } = await supabase
+          .from('payment_methods')
+          .select('*')
+          .eq('organization_id', orgId)
+          .order('is_default', { ascending: false });
+
+        if (paymentData) {
+          setPaymentMethods(paymentData);
+        }
 
         if (orgData) {
           setOrganizationPhone(orgData.phone || '');
@@ -154,9 +170,6 @@ export default function Settings() {
             knowledge_base_url: orgData.knowledge_base_url || null,
             knowledge_base_name: orgData.knowledge_base_name || null,
             knowledge_base_text: orgData.knowledge_base_text || null,
-            payment_provider_name: orgData.payment_provider_name || null,
-            payment_account_number: orgData.payment_account_number || null,
-            payment_recipient_name: orgData.payment_recipient_name || null,
           }));
         }
       }
@@ -197,9 +210,6 @@ export default function Settings() {
           phone: organizationPhone?.trim() || null,
           representative_name: settings.representative_name?.trim() || null,
           representative_position: settings.representative_position?.trim() || null,
-          payment_provider_name: settings.payment_provider_name?.trim() || null,
-          payment_account_number: settings.payment_account_number?.trim() || null,
-          payment_recipient_name: settings.payment_recipient_name?.trim() || null,
           onboarding_completed: isComplete,
         })
         .eq('id', organizationId);
@@ -722,46 +732,143 @@ export default function Settings() {
 
               {/* Dados de Pagamento */}
               <div className="pt-6 border-t border-border">
-                <h3 className="text-base font-semibold mb-2 flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Dados de Pagamento
-                </h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-base font-semibold flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Dados de Pagamento
+                  </h3>
+                  {isAdmin && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setPaymentMethods(prev => [...prev, {
+                          id: `new-${Date.now()}`,
+                          provider_name: '',
+                          account_number: '',
+                          recipient_name: '',
+                          is_default: prev.length === 0
+                        }]);
+                      }}
+                      className="gap-1"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Adicionar
+                    </Button>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Informações exibidas nas facturas de prestação de serviços
                 </p>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="payment_provider_name">Nome da Provedora</Label>
-                    <Input
-                      id="payment_provider_name"
-                      placeholder="Ex: M-Pesa, BCI, Millennium BIM"
-                      value={settings.payment_provider_name || ''}
-                      onChange={(e) => setSettings(prev => ({ ...prev, payment_provider_name: e.target.value }))}
-                      disabled={!isAdmin}
-                    />
+                {paymentMethods.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhum método de pagamento adicionado
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {paymentMethods.map((method, index) => (
+                      <div key={method.id} className="flex items-center gap-2">
+                        <Input
+                          placeholder="Provedora (M-Pesa, BCI...)"
+                          value={method.provider_name}
+                          onChange={(e) => {
+                            const updated = [...paymentMethods];
+                            updated[index].provider_name = e.target.value;
+                            setPaymentMethods(updated);
+                          }}
+                          disabled={!isAdmin}
+                          className="flex-1"
+                        />
+                        <Input
+                          placeholder="Número de Conta"
+                          value={method.account_number}
+                          onChange={(e) => {
+                            const updated = [...paymentMethods];
+                            updated[index].account_number = e.target.value;
+                            setPaymentMethods(updated);
+                          }}
+                          disabled={!isAdmin}
+                          className="flex-1"
+                        />
+                        <Input
+                          placeholder="Destinatário"
+                          value={method.recipient_name || ''}
+                          onChange={(e) => {
+                            const updated = [...paymentMethods];
+                            updated[index].recipient_name = e.target.value;
+                            setPaymentMethods(updated);
+                          }}
+                          disabled={!isAdmin}
+                          className="flex-1"
+                        />
+                        {isAdmin && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={async () => {
+                              const methodId = method.id;
+                              if (!methodId.startsWith('new-')) {
+                                await supabase.from('payment_methods').delete().eq('id', methodId);
+                              }
+                              setPaymentMethods(prev => prev.filter(m => m.id !== methodId));
+                            }}
+                            className="shrink-0 text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="payment_account_number">Número de Conta</Label>
-                    <Input
-                      id="payment_account_number"
-                      placeholder="Ex: 84 XXX XXXX"
-                      value={settings.payment_account_number || ''}
-                      onChange={(e) => setSettings(prev => ({ ...prev, payment_account_number: e.target.value }))}
-                      disabled={!isAdmin}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2 mt-4">
-                  <Label htmlFor="payment_recipient_name">Nome do Destinatário</Label>
-                  <Input
-                    id="payment_recipient_name"
-                    placeholder="Ex: Agência XYZ, Lda"
-                    value={settings.payment_recipient_name || ''}
-                    onChange={(e) => setSettings(prev => ({ ...prev, payment_recipient_name: e.target.value }))}
-                    disabled={!isAdmin}
-                  />
-                </div>
+                )}
+                
+                {isAdmin && paymentMethods.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={savingPayment}
+                    onClick={async () => {
+                      if (!organizationId) return;
+                      setSavingPayment(true);
+                      try {
+                        for (const method of paymentMethods) {
+                          if (method.id.startsWith('new-')) {
+                            await supabase.from('payment_methods').insert({
+                              organization_id: organizationId,
+                              provider_name: method.provider_name,
+                              account_number: method.account_number,
+                              recipient_name: method.recipient_name || null,
+                              is_default: method.is_default
+                            });
+                          } else {
+                            await supabase.from('payment_methods').update({
+                              provider_name: method.provider_name,
+                              account_number: method.account_number,
+                              recipient_name: method.recipient_name || null,
+                            }).eq('id', method.id);
+                          }
+                        }
+                        // Refresh
+                        const { data } = await supabase.from('payment_methods').select('*').eq('organization_id', organizationId).order('is_default', { ascending: false });
+                        if (data) setPaymentMethods(data);
+                        toast({ title: 'Sucesso!', description: 'Métodos de pagamento salvos' });
+                      } catch (error) {
+                        console.error(error);
+                        toast({ title: 'Erro', description: 'Não foi possível salvar', variant: 'destructive' });
+                      } finally {
+                        setSavingPayment(false);
+                      }
+                    }}
+                    className="mt-3 gap-2"
+                  >
+                    {savingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Salvar Métodos de Pagamento
+                  </Button>
+                )}
               </div>
 
               {isAdmin && (
