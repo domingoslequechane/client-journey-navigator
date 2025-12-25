@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Pencil, ArrowRight, Pause, Play, FileText, CheckCircle, Clock } from 'lucide-react';
+import { Loader2, Pencil, ArrowRight, Pause, FileText, CheckCircle, Clock, Square, CheckCircle2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
@@ -42,6 +42,7 @@ const FIELD_LABELS: Record<string, string> = {
   bant_timeline: 'BANT Timeline',
   current_stage: 'Etapa',
   paused: 'Estado',
+  checklist_item: 'Tarefa',
 };
 
 const TYPE_ICONS: Record<string, { icon: typeof Pencil; color: string }> = {
@@ -49,6 +50,8 @@ const TYPE_ICONS: Record<string, { icon: typeof Pencil; color: string }> = {
   stage_change: { icon: ArrowRight, color: 'text-green-500' },
   status_change: { icon: Pause, color: 'text-yellow-500' },
   task: { icon: CheckCircle, color: 'text-primary' },
+  task_completed: { icon: CheckCircle2, color: 'text-green-500' },
+  task_uncompleted: { icon: Square, color: 'text-muted-foreground' },
   milestone: { icon: FileText, color: 'text-purple-500' },
 };
 
@@ -204,8 +207,15 @@ export function ClientHistoryTab({ clientId }: ClientHistoryTabProps) {
                     </p>
                   )}
                   
+                  {/* Show description for task changes */}
+                  {['task_completed', 'task_uncompleted'].includes(activity.type) && activity.description && (
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {activity.description}
+                    </p>
+                  )}
+                  
                   {/* Show description for other types */}
-                  {!['field_change', 'stage_change'].includes(activity.type) && activity.description && (
+                  {!['field_change', 'stage_change', 'task_completed', 'task_uncompleted'].includes(activity.type) && activity.description && (
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {activity.description}
                     </p>
