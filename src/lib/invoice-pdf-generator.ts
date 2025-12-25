@@ -93,8 +93,12 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     return date.toLocaleDateString('pt-MZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  // Get section settings from custom layout
-  const getSection = (type: string) => data.customLayout?.find((s) => s.type === type && s.visible);
+  // Get section settings from custom layout - ensure it's an array
+  const customLayout = Array.isArray(data.customLayout) 
+    ? data.customLayout 
+    : (typeof data.customLayout === 'string' ? JSON.parse(data.customLayout as unknown as string) : null);
+  
+  const getSection = (type: string) => customLayout?.find((s: InvoiceSection) => s.type === type && s.visible);
 
   // ============= WATERMARK (if enabled) =============
   if (data.showWatermark) {

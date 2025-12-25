@@ -149,11 +149,21 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
         .maybeSingle();
 
       if (templateData) {
+        // Parse custom_layout if it's a string
+        let parsedLayout = templateData.custom_layout;
+        if (typeof parsedLayout === 'string') {
+          try {
+            parsedLayout = JSON.parse(parsedLayout);
+          } catch {
+            parsedLayout = undefined;
+          }
+        }
+        
         setTemplateSettings({
           template_style: (templateData.template_style as 'modern' | 'classic' | 'minimal' | 'onix') || 'onix',
           primary_color: templateData.primary_color || '#C5E86C',
           show_watermark: templateData.show_watermark ?? false,
-          custom_layout: templateData.custom_layout as any[] | undefined,
+          custom_layout: Array.isArray(parsedLayout) ? parsedLayout : undefined,
           paper_size: templateData.paper_size || undefined,
           footer_text: templateData.footer_text || undefined,
         });
