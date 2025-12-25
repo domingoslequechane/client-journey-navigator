@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useSubscription } from '@/hooks/useSubscription';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, FileText, Palette, Check } from 'lucide-react';
+import { Loader2, Save, FileText, Palette, Check, PenSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { InvoiceTemplateEditor } from '@/components/invoice-editor/InvoiceTemplateEditor';
 
 interface InvoiceTemplateSettingsProps {
   organizationId: string | null;
@@ -45,7 +45,7 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<TemplateSettings>(DEFAULT_SETTINGS);
-
+  const [editorOpen, setEditorOpen] = useState(false);
   useEffect(() => {
     if (organizationId) {
       fetchSettings();
@@ -264,6 +264,23 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
           />
         </div>
 
+        {/* Editor Button */}
+        {isAdmin && (
+          <div className="pt-4 border-t border-border">
+            <Button
+              variant="outline"
+              onClick={() => setEditorOpen(true)}
+              className="w-full gap-2"
+            >
+              <PenSquare className="h-4 w-4" />
+              Abrir Editor Visual (Drag & Drop)
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Crie um template personalizado arrastando variáveis para o canvas
+            </p>
+          </div>
+        )}
+
         {/* Save Button */}
         {isAdmin && (
           <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
@@ -281,6 +298,15 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
           </Button>
         )}
       </CardContent>
+
+      {/* Template Editor Modal */}
+      <InvoiceTemplateEditor
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        organizationId={organizationId}
+        primaryColor={settings.primary_color}
+        settingsId={settings.id}
+      />
     </Card>
   );
 }
