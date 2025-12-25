@@ -579,8 +579,8 @@ export default function AIAssistant() {
     </>
   );
 
-  // Chat Area Component (reusable)
-  const ChatContent = () => (
+  // Render chat content (as function, not component to prevent remount)
+  const renderChatContent = () => (
     <>
       {/* Header */}
       <div className="h-14 md:h-16 px-3 md:px-4 border-b border-border bg-background flex items-center gap-2">
@@ -716,10 +716,12 @@ export default function AIAssistant() {
             ref={fileInputRef}
             type="file"
             onChange={handleFileUpload}
-            className="hidden"
+            className="sr-only"
             accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+            tabIndex={-1}
           />
           <Button 
+            type="button"
             variant="outline" 
             size="icon"
             onClick={() => fileInputRef.current?.click()}
@@ -736,11 +738,17 @@ export default function AIAssistant() {
             placeholder="Escreva sua mensagem..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             className="flex-1"
             disabled={isLoading || isTyping}
           />
           <Button 
+            type="button"
             onClick={handleSend} 
             disabled={isLoading || isTyping || (!input.trim() && !pendingFile)}
             className="shrink-0"
@@ -785,7 +793,7 @@ export default function AIAssistant() {
           </div>
         ) : (
           // Mobile Chat View
-          <ChatContent />
+          renderChatContent()
         )}
       </AnimatedContainer>
     );
@@ -808,7 +816,7 @@ export default function AIAssistant() {
             </div>
           </>
         ) : (
-          <ChatContent />
+          renderChatContent()
         )}
       </div>
 
