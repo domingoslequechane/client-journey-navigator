@@ -549,6 +549,50 @@ export type Database = {
           },
         ]
       }
+      invoice_template_settings: {
+        Row: {
+          created_at: string | null
+          footer_text: string | null
+          id: string
+          organization_id: string
+          primary_color: string | null
+          show_logo: boolean | null
+          show_watermark: boolean | null
+          template_style: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          footer_text?: string | null
+          id?: string
+          organization_id: string
+          primary_color?: string | null
+          show_logo?: boolean | null
+          show_watermark?: boolean | null
+          template_style?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          footer_text?: string | null
+          id?: string
+          organization_id?: string
+          primary_color?: string | null
+          show_logo?: boolean | null
+          show_watermark?: boolean | null
+          template_style?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_template_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_history: {
         Row: {
           id: string

@@ -68,6 +68,12 @@ interface AgencyInfo {
   paymentRecipientName?: string;
 }
 
+interface TemplateSettings {
+  template_style: 'modern' | 'classic' | 'minimal';
+  primary_color: string;
+  show_watermark: boolean;
+}
+
 export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoiceModalProps) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +82,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
   const [currentPage, setCurrentPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [agencyInfo, setAgencyInfo] = useState<AgencyInfo | null>(null);
+  const [templateSettings, setTemplateSettings] = useState<TemplateSettings | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   
   // Form state
@@ -128,6 +135,21 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
           paymentProviderName: org.payment_provider_name || undefined,
           paymentAccountNumber: org.payment_account_number || undefined,
           paymentRecipientName: org.payment_recipient_name || undefined,
+        });
+      }
+
+      // Fetch template settings
+      const { data: templateData } = await supabase
+        .from('invoice_template_settings')
+        .select('template_style, primary_color, show_watermark')
+        .eq('organization_id', orgId)
+        .maybeSingle();
+
+      if (templateData) {
+        setTemplateSettings({
+          template_style: templateData.template_style as 'modern' | 'classic' | 'minimal',
+          primary_color: templateData.primary_color || '#2962FF',
+          show_watermark: templateData.show_watermark ?? false,
         });
       }
 
@@ -282,6 +304,9 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
         total,
         currency: agencyInfo.currency,
         notes: notes || undefined,
+        templateStyle: templateSettings?.template_style,
+        primaryColor: templateSettings?.primary_color,
+        showWatermark: templateSettings?.show_watermark,
       });
 
       toast({ title: 'Sucesso!', description: 'Factura gerada e guardada com sucesso' });
@@ -323,6 +348,9 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
       total: invoice.total,
       currency: agencyInfo.currency,
       notes: invoice.notes || undefined,
+      templateStyle: templateSettings?.template_style,
+      primaryColor: templateSettings?.primary_color,
+      showWatermark: templateSettings?.show_watermark,
     });
   };
 
