@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { Bar, BarChart, XAxis, YAxis, Cell } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { PauseCircle } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Client = Tables<'clients'>;
@@ -26,21 +28,68 @@ const chartConfig = STAGE_CONFIG.reduce((acc, stage) => {
 }, {} as ChartConfig);
 
 export function FunnelChart({ clients }: FunnelChartProps) {
-  const chartData = useMemo(() => {
-    // Exclui clientes pausados/suspensos da contagem
+  const { chartData, suspendedByStage, totalSuspended } = useMemo(() => {
     const activeClients = clients.filter(c => !c.paused);
-    return STAGE_CONFIG.map((stage) => ({
+    const suspended: Record<string, number> = {};
+    
+    // Count suspended clients per stage
+    STAGE_CONFIG.forEach(stage => {
+      suspended[stage.id] = clients.filter(c => c.paused && c.current_stage === stage.id).length;
+    });
+    
+    const data = STAGE_CONFIG.map((stage) => ({
       stage: stage.name,
       count: activeClients.filter((c) => c.current_stage === stage.id).length,
       fill: stage.color,
     }));
+    
+    return {
+      chartData: data,
+      suspendedByStage: suspended,
+      totalSuspended: clients.filter(c => c.paused).length,
+    };
   }, [clients]);
+
+  // Custom tooltip content
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    
+    const data = payload[0];
+    const stageName = data.payload.stage;
+    const stageConfig = STAGE_CONFIG.find(s => s.name === stageName);
+    const suspendedCount = stageConfig ? suspendedByStage[stageConfig.id] : 0;
+    
+    return (
+      <div className="rounded-lg border bg-background p-2 shadow-sm">
+        <div className="font-medium">{stageName}</div>
+        <div className="text-sm text-muted-foreground">
+          Activos: {data.value}
+        </div>
+        {suspendedCount > 0 && (
+          <div className="text-sm text-warning flex items-center gap-1">
+            <PauseCircle className="h-3 w-3" />
+            Suspensos: {suspendedCount}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <Card className="border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">Funil de Clientes</CardTitle>
-        <CardDescription>Distribuição por etapa da jornada</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base font-semibold">Funil de Clientes</CardTitle>
+            <CardDescription>Distribuição por etapa da jornada</CardDescription>
+          </div>
+          {totalSuspended > 0 && (
+            <Badge variant="outline" className="text-warning border-warning/50 gap-1">
+              <PauseCircle className="h-3 w-3" />
+              {totalSuspended} suspenso{totalSuspended > 1 ? 's' : ''}
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="pt-0">
         <ChartContainer config={chartConfig} className="h-[180px] w-full">
@@ -55,9 +104,7 @@ export function FunnelChart({ clients }: FunnelChartProps) {
               width={80}
               className="text-muted-foreground"
             />
-            <ChartTooltip 
-              content={<ChartTooltipContent hideIndicator />} 
-            />
+            <ChartTooltip content={<CustomTooltip />} />
             <Bar 
               dataKey="count" 
               radius={[0, 4, 4, 0]}
