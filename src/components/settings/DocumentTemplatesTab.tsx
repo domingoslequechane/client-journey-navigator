@@ -97,7 +97,7 @@ _________________________________
 {{empresa_cliente}}
 CONTRATANTE`;
 
-export function ContractTemplatesTab() {
+export function DocumentTemplatesTab() {
   const { organization } = useSubscription();
   const { canAddContractTemplate, planType, limits } = usePlanLimits();
   const { isAdmin } = useUserRole();
@@ -268,9 +268,9 @@ export function ContractTemplatesTab() {
           <CardHeader className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="min-w-0">
-                <CardTitle className="text-lg md:text-xl">Templates de Contrato</CardTitle>
+                <CardTitle className="text-lg md:text-xl">Templates de Documentos</CardTitle>
                 <CardDescription className="text-sm">
-                  Crie modelos de contrato que podem ser preenchidos automaticamente com dados do cliente.
+                  Crie modelos de documentos (contratos, orçamentos, propostas) que podem ser preenchidos automaticamente.
                 </CardDescription>
               </div>
               {!showForm && (

@@ -9,12 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone, AlertTriangle, Sparkles } from 'lucide-react';
+import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone, AlertTriangle, Sparkles, CreditCard } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { useAuth } from '@/contexts/AuthContext';
-import { ContractTemplatesTab } from '@/components/settings/ContractTemplatesTab';
+import { DocumentTemplatesTab } from '@/components/settings/DocumentTemplatesTab';
+import { InvoiceTemplateSettings } from '@/components/settings/InvoiceTemplateSettings';
 import { DeleteAgencyModal } from '@/components/settings/DeleteAgencyModal';
 
 interface AgencySettings {
@@ -27,6 +28,9 @@ interface AgencySettings {
   knowledge_base_url: string | null;
   knowledge_base_name: string | null;
   knowledge_base_text: string | null;
+  payment_provider_name: string | null;
+  payment_account_number: string | null;
+  payment_recipient_name: string | null;
 }
 
 interface UserProfile {
@@ -48,7 +52,7 @@ export default function Settings() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'profile' | 'agency' | 'knowledge' | 'contracts'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'agency' | 'knowledge' | 'documents'>('profile');
 
   const [settings, setSettings] = useState<AgencySettings>({
     id: '',
@@ -60,6 +64,9 @@ export default function Settings() {
     knowledge_base_url: null,
     knowledge_base_name: null,
     knowledge_base_text: null,
+    payment_provider_name: null,
+    payment_account_number: null,
+    payment_recipient_name: null,
   });
 
   // Organization state
@@ -123,7 +130,7 @@ export default function Settings() {
         const { data: orgData, error: orgError } = await supabase
           .from('organizations')
           .select(
-            'id, phone, name, owner_id, headquarters, nuit, representative_name, representative_position, knowledge_base_url, knowledge_base_name, knowledge_base_text, onboarding_completed'
+            'id, phone, name, owner_id, headquarters, nuit, representative_name, representative_position, knowledge_base_url, knowledge_base_name, knowledge_base_text, onboarding_completed, payment_provider_name, payment_account_number, payment_recipient_name'
           )
           .eq('id', orgId)
           .single();
@@ -147,6 +154,9 @@ export default function Settings() {
             knowledge_base_url: orgData.knowledge_base_url || null,
             knowledge_base_name: orgData.knowledge_base_name || null,
             knowledge_base_text: orgData.knowledge_base_text || null,
+            payment_provider_name: orgData.payment_provider_name || null,
+            payment_account_number: orgData.payment_account_number || null,
+            payment_recipient_name: orgData.payment_recipient_name || null,
           }));
         }
       }
@@ -187,6 +197,9 @@ export default function Settings() {
           phone: organizationPhone?.trim() || null,
           representative_name: settings.representative_name?.trim() || null,
           representative_position: settings.representative_position?.trim() || null,
+          payment_provider_name: settings.payment_provider_name?.trim() || null,
+          payment_account_number: settings.payment_account_number?.trim() || null,
+          payment_recipient_name: settings.payment_recipient_name?.trim() || null,
           onboarding_completed: isComplete,
         })
         .eq('id', organizationId);
@@ -401,8 +414,8 @@ export default function Settings() {
   };
 
   const coerceTab = (tab: string | null) => {
-    const allowed: Array<'profile' | 'agency' | 'knowledge' | 'contracts'> = isAdmin
-      ? ['profile', 'agency', 'knowledge', 'contracts']
+    const allowed: Array<'profile' | 'agency' | 'knowledge' | 'documents'> = isAdmin
+      ? ['profile', 'agency', 'knowledge', 'documents']
       : ['profile'];
 
     if (tab && (allowed as string[]).includes(tab)) {
@@ -466,10 +479,10 @@ export default function Settings() {
                 <span className="hidden sm:inline">Conhecimento</span>
                 <span className="sm:hidden">Conhec.</span>
               </TabsTrigger>
-              <TabsTrigger value="contracts" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
+              <TabsTrigger value="documents" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
                 <FileText className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">Contratos</span>
-                <span className="sm:hidden">Contr.</span>
+                <span className="hidden sm:inline">Documentos</span>
+                <span className="sm:hidden">Docs.</span>
               </TabsTrigger>
             </>
           )}
@@ -707,6 +720,50 @@ export default function Settings() {
                 </div>
               </div>
 
+              {/* Dados de Pagamento */}
+              <div className="pt-6 border-t border-border">
+                <h3 className="text-base font-semibold mb-2 flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Dados de Pagamento
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Informações exibidas nas facturas de prestação de serviços
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="payment_provider_name">Nome da Provedora</Label>
+                    <Input
+                      id="payment_provider_name"
+                      placeholder="Ex: M-Pesa, BCI, Millennium BIM"
+                      value={settings.payment_provider_name || ''}
+                      onChange={(e) => setSettings(prev => ({ ...prev, payment_provider_name: e.target.value }))}
+                      disabled={!isAdmin}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="payment_account_number">Número de Conta</Label>
+                    <Input
+                      id="payment_account_number"
+                      placeholder="Ex: 84 XXX XXXX"
+                      value={settings.payment_account_number || ''}
+                      onChange={(e) => setSettings(prev => ({ ...prev, payment_account_number: e.target.value }))}
+                      disabled={!isAdmin}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="payment_recipient_name">Nome do Destinatário</Label>
+                  <Input
+                    id="payment_recipient_name"
+                    placeholder="Ex: Agência XYZ, Lda"
+                    value={settings.payment_recipient_name || ''}
+                    onChange={(e) => setSettings(prev => ({ ...prev, payment_recipient_name: e.target.value }))}
+                    disabled={!isAdmin}
+                  />
+                </div>
+              </div>
+
               {isAdmin && (
                 <Button onClick={handleSaveAgency} disabled={saving} className="w-full gap-2">
                   {saving ? (
@@ -876,9 +933,12 @@ export default function Settings() {
           </div>
         </TabsContent>
 
-        {/* Contracts Tab */}
-        <TabsContent value="contracts">
-          <ContractTemplatesTab />
+        {/* Documents Tab */}
+        <TabsContent value="documents">
+          <div className="space-y-6">
+            <InvoiceTemplateSettings organizationId={organizationId} />
+            <DocumentTemplatesTab />
+          </div>
         </TabsContent>
       </Tabs>
       </AnimatedContainer>
