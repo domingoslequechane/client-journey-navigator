@@ -762,8 +762,12 @@ export default function AIAssistant() {
                       </div>
                       
                       {/* Action buttons BELOW message (ChatGPT style) */}
+                      {/* Action buttons BELOW message (ChatGPT style) */}
                       {message.role === 'assistant' && message.id !== 'welcome' && !message.id.startsWith('temp-') && streamingMessageId !== message.id && (
-                        <div className="flex gap-1 mt-1 ml-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <div className={cn(
+                          "flex gap-1 mt-1 ml-1 transition-opacity",
+                          isFavorited(message.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+                        )}>
                           {/* Copy button */}
                           <button
                             onClick={() => copyToClipboard(message.id, message.content)}
@@ -777,7 +781,7 @@ export default function AIAssistant() {
                               <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                             )}
                           </button>
-                          {/* Favorite button */}
+                          {/* Favorite button - always visible when favorited */}
                           <button
                             onClick={() => user && toggleFavorite(message.id, user.id)}
                             disabled={isToggling}
