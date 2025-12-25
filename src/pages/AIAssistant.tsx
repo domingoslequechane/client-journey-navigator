@@ -634,7 +634,7 @@ export default function AIAssistant() {
               >
                 {message.role === 'assistant' ? (
                   <div 
-                    className="text-sm prose prose-sm max-w-none"
+                    className="text-sm max-w-none [&>p]:leading-relaxed [&>ul]:space-y-0.5 [&>ol]:space-y-0.5"
                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }}
                   />
                 ) : (
