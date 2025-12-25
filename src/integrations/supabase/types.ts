@@ -759,6 +759,9 @@ export type Database = {
           nuit: string | null
           onboarding_completed: boolean | null
           owner_id: string
+          payment_account_number: string | null
+          payment_provider_name: string | null
+          payment_recipient_name: string | null
           phone: string | null
           plan_type: Database["public"]["Enums"]["plan_type"] | null
           representative_name: string | null
@@ -782,6 +785,9 @@ export type Database = {
           nuit?: string | null
           onboarding_completed?: boolean | null
           owner_id: string
+          payment_account_number?: string | null
+          payment_provider_name?: string | null
+          payment_recipient_name?: string | null
           phone?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type"] | null
           representative_name?: string | null
@@ -805,6 +811,9 @@ export type Database = {
           nuit?: string | null
           onboarding_completed?: boolean | null
           owner_id?: string
+          payment_account_number?: string | null
+          payment_provider_name?: string | null
+          payment_recipient_name?: string | null
           phone?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type"] | null
           representative_name?: string | null
@@ -954,6 +963,78 @@ export type Database = {
           },
           {
             foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_invoices: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issue_date: string
+          notes: string | null
+          organization_id: string
+          pdf_url: string | null
+          services: Json
+          status: string | null
+          subtotal: number
+          tax_amount: number | null
+          tax_percentage: number | null
+          total: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          notes?: string | null
+          organization_id: string
+          pdf_url?: string | null
+          services: Json
+          status?: string | null
+          subtotal: number
+          tax_amount?: number | null
+          tax_percentage?: number | null
+          total: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          notes?: string | null
+          organization_id?: string
+          pdf_url?: string | null
+          services?: Json
+          status?: string | null
+          subtotal?: number
+          tax_amount?: number | null
+          tax_percentage?: number | null
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_invoices_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"

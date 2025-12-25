@@ -25,7 +25,8 @@ import {
   ChevronDown,
   Receipt,
   Calculator,
-  FileCheck
+  FileCheck,
+  DollarSign
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -33,9 +34,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { ContractModal } from './ContractModal';
-import { EditClientModal } from './EditClientModal';
 import { GenerateContractModal } from './GenerateContractModal';
 import { GenerateDocumentModal } from './GenerateDocumentModal';
+import { ServiceInvoiceModal } from './ServiceInvoiceModal';
 import { ReportModal } from './ReportModal';
 import { DeleteClientModal } from './DeleteClientModal';
 import { ClientHistoryTab } from './ClientHistoryTab';
@@ -68,8 +69,8 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [isPausing, setIsPausing] = useState(false);
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [generateContractOpen, setGenerateContractOpen] = useState(false);
-  const [editClientOpen, setEditClientOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [contractUrl, setContractUrl] = useState<string | null>(null);
   const [contractName, setContractName] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('checklist');
@@ -477,7 +478,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               size="sm" 
               className="gap-2" 
               disabled={isPaused}
-              onClick={() => setEditClientOpen(true)}
+              onClick={() => navigate(`/app/clients/edit/${client.id}`)}
             >
               {isPaused ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
               Editar
@@ -605,6 +606,17 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             </div>
           </div>
         )}
+        {/* Monthly Budget - Only visible for sales and admin */}
+        {(userRole === 'admin' || userRole === 'sales' || isAdmin) && client.monthlyBudget && (
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
+            {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
+            <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Orçamento Mensal</p>
+              <p className="text-sm font-medium">{Number(client.monthlyBudget).toLocaleString()} MZN</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Compact BANT Score - integrated with client info */}
@@ -628,10 +640,21 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         </div>
       </div>
 
-      {/* Action Buttons - Contract and Documents */}
+      {/* Action Buttons - Contract, Documents, and Invoices */}
       {canSeeContract && (
         <div className="flex flex-wrap gap-2">
+          {/* Invoice Button - Outside dropdown */}
           <Button 
+            variant="outline" 
+            className="gap-2" 
+            disabled={isPaused}
+            onClick={() => setInvoiceModalOpen(true)}
+          >
+            {isPaused ? <Lock className="h-4 w-4" /> : <Receipt className="h-4 w-4" />}
+            Facturas
+          </Button>
+          
+          <Button
             variant="outline" 
             className="gap-2" 
             disabled={isPaused}
@@ -729,12 +752,20 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         </div>
       )}
 
-      {/* Edit Client Modal */}
-      <EditClientModal
-        open={editClientOpen}
-        onOpenChange={setEditClientOpen}
-        client={client}
-        onClientUpdated={() => onUpdate({ ...client, stage: client.stage })}
+      {/* Service Invoice Modal */}
+      <ServiceInvoiceModal
+        open={invoiceModalOpen}
+        onOpenChange={setInvoiceModalOpen}
+        client={{
+          id: client.id,
+          companyName: client.companyName,
+          contactName: client.contactName,
+          email: client.email,
+          phone: client.phone,
+          address: client.address || undefined,
+          services: client.services,
+          monthlyBudget: client.monthlyBudget,
+        }}
       />
 
       {/* Tabs */}
