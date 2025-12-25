@@ -503,8 +503,8 @@ export default function AIAssistant() {
     setSelectedClientId(null);
   };
 
-  // Client List Component (reusable)
-  const ClientListContent = () => (
+  // Render client list
+  const renderClientList = () => (
     <>
       <div className="p-4 border-b border-border space-y-3">
         {/* Search */}
@@ -546,11 +546,14 @@ export default function AIAssistant() {
         ) : (
           <div className="p-2 space-y-1">
             {filteredClients.map(client => (
-              <button
+              <div
                 key={client.id}
                 onClick={() => handleSelectClient(client.id)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSelectClient(client.id)}
+                role="button"
+                tabIndex={0}
                 className={cn(
-                  "w-full text-left p-3 rounded-lg transition-colors",
+                  "w-full text-left p-3 rounded-lg transition-colors cursor-pointer",
                   selectedClientId === client.id 
                     ? "bg-primary/10 border border-primary/20" 
                     : "hover:bg-muted"
@@ -568,7 +571,7 @@ export default function AIAssistant() {
                     </div>
                   </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -778,7 +781,7 @@ export default function AIAssistant() {
                 <p className="text-xs text-muted-foreground">Selecione um cliente</p>
               </div>
             </div>
-            <ClientListContent />
+            {renderClientList()}
           </div>
         ) : (
           // Mobile Chat View
@@ -832,7 +835,7 @@ export default function AIAssistant() {
         </div>
         
         {!sidebarCollapsed ? (
-          <ClientListContent />
+          renderClientList()
         ) : (
           <ScrollArea className="flex-1">
             {loadingClients ? (
