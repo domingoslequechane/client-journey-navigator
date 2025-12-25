@@ -27,9 +27,11 @@ const chartConfig = STAGE_CONFIG.reduce((acc, stage) => {
 
 export function FunnelChart({ clients }: FunnelChartProps) {
   const chartData = useMemo(() => {
+    // Exclui clientes pausados/suspensos da contagem
+    const activeClients = clients.filter(c => !c.paused);
     return STAGE_CONFIG.map((stage) => ({
       stage: stage.name,
-      count: clients.filter((c) => c.current_stage === stage.id).length,
+      count: activeClients.filter((c) => c.current_stage === stage.id).length,
       fill: stage.color,
     }));
   }, [clients]);

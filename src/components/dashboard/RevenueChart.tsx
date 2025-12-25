@@ -21,8 +21,9 @@ const chartConfig = {
 
 export function RevenueChart({ clients, currencySymbol }: RevenueChartProps) {
   const { chartData, monthlyData, currentMonthKey, previousMonthKey } = useMemo(() => {
-    // Filter only non-paused clients and group by month
-    const activeClients = clients.filter(c => !c.paused);
+    // Receita Fixa: apenas clientes operacionais (contratos fechados) não pausados
+    const operationalStages = ['producao', 'trafego', 'retencao', 'fidelizacao'];
+    const activeClients = clients.filter(c => !c.paused && operationalStages.includes(c.current_stage));
     const monthlyRevenue: Record<string, number> = {};
     
     activeClients.forEach((client) => {
@@ -76,8 +77,8 @@ export function RevenueChart({ clients, currencySymbol }: RevenueChartProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base font-semibold">Receita Prevista</CardTitle>
-            <CardDescription>Evolução mensal acumulada</CardDescription>
+            <CardTitle className="text-base font-semibold">Receita Fixa</CardTitle>
+            <CardDescription>Contratos fechados</CardDescription>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <TrendingUp className="h-4 w-4 text-success" />
