@@ -11,6 +11,7 @@ import { RoleProtectedRoute } from "@/components/auth/RoleProtectedRoute";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AdminLayout } from "./components/admin/AdminLayout";
+import { InstallPromptBanner } from "./components/pwa/InstallPromptBanner";
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -70,6 +71,7 @@ const App = () => (
           <ScrollToTop />
           <AuthProvider>
             <PlanThemeProvider>
+              <InstallPromptBanner />
               <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/pricing" element={<Pricing />} />

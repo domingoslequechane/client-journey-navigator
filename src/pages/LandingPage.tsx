@@ -28,11 +28,13 @@ import {
   Eye,
   CalendarCheck,
   Wallet,
-  TrendingDown
+  TrendingDown,
+  Download
 } from 'lucide-react';
 import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration';
 import { useEffect, useState, useRef } from 'react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 // Plan images
 import planBussola from '@/assets/plans/plan-bussola.png';
@@ -118,6 +120,7 @@ const useScrollReveal = () => {
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const { canInstall, isInstalled, install } = usePWAInstall();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -206,6 +209,17 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            {canInstall && !isInstalled && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={install}
+                title="Instalar app"
+                className="hidden sm:inline-flex"
+              >
+                <Download className="h-5 w-5" />
+              </Button>
+            )}
             <Link to="/auth">
               <Button variant="ghost" size="sm" className="hidden sm:inline-flex">Entrar</Button>
             </Link>
@@ -249,7 +263,7 @@ export default function LandingPage() {
             
             {/* CTA único */}
             <div 
-              className="flex flex-col items-center justify-center gap-4 mb-12 animate-fade-in"
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in"
               style={{ animationDelay: '0.6s' }}
             >
               <Link to="/auth">
@@ -260,6 +274,18 @@ export default function LandingPage() {
                   <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </Link>
+              
+              {canInstall && !isInstalled && (
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={install}
+                  className="text-lg px-6 py-6 gap-2 hover:scale-105 transition-all"
+                >
+                  <Download className="h-5 w-5" />
+                  Instalar App
+                </Button>
+              )}
             </div>
             
             {/* Trust badges simples */}
