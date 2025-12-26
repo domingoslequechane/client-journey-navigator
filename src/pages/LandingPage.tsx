@@ -296,7 +296,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
+              <div className="text-center md:text-left">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
                   Você conhece bem{' '}
                   <span className="text-destructive">essa rotina</span>.
@@ -305,7 +305,7 @@ export default function LandingPage() {
                 <div className="space-y-6 text-lg md:text-xl text-muted-foreground leading-relaxed">
                   <p>
                     Leads perdidos no WhatsApp. Planilhas que ninguém entende. 
-                    Equipe sem saber o que fazer.
+                    Equipe sem saber o fazer.
                   </p>
                   
                   <p className="text-foreground font-medium">
@@ -335,7 +335,7 @@ export default function LandingPage() {
                 className="h-64 md:h-80 order-2 md:order-1"
               />
               
-              <div className="order-1 md:order-2">
+              <div className="order-1 md:order-2 text-center md:text-left">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
                   O preço de{' '}
                   <span className="text-destructive">continuar assim</span>.
@@ -393,7 +393,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="text-center md:text-left">
+              <div className="text-center">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
                   Imagine abrir o computador e{' '}
                   <span className="text-primary">ver tudo no lugar</span>.
@@ -748,7 +748,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-12 border-t border-border bg-card">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-xl">Q</span>
