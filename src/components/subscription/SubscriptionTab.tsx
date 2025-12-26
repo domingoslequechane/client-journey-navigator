@@ -354,14 +354,15 @@ export function SubscriptionTab() {
                   size="sm"
                   onClick={handleManagePayment}
                   disabled={actionLoading === 'portal'}
-                  className="gap-2 w-full sm:w-auto"
+                  className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
                 >
                   {actionLoading === 'portal' ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin shrink-0" />
                   ) : (
-                    <ExternalLink className="h-4 w-4" />
+                    <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
                   )}
-                  Gerenciar Pagamento
+                  <span className="hidden sm:inline">Gerenciar Pagamento</span>
+                  <span className="sm:hidden">Pagamento</span>
                 </Button>
 
                 {!cancelAtPeriodEnd && (
@@ -370,10 +371,11 @@ export function SubscriptionTab() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="gap-2 text-destructive hover:text-destructive w-full sm:w-auto"
+                        className="gap-2 text-destructive hover:text-destructive w-full sm:w-auto text-xs sm:text-sm"
                       >
-                        <XCircle className="h-4 w-4" />
-                        Cancelar Assinatura
+                        <XCircle className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                        <span className="hidden sm:inline">Cancelar Assinatura</span>
+                        <span className="sm:hidden">Cancelar</span>
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>

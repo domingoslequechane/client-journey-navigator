@@ -161,6 +161,25 @@ All colors MUST be HSL.
   }
 }
 
+/* Mobile-optimized font sizes for better UX */
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+  }
+  
+  h3 {
+    font-size: 1.1rem;
+  }
+}
+
 /* Theme transition for smooth color changes */
 .theme-transitioning,
 .theme-transitioning * {
