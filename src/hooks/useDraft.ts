@@ -20,6 +20,8 @@ interface StoredDraft<T> {
 
 const DRAFT_VERSION = 1;
 
+type SetDraftValue<T> = T | ((prev: T) => T);
+
 export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'local', lazy = false }: DraftOptions<T>) {
   const storageKey = `draft_${key}`;
   const storageApi = storage === 'local' ? localStorage : sessionStorage;
@@ -122,15 +124,20 @@ export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'lo
   }, [saveImmediately]);
 
   // Save draft with debounce
-  const saveDraft = useCallback((newValue: T) => {
-    setValue(newValue);
-    valueRef.current = newValue;
-    
+  const saveDraft = useCallback((nextValue: SetDraftValue<T>) => {
+    const resolvedValue =
+      typeof nextValue === 'function'
+        ? (nextValue as (prev: T) => T)(valueRef.current)
+        : nextValue;
+
+    setValue(resolvedValue);
+    valueRef.current = resolvedValue;
+
     // Activate on first interaction in lazy mode
     if (lazy && !isActivated) {
       setIsActivated(true);
     }
-    
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -139,7 +146,7 @@ export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'lo
     timeoutRef.current = setTimeout(() => {
       try {
         const draft: StoredDraft<T> = {
-          data: newValue,
+          data: resolvedValue,
           meta: {
             updatedAt: new Date().toISOString(),
             version: DRAFT_VERSION,
