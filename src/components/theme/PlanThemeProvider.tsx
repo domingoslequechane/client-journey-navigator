@@ -4,6 +4,28 @@ import { useSubscription, PlanType } from '@/hooks/useSubscription';
 import { PLAN_COLORS } from '@/lib/plan-colors';
 import { useTheme } from 'next-themes';
 
+// Map plan types to HEX colors for browser theme-color
+const PLAN_THEME_COLORS: Record<PlanType, string> = {
+  free: '#22c55e',     // Verde
+  starter: '#3b82f6',  // Azul
+  pro: '#a855f7',      // Roxo
+  agency: '#F97316',   // Laranja
+};
+
+function updateBrowserThemeColor(planType: PlanType) {
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (!themeColorMeta) return;
+  
+  themeColorMeta.setAttribute('content', PLAN_THEME_COLORS[planType] || '#F97316');
+}
+
+function resetBrowserThemeColor() {
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (!themeColorMeta) return;
+  
+  themeColorMeta.setAttribute('content', '#F97316');
+}
+
 function applyPlanTheme(planType: PlanType, isDark: boolean) {
   const root = document.documentElement;
   const colors = PLAN_COLORS[planType];
@@ -70,8 +92,10 @@ export function PlanThemeProvider({ children }: PlanThemeProviderProps) {
       requestAnimationFrame(() => {
         if (isInsideApp && !loading) {
           applyPlanTheme(planType, isDark);
+          updateBrowserThemeColor(planType);
         } else {
           resetToDefaultTheme(isDark);
+          resetBrowserThemeColor();
         }
         
         // Remove transition class after animation completes
@@ -83,8 +107,10 @@ export function PlanThemeProvider({ children }: PlanThemeProviderProps) {
       // No transition needed, apply directly
       if (isInsideApp && !loading) {
         applyPlanTheme(planType, isDark);
+        updateBrowserThemeColor(planType);
       } else {
         resetToDefaultTheme(isDark);
+        resetBrowserThemeColor();
       }
     }
     
