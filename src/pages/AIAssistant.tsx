@@ -897,10 +897,7 @@ export default function AIAssistant() {
       )}
 
       {/* Input */}
-      <div 
-        className="p-3 md:p-4 border-t border-border bg-background shrink-0"
-        style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' } : undefined}
-      >
+      <div className="p-3 md:p-4 border-t border-border bg-background shrink-0">
         <div className="flex gap-2 max-w-3xl mx-auto">
           <input
             ref={fileInputRef}
