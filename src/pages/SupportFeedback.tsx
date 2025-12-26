@@ -82,10 +82,11 @@ export default function SupportFeedback() {
     setValue: setTicketDraft,
     clearDraft: clearTicketDraft,
   } = useDraft<NewTicketDraft>({
-    key: 'new_ticket_draft',
-    initialValue: { subject: '', message: '' },
-    storage: 'local',
-  });
+  key: 'new_ticket_draft',
+  initialValue: { subject: '', message: '' },
+  storage: 'local',
+  lazy: true,
+});
 
   // Feedback state with draft
   const [userFeedbacks, setUserFeedbacks] = useState<UserFeedback[]>([]);
@@ -97,10 +98,11 @@ export default function SupportFeedback() {
     setValue: setFeedbackDraft,
     clearDraft: clearFeedbackDraft,
   } = useDraft<FeedbackDraft>({
-    key: 'feedback_draft',
-    initialValue: { type: 'general', subject: '', message: '' },
-    storage: 'local',
-  });
+  key: 'feedback_draft',
+  initialValue: { type: 'general', subject: '', message: '' },
+  storage: 'local',
+  lazy: true,
+});
 
   const handleSelectTicket = (ticket: SupportTicket) => {
     setSelectedTicket(ticket);

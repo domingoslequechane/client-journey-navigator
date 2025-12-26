@@ -30,10 +30,11 @@ export default function Onboarding() {
     setValue: setFormData,
     clearDraft,
   } = useDraft<OnboardingFormData>({
-    key: 'onboarding_form',
-    initialValue: { agencyName: '', selectedCountry: 'MZ' },
-    storage: 'local',
-  });
+  key: 'onboarding_form',
+  initialValue: { agencyName: '', selectedCountry: 'MZ' },
+  storage: 'local',
+  lazy: true,
+});
 
   // Check if returning from successful payment
   useEffect(() => {
