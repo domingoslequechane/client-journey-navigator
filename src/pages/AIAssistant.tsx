@@ -708,8 +708,7 @@ export default function AIAssistant() {
   // Render chat content (as function, not component to prevent remount)
   const renderChatContent = () => (
     <div className={cn(
-      "flex flex-col bg-background",
-      isMobile ? "fixed inset-0 z-10 h-dvh" : "h-full"
+      "flex flex-col bg-background h-full",
     )}>
       {/* Header - sticky on mobile */}
       <div className="h-14 md:h-16 px-3 md:px-4 border-b border-border bg-background flex items-center gap-2 transition-all duration-300 shrink-0 sticky top-0 z-10">
@@ -900,7 +899,7 @@ export default function AIAssistant() {
       {/* Input */}
       <div className={cn(
         "p-3 md:p-4 border-t border-border bg-background shrink-0",
-        isMobile && "pb-safe"
+        isMobile && "pb-24"
       )}>
         <div className="flex gap-2 max-w-3xl mx-auto">
           <input
