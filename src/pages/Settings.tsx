@@ -458,18 +458,24 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto">
-      <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
-        <Button variant="ghost" size="icon" onClick={handleBack} className="shrink-0">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-3xl font-bold">Configurações</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Gerencie as configurações do sistema</p>
-        </div>
-      </AnimatedContainer>
+    <div className="h-full flex flex-col">
+      {/* Fixed Header */}
+      <div className="shrink-0 p-4 md:px-8 md:pt-8 md:pb-4 bg-background sticky top-0 z-10 border-b border-border md:border-b-0">
+        <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 max-w-4xl mx-auto">
+          <Button variant="ghost" size="icon" onClick={handleBack} className="shrink-0">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-3xl font-bold">Configurações</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Gerencie as configurações do sistema</p>
+          </div>
+        </AnimatedContainer>
+      </div>
+      
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-auto p-4 md:px-8 md:pb-8">
+        <div className="max-w-4xl mx-auto">
 
-      <AnimatedContainer animation="fade-up" delay={0.1}>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className={cn("grid w-full", isAdmin ? "grid-cols-4" : "grid-cols-1")}>
           <TabsTrigger value="profile" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
@@ -1051,7 +1057,8 @@ export default function Settings() {
           </div>
         </TabsContent>
       </Tabs>
-      </AnimatedContainer>
+        </div>
+      </div>
 
       {/* Delete Agency Modal */}
       {organizationId && (
