@@ -927,7 +927,7 @@ export default function AIAssistant() {
   }
 
   if (!hasActiveSubscription) {
-    return <SubscriptionRequired feature="o Assistente de IA" />;
+    return <SubscriptionRequired feature="o Qualify IA" />;
   }
 
   // Mobile Layout
@@ -942,7 +942,7 @@ export default function AIAssistant() {
                 <Sparkles className="h-4 w-4 text-primary-foreground" />
               </div>
               <div>
-                <h2 className="font-semibold text-sm">Assistente de IA</h2>
+                <h2 className="font-semibold text-sm">Qualify IA</h2>
                 <p className="text-xs text-muted-foreground">Selecione um cliente</p>
               </div>
             </div>
