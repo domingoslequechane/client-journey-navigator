@@ -967,7 +967,7 @@ export default function AIAssistant() {
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <AnimatedContainer animation="scale-in" className="text-center">
                 <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary/50" />
-                <h3 className="text-lg font-medium">Assistente de IA</h3>
+                <h3 className="text-lg font-medium">QIA</h3>
                 <p className="text-sm mt-1">Selecione um cliente para iniciar uma conversa</p>
               </AnimatedContainer>
             </div>
