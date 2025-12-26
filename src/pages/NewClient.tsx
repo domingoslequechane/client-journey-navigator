@@ -69,7 +69,7 @@ export default function NewClient() {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [clientDataLoaded, setClientDataLoaded] = useState(false);
   
-  // Draft for new clients only (not edit mode)
+  // Draft for new clients only - in edit mode, use lazy to prevent draft restoration
   const draftKey = isEditMode ? `client_edit_${clientId}` : 'new_client';
   const {
     value: formData,
@@ -82,6 +82,7 @@ export default function NewClient() {
     initialValue: initialFormData,
     debounceMs: 300,
     storage: 'local',
+    lazy: isEditMode, // In edit mode, only activate draft after user interaction
   });
 
   // Update form data helper
