@@ -87,19 +87,21 @@ export default function NewClient() {
 
   // Update form data helper
   const updateField = useCallback(<K extends keyof ClientFormData>(field: K, value: ClientFormData[K]) => {
-    setFormData({ ...formData, [field]: value });
-  }, [formData, setFormData]);
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  }, [setFormData]);
 
-  const updateBant = useCallback((key: string, value: number) => {
-    setFormData({ ...formData, bant: { ...formData.bant, [key]: value } });
-  }, [formData, setFormData]);
+  const updateBant = useCallback((key: keyof ClientFormData['bant'], value: number) => {
+    setFormData((prev) => ({ ...prev, bant: { ...prev.bant, [key]: value } }));
+  }, [setFormData]);
 
   const handleServiceToggle = useCallback((service: ServiceType) => {
-    const newServices = formData.services.includes(service) 
-      ? formData.services.filter(s => s !== service) 
-      : [...formData.services, service];
-    updateField('services', newServices);
-  }, [formData.services, updateField]);
+    setFormData((prev) => {
+      const newServices = prev.services.includes(service)
+        ? prev.services.filter((s) => s !== service)
+        : [...prev.services, service];
+      return { ...prev, services: newServices };
+    });
+  }, [setFormData]);
 
   useEffect(() => {
     loadOrganizationData();
@@ -131,9 +133,11 @@ export default function NewClient() {
         .eq('id', orgId)
         .single();
       
-      // Only set default currency if no draft was restored
-      if (org?.currency && !hasRestoredDraft && formData.budgetCurrency === 'MZN') {
-        updateField('budgetCurrency', org.currency);
+      // Only set default currency when creating a new client (avoid overwriting edit form)
+      if (!isEditMode && org?.currency && !hasRestoredDraft) {
+        setFormData((prev) =>
+          prev.budgetCurrency === 'MZN' ? { ...prev, budgetCurrency: org.currency } : prev
+        );
       }
     }
   };
@@ -443,7 +447,7 @@ export default function NewClient() {
                     value={[formData.bant[item.key as keyof typeof formData.bant]]} 
                     max={10} 
                     step={1} 
-                    onValueChange={([v]) => updateBant(item.key, v)} 
+                    onValueChange={([v]) => updateBant(item.key as keyof ClientFormData['bant'], v)} 
                   />
                 </div>
               ))}
