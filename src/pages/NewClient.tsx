@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Building2, User, Globe, DollarSign, Loader2 } from 'lucide-react';
+import { ArrowLeft, Building2, User, Globe, DollarSign, Loader2, X } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SERVICE_LABELS, SOURCE_LABELS, ServiceType } from '@/types';
@@ -18,6 +18,44 @@ import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { useSubscription } from '@/hooks/useSubscription';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
+import { useDraft } from '@/hooks/useDraft';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+interface ClientFormData {
+  companyName: string;
+  website: string;
+  address: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  source: string;
+  qualification: string;
+  notes: string;
+  bant: { budget: number; authority: number; need: number; timeline: number };
+  services: ServiceType[];
+  budgetCurrency: string;
+  trafficCurrency: string;
+  monthlyBudget: string;
+  trafficBudget: string;
+}
+
+const initialFormData: ClientFormData = {
+  companyName: '',
+  website: '',
+  address: '',
+  contactName: '',
+  phone: '',
+  email: '',
+  source: '',
+  qualification: 'cold',
+  notes: '',
+  bant: { budget: 0, authority: 0, need: 0, timeline: 0 },
+  services: [],
+  budgetCurrency: 'MZN',
+  trafficCurrency: 'USD',
+  monthlyBudget: '',
+  trafficBudget: '',
+};
 
 export default function NewClient() {
   const navigate = useNavigate();
@@ -29,33 +67,47 @@ export default function NewClient() {
   const [saving, setSaving] = useState(false);
   const [loadingClient, setLoadingClient] = useState(isEditMode);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [clientDataLoaded, setClientDataLoaded] = useState(false);
   
-  // Form state
-  const [companyName, setCompanyName] = useState('');
-  const [website, setWebsite] = useState('');
-  const [address, setAddress] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [source, setSource] = useState('');
-  const [qualification, setQualification] = useState('cold');
-  const [notes, setNotes] = useState('');
-  const [bant, setBant] = useState({ budget: 0, authority: 0, need: 0, timeline: 0 });
-  const [services, setServices] = useState<ServiceType[]>([]);
-  const [budgetCurrency, setBudgetCurrency] = useState('MZN');
-  const [trafficCurrency, setTrafficCurrency] = useState('USD');
-  const [monthlyBudget, setMonthlyBudget] = useState('');
-  const [trafficBudget, setTrafficBudget] = useState('');
+  // Draft for new clients only (not edit mode)
+  const draftKey = isEditMode ? `client_edit_${clientId}` : 'new_client';
+  const {
+    value: formData,
+    setValue: setFormData,
+    hasRestoredDraft,
+    clearDraft,
+    discardDraft,
+  } = useDraft<ClientFormData>({
+    key: draftKey,
+    initialValue: initialFormData,
+    debounceMs: 500,
+  });
+
+  // Update form data helper
+  const updateField = useCallback(<K extends keyof ClientFormData>(field: K, value: ClientFormData[K]) => {
+    setFormData({ ...formData, [field]: value });
+  }, [formData, setFormData]);
+
+  const updateBant = useCallback((key: string, value: number) => {
+    setFormData({ ...formData, bant: { ...formData.bant, [key]: value } });
+  }, [formData, setFormData]);
+
+  const handleServiceToggle = useCallback((service: ServiceType) => {
+    const newServices = formData.services.includes(service) 
+      ? formData.services.filter(s => s !== service) 
+      : [...formData.services, service];
+    updateField('services', newServices);
+  }, [formData.services, updateField]);
 
   useEffect(() => {
     loadOrganizationData();
   }, []);
 
   useEffect(() => {
-    if (clientId) {
+    if (clientId && !clientDataLoaded) {
       loadClientData(clientId);
     }
-  }, [clientId]);
+  }, [clientId, clientDataLoaded]);
 
   const loadOrganizationData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -77,8 +129,9 @@ export default function NewClient() {
         .eq('id', orgId)
         .single();
       
-      if (org?.currency) {
-        setBudgetCurrency(org.currency);
+      // Only set default currency if no draft was restored
+      if (org?.currency && !hasRestoredDraft && formData.budgetCurrency === 'MZN') {
+        updateField('budgetCurrency', org.currency);
       }
     }
   };
@@ -95,25 +148,32 @@ export default function NewClient() {
       if (error) throw error;
 
       if (client) {
-        setCompanyName(client.company_name || '');
-        setContactName(client.contact_name || '');
-        setEmail(client.email || '');
-        setPhone(client.phone || '');
-        setWebsite(client.website || '');
-        setAddress(client.address || '');
-        setSource(client.source || '');
-        setQualification(client.qualification || 'cold');
-        setNotes(client.notes || '');
-        setServices((client.services as ServiceType[]) || []);
-        setMonthlyBudget(client.monthly_budget ? String(client.monthly_budget) : '');
-        setTrafficBudget(client.paid_traffic_budget ? String(client.paid_traffic_budget) : '');
-        setBant({
-          budget: client.bant_budget || 0,
-          authority: client.bant_authority || 0,
-          need: client.bant_need || 0,
-          timeline: client.bant_timeline || 0,
+        // When loading client data for edit, discard any draft and set fresh data
+        clearDraft();
+        setFormData({
+          companyName: client.company_name || '',
+          contactName: client.contact_name || '',
+          email: client.email || '',
+          phone: client.phone || '',
+          website: client.website || '',
+          address: client.address || '',
+          source: client.source || '',
+          qualification: client.qualification || 'cold',
+          notes: client.notes || '',
+          services: (client.services as ServiceType[]) || [],
+          monthlyBudget: client.monthly_budget ? String(client.monthly_budget) : '',
+          trafficBudget: client.paid_traffic_budget ? String(client.paid_traffic_budget) : '',
+          bant: {
+            budget: client.bant_budget || 0,
+            authority: client.bant_authority || 0,
+            need: client.bant_need || 0,
+            timeline: client.bant_timeline || 0,
+          },
+          budgetCurrency: 'MZN',
+          trafficCurrency: 'USD',
         });
         setOrganizationId(client.organization_id);
+        setClientDataLoaded(true);
       }
     } catch (error) {
       console.error('Error loading client:', error);
@@ -124,14 +184,10 @@ export default function NewClient() {
     }
   };
 
-  const handleServiceToggle = (service: ServiceType) => {
-    setServices(prev => prev.includes(service) ? prev.filter(s => s !== service) : [...prev, service]);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!companyName || !contactName || !phone) {
+    if (!formData.companyName || !formData.contactName || !formData.phone) {
       toast({ title: 'Erro', description: 'Preencha os campos obrigatórios', variant: 'destructive' });
       return;
     }
@@ -142,26 +198,25 @@ export default function NewClient() {
       if (!user) throw new Error('Usuário não autenticado');
 
       const clientData = {
-        company_name: companyName,
-        contact_name: contactName,
-        email: email || null,
-        phone,
-        website: website || null,
-        address: address || null,
-        source: source || null,
-        notes: notes || null,
-        qualification: qualification as 'cold' | 'warm' | 'hot' | 'qualified',
-        services: services.length > 0 ? services : null,
-        monthly_budget: monthlyBudget ? parseFloat(monthlyBudget) : null,
-        paid_traffic_budget: trafficBudget ? parseFloat(trafficBudget) : null,
-        bant_budget: bant.budget,
-        bant_authority: bant.authority,
-        bant_need: bant.need,
-        bant_timeline: bant.timeline,
+        company_name: formData.companyName,
+        contact_name: formData.contactName,
+        email: formData.email || null,
+        phone: formData.phone,
+        website: formData.website || null,
+        address: formData.address || null,
+        source: formData.source || null,
+        notes: formData.notes || null,
+        qualification: formData.qualification as 'cold' | 'warm' | 'hot' | 'qualified',
+        services: formData.services.length > 0 ? formData.services : null,
+        monthly_budget: formData.monthlyBudget ? parseFloat(formData.monthlyBudget) : null,
+        paid_traffic_budget: formData.trafficBudget ? parseFloat(formData.trafficBudget) : null,
+        bant_budget: formData.bant.budget,
+        bant_authority: formData.bant.authority,
+        bant_need: formData.bant.need,
+        bant_timeline: formData.bant.timeline,
       };
 
       if (isEditMode && clientId) {
-        // Update existing client
         const { error } = await supabase
           .from('clients')
           .update(clientData)
@@ -169,10 +224,10 @@ export default function NewClient() {
 
         if (error) throw error;
 
+        clearDraft();
         toast({ title: 'Sucesso!', description: 'Cliente atualizado com sucesso' });
         navigate(`/app/clients/${clientId}`);
       } else {
-        // Create new client
         const { error } = await supabase
           .from('clients')
           .insert({
@@ -184,6 +239,7 @@ export default function NewClient() {
 
         if (error) throw error;
 
+        clearDraft();
         toast({ title: 'Sucesso!', description: 'Cliente cadastrado com sucesso' });
         navigate('/app/clients');
       }
@@ -245,6 +301,24 @@ export default function NewClient() {
         </div>
       </AnimatedContainer>
 
+      {/* Draft restored notification */}
+      {hasRestoredDraft && !isEditMode && (
+        <Alert className="mb-6 border-primary/50 bg-primary/5">
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-sm">Rascunho restaurado automaticamente</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={discardDraft}
+              className="h-8 px-2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Descartar
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
         {/* Company Info */}
         <AnimatedContainer animation="fade-up" delay={0.1} className="bg-card border border-border rounded-xl p-4 md:p-6">
@@ -256,8 +330,8 @@ export default function NewClient() {
             <div>
               <Label>Nome da Empresa *</Label>
               <Input 
-                value={companyName} 
-                onChange={(e) => setCompanyName(e.target.value)} 
+                value={formData.companyName} 
+                onChange={(e) => updateField('companyName', e.target.value)} 
                 placeholder="Ex: Restaurante Sabor & Arte" 
                 required 
               />
@@ -265,16 +339,16 @@ export default function NewClient() {
             <div>
               <Label>Website</Label>
               <Input 
-                value={website} 
-                onChange={(e) => setWebsite(e.target.value)} 
+                value={formData.website} 
+                onChange={(e) => updateField('website', e.target.value)} 
                 placeholder="www.empresa.com" 
               />
             </div>
             <div className="md:col-span-2">
               <Label>Endereço</Label>
               <Input 
-                value={address} 
-                onChange={(e) => setAddress(e.target.value)} 
+                value={formData.address} 
+                onChange={(e) => updateField('address', e.target.value)} 
                 placeholder="Av. Eduardo Mondlane, 123 - Maputo" 
               />
             </div>
@@ -291,8 +365,8 @@ export default function NewClient() {
             <div>
               <Label>Nome do Contato *</Label>
               <Input 
-                value={contactName} 
-                onChange={(e) => setContactName(e.target.value)} 
+                value={formData.contactName} 
+                onChange={(e) => updateField('contactName', e.target.value)} 
                 placeholder="Ex: Maria Santos" 
                 required 
               />
@@ -300,8 +374,8 @@ export default function NewClient() {
             <div>
               <Label>Telefone *</Label>
               <PhoneInput 
-                value={phone} 
-                onChange={setPhone} 
+                value={formData.phone} 
+                onChange={(value) => updateField('phone', value || '')} 
                 placeholder="+258 84 123 4567" 
                 required 
               />
@@ -310,8 +384,8 @@ export default function NewClient() {
               <Label>E-mail</Label>
               <Input 
                 type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
+                value={formData.email} 
+                onChange={(e) => updateField('email', e.target.value)} 
                 placeholder="email@empresa.com" 
               />
             </div>
@@ -327,7 +401,7 @@ export default function NewClient() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div>
               <Label>Fonte de Origem</Label>
-              <Select value={source} onValueChange={setSource}>
+              <Select value={formData.source} onValueChange={(value) => updateField('source', value)}>
                 <SelectTrigger><SelectValue placeholder="Como conheceu?" /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(SOURCE_LABELS).map(([key, label]) => (
@@ -338,7 +412,7 @@ export default function NewClient() {
             </div>
             <div>
               <Label>Qualificação</Label>
-              <Select value={qualification} onValueChange={setQualification}>
+              <Select value={formData.qualification} onValueChange={(value) => updateField('qualification', value)}>
                 <SelectTrigger><SelectValue placeholder="Temperatura" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cold">Frio</SelectItem>
@@ -361,9 +435,14 @@ export default function NewClient() {
                 <div key={item.key}>
                   <div className="flex justify-between text-sm mb-2">
                     <span>{item.label}<span className="text-muted-foreground text-xs ml-2">{item.desc}</span></span>
-                    <span className="font-medium">{bant[item.key as keyof typeof bant]}/10</span>
+                    <span className="font-medium">{formData.bant[item.key as keyof typeof formData.bant]}/10</span>
                   </div>
-                  <Slider value={[bant[item.key as keyof typeof bant]]} max={10} step={1} onValueChange={([v]) => setBant(p => ({ ...p, [item.key]: v }))} />
+                  <Slider 
+                    value={[formData.bant[item.key as keyof typeof formData.bant]]} 
+                    max={10} 
+                    step={1} 
+                    onValueChange={([v]) => updateBant(item.key, v)} 
+                  />
                 </div>
               ))}
             </div>
@@ -373,7 +452,7 @@ export default function NewClient() {
             <div>
               <Label>Orçamento Mensal Estimado</Label>
               <div className="flex gap-2 mt-1">
-                <Select value={budgetCurrency} onValueChange={setBudgetCurrency}>
+                <Select value={formData.budgetCurrency} onValueChange={(value) => updateField('budgetCurrency', value)}>
                   <SelectTrigger className="w-24">
                     <SelectValue />
                   </SelectTrigger>
@@ -385,8 +464,8 @@ export default function NewClient() {
                 </Select>
                 <Input 
                   type="number" 
-                  value={monthlyBudget} 
-                  onChange={(e) => setMonthlyBudget(e.target.value)} 
+                  value={formData.monthlyBudget} 
+                  onChange={(e) => updateField('monthlyBudget', e.target.value)} 
                   placeholder="10000" 
                   className="flex-1" 
                 />
@@ -395,7 +474,7 @@ export default function NewClient() {
             <div>
               <Label>Orçamento Tráfego Pago</Label>
               <div className="flex gap-2 mt-1">
-                <Select value={trafficCurrency} onValueChange={setTrafficCurrency}>
+                <Select value={formData.trafficCurrency} onValueChange={(value) => updateField('trafficCurrency', value)}>
                   <SelectTrigger className="w-24">
                     <SelectValue />
                   </SelectTrigger>
@@ -407,8 +486,8 @@ export default function NewClient() {
                 </Select>
                 <Input 
                   type="number" 
-                  value={trafficBudget} 
-                  onChange={(e) => setTrafficBudget(e.target.value)} 
+                  value={formData.trafficBudget} 
+                  onChange={(e) => updateField('trafficBudget', e.target.value)} 
                   placeholder="500" 
                   className="flex-1" 
                 />
@@ -426,7 +505,11 @@ export default function NewClient() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {(Object.entries(SERVICE_LABELS) as [ServiceType, string][]).map(([key, label]) => (
               <div key={key} className="flex items-center space-x-2">
-                <Checkbox id={key} checked={services.includes(key)} onCheckedChange={() => handleServiceToggle(key)} />
+                <Checkbox 
+                  id={key} 
+                  checked={formData.services.includes(key)} 
+                  onCheckedChange={() => handleServiceToggle(key)} 
+                />
                 <label htmlFor={key} className="text-sm cursor-pointer">{label}</label>
               </div>
             ))}
@@ -437,8 +520,8 @@ export default function NewClient() {
         <AnimatedContainer animation="fade-up" delay={0.3} className="bg-card border border-border rounded-xl p-4 md:p-6">
           <Label>Observações</Label>
           <Textarea 
-            value={notes} 
-            onChange={(e) => setNotes(e.target.value)} 
+            value={formData.notes} 
+            onChange={(e) => updateField('notes', e.target.value)} 
             placeholder="Anotações importantes sobre o cliente..." 
             className="mt-2" 
             rows={4} 
