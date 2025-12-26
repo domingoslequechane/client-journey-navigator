@@ -161,6 +161,25 @@ All colors MUST be HSL.
   }
 }
 
+/* Dynamic viewport height for mobile keyboard support */
+@supports (height: 100dvh) {
+  .h-dvh {
+    height: 100dvh;
+  }
+}
+
+/* Fallback for browsers without dvh support */
+@supports not (height: 100dvh) {
+  .h-dvh {
+    height: 100vh;
+  }
+}
+
+/* Safe area padding for iOS devices with keyboard */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+}
+
 /* Mobile-optimized font sizes for better UX */
 @media (max-width: 640px) {
   html {
