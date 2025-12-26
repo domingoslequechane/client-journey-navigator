@@ -204,14 +204,15 @@ export default function LandingPage() {
             <a href="#planos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Planos</a>
             <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <ThemeToggle />
             <Link to="/auth">
               <Button variant="ghost" size="sm" className="hidden sm:inline-flex">Entrar</Button>
             </Link>
             <Link to="/auth">
               <Button size="sm" className="gap-2 shadow-lg shadow-primary/25">
-                Quero crescer 47%
+                <span className="hidden sm:inline">Quero crescer 47%</span>
+                <span className="sm:hidden">Começar</span>
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -252,17 +253,18 @@ export default function LandingPage() {
               style={{ animationDelay: '0.6s' }}
             >
               <Link to="/auth">
-                <Button size="lg" className="text-xl px-10 py-7 gap-3 shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105">
-                  <TrendingUp className="h-6 w-6" />
-                  Quero crescer 47%
-                  <ArrowRight className="h-6 w-6" />
+                <Button size="lg" className="text-lg sm:text-xl px-6 sm:px-10 py-6 sm:py-7 gap-2 sm:gap-3 shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105">
+                  <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
+                  <span className="hidden sm:inline">Quero crescer 47%</span>
+                  <span className="sm:hidden">Começar agora</span>
+                  <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </Link>
             </div>
             
             {/* Trust badges simples */}
             <div 
-              className="flex flex-wrap items-center justify-center gap-6 md:gap-10 text-sm text-muted-foreground animate-fade-in"
+              className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-10 text-xs sm:text-sm text-muted-foreground animate-fade-in"
               style={{ animationDelay: '0.8s' }}
             >
               <div className="flex items-center gap-2">
@@ -439,14 +441,14 @@ export default function LandingPage() {
                 <span className="text-sm text-muted-foreground ml-2">Qualify — Pipeline</span>
               </div>
               
-              <div className="grid grid-cols-4 md:grid-cols-7 gap-2 md:gap-4">
+              <div className="flex md:grid md:grid-cols-7 gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
                 {['Prospecção', 'Reunião', 'Contratação', 'Produção', 'Tráfego', 'Retenção', 'Fidelização'].map((stage, i) => (
-                  <div key={stage} className="text-center">
-                    <div className="bg-muted rounded-lg p-2 md:p-3 mb-2 h-24 md:h-32 flex flex-col justify-between">
-                      <div className="text-xs font-medium text-muted-foreground truncate">{stage}</div>
+                  <div key={stage} className="text-center min-w-[70px] flex-shrink-0 md:min-w-0">
+                    <div className="bg-muted rounded-lg p-2 md:p-3 mb-2 h-20 md:h-32 flex flex-col justify-between">
+                      <div className="text-[10px] md:text-xs font-medium text-muted-foreground truncate">{stage}</div>
                       <div className="space-y-1">
                         {[...Array(Math.max(1, 3 - i))].map((_, j) => (
-                          <div key={j} className="h-3 md:h-4 bg-primary/20 rounded animate-pulse" />
+                          <div key={j} className="h-2 md:h-4 bg-primary/20 rounded animate-pulse" />
                         ))}
                       </div>
                     </div>
@@ -729,10 +731,11 @@ export default function LandingPage() {
             Configure em 2 minutos. Comece grátis. Sem cartão.
           </p>
           <Link to="/auth">
-            <Button size="lg" variant="secondary" className="text-xl px-12 py-7 gap-3 shadow-xl hover:scale-105 transition-all">
-              <Rocket className="h-6 w-6" />
-              Começar agora — é grátis
-              <ArrowRight className="h-6 w-6" />
+            <Button size="lg" variant="secondary" className="text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-7 gap-2 sm:gap-3 shadow-xl hover:scale-105 transition-all">
+              <Rocket className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="hidden sm:inline">Começar agora — é grátis</span>
+              <span className="sm:hidden">Começar grátis</span>
+              <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </Link>
           
@@ -753,7 +756,7 @@ export default function LandingPage() {
               <span className="font-bold text-xl">Qualify</span>
             </div>
             
-            <div className="flex items-center gap-8 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-muted-foreground">
               <a href="#solucao" className="hover:text-foreground transition-colors">Solução</a>
               <a href="#planos" className="hover:text-foreground transition-colors">Planos</a>
               <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
