@@ -218,6 +218,35 @@ export default function AIAssistant() {
     scrollToBottom(false);
   }, [messages, scrollToBottom]);
 
+  // Scroll to bottom when selecting a new client
+  useEffect(() => {
+    if (selectedClientId && messages.length > 0) {
+      // Small delay to ensure DOM is rendered
+      const timer = setTimeout(() => scrollToBottom(false), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedClientId, scrollToBottom]);
+
+  // Handle mobile keyboard resize - scroll to bottom when keyboard appears
+  useEffect(() => {
+    if (!isMobile || !selectedClientId) return;
+    
+    const handleResize = () => {
+      // When viewport changes (keyboard opens/closes), scroll to bottom
+      if (messages.length > 0) {
+        scrollToBottom(false);
+      }
+    };
+    
+    // Visual Viewport API - more reliable for detecting keyboard
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport?.removeEventListener('resize', handleResize);
+    }
+    
+    return undefined;
+  }, [isMobile, selectedClientId, messages.length, scrollToBottom]);
+
   // Create or get conversation
   const getOrCreateConversation = async (clientId: string): Promise<string> => {
     const { data: existing } = await supabase
@@ -678,9 +707,12 @@ export default function AIAssistant() {
 
   // Render chat content (as function, not component to prevent remount)
   const renderChatContent = () => (
-    <>
-      {/* Header */}
-      <div className="h-14 md:h-16 px-3 md:px-4 border-b border-border bg-background flex items-center gap-2 transition-all duration-300">
+    <div className={cn(
+      "flex flex-col bg-background",
+      isMobile ? "fixed inset-0 z-10 h-dvh" : "h-full"
+    )}>
+      {/* Header - sticky on mobile */}
+      <div className="h-14 md:h-16 px-3 md:px-4 border-b border-border bg-background flex items-center gap-2 transition-all duration-300 shrink-0 sticky top-0 z-10">
         {isMobile && (
           <Button
             variant="ghost"
@@ -705,7 +737,7 @@ export default function AIAssistant() {
       </div>
 
       {/* Messages with scroll area */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="flex-1 relative overflow-hidden min-h-0">
         <ScrollArea 
           className="h-full p-3 md:p-4"
           onScrollCapture={handleScroll}
@@ -866,7 +898,10 @@ export default function AIAssistant() {
       )}
 
       {/* Input */}
-      <div className="p-3 md:p-4 border-t border-border">
+      <div className={cn(
+        "p-3 md:p-4 border-t border-border bg-background shrink-0",
+        isMobile && "pb-safe"
+      )}>
         <div className="flex gap-2 max-w-3xl mx-auto">
           <input
             ref={fileInputRef}
@@ -914,7 +949,7 @@ export default function AIAssistant() {
           </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 
   // Check subscription access
