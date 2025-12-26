@@ -23,6 +23,7 @@ import SalesFunnel from "./pages/SalesFunnel";
 import OperationalFlow from "./pages/OperationalFlow";
 import Clients from "./pages/Clients";
 import NewClient from "./pages/NewClient";
+import EditClient from "./pages/EditClient";
 import ClientDetail from "./pages/ClientDetail";
 import Academia from "./pages/Academia";
 import Team from "./pages/Team";
@@ -110,7 +111,7 @@ const App = () => (
                 <Route path="clients/:clientId" element={<ClientDetail />} />
                 <Route path="clients/edit/:clientId" element={
                   <RoleProtectedRoute allowedRoles={['admin', 'sales']}>
-                    <NewClient />
+                    <EditClient />
                   </RoleProtectedRoute>
                 } />
                 <Route path="new-client" element={
