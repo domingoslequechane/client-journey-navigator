@@ -16,12 +16,12 @@ const MessageSchema = z.object({
 
 const ClientDataSchema = z.object({
   id: z.string().uuid("ID de cliente inválido").optional(),
-  company_name: z.string().max(255).optional(),
-  contact_name: z.string().max(255).optional(),
-  phone: z.string().max(50).optional(),
-  email: z.string().max(255).optional(),
-  current_stage: z.string().max(50).optional(),
-  qualification: z.string().max(50).optional(),
+  company_name: z.string().max(255).optional().nullable(),
+  contact_name: z.string().max(255).optional().nullable(),
+  phone: z.string().max(50).optional().nullable(),
+  email: z.string().max(255).optional().nullable(),
+  current_stage: z.string().max(50).optional().nullable(),
+  qualification: z.string().max(50).optional().nullable(),
   monthly_budget: z.number().optional().nullable(),
   paid_traffic_budget: z.number().optional().nullable(),
   services: z.array(z.string().max(100)).max(20).optional().nullable(),
@@ -30,9 +30,9 @@ const ClientDataSchema = z.object({
   bant_authority: z.number().min(0).max(10).optional().nullable(),
   bant_need: z.number().min(0).max(10).optional().nullable(),
   bant_timeline: z.number().min(0).max(10).optional().nullable(),
-  has_contract: z.boolean().optional(),
+  has_contract: z.boolean().optional().nullable(),
   contract_name: z.string().max(255).optional().nullable(),
-  context: z.string().max(255).optional(),
+  context: z.string().max(255).optional().nullable(),
 }).optional();
 
 const ChatRequestSchema = z.object({
