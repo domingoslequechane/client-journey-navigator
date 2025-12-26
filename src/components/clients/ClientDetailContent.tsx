@@ -469,14 +469,14 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       </div>
 
       {/* All Client Info */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <h4 className="font-semibold text-sm">Informações do Cliente</h4>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {canEditClient && (
             <Button 
               variant="outline" 
               size="sm" 
-              className="gap-2" 
+              className="gap-2 flex-1 sm:flex-none" 
               disabled={isPaused}
               onClick={() => navigate(`/app/clients/edit/${client.id}`)}
             >
@@ -492,10 +492,11 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                 <Button 
                   variant={isPaused ? "outline" : "secondary"} 
                   size="sm"
-                  className={`gap-2 ${isPaused ? 'border-green-500 text-green-500 hover:bg-green-500 hover:text-white' : ''}`}
+                  className={`gap-2 flex-1 sm:flex-none ${isPaused ? 'border-green-500 text-green-500 hover:bg-green-500 hover:text-white' : ''}`}
                 >
                   {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
-                  {isPaused ? 'Reativar' : 'Suspender'}
+                  <span className="hidden xs:inline">{isPaused ? 'Reativar' : 'Suspender'}</span>
+                  <span className="xs:hidden">{isPaused ? 'Reativar' : 'Susp.'}</span>
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -537,11 +538,12 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 flex-1 sm:flex-none"
                 onClick={() => setDeleteDialogOpen(true)}
               >
                 <Trash2 className="h-3 w-3" />
-                Eliminar
+                <span className="hidden xs:inline">Eliminar</span>
+                <span className="xs:hidden">Elim.</span>
               </Button>
               <DeleteClientModal
                 open={deleteDialogOpen}

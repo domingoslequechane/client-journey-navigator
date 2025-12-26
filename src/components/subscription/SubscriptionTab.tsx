@@ -306,26 +306,26 @@ export function SubscriptionTab() {
           '--neon-color': `hsl(var(--primary))` 
         } as React.CSSProperties : undefined}
       >
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <CardHeader className="pb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <img 
                 src={currentPlan.image} 
                 alt={`Plano ${currentPlan.name}`}
-                className="h-16 w-16 object-contain"
+                className="h-12 w-12 sm:h-16 sm:w-16 object-contain"
               />
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <PlanIcon className={cn("h-5 w-5", currentPlan.color)} />
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <PlanIcon className={cn("h-4 w-4 sm:h-5 sm:w-5", currentPlan.color)} />
                   Plano {currentPlan.name}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   {isPaidPlan && isActive ? 'Sua assinatura está ativa' : 'Você não possui assinatura ativa'}
                 </CardDescription>
               </div>
             </div>
-            <div className="text-right">
-              <span className={cn("text-2xl font-bold", currentPlan.color)}>{currentPlan.price}</span>
+            <div className="text-left sm:text-right">
+              <span className={cn("text-xl sm:text-2xl font-bold", currentPlan.color)}>{currentPlan.price}</span>
               {isActive && subscription?.currentPeriodEnd && !cancelAtPeriodEnd && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Renova em {format(new Date(subscription.currentPeriodEnd), "dd/MM/yyyy", { locale: ptBR })}
@@ -335,17 +335,17 @@ export function SubscriptionTab() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {currentPlan.features.map((feature, index) => (
-              <div key={index} className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className={cn("h-4 w-4", currentPlan.color)} />
+              <div key={index} className="flex items-center gap-2 text-xs sm:text-sm">
+                <CheckCircle2 className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0", currentPlan.color)} />
                 <span>{feature}</span>
               </div>
             ))}
           </div>
 
           {/* Management buttons */}
-          <div className="flex flex-wrap gap-2 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-4 border-t">
             {/* Payment management - only for paid plans */}
             {isPaidPlan && isActive && (
               <>
@@ -354,7 +354,7 @@ export function SubscriptionTab() {
                   size="sm"
                   onClick={handleManagePayment}
                   disabled={actionLoading === 'portal'}
-                  className="gap-2"
+                  className="gap-2 w-full sm:w-auto"
                 >
                   {actionLoading === 'portal' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -370,7 +370,7 @@ export function SubscriptionTab() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="gap-2 text-destructive hover:text-destructive"
+                        className="gap-2 text-destructive hover:text-destructive w-full sm:w-auto"
                       >
                         <XCircle className="h-4 w-4" />
                         Cancelar Assinatura
@@ -489,25 +489,25 @@ export function SubscriptionTab() {
               {payments.map((payment) => (
                 <div 
                   key={payment.id} 
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border bg-card"
                 >
                   <div className="flex items-center gap-3">
                     {payment.status === 'confirmed' ? (
-                      <CheckCircle2 className={cn("h-5 w-5", currentPlan.color)} />
+                      <CheckCircle2 className={cn("h-5 w-5 shrink-0", currentPlan.color)} />
                     ) : payment.status === 'failed' ? (
-                      <XCircle className="h-5 w-5 text-destructive" />
+                      <XCircle className="h-5 w-5 shrink-0 text-destructive" />
                     ) : (
-                      <Clock className="h-5 w-5 text-yellow-500" />
+                      <Clock className="h-5 w-5 shrink-0 text-yellow-500" />
                     )}
-                    <div>
-                      <p className="font-medium text-sm">{payment.description || 'Assinatura'}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{payment.description || 'Assinatura'}</p>
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(payment.payment_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pl-8 sm:pl-0">
+                    <span className="font-medium text-sm">
                       ${payment.amount.toFixed(2)} {payment.currency}
                     </span>
                     {getPaymentStatusBadge(payment.status)}

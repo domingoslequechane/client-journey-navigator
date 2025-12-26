@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from 'next-themes';
+import { supabase } from '@/integrations/supabase/client';
 import {
   LayoutDashboard,
   Building2,
@@ -20,7 +21,8 @@ import {
   Sun,
   Moon,
   LogOut,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import {
   Drawer,
@@ -29,14 +31,40 @@ import {
   DrawerTitle,
   DrawerClose,
 } from '@/components/ui/drawer';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, isAdmin } = useUserRole();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
+
+  // Check if user has multiple organizations
+  useEffect(() => {
+    const checkMultipleOrgs = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase.rpc('get_user_organizations', {
+        user_uuid: user.id
+      });
+      
+      setHasMultipleOrgs(data && data.length > 1);
+    };
+    
+    checkMultipleOrgs();
+  }, [user]);
 
   // Build main navigation based on role permissions
   const navigation = useMemo(() => {
@@ -96,9 +124,20 @@ export function MobileNav() {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  const handleLogout = async () => {
+  const handleOpenLogoutDialog = () => {
     setMoreOpen(false);
+    setLogoutDialogOpen(true);
+  };
+
+  const handleSignOut = async () => {
     await signOut();
+    setLogoutDialogOpen(false);
+    navigate('/auth');
+  };
+
+  const handleSwitchOrganization = () => {
+    setLogoutDialogOpen(false);
+    navigate('/app/select-organization');
   };
 
   return (
@@ -184,7 +223,7 @@ export function MobileNav() {
 
             {/* Logout */}
             <button
-              onClick={handleLogout}
+              onClick={handleOpenLogoutDialog}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-destructive/10 text-destructive text-left"
             >
               <LogOut className="h-5 w-5" />
@@ -193,6 +232,49 @@ export function MobileNav() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>O que deseja fazer?</DialogTitle>
+            <DialogDescription>
+              Escolha uma opção abaixo para continuar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-4">
+            {hasMultipleOrgs && (
+              <Button 
+                variant="outline" 
+                className="w-full justify-start gap-3 h-auto py-3"
+                onClick={handleSwitchOrganization}
+              >
+                <RefreshCw className="h-5 w-5" />
+                <div className="text-left">
+                  <p className="font-medium">Mudar de Agência</p>
+                  <p className="text-xs text-muted-foreground">Trocar para outra agência que você tem acesso</p>
+                </div>
+              </Button>
+            )}
+            <Button 
+              variant="destructive" 
+              className="w-full justify-start gap-3 h-auto py-3"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-5 w-5" />
+              <div className="text-left">
+                <p className="font-medium">Sair da Aplicação</p>
+                <p className="text-xs text-destructive-foreground/70">Encerrar sua sessão completamente</p>
+              </div>
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLogoutDialogOpen(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

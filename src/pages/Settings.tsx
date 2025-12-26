@@ -767,58 +767,60 @@ export default function Settings() {
                     Nenhum método de pagamento adicionado
                   </p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {paymentMethods.map((method, index) => (
-                      <div key={method.id} className="flex items-center gap-2">
-                        <Input
-                          placeholder="Provedora (M-Pesa, BCI...)"
-                          value={method.provider_name}
-                          onChange={(e) => {
-                            const updated = [...paymentMethods];
-                            updated[index].provider_name = e.target.value;
-                            setPaymentMethods(updated);
-                          }}
-                          disabled={!isAdmin}
-                          className="flex-1"
-                        />
-                        <Input
-                          placeholder="Número de Conta"
-                          value={method.account_number}
-                          onChange={(e) => {
-                            const updated = [...paymentMethods];
-                            updated[index].account_number = e.target.value;
-                            setPaymentMethods(updated);
-                          }}
-                          disabled={!isAdmin}
-                          className="flex-1"
-                        />
-                        <Input
-                          placeholder="Destinatário"
-                          value={method.recipient_name || ''}
-                          onChange={(e) => {
-                            const updated = [...paymentMethods];
-                            updated[index].recipient_name = e.target.value;
-                            setPaymentMethods(updated);
-                          }}
-                          disabled={!isAdmin}
-                          className="flex-1"
-                        />
-                        {isAdmin && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={async () => {
-                              const methodId = method.id;
-                              if (!methodId.startsWith('new-')) {
-                                await supabase.from('payment_methods').delete().eq('id', methodId);
-                              }
-                              setPaymentMethods(prev => prev.filter(m => m.id !== methodId));
+                      <div key={method.id} className="p-3 border border-border rounded-lg space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <Input
+                            placeholder="Provedora (M-Pesa, BCI...)"
+                            value={method.provider_name}
+                            onChange={(e) => {
+                              const updated = [...paymentMethods];
+                              updated[index].provider_name = e.target.value;
+                              setPaymentMethods(updated);
                             }}
-                            className="shrink-0 text-muted-foreground hover:text-destructive"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                            disabled={!isAdmin}
+                          />
+                          <Input
+                            placeholder="Número de Conta"
+                            value={method.account_number}
+                            onChange={(e) => {
+                              const updated = [...paymentMethods];
+                              updated[index].account_number = e.target.value;
+                              setPaymentMethods(updated);
+                            }}
+                            disabled={!isAdmin}
+                          />
+                          <Input
+                            placeholder="Destinatário"
+                            value={method.recipient_name || ''}
+                            onChange={(e) => {
+                              const updated = [...paymentMethods];
+                              updated[index].recipient_name = e.target.value;
+                              setPaymentMethods(updated);
+                            }}
+                            disabled={!isAdmin}
+                          />
+                        </div>
+                        {isAdmin && (
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                const methodId = method.id;
+                                if (!methodId.startsWith('new-')) {
+                                  await supabase.from('payment_methods').delete().eq('id', methodId);
+                                }
+                                setPaymentMethods(prev => prev.filter(m => m.id !== methodId));
+                              }}
+                              className="text-muted-foreground hover:text-destructive gap-1"
+                            >
+                              <X className="h-4 w-4" />
+                              Remover
+                            </Button>
+                          </div>
                         )}
                       </div>
                     ))}
