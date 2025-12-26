@@ -142,7 +142,16 @@ export function MobileNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden safe-area-bottom">
+      <nav 
+        className="fixed bottom-0 left-0 right-0 z-[999] bg-background/95 backdrop-blur-sm border-t border-border shadow-lg md:hidden safe-area-bottom"
+        style={{ 
+          position: 'fixed', 
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: 'hsl(var(--background) / 0.95)'
+        }}
+      >
         <div className="flex items-center justify-around py-2">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href || 

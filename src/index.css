@@ -180,6 +180,27 @@ All colors MUST be HSL.
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
 }
 
+/* Safe area bottom for mobile navigation */
+.safe-area-bottom {
+  padding-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Fallback for browsers without env() support */
+@supports not (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: 0;
+  }
+}
+
+/* iOS specific fixes for fixed positioning */
+@supports (-webkit-touch-callout: none) {
+  .fixed.bottom-0 {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
 /* Mobile-optimized font sizes for better UX */
 @media (max-width: 640px) {
   html {

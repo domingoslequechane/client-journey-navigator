@@ -17,7 +17,10 @@ export function AppLayout() {
       </div>
       
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pb-20 md:pb-0">
+      <main 
+        className="flex-1 overflow-auto pb-20 md:pb-0"
+        style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
+      >
         <Outlet />
       </main>
       
