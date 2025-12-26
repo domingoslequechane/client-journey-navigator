@@ -15,7 +15,7 @@ interface InvoiceTemplateSettingsProps {
   organizationId: string | null;
 }
 
-type TemplateStyle = 'modern' | 'classic' | 'minimal';
+type TemplateStyle = 'modern' | 'classic' | 'minimal' | 'onix';
 
 interface TemplateSettings {
   id?: string;
@@ -27,16 +27,17 @@ interface TemplateSettings {
 }
 
 const TEMPLATE_STYLES: { value: TemplateStyle; label: string; description: string }[] = [
+  { value: 'onix', label: 'Onix', description: 'Design premium com cabeçalho verde-lima' },
   { value: 'modern', label: 'Moderno', description: 'Design vibrante com cabeçalho colorido' },
   { value: 'classic', label: 'Clássico', description: 'Layout tradicional com bordas definidas' },
   { value: 'minimal', label: 'Minimalista', description: 'Estilo limpo e elegante' },
 ];
 
 const DEFAULT_SETTINGS: TemplateSettings = {
-  template_style: 'modern',
+  template_style: 'onix',
   show_logo: true,
   show_watermark: false,
-  primary_color: '#2962FF',
+  primary_color: '#C5E86C',
   footer_text: null,
 };
 
@@ -178,6 +179,16 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
                 
                 {/* Mini preview */}
                 <div className="mt-3 h-16 rounded border border-border overflow-hidden bg-background">
+                  {style.value === 'onix' && (
+                    <div className="h-full">
+                      <div className="h-4 w-full bg-[#d4ff6f]" />
+                      <div className="h-3 w-full bg-[#1a1a1a]" />
+                      <div className="p-1 space-y-1">
+                        <div className="h-1 w-14 bg-muted-foreground/20 rounded" />
+                        <div className="h-1 w-10 bg-muted-foreground/20 rounded" />
+                      </div>
+                    </div>
+                  )}
                   {style.value === 'modern' && (
                     <div className="h-full">
                       <div className="h-4 w-full" style={{ backgroundColor: settings.primary_color }} />
