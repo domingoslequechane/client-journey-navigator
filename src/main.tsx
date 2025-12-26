@@ -5,9 +5,16 @@ import "./index.css";
 // Hide splash screen when app is ready
 const hideSplashScreen = () => {
   const splash = document.getElementById('splash-screen');
+  const root = document.getElementById('root');
+  
   if (splash) {
     splash.classList.add('hidden');
     setTimeout(() => splash.remove(), 400);
+  }
+  
+  // Ativar animação de entrada do conteúdo
+  if (root) {
+    root.classList.add('content-ready');
   }
 };
 
