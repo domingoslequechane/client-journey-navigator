@@ -675,7 +675,7 @@ export default function LandingPage() {
           </div>
 
           <div className="text-center mt-12 space-y-8">
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-6">
               Cancele a qualquer momento. Sem taxas de cancelamento.
             </p>
             <Link to="/pricing">
