@@ -113,9 +113,10 @@ export default function AIAssistant() {
   const [showClientList, setShowClientList] = useState(true);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const sendingRef = useRef(false);
   const { checkRateLimit, isRateLimited } = useRateLimit({ maxRequests: 15, windowMs: 60000 });
 
@@ -202,9 +203,15 @@ export default function AIAssistant() {
     }
   }, [selectedClient?.conversation_id, conversationMessages, selectedClientId, selectedClient?.company_name, currencySymbol]);
 
-  const scrollToBottom = useCallback((smooth = true) => {
+const scrollToBottom = useCallback((smooth = true) => {
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
     setShowScrollButton(false);
+  }, []);
+
+  const focusInput = useCallback(() => {
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
   }, []);
 
   // Handle scroll to detect when user scrolls up
@@ -218,14 +225,15 @@ export default function AIAssistant() {
     scrollToBottom(false);
   }, [messages, scrollToBottom]);
 
-  // Scroll to bottom when selecting a new client
+  // Scroll to bottom when selecting a new client or messages load
   useEffect(() => {
-    if (selectedClientId && messages.length > 0) {
-      // Small delay to ensure DOM is rendered
-      const timer = setTimeout(() => scrollToBottom(false), 150);
-      return () => clearTimeout(timer);
+    if (selectedClientId && messages.length > 0 && !isLoadingMessages) {
+      // Use requestAnimationFrame to ensure DOM is fully rendered
+      requestAnimationFrame(() => {
+        setTimeout(() => scrollToBottom(false), 100);
+      });
     }
-  }, [selectedClientId, scrollToBottom]);
+  }, [selectedClientId, messages.length, isLoadingMessages, scrollToBottom]);
 
   // Handle mobile keyboard resize - scroll to bottom when keyboard appears
   useEffect(() => {
@@ -570,6 +578,7 @@ export default function AIAssistant() {
     await incrementUsage('ai_messages');
     
     setIsLoading(false);
+    focusInput();
     
     // Allow useEffect to sync again after a delay
     setTimeout(() => {
@@ -617,9 +626,13 @@ export default function AIAssistant() {
     if (isMobile) {
       setShowClientList(false);
     }
-    // Smooth transition delay
+    // Smooth transition delay, then scroll and focus
     setTimeout(() => {
       setIsLoadingMessages(false);
+      requestAnimationFrame(() => {
+        scrollToBottom(false);
+        focusInput();
+      });
     }, 400);
   };
 
@@ -874,7 +887,11 @@ export default function AIAssistant() {
         {/* Scroll to bottom button */}
         <ScrollToBottomButton 
           visible={showScrollButton} 
-          onClick={() => scrollToBottom(true)} 
+          onClick={() => {
+            scrollToBottom(true);
+            focusInput();
+          }}
+          className="bottom-32 md:bottom-28"
         />
       </div>
 
@@ -922,6 +939,7 @@ export default function AIAssistant() {
             )}
           </Button>
           <AutoResizeTextarea
+            ref={inputRef}
             placeholder="Escreva sua mensagem..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
