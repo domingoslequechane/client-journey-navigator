@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "og-image.png"],
+      includeAssets: ["favicon.ico", "og-image.png", "splash-logo-white.png", "splash-logo.png", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
         name: "Qualify — CRM com IA para Agências",
         short_name: "Qualify",

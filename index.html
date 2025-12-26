@@ -2,6 +2,11 @@
 <html lang="pt">
   <head>
     <meta charset="UTF-8" />
+    
+    <!-- Preload critical splash assets for instant display -->
+    <link rel="preload" href="/splash-logo-white.png" as="image" type="image/png" fetchpriority="high" />
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600&display=swap" as="style" />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -37,23 +42,8 @@
     <meta name="twitter:title" content="Qualify — O CRM com IA feito para Agências de Marketing e Freelancers">
     <meta property="og:description" content="Chega de leads perdidos no WhatsApp e planilhas confusas. Centralize clientes, priorize oportunidades e aumente conversões com pipeline, BANT e IA.">
     <meta name="twitter:description" content="Chega de leads perdidos no WhatsApp e planilhas confusas. Centralize clientes, priorize oportunidades e aumente conversões com pipeline, BANT e IA.">
-  </head>
-
-  <body>
-    <!-- Custom Splash Screen -->
-    <div id="splash-screen">
-      <div class="splash-content">
-        <img src="/splash-logo-white.png?v=2" alt="Qualify" class="splash-logo" />
-        <div class="splash-loader">
-          <div class="splash-loader-bar"></div>
-        </div>
-        <span class="splash-text">Qualify</span>
-      </div>
-    </div>
     
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    
+    <!-- Inline critical splash screen styles for instant render -->
     <style>
       #splash-screen {
         position: fixed;
@@ -68,33 +58,34 @@
         z-index: 9999;
         transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
       }
-      
       #splash-screen.hidden {
         opacity: 0;
         visibility: hidden;
       }
-      
       .splash-content {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 24px;
       }
-      
       .splash-logo {
         width: 120px;
         height: 120px;
         animation: pulse-logo 2s ease-in-out infinite;
+        /* Placeholder background while image loads */
+        background: rgba(255,255,255,0.1);
+        border-radius: 20px;
       }
-      
+      .splash-logo.loaded {
+        background: transparent;
+      }
       .splash-text {
         color: white;
         font-size: 28px;
         font-weight: 600;
-        font-family: 'Space Grotesk', system-ui, sans-serif;
+        font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
         letter-spacing: -0.5px;
       }
-      
       .splash-loader {
         width: 180px;
         height: 4px;
@@ -102,7 +93,6 @@
         border-radius: 4px;
         overflow: hidden;
       }
-      
       .splash-loader-bar {
         width: 40%;
         height: 100%;
@@ -110,29 +100,49 @@
         border-radius: 4px;
         animation: loading-bar 1.2s ease-in-out infinite;
       }
-      
       @keyframes pulse-logo {
         0%, 100% { transform: scale(1); opacity: 1; }
         50% { transform: scale(1.05); opacity: 0.9; }
       }
-      
       @keyframes loading-bar {
         0% { transform: translateX(-100%); }
         50% { transform: translateX(150%); }
         100% { transform: translateX(400%); }
       }
-      
-      /* Animação de entrada do conteúdo principal */
       #root {
         opacity: 0;
         transform: translateY(10px);
         transition: opacity 0.5s ease-out, transform 0.5s ease-out;
       }
-      
       #root.content-ready {
         opacity: 1;
         transform: translateY(0);
       }
     </style>
+  </head>
+
+  <body>
+    <!-- Custom Splash Screen -->
+    <div id="splash-screen">
+      <div class="splash-content">
+        <img 
+          src="/splash-logo-white.png" 
+          alt="Qualify" 
+          class="splash-logo" 
+          width="120" 
+          height="120"
+          decoding="sync"
+          fetchpriority="high"
+          onload="this.classList.add('loaded')"
+        />
+        <div class="splash-loader">
+          <div class="splash-loader-bar"></div>
+        </div>
+        <span class="splash-text">Qualify</span>
+      </div>
+    </div>
+    
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
