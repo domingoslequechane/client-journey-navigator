@@ -80,7 +80,8 @@ export default function NewClient() {
   } = useDraft<ClientFormData>({
     key: draftKey,
     initialValue: initialFormData,
-    debounceMs: 500,
+    debounceMs: 300,
+    storage: 'local',
   });
 
   // Update form data helper

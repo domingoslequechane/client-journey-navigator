@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useDraft } from '@/hooks/useDraft';
 
 interface SupportTicket {
   id: string;
@@ -45,6 +46,17 @@ interface UserFeedback {
   created_at: string;
 }
 
+interface NewTicketDraft {
+  subject: string;
+  message: string;
+}
+
+interface FeedbackDraft {
+  type: string;
+  subject: string;
+  message: string;
+}
+
 const feedbackTypes = [
   { value: 'general', label: 'Geral' },
   { value: 'bug', label: 'Reportar Bug' },
@@ -59,20 +71,36 @@ export default function SupportFeedback() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [newTicketSubject, setNewTicketSubject] = useState('');
-  const [newTicketMessage, setNewTicketMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [creatingTicket, setCreatingTicket] = useState(false);
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
   
-  // Feedback state
+  // Draft for new ticket
+  const {
+    value: ticketDraft,
+    setValue: setTicketDraft,
+    clearDraft: clearTicketDraft,
+  } = useDraft<NewTicketDraft>({
+    key: 'new_ticket_draft',
+    initialValue: { subject: '', message: '' },
+    storage: 'local',
+  });
+
+  // Feedback state with draft
   const [userFeedbacks, setUserFeedbacks] = useState<UserFeedback[]>([]);
-  const [feedbackType, setFeedbackType] = useState('general');
-  const [feedbackSubject, setFeedbackSubject] = useState('');
-  const [feedbackMessage, setFeedbackMessage] = useState('');
   const [sendingFeedback, setSendingFeedback] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  
+  const {
+    value: feedbackDraft,
+    setValue: setFeedbackDraft,
+    clearDraft: clearFeedbackDraft,
+  } = useDraft<FeedbackDraft>({
+    key: 'feedback_draft',
+    initialValue: { type: 'general', subject: '', message: '' },
+    storage: 'local',
+  });
 
   const handleSelectTicket = (ticket: SupportTicket) => {
     setSelectedTicket(ticket);
@@ -167,7 +195,7 @@ export default function SupportFeedback() {
   };
 
   const createTicket = async () => {
-    if (!newTicketSubject.trim() || !newTicketMessage.trim()) {
+    if (!ticketDraft.subject.trim() || !ticketDraft.message.trim()) {
       toast.error('Preencha o assunto e a mensagem');
       return;
     }
@@ -187,7 +215,7 @@ export default function SupportFeedback() {
         .insert({
           user_id: user?.id,
           organization_id: profileData?.organization_id,
-          subject: newTicketSubject.trim()
+          subject: ticketDraft.subject.trim()
         })
         .select()
         .single();
@@ -200,15 +228,14 @@ export default function SupportFeedback() {
         .insert({
           ticket_id: ticket.id,
           sender_id: user?.id,
-          message: newTicketMessage.trim(),
+          message: ticketDraft.message.trim(),
           is_admin: false
         });
 
       if (messageError) throw messageError;
 
       toast.success('Ticket de suporte criado com sucesso');
-      setNewTicketSubject('');
-      setNewTicketMessage('');
+      clearTicketDraft();
       setShowNewTicketForm(false);
       fetchTickets();
       setSelectedTicket(ticket);
@@ -293,7 +320,7 @@ export default function SupportFeedback() {
   };
 
   const submitFeedback = async () => {
-    if (!feedbackSubject.trim() || !feedbackMessage.trim()) {
+    if (!feedbackDraft.subject.trim() || !feedbackDraft.message.trim()) {
       toast.error('Preencha o assunto e a mensagem');
       return;
     }
@@ -310,17 +337,15 @@ export default function SupportFeedback() {
         user_id: user?.id,
         user_email: user?.email,
         organization_id: profileData?.organization_id,
-        type: feedbackType,
-        subject: feedbackSubject.trim(),
-        message: feedbackMessage.trim(),
+        type: feedbackDraft.type,
+        subject: feedbackDraft.subject.trim(),
+        message: feedbackDraft.message.trim(),
       });
 
       if (error) throw error;
 
       toast.success('Feedback enviado com sucesso!');
-      setFeedbackType('general');
-      setFeedbackSubject('');
-      setFeedbackMessage('');
+      clearFeedbackDraft();
       setShowFeedbackModal(false);
       fetchUserFeedbacks();
     } catch (error) {
@@ -447,8 +472,8 @@ export default function SupportFeedback() {
                         <div>
                           <label className="text-sm font-medium">Assunto</label>
                           <Input
-                            value={newTicketSubject}
-                            onChange={(e) => setNewTicketSubject(e.target.value)}
+                            value={ticketDraft.subject}
+                            onChange={(e) => setTicketDraft({ ...ticketDraft, subject: e.target.value })}
                             placeholder="Descreva brevemente o problema"
                             className="mt-1"
                           />
@@ -456,8 +481,8 @@ export default function SupportFeedback() {
                         <div className="flex-1">
                           <label className="text-sm font-medium">Mensagem</label>
                           <textarea
-                            value={newTicketMessage}
-                            onChange={(e) => setNewTicketMessage(e.target.value)}
+                            value={ticketDraft.message}
+                            onChange={(e) => setTicketDraft({ ...ticketDraft, message: e.target.value })}
                             placeholder="Descreva seu problema em detalhes..."
                             className="w-full h-40 mt-1 px-3 py-2 rounded-md border border-input bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                           />
@@ -611,8 +636,8 @@ export default function SupportFeedback() {
                         <div>
                           <label className="text-sm font-medium">Assunto</label>
                           <Input
-                            value={newTicketSubject}
-                            onChange={(e) => setNewTicketSubject(e.target.value)}
+                            value={ticketDraft.subject}
+                            onChange={(e) => setTicketDraft({ ...ticketDraft, subject: e.target.value })}
                             placeholder="Descreva brevemente o problema"
                             className="mt-1"
                           />
@@ -620,8 +645,8 @@ export default function SupportFeedback() {
                         <div className="flex-1">
                           <label className="text-sm font-medium">Mensagem</label>
                           <textarea
-                            value={newTicketMessage}
-                            onChange={(e) => setNewTicketMessage(e.target.value)}
+                            value={ticketDraft.message}
+                            onChange={(e) => setTicketDraft({ ...ticketDraft, message: e.target.value })}
                             placeholder="Descreva seu problema em detalhes..."
                             className="w-full h-40 mt-1 px-3 py-2 rounded-md border border-input bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                           />
@@ -787,7 +812,7 @@ export default function SupportFeedback() {
               <div className="space-y-4 pt-2">
                 <div className="space-y-2">
                   <Label>Tipo de Feedback</Label>
-                  <Select value={feedbackType} onValueChange={setFeedbackType}>
+                  <Select value={feedbackDraft.type} onValueChange={(value) => setFeedbackDraft({ ...feedbackDraft, type: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
@@ -804,8 +829,8 @@ export default function SupportFeedback() {
                 <div className="space-y-2">
                   <Label>Assunto</Label>
                   <Input
-                    value={feedbackSubject}
-                    onChange={(e) => setFeedbackSubject(e.target.value)}
+                    value={feedbackDraft.subject}
+                    onChange={(e) => setFeedbackDraft({ ...feedbackDraft, subject: e.target.value })}
                     placeholder="Resumo do seu feedback"
                     maxLength={200}
                   />
@@ -814,8 +839,8 @@ export default function SupportFeedback() {
                 <div className="space-y-2">
                   <Label>Mensagem</Label>
                   <Textarea
-                    value={feedbackMessage}
-                    onChange={(e) => setFeedbackMessage(e.target.value)}
+                    value={feedbackDraft.message}
+                    onChange={(e) => setFeedbackDraft({ ...feedbackDraft, message: e.target.value })}
                     placeholder="Descreva seu feedback em detalhes..."
                     rows={4}
                     maxLength={2000}

@@ -19,7 +19,7 @@ interface StoredDraft<T> {
 
 const DRAFT_VERSION = 1;
 
-export function useDraft<T>({ key, initialValue, debounceMs = 500, storage = 'session' }: DraftOptions<T>) {
+export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'local' }: DraftOptions<T>) {
   const storageKey = `draft_${key}`;
   const storageApi = storage === 'local' ? localStorage : sessionStorage;
   
@@ -28,6 +28,32 @@ export function useDraft<T>({ key, initialValue, debounceMs = 500, storage = 'se
   const [draftRestoredAt, setDraftRestoredAt] = useState<Date | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
+  const valueRef = useRef<T>(initialValue);
+
+  // Keep valueRef in sync
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
+  // Save immediately (for visibility change / page hide)
+  const saveImmediately = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    try {
+      const draft: StoredDraft<T> = {
+        data: valueRef.current,
+        meta: {
+          updatedAt: new Date().toISOString(),
+          version: DRAFT_VERSION,
+        },
+      };
+      storageApi.setItem(storageKey, JSON.stringify(draft));
+    } catch (error) {
+      console.warn('Failed to save draft:', error);
+    }
+  }, [storageKey, storageApi]);
 
   // Load draft on mount
   useEffect(() => {
@@ -40,6 +66,7 @@ export function useDraft<T>({ key, initialValue, debounceMs = 500, storage = 'se
         const parsed: StoredDraft<T> = JSON.parse(stored);
         if (parsed.meta.version === DRAFT_VERSION && parsed.data) {
           setValue(parsed.data);
+          valueRef.current = parsed.data;
           setHasRestoredDraft(true);
           setDraftRestoredAt(new Date(parsed.meta.updatedAt));
         }
@@ -50,9 +77,37 @@ export function useDraft<T>({ key, initialValue, debounceMs = 500, storage = 'se
     }
   }, [storageKey, storageApi]);
 
+  // Add visibility change and pagehide listeners for mobile
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        saveImmediately();
+      }
+    };
+
+    const handlePageHide = () => {
+      saveImmediately();
+    };
+
+    const handleBeforeUnload = () => {
+      saveImmediately();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [saveImmediately]);
+
   // Save draft with debounce
   const saveDraft = useCallback((newValue: T) => {
     setValue(newValue);
+    valueRef.current = newValue;
     
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -88,6 +143,7 @@ export function useDraft<T>({ key, initialValue, debounceMs = 500, storage = 'se
   const discardDraft = useCallback(() => {
     clearDraft();
     setValue(initialValue);
+    valueRef.current = initialValue;
   }, [clearDraft, initialValue]);
 
   // Cleanup on unmount

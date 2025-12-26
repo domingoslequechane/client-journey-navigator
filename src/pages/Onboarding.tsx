@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,15 +10,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Building2, ArrowRight, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { COUNTRIES } from '@/lib/currencies';
+import { useDraft } from '@/hooks/useDraft';
+import { useState } from 'react';
+
+interface OnboardingFormData {
+  agencyName: string;
+  selectedCountry: string;
+}
 
 export default function Onboarding() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [agencyName, setAgencyName] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState('MZ');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingOrg, setCheckingOrg] = useState(true);
+
+  const {
+    value: formData,
+    setValue: setFormData,
+    clearDraft,
+  } = useDraft<OnboardingFormData>({
+    key: 'onboarding_form',
+    initialValue: { agencyName: '', selectedCountry: 'MZ' },
+    storage: 'local',
+  });
 
   // Check if returning from successful payment
   useEffect(() => {
@@ -77,7 +92,7 @@ export default function Onboarding() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!agencyName.trim()) {
+    if (!formData.agencyName.trim()) {
       toast.error('Por favor, insira o nome da sua agência');
       return;
     }
@@ -109,20 +124,20 @@ export default function Onboarding() {
         .maybeSingle();
 
       // Get country currency
-      const country = COUNTRIES.find(c => c.code === selectedCountry);
+      const country = COUNTRIES.find(c => c.code === formData.selectedCountry);
       const currency = country?.currency || 'MZN';
 
       let organizationId = profile?.organization_id;
 
       // If user doesn't have an organization (e.g., social login), create one
       if (!organizationId) {
-        const { data: slugData } = await supabase.rpc('generate_slug', { name: agencyName.trim() });
+        const { data: slugData } = await supabase.rpc('generate_slug', { name: formData.agencyName.trim() });
         const slug = slugData || `agency-${Date.now()}`;
 
         const { data: orgData, error: orgError } = await supabase
           .from('organizations')
           .insert({
-            name: agencyName.trim(),
+            name: formData.agencyName.trim(),
             slug: slug,
             owner_id: sessionUser.id,
             currency: currency,
@@ -167,12 +182,12 @@ export default function Onboarding() {
         if (memberError) throw memberError;
       } else {
         // Update existing organization with name and currency
-        const { data: slug } = await supabase.rpc('generate_slug', { name: agencyName.trim() });
+        const { data: slug } = await supabase.rpc('generate_slug', { name: formData.agencyName.trim() });
 
         const { error } = await supabase
           .from('organizations')
           .update({ 
-            name: agencyName.trim(),
+            name: formData.agencyName.trim(),
             slug: slug || `agency-${Date.now()}`,
             currency: currency,
             onboarding_completed: true,
@@ -206,6 +221,7 @@ export default function Onboarding() {
       // Organization already has plan_type set (agency for trial or existing)
       // No need to override to free here
 
+      clearDraft();
       toast.success('Agência configurada com sucesso!');
       navigate('/app');
     } catch (error: any) {
@@ -246,8 +262,8 @@ export default function Onboarding() {
                 id="agencyName"
                 type="text"
                 placeholder="Ex: Marketing Digital Pro"
-                value={agencyName}
-                onChange={(e) => setAgencyName(e.target.value)}
+                value={formData.agencyName}
+                onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
                 disabled={isSubmitting}
                 maxLength={100}
                 required
@@ -262,7 +278,7 @@ export default function Onboarding() {
                 <Globe className="h-4 w-4" />
                 País
               </Label>
-              <Select value={selectedCountry} onValueChange={setSelectedCountry} disabled={isSubmitting}>
+              <Select value={formData.selectedCountry} onValueChange={(value) => setFormData({ ...formData, selectedCountry: value })} disabled={isSubmitting}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o seu país" />
                 </SelectTrigger>
@@ -282,7 +298,7 @@ export default function Onboarding() {
             <Button
               type="submit" 
               className="w-full" 
-              disabled={isSubmitting || !agencyName.trim()}
+              disabled={isSubmitting || !formData.agencyName.trim()}
             >
               {isSubmitting ? (
                 <>

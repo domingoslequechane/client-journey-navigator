@@ -21,6 +21,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useMessageFavorites } from '@/hooks/useMessageFavorites';
+import { useDraft } from '@/hooks/useDraft';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 import { useAuth } from '@/contexts/AuthContext';
@@ -86,7 +87,16 @@ export default function AIAssistant() {
   const { favorites, isFavorited, toggleFavorite, isToggling } = useMessageFavorites(organizationId);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const {
+    value: input,
+    setValue: setInput,
+    clearDraft: clearInputDraft,
+  } = useDraft({
+    key: 'ai_assistant_input',
+    initialValue: '',
+    storage: 'session',
+    debounceMs: 200,
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
