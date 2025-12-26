@@ -5,6 +5,7 @@ interface DraftOptions<T> {
   initialValue: T;
   debounceMs?: number;
   storage?: 'local' | 'session';
+  lazy?: boolean; // Only activates after first setValue call
 }
 
 interface DraftMeta {
@@ -19,13 +20,14 @@ interface StoredDraft<T> {
 
 const DRAFT_VERSION = 1;
 
-export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'local' }: DraftOptions<T>) {
+export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'local', lazy = false }: DraftOptions<T>) {
   const storageKey = `draft_${key}`;
   const storageApi = storage === 'local' ? localStorage : sessionStorage;
   
   const [value, setValue] = useState<T>(initialValue);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
   const [draftRestoredAt, setDraftRestoredAt] = useState<Date | null>(null);
+  const [isActivated, setIsActivated] = useState(!lazy);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
   const valueRef = useRef<T>(initialValue);
@@ -35,8 +37,19 @@ export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'lo
     valueRef.current = value;
   }, [value]);
 
+  // Check if draft exists without loading it
+  const hasDraftStored = useCallback(() => {
+    try {
+      return storageApi.getItem(storageKey) !== null;
+    } catch {
+      return false;
+    }
+  }, [storageKey, storageApi]);
+
   // Save immediately (for visibility change / page hide)
   const saveImmediately = useCallback(() => {
+    if (!isActivated) return; // Don't save if not activated
+    
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -53,12 +66,15 @@ export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'lo
     } catch (error) {
       console.warn('Failed to save draft:', error);
     }
-  }, [storageKey, storageApi]);
+  }, [storageKey, storageApi, isActivated]);
 
-  // Load draft on mount
+  // Load draft on mount (only if not lazy or if draft exists)
   useEffect(() => {
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
+
+    // In lazy mode, only restore if draft exists
+    if (lazy && !hasDraftStored()) return;
 
     try {
       const stored = storageApi.getItem(storageKey);
@@ -69,13 +85,14 @@ export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'lo
           valueRef.current = parsed.data;
           setHasRestoredDraft(true);
           setDraftRestoredAt(new Date(parsed.meta.updatedAt));
+          if (lazy) setIsActivated(true); // Activate if restoring in lazy mode
         }
       }
     } catch (error) {
       console.warn('Failed to restore draft:', error);
       storageApi.removeItem(storageKey);
     }
-  }, [storageKey, storageApi]);
+  }, [storageKey, storageApi, lazy, hasDraftStored]);
 
   // Add visibility change and pagehide listeners for mobile
   useEffect(() => {
@@ -109,10 +126,16 @@ export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'lo
     setValue(newValue);
     valueRef.current = newValue;
     
+    // Activate on first interaction in lazy mode
+    if (lazy && !isActivated) {
+      setIsActivated(true);
+    }
+    
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
+    // Only save if activated (or will be after this call)
     timeoutRef.current = setTimeout(() => {
       try {
         const draft: StoredDraft<T> = {
@@ -127,7 +150,7 @@ export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'lo
         console.warn('Failed to save draft:', error);
       }
     }, debounceMs);
-  }, [storageKey, debounceMs, storageApi]);
+  }, [storageKey, debounceMs, storageApi, lazy, isActivated]);
 
   // Clear draft
   const clearDraft = useCallback(() => {
@@ -137,7 +160,8 @@ export function useDraft<T>({ key, initialValue, debounceMs = 300, storage = 'lo
     storageApi.removeItem(storageKey);
     setHasRestoredDraft(false);
     setDraftRestoredAt(null);
-  }, [storageKey, storageApi]);
+    if (lazy) setIsActivated(false); // Deactivate in lazy mode
+  }, [storageKey, storageApi, lazy]);
 
   // Discard draft and reset to initial value
   const discardDraft = useCallback(() => {
