@@ -652,6 +652,9 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           >
             {isPaused ? <Lock className="h-4 w-4" /> : <Receipt className="h-4 w-4" />}
             Facturas
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
+              Dev
+            </Badge>
           </Button>
           
           <Button

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, FileText, Palette, Check, PenSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -145,6 +146,9 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
           Estilo de Factura
+          <Badge variant="outline" className="ml-2 text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">
+            Em desenvolvimento
+          </Badge>
         </CardTitle>
         <CardDescription>
           Escolha o estilo visual das suas facturas de prestação de serviços
