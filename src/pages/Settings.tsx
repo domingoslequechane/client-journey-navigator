@@ -902,14 +902,15 @@ export default function Settings() {
                         Ações irreversíveis para sua agência
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-3 sm:px-6">
                       <Button 
                         variant="destructive" 
                         onClick={() => setShowDeleteModal(true)}
-                        className="w-full gap-2"
+                        className="w-full gap-2 text-xs sm:text-sm"
                       >
-                        <Trash2 className="h-4 w-4" />
-                        Apagar Agência Permanentemente
+                        <Trash2 className="h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline">Apagar Agência Permanentemente</span>
+                        <span className="sm:hidden">Apagar Agência</span>
                       </Button>
                     </CardContent>
                   </Card>

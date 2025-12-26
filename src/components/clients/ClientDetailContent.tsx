@@ -776,17 +776,17 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full">
-          <TabsTrigger value="checklist" className="flex-1 gap-2" disabled={isPaused}>
-            {isPaused ? <Lock className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
-            Checklist
+          <TabsTrigger value="checklist" className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm min-w-0 px-2 sm:px-3" disabled={isPaused}>
+            {isPaused ? <Lock className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" /> : <CheckSquare className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />}
+            <span className="truncate">Checklist</span>
           </TabsTrigger>
-          <TabsTrigger value="notes" className="flex-1 gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Notas
+          <TabsTrigger value="notes" className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm min-w-0 px-2 sm:px-3">
+            <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="truncate">Notas</span>
           </TabsTrigger>
-          <TabsTrigger value="history" className="flex-1 gap-2">
-            <History className="h-4 w-4" />
-            Histórico
+          <TabsTrigger value="history" className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm min-w-0 px-2 sm:px-3">
+            <History className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="truncate">Histórico</span>
           </TabsTrigger>
         </TabsList>
 
@@ -876,16 +876,16 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                 variant="outline"
                 onClick={handleMoveToPrevStage}
                 disabled={isLoadingStage !== null || isPaused}
-                className="flex-1 gap-2"
+                className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm min-w-0 px-2 sm:px-4"
               >
                 {isPaused ? (
-                  <Lock className="h-4 w-4" />
+                  <Lock className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
                 ) : isLoadingStage === 'prev' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin shrink-0" />
                 ) : (
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
                 )}
-                {prevStage.name}
+                <span className="truncate">{prevStage.name}</span>
               </Button>
             )}
             
@@ -893,23 +893,23 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               <Button 
                 onClick={handleMoveToNextStage}
                 disabled={!allRequiredCompleted || isLoadingStage !== null || isPaused}
-                className="flex-1 gap-2"
+                className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm min-w-0 px-2 sm:px-4"
                 title={isPaused ? 'Cliente bloqueado' : !allRequiredCompleted ? 'Complete todos os itens obrigatórios (*) para avançar' : ''}
               >
                 {isPaused ? (
                   <>
-                    <Lock className="h-4 w-4" />
-                    Bloqueado
+                    <Lock className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                    <span className="truncate">Bloqueado</span>
                   </>
                 ) : isLoadingStage === 'next' ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Processando...
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin shrink-0" />
+                    <span className="hidden sm:inline truncate">Processando...</span>
                   </>
                 ) : (
                   <>
-                    {nextStage.name}
-                    <ArrowRight className="h-4 w-4" />
+                    <span className="truncate">{nextStage.name}</span>
+                    <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
                   </>
                 )}
               </Button>
