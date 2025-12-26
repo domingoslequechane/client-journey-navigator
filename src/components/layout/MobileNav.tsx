@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from 'next-themes';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { supabase } from '@/integrations/supabase/client';
 import {
   LayoutDashboard,
@@ -47,6 +48,7 @@ export function MobileNav() {
   const { canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, isAdmin } = useUserRole();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const isKeyboardVisible = useKeyboardVisible();
   const [moreOpen, setMoreOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
@@ -143,7 +145,11 @@ export function MobileNav() {
   return (
     <>
       <nav 
-        className="fixed bottom-0 left-0 right-0 z-[999] bg-background/95 backdrop-blur-sm border-t border-border shadow-lg md:hidden safe-area-bottom"
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-[999] bg-background/95 backdrop-blur-sm border-t border-border shadow-lg md:hidden safe-area-bottom",
+          "transition-transform duration-200",
+          isKeyboardVisible && "translate-y-full"
+        )}
         style={{ 
           position: 'fixed', 
           bottom: 0,
