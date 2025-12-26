@@ -25,7 +25,6 @@ const CONFETTI_SHAPES = ['■', '●', '▲', '◆'];
 export function NewYearEffect() {
   const [confetti, setConfetti] = useState<Confetti[]>([]);
   const [fireworks, setFireworks] = useState<Firework[]>([]);
-  const [showText, setShowText] = useState(false);
 
   useEffect(() => {
     const particles: Confetti[] = [];
@@ -59,10 +58,6 @@ export function NewYearEffect() {
 
     setConfetti(particles);
     setFireworks(fireworksArray);
-    
-    // Show text after a short delay
-    const textTimer = setTimeout(() => setShowText(true), 500);
-    return () => clearTimeout(textTimer);
   }, []);
 
   const getSymbol = (particle: Confetti) => {
@@ -232,42 +227,6 @@ export function NewYearEffect() {
             {getSymbol(particle)}
           </div>
         ))}
-        
-        {/* Animated New Year Text */}
-        {showText && (
-          <div 
-            className="absolute top-8 left-1/2 -translate-x-1/2 text-center"
-            style={{
-              animation: 'textReveal 1s ease-out forwards',
-            }}
-          >
-            <div 
-              className="text-2xl md:text-4xl lg:text-5xl font-bold"
-              style={{
-                background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF6B6B 50%, #A855F7 75%, #4ECDC4 100%)',
-                backgroundSize: '200% 200%',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                animation: 'textGlow 2s ease-in-out infinite',
-                fontFamily: 'inherit',
-                letterSpacing: '0.05em',
-              }}
-            >
-              🎆 Feliz Ano Novo 2025 🎆
-            </div>
-            <div 
-              className="text-sm md:text-lg mt-2 opacity-80"
-              style={{
-                color: '#FFD700',
-                textShadow: '0 0 10px rgba(255, 215, 0, 0.5)',
-                animation: 'twinkle 1.5s ease-in-out infinite',
-              }}
-            >
-              ✨ Que venha um ano incrível! ✨
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
