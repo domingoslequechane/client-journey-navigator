@@ -16,7 +16,13 @@
     "notifications": "Notificações",
     "subscription": "Assinatura",
     "logout": "Sair",
-    "backTo": "Voltar para {{page}}"
+    "backTo": "Voltar para {{page}}",
+    "backToSite": "Voltar ao site",
+    "home": "Home",
+    "funnel": "Funil",
+    "flow": "Fluxo",
+    "more": "Mais",
+    "menu": "Menu"
   },
   "actions": {
     "save": "Salvar",
@@ -53,7 +59,10 @@
     "showMore": "Ver mais",
     "showLess": "Ver menos",
     "seeAll": "Ver todos",
-    "goBack": "Voltar"
+    "goBack": "Voltar",
+    "understood": "Entendi",
+    "installApp": "Instalar App",
+    "collapseMenu": "Recolher Menu"
   },
   "status": {
     "loading": "Carregando...",
@@ -78,7 +87,9 @@
     "maxLength": "Máximo {{count}} caracteres",
     "passwordMismatch": "As senhas não coincidem",
     "minValue": "Valor mínimo: {{value}}",
-    "maxValue": "Valor máximo: {{value}}"
+    "maxValue": "Valor máximo: {{value}}",
+    "minPassword": "Senha deve ter no mínimo 6 caracteres",
+    "minName": "Nome deve ter no mínimo 2 caracteres"
   },
   "messages": {
     "savedSuccessfully": "Salvo com sucesso!",
@@ -115,8 +126,10 @@
     "spanish": "Espanhol"
   },
   "theme": {
-    "light": "Claro",
-    "dark": "Escuro",
+    "toggle": "Tema",
+    "toggleTheme": "Alternar tema",
+    "light": "Modo Claro",
+    "dark": "Modo Escuro",
     "system": "Sistema"
   },
   "pagination": {
@@ -129,5 +142,20 @@
     "last": "Última",
     "prev": "Anterior",
     "next": "Próxima"
+  },
+  "logout": {
+    "dialogTitle": "O que deseja fazer?",
+    "dialogDescription": "Escolha uma opção abaixo para continuar.",
+    "switchAgency": "Mudar de Agência",
+    "switchAgencyDescription": "Trocar para outra agência que você tem acesso",
+    "signOut": "Sair da Aplicação",
+    "signOutDescription": "Encerrar sua sessão completamente"
+  },
+  "plans": {
+    "compass": "Bússola",
+    "lance": "Lança",
+    "bow": "Arco",
+    "catapult": "Catapulta",
+    "plan": "Plano"
   }
 }

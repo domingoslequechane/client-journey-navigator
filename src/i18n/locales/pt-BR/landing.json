@@ -1,9 +1,157 @@
 {
+  "header": {
+    "problem": "Problema",
+    "solution": "Solução",
+    "plans": "Planos",
+    "faq": "FAQ",
+    "login": "Entrar",
+    "cta": "Quero crescer 47%",
+    "ctaMobile": "Começar",
+    "installApp": "Instalar app"
+  },
   "hero": {
-    "title": "Gerencie seus clientes com inteligência",
-    "subtitle": "Qualify é o CRM inteligente que ajuda sua agência a conquistar e fidelizar mais clientes",
-    "cta": "Começar Agora",
-    "ctaSecondary": "Ver Demonstração"
+    "title": "Cresça",
+    "titleHighlight": "+47%",
+    "titleEnd": "em conversões",
+    "subtitle": "Ou continue perdendo clientes no WhatsApp...",
+    "cta": "Quero crescer 47%",
+    "ctaMobile": "Começar agora",
+    "installApp": "Instalar App",
+    "trustNoCard": "Sem cartão",
+    "trustSetup": "Setup em 2 min",
+    "trustCancel": "Cancele quando quiser"
+  },
+  "problem": {
+    "title": "Você conhece bem",
+    "titleHighlight": "essa rotina",
+    "description1": "Leads perdidos no WhatsApp. Planilhas que ninguém entende. Equipe sem saber o fazer.",
+    "description2": "E você, no meio do caos,",
+    "description2Highlight": "perdendo vendas todos os dias"
+  },
+  "cost": {
+    "title": "O preço de",
+    "titleHighlight": "continuar assim",
+    "revenueLoss": "Perda de Receita",
+    "revenueLossDesc": "leads que nunca fecharam",
+    "revenueLossText": "Leads esquecidos = contratos perdidos.",
+    "hoursWasted": "120h",
+    "hoursWastedDesc": "desperdiçadas por mês",
+    "hoursWastedText": "Tempo em planilhas, não em vendas.",
+    "clientsLost": "40%",
+    "clientsLostDesc": "dos leads vão para concorrente",
+    "clientsLostText": "Quem responde primeiro, ganha.",
+    "conclusion": "Não é falta de esforço.",
+    "conclusionHighlight": "É falta de sistema."
+  },
+  "hope": {
+    "title": "Imagine abrir o computador e",
+    "titleHighlight": "ver tudo no lugar",
+    "description": "Ver cada cliente. Saber o próximo passo. Prever quanto vai faturar.",
+    "tagline": "Sem planilhas. Sem WhatsApp. Sem caos."
+  },
+  "solution": {
+    "title": "Isso é o",
+    "titleHighlight": "Qualify",
+    "description": "O CRM com IA que organiza seus clientes, qualifica leads automaticamente, sugere estratégias e prevê seu faturamento — tudo num só lugar.",
+    "mockupTitle": "Qualify — Pipeline",
+    "stages": {
+      "prospecting": "Prospecção",
+      "meeting": "Reunião",
+      "contracting": "Contratação",
+      "production": "Produção",
+      "traffic": "Tráfego",
+      "retention": "Retenção",
+      "loyalty": "Fidelização"
+    },
+    "benefit1Title": "Organiza automaticamente",
+    "benefit1Desc": "Cada cliente no lugar certo",
+    "benefit2Title": "Mostra os melhores leads",
+    "benefit2Desc": "Priorize quem vale a pena",
+    "benefit3Title": "IA que sugere estratégias",
+    "benefit3Desc": "Contexto total do cliente",
+    "benefit4Title": "Prevê seu faturamento",
+    "benefit4Desc": "Dashboard em tempo real"
+  },
+  "social": {
+    "statValue": "+47%",
+    "statLabel": "de conversões em 3 meses",
+    "testimonial": "Em 3 meses, nossa taxa de conversão subiu 47%. O Qualify transformou nossa agência de",
+    "testimonialHighlight": " 3 para 15 clientes ativos",
+    "testimonialEnd": ". Finalmente consigo ver tudo num só lugar.",
+    "author": "Mariana Costa",
+    "authorRole": "CEO, Costa Digital Marketing",
+    "stat1Value": "100+",
+    "stat1Label": "Agências usando",
+    "stat2Value": "-4h",
+    "stat2Label": "Por dia economizadas",
+    "stat3Value": "1k+",
+    "stat3Label": "Clientes gerenciados"
+  },
+  "pricing": {
+    "title": "Comece grátis.",
+    "titleHighlight": "Cresça no seu ritmo.",
+    "subtitle": "Sem cartão para começar. Sem compromisso.",
+    "free": "Grátis",
+    "forever": "para sempre",
+    "perMonth": "/mês",
+    "mostPopular": "Mais Popular",
+    "startFree": "Começar Grátis",
+    "subscribe": "Assinar Agora",
+    "cancelAnytime": "Cancele a qualquer momento. Sem taxas de cancelamento.",
+    "comparePlans": "Comparar Planos em Detalhe"
+  },
+  "plans": {
+    "free": {
+      "name": "Bússola",
+      "subtitle": "Essencial",
+      "tagline": "Encontre o caminho certo para começar!",
+      "features": ["3 clientes ativos", "Funil ilimitado", "90 msgs IA", "1 usuário"]
+    },
+    "starter": {
+      "name": "Lança",
+      "subtitle": "Crescimento",
+      "tagline": "Lance sua marca no mundo digital!",
+      "features": ["15 clientes ativos", "Funil ilimitado", "500 msgs IA", "5 usuários"]
+    },
+    "pro": {
+      "name": "Arco",
+      "subtitle": "Profissional",
+      "tagline": "Alcance resultados com precisão!",
+      "features": ["50 clientes ativos", "Funil ilimitado", "1200 msgs IA", "10 usuários"]
+    },
+    "agency": {
+      "name": "Catapulta",
+      "subtitle": "Agência",
+      "tagline": "Imponha sua agência no mercado!",
+      "features": ["Clientes ilimitados", "Funil ilimitado", "IA ilimitada", "20 usuários"]
+    }
+  },
+  "faq": {
+    "title": "Dúvidas?",
+    "badge": "Perguntas Frequentes",
+    "q1": "Preciso de cartão de crédito para começar?",
+    "a1": "Não! O plano Bússola é 100% gratuito para sempre, sem necessidade de cartão.",
+    "q2": "Posso cancelar minha assinatura a qualquer momento?",
+    "a2": "Sim! Cancele quando quiser nas configurações. Você mantém acesso até o fim do período pago.",
+    "q3": "O que são clientes ativos?",
+    "a3": "Clientes nos estágios operacionais (Produção, Tráfego, Retenção, Fidelização). Prospectos no funil de vendas são <strong>ilimitados</strong> em todos os planos!",
+    "q4": "Meus dados estão seguros?",
+    "a4": "Sim! Criptografia de ponta a ponta, servidores seguros, nunca compartilhamos dados com terceiros."
+  },
+  "cta": {
+    "title": "Quantos clientes você vai perder",
+    "titleSecond": "enquanto decide?",
+    "subtitle": "Configure em 2 minutos. Comece grátis. Sem cartão.",
+    "button": "Começar agora — é grátis",
+    "buttonMobile": "Começar grátis",
+    "footer": "Junte-se a 100+ agências que pararam de perder vendas."
+  },
+  "footer": {
+    "copyright": "© {{year}} Qualify. Todos os direitos reservados.",
+    "solution": "Solução",
+    "plans": "Planos",
+    "faq": "FAQ",
+    "login": "Login"
   },
   "features": {
     "title": "Tudo que você precisa para crescer",
@@ -33,76 +181,9 @@
       "description": "Acesse de qualquer lugar, a qualquer momento"
     }
   },
-  "problem": {
-    "title": "O Problema",
-    "description": "Agências perdem tempo e dinheiro com processos manuais e desorganizados"
-  },
-  "solution": {
-    "title": "A Solução",
-    "description": "Qualify automatiza e organiza todo o seu processo comercial"
-  },
-  "hope": {
-    "title": "O Resultado",
-    "description": "Mais clientes, menos trabalho manual, decisões mais inteligentes"
-  },
   "testimonials": {
     "title": "O que nossos clientes dizem",
     "subtitle": "Veja como Qualify está transformando agências"
-  },
-  "pricing": {
-    "title": "Planos e Preços",
-    "subtitle": "Escolha o plano ideal para sua agência",
-    "monthly": "Mensal",
-    "yearly": "Anual",
-    "save": "Economize {{percent}}%",
-    "mostPopular": "Mais Popular",
-    "currentPlan": "Plano Atual",
-    "selectPlan": "Selecionar Plano",
-    "startTrial": "Iniciar Teste Grátis",
-    "contactSales": "Falar com Vendas",
-    "perMonth": "/mês",
-    "perYear": "/ano",
-    "features": "Recursos inclusos",
-    "freeTrialDays": "{{days}} dias de teste grátis"
-  },
-  "plans": {
-    "free": {
-      "name": "Grátis",
-      "description": "Para começar a explorar"
-    },
-    "starter": {
-      "name": "Arco",
-      "description": "Para pequenas equipes"
-    },
-    "pro": {
-      "name": "Catapulta",
-      "description": "Para equipes em crescimento"
-    },
-    "agency": {
-      "name": "Lança",
-      "description": "Para agências completas"
-    }
-  },
-  "cta": {
-    "title": "Pronto para transformar sua agência?",
-    "subtitle": "Comece gratuitamente e veja a diferença",
-    "button": "Criar Conta Grátis"
-  },
-  "footer": {
-    "product": "Produto",
-    "company": "Empresa",
-    "resources": "Recursos",
-    "legal": "Legal",
-    "features": "Funcionalidades",
-    "pricing": "Preços",
-    "about": "Sobre Nós",
-    "contact": "Contato",
-    "blog": "Blog",
-    "help": "Ajuda",
-    "terms": "Termos de Uso",
-    "privacy": "Privacidade",
-    "cookies": "Cookies",
-    "allRightsReserved": "Todos os direitos reservados"
   },
   "nav": {
     "features": "Funcionalidades",
