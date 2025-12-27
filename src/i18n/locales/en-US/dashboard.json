@@ -1,0 +1,59 @@
+{
+  "title": "Dashboard",
+  "welcome": "Welcome, {{name}}!",
+  "overview": "Overview",
+  "stats": {
+    "totalClients": "Total Clients",
+    "activeClients": "Active Clients",
+    "newThisMonth": "New this month",
+    "revenue": "Revenue",
+    "monthlyRevenue": "Monthly Revenue",
+    "totalRevenue": "Total Revenue",
+    "conversionRate": "Conversion Rate",
+    "averageTicket": "Average Ticket"
+  },
+  "charts": {
+    "revenueOverTime": "Revenue Over Time",
+    "clientsBySource": "Clients by Source",
+    "clientsByStage": "Clients by Stage",
+    "monthlyGrowth": "Monthly Growth"
+  },
+  "funnel": {
+    "title": "Sales Funnel",
+    "stages": {
+      "prospeccao": "Prospecting",
+      "reuniao": "Meeting",
+      "contratacao": "Contracting",
+      "producao": "Production",
+      "trafego": "Traffic",
+      "retencao": "Retention",
+      "fidelizacao": "Loyalty"
+    }
+  },
+  "recentActivity": {
+    "title": "Recent Activity",
+    "noActivity": "No recent activity",
+    "viewAll": "View all"
+  },
+  "highlights": {
+    "title": "Highlights",
+    "hotLeads": "Hot Leads",
+    "pendingTasks": "Pending Tasks",
+    "upcomingMeetings": "Upcoming Meetings"
+  },
+  "aiSuggestion": {
+    "title": "AI Suggestion",
+    "generating": "Generating suggestion...",
+    "refresh": "New suggestion",
+    "noSuggestion": "No suggestions at the moment"
+  },
+  "period": {
+    "today": "Today",
+    "week": "This week",
+    "month": "This month",
+    "quarter": "This quarter",
+    "year": "This year",
+    "allTime": "All time",
+    "custom": "Custom"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "title": "Suporte e Feedback",
+  "subtitle": "Como podemos ajudar?",
+  "tabs": {
+    "support": "Suporte",
+    "feedback": "Feedback"
+  },
+  "support": {
+    "title": "Central de Suporte",
+    "description": "Tire suas dúvidas e resolva problemas",
+    "newTicket": "Novo Ticket",
+    "myTickets": "Meus Tickets",
+    "ticketSubject": "Assunto",
+    "ticketSubjectPlaceholder": "Descreva brevemente o problema",
+    "ticketMessage": "Mensagem",
+    "ticketMessagePlaceholder": "Descreva o problema em detalhes...",
+    "submit": "Enviar Ticket",
+    "submitting": "Enviando...",
+    "success": "Ticket enviado com sucesso!",
+    "reply": "Responder",
+    "close": "Fechar Ticket"
+  },
+  "feedback": {
+    "title": "Enviar Feedback",
+    "description": "Sua opinião é muito importante para nós",
+    "type": {
+      "label": "Tipo de Feedback",
+      "suggestion": "Sugestão",
+      "bug": "Relatório de Bug",
+      "compliment": "Elogio",
+      "other": "Outro"
+    },
+    "subject": "Assunto",
+    "subjectPlaceholder": "Título do feedback",
+    "message": "Mensagem",
+    "messagePlaceholder": "Descreva sua sugestão ou problema em detalhes...",
+    "submit": "Enviar Feedback",
+    "submitting": "Enviando...",
+    "success": "Feedback enviado com sucesso! Obrigado.",
+    "myFeedbacks": "Meus Feedbacks"
+  },
+  "status": {
+    "open": "Aberto",
+    "in_progress": "Em Andamento",
+    "resolved": "Resolvido",
+    "closed": "Fechado",
+    "pending": "Pendente"
+  },
+  "messages": {
+    "noTickets": "Nenhum ticket encontrado",
+    "noFeedbacks": "Nenhum feedback enviado",
+    "ticketClosed": "Ticket fechado com sucesso",
+    "replySent": "Resposta enviada"
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "title": "Team",
+  "subtitle": "Manage your organization members",
+  "members": {
+    "title": "Members",
+    "count": "{{count}} member(s)",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "invite": {
+    "title": "Invite Member",
+    "description": "Send an invitation to add a new team member",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "New member's name",
+    "email": "Email",
+    "emailPlaceholder": "email@example.com",
+    "role": "Role",
+    "selectRole": "Select a role",
+    "send": "Send Invite",
+    "sending": "Sending...",
+    "success": "Invite sent successfully!",
+    "error": "Error sending invite"
+  },
+  "roles": {
+    "admin": {
+      "name": "Administrator",
+      "description": "Full access to all features"
+    },
+    "sales": {
+      "name": "Sales",
+      "description": "Access to sales funnel and clients"
+    },
+    "operations": {
+      "name": "Operations",
+      "description": "Access to operational flow and production"
+    },
+    "campaign_management": {
+      "name": "Campaign Management",
+      "description": "Access to traffic and campaign management"
+    }
+  },
+  "member": {
+    "joinedAt": "Joined on {{date}}",
+    "lastActive": "Last active: {{date}}",
+    "you": "(you)",
+    "owner": "Owner",
+    "pending": "Pending"
+  },
+  "actions": {
+    "changeRole": "Change Role",
+    "remove": "Remove from Team",
+    "resendInvite": "Resend Invite",
+    "cancelInvite": "Cancel Invite"
+  },
+  "pendingInvites": {
+    "title": "Pending Invites",
+    "count": "{{count}} pending invite(s)",
+    "sentAt": "Sent on {{date}}",
+    "expiresAt": "Expires on {{date}}",
+    "noInvites": "No pending invites"
+  },
+  "remove": {
+    "title": "Remove Member",
+    "confirmTitle": "Confirm Removal",
+    "confirmMessage": "Are you sure you want to remove {{name}} from the team?",
+    "confirm": "Remove",
+    "cancel": "Cancel",
+    "success": "Member removed successfully",
+    "error": "Error removing member"
+  },
+  "messages": {
+    "roleUpdated": "Role updated successfully!",
+    "inviteResent": "Invite resent!",
+    "inviteCancelled": "Invite cancelled"
+  },
+  "empty": {
+    "title": "No team members",
+    "description": "Invite members to collaborate in your organization"
+  },
+  "limits": {
+    "reached": "Member limit reached",
+    "upgrade": "Upgrade your plan to add more members",
+    "current": "{{current}} of {{max}} members"
+  }
+}

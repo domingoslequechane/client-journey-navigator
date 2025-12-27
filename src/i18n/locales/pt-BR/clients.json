@@ -1,0 +1,122 @@
+{
+  "title": "Clientes",
+  "subtitle": "Gerencie seus clientes e leads",
+  "newClient": "Novo Cliente",
+  "editClient": "Editar Cliente",
+  "clientDetails": "Detalhes do Cliente",
+  "deleteClient": "Excluir Cliente",
+  "search": {
+    "placeholder": "Buscar clientes...",
+    "noResults": "Nenhum cliente encontrado"
+  },
+  "filters": {
+    "all": "Todos",
+    "active": "Ativos",
+    "paused": "Pausados",
+    "byStage": "Por etapa",
+    "byQualification": "Por qualificação",
+    "bySource": "Por origem"
+  },
+  "form": {
+    "companyName": "Nome da Empresa",
+    "companyNamePlaceholder": "Nome da empresa",
+    "contactName": "Nome do Contato",
+    "contactNamePlaceholder": "Nome do contato principal",
+    "email": "E-mail",
+    "emailPlaceholder": "email@empresa.com",
+    "phone": "Telefone",
+    "phonePlaceholder": "+55 11 99999-9999",
+    "website": "Website",
+    "websitePlaceholder": "https://empresa.com",
+    "address": "Endereço",
+    "addressPlaceholder": "Endereço completo",
+    "source": "Origem",
+    "sourcePlaceholder": "Como conheceu a empresa?",
+    "notes": "Observações",
+    "notesPlaceholder": "Anotações sobre o cliente...",
+    "services": "Serviços",
+    "servicesPlaceholder": "Serviços contratados",
+    "monthlyBudget": "Orçamento Mensal",
+    "paidTrafficBudget": "Orçamento de Tráfego Pago",
+    "stage": "Etapa",
+    "qualification": "Qualificação"
+  },
+  "stages": {
+    "prospeccao": "Prospecção",
+    "reuniao": "Reunião",
+    "contratacao": "Contratação",
+    "producao": "Produção",
+    "trafego": "Tráfego",
+    "retencao": "Retenção",
+    "fidelizacao": "Fidelização"
+  },
+  "qualification": {
+    "cold": "Frio",
+    "warm": "Morno",
+    "hot": "Quente",
+    "qualified": "Qualificado"
+  },
+  "bant": {
+    "title": "Análise BANT",
+    "budget": "Orçamento",
+    "authority": "Autoridade",
+    "need": "Necessidade",
+    "timeline": "Prazo",
+    "score": "Pontuação BANT"
+  },
+  "history": {
+    "title": "Histórico",
+    "activities": "Atividades",
+    "noHistory": "Nenhuma atividade registrada",
+    "types": {
+      "call": "Ligação",
+      "email": "E-mail",
+      "meeting": "Reunião",
+      "note": "Anotação",
+      "task": "Tarefa",
+      "milestone": "Marco",
+      "field_change": "Alteração de Campo",
+      "stage_change": "Mudança de Etapa",
+      "status_change": "Mudança de Status"
+    }
+  },
+  "contract": {
+    "title": "Contrato",
+    "generate": "Gerar Contrato",
+    "view": "Ver Contrato",
+    "download": "Baixar Contrato",
+    "noContract": "Nenhum contrato gerado"
+  },
+  "invoice": {
+    "title": "Fatura de Serviço",
+    "generate": "Gerar Fatura",
+    "view": "Ver Fatura",
+    "download": "Baixar Fatura"
+  },
+  "actions": {
+    "pause": "Pausar Cliente",
+    "resume": "Reativar Cliente",
+    "moveStage": "Mover Etapa",
+    "exportData": "Exportar Dados"
+  },
+  "messages": {
+    "clientCreated": "Cliente criado com sucesso!",
+    "clientUpdated": "Cliente atualizado com sucesso!",
+    "clientDeleted": "Cliente excluído com sucesso!",
+    "clientPaused": "Cliente pausado",
+    "clientResumed": "Cliente reativado",
+    "confirmDelete": "Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.",
+    "stageMoved": "Cliente movido para {{stage}}"
+  },
+  "empty": {
+    "title": "Nenhum cliente cadastrado",
+    "description": "Comece adicionando seu primeiro cliente",
+    "action": "Adicionar Cliente"
+  },
+  "tabs": {
+    "info": "Informações",
+    "history": "Histórico",
+    "documents": "Documentos",
+    "checklist": "Checklist"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "title": "Notifications",
+  "subtitle": "Stay up to date with updates",
+  "markAllRead": "Mark all as read",
+  "clearAll": "Clear all",
+  "empty": {
+    "title": "No notifications",
+    "description": "You're all caught up!"
+  },
+  "unread": "{{count}} unread",
+  "new": "New",
+  "readAt": "Read at {{date}}",
+  "types": {
+    "info": "Information",
+    "success": "Success",
+    "warning": "Warning",
+    "error": "Error",
+    "announcement": "Announcement",
+    "feedback": "Feedback"
+  },
+  "settings": {
+    "title": "Notification Settings",
+    "email": "Email Notifications",
+    "push": "Push Notifications",
+    "inApp": "In-App Notifications"
+  },
+  "preferences": {
+    "newClients": "New clients",
+    "stageChanges": "Stage changes",
+    "teamUpdates": "Team updates",
+    "systemAlerts": "System alerts"
+  }
+}

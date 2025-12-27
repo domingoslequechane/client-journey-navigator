@@ -1,0 +1,85 @@
+{
+  "title": "Equipe",
+  "subtitle": "Gerencie os membros da sua organização",
+  "members": {
+    "title": "Membros",
+    "count": "{{count}} membro(s)",
+    "active": "Ativos",
+    "inactive": "Inativos"
+  },
+  "invite": {
+    "title": "Convidar Membro",
+    "description": "Envie um convite para adicionar um novo membro à equipe",
+    "fullName": "Nome Completo",
+    "fullNamePlaceholder": "Nome do novo membro",
+    "email": "E-mail",
+    "emailPlaceholder": "email@exemplo.com",
+    "role": "Cargo",
+    "selectRole": "Selecione um cargo",
+    "send": "Enviar Convite",
+    "sending": "Enviando...",
+    "success": "Convite enviado com sucesso!",
+    "error": "Erro ao enviar convite"
+  },
+  "roles": {
+    "admin": {
+      "name": "Administrador",
+      "description": "Acesso total a todas as funcionalidades"
+    },
+    "sales": {
+      "name": "Vendas",
+      "description": "Acesso ao funil de vendas e clientes"
+    },
+    "operations": {
+      "name": "Operações",
+      "description": "Acesso ao fluxo operacional e produção"
+    },
+    "campaign_management": {
+      "name": "Gestão de Campanhas",
+      "description": "Acesso à gestão de tráfego e campanhas"
+    }
+  },
+  "member": {
+    "joinedAt": "Entrou em {{date}}",
+    "lastActive": "Último acesso: {{date}}",
+    "you": "(você)",
+    "owner": "Proprietário",
+    "pending": "Pendente"
+  },
+  "actions": {
+    "changeRole": "Alterar Cargo",
+    "remove": "Remover da Equipe",
+    "resendInvite": "Reenviar Convite",
+    "cancelInvite": "Cancelar Convite"
+  },
+  "pendingInvites": {
+    "title": "Convites Pendentes",
+    "count": "{{count}} convite(s) pendente(s)",
+    "sentAt": "Enviado em {{date}}",
+    "expiresAt": "Expira em {{date}}",
+    "noInvites": "Nenhum convite pendente"
+  },
+  "remove": {
+    "title": "Remover Membro",
+    "confirmTitle": "Confirmar Remoção",
+    "confirmMessage": "Tem certeza que deseja remover {{name}} da equipe?",
+    "confirm": "Remover",
+    "cancel": "Cancelar",
+    "success": "Membro removido com sucesso",
+    "error": "Erro ao remover membro"
+  },
+  "messages": {
+    "roleUpdated": "Cargo atualizado com sucesso!",
+    "inviteResent": "Convite reenviado!",
+    "inviteCancelled": "Convite cancelado"
+  },
+  "empty": {
+    "title": "Nenhum membro na equipe",
+    "description": "Convide membros para colaborar na sua organização"
+  },
+  "limits": {
+    "reached": "Limite de membros atingido",
+    "upgrade": "Faça upgrade do plano para adicionar mais membros",
+    "current": "{{current}} de {{max}} membros"
+  }
+}

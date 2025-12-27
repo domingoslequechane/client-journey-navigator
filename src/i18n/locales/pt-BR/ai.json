@@ -1,0 +1,50 @@
+{
+  "title": "QIA - Assistente IA",
+  "subtitle": "Seu assistente inteligente de vendas",
+  "selectClient": "Selecionar Cliente",
+  "selectClientDescription": "Escolha um cliente para iniciar uma conversa com contexto",
+  "noClientSelected": "Nenhum cliente selecionado",
+  "chat": {
+    "placeholder": "Digite sua mensagem...",
+    "send": "Enviar",
+    "thinking": "Pensando...",
+    "typing": "QIA está digitando...",
+    "newConversation": "Nova Conversa",
+    "clearHistory": "Limpar Histórico",
+    "scrollToBottom": "Ir para o final"
+  },
+  "messages": {
+    "welcome": "Olá! Sou a QIA, sua assistente de vendas inteligente. Como posso ajudar você hoje?",
+    "welcomeWithClient": "Olá! Vejo que você está trabalhando com {{clientName}}. Como posso ajudar?",
+    "error": "Desculpe, ocorreu um erro. Tente novamente.",
+    "rateLimited": "Você atingiu o limite de mensagens. Aguarde um momento.",
+    "noCredits": "Você não tem créditos de IA disponíveis."
+  },
+  "suggestions": {
+    "title": "Sugestões",
+    "analyzeClient": "Analisar perfil do cliente",
+    "suggestApproach": "Sugerir abordagem de vendas",
+    "draftEmail": "Rascunhar e-mail de follow-up",
+    "prepareProposal": "Preparar proposta comercial",
+    "identifyNeeds": "Identificar necessidades do cliente"
+  },
+  "favorites": {
+    "title": "Favoritos",
+    "add": "Adicionar aos favoritos",
+    "remove": "Remover dos favoritos",
+    "noFavorites": "Nenhuma mensagem favorita",
+    "savedAt": "Salvo em {{date}}"
+  },
+  "files": {
+    "upload": "Enviar arquivo",
+    "uploading": "Enviando...",
+    "attached": "Arquivo anexado",
+    "maxSize": "Tamanho máximo: {{size}}MB",
+    "invalidType": "Tipo de arquivo não suportado"
+  },
+  "actions": {
+    "copy": "Copiar resposta",
+    "regenerate": "Regenerar resposta",
+    "feedback": "Enviar feedback"
+  }
+}

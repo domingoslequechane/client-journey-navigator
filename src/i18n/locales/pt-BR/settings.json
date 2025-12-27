@@ -1,0 +1,128 @@
+{
+  "title": "Configurações",
+  "subtitle": "Gerencie as configurações da sua organização",
+  "tabs": {
+    "general": "Geral",
+    "organization": "Organização",
+    "team": "Equipe",
+    "templates": "Modelos",
+    "invoice": "Fatura",
+    "subscription": "Assinatura",
+    "billing": "Faturamento",
+    "integrations": "Integrações",
+    "notifications": "Notificações",
+    "security": "Segurança"
+  },
+  "general": {
+    "title": "Configurações Gerais",
+    "language": "Idioma",
+    "languageDescription": "Selecione o idioma da interface",
+    "theme": "Tema",
+    "themeDescription": "Escolha entre tema claro ou escuro",
+    "timezone": "Fuso Horário",
+    "dateFormat": "Formato de Data",
+    "currency": "Moeda",
+    "currencyDescription": "Moeda padrão para exibição de valores"
+  },
+  "organization": {
+    "title": "Informações da Organização",
+    "name": "Nome da Organização",
+    "namePlaceholder": "Nome da sua empresa",
+    "nuit": "NUIT",
+    "nuitPlaceholder": "Número de identificação tributária",
+    "headquarters": "Sede",
+    "headquartersPlaceholder": "Endereço da sede",
+    "phone": "Telefone",
+    "phonePlaceholder": "+258 84 000 0000",
+    "representative": "Representante Legal",
+    "representativeName": "Nome do Representante",
+    "representativePosition": "Cargo do Representante",
+    "logo": "Logo",
+    "uploadLogo": "Enviar Logo",
+    "removeLogo": "Remover Logo"
+  },
+  "payment": {
+    "title": "Informações de Pagamento",
+    "description": "Configure os dados bancários para faturas",
+    "providerName": "Provedor de Pagamento",
+    "providerNamePlaceholder": "Ex: M-Pesa, Banco X",
+    "accountNumber": "Número da Conta",
+    "accountNumberPlaceholder": "Número da conta ou celular",
+    "recipientName": "Nome do Beneficiário",
+    "recipientNamePlaceholder": "Nome que aparecerá na fatura"
+  },
+  "knowledgeBase": {
+    "title": "Base de Conhecimento da IA",
+    "description": "Configure informações que a IA usará para responder perguntas",
+    "name": "Nome do Documento",
+    "namePlaceholder": "Ex: Manual de Vendas",
+    "url": "URL do Documento",
+    "urlPlaceholder": "https://...",
+    "text": "Texto de Referência",
+    "textPlaceholder": "Cole aqui o conteúdo que a IA deve usar como referência..."
+  },
+  "templates": {
+    "title": "Modelos de Documentos",
+    "contract": "Modelos de Contrato",
+    "invoice": "Modelo de Fatura",
+    "addTemplate": "Adicionar Modelo",
+    "editTemplate": "Editar Modelo",
+    "deleteTemplate": "Excluir Modelo",
+    "setDefault": "Definir como Padrão",
+    "templateName": "Nome do Modelo",
+    "templateContent": "Conteúdo do Modelo",
+    "availableVariables": "Variáveis Disponíveis",
+    "noTemplates": "Nenhum modelo cadastrado"
+  },
+  "invoice": {
+    "title": "Configurações de Fatura",
+    "style": "Estilo do Template",
+    "primaryColor": "Cor Principal",
+    "showLogo": "Exibir Logo",
+    "showWatermark": "Exibir Marca D'água",
+    "footerText": "Texto do Rodapé",
+    "footerTextPlaceholder": "Termos e condições...",
+    "paperSize": "Tamanho do Papel",
+    "preview": "Pré-visualizar"
+  },
+  "subscription": {
+    "title": "Assinatura",
+    "currentPlan": "Plano Atual",
+    "planDetails": "Detalhes do Plano",
+    "billingCycle": "Ciclo de Faturamento",
+    "nextBilling": "Próxima Cobrança",
+    "changePlan": "Alterar Plano",
+    "cancelSubscription": "Cancelar Assinatura",
+    "viewPlans": "Ver Planos",
+    "syncSubscription": "Sincronizar Assinatura",
+    "syncing": "Sincronizando...",
+    "trial": "Período de Teste",
+    "trialEndsAt": "Teste termina em",
+    "daysRemaining": "{{count}} dia(s) restante(s)"
+  },
+  "team": {
+    "title": "Gerenciar Equipe",
+    "members": "Membros",
+    "inviteMember": "Convidar Membro",
+    "pendingInvites": "Convites Pendentes",
+    "roles": {
+      "admin": "Administrador",
+      "sales": "Vendas",
+      "operations": "Operações",
+      "campaign_management": "Gestão de Campanhas"
+    }
+  },
+  "danger": {
+    "title": "Zona de Perigo",
+    "deleteOrganization": "Excluir Organização",
+    "deleteDescription": "Esta ação é irreversível. Todos os dados serão permanentemente excluídos.",
+    "deleteConfirm": "Digite o nome da organização para confirmar"
+  },
+  "messages": {
+    "settingsSaved": "Configurações salvas com sucesso!",
+    "settingsError": "Erro ao salvar configurações",
+    "logoUploaded": "Logo enviado com sucesso!",
+    "logoRemoved": "Logo removido",
+    "organizationDeleted": "Organização excluída"
+  }
+}

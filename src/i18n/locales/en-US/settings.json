@@ -1,0 +1,128 @@
+{
+  "title": "Settings",
+  "subtitle": "Manage your organization settings",
+  "tabs": {
+    "general": "General",
+    "organization": "Organization",
+    "team": "Team",
+    "templates": "Templates",
+    "invoice": "Invoice",
+    "subscription": "Subscription",
+    "billing": "Billing",
+    "integrations": "Integrations",
+    "notifications": "Notifications",
+    "security": "Security"
+  },
+  "general": {
+    "title": "General Settings",
+    "language": "Language",
+    "languageDescription": "Select interface language",
+    "theme": "Theme",
+    "themeDescription": "Choose between light or dark theme",
+    "timezone": "Timezone",
+    "dateFormat": "Date Format",
+    "currency": "Currency",
+    "currencyDescription": "Default currency for displaying values"
+  },
+  "organization": {
+    "title": "Organization Information",
+    "name": "Organization Name",
+    "namePlaceholder": "Your company name",
+    "nuit": "Tax ID",
+    "nuitPlaceholder": "Tax identification number",
+    "headquarters": "Headquarters",
+    "headquartersPlaceholder": "Headquarters address",
+    "phone": "Phone",
+    "phonePlaceholder": "+1 555 000-0000",
+    "representative": "Legal Representative",
+    "representativeName": "Representative Name",
+    "representativePosition": "Representative Position",
+    "logo": "Logo",
+    "uploadLogo": "Upload Logo",
+    "removeLogo": "Remove Logo"
+  },
+  "payment": {
+    "title": "Payment Information",
+    "description": "Configure bank details for invoices",
+    "providerName": "Payment Provider",
+    "providerNamePlaceholder": "E.g.: PayPal, Bank X",
+    "accountNumber": "Account Number",
+    "accountNumberPlaceholder": "Account or mobile number",
+    "recipientName": "Recipient Name",
+    "recipientNamePlaceholder": "Name that will appear on invoice"
+  },
+  "knowledgeBase": {
+    "title": "AI Knowledge Base",
+    "description": "Configure information that AI will use to answer questions",
+    "name": "Document Name",
+    "namePlaceholder": "E.g.: Sales Manual",
+    "url": "Document URL",
+    "urlPlaceholder": "https://...",
+    "text": "Reference Text",
+    "textPlaceholder": "Paste here the content that AI should use as reference..."
+  },
+  "templates": {
+    "title": "Document Templates",
+    "contract": "Contract Templates",
+    "invoice": "Invoice Template",
+    "addTemplate": "Add Template",
+    "editTemplate": "Edit Template",
+    "deleteTemplate": "Delete Template",
+    "setDefault": "Set as Default",
+    "templateName": "Template Name",
+    "templateContent": "Template Content",
+    "availableVariables": "Available Variables",
+    "noTemplates": "No templates registered"
+  },
+  "invoice": {
+    "title": "Invoice Settings",
+    "style": "Template Style",
+    "primaryColor": "Primary Color",
+    "showLogo": "Show Logo",
+    "showWatermark": "Show Watermark",
+    "footerText": "Footer Text",
+    "footerTextPlaceholder": "Terms and conditions...",
+    "paperSize": "Paper Size",
+    "preview": "Preview"
+  },
+  "subscription": {
+    "title": "Subscription",
+    "currentPlan": "Current Plan",
+    "planDetails": "Plan Details",
+    "billingCycle": "Billing Cycle",
+    "nextBilling": "Next Billing",
+    "changePlan": "Change Plan",
+    "cancelSubscription": "Cancel Subscription",
+    "viewPlans": "View Plans",
+    "syncSubscription": "Sync Subscription",
+    "syncing": "Syncing...",
+    "trial": "Trial Period",
+    "trialEndsAt": "Trial ends at",
+    "daysRemaining": "{{count}} day(s) remaining"
+  },
+  "team": {
+    "title": "Manage Team",
+    "members": "Members",
+    "inviteMember": "Invite Member",
+    "pendingInvites": "Pending Invites",
+    "roles": {
+      "admin": "Administrator",
+      "sales": "Sales",
+      "operations": "Operations",
+      "campaign_management": "Campaign Management"
+    }
+  },
+  "danger": {
+    "title": "Danger Zone",
+    "deleteOrganization": "Delete Organization",
+    "deleteDescription": "This action is irreversible. All data will be permanently deleted.",
+    "deleteConfirm": "Type the organization name to confirm"
+  },
+  "messages": {
+    "settingsSaved": "Settings saved successfully!",
+    "settingsError": "Error saving settings",
+    "logoUploaded": "Logo uploaded successfully!",
+    "logoRemoved": "Logo removed",
+    "organizationDeleted": "Organization deleted"
+  }
+}
