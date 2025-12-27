@@ -15,10 +15,10 @@ export function ScrollToBottomButton({ visible, onClick, className }: ScrollToBo
     <Button
       onClick={onClick}
       className={cn(
-        "absolute right-6 rounded-full h-10 w-10 shadow-lg animate-fade-in z-10",
+        "absolute left-1/2 -translate-x-1/2 rounded-full h-10 w-10 shadow-lg animate-fade-in z-10",
         "bg-background hover:bg-muted border border-border text-foreground",
         "transition-all duration-200 hover:scale-105",
-        className || "bottom-24"
+        className || "bottom-4"
       )}
       size="icon"
       variant="outline"
