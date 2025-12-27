@@ -1,9 +1,157 @@
 {
+  "header": {
+    "problem": "Problem",
+    "solution": "Solution",
+    "plans": "Plans",
+    "faq": "FAQ",
+    "login": "Login",
+    "cta": "Grow 47% now",
+    "ctaMobile": "Start",
+    "installApp": "Install app"
+  },
   "hero": {
-    "title": "Manage your clients with intelligence",
-    "subtitle": "Qualify is the intelligent CRM that helps your agency win and retain more clients",
-    "cta": "Get Started",
-    "ctaSecondary": "Watch Demo"
+    "title": "Grow",
+    "titleHighlight": "+47%",
+    "titleEnd": "in conversions",
+    "subtitle": "Or keep losing clients on WhatsApp...",
+    "cta": "Grow 47% now",
+    "ctaMobile": "Start now",
+    "installApp": "Install App",
+    "trustNoCard": "No card required",
+    "trustSetup": "2 min setup",
+    "trustCancel": "Cancel anytime"
+  },
+  "problem": {
+    "title": "You know this",
+    "titleHighlight": "routine well",
+    "description1": "Lost leads on WhatsApp. Spreadsheets no one understands. Team not knowing what to do.",
+    "description2": "And you, in the middle of chaos,",
+    "description2Highlight": "losing sales every day"
+  },
+  "cost": {
+    "title": "The cost of",
+    "titleHighlight": "staying like this",
+    "revenueLoss": "Revenue Loss",
+    "revenueLossDesc": "leads that never closed",
+    "revenueLossText": "Forgotten leads = lost contracts.",
+    "hoursWasted": "120h",
+    "hoursWastedDesc": "wasted per month",
+    "hoursWastedText": "Time on spreadsheets, not on sales.",
+    "clientsLost": "40%",
+    "clientsLostDesc": "of leads go to competitors",
+    "clientsLostText": "First to respond wins.",
+    "conclusion": "It's not a lack of effort.",
+    "conclusionHighlight": "It's a lack of system."
+  },
+  "hope": {
+    "title": "Imagine opening your computer and",
+    "titleHighlight": "seeing everything in place",
+    "description": "See every client. Know the next step. Predict your revenue.",
+    "tagline": "No spreadsheets. No WhatsApp. No chaos."
+  },
+  "solution": {
+    "title": "This is",
+    "titleHighlight": "Qualify",
+    "description": "The AI-powered CRM that organizes your clients, automatically qualifies leads, suggests strategies, and predicts your revenue — all in one place.",
+    "mockupTitle": "Qualify — Pipeline",
+    "stages": {
+      "prospecting": "Prospecting",
+      "meeting": "Meeting",
+      "contracting": "Contracting",
+      "production": "Production",
+      "traffic": "Traffic",
+      "retention": "Retention",
+      "loyalty": "Loyalty"
+    },
+    "benefit1Title": "Auto-organizes",
+    "benefit1Desc": "Every client in the right place",
+    "benefit2Title": "Shows best leads",
+    "benefit2Desc": "Prioritize who's worth it",
+    "benefit3Title": "AI suggests strategies",
+    "benefit3Desc": "Full client context",
+    "benefit4Title": "Predicts revenue",
+    "benefit4Desc": "Real-time dashboard"
+  },
+  "social": {
+    "statValue": "+47%",
+    "statLabel": "conversions in 3 months",
+    "testimonial": "In 3 months, our conversion rate went up 47%. Qualify transformed our agency from",
+    "testimonialHighlight": " 3 to 15 active clients",
+    "testimonialEnd": ". Finally, I can see everything in one place.",
+    "author": "Mariana Costa",
+    "authorRole": "CEO, Costa Digital Marketing",
+    "stat1Value": "100+",
+    "stat1Label": "Agencies using",
+    "stat2Value": "-4h",
+    "stat2Label": "Saved per day",
+    "stat3Value": "1k+",
+    "stat3Label": "Clients managed"
+  },
+  "pricing": {
+    "title": "Start free.",
+    "titleHighlight": "Grow at your pace.",
+    "subtitle": "No card to start. No commitment.",
+    "free": "Free",
+    "forever": "forever",
+    "perMonth": "/month",
+    "mostPopular": "Most Popular",
+    "startFree": "Start Free",
+    "subscribe": "Subscribe Now",
+    "cancelAnytime": "Cancel anytime. No cancellation fees.",
+    "comparePlans": "Compare Plans in Detail"
+  },
+  "plans": {
+    "free": {
+      "name": "Compass",
+      "subtitle": "Essential",
+      "tagline": "Find the right path to start!",
+      "features": ["3 active clients", "Unlimited funnel", "90 AI messages", "1 user"]
+    },
+    "starter": {
+      "name": "Lance",
+      "subtitle": "Growth",
+      "tagline": "Launch your brand to the digital world!",
+      "features": ["15 active clients", "Unlimited funnel", "500 AI messages", "5 users"]
+    },
+    "pro": {
+      "name": "Bow",
+      "subtitle": "Professional",
+      "tagline": "Achieve results with precision!",
+      "features": ["50 active clients", "Unlimited funnel", "1200 AI messages", "10 users"]
+    },
+    "agency": {
+      "name": "Catapult",
+      "subtitle": "Agency",
+      "tagline": "Impose your agency in the market!",
+      "features": ["Unlimited clients", "Unlimited funnel", "Unlimited AI", "20 users"]
+    }
+  },
+  "faq": {
+    "title": "Questions?",
+    "badge": "Frequently Asked Questions",
+    "q1": "Do I need a credit card to start?",
+    "a1": "No! The Compass plan is 100% free forever, no card required.",
+    "q2": "Can I cancel my subscription at any time?",
+    "a2": "Yes! Cancel whenever you want in settings. You keep access until the end of the paid period.",
+    "q3": "What are active clients?",
+    "a3": "Clients in operational stages (Production, Traffic, Retention, Loyalty). Prospects in the sales funnel are <strong>unlimited</strong> in all plans!",
+    "q4": "Is my data secure?",
+    "a4": "Yes! End-to-end encryption, secure servers, we never share data with third parties."
+  },
+  "cta": {
+    "title": "How many clients will you lose",
+    "titleSecond": "while you decide?",
+    "subtitle": "Set up in 2 minutes. Start free. No card.",
+    "button": "Start now — it's free",
+    "buttonMobile": "Start free",
+    "footer": "Join 100+ agencies that stopped losing sales."
+  },
+  "footer": {
+    "copyright": "© {{year}} Qualify. All rights reserved.",
+    "solution": "Solution",
+    "plans": "Plans",
+    "faq": "FAQ",
+    "login": "Login"
   },
   "features": {
     "title": "Everything you need to grow",
@@ -33,76 +181,9 @@
       "description": "Access from anywhere, anytime"
     }
   },
-  "problem": {
-    "title": "The Problem",
-    "description": "Agencies waste time and money with manual and disorganized processes"
-  },
-  "solution": {
-    "title": "The Solution",
-    "description": "Qualify automates and organizes your entire sales process"
-  },
-  "hope": {
-    "title": "The Result",
-    "description": "More clients, less manual work, smarter decisions"
-  },
   "testimonials": {
     "title": "What our clients say",
     "subtitle": "See how Qualify is transforming agencies"
-  },
-  "pricing": {
-    "title": "Plans & Pricing",
-    "subtitle": "Choose the ideal plan for your agency",
-    "monthly": "Monthly",
-    "yearly": "Yearly",
-    "save": "Save {{percent}}%",
-    "mostPopular": "Most Popular",
-    "currentPlan": "Current Plan",
-    "selectPlan": "Select Plan",
-    "startTrial": "Start Free Trial",
-    "contactSales": "Contact Sales",
-    "perMonth": "/month",
-    "perYear": "/year",
-    "features": "Features included",
-    "freeTrialDays": "{{days}} days free trial"
-  },
-  "plans": {
-    "free": {
-      "name": "Free",
-      "description": "To start exploring"
-    },
-    "starter": {
-      "name": "Bow",
-      "description": "For small teams"
-    },
-    "pro": {
-      "name": "Catapult",
-      "description": "For growing teams"
-    },
-    "agency": {
-      "name": "Spear",
-      "description": "For full agencies"
-    }
-  },
-  "cta": {
-    "title": "Ready to transform your agency?",
-    "subtitle": "Start for free and see the difference",
-    "button": "Create Free Account"
-  },
-  "footer": {
-    "product": "Product",
-    "company": "Company",
-    "resources": "Resources",
-    "legal": "Legal",
-    "features": "Features",
-    "pricing": "Pricing",
-    "about": "About Us",
-    "contact": "Contact",
-    "blog": "Blog",
-    "help": "Help",
-    "terms": "Terms of Use",
-    "privacy": "Privacy",
-    "cookies": "Cookies",
-    "allRightsReserved": "All rights reserved"
   },
   "nav": {
     "features": "Features",

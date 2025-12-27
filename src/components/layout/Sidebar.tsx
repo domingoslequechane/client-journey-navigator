@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -30,14 +31,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { LanguageSelector } from '@/components/ui/language-selector';
 
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
 
 const PLAN_CONFIG = {
-  free: { name: 'Bússola', icon: Compass },
-  starter: { name: 'Lança', icon: Target },
-  pro: { name: 'Arco', icon: TrendingUp },
-  agency: { name: 'Catapulta', icon: Rocket },
+  free: { name: 'plans.compass', icon: Compass },
+  starter: { name: 'plans.lance', icon: Target },
+  pro: { name: 'plans.bow', icon: TrendingUp },
+  agency: { name: 'plans.catapult', icon: Rocket },
 };
 
 export function Sidebar() {
@@ -45,6 +47,7 @@ export function Sidebar() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { planType, organization } = useSubscription();
+  const { t } = useTranslation('common');
   const { 
     canSeeSalesFunnel, 
     canSeeOperationalFlow, 
@@ -88,16 +91,16 @@ export function Sidebar() {
   // Filter navigation items based on role
   const navigation = useMemo(() => {
     const allItems = [
-      { name: 'Dashboard', href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true },
-      { name: 'Funil de Vendas', href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel', show: canSeeSalesFunnel },
-      { name: 'Fluxo Operacional', href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational', show: canSeeOperationalFlow },
-      { name: 'Clientes', href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
-      { name: 'QIA', href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
-      { name: 'Academia', href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
-      { name: 'Equipe', href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam },
+      { name: t('navigation.dashboard'), href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true },
+      { name: t('navigation.salesFunnel'), href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel', show: canSeeSalesFunnel },
+      { name: t('navigation.operationalFlow'), href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational', show: canSeeOperationalFlow },
+      { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
+      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
+      { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
+      { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam },
     ];
     return allItems.filter(item => item.show);
-  }, [canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam]);
+  }, [canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, t]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -190,20 +193,31 @@ export function Sidebar() {
         </nav>
 
         <div className="p-2 border-t border-border space-y-1">
-          {/* Theme Toggle */}
+          {/* Theme Toggle & Language Selector */}
           {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex justify-center">
-                  <ThemeToggle />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">Alternar tema</TooltipContent>
-            </Tooltip>
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex justify-center">
+                    <ThemeToggle />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">{t('theme.toggleTheme')}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex justify-center">
+                    <LanguageSelector />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">{t('language.select')}</TooltipContent>
+              </Tooltip>
+            </>
           ) : (
             <div className="flex items-center gap-3 px-3 py-2.5">
               <ThemeToggle />
-              <span className="text-sm text-muted-foreground">Tema</span>
+              <LanguageSelector />
+              <span className="text-sm text-muted-foreground">{t('theme.toggle')}</span>
             </div>
           )}
 
@@ -223,7 +237,7 @@ export function Sidebar() {
                   <HeadphonesIcon className="h-5 w-5" />
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right">Suporte e Feedback</TooltipContent>
+              <TooltipContent side="right">{t('navigation.support')}</TooltipContent>
             </Tooltip>
           ) : (
             <Link
@@ -236,7 +250,7 @@ export function Sidebar() {
               )}
             >
               <HeadphonesIcon className="h-5 w-5" />
-              Suporte e Feedback
+              {t('navigation.support')}
             </Link>
           )}
 
@@ -260,7 +274,7 @@ export function Sidebar() {
                   <Settings className="h-5 w-5" />
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right">Configurações</TooltipContent>
+              <TooltipContent side="right">{t('navigation.settings')}</TooltipContent>
             </Tooltip>
           ) : (
             <Link
@@ -274,7 +288,7 @@ export function Sidebar() {
               )}
             >
               <Settings className="h-5 w-5" />
-              Configurações
+              {t('navigation.settings')}
             </Link>
           )}
 
@@ -304,7 +318,7 @@ export function Sidebar() {
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  Plano {currentPlan.name}
+                  {t('plans.plan')} {t(currentPlan.name)}
                 </TooltipContent>
               </Tooltip>
             ) : (
@@ -326,7 +340,7 @@ export function Sidebar() {
                     location.pathname === '/app/subscription' ? 'text-primary-foreground' : 'text-primary'
                   )} />
                 </div>
-                <span>Plano {currentPlan.name}</span>
+                <span>{t('plans.plan')} {t(currentPlan.name)}</span>
               </Link>
             )
           )}
@@ -349,7 +363,7 @@ export function Sidebar() {
                       <LogOut className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="right">Sair</TooltipContent>
+                  <TooltipContent side="right">{t('navigation.logout')}</TooltipContent>
                 </Tooltip>
               ) : (
                 <Button
@@ -358,7 +372,7 @@ export function Sidebar() {
                   onClick={() => setLogoutDialogOpen(true)}
                 >
                   <LogOut className="h-5 w-5" />
-                  Sair
+                  {t('navigation.logout')}
                 </Button>
               )}
             </div>
@@ -368,9 +382,9 @@ export function Sidebar() {
           <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>O que deseja fazer?</DialogTitle>
+                <DialogTitle>{t('logout.dialogTitle')}</DialogTitle>
                 <DialogDescription>
-                  Escolha uma opção abaixo para continuar.
+                  {t('logout.dialogDescription')}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-3 py-4">
@@ -382,8 +396,8 @@ export function Sidebar() {
                   >
                     <RefreshCw className="h-5 w-5" />
                     <div className="text-left">
-                      <p className="font-medium">Mudar de Agência</p>
-                      <p className="text-xs text-muted-foreground">Trocar para outra agência que você tem acesso</p>
+                      <p className="font-medium">{t('logout.switchAgency')}</p>
+                      <p className="text-xs text-muted-foreground">{t('logout.switchAgencyDescription')}</p>
                     </div>
                   </Button>
                 )}
@@ -394,14 +408,14 @@ export function Sidebar() {
                 >
                   <LogOut className="h-5 w-5" />
                   <div className="text-left">
-                    <p className="font-medium">Sair da Aplicação</p>
-                    <p className="text-xs text-destructive-foreground/70">Encerrar sua sessão completamente</p>
+                    <p className="font-medium">{t('logout.signOut')}</p>
+                    <p className="text-xs text-destructive-foreground/70">{t('logout.signOutDescription')}</p>
                   </div>
                 </Button>
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setLogoutDialogOpen(false)}>
-                  Cancelar
+                  {t('actions.cancel')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -422,7 +436,7 @@ export function Sidebar() {
             ) : (
               <>
                 <ChevronLeft className="h-4 w-4" />
-                Recolher Menu
+                {t('actions.collapseMenu')}
               </>
             )}
           </Button>

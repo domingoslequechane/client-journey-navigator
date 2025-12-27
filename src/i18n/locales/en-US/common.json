@@ -16,7 +16,13 @@
     "notifications": "Notifications",
     "subscription": "Subscription",
     "logout": "Logout",
-    "backTo": "Back to {{page}}"
+    "backTo": "Back to {{page}}",
+    "backToSite": "Back to site",
+    "home": "Home",
+    "funnel": "Funnel",
+    "flow": "Flow",
+    "more": "More",
+    "menu": "Menu"
   },
   "actions": {
     "save": "Save",
@@ -53,7 +59,10 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "seeAll": "See all",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "understood": "Understood",
+    "installApp": "Install App",
+    "collapseMenu": "Collapse Menu"
   },
   "status": {
     "loading": "Loading...",
@@ -78,7 +87,9 @@
     "maxLength": "Maximum {{count}} characters",
     "passwordMismatch": "Passwords don't match",
     "minValue": "Minimum value: {{value}}",
-    "maxValue": "Maximum value: {{value}}"
+    "maxValue": "Maximum value: {{value}}",
+    "minPassword": "Password must be at least 6 characters",
+    "minName": "Name must be at least 2 characters"
   },
   "messages": {
     "savedSuccessfully": "Saved successfully!",
@@ -115,8 +126,10 @@
     "spanish": "Spanish"
   },
   "theme": {
-    "light": "Light",
-    "dark": "Dark",
+    "toggle": "Theme",
+    "toggleTheme": "Toggle theme",
+    "light": "Light Mode",
+    "dark": "Dark Mode",
     "system": "System"
   },
   "pagination": {
@@ -129,5 +142,20 @@
     "last": "Last",
     "prev": "Previous",
     "next": "Next"
+  },
+  "logout": {
+    "dialogTitle": "What would you like to do?",
+    "dialogDescription": "Choose an option below to continue.",
+    "switchAgency": "Switch Agency",
+    "switchAgencyDescription": "Switch to another agency you have access to",
+    "signOut": "Sign Out",
+    "signOutDescription": "End your session completely"
+  },
+  "plans": {
+    "compass": "Compass",
+    "lance": "Lance",
+    "bow": "Bow",
+    "catapult": "Catapult",
+    "plan": "Plan"
   }
 }

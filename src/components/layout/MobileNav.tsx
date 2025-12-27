@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,10 +42,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { LanguageSelector } from '@/components/ui/language-selector';
 
 export function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
   const { canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, isAdmin } = useUserRole();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -71,24 +74,24 @@ export function MobileNav() {
   // Build main navigation based on role permissions
   const navigation = useMemo(() => {
     const items = [
-      { name: 'Home', href: '/app', icon: LayoutDashboard, show: true },
+      { name: t('navigation.home'), href: '/app', icon: LayoutDashboard, show: true },
     ];
 
     // Add Sales Funnel if available
     if (canSeeSalesFunnel) {
-      items.push({ name: 'Funil', href: '/app/sales-funnel', icon: Kanban, show: true });
+      items.push({ name: t('navigation.funnel'), href: '/app/sales-funnel', icon: Kanban, show: true });
     }
 
     // Always show Operational Flow in main nav if user has access
     if (canSeeOperationalFlow) {
-      items.push({ name: 'Fluxo', href: '/app/operational-flow', icon: Workflow, show: true });
+      items.push({ name: t('navigation.flow'), href: '/app/operational-flow', icon: Workflow, show: true });
     }
 
     // AI Assistant for everyone
-    items.push({ name: 'QIA', href: '/app/ai-assistant', icon: Sparkles, show: true });
+    items.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, show: true });
 
     return items;
-  }, [canSeeSalesFunnel, canSeeOperationalFlow]);
+  }, [canSeeSalesFunnel, canSeeOperationalFlow, t]);
 
   // Build "More" menu items
   const moreItems = useMemo(() => {
@@ -96,26 +99,26 @@ export function MobileNav() {
 
     // Add Clients to more menu on mobile
     if (canSeeClients) {
-      items.push({ name: 'Clientes', href: '/app/clients', icon: Building2, show: true });
+      items.push({ name: t('navigation.clients'), href: '/app/clients', icon: Building2, show: true });
     }
 
     items.push(
-      { name: 'Academia', href: '/app/academia', icon: GraduationCap, show: true },
-      { name: 'Notificações', href: '/app/notifications', icon: Bell, show: true },
-      { name: 'Suporte', href: '/app/support', icon: MessageSquare, show: true },
+      { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },
+      { name: t('navigation.notifications'), href: '/app/notifications', icon: Bell, show: true },
+      { name: t('navigation.support'), href: '/app/support', icon: MessageSquare, show: true },
     );
 
     if (canSeeTeam) {
-      items.push({ name: 'Equipe', href: '/app/team', icon: Users, show: true });
+      items.push({ name: t('navigation.team'), href: '/app/team', icon: Users, show: true });
     }
 
     if (isAdmin) {
-      items.push({ name: 'Configurações', href: '/app/settings', icon: Settings, show: true });
-      items.push({ name: 'Assinatura', href: '/app/subscription', icon: CreditCard, show: true });
+      items.push({ name: t('navigation.settings'), href: '/app/settings', icon: Settings, show: true });
+      items.push({ name: t('navigation.subscription'), href: '/app/subscription', icon: CreditCard, show: true });
     }
 
     return items;
-  }, [canSeeTeam, isAdmin, canSeeClients]);
+  }, [canSeeTeam, isAdmin, canSeeClients, t]);
 
   const handleNavigate = (href: string) => {
     setMoreOpen(false);
@@ -186,7 +189,7 @@ export function MobileNav() {
             className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[64px] text-muted-foreground"
           >
             <MoreHorizontal className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Mais</span>
+            <span className="text-[10px] font-medium">{t('navigation.more')}</span>
           </button>
         </div>
       </nav>
@@ -195,7 +198,7 @@ export function MobileNav() {
       <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader className="flex items-center justify-between">
-            <DrawerTitle>Menu</DrawerTitle>
+            <DrawerTitle>{t('navigation.menu')}</DrawerTitle>
             <DrawerClose asChild>
               <button className="p-2 rounded-lg hover:bg-muted">
                 <X className="h-5 w-5" />
@@ -227,13 +230,19 @@ export function MobileNav() {
             {/* Divider */}
             <div className="h-px bg-border my-4" />
 
+            {/* Language selector */}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <LanguageSelector />
+              <span className="font-medium text-foreground">{t('language.select')}</span>
+            </div>
+
             {/* Theme toggle */}
             <button
               onClick={handleToggleTheme}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-muted text-foreground text-left"
             >
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              <span className="font-medium">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
+              <span className="font-medium">{theme === 'dark' ? t('theme.light') : t('theme.dark')}</span>
             </button>
 
             {/* Logout */}
@@ -242,7 +251,7 @@ export function MobileNav() {
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-destructive/10 text-destructive text-left"
             >
               <LogOut className="h-5 w-5" />
-              <span className="font-medium">Sair</span>
+              <span className="font-medium">{t('navigation.logout')}</span>
             </button>
           </div>
         </DrawerContent>
@@ -252,9 +261,9 @@ export function MobileNav() {
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>O que deseja fazer?</DialogTitle>
+            <DialogTitle>{t('logout.dialogTitle')}</DialogTitle>
             <DialogDescription>
-              Escolha uma opção abaixo para continuar.
+              {t('logout.dialogDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-4">
@@ -266,8 +275,8 @@ export function MobileNav() {
               >
                 <RefreshCw className="h-5 w-5" />
                 <div className="text-left">
-                  <p className="font-medium">Mudar de Agência</p>
-                  <p className="text-xs text-muted-foreground">Trocar para outra agência que você tem acesso</p>
+                  <p className="font-medium">{t('logout.switchAgency')}</p>
+                  <p className="text-xs text-muted-foreground">{t('logout.switchAgencyDescription')}</p>
                 </div>
               </Button>
             )}
@@ -278,14 +287,14 @@ export function MobileNav() {
             >
               <LogOut className="h-5 w-5" />
               <div className="text-left">
-                <p className="font-medium">Sair da Aplicação</p>
-                <p className="text-xs text-destructive-foreground/70">Encerrar sua sessão completamente</p>
+                <p className="font-medium">{t('logout.signOut')}</p>
+                <p className="text-xs text-destructive-foreground/70">{t('logout.signOutDescription')}</p>
               </div>
             </Button>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setLogoutDialogOpen(false)}>
-              Cancelar
+              {t('actions.cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>
