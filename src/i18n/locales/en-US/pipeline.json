@@ -1,0 +1,68 @@
+{
+  "salesFunnel": {
+    "title": "Sales Funnel",
+    "subtitle": "Manage your leads and opportunities",
+    "emptyColumn": "No clients in this stage",
+    "dragHint": "Drag to move between stages"
+  },
+  "operationalFlow": {
+    "title": "Operational Flow",
+    "subtitle": "Track production and deliveries",
+    "emptyColumn": "No clients in this stage"
+  },
+  "stages": {
+    "prospeccao": {
+      "name": "Prospecting",
+      "description": "New leads and first contacts"
+    },
+    "reuniao": {
+      "name": "Meeting",
+      "description": "Scheduling and holding meetings"
+    },
+    "contratacao": {
+      "name": "Contracting",
+      "description": "Negotiation and contract closing"
+    },
+    "producao": {
+      "name": "Production",
+      "description": "Development and material creation"
+    },
+    "trafego": {
+      "name": "Traffic",
+      "description": "Traffic and campaign management"
+    },
+    "retencao": {
+      "name": "Retention",
+      "description": "Client maintenance and support"
+    },
+    "fidelizacao": {
+      "name": "Loyalty",
+      "description": "Loyal and recurring clients"
+    }
+  },
+  "filters": {
+    "all": "All",
+    "hot": "Hot",
+    "warm": "Warm",
+    "cold": "Cold",
+    "qualified": "Qualified",
+    "paused": "Paused"
+  },
+  "clientCard": {
+    "budget": "Budget",
+    "contact": "Contact",
+    "lastActivity": "Last activity",
+    "daysInStage": "{{count}} day(s) in this stage",
+    "pausedAt": "Paused on {{date}}",
+    "viewDetails": "View Details"
+  },
+  "actions": {
+    "addClient": "Add Client",
+    "moveToStage": "Move to {{stage}}",
+    "viewAllInStage": "View all in {{stage}}"
+  },
+  "messages": {
+    "clientMoved": "Client moved to {{stage}}",
+    "stageUpdated": "Stage updated successfully"
+  }
+}

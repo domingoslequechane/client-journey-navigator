@@ -1,0 +1,50 @@
+{
+  "title": "QIA - AI Assistant",
+  "subtitle": "Your intelligent sales assistant",
+  "selectClient": "Select Client",
+  "selectClientDescription": "Choose a client to start a conversation with context",
+  "noClientSelected": "No client selected",
+  "chat": {
+    "placeholder": "Type your message...",
+    "send": "Send",
+    "thinking": "Thinking...",
+    "typing": "QIA is typing...",
+    "newConversation": "New Conversation",
+    "clearHistory": "Clear History",
+    "scrollToBottom": "Go to bottom"
+  },
+  "messages": {
+    "welcome": "Hello! I'm QIA, your intelligent sales assistant. How can I help you today?",
+    "welcomeWithClient": "Hello! I see you're working with {{clientName}}. How can I help?",
+    "error": "Sorry, an error occurred. Please try again.",
+    "rateLimited": "You've reached the message limit. Please wait a moment.",
+    "noCredits": "You don't have any AI credits available."
+  },
+  "suggestions": {
+    "title": "Suggestions",
+    "analyzeClient": "Analyze client profile",
+    "suggestApproach": "Suggest sales approach",
+    "draftEmail": "Draft follow-up email",
+    "prepareProposal": "Prepare commercial proposal",
+    "identifyNeeds": "Identify client needs"
+  },
+  "favorites": {
+    "title": "Favorites",
+    "add": "Add to favorites",
+    "remove": "Remove from favorites",
+    "noFavorites": "No favorite messages",
+    "savedAt": "Saved on {{date}}"
+  },
+  "files": {
+    "upload": "Upload file",
+    "uploading": "Uploading...",
+    "attached": "File attached",
+    "maxSize": "Maximum size: {{size}}MB",
+    "invalidType": "File type not supported"
+  },
+  "actions": {
+    "copy": "Copy response",
+    "regenerate": "Regenerate response",
+    "feedback": "Send feedback"
+  }
+}

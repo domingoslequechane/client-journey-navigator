@@ -1,0 +1,114 @@
+{
+  "hero": {
+    "title": "Manage your clients with intelligence",
+    "subtitle": "Qualify is the intelligent CRM that helps your agency win and retain more clients",
+    "cta": "Get Started",
+    "ctaSecondary": "Watch Demo"
+  },
+  "features": {
+    "title": "Everything you need to grow",
+    "subtitle": "Powerful tools to manage the entire client lifecycle",
+    "funnel": {
+      "title": "Visual Sales Funnel",
+      "description": "Visualize and manage your leads at every stage of the sales funnel"
+    },
+    "ai": {
+      "title": "AI Assistant",
+      "description": "Get intelligent suggestions and automate repetitive tasks"
+    },
+    "contracts": {
+      "title": "Automated Contracts",
+      "description": "Generate professional contracts with one click"
+    },
+    "analytics": {
+      "title": "Reports & Analytics",
+      "description": "Track important metrics and make data-driven decisions"
+    },
+    "team": {
+      "title": "Team Management",
+      "description": "Collaborate with your team and set role-based permissions"
+    },
+    "mobile": {
+      "title": "Mobile Access",
+      "description": "Access from anywhere, anytime"
+    }
+  },
+  "problem": {
+    "title": "The Problem",
+    "description": "Agencies waste time and money with manual and disorganized processes"
+  },
+  "solution": {
+    "title": "The Solution",
+    "description": "Qualify automates and organizes your entire sales process"
+  },
+  "hope": {
+    "title": "The Result",
+    "description": "More clients, less manual work, smarter decisions"
+  },
+  "testimonials": {
+    "title": "What our clients say",
+    "subtitle": "See how Qualify is transforming agencies"
+  },
+  "pricing": {
+    "title": "Plans & Pricing",
+    "subtitle": "Choose the ideal plan for your agency",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "save": "Save {{percent}}%",
+    "mostPopular": "Most Popular",
+    "currentPlan": "Current Plan",
+    "selectPlan": "Select Plan",
+    "startTrial": "Start Free Trial",
+    "contactSales": "Contact Sales",
+    "perMonth": "/month",
+    "perYear": "/year",
+    "features": "Features included",
+    "freeTrialDays": "{{days}} days free trial"
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "description": "To start exploring"
+    },
+    "starter": {
+      "name": "Bow",
+      "description": "For small teams"
+    },
+    "pro": {
+      "name": "Catapult",
+      "description": "For growing teams"
+    },
+    "agency": {
+      "name": "Spear",
+      "description": "For full agencies"
+    }
+  },
+  "cta": {
+    "title": "Ready to transform your agency?",
+    "subtitle": "Start for free and see the difference",
+    "button": "Create Free Account"
+  },
+  "footer": {
+    "product": "Product",
+    "company": "Company",
+    "resources": "Resources",
+    "legal": "Legal",
+    "features": "Features",
+    "pricing": "Pricing",
+    "about": "About Us",
+    "contact": "Contact",
+    "blog": "Blog",
+    "help": "Help",
+    "terms": "Terms of Use",
+    "privacy": "Privacy",
+    "cookies": "Cookies",
+    "allRightsReserved": "All rights reserved"
+  },
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "about": "About",
+    "login": "Sign In",
+    "signup": "Get Started Free"
+  }
+}

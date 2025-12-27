@@ -1,0 +1,33 @@
+{
+  "title": "Notificações",
+  "subtitle": "Fique por dentro das atualizações",
+  "markAllRead": "Marcar todas como lidas",
+  "clearAll": "Limpar todas",
+  "empty": {
+    "title": "Nenhuma notificação",
+    "description": "Você está em dia!"
+  },
+  "unread": "{{count}} não lida(s)",
+  "new": "Nova",
+  "readAt": "Lida em {{date}}",
+  "types": {
+    "info": "Informação",
+    "success": "Sucesso",
+    "warning": "Aviso",
+    "error": "Erro",
+    "announcement": "Anúncio",
+    "feedback": "Feedback"
+  },
+  "settings": {
+    "title": "Configurações de Notificação",
+    "email": "Notificações por E-mail",
+    "push": "Notificações Push",
+    "inApp": "Notificações no App"
+  },
+  "preferences": {
+    "newClients": "Novos clientes",
+    "stageChanges": "Mudanças de etapa",
+    "teamUpdates": "Atualizações da equipe",
+    "systemAlerts": "Alertas do sistema"
+  }
+}

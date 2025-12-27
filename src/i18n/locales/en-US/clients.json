@@ -1,0 +1,122 @@
+{
+  "title": "Clients",
+  "subtitle": "Manage your clients and leads",
+  "newClient": "New Client",
+  "editClient": "Edit Client",
+  "clientDetails": "Client Details",
+  "deleteClient": "Delete Client",
+  "search": {
+    "placeholder": "Search clients...",
+    "noResults": "No clients found"
+  },
+  "filters": {
+    "all": "All",
+    "active": "Active",
+    "paused": "Paused",
+    "byStage": "By stage",
+    "byQualification": "By qualification",
+    "bySource": "By source"
+  },
+  "form": {
+    "companyName": "Company Name",
+    "companyNamePlaceholder": "Company name",
+    "contactName": "Contact Name",
+    "contactNamePlaceholder": "Main contact name",
+    "email": "Email",
+    "emailPlaceholder": "email@company.com",
+    "phone": "Phone",
+    "phonePlaceholder": "+1 555 123-4567",
+    "website": "Website",
+    "websitePlaceholder": "https://company.com",
+    "address": "Address",
+    "addressPlaceholder": "Full address",
+    "source": "Source",
+    "sourcePlaceholder": "How did they find us?",
+    "notes": "Notes",
+    "notesPlaceholder": "Notes about the client...",
+    "services": "Services",
+    "servicesPlaceholder": "Contracted services",
+    "monthlyBudget": "Monthly Budget",
+    "paidTrafficBudget": "Paid Traffic Budget",
+    "stage": "Stage",
+    "qualification": "Qualification"
+  },
+  "stages": {
+    "prospeccao": "Prospecting",
+    "reuniao": "Meeting",
+    "contratacao": "Contracting",
+    "producao": "Production",
+    "trafego": "Traffic",
+    "retencao": "Retention",
+    "fidelizacao": "Loyalty"
+  },
+  "qualification": {
+    "cold": "Cold",
+    "warm": "Warm",
+    "hot": "Hot",
+    "qualified": "Qualified"
+  },
+  "bant": {
+    "title": "BANT Analysis",
+    "budget": "Budget",
+    "authority": "Authority",
+    "need": "Need",
+    "timeline": "Timeline",
+    "score": "BANT Score"
+  },
+  "history": {
+    "title": "History",
+    "activities": "Activities",
+    "noHistory": "No activity recorded",
+    "types": {
+      "call": "Call",
+      "email": "Email",
+      "meeting": "Meeting",
+      "note": "Note",
+      "task": "Task",
+      "milestone": "Milestone",
+      "field_change": "Field Change",
+      "stage_change": "Stage Change",
+      "status_change": "Status Change"
+    }
+  },
+  "contract": {
+    "title": "Contract",
+    "generate": "Generate Contract",
+    "view": "View Contract",
+    "download": "Download Contract",
+    "noContract": "No contract generated"
+  },
+  "invoice": {
+    "title": "Service Invoice",
+    "generate": "Generate Invoice",
+    "view": "View Invoice",
+    "download": "Download Invoice"
+  },
+  "actions": {
+    "pause": "Pause Client",
+    "resume": "Resume Client",
+    "moveStage": "Move Stage",
+    "exportData": "Export Data"
+  },
+  "messages": {
+    "clientCreated": "Client created successfully!",
+    "clientUpdated": "Client updated successfully!",
+    "clientDeleted": "Client deleted successfully!",
+    "clientPaused": "Client paused",
+    "clientResumed": "Client resumed",
+    "confirmDelete": "Are you sure you want to delete this client? This action cannot be undone.",
+    "stageMoved": "Client moved to {{stage}}"
+  },
+  "empty": {
+    "title": "No clients registered",
+    "description": "Start by adding your first client",
+    "action": "Add Client"
+  },
+  "tabs": {
+    "info": "Information",
+    "history": "History",
+    "documents": "Documents",
+    "checklist": "Checklist"
+  }
+}

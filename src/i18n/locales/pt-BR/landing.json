@@ -1,0 +1,114 @@
+{
+  "hero": {
+    "title": "Gerencie seus clientes com inteligência",
+    "subtitle": "Qualify é o CRM inteligente que ajuda sua agência a conquistar e fidelizar mais clientes",
+    "cta": "Começar Agora",
+    "ctaSecondary": "Ver Demonstração"
+  },
+  "features": {
+    "title": "Tudo que você precisa para crescer",
+    "subtitle": "Ferramentas poderosas para gerenciar todo o ciclo de vida do cliente",
+    "funnel": {
+      "title": "Funil de Vendas Visual",
+      "description": "Visualize e gerencie seus leads em cada etapa do funil de vendas"
+    },
+    "ai": {
+      "title": "Assistente de IA",
+      "description": "Receba sugestões inteligentes e automatize tarefas repetitivas"
+    },
+    "contracts": {
+      "title": "Contratos Automatizados",
+      "description": "Gere contratos profissionais com um clique"
+    },
+    "analytics": {
+      "title": "Relatórios e Analytics",
+      "description": "Acompanhe métricas importantes e tome decisões baseadas em dados"
+    },
+    "team": {
+      "title": "Gestão de Equipe",
+      "description": "Colabore com sua equipe e defina permissões por cargo"
+    },
+    "mobile": {
+      "title": "Acesso Mobile",
+      "description": "Acesse de qualquer lugar, a qualquer momento"
+    }
+  },
+  "problem": {
+    "title": "O Problema",
+    "description": "Agências perdem tempo e dinheiro com processos manuais e desorganizados"
+  },
+  "solution": {
+    "title": "A Solução",
+    "description": "Qualify automatiza e organiza todo o seu processo comercial"
+  },
+  "hope": {
+    "title": "O Resultado",
+    "description": "Mais clientes, menos trabalho manual, decisões mais inteligentes"
+  },
+  "testimonials": {
+    "title": "O que nossos clientes dizem",
+    "subtitle": "Veja como Qualify está transformando agências"
+  },
+  "pricing": {
+    "title": "Planos e Preços",
+    "subtitle": "Escolha o plano ideal para sua agência",
+    "monthly": "Mensal",
+    "yearly": "Anual",
+    "save": "Economize {{percent}}%",
+    "mostPopular": "Mais Popular",
+    "currentPlan": "Plano Atual",
+    "selectPlan": "Selecionar Plano",
+    "startTrial": "Iniciar Teste Grátis",
+    "contactSales": "Falar com Vendas",
+    "perMonth": "/mês",
+    "perYear": "/ano",
+    "features": "Recursos inclusos",
+    "freeTrialDays": "{{days}} dias de teste grátis"
+  },
+  "plans": {
+    "free": {
+      "name": "Grátis",
+      "description": "Para começar a explorar"
+    },
+    "starter": {
+      "name": "Arco",
+      "description": "Para pequenas equipes"
+    },
+    "pro": {
+      "name": "Catapulta",
+      "description": "Para equipes em crescimento"
+    },
+    "agency": {
+      "name": "Lança",
+      "description": "Para agências completas"
+    }
+  },
+  "cta": {
+    "title": "Pronto para transformar sua agência?",
+    "subtitle": "Comece gratuitamente e veja a diferença",
+    "button": "Criar Conta Grátis"
+  },
+  "footer": {
+    "product": "Produto",
+    "company": "Empresa",
+    "resources": "Recursos",
+    "legal": "Legal",
+    "features": "Funcionalidades",
+    "pricing": "Preços",
+    "about": "Sobre Nós",
+    "contact": "Contato",
+    "blog": "Blog",
+    "help": "Ajuda",
+    "terms": "Termos de Uso",
+    "privacy": "Privacidade",
+    "cookies": "Cookies",
+    "allRightsReserved": "Todos os direitos reservados"
+  },
+  "nav": {
+    "features": "Funcionalidades",
+    "pricing": "Preços",
+    "about": "Sobre",
+    "login": "Entrar",
+    "signup": "Começar Grátis"
+  }
+}

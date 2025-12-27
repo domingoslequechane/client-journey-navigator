@@ -1,0 +1,55 @@
+{
+  "title": "Support & Feedback",
+  "subtitle": "How can we help?",
+  "tabs": {
+    "support": "Support",
+    "feedback": "Feedback"
+  },
+  "support": {
+    "title": "Support Center",
+    "description": "Get your questions answered and resolve issues",
+    "newTicket": "New Ticket",
+    "myTickets": "My Tickets",
+    "ticketSubject": "Subject",
+    "ticketSubjectPlaceholder": "Briefly describe the issue",
+    "ticketMessage": "Message",
+    "ticketMessagePlaceholder": "Describe the issue in detail...",
+    "submit": "Submit Ticket",
+    "submitting": "Submitting...",
+    "success": "Ticket submitted successfully!",
+    "reply": "Reply",
+    "close": "Close Ticket"
+  },
+  "feedback": {
+    "title": "Send Feedback",
+    "description": "Your opinion is very important to us",
+    "type": {
+      "label": "Feedback Type",
+      "suggestion": "Suggestion",
+      "bug": "Bug Report",
+      "compliment": "Compliment",
+      "other": "Other"
+    },
+    "subject": "Subject",
+    "subjectPlaceholder": "Feedback title",
+    "message": "Message",
+    "messagePlaceholder": "Describe your suggestion or issue in detail...",
+    "submit": "Submit Feedback",
+    "submitting": "Submitting...",
+    "success": "Feedback submitted successfully! Thank you.",
+    "myFeedbacks": "My Feedbacks"
+  },
+  "status": {
+    "open": "Open",
+    "in_progress": "In Progress",
+    "resolved": "Resolved",
+    "closed": "Closed",
+    "pending": "Pending"
+  },
+  "messages": {
+    "noTickets": "No tickets found",
+    "noFeedbacks": "No feedback submitted",
+    "ticketClosed": "Ticket closed successfully",
+    "replySent": "Reply sent"
+  }
+}

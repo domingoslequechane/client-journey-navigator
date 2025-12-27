@@ -1,0 +1,59 @@
+{
+  "title": "Dashboard",
+  "welcome": "Bem-vindo, {{name}}!",
+  "overview": "Visão Geral",
+  "stats": {
+    "totalClients": "Total de Clientes",
+    "activeClients": "Clientes Ativos",
+    "newThisMonth": "Novos este mês",
+    "revenue": "Receita",
+    "monthlyRevenue": "Receita Mensal",
+    "totalRevenue": "Receita Total",
+    "conversionRate": "Taxa de Conversão",
+    "averageTicket": "Ticket Médio"
+  },
+  "charts": {
+    "revenueOverTime": "Receita ao Longo do Tempo",
+    "clientsBySource": "Clientes por Origem",
+    "clientsByStage": "Clientes por Etapa",
+    "monthlyGrowth": "Crescimento Mensal"
+  },
+  "funnel": {
+    "title": "Funil de Vendas",
+    "stages": {
+      "prospeccao": "Prospecção",
+      "reuniao": "Reunião",
+      "contratacao": "Contratação",
+      "producao": "Produção",
+      "trafego": "Tráfego",
+      "retencao": "Retenção",
+      "fidelizacao": "Fidelização"
+    }
+  },
+  "recentActivity": {
+    "title": "Atividade Recente",
+    "noActivity": "Nenhuma atividade recente",
+    "viewAll": "Ver todas"
+  },
+  "highlights": {
+    "title": "Destaques",
+    "hotLeads": "Leads Quentes",
+    "pendingTasks": "Tarefas Pendentes",
+    "upcomingMeetings": "Reuniões Próximas"
+  },
+  "aiSuggestion": {
+    "title": "Sugestão da IA",
+    "generating": "Gerando sugestão...",
+    "refresh": "Nova sugestão",
+    "noSuggestion": "Sem sugestões no momento"
+  },
+  "period": {
+    "today": "Hoje",
+    "week": "Esta semana",
+    "month": "Este mês",
+    "quarter": "Este trimestre",
+    "year": "Este ano",
+    "allTime": "Todo o período",
+    "custom": "Personalizado"
+  }
+}

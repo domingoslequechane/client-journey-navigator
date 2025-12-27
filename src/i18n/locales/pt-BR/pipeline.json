@@ -1,0 +1,68 @@
+{
+  "salesFunnel": {
+    "title": "Funil de Vendas",
+    "subtitle": "Gerencie seus leads e oportunidades",
+    "emptyColumn": "Nenhum cliente nesta etapa",
+    "dragHint": "Arraste para mover entre etapas"
+  },
+  "operationalFlow": {
+    "title": "Fluxo Operacional",
+    "subtitle": "Acompanhe a produção e entregas",
+    "emptyColumn": "Nenhum cliente nesta etapa"
+  },
+  "stages": {
+    "prospeccao": {
+      "name": "Prospecção",
+      "description": "Novos leads e primeiros contatos"
+    },
+    "reuniao": {
+      "name": "Reunião",
+      "description": "Agendamento e realização de reuniões"
+    },
+    "contratacao": {
+      "name": "Contratação",
+      "description": "Negociação e fechamento de contrato"
+    },
+    "producao": {
+      "name": "Produção",
+      "description": "Desenvolvimento e criação de materiais"
+    },
+    "trafego": {
+      "name": "Tráfego",
+      "description": "Gestão de tráfego e campanhas"
+    },
+    "retencao": {
+      "name": "Retenção",
+      "description": "Manutenção e suporte ao cliente"
+    },
+    "fidelizacao": {
+      "name": "Fidelização",
+      "description": "Clientes fidelizados e recorrentes"
+    }
+  },
+  "filters": {
+    "all": "Todos",
+    "hot": "Quentes",
+    "warm": "Mornos",
+    "cold": "Frios",
+    "qualified": "Qualificados",
+    "paused": "Pausados"
+  },
+  "clientCard": {
+    "budget": "Orçamento",
+    "contact": "Contato",
+    "lastActivity": "Última atividade",
+    "daysInStage": "{{count}} dia(s) nesta etapa",
+    "pausedAt": "Pausado em {{date}}",
+    "viewDetails": "Ver Detalhes"
+  },
+  "actions": {
+    "addClient": "Adicionar Cliente",
+    "moveToStage": "Mover para {{stage}}",
+    "viewAllInStage": "Ver todos em {{stage}}"
+  },
+  "messages": {
+    "clientMoved": "Cliente movido para {{stage}}",
+    "stageUpdated": "Etapa atualizada com sucesso"
+  }
+}
