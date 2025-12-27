@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,20 +14,21 @@ import { ArrowLeft, Mail, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { LanguageSelector } from '@/components/ui/language-selector';
 import { SnowEffect } from '@/components/effects/SnowEffect';
 
-const authSchema = z.object({
-  email: z.string().email({ message: 'E-mail inválido' }),
-  password: z.string().min(6, { message: 'Senha deve ter no mínimo 6 caracteres' }),
+const createAuthSchema = (t: (key: string) => string) => z.object({
+  email: z.string().email({ message: t('validation.invalidEmail') }),
+  password: z.string().min(6, { message: t('validation.minPassword') }),
   confirmPassword: z.string().optional(),
-  fullName: z.string().min(2, { message: 'Nome deve ter no mínimo 2 caracteres' }).optional(),
+  fullName: z.string().min(2, { message: t('validation.minName') }).optional(),
 }).refine((data) => {
   if (data.fullName && data.confirmPassword) {
     return data.password === data.confirmPassword;
   }
   return true;
 }, {
-  message: 'As senhas não coincidem',
+  message: t('validation.passwordMismatch'),
   path: ['confirmPassword'],
 });
 
@@ -34,6 +36,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const { session } = useAuth();
+  const { t } = useTranslation('auth');
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,6 +48,8 @@ export default function Auth() {
   const [suspendedDialogOpen, setSuspendedDialogOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  const authSchema = createAuthSchema(t);
 
   useEffect(() => {
     const checkSessionAndRedirect = async () => {
@@ -121,9 +126,9 @@ export default function Auth() {
     
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        toast({ title: 'Erro', description: 'E-mail ou senha incorretos', variant: 'destructive' });
+        toast({ title: t('toast.error'), description: t('toast.invalidCredentials'), variant: 'destructive' });
       } else {
-        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+        toast({ title: t('toast.error'), description: error.message, variant: 'destructive' });
       }
       setLoading(false);
       return;
@@ -159,7 +164,7 @@ export default function Auth() {
         user_agent: navigator.userAgent,
       });
 
-      toast({ title: 'Bem-vindo!', description: 'Login realizado com sucesso' });
+      toast({ title: t('toast.welcome'), description: t('toast.loginSuccess') });
       
       // Redirect system admins to admin panel, preserve route for regular users
       if (adminRole) {
@@ -195,8 +200,8 @@ export default function Auth() {
 
       if (!response.ok) {
         toast({ 
-          title: 'Erro', 
-          description: data.error || 'Erro ao enviar código de verificação', 
+          title: t('toast.error'), 
+          description: data.error || t('toast.verificationError'), 
           variant: 'destructive' 
         });
         setLoading(false);
@@ -209,14 +214,14 @@ export default function Auth() {
       });
       
       toast({
-        title: 'Código enviado!',
-        description: 'Verifique seu e-mail para o código de verificação',
+        title: t('toast.codeSent'),
+        description: t('toast.checkEmail'),
       });
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({ 
-        title: 'Erro', 
-        description: 'Erro ao processar cadastro. Tente novamente.', 
+        title: t('toast.error'), 
+        description: t('toast.signupError'), 
         variant: 'destructive' 
       });
     }
@@ -226,7 +231,7 @@ export default function Auth() {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      setErrors({ email: 'Digite seu e-mail' });
+      setErrors({ email: t('validation.enterEmail') });
       return;
     }
     
@@ -236,10 +241,10 @@ export default function Auth() {
     });
     
     if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      toast({ title: t('toast.error'), description: error.message, variant: 'destructive' });
     } else {
       setResetEmailSent(true);
-      toast({ title: 'E-mail enviado!', description: 'Verifique sua caixa de entrada' });
+      toast({ title: t('toast.emailSent'), description: t('toast.checkInbox') });
     }
     setLoading(false);
   };
@@ -257,14 +262,14 @@ export default function Auth() {
                     <ShieldAlert className="h-6 w-6 text-destructive" />
                   </div>
                 </div>
-                <DialogTitle>Conta Suspensa</DialogTitle>
+                <DialogTitle>{t('suspended.title')}</DialogTitle>
                 <DialogDescription>
-                  A sua conta foi suspensa pelo administrador. Não é possível aceder ao sistema até que a sua conta seja reativada.
+                  {t('suspended.description')}
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <Button onClick={() => setSuspendedDialogOpen(false)} className="w-full">
-                  Entendi
+                  {t('suspended.understood')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -277,14 +282,15 @@ export default function Auth() {
   if (showForgotPassword) {
     return (
       <PublicBackground>
-        <div className="absolute top-4 right-4 z-50">
+        <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+          <LanguageSelector />
           <ThemeToggle />
         </div>
         <div className="min-h-screen flex items-center justify-center p-4">
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold">Recuperar Senha</CardTitle>
-              <CardDescription>Digite seu e-mail para receber o link de recuperação</CardDescription>
+              <CardTitle className="text-2xl font-bold">{t('forgotPassword.title')}</CardTitle>
+              <CardDescription>{t('forgotPassword.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               {resetEmailSent ? (
@@ -292,22 +298,22 @@ export default function Auth() {
                   <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
                     <Mail className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="font-semibold">E-mail enviado!</h3>
+                  <h3 className="font-semibold">{t('forgotPassword.emailSentTitle')}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.
+                    {t('forgotPassword.emailSentDescription')}
                   </p>
                   <Button variant="outline" onClick={() => { setShowForgotPassword(false); setResetEmailSent(false); }} className="w-full">
-                    Voltar ao Login
+                    {t('forgotPassword.backToLogin')}
                   </Button>
                 </div>
               ) : (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="reset-email">E-mail</Label>
+                    <Label htmlFor="reset-email">{t('labels.email')}</Label>
                     <Input
                       id="reset-email"
                       type="email"
-                      placeholder="seu@email.com"
+                      placeholder={t('placeholders.email')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -315,11 +321,11 @@ export default function Auth() {
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Enviando...' : 'Enviar Link de Recuperação'}
+                    {loading ? t('buttons.sending') : t('forgotPassword.sendLink')}
                   </Button>
                   <Button variant="ghost" onClick={() => setShowForgotPassword(false)} className="w-full gap-2">
                     <ArrowLeft className="h-4 w-4" />
-                    Voltar ao Login
+                    {t('forgotPassword.backToLogin')}
                   </Button>
                 </form>
               )}
@@ -342,7 +348,7 @@ export default function Auth() {
     });
     
     if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      toast({ title: t('toast.error'), description: error.message, variant: 'destructive' });
     }
     setLoading(false);
   };
@@ -350,7 +356,8 @@ export default function Auth() {
   return (
     <PublicBackground>
       <SnowEffect />
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+        <LanguageSelector />
         <ThemeToggle />
       </div>
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -358,7 +365,7 @@ export default function Auth() {
           {/* Back to Landing */}
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
             <ArrowLeft className="h-4 w-4" />
-            Voltar ao site
+            {t('backToSite')}
           </Link>
           
           <Card>
@@ -369,23 +376,23 @@ export default function Auth() {
                 </div>
               </div>
               <CardTitle className="text-2xl font-bold">Qualify</CardTitle>
-              <CardDescription>Sistema de gestão de clientes</CardDescription>
+              <CardDescription>{t('subtitle')}</CardDescription>
             </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+                <TabsTrigger value="signin">{t('tabs.login')}</TabsTrigger>
+                <TabsTrigger value="signup">{t('tabs.register')}</TabsTrigger>
               </TabsList>
               
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">E-mail</Label>
+                    <Label htmlFor="signin-email">{t('labels.email')}</Label>
                     <Input
                       id="signin-email"
                       type="email"
-                      placeholder="seu@email.com"
+                      placeholder={t('placeholders.email')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -394,13 +401,13 @@ export default function Auth() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="signin-password">Senha</Label>
+                      <Label htmlFor="signin-password">{t('labels.password')}</Label>
                       <button
                         type="button"
                         onClick={() => setShowForgotPassword(true)}
                         className="text-xs text-primary hover:underline"
                       >
-                        Esqueceu a senha?
+                        {t('forgotPassword.link')}
                       </button>
                     </div>
                     <div className="relative">
@@ -425,7 +432,7 @@ export default function Auth() {
                     {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Entrando...' : 'Entrar'}
+                    {loading ? t('buttons.loggingIn') : t('buttons.login')}
                   </Button>
 
                   <div className="relative my-4">
@@ -433,7 +440,7 @@ export default function Auth() {
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">Ou continue com</span>
+                      <span className="bg-card px-2 text-muted-foreground">{t('orContinueWith')}</span>
                     </div>
                   </div>
 
@@ -462,7 +469,7 @@ export default function Auth() {
                         fill="#EA4335"
                       />
                     </svg>
-                    Continuar com Google
+                    {t('buttons.continueWithGoogle')}
                   </Button>
                 </form>
               </TabsContent>
@@ -470,11 +477,11 @@ export default function Auth() {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nome Completo</Label>
+                    <Label htmlFor="signup-name">{t('labels.fullName')}</Label>
                     <Input
                       id="signup-name"
                       type="text"
-                      placeholder="Seu nome"
+                      placeholder={t('placeholders.name')}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
@@ -482,11 +489,11 @@ export default function Auth() {
                     {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">E-mail</Label>
+                    <Label htmlFor="signup-email">{t('labels.email')}</Label>
                     <Input
                       id="signup-email"
                       type="email"
-                      placeholder="seu@email.com"
+                      placeholder={t('placeholders.email')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -494,12 +501,12 @@ export default function Auth() {
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Senha</Label>
+                    <Label htmlFor="signup-password">{t('labels.password')}</Label>
                     <div className="relative">
                       <Input
                         id="signup-password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Mínimo 6 caracteres"
+                        placeholder={t('placeholders.minChars')}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -517,12 +524,12 @@ export default function Auth() {
                     {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-confirm-password">Confirmar Senha</Label>
+                    <Label htmlFor="signup-confirm-password">{t('labels.confirmPassword')}</Label>
                     <div className="relative">
                       <Input
                         id="signup-confirm-password"
                         type={showConfirmPassword ? 'text' : 'password'}
-                        placeholder="Digite a senha novamente"
+                        placeholder={t('placeholders.confirmPassword')}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
@@ -540,7 +547,7 @@ export default function Auth() {
                     {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Criando conta...' : 'Criar conta'}
+                    {loading ? t('buttons.creatingAccount') : t('buttons.createAccount')}
                   </Button>
                 </form>
               </TabsContent>

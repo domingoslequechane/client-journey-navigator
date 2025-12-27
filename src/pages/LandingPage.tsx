@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,7 @@ import {
 import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration';
 import { useEffect, useState, useRef } from 'react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { LanguageSelector } from '@/components/ui/language-selector';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 // Plan images
@@ -118,6 +120,7 @@ const useScrollReveal = () => {
 };
 
 export default function LandingPage() {
+  const { t } = useTranslation('landing');
   const [isScrolled, setIsScrolled] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const { canInstall, isInstalled, install } = usePWAInstall();
@@ -202,31 +205,32 @@ export default function LandingPage() {
             <span className="font-bold text-2xl tracking-tight">Qualify</span>
           </div>
           <nav className="hidden lg:flex items-center gap-8">
-            <a href="#problema" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Problema</a>
-            <a href="#solucao" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Solução</a>
-            <a href="#planos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Planos</a>
-            <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
+            <a href="#problema" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{t('header.problem')}</a>
+            <a href="#solucao" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{t('header.solution')}</a>
+            <a href="#planos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{t('header.plans')}</a>
+            <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{t('header.faq')}</a>
           </nav>
           <div className="flex items-center gap-2">
+            <LanguageSelector />
             <ThemeToggle />
             {canInstall && !isInstalled && (
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={install}
-                title="Instalar app"
+                title={t('header.installApp')}
                 className="hidden sm:inline-flex"
               >
                 <Download className="h-5 w-5" />
               </Button>
             )}
             <Link to="/auth">
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex">Entrar</Button>
+              <Button variant="ghost" size="sm" className="hidden sm:inline-flex">{t('header.login')}</Button>
             </Link>
             <Link to="/auth">
               <Button size="sm" className="gap-2 shadow-lg shadow-primary/25">
-                <span className="hidden sm:inline">Quero crescer 47%</span>
-                <span className="sm:hidden">Começar</span>
+                <span className="hidden sm:inline">{t('header.cta')}</span>
+                <span className="sm:hidden">{t('header.ctaMobile')}</span>
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -245,12 +249,12 @@ export default function LandingPage() {
               className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-tight mb-6 animate-fade-in"
               style={{ animationDelay: '0.2s' }}
             >
-              Cresça{' '}
+              {t('hero.title')}{' '}
               <span className="relative inline-block">
-                <span className="relative z-10 text-primary">+47%</span>
+                <span className="relative z-10 text-primary">{t('hero.titleHighlight')}</span>
                 <span className="absolute -bottom-2 left-0 right-0 h-4 bg-primary/20 -rotate-1" />
               </span>
-              {' '}em conversões
+              {' '}{t('hero.titleEnd')}
             </h1>
             
             {/* Subheadline - Alternativa */}
@@ -258,7 +262,7 @@ export default function LandingPage() {
               className="text-xl sm:text-2xl md:text-3xl text-muted-foreground mb-10 animate-fade-in"
               style={{ animationDelay: '0.4s' }}
             >
-              Ou continue perdendo clientes no WhatsApp...
+              {t('hero.subtitle')}
             </p>
             
             {/* CTA único */}
@@ -269,8 +273,8 @@ export default function LandingPage() {
               <Link to="/auth">
                 <Button size="lg" className="text-lg sm:text-xl px-6 sm:px-10 py-6 sm:py-7 gap-2 sm:gap-3 shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105">
                   <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
-                  <span className="hidden sm:inline">Quero crescer 47%</span>
-                  <span className="sm:hidden">Começar agora</span>
+                  <span className="hidden sm:inline">{t('hero.cta')}</span>
+                  <span className="sm:hidden">{t('hero.ctaMobile')}</span>
                   <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </Link>
@@ -283,7 +287,7 @@ export default function LandingPage() {
                   className="text-lg px-6 py-6 gap-2 hover:scale-105 transition-all"
                 >
                   <Download className="h-5 w-5" />
-                  Instalar App
+                  {t('hero.installApp')}
                 </Button>
               )}
             </div>
@@ -295,15 +299,15 @@ export default function LandingPage() {
             >
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
-                <span>Sem cartão</span>
+                <span>{t('hero.trustNoCard')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
-                <span>Setup em 2 min</span>
+                <span>{t('hero.trustSetup')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-primary" />
-                <span>Cancele quando quiser</span>
+                <span>{t('hero.trustCancel')}</span>
               </div>
             </div>
           </div>
@@ -324,18 +328,17 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="text-center md:text-left">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
-                  Você conhece bem{' '}
-                  <span className="text-destructive">essa rotina</span>.
+                  {t('problem.title')}{' '}
+                  <span className="text-destructive">{t('problem.titleHighlight')}</span>.
                 </h2>
                 
                 <div className="space-y-6 text-lg md:text-xl text-muted-foreground leading-relaxed">
                   <p>
-                    Leads perdidos no WhatsApp. Planilhas que ninguém entende. 
-                    Equipe sem saber o fazer.
+                    {t('problem.description1')}
                   </p>
                   
                   <p className="text-foreground font-medium">
-                    E você, no meio do caos, <span className="text-destructive">perdendo vendas todos os dias</span>.
+                    {t('problem.description2')} <span className="text-destructive">{t('problem.description2Highlight')}</span>.
                   </p>
                 </div>
               </div>
@@ -363,8 +366,8 @@ export default function LandingPage() {
               
               <div className="order-1 md:order-2 text-center md:text-left">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-                  O preço de{' '}
-                  <span className="text-destructive">continuar assim</span>.
+                  {t('cost.title')}{' '}
+                  <span className="text-destructive">{t('cost.titleHighlight')}</span>.
                 </h2>
               </div>
             </div>
@@ -375,10 +378,10 @@ export default function LandingPage() {
                 <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                   <TrendingDown className="h-8 w-8 text-destructive" />
                 </div>
-                <div className="text-3xl font-bold text-destructive mb-2">Perda de Receita</div>
-                <div className="text-sm text-muted-foreground mb-4">leads que nunca fecharam</div>
+                <div className="text-3xl font-bold text-destructive mb-2">{t('cost.revenueLoss')}</div>
+                <div className="text-sm text-muted-foreground mb-4">{t('cost.revenueLossDesc')}</div>
                 <p className="text-muted-foreground text-sm">
-                  Leads esquecidos = contratos perdidos.
+                  {t('cost.revenueLossText')}
                 </p>
               </div>
               
@@ -387,10 +390,10 @@ export default function LandingPage() {
                 <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                   <Timer className="h-8 w-8 text-destructive" />
                 </div>
-                <div className="text-4xl font-bold text-destructive mb-2">120h</div>
-                <div className="text-sm text-muted-foreground mb-4">desperdiçadas por mês</div>
+                <div className="text-4xl font-bold text-destructive mb-2">{t('cost.hoursWasted')}</div>
+                <div className="text-sm text-muted-foreground mb-4">{t('cost.hoursWastedDesc')}</div>
                 <p className="text-muted-foreground text-sm">
-                  Tempo em planilhas, não em vendas.
+                  {t('cost.hoursWastedText')}
                 </p>
               </div>
               
@@ -399,16 +402,16 @@ export default function LandingPage() {
                 <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                   <UserX className="h-8 w-8 text-destructive" />
                 </div>
-                <div className="text-4xl font-bold text-destructive mb-2">40%</div>
-                <div className="text-sm text-muted-foreground mb-4">dos leads vão para concorrente</div>
+                <div className="text-4xl font-bold text-destructive mb-2">{t('cost.clientsLost')}</div>
+                <div className="text-sm text-muted-foreground mb-4">{t('cost.clientsLostDesc')}</div>
                 <p className="text-muted-foreground text-sm">
-                  Quem responde primeiro, ganha.
+                  {t('cost.clientsLostText')}
                 </p>
               </div>
             </div>
             
             <p className="text-center mt-12 text-lg text-foreground font-medium">
-              Não é falta de esforço. <span className="text-primary">É falta de sistema.</span>
+              {t('cost.conclusion')} <span className="text-primary">{t('cost.conclusionHighlight')}</span>
             </p>
           </div>
         </div>
@@ -421,16 +424,16 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="text-center">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
-                  Imagine abrir o computador e{' '}
-                  <span className="text-primary">ver tudo no lugar</span>.
+                  {t('hope.title')}{' '}
+                  <span className="text-primary">{t('hope.titleHighlight')}</span>.
                 </h2>
                 
                 <p className="text-lg md:text-xl text-muted-foreground mb-6">
-                  Ver cada cliente. Saber o próximo passo. Prever quanto vai faturar.
+                  {t('hope.description')}
                 </p>
                 
                 <p className="text-xl text-foreground font-medium">
-                  Sem planilhas. Sem WhatsApp. Sem caos.
+                  {t('hope.tagline')}
                 </p>
               </div>
               
@@ -450,11 +453,10 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-                Isso é o <span className="text-primary">Qualify</span>.
+                {t('solution.title')} <span className="text-primary">{t('solution.titleHighlight')}</span>.
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                O CRM com IA que organiza seus clientes, qualifica leads automaticamente, 
-                sugere estratégias e prevê seu faturamento — tudo num só lugar.
+                {t('solution.description')}
               </p>
             </div>
             
@@ -464,11 +466,19 @@ export default function LandingPage() {
                 <div className="h-3 w-3 rounded-full bg-destructive/50" />
                 <div className="h-3 w-3 rounded-full bg-warning/50" />
                 <div className="h-3 w-3 rounded-full bg-primary/50" />
-                <span className="text-sm text-muted-foreground ml-2">Qualify — Pipeline</span>
+                <span className="text-sm text-muted-foreground ml-2">{t('solution.mockupTitle')}</span>
               </div>
               
               <div className="flex md:grid md:grid-cols-7 gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                {['Prospecção', 'Reunião', 'Contratação', 'Produção', 'Tráfego', 'Retenção', 'Fidelização'].map((stage, i) => (
+                {[
+                  t('solution.stages.prospecting'),
+                  t('solution.stages.meeting'),
+                  t('solution.stages.contracting'),
+                  t('solution.stages.production'),
+                  t('solution.stages.traffic'),
+                  t('solution.stages.retention'),
+                  t('solution.stages.loyalty')
+                ].map((stage, i) => (
                   <div key={stage} className="text-center min-w-[70px] flex-shrink-0 md:min-w-0">
                     <div className="bg-muted rounded-lg p-2 md:p-3 mb-2 h-20 md:h-32 flex flex-col justify-between">
                       <div className="text-[10px] md:text-xs font-medium text-muted-foreground truncate">{stage}</div>
@@ -489,32 +499,32 @@ export default function LandingPage() {
                 <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <LayoutGrid className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-1">Organiza automaticamente</h3>
-                <p className="text-sm text-muted-foreground">Cada cliente no lugar certo</p>
+                <h3 className="font-semibold mb-1">{t('solution.benefit1Title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('solution.benefit1Desc')}</p>
               </div>
               
               <div className="text-center">
                 <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Star className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-1">Mostra os melhores leads</h3>
-                <p className="text-sm text-muted-foreground">Priorize quem vale a pena</p>
+                <h3 className="font-semibold mb-1">{t('solution.benefit2Title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('solution.benefit2Desc')}</p>
               </div>
               
               <div className="text-center">
                 <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Bot className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-1">IA que sugere estratégias</h3>
-                <p className="text-sm text-muted-foreground">Contexto total do cliente</p>
+                <h3 className="font-semibold mb-1">{t('solution.benefit3Title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('solution.benefit3Desc')}</p>
               </div>
               
               <div className="text-center">
                 <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <TrendingUp className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-1">Prevê seu faturamento</h3>
-                <p className="text-sm text-muted-foreground">Dashboard em tempo real</p>
+                <h3 className="font-semibold mb-1">{t('solution.benefit4Title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('solution.benefit4Desc')}</p>
               </div>
             </div>
           </div>
@@ -530,8 +540,8 @@ export default function LandingPage() {
               <div className="inline-flex items-center gap-4 bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6">
                 <TrendingUp className="h-12 w-12 text-primary" />
                 <div className="text-left">
-                  <div className="text-5xl md:text-6xl font-bold text-primary">+47%</div>
-                  <div className="text-muted-foreground">de conversões em 3 meses</div>
+                  <div className="text-5xl md:text-6xl font-bold text-primary">{t('social.statValue')}</div>
+                  <div className="text-muted-foreground">{t('social.statLabel')}</div>
                 </div>
               </div>
             </div>
@@ -545,9 +555,9 @@ export default function LandingPage() {
               </div>
               
               <blockquote className="text-xl md:text-2xl text-foreground mb-8 leading-relaxed">
-                "Em 3 meses, nossa taxa de conversão subiu 47%. O Qualify transformou nossa agência de 
-                <strong className="text-primary"> 3 para 15 clientes ativos</strong>. 
-                Finalmente consigo ver tudo num só lugar."
+                "{t('social.testimonial')}
+                <strong className="text-primary">{t('social.testimonialHighlight')}</strong>
+                {t('social.testimonialEnd')}"
               </blockquote>
               
               <div className="flex items-center gap-4">
@@ -555,8 +565,8 @@ export default function LandingPage() {
                   <span className="text-primary-foreground font-bold text-lg">MC</span>
                 </div>
                 <div>
-                  <p className="font-semibold text-lg">Mariana Costa</p>
-                  <p className="text-muted-foreground">CEO, Costa Digital Marketing</p>
+                  <p className="font-semibold text-lg">{t('social.author')}</p>
+                  <p className="text-muted-foreground">{t('social.authorRole')}</p>
                 </div>
               </div>
             </div>
@@ -564,16 +574,16 @@ export default function LandingPage() {
             {/* Stats secundários */}
             <div className="grid grid-cols-3 gap-6 mt-12">
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">100+</div>
-                <div className="text-sm text-muted-foreground">Agências usando</div>
+                <div className="text-3xl font-bold text-primary mb-1">{t('social.stat1Value')}</div>
+                <div className="text-sm text-muted-foreground">{t('social.stat1Label')}</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">-4h</div>
-                <div className="text-sm text-muted-foreground">Por dia economizadas</div>
+                <div className="text-3xl font-bold text-primary mb-1">{t('social.stat2Value')}</div>
+                <div className="text-sm text-muted-foreground">{t('social.stat2Label')}</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">1k+</div>
-                <div className="text-sm text-muted-foreground">Clientes gerenciados</div>
+                <div className="text-3xl font-bold text-primary mb-1">{t('social.stat3Value')}</div>
+                <div className="text-sm text-muted-foreground">{t('social.stat3Label')}</div>
               </div>
             </div>
           </div>
@@ -585,15 +595,17 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-              Comece grátis. <span className="text-primary">Cresça no seu ritmo.</span>
+              {t('pricing.title')} <span className="text-primary">{t('pricing.titleHighlight')}</span>
             </h2>
             <p className="text-xl text-muted-foreground">
-              Sem cartão para começar. Sem compromisso.
+              {t('pricing.subtitle')}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {(Object.entries(planConfig) as [string, typeof planConfig.pro][]).map(([key, plan]) => (
+            {(Object.entries(planConfig) as [string, typeof planConfig.pro][]).map(([key, plan]) => {
+              const planKey = key as 'free' | 'starter' | 'pro' | 'agency';
+              return (
               <Card 
                 key={key}
                 className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 ${
@@ -610,7 +622,7 @@ export default function LandingPage() {
                 >
                   <img 
                     src={plan.image} 
-                    alt={`Plano ${plan.name}`}
+                    alt={t(`plans.${planKey}.name`)}
                     className="w-full h-full object-cover"
                   />
                   {'popular' in plan && plan.popular && (
@@ -619,40 +631,40 @@ export default function LandingPage() {
                       style={{ backgroundColor: plan.color }}
                     >
                       <Sparkles className="h-3 w-3 mr-1" />
-                      Mais Popular
+                      {t('pricing.mostPopular')}
                     </Badge>
                   )}
                 </div>
 
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2">
-                    <span style={{ color: plan.color }}>{plan.name}</span>
+                    <span style={{ color: plan.color }}>{t(`plans.${planKey}.name`)}</span>
                   </CardTitle>
-                  <CardDescription>{plan.subtitle}</CardDescription>
+                  <CardDescription>{t(`plans.${planKey}.subtitle`)}</CardDescription>
                   <div className="pt-2">
                     {'isFree' in plan && plan.isFree ? (
                       <>
                         <span className="text-3xl font-bold" style={{ color: plan.color }}>
-                          Grátis
+                          {t('pricing.free')}
                         </span>
-                        <p className="text-xs text-muted-foreground">para sempre</p>
+                        <p className="text-xs text-muted-foreground">{t('pricing.forever')}</p>
                       </>
                     ) : (
                       <>
                         <span className="text-3xl font-bold" style={{ color: plan.color }}>
                           ${plan.price}
                         </span>
-                        <span className="text-muted-foreground">/mês</span>
+                        <span className="text-muted-foreground">{t('pricing.perMonth')}</span>
                       </>
                     )}
                   </div>
                   <p className="text-xs italic text-muted-foreground mt-1">
-                    {plan.tagline}
+                    {t(`plans.${planKey}.tagline`)}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
-                    {plan.features.map((feature, index) => (
+                    {(t(`plans.${planKey}.features`, { returnObjects: true }) as string[]).map((feature: string, index: number) => (
                       <li key={index} className="flex items-center gap-2 text-sm">
                         <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: plan.color }} />
                         <span>{feature}</span>
@@ -666,22 +678,22 @@ export default function LandingPage() {
                       style={{ backgroundColor: plan.color }}
                     >
                       <CreditCard className="h-4 w-4" />
-                      {'isFree' in plan && plan.isFree ? 'Começar Grátis' : 'Assinar Agora'}
+                      {'isFree' in plan && plan.isFree ? t('pricing.startFree') : t('pricing.subscribe')}
                     </Button>
                   </Link>
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </div>
 
           <div className="text-center mt-12 space-y-8">
             <p className="text-muted-foreground mb-6">
-              Cancele a qualquer momento. Sem taxas de cancelamento.
+              {t('pricing.cancelAnytime')}
             </p>
             <Link to="/pricing">
               <Button variant="outline" size="lg" className="gap-2">
                 <Eye className="h-5 w-5" />
-                Comparar Planos em Detalhe
+                {t('pricing.comparePlans')}
               </Button>
             </Link>
           </div>
@@ -694,10 +706,10 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <Badge variant="outline" className="mb-4 gap-2">
               <HelpCircle className="h-4 w-4" />
-              Perguntas Frequentes
+              {t('faq.badge')}
             </Badge>
             <h2 className="text-3xl md:text-4xl font-bold">
-              Dúvidas?
+              {t('faq.title')}
             </h2>
           </div>
 
@@ -705,38 +717,35 @@ export default function LandingPage() {
             <Accordion type="single" collapsible className="space-y-4">
               <AccordionItem value="item-1" className="bg-card border rounded-lg px-6">
                 <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                  Preciso de cartão de crédito para começar?
+                  {t('faq.q1')}
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Não! O plano Bússola é 100% gratuito para sempre, sem necessidade de cartão.
+                  {t('faq.a1')}
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-2" className="bg-card border rounded-lg px-6">
                 <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                  Posso cancelar minha assinatura a qualquer momento?
+                  {t('faq.q2')}
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Sim! Cancele quando quiser nas configurações. Você mantém acesso até o fim do período pago.
+                  {t('faq.a2')}
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-3" className="bg-card border rounded-lg px-6">
                 <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                  O que são clientes ativos?
+                  {t('faq.q3')}
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  Clientes nos estágios operacionais (Produção, Tráfego, Retenção, Fidelização). 
-                  Prospectos no funil de vendas são <strong>ilimitados</strong> em todos os planos!
-                </AccordionContent>
+                <AccordionContent className="text-muted-foreground" dangerouslySetInnerHTML={{ __html: t('faq.a3') }} />
               </AccordionItem>
 
               <AccordionItem value="item-4" className="bg-card border rounded-lg px-6">
                 <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                  Meus dados estão seguros?
+                  {t('faq.q4')}
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Sim! Criptografia de ponta a ponta, servidores seguros, nunca compartilhamos dados com terceiros.
+                  {t('faq.a4')}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -750,23 +759,23 @@ export default function LandingPage() {
         
         <div className="container mx-auto px-4 text-center relative z-10">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground mb-6">
-            Quantos clientes você vai perder{' '}
-            <span className="block mt-2">enquanto decide?</span>
+            {t('cta.title')}{' '}
+            <span className="block mt-2">{t('cta.titleSecond')}</span>
           </h2>
           <p className="text-xl text-primary-foreground/80 mb-10 max-w-xl mx-auto">
-            Configure em 2 minutos. Comece grátis. Sem cartão.
+            {t('cta.subtitle')}
           </p>
           <Link to="/auth">
             <Button size="lg" variant="secondary" className="text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-7 gap-2 sm:gap-3 shadow-xl hover:scale-105 transition-all">
               <Rocket className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="hidden sm:inline">Começar agora — é grátis</span>
-              <span className="sm:hidden">Começar grátis</span>
+              <span className="hidden sm:inline">{t('cta.button')}</span>
+              <span className="sm:hidden">{t('cta.buttonMobile')}</span>
               <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </Link>
           
           <p className="mt-10 text-primary-foreground/60 text-sm">
-            Junte-se a 100+ agências que pararam de perder vendas.
+            {t('cta.footer')}
           </p>
         </div>
       </section>
@@ -783,14 +792,14 @@ export default function LandingPage() {
             </div>
             
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-muted-foreground">
-              <a href="#solucao" className="hover:text-foreground transition-colors">Solução</a>
-              <a href="#planos" className="hover:text-foreground transition-colors">Planos</a>
-              <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
-              <Link to="/auth" className="hover:text-foreground transition-colors">Login</Link>
+              <a href="#solucao" className="hover:text-foreground transition-colors">{t('footer.solution')}</a>
+              <a href="#planos" className="hover:text-foreground transition-colors">{t('footer.plans')}</a>
+              <a href="#faq" className="hover:text-foreground transition-colors">{t('footer.faq')}</a>
+              <Link to="/auth" className="hover:text-foreground transition-colors">{t('footer.login')}</Link>
             </div>
             
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Qualify. Todos os direitos reservados.
+              {t('footer.copyright', { year: new Date().getFullYear() })}
             </p>
           </div>
         </div>
