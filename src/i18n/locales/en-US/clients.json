@@ -118,5 +118,29 @@
     "history": "History",
     "documents": "Documents",
     "checklist": "Checklist"
+  },
+  "sources": {
+    "google_maps": "Google Maps",
+    "social_media": "Social Media",
+    "referral": "Referral",
+    "visit": "Visit",
+    "inbound": "Inbound",
+    "other": "Other"
+  },
+  "services": {
+    "social_management": "Social Media Management",
+    "content_creation": "Content Creation",
+    "video_production": "Video Production",
+    "facebook_ads": "Facebook Ads",
+    "instagram_ads": "Instagram Ads",
+    "tiktok_ads": "TikTok Ads",
+    "graphic_design": "Graphic Design",
+    "marketing_consulting": "Marketing Consulting"
+  },
+  "documents": {
+    "contract": "Contract",
+    "proforma_invoice": "Proforma Invoice",
+    "budget": "Budget",
+    "commercial_proposal": "Commercial Proposal"
   }
 }

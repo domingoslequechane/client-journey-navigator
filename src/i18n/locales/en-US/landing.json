@@ -191,5 +191,34 @@
     "about": "About",
     "login": "Sign In",
     "signup": "Get Started Free"
+  },
+  "illustrations": {
+    "chaos": {
+      "header": "Chaos — Messages",
+      "urgent": "URGENT",
+      "whereClient": "Where is the client?",
+      "lostLead": "Lost Lead"
+    },
+    "loss": {
+      "header": "Leads — Lost"
+    },
+    "dashboard": {
+      "header": "Qualify — Dashboard",
+      "predictedRevenue": "Predicted Revenue",
+      "revenueValue": "$47,500",
+      "revenueChange": "↑ 23% vs last month",
+      "hotLeads": "Hot Leads",
+      "clientName": "Marketing Corp",
+      "lastInteraction": "Last interaction: 2 days ago",
+      "hotLeadBadge": "Hot Lead",
+      "aiSuggestion": "AI Suggestion",
+      "aiMessage": "This client hasn't responded in 48h. Based on history, a call now has a 73% conversion chance."
+    },
+    "pipeline": {
+      "header": "Qualify — Pipeline",
+      "prospecting": "Prospecting",
+      "meeting": "Meeting",
+      "production": "Production"
+    }
   }
 }
