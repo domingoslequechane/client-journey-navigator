@@ -2,15 +2,26 @@
   "title": "Dashboard",
   "welcome": "Welcome, {{name}}!",
   "overview": "Overview",
+  "subtitle": {
+    "full": "Overview of your clients' journey",
+    "sales": "Sales funnel overview",
+    "operations": "Operational flow overview"
+  },
   "stats": {
     "totalClients": "Total Clients",
+    "totalClientsDesc": "In database",
     "activeClients": "Active Clients",
     "newThisMonth": "New this month",
     "revenue": "Revenue",
     "monthlyRevenue": "Monthly Revenue",
+    "expectedRevenue": "Expected Revenue",
+    "expectedRevenueDesc": "This month",
     "totalRevenue": "Total Revenue",
     "conversionRate": "Conversion Rate",
-    "averageTicket": "Average Ticket"
+    "conversionRateDesc": "Leads → Clients",
+    "averageTicket": "Average Ticket",
+    "hotLeads": "Hot Leads",
+    "hotLeadsDesc": "Ready to close"
   },
   "charts": {
     "revenueOverTime": "Revenue Over Time",
@@ -55,5 +66,13 @@
     "year": "This year",
     "allTime": "All time",
     "custom": "Custom"
+  },
+  "quickActions": {
+    "newClient": "New Client",
+    "newClientDesc": "Register a new lead in the system",
+    "salesFunnel": "Sales Funnel",
+    "salesFunnelDesc": "Visual kanban of the client journey",
+    "operationalFlow": "Operational Flow",
+    "operationalFlowDesc": "Track clients in production"
   }
 }

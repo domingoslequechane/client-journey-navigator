@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   StatsCard, 
@@ -23,24 +24,9 @@ import type { Tables } from '@/integrations/supabase/types';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useUserRole } from '@/hooks/useUserRole';
 import { formatPhoneNumber } from '@/lib/phone-utils';
+import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
 
 type Client = Tables<'clients'>;
-
-const QUALIFICATION_LABELS: Record<string, string> = {
-  cold: 'Frio',
-  warm: 'Morno',
-  hot: 'Quente',
-  qualified: 'Qualificado',
-};
-
-const SOURCE_LABELS: Record<string, string> = {
-  google_maps: 'Google Maps',
-  social_media: 'Redes Sociais',
-  referral: 'Indicação',
-  visit: 'Visita Presencial',
-  inbound: 'Inbound',
-  other: 'Outro',
-};
 
 // Stages each role is responsible for
 const SALES_STAGES = ['prospeccao', 'reuniao', 'contratacao'];
@@ -48,6 +34,8 @@ const OPERATIONS_STAGES = ['producao', 'trafego'];
 const CAMPAIGN_STAGES = ['trafego', 'retencao', 'fidelizacao'];
 
 export default function Dashboard() {
+  const { t } = useTranslation('dashboard');
+  const { qualificationLabels, sourceLabels } = useTranslatedLabels();
   const { 
     role: userRole, 
     loading: roleLoading, 
@@ -156,13 +144,13 @@ export default function Dashboard() {
 
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8" data-tutorial="dashboard">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">{t('title')}</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">
             {canSeeSales && canSeeOperations 
-              ? 'Visão geral da jornada dos seus clientes' 
+              ? t('subtitle.full') 
               : canSeeSales 
-                ? 'Visão geral do funil de vendas'
-                : 'Visão geral do fluxo operacional'}
+                ? t('subtitle.sales')
+                : t('subtitle.operations')}
           </p>
         </div>
       </AnimatedContainer>
@@ -171,36 +159,36 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
         <AnimatedContainer animation="fade-up" delay={0.05}>
           <StatsCard 
-            title="Total de Clientes" 
+            title={t('stats.totalClients')} 
             value={totalClients}
-            description="Na base de dados"
+            description={t('stats.totalClientsDesc')}
             icon={Users}
             variant="info"
           />
         </AnimatedContainer>
         <AnimatedContainer animation="fade-up" delay={0.1}>
           <StatsCard 
-            title="Receita Prevista" 
+            title={t('stats.expectedRevenue')} 
             value={`${currencySymbol} ${fixedRevenue.toLocaleString()}`}
-            description="Este mês"
+            description={t('stats.expectedRevenueDesc')}
             icon={DollarSign}
             variant="success"
           />
         </AnimatedContainer>
         <AnimatedContainer animation="fade-up" delay={0.15}>
           <StatsCard 
-            title="Leads Quentes" 
+            title={t('stats.hotLeads')} 
             value={hotLeads}
-            description="Prontos para fechar"
+            description={t('stats.hotLeadsDesc')}
             icon={Flame}
             variant="warning"
           />
         </AnimatedContainer>
         <AnimatedContainer animation="fade-up" delay={0.2}>
           <StatsCard 
-            title="Taxa de Conversão" 
+            title={t('stats.conversionRate')} 
             value={`${conversionRate}%`}
-            description="Leads → Clientes"
+            description={t('stats.conversionRateDesc')}
             icon={Award}
             variant="primary"
           />

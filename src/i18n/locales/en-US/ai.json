@@ -4,6 +4,8 @@
   "selectClient": "Select Client",
   "selectClientDescription": "Choose a client to start a conversation with context",
   "noClientSelected": "No client selected",
+  "searchClients": "Search clients...",
+  "allStages": "All stages",
   "chat": {
     "placeholder": "Type your message...",
     "send": "Send",
@@ -46,5 +48,14 @@
     "copy": "Copy response",
     "regenerate": "Regenerate response",
     "feedback": "Send feedback"
+  },
+  "stageOptions": {
+    "all": "All stages",
+    "prospeccao": "Prospecting",
+    "reuniao": "Meeting",
+    "contratacao": "Contracting",
+    "producao": "Production",
+    "trafego": "Traffic",
+    "retencao": "Retention"
   }
 }

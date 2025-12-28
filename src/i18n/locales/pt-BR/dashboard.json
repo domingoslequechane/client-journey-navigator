@@ -2,15 +2,26 @@
   "title": "Dashboard",
   "welcome": "Bem-vindo, {{name}}!",
   "overview": "Visão Geral",
+  "subtitle": {
+    "full": "Visão geral da jornada dos seus clientes",
+    "sales": "Visão geral do funil de vendas",
+    "operations": "Visão geral do fluxo operacional"
+  },
   "stats": {
     "totalClients": "Total de Clientes",
+    "totalClientsDesc": "Na base de dados",
     "activeClients": "Clientes Ativos",
     "newThisMonth": "Novos este mês",
     "revenue": "Receita",
     "monthlyRevenue": "Receita Mensal",
+    "expectedRevenue": "Receita Prevista",
+    "expectedRevenueDesc": "Este mês",
     "totalRevenue": "Receita Total",
     "conversionRate": "Taxa de Conversão",
-    "averageTicket": "Ticket Médio"
+    "conversionRateDesc": "Leads → Clientes",
+    "averageTicket": "Ticket Médio",
+    "hotLeads": "Leads Quentes",
+    "hotLeadsDesc": "Prontos para fechar"
   },
   "charts": {
     "revenueOverTime": "Receita ao Longo do Tempo",
@@ -55,5 +66,13 @@
     "year": "Este ano",
     "allTime": "Todo o período",
     "custom": "Personalizado"
+  },
+  "quickActions": {
+    "newClient": "Novo Cliente",
+    "newClientDesc": "Cadastre um novo lead no sistema",
+    "salesFunnel": "Funil de Vendas",
+    "salesFunnelDesc": "Kanban visual da jornada do cliente",
+    "operationalFlow": "Fluxo Operacional",
+    "operationalFlowDesc": "Acompanhe clientes em produção"
   }
 }
