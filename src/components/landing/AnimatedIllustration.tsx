@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type SectionType = 'problema' | 'custo' | 'solucao' | 'esperanca';
 
@@ -10,6 +11,8 @@ interface AnimatedIllustrationProps {
 
 // Chaos Illustration - WhatsApp-like messages with alerts
 function ChaosIllustration() {
+  const { t } = useTranslation('landing');
+  
   return (
     <div className="w-full h-full bg-[#1a1a1a] rounded-xl overflow-hidden p-4 min-h-[280px]">
       {/* Window Header */}
@@ -19,7 +22,7 @@ function ChaosIllustration() {
           <div className="w-3 h-3 rounded-full bg-warning/80" />
           <div className="w-3 h-3 rounded-full bg-success/80" />
         </div>
-        <span className="text-xs text-muted-foreground ml-2">Caos — Mensagens</span>
+        <span className="text-xs text-muted-foreground ml-2">{t('illustrations.chaos.header')}</span>
       </div>
       
       {/* Messages */}
@@ -27,7 +30,7 @@ function ChaosIllustration() {
         <div className="flex items-start gap-2 animate-pulse">
           <div className="w-8 h-8 rounded-full bg-destructive/30 flex items-center justify-center text-destructive text-xs">⚠️</div>
           <div className="flex-1 bg-[#2a2a2a] rounded-lg p-3">
-            <div className="text-destructive text-xs font-medium mb-1">URGENTE</div>
+            <div className="text-destructive text-xs font-medium mb-1">{t('illustrations.chaos.urgent')}</div>
             <div className="h-2 w-3/4 bg-muted-foreground/20 rounded" />
           </div>
         </div>
@@ -35,7 +38,7 @@ function ChaosIllustration() {
         <div className="flex items-start gap-2">
           <div className="w-8 h-8 rounded-full bg-warning/30 flex items-center justify-center text-warning text-xs">❓</div>
           <div className="flex-1 bg-[#2a2a2a] rounded-lg p-3">
-            <div className="text-warning text-xs font-medium mb-1">Onde está o cliente?</div>
+            <div className="text-warning text-xs font-medium mb-1">{t('illustrations.chaos.whereClient')}</div>
             <div className="h-2 w-1/2 bg-muted-foreground/20 rounded" />
           </div>
         </div>
@@ -43,7 +46,7 @@ function ChaosIllustration() {
         <div className="flex items-start gap-2 opacity-70">
           <div className="w-8 h-8 rounded-full bg-destructive/30 flex items-center justify-center text-destructive text-xs">❌</div>
           <div className="flex-1 bg-[#2a2a2a] rounded-lg p-3">
-            <div className="text-destructive text-xs font-medium mb-1">Lead Perdido</div>
+            <div className="text-destructive text-xs font-medium mb-1">{t('illustrations.chaos.lostLead')}</div>
             <div className="h-2 w-2/3 bg-muted-foreground/20 rounded" />
           </div>
         </div>
@@ -61,6 +64,8 @@ function ChaosIllustration() {
 
 // Loss Illustration - Cards fading/disappearing
 function LossIllustration() {
+  const { t } = useTranslation('landing');
+  
   return (
     <div className="w-full h-full bg-[#1a1a1a] rounded-xl overflow-hidden p-4 min-h-[280px]">
       {/* Window Header */}
@@ -70,7 +75,7 @@ function LossIllustration() {
           <div className="w-3 h-3 rounded-full bg-warning/80" />
           <div className="w-3 h-3 rounded-full bg-success/80" />
         </div>
-        <span className="text-xs text-muted-foreground ml-2">Leads — Perdidos</span>
+        <span className="text-xs text-muted-foreground ml-2">{t('illustrations.loss.header')}</span>
       </div>
       
       {/* Fading Cards */}
@@ -120,6 +125,8 @@ function LossIllustration() {
 
 // Dashboard Illustration - Revenue, Leads & AI Suggestions
 function DashboardIllustration() {
+  const { t } = useTranslation('landing');
+  
   return (
     <div className="w-full h-full bg-[#1a1a1a] rounded-xl overflow-hidden p-5 min-h-[320px]">
       {/* Window Header */}
@@ -129,7 +136,7 @@ function DashboardIllustration() {
           <div className="w-3 h-3 rounded-full bg-warning/80" />
           <div className="w-3 h-3 rounded-full bg-success/80" />
         </div>
-        <span className="text-sm text-muted-foreground ml-2">Qualify — Dashboard</span>
+        <span className="text-sm text-muted-foreground ml-2">{t('illustrations.dashboard.header')}</span>
       </div>
       
       {/* Dashboard Content */}
@@ -138,14 +145,14 @@ function DashboardIllustration() {
         <div className="flex flex-col gap-3 w-[160px]">
           {/* Revenue Card */}
           <div className="bg-[#2a2a2a] rounded-lg p-4">
-            <div className="text-xs text-muted-foreground mb-1">Receita Prevista</div>
-            <div className="text-xl font-bold text-primary">R$ 47.500</div>
-            <div className="text-xs text-success mt-1">↑ 23% vs mês anterior</div>
+            <div className="text-xs text-muted-foreground mb-1">{t('illustrations.dashboard.predictedRevenue')}</div>
+            <div className="text-xl font-bold text-primary">{t('illustrations.dashboard.revenueValue')}</div>
+            <div className="text-xs text-success mt-1">{t('illustrations.dashboard.revenueChange')}</div>
           </div>
           
           {/* Leads Card */}
           <div className="bg-[#2a2a2a] rounded-lg p-4">
-            <div className="text-xs text-muted-foreground mb-1">Leads Quentes</div>
+            <div className="text-xs text-muted-foreground mb-1">{t('illustrations.dashboard.hotLeads')}</div>
             <div className="text-2xl font-bold text-foreground">12</div>
             <div className="w-full h-2 bg-muted rounded-full mt-2 overflow-hidden">
               <div className="w-3/4 h-full bg-primary rounded-full" />
@@ -160,21 +167,21 @@ function DashboardIllustration() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">MC</div>
               <div>
-                <div className="text-base font-medium text-foreground">Marketing Corp</div>
-                <div className="text-xs text-muted-foreground">Última interação: há 2 dias</div>
+                <div className="text-base font-medium text-foreground">{t('illustrations.dashboard.clientName')}</div>
+                <div className="text-xs text-muted-foreground">{t('illustrations.dashboard.lastInteraction')}</div>
               </div>
             </div>
-            <span className="text-xs px-2.5 py-1 rounded border border-primary text-primary">Lead Quente</span>
+            <span className="text-xs px-2.5 py-1 rounded border border-primary text-primary">{t('illustrations.dashboard.hotLeadBadge')}</span>
           </div>
           
           {/* AI Suggestion */}
           <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm">✨</span>
-              <span className="text-sm font-medium text-primary">Sugestão da IA</span>
+              <span className="text-sm font-medium text-primary">{t('illustrations.dashboard.aiSuggestion')}</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              "Este cliente não responde há 48h. Baseado no histórico, uma ligação agora tem 73% de chance de conversão."
+              {t('illustrations.dashboard.aiMessage')}
             </p>
           </div>
         </div>
@@ -185,6 +192,8 @@ function DashboardIllustration() {
 
 // Pipeline Illustration - Organized Kanban
 function PipelineIllustration() {
+  const { t } = useTranslation('landing');
+  
   return (
     <div className="w-full h-full bg-[#1a1a1a] rounded-xl overflow-hidden p-4 min-h-[280px]">
       {/* Window Header */}
@@ -194,14 +203,14 @@ function PipelineIllustration() {
           <div className="w-3 h-3 rounded-full bg-warning/80" />
           <div className="w-3 h-3 rounded-full bg-success/80" />
         </div>
-        <span className="text-xs text-muted-foreground ml-2">Qualify — Pipeline</span>
+        <span className="text-xs text-muted-foreground ml-2">{t('illustrations.pipeline.header')}</span>
       </div>
       
       {/* Kanban Columns */}
       <div className="grid grid-cols-3 gap-2 h-[200px]">
         {/* Column 1 */}
         <div className="bg-[#2a2a2a] rounded-lg p-2">
-          <div className="text-xs text-muted-foreground mb-2 font-medium">Prospecção</div>
+          <div className="text-xs text-muted-foreground mb-2 font-medium">{t('illustrations.pipeline.prospecting')}</div>
           <div className="space-y-2">
             <div className="bg-primary rounded p-2">
               <div className="h-2 w-full bg-primary-foreground/30 rounded mb-1" />
@@ -219,7 +228,7 @@ function PipelineIllustration() {
         
         {/* Column 2 */}
         <div className="bg-[#2a2a2a] rounded-lg p-2">
-          <div className="text-xs text-muted-foreground mb-2 font-medium">Reunião</div>
+          <div className="text-xs text-muted-foreground mb-2 font-medium">{t('illustrations.pipeline.meeting')}</div>
           <div className="space-y-2">
             <div className="bg-primary rounded p-2">
               <div className="h-2 w-full bg-primary-foreground/30 rounded mb-1" />
@@ -233,7 +242,7 @@ function PipelineIllustration() {
         
         {/* Column 3 */}
         <div className="bg-[#2a2a2a] rounded-lg p-2">
-          <div className="text-xs text-muted-foreground mb-2 font-medium">Produção</div>
+          <div className="text-xs text-muted-foreground mb-2 font-medium">{t('illustrations.pipeline.production')}</div>
           <div className="space-y-2">
             <div className="bg-success rounded p-2">
               <div className="h-2 w-full bg-success-foreground/30 rounded mb-1" />

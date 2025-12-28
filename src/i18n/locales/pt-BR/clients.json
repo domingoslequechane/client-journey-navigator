@@ -118,5 +118,29 @@
     "history": "Histórico",
     "documents": "Documentos",
     "checklist": "Checklist"
+  },
+  "sources": {
+    "google_maps": "Google Maps",
+    "social_media": "Redes Sociais",
+    "referral": "Indicação",
+    "visit": "Visita Presencial",
+    "inbound": "Inbound",
+    "other": "Outro"
+  },
+  "services": {
+    "social_management": "Gestão de Redes Sociais",
+    "content_creation": "Criação de Conteúdo",
+    "video_production": "Produção de Vídeo",
+    "facebook_ads": "Tráfego Pago Facebook",
+    "instagram_ads": "Tráfego Pago Instagram",
+    "tiktok_ads": "Tráfego Pago TikTok",
+    "graphic_design": "Design Gráfico",
+    "marketing_consulting": "Consultoria de Marketing"
+  },
+  "documents": {
+    "contract": "Contrato",
+    "proforma_invoice": "Factura Proforma",
+    "budget": "Orçamento",
+    "commercial_proposal": "Proposta Comercial"
   }
 }
