@@ -664,12 +664,16 @@ export default function LandingPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
-                    {(t(`plans.${planKey}.features`, { returnObjects: true }) as string[]).map((feature: string, index: number) => (
-                      <li key={index} className="flex items-center gap-2 text-sm">
-                        <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: plan.color }} />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
+                    {(() => {
+                      const features = t(`plans.${planKey}.features`, { returnObjects: true });
+                      const featureList = Array.isArray(features) ? features : plan.features;
+                      return featureList.map((feature: string, index: number) => (
+                        <li key={index} className="flex items-center gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: plan.color }} />
+                          <span>{feature}</span>
+                        </li>
+                      ));
+                    })()}
                   </ul>
                   
                   <Link to="/auth" className="block">
