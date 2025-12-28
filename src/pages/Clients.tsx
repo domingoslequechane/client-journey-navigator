@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { ALL_STAGES } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -27,15 +28,9 @@ import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { useSubscription } from '@/hooks/useSubscription';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
+import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
 
 type Client = Tables<'clients'>;
-
-const QUALIFICATION_LABELS: Record<string, string> = {
-  cold: 'Frio',
-  warm: 'Morno',
-  hot: 'Quente',
-  qualified: 'Qualificado',
-};
 
 const QUALIFICATION_COLORS: Record<string, string> = {
   cold: 'bg-blue-100 text-blue-800',
@@ -45,6 +40,10 @@ const QUALIFICATION_COLORS: Record<string, string> = {
 };
 
 export default function Clients() {
+  const { t } = useTranslation('clients');
+  const { t: tCommon } = useTranslation('common');
+  const { qualificationLabels, getQualificationLabel, getStageLabel } = useTranslatedLabels();
+  const navigate = useNavigate();
   const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,9 +108,9 @@ export default function Clients() {
     <div className="p-4 md:p-8">
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Clientes</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">{t('title')}</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">
-            Gerencie todos os seus clientes ({filteredClients.length} de {clients.length})
+            {t('subtitle', { count: filteredClients.length, total: clients.length })}
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -126,12 +125,12 @@ export default function Clients() {
                     disabled={filteredClients.length === 0}
                   >
                     <Download className="h-4 w-4" />
-                    <span className="hidden sm:inline">Exportar</span>
+                    <span className="hidden sm:inline">{t('actions.export')}</span>
                   </Button>
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Exportar clientes para CSV</p>
+                <p>{t('actions.exportTooltip')}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -146,7 +145,7 @@ export default function Clients() {
               ) : (
                 <Lock className="h-4 w-4" />
               )}
-              {canAddClient ? 'Novo Cliente' : 'Limite'}
+              {canAddClient ? t('actions.newClient') : t('actions.limit')}
             </Button>
           )}
         </div>
@@ -157,7 +156,7 @@ export default function Clients() {
         <div className="relative flex-1 md:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por empresa, contato ou email..."
+            placeholder={t('search.placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -167,10 +166,10 @@ export default function Clients() {
           <Select value={filterStage || 'all'} onValueChange={(v) => setFilterStage(v === 'all' ? null : v)}>
             <SelectTrigger className="w-full md:w-44">
               <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Fase" />
+              <SelectValue placeholder={t('filters.stage')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas as fases</SelectItem>
+              <SelectItem value="all">{t('filters.allStages')}</SelectItem>
               {ALL_STAGES.map((stage) => (
                 <SelectItem key={stage.id} value={stage.id}>
                   {stage.name}
@@ -180,14 +179,14 @@ export default function Clients() {
           </Select>
           <Select value={filterQualification || 'all'} onValueChange={(v) => setFilterQualification(v === 'all' ? null : v)}>
             <SelectTrigger className="w-full md:w-40">
-              <SelectValue placeholder="Qualificação" />
+              <SelectValue placeholder={t('filters.qualification')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="cold">Frio</SelectItem>
-              <SelectItem value="warm">Morno</SelectItem>
-              <SelectItem value="hot">Quente</SelectItem>
-              <SelectItem value="qualified">Qualificado</SelectItem>
+              <SelectItem value="all">{t('filters.all')}</SelectItem>
+              <SelectItem value="cold">{qualificationLabels.cold}</SelectItem>
+              <SelectItem value="warm">{qualificationLabels.warm}</SelectItem>
+              <SelectItem value="hot">{qualificationLabels.hot}</SelectItem>
+              <SelectItem value="qualified">{qualificationLabels.qualified}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -221,11 +220,12 @@ export default function Clients() {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2 mt-3">
-                      <Badge className={`${stage?.color || 'bg-muted'} text-xs`}>
-                        {stage?.name || client.current_stage}
-                      </Badge>
-                      <Badge variant="secondary" className={`${QUALIFICATION_COLORS[client.qualification]} text-xs`}>
-                        {QUALIFICATION_LABELS[client.qualification]}
+                        <Badge className={`${stage?.color || 'bg-muted'} text-xs`}>
+                          {stage?.name || client.current_stage}
+                        </Badge>
+                        <Badge variant="secondary" className={`${QUALIFICATION_COLORS[client.qualification]} text-xs`}>
+                          {getQualificationLabel(client.qualification)}
+                        </Badge>
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between mt-3">
@@ -244,12 +244,12 @@ export default function Clients() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Empresa</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Contato</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Fase</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Qualificação</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">BANT Score</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Criado em</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.company')}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.contact')}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.stage')}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.qualification')}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.bantScore')}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.createdAt')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -290,8 +290,9 @@ export default function Clients() {
                         </td>
                         <td className="px-6 py-4">
                           <Badge variant="secondary" className={QUALIFICATION_COLORS[client.qualification]}>
-                            {QUALIFICATION_LABELS[client.qualification]}
+                            {getQualificationLabel(client.qualification)}
                           </Badge>
+                        </td>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
@@ -316,7 +317,9 @@ export default function Clients() {
 
         {filteredClients.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
-            Nenhum cliente encontrado
+            {t('empty')}
+          </div>
+        )}
           </div>
         )}
       </AnimatedContainer>

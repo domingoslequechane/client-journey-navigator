@@ -39,18 +39,30 @@
       "description": "Access to traffic and campaign management"
     }
   },
+  "status": {
+    "active": "Active",
+    "pending": "Pending Invite",
+    "suspended": "Suspended"
+  },
   "member": {
     "joinedAt": "Joined on {{date}}",
     "lastActive": "Last active: {{date}}",
     "you": "(you)",
     "owner": "Owner",
-    "pending": "Pending"
+    "pending": "Pending",
+    "name": "Name",
+    "email": "Email",
+    "roleLabel": "Role",
+    "statusLabel": "Status",
+    "actionsLabel": "Actions"
   },
   "actions": {
     "changeRole": "Change Role",
     "remove": "Remove from Team",
     "resendInvite": "Resend Invite",
-    "cancelInvite": "Cancel Invite"
+    "cancelInvite": "Cancel Invite",
+    "suspend": "Suspend",
+    "activate": "Activate"
   },
   "pendingInvites": {
     "title": "Pending Invites",
@@ -63,15 +75,41 @@
     "title": "Remove Member",
     "confirmTitle": "Confirm Removal",
     "confirmMessage": "Are you sure you want to remove {{name}} from the team?",
+    "confirmMessageDetail": "The user will be removed from the organization and notified by email. This action cannot be undone.",
     "confirm": "Remove",
     "cancel": "Cancel",
     "success": "Member removed successfully",
     "error": "Error removing member"
   },
+  "cancelInvite": {
+    "title": "Cancel Invite",
+    "message": "Are you sure you want to cancel the invite for {{name}}?",
+    "confirm": "Cancel Invite"
+  },
+  "changeRoleDialog": {
+    "title": "Change Role",
+    "description": "Select the new role for {{name}}",
+    "newRole": "New Role",
+    "selectRole": "Select a role",
+    "save": "Save",
+    "saving": "Saving..."
+  },
+  "adminPromotion": {
+    "title": "Promote to Administrator?",
+    "message": "{{name}} will have full access to the system, including agency settings and team management. Are you sure?",
+    "confirm": "Yes, promote"
+  },
   "messages": {
     "roleUpdated": "Role updated successfully!",
     "inviteResent": "Invite resent!",
-    "inviteCancelled": "Invite cancelled"
+    "inviteCancelled": "Invite cancelled",
+    "accessDenied": "Access denied",
+    "adminOnly": "Only administrators can access this page",
+    "loadError": "Could not load team",
+    "suspended": "User suspended",
+    "suspendedDesc": "The user can no longer access the system",
+    "activated": "User activated",
+    "activatedDesc": "The user can access the system again"
   },
   "empty": {
     "title": "No team members",

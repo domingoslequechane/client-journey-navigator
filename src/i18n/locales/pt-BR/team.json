@@ -39,18 +39,30 @@
       "description": "Acesso à gestão de tráfego e campanhas"
     }
   },
+  "status": {
+    "active": "Ativo",
+    "pending": "Convite Pendente",
+    "suspended": "Suspenso"
+  },
   "member": {
     "joinedAt": "Entrou em {{date}}",
     "lastActive": "Último acesso: {{date}}",
     "you": "(você)",
     "owner": "Proprietário",
-    "pending": "Pendente"
+    "pending": "Pendente",
+    "name": "Nome",
+    "email": "E-mail",
+    "roleLabel": "Cargo",
+    "statusLabel": "Status",
+    "actionsLabel": "Ações"
   },
   "actions": {
     "changeRole": "Alterar Cargo",
     "remove": "Remover da Equipe",
     "resendInvite": "Reenviar Convite",
-    "cancelInvite": "Cancelar Convite"
+    "cancelInvite": "Cancelar Convite",
+    "suspend": "Suspender",
+    "activate": "Ativar"
   },
   "pendingInvites": {
     "title": "Convites Pendentes",
@@ -63,15 +75,41 @@
     "title": "Remover Membro",
     "confirmTitle": "Confirmar Remoção",
     "confirmMessage": "Tem certeza que deseja remover {{name}} da equipe?",
+    "confirmMessageDetail": "O usuário será removido da organização e notificado por email. Esta ação não pode ser desfeita.",
     "confirm": "Remover",
     "cancel": "Cancelar",
     "success": "Membro removido com sucesso",
     "error": "Erro ao remover membro"
   },
+  "cancelInvite": {
+    "title": "Cancelar Convite",
+    "message": "Tem certeza que deseja cancelar o convite para {{name}}?",
+    "confirm": "Cancelar Convite"
+  },
+  "changeRoleDialog": {
+    "title": "Alterar Cargo",
+    "description": "Selecione o novo cargo para {{name}}",
+    "newRole": "Novo Cargo",
+    "selectRole": "Selecione um cargo",
+    "save": "Salvar",
+    "saving": "Salvando..."
+  },
+  "adminPromotion": {
+    "title": "Promover a Administrador?",
+    "message": "{{name}} terá acesso total ao sistema, incluindo configurações da agência e gerenciamento de equipe. Tem certeza?",
+    "confirm": "Sim, promover"
+  },
   "messages": {
     "roleUpdated": "Cargo atualizado com sucesso!",
     "inviteResent": "Convite reenviado!",
-    "inviteCancelled": "Convite cancelado"
+    "inviteCancelled": "Convite cancelado",
+    "accessDenied": "Acesso negado",
+    "adminOnly": "Apenas administradores podem acessar esta página",
+    "loadError": "Não foi possível carregar a equipe",
+    "suspended": "Usuário suspenso",
+    "suspendedDesc": "O usuário não poderá mais acessar o sistema",
+    "activated": "Usuário ativado",
+    "activatedDesc": "O usuário pode acessar o sistema novamente"
   },
   "empty": {
     "title": "Nenhum membro na equipe",

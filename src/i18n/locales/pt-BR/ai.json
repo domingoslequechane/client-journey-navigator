@@ -4,6 +4,8 @@
   "selectClient": "Selecionar Cliente",
   "selectClientDescription": "Escolha um cliente para iniciar uma conversa com contexto",
   "noClientSelected": "Nenhum cliente selecionado",
+  "searchClients": "Buscar clientes...",
+  "allStages": "Todas as fases",
   "chat": {
     "placeholder": "Digite sua mensagem...",
     "send": "Enviar",
@@ -46,5 +48,14 @@
     "copy": "Copiar resposta",
     "regenerate": "Regenerar resposta",
     "feedback": "Enviar feedback"
+  },
+  "stageOptions": {
+    "all": "Todas as fases",
+    "prospeccao": "Prospecção",
+    "reuniao": "Reunião",
+    "contratacao": "Contratação",
+    "producao": "Produção",
+    "trafego": "Tráfego",
+    "retencao": "Retenção"
   }
 }
