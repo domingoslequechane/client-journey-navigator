@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { OPERATIONAL_FLOW_STAGES, Client } from '@/types';
 import { mapDbClientToUiClient } from '@/lib/client-utils';
@@ -14,10 +15,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatPhoneNumber } from '@/lib/phone-utils';
 import { useSubscription } from '@/hooks/useSubscription';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
+import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
 
 const stageIcons = { production: Cog, campaigns: Megaphone, retention: Target, loyalty: Heart };
 
 export default function OperationalFlow() {
+  const { t } = useTranslation('pipeline');
+  const { getStageLabel } = useTranslatedLabels();
   const navigate = useNavigate();
   const { currencySymbol } = useOrganizationCurrency();
   const { user } = useAuth();
@@ -65,15 +69,15 @@ export default function OperationalFlow() {
   }
 
   if (!hasActiveSubscription) {
-    return <SubscriptionRequired feature="o Fluxo Operacional" />;
+    return <SubscriptionRequired feature={t('operationalFlow.title')} />;
   }
 
   return (
     <div className="p-4 md:p-8 h-full flex flex-col">
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Fluxo Operacional</h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">Acompanhe os clientes nas fases de execução e retenção</p>
+          <h1 className="text-2xl md:text-3xl font-bold">{t('operationalFlow.title')}</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">{t('operationalFlow.subtitle')}</p>
         </div>
       </AnimatedContainer>
 
@@ -92,16 +96,16 @@ export default function OperationalFlow() {
                 <div className={cn('p-4 rounded-t-xl border-t-4', stage.color, stage.borderColor)}>
                   <div className="flex items-center gap-2 mb-1">
                     <StageIcon className="h-5 w-5" />
-                    <h3 className="font-semibold">{stage.name}</h3>
+                    <h3 className="font-semibold">{getStageLabel(stage.id)}</h3>
                     <Badge variant="secondary" className="ml-auto">{stageClients.length}</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">{stage.description}</p>
+                  <p className="text-xs text-muted-foreground">{t(`stageDescriptions.${stage.id}`)}</p>
                 </div>
                 
                 <div className="flex-1 bg-muted/30 rounded-b-xl p-3 space-y-3 min-h-[400px]">
                   {stageClients.length === 0 ? (
                     <div className="text-center py-8">
-                      <p className="text-sm text-muted-foreground mb-3">Nenhum cliente nesta fase</p>
+                      <p className="text-sm text-muted-foreground mb-3">{t('emptyStage')}</p>
                     </div>
                   ) : (
                     stageClients.map((client, clientIndex) => (
@@ -129,13 +133,13 @@ export default function OperationalFlow() {
                           </div>
                           <div className="mt-3">
                             <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                              <span>Progresso</span>
+                              <span>{t('progress')}</span>
                               <span>{client.progress}/9</span>
                             </div>
                             <Progress value={(client.progress / 9) * 100} className="h-1.5" />
                           </div>
                           <div className="flex justify-between mt-2 text-xs">
-                            <span className="text-muted-foreground">Orçamento Mensal</span>
+                            <span className="text-muted-foreground">{t('monthlyBudget')}</span>
                             <span className="font-medium text-primary">{currencySymbol} {client.monthlyBudget.toLocaleString()}</span>
                           </div>
                         </div>

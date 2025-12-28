@@ -142,5 +142,9 @@
     "proforma_invoice": "Factura Proforma",
     "budget": "Orçamento",
     "commercial_proposal": "Proposta Comercial"
+  },
+  "errors": {
+    "title": "Erro",
+    "loadClients": "Não foi possível carregar os clientes"
   }
 }

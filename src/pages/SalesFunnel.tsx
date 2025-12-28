@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
-import { SALES_FUNNEL_STAGES, Client, TEMPERATURE_LABELS, SOURCE_LABELS } from '@/types';
+import { SALES_FUNNEL_STAGES, Client } from '@/types';
 import { mapDbClientToUiClient } from '@/lib/client-utils';
 import { Button } from '@/components/ui/button';
 import { Plus, Search, Target, FileCheck, Phone } from 'lucide-react';
@@ -15,10 +16,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatPhoneNumber } from '@/lib/phone-utils';
 import { useSubscription } from '@/hooks/useSubscription';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
+import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
 
 const stageIcons = { prospecting: Search, qualification: Target, closing: FileCheck };
 
 export default function SalesFunnel() {
+  const { t } = useTranslation('pipeline');
+  const { t: tCommon } = useTranslation('common');
+  const { getTemperatureLabel, getSourceLabel, getStageLabel } = useTranslatedLabels();
   const navigate = useNavigate();
   const { currencySymbol } = useOrganizationCurrency();
   const { user } = useAuth();
@@ -66,20 +71,20 @@ export default function SalesFunnel() {
   }
 
   if (!hasActiveSubscription) {
-    return <SubscriptionRequired feature="o Funil de Vendas" />;
+    return <SubscriptionRequired feature={t('title')} />;
   }
 
   return (
     <div className="p-4 md:p-8 h-full flex flex-col">
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Funil de Vendas</h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">Acompanhe os clientes nas fases de prospecção, qualificação e fechamento</p>
+          <h1 className="text-2xl md:text-3xl font-bold">{t('title')}</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">{t('subtitle')}</p>
         </div>
         <Link to="/app/new-client">
           <Button className="gap-2 w-full sm:w-auto">
             <Plus className="h-4 w-4" />
-            Novo Cliente
+            {t('actions.newClient')}
           </Button>
         </Link>
       </AnimatedContainer>
@@ -99,21 +104,21 @@ export default function SalesFunnel() {
                 <div className={cn('p-4 rounded-t-xl border-t-4', stage.color, stage.borderColor)}>
                   <div className="flex items-center gap-2 mb-1">
                     <StageIcon className="h-5 w-5" />
-                    <h3 className="font-semibold">{stage.name}</h3>
+                    <h3 className="font-semibold">{getStageLabel(stage.id)}</h3>
                     <Badge variant="secondary" className="ml-auto">{stageClients.length}</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">{stage.description}</p>
+                  <p className="text-xs text-muted-foreground">{t(`stageDescriptions.${stage.id}`)}</p>
                 </div>
                 
                 <div className="flex-1 bg-muted/30 rounded-b-xl p-3 space-y-3 min-h-[400px]">
                   {stageClients.length === 0 ? (
                     <div className="text-center py-8">
-                      <p className="text-sm text-muted-foreground mb-3">Nenhum cliente nesta fase</p>
+                      <p className="text-sm text-muted-foreground mb-3">{t('emptyStage')}</p>
                       {/* Only show Add button for prospecting stage */}
                       {stage.id === 'prospecting' && (
                         <Link to="/app/new-client">
                           <Button variant="outline" size="sm" className="gap-1">
-                            <Plus className="h-4 w-4" /> Adicionar
+                            <Plus className="h-4 w-4" /> {tCommon('add')}
                           </Button>
                         </Link>
                       )}
@@ -144,19 +149,19 @@ export default function SalesFunnel() {
                           </div>
                           <div className="flex items-center gap-2 mt-3">
                             <Badge variant={client.temperature === 'hot' ? 'default' : 'secondary'} className="text-xs">
-                              {TEMPERATURE_LABELS[client.temperature]}
+                              {getTemperatureLabel(client.temperature)}
                             </Badge>
-                            <Badge variant="outline" className="text-xs">{SOURCE_LABELS[client.source]}</Badge>
+                            <Badge variant="outline" className="text-xs">{getSourceLabel(client.source)}</Badge>
                           </div>
                           <div className="mt-3">
                             <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                              <span>Progresso</span>
+                              <span>{t('progress')}</span>
                               <span>{client.progress}/9</span>
                             </div>
                             <Progress value={(client.progress / 9) * 100} className="h-1.5" />
                           </div>
                           <div className="flex justify-between mt-2 text-xs">
-                            <span className="text-muted-foreground">Orçamento Mensal</span>
+                            <span className="text-muted-foreground">{t('monthlyBudget')}</span>
                             <span className="font-medium text-primary">{currencySymbol} {client.monthlyBudget.toLocaleString()}</span>
                           </div>
                         </div>

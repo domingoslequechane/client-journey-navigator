@@ -52,19 +52,30 @@ export function useTranslatedLabels() {
     hot: tPipeline('filters.hot'),
   };
 
-  // Stage labels
+  // Stage labels - use the stages object structure
   const getStageLabel = (stage: string): string => {
-    return t(`stages.${stage}`, stage);
+    // Map UI stage IDs to DB stage IDs
+    const stageDbMap: Record<string, string> = {
+      prospecting: 'prospeccao',
+      qualification: 'reuniao',
+      closing: 'contratacao',
+      production: 'producao',
+      campaigns: 'trafego',
+      retention: 'retencao',
+      loyalty: 'fidelizacao',
+    };
+    const dbStage = stageDbMap[stage] || stage;
+    return t(`stages.${dbStage}`, tPipeline(`stages.${dbStage}.name`, stage));
   };
 
   const stageLabels: Record<string, string> = {
-    prospeccao: t('stages.prospeccao'),
-    reuniao: t('stages.reuniao'),
-    contratacao: t('stages.contratacao'),
-    producao: t('stages.producao'),
-    trafego: t('stages.trafego'),
-    retencao: t('stages.retencao'),
-    fidelizacao: t('stages.fidelizacao'),
+    prospeccao: t('stages.prospeccao', tPipeline('stages.prospeccao.name', 'Prospecting')),
+    reuniao: t('stages.reuniao', tPipeline('stages.reuniao.name', 'Meeting')),
+    contratacao: t('stages.contratacao', tPipeline('stages.contratacao.name', 'Contracting')),
+    producao: t('stages.producao', tPipeline('stages.producao.name', 'Production')),
+    trafego: t('stages.trafego', tPipeline('stages.trafego.name', 'Traffic')),
+    retencao: t('stages.retencao', tPipeline('stages.retencao.name', 'Retention')),
+    fidelizacao: t('stages.fidelizacao', tPipeline('stages.fidelizacao.name', 'Loyalty')),
   };
 
   // Role labels

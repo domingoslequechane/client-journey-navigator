@@ -44,7 +44,6 @@ export default function Clients() {
   const { t: tCommon } = useTranslation('common');
   const { qualificationLabels, getQualificationLabel, getStageLabel } = useTranslatedLabels();
   const navigate = useNavigate();
-  const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,7 +69,7 @@ export default function Clients() {
       setClients(data || []);
     } catch (error) {
       console.error('Error fetching clients:', error);
-      toast({ title: 'Erro', description: 'Não foi possível carregar os clientes', variant: 'destructive' });
+      toast({ title: t('errors.title'), description: t('errors.loadClients'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -172,7 +171,7 @@ export default function Clients() {
               <SelectItem value="all">{t('filters.allStages')}</SelectItem>
               {ALL_STAGES.map((stage) => (
                 <SelectItem key={stage.id} value={stage.id}>
-                  {stage.name}
+                  {getStageLabel(stage.id)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -196,130 +195,126 @@ export default function Clients() {
       <AnimatedContainer animation="fade-up" delay={0.2} className="bg-card border border-border rounded-xl overflow-hidden">
         {/* Mobile Cards View */}
         <div className="md:hidden divide-y divide-border">
+          {filteredClients.map((client) => {
+            const mappedStage = getStageFromDb(client.current_stage);
+            const stage = ALL_STAGES.find(s => s.id === mappedStage);
+            const bantScore = (client.bant_budget || 0) + (client.bant_authority || 0) + (client.bant_need || 0) + (client.bant_timeline || 0);
+            
+            return (
+              <div 
+                key={client.id}
+                className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+                onClick={() => navigate(`/app/clients/${client.id}`)}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Building2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{client.company_name}</p>
+                    <p className="text-sm text-muted-foreground">{client.contact_name}</p>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 font-mono">
+                      <Phone className="h-3 w-3" />{formatPhoneNumber(client.phone)}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Badge className={`${stage?.color || 'bg-muted'} text-xs`}>
+                    {getStageLabel(client.current_stage)}
+                  </Badge>
+                  <Badge variant="secondary" className={`${QUALIFICATION_COLORS[client.qualification]} text-xs`}>
+                    {getQualificationLabel(client.qualification)}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-xs text-muted-foreground">BANT: {bantScore}/40</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(client.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border bg-muted/50">
+                <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.company')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.contact')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.stage')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.qualification')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.bantScore')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.createdAt')}</th>
+              </tr>
+            </thead>
+            <tbody>
               {filteredClients.map((client) => {
                 const mappedStage = getStageFromDb(client.current_stage);
                 const stage = ALL_STAGES.find(s => s.id === mappedStage);
                 const bantScore = (client.bant_budget || 0) + (client.bant_authority || 0) + (client.bant_need || 0) + (client.bant_timeline || 0);
                 
                 return (
-                  <div 
+                  <tr 
                     key={client.id}
-                    className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+                    className="border-b border-border hover:bg-muted/50 cursor-pointer transition-colors"
                     onClick={() => navigate(`/app/clients/${client.id}`)}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Building2 className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{client.company_name}</p>
-                        <p className="text-sm text-muted-foreground">{client.contact_name}</p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 font-mono">
-                          <Phone className="h-3 w-3" />{formatPhoneNumber(client.phone)}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Building2 className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{client.company_name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {client.email && <><Mail className="h-3 w-3" />{client.email}</>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                        <Badge className={`${stage?.color || 'bg-muted'} text-xs`}>
-                          {stage?.name || client.current_stage}
-                        </Badge>
-                        <Badge variant="secondary" className={`${QUALIFICATION_COLORS[client.qualification]} text-xs`}>
-                          {getQualificationLabel(client.qualification)}
-                        </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm">{client.contact_name}</p>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+                        <Phone className="h-3 w-3" />{formatPhoneNumber(client.phone)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge className={`${stage?.color || 'bg-muted'}`}>
+                        {getStageLabel(client.current_stage)}
                       </Badge>
-                    </div>
-                    <div className="flex items-center justify-between mt-3">
-                      <span className="text-xs text-muted-foreground">BANT: {bantScore}/40</span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(client.created_at).toLocaleDateString('pt-BR')}
-                      </span>
-                    </div>
-                  </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge variant="secondary" className={QUALIFICATION_COLORS[client.qualification]}>
+                        {getQualificationLabel(client.qualification)}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full"
+                            style={{ width: `${(bantScore / 40) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium">{bantScore}/40</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                      {new Date(client.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
                 );
               })}
-            </div>
-
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.company')}</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.contact')}</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.stage')}</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.qualification')}</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.bantScore')}</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">{t('table.createdAt')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredClients.map((client) => {
-                    const mappedStage = getStageFromDb(client.current_stage);
-                    const stage = ALL_STAGES.find(s => s.id === mappedStage);
-                    const bantScore = (client.bant_budget || 0) + (client.bant_authority || 0) + (client.bant_need || 0) + (client.bant_timeline || 0);
-                    
-                    return (
-                      <tr 
-                        key={client.id}
-                        className="border-b border-border hover:bg-muted/50 cursor-pointer transition-colors"
-                        onClick={() => navigate(`/app/clients/${client.id}`)}
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <Building2 className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                              <p className="font-medium">{client.company_name}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                {client.email && <><Mail className="h-3 w-3" />{client.email}</>}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm">{client.contact_name}</p>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
-                            <Phone className="h-3 w-3" />{formatPhoneNumber(client.phone)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge className={`${stage?.color || 'bg-muted'}`}>
-                            {stage?.name || client.current_stage}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge variant="secondary" className={QUALIFICATION_COLORS[client.qualification]}>
-                            {getQualificationLabel(client.qualification)}
-                          </Badge>
-                        </td>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-primary rounded-full"
-                                style={{ width: `${(bantScore / 40) * 100}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-medium">{bantScore}/40</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">
-                          {new Date(client.created_at).toLocaleDateString('pt-BR')}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
 
         {filteredClients.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             {t('empty')}
-          </div>
-        )}
           </div>
         )}
       </AnimatedContainer>
