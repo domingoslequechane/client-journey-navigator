@@ -142,5 +142,9 @@
     "proforma_invoice": "Proforma Invoice",
     "budget": "Budget",
     "commercial_proposal": "Commercial Proposal"
+  },
+  "errors": {
+    "title": "Error",
+    "loadClients": "Could not load clients"
   }
 }

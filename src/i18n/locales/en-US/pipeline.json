@@ -1,4 +1,9 @@
 {
+  "title": "Sales Funnel",
+  "subtitle": "Track clients through prospecting, qualification and closing stages",
+  "emptyStage": "No clients in this stage",
+  "progress": "Progress",
+  "monthlyBudget": "Monthly Budget",
   "salesFunnel": {
     "title": "Sales Funnel",
     "subtitle": "Manage your leads and opportunities",
@@ -7,8 +12,17 @@
   },
   "operationalFlow": {
     "title": "Operational Flow",
-    "subtitle": "Track production and deliveries",
+    "subtitle": "Track clients through execution and retention stages",
     "emptyColumn": "No clients in this stage"
+  },
+  "stageDescriptions": {
+    "prospecting": "Identifying and making first contact with potential clients",
+    "qualification": "Meeting and qualifying the lead",
+    "closing": "Negotiation and contract closing",
+    "production": "Execution and material production",
+    "campaigns": "Paid traffic campaign management",
+    "retention": "Retention and renewal strategies",
+    "loyalty": "Loyalty and long-term relationship"
   },
   "stages": {
     "prospeccao": {
@@ -58,6 +72,7 @@
   },
   "actions": {
     "addClient": "Add Client",
+    "newClient": "New Client",
     "moveToStage": "Move to {{stage}}",
     "viewAllInStage": "View all in {{stage}}"
   },

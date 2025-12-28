@@ -1,4 +1,9 @@
 {
+  "title": "Funil de Vendas",
+  "subtitle": "Acompanhe os clientes nas fases de prospecção, qualificação e fechamento",
+  "emptyStage": "Nenhum cliente nesta fase",
+  "progress": "Progresso",
+  "monthlyBudget": "Orçamento Mensal",
   "salesFunnel": {
     "title": "Funil de Vendas",
     "subtitle": "Gerencie seus leads e oportunidades",
@@ -7,8 +12,17 @@
   },
   "operationalFlow": {
     "title": "Fluxo Operacional",
-    "subtitle": "Acompanhe a produção e entregas",
+    "subtitle": "Acompanhe os clientes nas fases de execução e retenção",
     "emptyColumn": "Nenhum cliente nesta etapa"
+  },
+  "stageDescriptions": {
+    "prospecting": "Identificação e primeiro contato com potenciais clientes",
+    "qualification": "Reunião e qualificação do lead",
+    "closing": "Negociação e fechamento do contrato",
+    "production": "Execução e produção de materiais",
+    "campaigns": "Gestão de campanhas de tráfego pago",
+    "retention": "Estratégias de retenção e renovação",
+    "loyalty": "Fidelização e relacionamento de longo prazo"
   },
   "stages": {
     "prospeccao": {
@@ -58,6 +72,7 @@
   },
   "actions": {
     "addClient": "Adicionar Cliente",
+    "newClient": "Novo Cliente",
     "moveToStage": "Mover para {{stage}}",
     "viewAllInStage": "Ver todos em {{stage}}"
   },

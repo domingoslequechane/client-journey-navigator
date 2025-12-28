@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ import { AnimatedContainer } from '@/components/ui/animated-container';
 import { z } from 'zod';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
+import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
 
 interface TeamMember {
   id: string;
@@ -29,13 +31,6 @@ interface TeamMember {
   type: 'member' | 'invite';
   inviteId?: string;
 }
-
-const ROLE_LABELS: Record<string, string> = {
-  sales: 'Vendas',
-  operations: 'Operações',
-  campaign_management: 'Gestão de Campanhas',
-  admin: 'Administrador',
-};
 
 const ROLE_COLORS: Record<string, string> = {
   sales: 'bg-blue-100 text-blue-800',
@@ -57,6 +52,9 @@ const inviteSchema = z.object({
 });
 
 export default function Team() {
+  const { t } = useTranslation('team');
+  const { t: tCommon } = useTranslation('common');
+  const { roleLabels, getRoleLabel } = useTranslatedLabels();
   const navigate = useNavigate();
   const { canInviteTeamMember, planType, usage, limits, loading: planLoading } = usePlanLimits();
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -782,7 +780,7 @@ export default function Team() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={ROLE_COLORS[member.role] || ''}>
-                        {ROLE_LABELS[member.role] || member.role}
+                        {getRoleLabel(member.role)}
                       </Badge>
                     </TableCell>
                     <TableCell>
