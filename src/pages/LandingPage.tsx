@@ -741,7 +741,9 @@ export default function LandingPage() {
                 <AccordionTrigger className="text-left font-semibold hover:no-underline">
                   {t('faq.q3')}
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground" dangerouslySetInnerHTML={{ __html: t('faq.a3') }} />
+                <AccordionContent className="text-muted-foreground">
+                  <span dangerouslySetInnerHTML={{ __html: t('faq.a3') }} />
+                </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-4" className="bg-card border rounded-lg px-6">
