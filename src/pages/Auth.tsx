@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { LanguageSelector } from '@/components/ui/language-selector';
-import { SnowEffect } from '@/components/effects/SnowEffect';
+
 
 const createAuthSchema = (t: (key: string) => string) => z.object({
   email: z.string().email({ message: t('validation.invalidEmail') }),
@@ -355,7 +355,6 @@ export default function Auth() {
 
   return (
     <PublicBackground>
-      <SnowEffect />
       <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
         <LanguageSelector />
         <ThemeToggle />

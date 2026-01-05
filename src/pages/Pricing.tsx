@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, X, ArrowLeft, Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { PublicBackground } from '@/components/layout/PublicBackground';
-import { SnowEffect } from '@/components/effects/SnowEffect';
+
 
 // Plan images
 import planBussola from '@/assets/plans/plan-bussola.png';
@@ -130,7 +130,6 @@ const Pricing = () => {
 
   return (
     <PublicBackground>
-      <SnowEffect />
       <div className="min-h-screen">
         {/* Header */}
         <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
