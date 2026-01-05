@@ -135,7 +135,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden relative">
+    <div className="min-h-screen bg-background relative">
       {/* Inline keyframes for animations */}
       <style>{`
         @keyframes shimmer {
