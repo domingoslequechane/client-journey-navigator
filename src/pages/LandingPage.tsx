@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { SnowEffect } from '@/components/effects/SnowEffect';
+
 import { 
   Accordion,
   AccordionContent,
@@ -136,7 +136,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden relative">
-      <SnowEffect />
       {/* Inline keyframes for animations */}
       <style>{`
         @keyframes shimmer {
