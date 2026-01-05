@@ -105,10 +105,8 @@ export function PublicBackground({ children }: PublicBackgroundProps) {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(var(--primary-rgb,0,0,0)/0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--primary-rgb,0,0,0)/0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-0">
-        {children}
-      </div>
+      {/* Content - no z-index restriction to allow fixed headers to work */}
+      {children}
     </div>
   );
 }
