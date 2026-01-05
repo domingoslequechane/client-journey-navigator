@@ -421,7 +421,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="text-center">
+              <div className="text-center md:text-left">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
                   {t('hope.title')}{' '}
                   <span className="text-primary">{t('hope.titleHighlight')}</span>.
