@@ -43,6 +43,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
 import AdminSupport from "./pages/admin/AdminSupport";
+import PartnerProgram from "./pages/PartnerProgram";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +77,7 @@ const App = () => (
               <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/parcerias" element={<PartnerProgram />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/set-password" element={<SetPassword />} />
