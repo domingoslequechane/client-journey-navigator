@@ -73,3 +73,6 @@ verify_jwt = false
 
 [functions.generate-ai-suggestion]
 verify_jwt = true
+
+[functions.send-partner-inquiry]
+verify_jwt = false
