@@ -1,8 +1,20 @@
+import { useState } from "react";
 import { PublicBackground } from "@/components/layout/PublicBackground";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Shield,
   Award,
@@ -21,7 +33,8 @@ import {
   Target,
   Zap,
   TrendingUp,
-  Heart
+  Heart,
+  Loader2
 } from "lucide-react";
 import {
   Table,
@@ -31,6 +44,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface PartnerLevelCardProps {
   level: "bronze" | "prata" | "ouro";
@@ -126,6 +141,59 @@ function PartnerLevelCard({ level, icon, range, partnerDiscount, audienceDiscoun
 }
 
 export default function PartnerProgram() {
+  const { toast } = useToast();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    whatsapp: "",
+    message: ""
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.email || !formData.whatsapp) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha email e WhatsApp.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("send-partner-inquiry", {
+        body: {
+          email: formData.email,
+          whatsapp: formData.whatsapp,
+          message: formData.message || undefined
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Solicitação enviada!",
+        description: "Entraremos em contato em breve. Obrigado pelo interesse!"
+      });
+      
+      setIsModalOpen(false);
+      setFormData({ email: "", whatsapp: "", message: "" });
+    } catch (error: any) {
+      console.error("Error submitting partner inquiry:", error);
+      toast({
+        title: "Erro ao enviar",
+        description: "Ocorreu um erro. Por favor, tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const partnerLevels: PartnerLevelCardProps[] = [
     {
       level: "bronze",
@@ -173,12 +241,12 @@ export default function PartnerProgram() {
 
   const discountTable = [
     {
-      plan: "Catapulta",
-      icon: <Rocket className="h-5 w-5" />,
+      plan: "Lança",
+      icon: <Zap className="h-5 w-5" />,
       bronzeDiscount: "10%",
-      prataDiscount: "15%",
-      ouroDiscount: "25%",
-      profile: "Agências iniciantes"
+      prataDiscount: "25%",
+      ouroDiscount: "50%",
+      profile: "Agências consolidadas"
     },
     {
       plan: "Arco",
@@ -189,12 +257,12 @@ export default function PartnerProgram() {
       profile: "Agências em crescimento"
     },
     {
-      plan: "Lança",
-      icon: <Zap className="h-5 w-5" />,
+      plan: "Catapulta",
+      icon: <Rocket className="h-5 w-5" />,
       bronzeDiscount: "10%",
-      prataDiscount: "25%",
-      ouroDiscount: "50%",
-      profile: "Agências consolidadas"
+      prataDiscount: "15%",
+      ouroDiscount: "25%",
+      profile: "Agências iniciantes"
     }
   ];
 
@@ -363,7 +431,7 @@ export default function PartnerProgram() {
                 Apoio a Eventos e Comunidade
               </h2>
               <p className="text-muted-foreground max-w-xl mx-auto">
-                Queremos que você brilhe. Por isso, oferecemos suporte completo para suas iniciativas.
+                Queremos que você brilhe. Por isso, oferecemos suporte para suas iniciativas.
               </p>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
@@ -444,7 +512,7 @@ export default function PartnerProgram() {
                   <p className="text-muted-foreground mb-6 max-w-md">
                     Entre em contato conosco e comece sua jornada como parceiro Qualify.
                   </p>
-                  <Button size="lg" className="gap-2">
+                  <Button size="lg" className="gap-2" onClick={() => setIsModalOpen(true)}>
                     Quero ser parceiro
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -462,6 +530,66 @@ export default function PartnerProgram() {
             </p>
           </div>
         </footer>
+
+        {/* Partner Inquiry Modal */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Handshake className="h-5 w-5 text-primary" />
+                Quero ser parceiro
+              </DialogTitle>
+              <DialogDescription>
+                Preencha seus dados e entraremos em contato para iniciar sua jornada como parceiro Qualify.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp *</Label>
+                <PhoneInput
+                  value={formData.whatsapp}
+                  onChange={(value) => setFormData(prev => ({ ...prev, whatsapp: value || "" }))}
+                  defaultCountry="MZ"
+                  placeholder="+258 84 123 4567"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="message">Mensagem (opcional)</Label>
+                <Textarea
+                  id="message"
+                  placeholder="Conte-nos um pouco sobre você e sua audiência..."
+                  value={formData.message}
+                  onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              <Button type="submit" className="w-full gap-2" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    Enviar solicitação
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </PublicBackground>
   );
