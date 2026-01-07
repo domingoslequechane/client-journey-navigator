@@ -198,10 +198,18 @@ export default function PartnerProgram() {
       setFormData({ email: "", whatsapp: "", message: "", socialMedia: { facebook: "", instagram: "", linkedin: "", tiktok: "", youtube: "", other: "" } });
     } catch (error: any) {
       console.error("Error submitting partner inquiry:", error);
+
+      const rawMessage = error?.message ?? "";
+      const isResendTestMode =
+        rawMessage.includes("You can only send testing emails") ||
+        rawMessage.includes("verify a domain at resend.com/domains");
+
       toast({
         title: "Erro ao enviar",
-        description: "Ocorreu um erro. Por favor, tente novamente.",
-        variant: "destructive"
+        description: isResendTestMode
+          ? "Envio bloqueado pelo Resend em modo de teste. Verifique um domínio no Resend e use um remetente (from) desse domínio."
+          : rawMessage || "Ocorreu um erro. Por favor, tente novamente.",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
