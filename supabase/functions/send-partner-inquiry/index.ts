@@ -73,7 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Qualify AI <onboarding@resend.dev>",
+        from: "Qualify AI <parcerias-qualify@onixagence.com>",
         to: ["d.lequechane@onixagence.com"],
         subject: "Nova Solicitação de Parceria - Qualify AI",
         html: `

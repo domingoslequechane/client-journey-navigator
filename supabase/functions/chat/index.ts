@@ -190,9 +190,9 @@ serve(async (req) => {
       if (agencyData) {
         agencyName = sanitizeForPrompt(agencyData.agency_name, 100);
         
-        // Optimized: Reduced knowledge base from 3000 to 1000 chars
+        // Increased knowledge base to 3000 chars for richer context
         if (agencyData.knowledge_base_text) {
-          knowledgeBaseContext = sanitizeForPrompt(agencyData.knowledge_base_text, 1000);
+          knowledgeBaseContext = sanitizeForPrompt(agencyData.knowledge_base_text, 3000);
         }
       }
 
