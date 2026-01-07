@@ -115,12 +115,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!emailResponse.ok) {
       console.error("Resend API error:", data);
-      throw new Error(data.message || "Failed to send email");
+
+      const message = data?.message || "Failed to send email";
+      const status = data?.statusCode ?? emailResponse.status ?? 500;
+
+      return new Response(JSON.stringify({ error: message }), {
+        status,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     console.log("Email sent successfully:", data);
 
-    return new Response(JSON.stringify({ success: true, data: emailResponse }), {
+    return new Response(JSON.stringify({ success: true, data }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
