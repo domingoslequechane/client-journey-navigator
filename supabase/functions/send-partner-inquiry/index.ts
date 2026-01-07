@@ -7,10 +7,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface SocialMedia {
+  facebook?: string;
+  instagram?: string;
+  linkedin?: string;
+  tiktok?: string;
+  youtube?: string;
+  other?: string;
+}
+
 interface PartnerInquiryRequest {
   email: string;
   whatsapp: string;
   message?: string;
+  socialMedia?: SocialMedia;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -22,9 +32,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, whatsapp, message }: PartnerInquiryRequest = await req.json();
+    const { email, whatsapp, message, socialMedia }: PartnerInquiryRequest = await req.json();
 
-    console.log("Partner inquiry data:", { email, whatsapp, hasMessage: !!message });
+    console.log("Partner inquiry data:", { email, whatsapp, hasMessage: !!message, hasSocialMedia: !!socialMedia });
 
     // Validate required fields
     if (!email || !whatsapp) {
@@ -37,6 +47,24 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
+
+    // Build social media section HTML
+    const socialMediaItems: string[] = [];
+    if (socialMedia?.facebook) socialMediaItems.push(`<li style="margin: 5px 0;"><strong>Facebook:</strong> <a href="${socialMedia.facebook}" style="color: #6366f1;">${socialMedia.facebook}</a></li>`);
+    if (socialMedia?.instagram) socialMediaItems.push(`<li style="margin: 5px 0;"><strong>Instagram:</strong> <a href="${socialMedia.instagram}" style="color: #6366f1;">${socialMedia.instagram}</a></li>`);
+    if (socialMedia?.linkedin) socialMediaItems.push(`<li style="margin: 5px 0;"><strong>LinkedIn:</strong> <a href="${socialMedia.linkedin}" style="color: #6366f1;">${socialMedia.linkedin}</a></li>`);
+    if (socialMedia?.tiktok) socialMediaItems.push(`<li style="margin: 5px 0;"><strong>TikTok:</strong> <a href="${socialMedia.tiktok}" style="color: #6366f1;">${socialMedia.tiktok}</a></li>`);
+    if (socialMedia?.youtube) socialMediaItems.push(`<li style="margin: 5px 0;"><strong>YouTube:</strong> <a href="${socialMedia.youtube}" style="color: #6366f1;">${socialMedia.youtube}</a></li>`);
+    if (socialMedia?.other) socialMediaItems.push(`<li style="margin: 5px 0;"><strong>Outro:</strong> <a href="${socialMedia.other}" style="color: #6366f1;">${socialMedia.other}</a></li>`);
+
+    const socialMediaHtml = socialMediaItems.length > 0 ? `
+      <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h2 style="color: #334155; margin-top: 0;">Mídias Sociais</h2>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          ${socialMediaItems.join('')}
+        </ul>
+      </div>
+    ` : '';
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -72,6 +100,8 @@ const handler = async (req: Request): Promise<Response> => {
                 <span style="color: #334155;">${message || "Nenhuma mensagem adicional"}</span>
               </p>
             </div>
+
+            ${socialMediaHtml}
             
             <p style="color: #94a3b8; font-size: 12px; margin-top: 30px;">
               Esta mensagem foi enviada automaticamente pelo formulário de parcerias do Qualify AI CRM.
