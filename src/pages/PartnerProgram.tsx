@@ -266,8 +266,8 @@ export default function PartnerProgram() {
       plan: "Lança",
       icon: <Zap className="h-5 w-5" />,
       bronzeDiscount: "10%",
-      prataDiscount: "25%",
-      ouroDiscount: "50%",
+      prataDiscount: "15%",
+      ouroDiscount: "25%",
       profile: "Agências consolidadas"
     },
     {
@@ -282,8 +282,8 @@ export default function PartnerProgram() {
       plan: "Catapulta",
       icon: <Rocket className="h-5 w-5" />,
       bronzeDiscount: "10%",
-      prataDiscount: "15%",
-      ouroDiscount: "25%",
+      prataDiscount: "25%",
+      ouroDiscount: "50%",
       profile: "Agências iniciantes"
     }
   ];
@@ -559,7 +559,7 @@ export default function PartnerProgram() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Handshake className="h-5 w-5 text-primary" />
-                Quero ser parceiro
+                Formulário de parceria
               </DialogTitle>
               <DialogDescription>
                 Preencha seus dados e entraremos em contato para iniciar sua jornada como parceiro Qualify.
