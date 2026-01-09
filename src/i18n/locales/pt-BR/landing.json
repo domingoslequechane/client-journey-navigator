@@ -52,7 +52,7 @@
   "solution": {
     "title": "Isso é o",
     "titleHighlight": "Qualify",
-    "description": "O CRM com IA que organiza seus clientes, qualifica leads automaticamente, sugere estratégias e prevê seu faturamento — tudo num só lugar.",
+    "description": "O CRM com IA que organiza clientes, qualifica leads, gera contratos, faturas, propostas e orçamentos em um clique, e sugere o que estudar para evoluir — tudo num só lugar.",
     "mockupTitle": "Qualify — Pipeline",
     "stages": {
       "prospecting": "Prospecção",
@@ -63,14 +63,20 @@
       "retention": "Retenção",
       "loyalty": "Fidelização"
     },
-    "benefit1Title": "Organiza automaticamente",
-    "benefit1Desc": "Cada cliente no lugar certo",
-    "benefit2Title": "Mostra os melhores leads",
-    "benefit2Desc": "Priorize quem vale a pena",
-    "benefit3Title": "IA que sugere estratégias",
-    "benefit3Desc": "Contexto total do cliente",
-    "benefit4Title": "Prevê seu faturamento",
-    "benefit4Desc": "Dashboard em tempo real"
+    "benefit1Title": "Funil visual completo",
+    "benefit1Desc": "De lead a cliente fidelizado",
+    "benefit2Title": "Qualificação automática",
+    "benefit2Desc": "IA identifica os melhores leads",
+    "benefit3Title": "IA estratégica",
+    "benefit3Desc": "Sugestões personalizadas",
+    "benefit4Title": "Dashboard em tempo real",
+    "benefit4Desc": "Preveja seu faturamento",
+    "benefit5Title": "Documentos em 1 clique",
+    "benefit5Desc": "Contratos, faturas e propostas",
+    "benefit6Title": "Orçamentos automáticos",
+    "benefit6Desc": "Gere orçamentos profissionais",
+    "benefit7Title": "Academia inteligente",
+    "benefit7Desc": "Estude o que precisa melhorar"
   },
   "social": {
     "statValue": "+47%",
@@ -105,25 +111,25 @@
       "name": "Bússola",
       "subtitle": "Essencial",
       "tagline": "Encontre o caminho certo para começar!",
-      "features": ["3 clientes ativos", "Funil ilimitado", "90 msgs IA", "1 usuário"]
+      "features": ["3 clientes ativos", "Funil ilimitado", "90 msgs IA", "Academia básica"]
     },
     "starter": {
       "name": "Lança",
       "subtitle": "Crescimento",
       "tagline": "Lance sua marca no mundo digital!",
-      "features": ["15 clientes ativos", "Funil ilimitado", "500 msgs IA", "5 usuários"]
+      "features": ["15 clientes ativos", "Contratos e faturas", "500 msgs IA", "Academia completa"]
     },
     "pro": {
       "name": "Arco",
       "subtitle": "Profissional",
       "tagline": "Alcance resultados com precisão!",
-      "features": ["50 clientes ativos", "Funil ilimitado", "1200 msgs IA", "10 usuários"]
+      "features": ["50 clientes ativos", "Todos os documentos", "1200 msgs IA", "Academia + IA"]
     },
     "agency": {
       "name": "Catapulta",
       "subtitle": "Agência",
       "tagline": "Imponha sua agência no mercado!",
-      "features": ["Clientes ilimitados", "Funil ilimitado", "IA ilimitada", "20 usuários"]
+      "features": ["Clientes ilimitados", "Docs ilimitados", "IA ilimitada", "Suporte prioritário"]
     }
   },
   "faq": {
