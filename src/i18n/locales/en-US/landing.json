@@ -52,7 +52,7 @@
   "solution": {
     "title": "This is",
     "titleHighlight": "Qualify",
-    "description": "The AI-powered CRM that organizes your clients, automatically qualifies leads, suggests strategies, and predicts your revenue — all in one place.",
+    "description": "The AI-powered CRM that organizes clients, qualifies leads, generates contracts, invoices, proposals and quotes in one click, and suggests what to study to grow — all in one place.",
     "mockupTitle": "Qualify — Pipeline",
     "stages": {
       "prospecting": "Prospecting",
@@ -63,14 +63,20 @@
       "retention": "Retention",
       "loyalty": "Loyalty"
     },
-    "benefit1Title": "Auto-organizes",
-    "benefit1Desc": "Every client in the right place",
-    "benefit2Title": "Shows best leads",
-    "benefit2Desc": "Prioritize who's worth it",
-    "benefit3Title": "AI suggests strategies",
-    "benefit3Desc": "Full client context",
-    "benefit4Title": "Predicts revenue",
-    "benefit4Desc": "Real-time dashboard"
+    "benefit1Title": "Complete visual funnel",
+    "benefit1Desc": "From lead to loyal client",
+    "benefit2Title": "Auto qualification",
+    "benefit2Desc": "AI identifies best leads",
+    "benefit3Title": "Strategic AI",
+    "benefit3Desc": "Personalized suggestions",
+    "benefit4Title": "Real-time dashboard",
+    "benefit4Desc": "Predict your revenue",
+    "benefit5Title": "Docs in 1 click",
+    "benefit5Desc": "Contracts, invoices and proposals",
+    "benefit6Title": "Auto quotes",
+    "benefit6Desc": "Generate professional quotes",
+    "benefit7Title": "Smart Academy",
+    "benefit7Desc": "Study what you need to improve"
   },
   "social": {
     "statValue": "+47%",
@@ -105,25 +111,25 @@
       "name": "Compass",
       "subtitle": "Essential",
       "tagline": "Find the right path to start!",
-      "features": ["3 active clients", "Unlimited funnel", "90 AI messages", "1 user"]
+      "features": ["3 active clients", "Unlimited funnel", "90 AI messages", "Basic Academy"]
     },
     "starter": {
       "name": "Lance",
       "subtitle": "Growth",
       "tagline": "Launch your brand to the digital world!",
-      "features": ["15 active clients", "Unlimited funnel", "500 AI messages", "5 users"]
+      "features": ["15 active clients", "Contracts & invoices", "500 AI messages", "Full Academy"]
     },
     "pro": {
       "name": "Bow",
       "subtitle": "Professional",
       "tagline": "Achieve results with precision!",
-      "features": ["50 active clients", "Unlimited funnel", "1200 AI messages", "10 users"]
+      "features": ["50 active clients", "All documents", "1200 AI messages", "Academy + AI"]
     },
     "agency": {
       "name": "Catapult",
       "subtitle": "Agency",
       "tagline": "Impose your agency in the market!",
-      "features": ["Unlimited clients", "Unlimited funnel", "Unlimited AI", "20 users"]
+      "features": ["Unlimited clients", "Unlimited docs", "Unlimited AI", "Priority support"]
     }
   },
   "faq": {

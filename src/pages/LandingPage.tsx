@@ -30,7 +30,10 @@ import {
   CalendarCheck,
   Wallet,
   TrendingDown,
-  Download
+  Download,
+  FileText,
+  Receipt,
+  GraduationCap
 } from 'lucide-react';
 import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration';
 import { useEffect, useState, useRef } from 'react';
@@ -492,8 +495,8 @@ export default function LandingPage() {
               </div>
             </div>
             
-            {/* 4 benefícios em linha */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {/* 7 benefícios em grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
               <div className="text-center">
                 <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <LayoutGrid className="h-7 w-7 text-primary" />
@@ -524,6 +527,33 @@ export default function LandingPage() {
                 </div>
                 <h3 className="font-semibold mb-1">{t('solution.benefit4Title')}</h3>
                 <p className="text-sm text-muted-foreground">{t('solution.benefit4Desc')}</p>
+              </div>
+            </div>
+            
+            {/* Segunda linha com 3 benefícios centralizados */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+              <div className="text-center">
+                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <FileText className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-1">{t('solution.benefit5Title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('solution.benefit5Desc')}</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Receipt className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-1">{t('solution.benefit6Title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('solution.benefit6Desc')}</p>
+              </div>
+              
+              <div className="text-center col-span-2 md:col-span-1">
+                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <GraduationCap className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-1">{t('solution.benefit7Title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('solution.benefit7Desc')}</p>
               </div>
             </div>
           </div>
