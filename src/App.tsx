@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster";
+import { lazy, Suspense } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -45,6 +46,7 @@ import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
 import AdminSupport from "./pages/admin/AdminSupport";
 import PartnerProgram from "./pages/PartnerProgram";
+import LinkTreePublic from "./pages/LinkTreePublic";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +87,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/select-plan" element={<SelectPlan />} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
+              <Route path="/l/:slug" element={<LinkTreePublic />} />
               <Route path="/app/onboarding" element={<Onboarding />} />
               <Route path="/app/select-organization" element={<SelectOrganization />} />
               <Route

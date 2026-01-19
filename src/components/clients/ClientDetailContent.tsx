@@ -26,7 +26,8 @@ import {
   Receipt,
   Calculator,
   FileCheck,
-  DollarSign
+  DollarSign,
+  Link
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -472,6 +473,17 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <h4 className="font-semibold text-sm">Informações do Cliente</h4>
         <div className="flex flex-wrap items-center gap-2">
+          {/* Link Tree Button */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2 flex-1 sm:flex-none" 
+            onClick={() => navigate(`/app/clients/${client.id}/links`)}
+          >
+            <Link className="h-3 w-3" />
+            Links
+          </Button>
+          
           {canEditClient && (
             <Button 
               variant="outline" 
