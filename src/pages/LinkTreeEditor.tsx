@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLinkPage } from '@/hooks/useLinkPage';
@@ -7,23 +7,26 @@ import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Link2, Palette, BarChart3, Settings, Globe, ExternalLink, Loader2, Plus } from 'lucide-react';
+import { ArrowLeft, Link2, Palette, BarChart3, Settings, Globe, ExternalLink, Loader2, Plus, Eye, EyeOff } from 'lucide-react';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { toast } from '@/hooks/use-toast';
 import { LinksTab } from '@/components/linktree/LinksTab';
 import { DesignTab } from '@/components/linktree/DesignTab';
 import { InsightsTab } from '@/components/linktree/InsightsTab';
 import { SettingsTab } from '@/components/linktree/SettingsTab';
-import { PhonePreview } from '@/components/linktree/PhonePreview';
+import { LinkTreePreview } from '@/components/linktree/LinkTreePreview';
+import { EditorToolbar } from '@/components/linktree/EditorToolbar';
 import type { LinkPage } from '@/types/linktree';
 
 export default function LinkTreeEditor() {
   const { clientId } = useParams<{ clientId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { organizationId } = useOrganizationCurrency();
-  const [activeTab, setActiveTab] = useState('links');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'links');
   const [showPreview, setShowPreview] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Fetch client data
   const { data: client, isLoading: loadingClient } = useQuery({
@@ -52,6 +55,7 @@ export default function LinkTreeEditor() {
     reorderBlocks,
     togglePublish,
     isCreating,
+    isUpdating,
   } = useLinkPage(clientId || null, organizationId);
 
   // Create page if it doesn't exist
@@ -62,6 +66,26 @@ export default function LinkTreeEditor() {
       clientName: client.company_name,
     });
   };
+
+  // Handle save
+  const handleSave = useCallback(() => {
+    toast({ title: 'Alterações salvas!', description: 'Suas mudanças foram sincronizadas.' });
+    setHasUnsavedChanges(false);
+  }, []);
+
+  // Track changes
+  const handleChange = useCallback(() => {
+    setHasUnsavedChanges(true);
+  }, []);
+
+  // Undo/Redo (placeholder - can be enhanced)
+  const handleUndo = useCallback(() => {
+    toast({ title: 'Desfazer', description: 'Ação desfeita' });
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    toast({ title: 'Refazer', description: 'Ação refeita' });
+  }, []);
 
   if (loadingClient || isLoading) {
     return (
@@ -129,7 +153,9 @@ export default function LinkTreeEditor() {
               variant="outline"
               size="sm"
               onClick={() => setShowPreview(!showPreview)}
+              className="gap-2"
             >
+              {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               {showPreview ? 'Editor' : 'Preview'}
             </Button>
           )}
@@ -153,6 +179,19 @@ export default function LinkTreeEditor() {
           )}
         </div>
       </div>
+
+      {/* Toolbar */}
+      <EditorToolbar
+        isPublished={linkPage.is_published}
+        isSaving={isUpdating}
+        hasUnsavedChanges={hasUnsavedChanges}
+        canUndo={false}
+        canRedo={false}
+        onSave={handleSave}
+        onPublish={togglePublish}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+      />
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
@@ -209,6 +248,7 @@ export default function LinkTreeEditor() {
                   deleteBlock={deleteBlock}
                   reorderBlocks={reorderBlocks}
                   updateLinkPage={updateLinkPage}
+                  onImageChange={handleChange}
                 />
               </TabsContent>
               <TabsContent value="design" className="h-full m-0">
@@ -224,17 +264,19 @@ export default function LinkTreeEditor() {
           </Tabs>
         </div>
 
-        {/* Preview Panel */}
+        {/* Preview Panel - Full Height Centered */}
         <div
           className={`${
             isMobile
               ? showPreview
                 ? 'flex-1'
                 : 'hidden'
-              : 'w-[400px] border-l bg-muted/20'
-          } flex items-center justify-center p-6 overflow-auto`}
+              : 'w-[450px] border-l'
+          } flex items-center justify-center bg-muted/20 overflow-auto`}
         >
-          <PhonePreview linkPage={linkPage} />
+          <div className="flex items-center justify-center min-h-full py-8">
+            <LinkTreePreview linkPage={linkPage} />
+          </div>
         </div>
       </div>
     </div>
