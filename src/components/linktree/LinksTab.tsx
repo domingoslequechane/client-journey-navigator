@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +17,6 @@ import {
   Video,
   Share2,
   Minus,
-  Mail,
   Check
 } from 'lucide-react';
 import {
@@ -94,16 +93,16 @@ export function LinksTab({
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
-        {/* Profile Section with Image Upload */}
+        {/* Profile Section - Simplified */}
         <Card className="p-4">
-          <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex items-center gap-4">
             <ImageUpload
               currentImageUrl={linkPage.logo_url}
               onImageChange={handleLogoChange}
               name={linkPage.name}
               size="lg"
             />
-            <div className="flex-1 w-full">
+            <div className="flex-1">
               {editingProfile ? (
                 <div className="space-y-2">
                   <Input
@@ -126,7 +125,7 @@ export function LinksTab({
                   </div>
                 </div>
               ) : (
-                <div className="text-center sm:text-left">
+                <div>
                   <h3 className="font-semibold">{linkPage.name}</h3>
                   <p className="text-sm text-muted-foreground">
                     {linkPage.bio || 'Clique para adicionar bio'}

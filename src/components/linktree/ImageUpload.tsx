@@ -1,10 +1,8 @@
 import { useState, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
-import { Camera, Loader2, Upload, Trash2 } from 'lucide-react';
+import { Camera, Loader2, Upload, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ImageUploadProps {
@@ -24,7 +22,6 @@ export function ImageUpload({
   size = 'lg',
   shape = 'circle',
 }: ImageUploadProps) {
-  const { t } = useTranslation('clients');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,14 +96,14 @@ export function ImageUpload({
     }
   };
 
-  const handleRemove = () => {
-    onImageChange(undefined);
-    toast({ title: 'Imagem removida' });
-  };
+  const hasImage = !!currentImageUrl;
 
   return (
-    <div className={cn('flex flex-col items-center gap-3', className)}>
-      <div className="relative group">
+    <div className={cn('flex flex-col items-center', className)}>
+      <div 
+        className="relative group cursor-pointer"
+        onClick={() => fileInputRef.current?.click()}
+      >
         <Avatar className={cn(
           sizeClasses[size],
           shape === 'square' && 'rounded-lg',
@@ -119,20 +116,21 @@ export function ImageUpload({
               shape === 'square' && 'rounded-lg'
             )}
           >
-            {name.charAt(0).toUpperCase()}
+            {hasImage ? name.charAt(0).toUpperCase() : <Upload className="h-6 w-6" />}
           </AvatarFallback>
         </Avatar>
         
         {/* Overlay on hover */}
         <div 
           className={cn(
-            'absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer',
+            'absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity',
             shape === 'circle' ? 'rounded-full' : 'rounded-lg'
           )}
-          onClick={() => fileInputRef.current?.click()}
         >
           {isUploading ? (
             <Loader2 className="h-6 w-6 text-white animate-spin" />
+          ) : hasImage ? (
+            <Pencil className="h-5 w-5 text-white" />
           ) : (
             <Camera className="h-6 w-6 text-white" />
           )}
@@ -146,35 +144,6 @@ export function ImageUpload({
         onChange={handleFileSelect}
         className="hidden"
       />
-
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-        >
-          {isUploading ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Upload className="h-4 w-4 mr-2" />
-          )}
-          {currentImageUrl ? 'Alterar' : 'Upload'}
-        </Button>
-        
-        {currentImageUrl && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleRemove}
-            disabled={isUploading}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

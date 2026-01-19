@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +7,7 @@ import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Link2, Palette, BarChart3, Settings, Globe, ExternalLink, Loader2, Plus, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Link2, Palette, BarChart3, Settings, Globe, ExternalLink, Loader2, Plus, Eye, EyeOff, Save, Undo2, Redo2, Check, GlobeLock } from 'lucide-react';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { toast } from '@/hooks/use-toast';
 import { LinksTab } from '@/components/linktree/LinksTab';
@@ -15,8 +15,14 @@ import { DesignTab } from '@/components/linktree/DesignTab';
 import { InsightsTab } from '@/components/linktree/InsightsTab';
 import { SettingsTab } from '@/components/linktree/SettingsTab';
 import { LinkTreePreview } from '@/components/linktree/LinkTreePreview';
-import { EditorToolbar } from '@/components/linktree/EditorToolbar';
 import type { LinkPage } from '@/types/linktree';
+import { cn } from '@/lib/utils';
+
+// History state for undo/redo
+interface HistoryState {
+  linkPage: LinkPage | null;
+  timestamp: number;
+}
 
 export default function LinkTreeEditor() {
   const { clientId } = useParams<{ clientId: string }>();
@@ -27,6 +33,11 @@ export default function LinkTreeEditor() {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'links');
   const [showPreview, setShowPreview] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Undo/Redo state
+  const [history, setHistory] = useState<HistoryState[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const lastSavedState = useRef<string | null>(null);
 
   // Fetch client data
   const { data: client, isLoading: loadingClient } = useQuery({
@@ -58,6 +69,36 @@ export default function LinkTreeEditor() {
     isUpdating,
   } = useLinkPage(clientId || null, organizationId);
 
+  // Initialize history when linkPage loads
+  useEffect(() => {
+    if (linkPage && history.length === 0) {
+      const initialState = { linkPage: JSON.parse(JSON.stringify(linkPage)), timestamp: Date.now() };
+      setHistory([initialState]);
+      setHistoryIndex(0);
+      lastSavedState.current = JSON.stringify(linkPage);
+    }
+  }, [linkPage, history.length]);
+
+  // Track changes for unsaved state
+  useEffect(() => {
+    if (linkPage && lastSavedState.current) {
+      const currentState = JSON.stringify(linkPage);
+      setHasUnsavedChanges(currentState !== lastSavedState.current);
+    }
+  }, [linkPage]);
+
+  // Add to history on changes
+  const addToHistory = useCallback((newState: LinkPage) => {
+    setHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push({ linkPage: JSON.parse(JSON.stringify(newState)), timestamp: Date.now() });
+      // Limit history to 50 items
+      if (newHistory.length > 50) newHistory.shift();
+      return newHistory;
+    });
+    setHistoryIndex(prev => Math.min(prev + 1, 49));
+  }, [historyIndex]);
+
   // Create page if it doesn't exist
   const handleCreatePage = async () => {
     if (!client) return;
@@ -68,28 +109,65 @@ export default function LinkTreeEditor() {
   };
 
   // Handle save
-  const handleSave = useCallback(() => {
-    toast({ title: 'Alterações salvas!', description: 'Suas mudanças foram sincronizadas.' });
-    setHasUnsavedChanges(false);
-  }, []);
+  const handleSave = useCallback(async () => {
+    if (!linkPage) return;
+    
+    try {
+      await updateLinkPage({
+        name: linkPage.name,
+        bio: linkPage.bio,
+        logo_url: linkPage.logo_url,
+        theme: linkPage.theme,
+      });
+      lastSavedState.current = JSON.stringify(linkPage);
+      setHasUnsavedChanges(false);
+      toast({ title: 'Salvo!', description: 'Alterações salvas com sucesso.' });
+    } catch (error) {
+      toast({ title: 'Erro', description: 'Não foi possível salvar.', variant: 'destructive' });
+    }
+  }, [linkPage, updateLinkPage]);
+
+  // Handle undo
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      setHistoryIndex(prev => prev - 1);
+      const prevState = history[historyIndex - 1];
+      if (prevState?.linkPage) {
+        updateLinkPage(prevState.linkPage).catch(console.error);
+      }
+    }
+  }, [historyIndex, history, updateLinkPage]);
+
+  // Handle redo
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(prev => prev + 1);
+      const nextState = history[historyIndex + 1];
+      if (nextState?.linkPage) {
+        updateLinkPage(nextState.linkPage).catch(console.error);
+      }
+    }
+  }, [historyIndex, history, updateLinkPage]);
+
+  // Handle publish
+  const handlePublish = useCallback(async () => {
+    await togglePublish();
+  }, [togglePublish]);
 
   // Track changes
   const handleChange = useCallback(() => {
+    if (linkPage) {
+      addToHistory(linkPage);
+    }
     setHasUnsavedChanges(true);
-  }, []);
+  }, [linkPage, addToHistory]);
 
-  // Undo/Redo (placeholder - can be enhanced)
-  const handleUndo = useCallback(() => {
-    toast({ title: 'Desfazer', description: 'Ação desfeita' });
-  }, []);
-
-  const handleRedo = useCallback(() => {
-    toast({ title: 'Refazer', description: 'Ação refeita' });
-  }, []);
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
 
   if (loadingClient || isLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -97,7 +175,7 @@ export default function LinkTreeEditor() {
 
   if (!client) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-8rem)] gap-4">
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] gap-4">
         <p className="text-muted-foreground">Cliente não encontrado</p>
         <Button onClick={() => navigate(-1)} variant="outline">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -110,7 +188,7 @@ export default function LinkTreeEditor() {
   // Show create page prompt if no page exists
   if (!linkPage) {
     return (
-      <AnimatedContainer animation="fade-in" className="flex flex-col items-center justify-center h-[calc(100vh-8rem)] gap-6 p-4">
+      <AnimatedContainer animation="fade-in" className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] gap-6 p-4">
         <div className="text-center space-y-2">
           <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Link2 className="h-8 w-8 text-primary" />
@@ -136,18 +214,59 @@ export default function LinkTreeEditor() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-background shrink-0">
+      {/* Single Header Row */}
+      <div className="flex items-center justify-between px-4 py-2 border-b bg-background shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
+          <div className="flex items-center gap-2">
             <h1 className="font-semibold">{linkPage.name}</h1>
-            <p className="text-xs text-muted-foreground">@{linkPage.slug}</p>
+            <span className="text-xs text-muted-foreground">@{linkPage.slug}</span>
           </div>
         </div>
+        
         <div className="flex items-center gap-2">
+          {/* Undo/Redo */}
+          <div className="flex items-center gap-1 border-r pr-2 mr-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className="h-8 w-8"
+              title="Desfazer (Ctrl+Z)"
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRedo}
+              disabled={!canRedo}
+              className="h-8 w-8"
+              title="Refazer (Ctrl+Y)"
+            >
+              <Redo2 className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Save Status */}
+          <div className="hidden sm:flex items-center gap-2 mr-2">
+            {isUpdating ? (
+              <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+              </span>
+            ) : hasUnsavedChanges ? (
+              <span className="flex items-center gap-1 text-xs text-amber-600">
+                <span className="h-1.5 w-1.5 bg-amber-500 rounded-full animate-pulse" />
+              </span>
+            ) : (
+              <Check className="h-3 w-3 text-green-500" />
+            )}
+          </div>
+
+          {/* Mobile Preview Toggle */}
           {isMobile && (
             <Button
               variant="outline"
@@ -156,18 +275,46 @@ export default function LinkTreeEditor() {
               className="gap-2"
             >
               {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {showPreview ? 'Editor' : 'Preview'}
             </Button>
           )}
+
+          {/* Save Button */}
           <Button
-            variant={linkPage.is_published ? 'default' : 'outline'}
+            variant="outline"
             size="sm"
+            onClick={handleSave}
+            disabled={isUpdating || !hasUnsavedChanges}
             className="gap-2"
-            onClick={togglePublish}
           >
-            <Globe className="h-4 w-4" />
-            {linkPage.is_published ? 'Publicado ✓' : 'Publicar'}
+            <Save className="h-4 w-4" />
+            <span className="hidden sm:inline">Salvar</span>
           </Button>
+
+          {/* Publish Button */}
+          <Button
+            variant={linkPage.is_published ? 'secondary' : 'default'}
+            size="sm"
+            onClick={handlePublish}
+            disabled={isUpdating}
+            className={cn(
+              'gap-2',
+              linkPage.is_published && 'bg-green-600 hover:bg-green-700 text-white'
+            )}
+          >
+            {linkPage.is_published ? (
+              <>
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline">Publicado</span>
+              </>
+            ) : (
+              <>
+                <GlobeLock className="h-4 w-4" />
+                <span className="hidden sm:inline">Publicar</span>
+              </>
+            )}
+          </Button>
+
+          {/* External Link */}
           {linkPage.is_published && (
             <Button
               variant="ghost"
@@ -179,19 +326,6 @@ export default function LinkTreeEditor() {
           )}
         </div>
       </div>
-
-      {/* Toolbar */}
-      <EditorToolbar
-        isPublished={linkPage.is_published}
-        isSaving={isUpdating}
-        hasUnsavedChanges={hasUnsavedChanges}
-        canUndo={false}
-        canRedo={false}
-        onSave={handleSave}
-        onPublish={togglePublish}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-      />
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
@@ -252,7 +386,7 @@ export default function LinkTreeEditor() {
                 />
               </TabsContent>
               <TabsContent value="design" className="h-full m-0">
-                <DesignTab linkPage={linkPage} updateLinkPage={updateLinkPage} />
+                <DesignTab linkPage={linkPage} updateLinkPage={updateLinkPage} onChange={handleChange} />
               </TabsContent>
               <TabsContent value="insights" className="h-full m-0">
                 <InsightsTab linkPage={linkPage} />
@@ -264,7 +398,7 @@ export default function LinkTreeEditor() {
           </Tabs>
         </div>
 
-        {/* Preview Panel - Full Height Centered */}
+        {/* Preview Panel - Centered */}
         <div
           className={`${
             isMobile
@@ -274,9 +408,7 @@ export default function LinkTreeEditor() {
               : 'w-[450px] border-l'
           } flex items-center justify-center bg-muted/20 overflow-auto`}
         >
-          <div className="flex items-center justify-center min-h-full py-8">
-            <LinkTreePreview linkPage={linkPage} />
-          </div>
+          <LinkTreePreview linkPage={linkPage} />
         </div>
       </div>
     </div>
