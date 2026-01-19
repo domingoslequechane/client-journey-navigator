@@ -28,6 +28,7 @@ import ClientDetail from "./pages/ClientDetail";
 import Academia from "./pages/Academia";
 import Team from "./pages/Team";
 import AIAssistant from "./pages/AIAssistant";
+import LinkTreeEditor from "./pages/LinkTreeEditor";
 import Settings from "./pages/Settings";
 import Upgrade from "./pages/Upgrade";
 import Pricing from "./pages/Pricing";
@@ -128,6 +129,7 @@ const App = () => (
                   </RoleProtectedRoute>
                 } />
                 <Route path="ai-assistant" element={<AIAssistant />} />
+                <Route path="clients/:clientId/links" element={<LinkTreeEditor />} />
                 <Route path="settings" element={
                   <RoleProtectedRoute requireSettings>
                     <Settings />
