@@ -7,13 +7,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Palette, Image as ImageIcon, Link2, Check } from 'lucide-react';
+import { Palette, Image as ImageIcon, Link2, Check, Upload, Trash2, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { LINK_TREE_TEMPLATES, GOOGLE_FONTS, type LinkPage, type LinkPageTheme } from '@/types/linktree';
+import { useRef, useState as useImageState } from 'react';
 
 interface DesignTabProps {
   linkPage: LinkPage;
   updateLinkPage: (updates: Partial<LinkPage>) => Promise<unknown>;
+  onChange?: () => void;
 }
 
 const BUTTON_STYLES = [
@@ -30,21 +33,23 @@ const BUTTON_RADIUS = [
   { id: 'square', label: 'Square' },
 ] as const;
 
-export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
+export function DesignTab({ linkPage, updateLinkPage, onChange }: DesignTabProps) {
   const [activeTab, setActiveTab] = useState('templates');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [isUploadingBg, setIsUploadingBg] = useState(false);
+  const bgInputRef = useRef<HTMLInputElement>(null);
   const theme = linkPage.theme;
 
   const handleThemeChange = async (updates: Partial<LinkPageTheme>) => {
-    setSelectedTemplateId(null); // Clear template selection when customizing
+    setSelectedTemplateId(null);
     await updateLinkPage({
       theme: { ...theme, ...updates },
     });
+    onChange?.();
   };
 
   const handleApplyTemplate = async (template: typeof LINK_TREE_TEMPLATES[0]) => {
     try {
-      // Create a deep copy of the template theme
       const newTheme: LinkPageTheme = {
         backgroundColor: template.theme.backgroundColor,
         primaryColor: template.theme.primaryColor,
@@ -52,11 +57,12 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
         fontFamily: template.theme.fontFamily,
         buttonStyle: template.theme.buttonStyle,
         buttonRadius: template.theme.buttonRadius,
-        backgroundImage: template.theme.backgroundImage,
+        backgroundImage: template.thumbnail, // Apply template thumbnail as background
       };
 
       await updateLinkPage({ theme: newTheme });
       setSelectedTemplateId(template.id);
+      onChange?.();
       toast({ 
         title: 'Template aplicado!', 
         description: `O template "${template.name}" foi aplicado com sucesso.` 
@@ -68,6 +74,47 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
         description: 'Não foi possível aplicar o template', 
         variant: 'destructive' 
       });
+    }
+  };
+
+  const handleBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Erro', description: 'Selecione uma imagem válida', variant: 'destructive' });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Erro', description: 'A imagem deve ter no máximo 5MB', variant: 'destructive' });
+      return;
+    }
+
+    setIsUploadingBg(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `linktree-backgrounds/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('contracts')
+        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('contracts')
+        .getPublicUrl(filePath);
+
+      await handleThemeChange({ backgroundImage: publicUrl });
+      toast({ title: 'Imagem de fundo atualizada!' });
+    } catch (error) {
+      console.error('Error uploading background:', error);
+      toast({ title: 'Erro', description: 'Não foi possível fazer o upload', variant: 'destructive' });
+    } finally {
+      setIsUploadingBg(false);
+      if (bgInputRef.current) bgInputRef.current.value = '';
     }
   };
 
@@ -91,9 +138,7 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {LINK_TREE_TEMPLATES.map((template) => {
                 const isSelected = selectedTemplateId === template.id || 
-                  (theme.backgroundColor === template.theme.backgroundColor && 
-                   theme.primaryColor === template.theme.primaryColor &&
-                   theme.buttonStyle === template.theme.buttonStyle);
+                  (theme.backgroundImage === template.thumbnail);
 
                 return (
                   <button
@@ -112,12 +157,10 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                     
-                    {/* Template name */}
                     <div className="absolute bottom-0 left-0 right-0 p-2">
                       <span className="text-white text-xs font-medium">{template.name}</span>
                     </div>
                     
-                    {/* Color preview circle */}
                     <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2">
                       <div
                         className="w-8 h-8 rounded-full border-2 border-white/50 shadow-lg"
@@ -125,14 +168,12 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
                       />
                     </div>
 
-                    {/* Selected indicator */}
                     {isSelected && (
                       <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
                         <Check className="h-3 w-3" />
                       </div>
                     )}
 
-                    {/* Hover overlay */}
                     <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Badge variant="secondary" className="bg-white/90">
                         Aplicar
@@ -145,6 +186,66 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
           </TabsContent>
 
           <TabsContent value="personalizar" className="mt-4 space-y-6">
+            {/* Background Image Upload */}
+            <Card className="p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                <h3 className="font-semibold">Imagem de Fundo</h3>
+              </div>
+              
+              <input
+                ref={bgInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleBgImageUpload}
+                className="hidden"
+              />
+
+              {theme.backgroundImage ? (
+                <div className="space-y-3">
+                  <div 
+                    className="h-32 w-full rounded-lg bg-cover bg-center border relative group"
+                    style={{ backgroundImage: `url(${theme.backgroundImage})` }}
+                  >
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-lg">
+                      <Button 
+                        size="sm" 
+                        variant="secondary"
+                        onClick={() => bgInputRef.current?.click()}
+                        disabled={isUploadingBg}
+                      >
+                        {isUploadingBg ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                        Alterar
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={() => handleThemeChange({ backgroundImage: undefined })}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  className="w-full h-32 border-dashed"
+                  onClick={() => bgInputRef.current?.click()}
+                  disabled={isUploadingBg}
+                >
+                  {isUploadingBg ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Upload className="h-6 w-6" />
+                      <span>Carregar imagem de fundo</span>
+                    </div>
+                  )}
+                </Button>
+              )}
+            </Card>
+
             {/* Colors */}
             <Card className="p-4 space-y-4">
               <div className="flex items-center gap-2">
@@ -203,36 +304,6 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
               </div>
             </Card>
 
-            {/* Background Image */}
-            <Card className="p-4 space-y-4">
-              <div className="flex items-center gap-2">
-                <ImageIcon className="h-4 w-4" />
-                <h3 className="font-semibold">Imagem de Fundo</h3>
-              </div>
-              <div>
-                <Input
-                  value={theme.backgroundImage || ''}
-                  onChange={(e) => handleThemeChange({ backgroundImage: e.target.value })}
-                  placeholder="Cole a URL da imagem de fundo"
-                />
-                {theme.backgroundImage && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <div 
-                      className="h-12 w-20 rounded bg-cover bg-center border"
-                      style={{ backgroundImage: `url(${theme.backgroundImage})` }}
-                    />
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleThemeChange({ backgroundImage: undefined })}
-                    >
-                      Remover
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </Card>
-
             {/* Button Style */}
             <Card className="p-4 space-y-4">
               <div className="flex items-center gap-2">
@@ -240,7 +311,6 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
                 <h3 className="font-semibold">Estilo dos Botões</h3>
               </div>
               
-              {/* Style */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-2 block">Tipo</Label>
                 <div className="grid grid-cols-4 gap-2">
@@ -270,7 +340,6 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
                 </div>
               </div>
 
-              {/* Radius */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-2 block">Bordas</Label>
                 <div className="grid grid-cols-4 gap-2">
@@ -296,27 +365,6 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
                       <span className="text-xs mt-2 block">{radius.label}</span>
                     </button>
                   ))}
-                </div>
-              </div>
-
-              {/* Preview */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: theme.backgroundColor }}>
-                <Label className="text-xs text-muted-foreground mb-2 block">Preview</Label>
-                <div
-                  className="w-full py-3 px-4 text-center text-sm font-medium"
-                  style={{
-                    backgroundColor: theme.buttonStyle === 'solid' ? theme.primaryColor :
-                                    theme.buttonStyle === 'glass' ? `${theme.primaryColor}40` :
-                                    theme.buttonStyle === 'soft' ? `${theme.primaryColor}30` :
-                                    'transparent',
-                    color: theme.textColor,
-                    border: theme.buttonStyle === 'outline' ? `2px solid ${theme.primaryColor}` : 'none',
-                    borderRadius: theme.buttonRadius === 'pill' ? '9999px' :
-                                 theme.buttonRadius === 'rounded' ? '12px' :
-                                 theme.buttonRadius === 'soft' ? '8px' : '4px',
-                  }}
-                >
-                  Exemplo de Botão
                 </div>
               </div>
             </Card>
