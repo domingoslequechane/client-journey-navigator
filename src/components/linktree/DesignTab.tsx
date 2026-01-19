@@ -242,8 +242,8 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {GOOGLE_FONTS.map((font) => (
-                    <SelectItem key={font} value={font}>
-                      {font}
+                    <SelectItem key={font.value} value={font.value}>
+                      {font.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

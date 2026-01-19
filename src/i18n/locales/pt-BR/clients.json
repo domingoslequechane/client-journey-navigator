@@ -143,6 +143,59 @@
     "budget": "Orçamento",
     "commercial_proposal": "Proposta Comercial"
   },
+  "linkTree": {
+    "title": "Árvore de Links",
+    "manage": "Gerenciar Links",
+    "empty": "Nenhuma página de links criada",
+    "create": "Criar Página de Links",
+    "published": "Publicado",
+    "draft": "Rascunho",
+    "views": "Visualizações",
+    "clicks": "Cliques",
+    "ctr": "CTR",
+    "tabs": {
+      "links": "Links",
+      "design": "Design",
+      "insights": "Insights",
+      "settings": "Configurações"
+    },
+    "blocks": {
+      "button": "Botão de Link",
+      "text": "Título/Texto",
+      "image": "Imagem",
+      "video": "Vídeo",
+      "social": "Redes Sociais",
+      "divider": "Divisor",
+      "emailForm": "Formulário de Email"
+    },
+    "profile": {
+      "title": "Perfil",
+      "name": "Nome",
+      "bio": "Bio",
+      "logo": "Logo"
+    },
+    "design": {
+      "templates": "Templates",
+      "colors": "Cores",
+      "background": "Fundo",
+      "buttonStyle": "Estilo do Botão",
+      "buttonRadius": "Formato do Botão",
+      "font": "Fonte"
+    },
+    "settings": {
+      "qrCode": "QR Code",
+      "customDomain": "Domínio Personalizado",
+      "slug": "Slug da Página"
+    },
+    "messages": {
+      "created": "Página de links criada com sucesso!",
+      "updated": "Página de links atualizada!",
+      "deleted": "Página de links excluída!",
+      "published": "Página publicada!",
+      "unpublished": "Página despublicada!",
+      "linkCopied": "Link copiado para a área de transferência!"
+    }
+  },
   "errors": {
     "title": "Erro",
     "loadClients": "Não foi possível carregar os clientes"

@@ -143,6 +143,59 @@
     "budget": "Budget",
     "commercial_proposal": "Commercial Proposal"
   },
+  "linkTree": {
+    "title": "Link Tree",
+    "manage": "Manage Links",
+    "empty": "No link page created",
+    "create": "Create Link Page",
+    "published": "Published",
+    "draft": "Draft",
+    "views": "Views",
+    "clicks": "Clicks",
+    "ctr": "CTR",
+    "tabs": {
+      "links": "Links",
+      "design": "Design",
+      "insights": "Insights",
+      "settings": "Settings"
+    },
+    "blocks": {
+      "button": "Link Button",
+      "text": "Title/Text",
+      "image": "Image",
+      "video": "Video",
+      "social": "Social Networks",
+      "divider": "Divider",
+      "emailForm": "Email Form"
+    },
+    "profile": {
+      "title": "Profile",
+      "name": "Name",
+      "bio": "Bio",
+      "logo": "Logo"
+    },
+    "design": {
+      "templates": "Templates",
+      "colors": "Colors",
+      "background": "Background",
+      "buttonStyle": "Button Style",
+      "buttonRadius": "Button Shape",
+      "font": "Font"
+    },
+    "settings": {
+      "qrCode": "QR Code",
+      "customDomain": "Custom Domain",
+      "slug": "Page Slug"
+    },
+    "messages": {
+      "created": "Link page created successfully!",
+      "updated": "Link page updated!",
+      "deleted": "Link page deleted!",
+      "published": "Page published!",
+      "unpublished": "Page unpublished!",
+      "linkCopied": "Link copied to clipboard!"
+    }
+  },
   "errors": {
     "title": "Error",
     "loadClients": "Could not load clients"
