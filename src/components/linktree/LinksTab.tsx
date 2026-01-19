@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageUpload } from './ImageUpload';
 import { 
   Plus, 
   GripVertical, 
@@ -18,16 +18,8 @@ import {
   Share2,
   Minus,
   Mail,
-  X,
   Check
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +35,7 @@ interface LinksTabProps {
   deleteBlock: (blockId: string) => Promise<void>;
   reorderBlocks: (orderedBlockIds: string[]) => Promise<void>;
   updateLinkPage: (updates: Partial<LinkPage>) => Promise<unknown>;
+  onImageChange?: () => void;
 }
 
 const BLOCK_TYPES = [
@@ -61,6 +54,7 @@ export function LinksTab({
   deleteBlock,
   reorderBlocks,
   updateLinkPage,
+  onImageChange,
 }: LinksTabProps) {
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
@@ -92,19 +86,24 @@ export function LinksTab({
     setEditingProfile(false);
   };
 
+  const handleLogoChange = async (url: string | undefined) => {
+    await updateLinkPage({ logo_url: url });
+    onImageChange?.();
+  };
+
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
-        {/* Profile Section */}
+        {/* Profile Section with Image Upload */}
         <Card className="p-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={linkPage.logo_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                {linkPage.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <ImageUpload
+              currentImageUrl={linkPage.logo_url}
+              onImageChange={handleLogoChange}
+              name={linkPage.name}
+              size="lg"
+            />
+            <div className="flex-1 w-full">
               {editingProfile ? (
                 <div className="space-y-2">
                   <Input
@@ -127,19 +126,22 @@ export function LinksTab({
                   </div>
                 </div>
               ) : (
-                <>
+                <div className="text-center sm:text-left">
                   <h3 className="font-semibold">{linkPage.name}</h3>
                   <p className="text-sm text-muted-foreground">
                     {linkPage.bio || 'Clique para adicionar bio'}
                   </p>
-                </>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setEditingProfile(true)}
+                    className="mt-2"
+                  >
+                    <Pencil className="h-4 w-4 mr-2" /> Editar
+                  </Button>
+                </div>
               )}
             </div>
-            {!editingProfile && (
-              <Button variant="outline" size="sm" onClick={() => setEditingProfile(true)}>
-                <Pencil className="h-4 w-4 mr-2" /> Editar
-              </Button>
-            )}
           </div>
         </Card>
 

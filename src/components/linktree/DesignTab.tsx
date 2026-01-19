@@ -6,7 +6,9 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Palette, Image as ImageIcon, Link2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Palette, Image as ImageIcon, Link2, Check } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { LINK_TREE_TEMPLATES, GOOGLE_FONTS, type LinkPage, type LinkPageTheme } from '@/types/linktree';
 
 interface DesignTabProps {
@@ -30,18 +32,43 @@ const BUTTON_RADIUS = [
 
 export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
   const [activeTab, setActiveTab] = useState('templates');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const theme = linkPage.theme;
 
   const handleThemeChange = async (updates: Partial<LinkPageTheme>) => {
+    setSelectedTemplateId(null); // Clear template selection when customizing
     await updateLinkPage({
       theme: { ...theme, ...updates },
     });
   };
 
   const handleApplyTemplate = async (template: typeof LINK_TREE_TEMPLATES[0]) => {
-    await updateLinkPage({
-      theme: template.theme,
-    });
+    try {
+      // Create a deep copy of the template theme
+      const newTheme: LinkPageTheme = {
+        backgroundColor: template.theme.backgroundColor,
+        primaryColor: template.theme.primaryColor,
+        textColor: template.theme.textColor,
+        fontFamily: template.theme.fontFamily,
+        buttonStyle: template.theme.buttonStyle,
+        buttonRadius: template.theme.buttonRadius,
+        backgroundImage: template.theme.backgroundImage,
+      };
+
+      await updateLinkPage({ theme: newTheme });
+      setSelectedTemplateId(template.id);
+      toast({ 
+        title: 'Template aplicado!', 
+        description: `O template "${template.name}" foi aplicado com sucesso.` 
+      });
+    } catch (error) {
+      console.error('Error applying template:', error);
+      toast({ 
+        title: 'Erro', 
+        description: 'Não foi possível aplicar o template', 
+        variant: 'destructive' 
+      });
+    }
   };
 
   return (
@@ -62,30 +89,58 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {LINK_TREE_TEMPLATES.map((template) => (
-                <button
-                  key={template.id}
-                  onClick={() => handleApplyTemplate(template)}
-                  className="relative aspect-[3/4] rounded-lg overflow-hidden group hover:ring-2 hover:ring-primary transition-all"
-                >
-                  <img
-                    src={template.thumbnail}
-                    alt={template.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-2">
-                    <span className="text-white text-xs font-medium">{template.name}</span>
-                  </div>
-                  {/* Preview circle */}
-                  <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <div
-                      className="w-8 h-8 rounded-full border-2 border-white/50"
-                      style={{ backgroundColor: template.theme.primaryColor }}
+              {LINK_TREE_TEMPLATES.map((template) => {
+                const isSelected = selectedTemplateId === template.id || 
+                  (theme.backgroundColor === template.theme.backgroundColor && 
+                   theme.primaryColor === template.theme.primaryColor &&
+                   theme.buttonStyle === template.theme.buttonStyle);
+
+                return (
+                  <button
+                    key={template.id}
+                    onClick={() => handleApplyTemplate(template)}
+                    className={`relative aspect-[3/4] rounded-lg overflow-hidden group transition-all ${
+                      isSelected 
+                        ? 'ring-2 ring-primary ring-offset-2' 
+                        : 'hover:ring-2 hover:ring-primary/50'
+                    }`}
+                  >
+                    <img
+                      src={template.thumbnail}
+                      alt={template.name}
+                      className="w-full h-full object-cover"
                     />
-                  </div>
-                </button>
-              ))}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    
+                    {/* Template name */}
+                    <div className="absolute bottom-0 left-0 right-0 p-2">
+                      <span className="text-white text-xs font-medium">{template.name}</span>
+                    </div>
+                    
+                    {/* Color preview circle */}
+                    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                      <div
+                        className="w-8 h-8 rounded-full border-2 border-white/50 shadow-lg"
+                        style={{ backgroundColor: template.theme.primaryColor }}
+                      />
+                    </div>
+
+                    {/* Selected indicator */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                        <Check className="h-3 w-3" />
+                      </div>
+                    )}
+
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Badge variant="secondary" className="bg-white/90">
+                        Aplicar
+                      </Badge>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </TabsContent>
 
@@ -154,19 +209,28 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
                 <ImageIcon className="h-4 w-4" />
                 <h3 className="font-semibold">Imagem de Fundo</h3>
               </div>
-              <Tabs defaultValue="url">
-                <TabsList className="grid grid-cols-2 w-full">
-                  <TabsTrigger value="url">URL</TabsTrigger>
-                  <TabsTrigger value="upload" disabled>Upload</TabsTrigger>
-                </TabsList>
-                <TabsContent value="url" className="mt-3">
-                  <Input
-                    value={theme.backgroundImage || ''}
-                    onChange={(e) => handleThemeChange({ backgroundImage: e.target.value })}
-                    placeholder="Cole a URL da imagem de fundo"
-                  />
-                </TabsContent>
-              </Tabs>
+              <div>
+                <Input
+                  value={theme.backgroundImage || ''}
+                  onChange={(e) => handleThemeChange({ backgroundImage: e.target.value })}
+                  placeholder="Cole a URL da imagem de fundo"
+                />
+                {theme.backgroundImage && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <div 
+                      className="h-12 w-20 rounded bg-cover bg-center border"
+                      style={{ backgroundImage: `url(${theme.backgroundImage})` }}
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleThemeChange({ backgroundImage: undefined })}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                )}
+              </div>
             </Card>
 
             {/* Button Style */}
@@ -177,56 +241,83 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
               </div>
               
               {/* Style */}
-              <div className="grid grid-cols-4 gap-2">
-                {BUTTON_STYLES.map((style) => (
-                  <button
-                    key={style.id}
-                    onClick={() => handleThemeChange({ buttonStyle: style.id })}
-                    className={`p-3 rounded-lg border-2 transition-all ${
-                      theme.buttonStyle === style.id
-                        ? 'border-primary bg-primary/10'
-                        : 'border-muted hover:border-primary/50'
-                    }`}
-                  >
-                    <div
-                      className="w-full h-6 rounded-full"
-                      style={{
-                        backgroundColor: style.id === 'solid' ? theme.primaryColor :
-                                        style.id === 'glass' ? `${theme.primaryColor}40` :
-                                        style.id === 'soft' ? `${theme.primaryColor}30` :
-                                        'transparent',
-                        border: style.id === 'outline' ? `2px solid ${theme.primaryColor}` : 'none',
-                      }}
-                    />
-                    <span className="text-xs mt-2 block">{style.label}</span>
-                  </button>
-                ))}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Tipo</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {BUTTON_STYLES.map((style) => (
+                    <button
+                      key={style.id}
+                      onClick={() => handleThemeChange({ buttonStyle: style.id })}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        theme.buttonStyle === style.id
+                          ? 'border-primary bg-primary/10'
+                          : 'border-muted hover:border-primary/50'
+                      }`}
+                    >
+                      <div
+                        className="w-full h-6 rounded-full"
+                        style={{
+                          backgroundColor: style.id === 'solid' ? theme.primaryColor :
+                                          style.id === 'glass' ? `${theme.primaryColor}40` :
+                                          style.id === 'soft' ? `${theme.primaryColor}30` :
+                                          'transparent',
+                          border: style.id === 'outline' ? `2px solid ${theme.primaryColor}` : 'none',
+                        }}
+                      />
+                      <span className="text-xs mt-2 block">{style.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Radius */}
-              <div className="grid grid-cols-4 gap-2">
-                {BUTTON_RADIUS.map((radius) => (
-                  <button
-                    key={radius.id}
-                    onClick={() => handleThemeChange({ buttonRadius: radius.id })}
-                    className={`p-3 rounded-lg border-2 transition-all ${
-                      theme.buttonRadius === radius.id
-                        ? 'border-primary bg-primary/10'
-                        : 'border-muted hover:border-primary/50'
-                    }`}
-                  >
-                    <div
-                      className="w-full h-6"
-                      style={{
-                        backgroundColor: theme.primaryColor,
-                        borderRadius: radius.id === 'pill' ? '9999px' :
-                                      radius.id === 'rounded' ? '12px' :
-                                      radius.id === 'soft' ? '8px' : '4px',
-                      }}
-                    />
-                    <span className="text-xs mt-2 block">{radius.label}</span>
-                  </button>
-                ))}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Bordas</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {BUTTON_RADIUS.map((radius) => (
+                    <button
+                      key={radius.id}
+                      onClick={() => handleThemeChange({ buttonRadius: radius.id })}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        theme.buttonRadius === radius.id
+                          ? 'border-primary bg-primary/10'
+                          : 'border-muted hover:border-primary/50'
+                      }`}
+                    >
+                      <div
+                        className="w-full h-6"
+                        style={{
+                          backgroundColor: theme.primaryColor,
+                          borderRadius: radius.id === 'pill' ? '9999px' :
+                                        radius.id === 'rounded' ? '12px' :
+                                        radius.id === 'soft' ? '8px' : '4px',
+                        }}
+                      />
+                      <span className="text-xs mt-2 block">{radius.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: theme.backgroundColor }}>
+                <Label className="text-xs text-muted-foreground mb-2 block">Preview</Label>
+                <div
+                  className="w-full py-3 px-4 text-center text-sm font-medium"
+                  style={{
+                    backgroundColor: theme.buttonStyle === 'solid' ? theme.primaryColor :
+                                    theme.buttonStyle === 'glass' ? `${theme.primaryColor}40` :
+                                    theme.buttonStyle === 'soft' ? `${theme.primaryColor}30` :
+                                    'transparent',
+                    color: theme.textColor,
+                    border: theme.buttonStyle === 'outline' ? `2px solid ${theme.primaryColor}` : 'none',
+                    borderRadius: theme.buttonRadius === 'pill' ? '9999px' :
+                                 theme.buttonRadius === 'rounded' ? '12px' :
+                                 theme.buttonRadius === 'soft' ? '8px' : '4px',
+                  }}
+                >
+                  Exemplo de Botão
+                </div>
               </div>
             </Card>
 
@@ -243,7 +334,7 @@ export function DesignTab({ linkPage, updateLinkPage }: DesignTabProps) {
                 <SelectContent>
                   {GOOGLE_FONTS.map((font) => (
                     <SelectItem key={font.value} value={font.value}>
-                      {font.name}
+                      <span style={{ fontFamily: font.value }}>{font.name}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
