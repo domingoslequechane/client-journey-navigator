@@ -599,6 +599,152 @@ export type Database = {
           },
         ]
       }
+      link_analytics: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          link_block_id: string | null
+          link_page_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          link_block_id?: string | null
+          link_page_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          link_block_id?: string | null
+          link_page_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_analytics_link_block_id_fkey"
+            columns: ["link_block_id"]
+            isOneToOne: false
+            referencedRelation: "link_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_analytics_link_page_id_fkey"
+            columns: ["link_page_id"]
+            isOneToOne: false
+            referencedRelation: "link_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_blocks: {
+        Row: {
+          clicks: number | null
+          content: Json
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          link_page_id: string
+          sort_order: number
+          style: Json | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          clicks?: number | null
+          content?: Json
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          link_page_id: string
+          sort_order?: number
+          style?: Json | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          clicks?: number | null
+          content?: Json
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          link_page_id?: string
+          sort_order?: number
+          style?: Json | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_blocks_link_page_id_fkey"
+            columns: ["link_page_id"]
+            isOneToOne: false
+            referencedRelation: "link_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_pages: {
+        Row: {
+          bio: string | null
+          client_id: string
+          created_at: string | null
+          custom_domain: string | null
+          id: string
+          is_published: boolean | null
+          logo_url: string | null
+          name: string
+          organization_id: string
+          slug: string
+          theme: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          bio?: string | null
+          client_id: string
+          created_at?: string | null
+          custom_domain?: string | null
+          id?: string
+          is_published?: boolean | null
+          logo_url?: string | null
+          name: string
+          organization_id: string
+          slug: string
+          theme?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          bio?: string | null
+          client_id?: string
+          created_at?: string | null
+          custom_domain?: string | null
+          id?: string
+          is_published?: boolean | null
+          logo_url?: string | null
+          name?: string
+          organization_id?: string
+          slug?: string
+          theme?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_pages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_pages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_history: {
         Row: {
           id: string
