@@ -226,5 +226,16 @@
       "meeting": "Meeting",
       "production": "Production"
     }
+  },
+  "link23": {
+    "title": "Create professional",
+    "titleHighlight": "link pages",
+    "subtitle": "Centralize all your clients' links on a personalized page. Linktree alternative, integrated with your CRM.",
+    "benefit1Title": "Custom Design",
+    "benefit1Desc": "Colors and themes that match the brand",
+    "benefit2Title": "Integrated Analytics",
+    "benefit2Desc": "Views and clicks in real time",
+    "benefit3Title": "Friendly URL",
+    "benefit3Desc": "qualify.app/agency/@client"
   }
 }

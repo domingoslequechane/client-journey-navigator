@@ -33,7 +33,10 @@ import {
   Download,
   FileText,
   Receipt,
-  GraduationCap
+  GraduationCap,
+  Link2,
+  Palette,
+  BarChart3
 } from 'lucide-react';
 import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration';
 import { useEffect, useState, useRef } from 'react';
@@ -554,6 +557,119 @@ export default function LandingPage() {
                 </div>
                 <h3 className="font-semibold mb-1">{t('solution.benefit7Title')}</h3>
                 <p className="text-sm text-muted-foreground">{t('solution.benefit7Desc')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* LINK23 - Nova Funcionalidade */}
+      <section className="py-20 md:py-32">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              {/* Texto */}
+              <div className="text-center md:text-left">
+                <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-2 mb-6">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-primary">Link23</span>
+                </div>
+                
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+                  {t('link23.title')}{' '}
+                  <span className="text-primary">{t('link23.titleHighlight')}</span>
+                </h2>
+                
+                <p className="text-lg md:text-xl text-muted-foreground mb-8">
+                  {t('link23.subtitle')}
+                </p>
+                
+                {/* 3 benefícios */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="text-center p-4 rounded-xl bg-muted/50">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <Palette className="h-5 w-5 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-sm mb-1">{t('link23.benefit1Title')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('link23.benefit1Desc')}</p>
+                  </div>
+                  
+                  <div className="text-center p-4 rounded-xl bg-muted/50">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-sm mb-1">{t('link23.benefit2Title')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('link23.benefit2Desc')}</p>
+                  </div>
+                  
+                  <div className="text-center p-4 rounded-xl bg-muted/50">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <Link2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-sm mb-1">{t('link23.benefit3Title')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('link23.benefit3Desc')}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Mockup visual animado */}
+              <div className="relative">
+                <div className="bg-card border border-border rounded-3xl p-6 shadow-2xl overflow-hidden">
+                  {/* Phone frame */}
+                  <div className="relative mx-auto" style={{ maxWidth: '280px' }}>
+                    {/* Phone header */}
+                    <div className="flex items-center justify-center gap-2 mb-4 pb-2 border-b border-border">
+                      <div className="h-2 w-2 rounded-full bg-primary/50" />
+                      <div className="h-3 w-16 bg-muted rounded-full" />
+                      <div className="h-2 w-2 rounded-full bg-primary/50" />
+                    </div>
+                    
+                    {/* Link page preview */}
+                    <div className="space-y-4">
+                      {/* Profile */}
+                      <div className="text-center">
+                        <div className="h-16 w-16 rounded-full bg-primary/20 mx-auto mb-3 flex items-center justify-center">
+                          <span className="text-2xl font-bold text-primary">A</span>
+                        </div>
+                        <h3 className="font-semibold">Agência Digital</h3>
+                        <p className="text-xs text-muted-foreground">@agencia</p>
+                      </div>
+                      
+                      {/* Links animados */}
+                      <div className="space-y-3">
+                        {['Instagram', 'WhatsApp', 'Portfolio', 'Contato'].map((link, i) => (
+                          <div 
+                            key={link}
+                            className="h-10 bg-primary/10 rounded-xl flex items-center justify-center text-sm font-medium animate-pulse"
+                            style={{ animationDelay: `${i * 0.2}s` }}
+                          >
+                            {link}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Stats */}
+                      <div className="flex justify-around pt-4 border-t border-border text-center">
+                        <div>
+                          <div className="text-lg font-bold text-primary">247</div>
+                          <div className="text-xs text-muted-foreground">views</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-primary">89</div>
+                          <div className="text-xs text-muted-foreground">clicks</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-primary">36%</div>
+                          <div className="text-xs text-muted-foreground">CTR</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Decorative elements */}
+                <div className="absolute -top-4 -right-4 h-20 w-20 bg-primary/10 rounded-full blur-xl" />
+                <div className="absolute -bottom-4 -left-4 h-16 w-16 bg-primary/10 rounded-full blur-xl" />
               </div>
             </div>
           </div>
