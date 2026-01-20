@@ -63,9 +63,144 @@ export interface LinkAnalytics {
 export interface LinkTreeTemplate {
   id: string;
   name: string;
-  thumbnail: string;
+  thumbnail?: string;
+  isColorOnly?: boolean;
   theme: LinkPageTheme;
 }
+
+// Color-only templates (no background image)
+export const COLOR_ONLY_TEMPLATES: LinkTreeTemplate[] = [
+  {
+    id: 'color-purple',
+    name: 'Roxo',
+    isColorOnly: true,
+    theme: {
+      backgroundColor: '#7c3aed',
+      primaryColor: '#ffffff',
+      textColor: '#ffffff',
+      fontFamily: 'Inter',
+      buttonStyle: 'outline',
+      buttonRadius: 'pill',
+    }
+  },
+  {
+    id: 'color-blue',
+    name: 'Azul',
+    isColorOnly: true,
+    theme: {
+      backgroundColor: '#2563eb',
+      primaryColor: '#ffffff',
+      textColor: '#ffffff',
+      fontFamily: 'Inter',
+      buttonStyle: 'solid',
+      buttonRadius: 'rounded',
+    }
+  },
+  {
+    id: 'color-green',
+    name: 'Verde',
+    isColorOnly: true,
+    theme: {
+      backgroundColor: '#16a34a',
+      primaryColor: '#ffffff',
+      textColor: '#ffffff',
+      fontFamily: 'Poppins',
+      buttonStyle: 'solid',
+      buttonRadius: 'pill',
+    }
+  },
+  {
+    id: 'color-pink',
+    name: 'Rosa',
+    isColorOnly: true,
+    theme: {
+      backgroundColor: '#ec4899',
+      primaryColor: '#ffffff',
+      textColor: '#ffffff',
+      fontFamily: 'Nunito',
+      buttonStyle: 'soft',
+      buttonRadius: 'rounded',
+    }
+  },
+  {
+    id: 'color-orange',
+    name: 'Laranja',
+    isColorOnly: true,
+    theme: {
+      backgroundColor: '#ea580c',
+      primaryColor: '#ffffff',
+      textColor: '#ffffff',
+      fontFamily: 'Montserrat',
+      buttonStyle: 'outline',
+      buttonRadius: 'soft',
+    }
+  },
+  {
+    id: 'color-dark',
+    name: 'Escuro',
+    isColorOnly: true,
+    theme: {
+      backgroundColor: '#18181b',
+      primaryColor: '#fafafa',
+      textColor: '#fafafa',
+      fontFamily: 'Inter',
+      buttonStyle: 'outline',
+      buttonRadius: 'rounded',
+    }
+  },
+  {
+    id: 'color-light',
+    name: 'Claro',
+    isColorOnly: true,
+    theme: {
+      backgroundColor: '#f8fafc',
+      primaryColor: '#0f172a',
+      textColor: '#0f172a',
+      fontFamily: 'Inter',
+      buttonStyle: 'solid',
+      buttonRadius: 'rounded',
+    }
+  },
+  {
+    id: 'color-teal',
+    name: 'Teal',
+    isColorOnly: true,
+    theme: {
+      backgroundColor: '#0d9488',
+      primaryColor: '#ffffff',
+      textColor: '#ffffff',
+      fontFamily: 'Quicksand',
+      buttonStyle: 'glass',
+      buttonRadius: 'pill',
+    }
+  },
+  {
+    id: 'color-red',
+    name: 'Vermelho',
+    isColorOnly: true,
+    theme: {
+      backgroundColor: '#dc2626',
+      primaryColor: '#ffffff',
+      textColor: '#ffffff',
+      fontFamily: 'Oswald',
+      buttonStyle: 'solid',
+      buttonRadius: 'soft',
+    }
+  },
+  {
+    id: 'color-indigo',
+    name: 'Índigo',
+    isColorOnly: true,
+    theme: {
+      backgroundColor: '#4f46e5',
+      primaryColor: '#e0e7ff',
+      textColor: '#ffffff',
+      fontFamily: 'Space Grotesk',
+      buttonStyle: 'glass',
+      buttonRadius: 'rounded',
+    }
+  },
+];
 
 export const LINK_TREE_TEMPLATES: LinkTreeTemplate[] = [
   {

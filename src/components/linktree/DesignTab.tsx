@@ -10,8 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Palette, Image as ImageIcon, Link2, Check, Upload, Trash2, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { LINK_TREE_TEMPLATES, GOOGLE_FONTS, type LinkPage, type LinkPageTheme } from '@/types/linktree';
-import { useRef, useState as useImageState } from 'react';
+import { LINK_TREE_TEMPLATES, COLOR_ONLY_TEMPLATES, GOOGLE_FONTS, type LinkPage, type LinkPageTheme, type LinkTreeTemplate } from '@/types/linktree';
+import { useRef } from 'react';
 
 interface DesignTabProps {
   linkPage: LinkPage;
@@ -48,7 +48,7 @@ export function DesignTab({ linkPage, updateLinkPage, onChange }: DesignTabProps
     onChange?.();
   };
 
-  const handleApplyTemplate = async (template: typeof LINK_TREE_TEMPLATES[0]) => {
+  const handleApplyTemplate = async (template: LinkTreeTemplate) => {
     try {
       const newTheme: LinkPageTheme = {
         backgroundColor: template.theme.backgroundColor,
@@ -57,7 +57,8 @@ export function DesignTab({ linkPage, updateLinkPage, onChange }: DesignTabProps
         fontFamily: template.theme.fontFamily,
         buttonStyle: template.theme.buttonStyle,
         buttonRadius: template.theme.buttonRadius,
-        backgroundImage: template.thumbnail, // Apply template thumbnail as background
+        // Only apply background image for templates with thumbnails (not color-only)
+        backgroundImage: template.isColorOnly ? undefined : template.thumbnail,
       };
 
       await updateLinkPage({ theme: newTheme });
@@ -94,18 +95,17 @@ export function DesignTab({ linkPage, updateLinkPage, onChange }: DesignTabProps
     setIsUploadingBg(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `linktree-backgrounds/${fileName}`;
+      const fileName = `backgrounds/${crypto.randomUUID()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('contracts')
-        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+        .from('linktree-assets')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('contracts')
-        .getPublicUrl(filePath);
+        .from('linktree-assets')
+        .getPublicUrl(fileName);
 
       await handleThemeChange({ backgroundImage: publicUrl });
       toast({ title: 'Imagem de fundo atualizada!' });
@@ -127,61 +127,129 @@ export function DesignTab({ linkPage, updateLinkPage, onChange }: DesignTabProps
             <TabsTrigger value="personalizar">Personalizar</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="templates" className="mt-4 space-y-4">
+          <TabsContent value="templates" className="mt-4 space-y-6">
+            {/* Image Templates */}
             <div>
-              <h3 className="font-semibold mb-2">Escolha um template</h3>
+              <h3 className="font-semibold mb-2">Templates com Imagem</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Cada template inclui cores, fontes, estilo de botões e layout
+                Templates com imagens de fundo e estilos predefinidos
               </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {LINK_TREE_TEMPLATES.map((template) => {
+                  const isSelected = selectedTemplateId === template.id || 
+                    (theme.backgroundImage === template.thumbnail);
+
+                  return (
+                    <button
+                      key={template.id}
+                      onClick={() => handleApplyTemplate(template)}
+                      className={`relative aspect-[3/4] rounded-lg overflow-hidden group transition-all ${
+                        isSelected 
+                          ? 'ring-2 ring-primary ring-offset-2' 
+                          : 'hover:ring-2 hover:ring-primary/50'
+                      }`}
+                    >
+                      <img
+                        src={template.thumbnail}
+                        alt={template.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                      
+                      <div className="absolute bottom-0 left-0 right-0 p-2">
+                        <span className="text-white text-xs font-medium">{template.name}</span>
+                      </div>
+                      
+                      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <div
+                          className="w-8 h-8 rounded-full border-2 border-white/50 shadow-lg"
+                          style={{ backgroundColor: template.theme.primaryColor }}
+                        />
+                      </div>
+
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+
+                      <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Badge variant="secondary" className="bg-white/90">
+                          Aplicar
+                        </Badge>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {LINK_TREE_TEMPLATES.map((template) => {
-                const isSelected = selectedTemplateId === template.id || 
-                  (theme.backgroundImage === template.thumbnail);
+            {/* Color-Only Templates */}
+            <div>
+              <h3 className="font-semibold mb-2">Templates com Cores</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Templates com cores sólidas, perfeitos para um visual limpo
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {COLOR_ONLY_TEMPLATES.map((template) => {
+                  const isSelected = selectedTemplateId === template.id;
 
-                return (
-                  <button
-                    key={template.id}
-                    onClick={() => handleApplyTemplate(template)}
-                    className={`relative aspect-[3/4] rounded-lg overflow-hidden group transition-all ${
-                      isSelected 
-                        ? 'ring-2 ring-primary ring-offset-2' 
-                        : 'hover:ring-2 hover:ring-primary/50'
-                    }`}
-                  >
-                    <img
-                      src={template.thumbnail}
-                      alt={template.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    
-                    <div className="absolute bottom-0 left-0 right-0 p-2">
-                      <span className="text-white text-xs font-medium">{template.name}</span>
-                    </div>
-                    
-                    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                      <div
-                        className="w-8 h-8 rounded-full border-2 border-white/50 shadow-lg"
-                        style={{ backgroundColor: template.theme.primaryColor }}
-                      />
-                    </div>
-
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                        <Check className="h-3 w-3" />
+                  return (
+                    <button
+                      key={template.id}
+                      onClick={() => handleApplyTemplate(template)}
+                      className={`relative aspect-square rounded-lg overflow-hidden group transition-all ${
+                        isSelected 
+                          ? 'ring-2 ring-primary ring-offset-2' 
+                          : 'hover:ring-2 hover:ring-primary/50'
+                      }`}
+                      style={{ backgroundColor: template.theme.backgroundColor }}
+                    >
+                      {/* Preview button style */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-3 gap-2">
+                        <div
+                          className="w-full h-6 rounded-full"
+                          style={{
+                            backgroundColor: template.theme.buttonStyle === 'outline' ? 'transparent' : template.theme.primaryColor,
+                            border: template.theme.buttonStyle === 'outline' ? `2px solid ${template.theme.primaryColor}` : 'none',
+                            borderRadius: template.theme.buttonRadius === 'pill' ? '9999px' :
+                                          template.theme.buttonRadius === 'rounded' ? '12px' :
+                                          template.theme.buttonRadius === 'soft' ? '8px' : '4px',
+                          }}
+                        />
+                        <div
+                          className="w-3/4 h-4 rounded-full opacity-50"
+                          style={{
+                            backgroundColor: template.theme.buttonStyle === 'outline' ? 'transparent' : template.theme.primaryColor,
+                            border: template.theme.buttonStyle === 'outline' ? `2px solid ${template.theme.primaryColor}` : 'none',
+                          }}
+                        />
                       </div>
-                    )}
+                      
+                      <div className="absolute bottom-0 left-0 right-0 p-2 text-center">
+                        <span 
+                          className="text-xs font-medium"
+                          style={{ color: template.theme.textColor }}
+                        >
+                          {template.name}
+                        </span>
+                      </div>
 
-                    <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Badge variant="secondary" className="bg-white/90">
-                        Aplicar
-                      </Badge>
-                    </div>
-                  </button>
-                );
-              })}
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 bg-white text-black rounded-full p-1">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Badge variant="secondary" className="bg-white/90">
+                          Aplicar
+                        </Badge>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </TabsContent>
 
