@@ -14,7 +14,7 @@ export function ClientCard({ client, onClick }: ClientCardProps) {
   return (
     <div 
       onClick={onClick}
-      className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:shadow-md transition-all hover:border-primary/50"
+      className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-4 cursor-pointer shadow-lg transition-all duration-300 hover:shadow-xl hover:border-border/80 hover:border-primary/50"
     >
       <div className="flex items-start gap-3">
         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
