@@ -226,5 +226,16 @@
       "meeting": "Reunião",
       "production": "Produção"
     }
+  },
+  "link23": {
+    "title": "Crie páginas de links",
+    "titleHighlight": "profissionais",
+    "subtitle": "Centralize todos os links dos seus clientes em uma página personalizada. Alternativa ao Linktree, integrada ao seu CRM.",
+    "benefit1Title": "Design Personalizado",
+    "benefit1Desc": "Cores e temas que combinam com a marca",
+    "benefit2Title": "Analytics Integrado",
+    "benefit2Desc": "Visualizações e cliques em tempo real",
+    "benefit3Title": "URL Amigável",
+    "benefit3Desc": "qualify.app/agencia/@cliente"
   }
 }
