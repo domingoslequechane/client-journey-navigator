@@ -143,7 +143,7 @@ export default function LinkTreeDashboard() {
 
   const getPublicUrl = (slug: string) => {
     const orgSlug = organization?.slug || 'agencia';
-    return `/agencia/@${slug}`;
+    return `/${orgSlug}/@${slug}`;
   };
 
   const handleCopyLink = (slug: string) => {
@@ -207,51 +207,51 @@ export default function LinkTreeDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Users className="h-5 w-5 text-primary" />
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
-            <div>
-              <p className="text-2xl font-bold">{linkPages?.length || 0}</p>
-              <p className="text-sm text-muted-foreground">Páginas</p>
+            <div className="min-w-0">
+              <p className="text-xl sm:text-2xl font-bold">{linkPages?.length || 0}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Páginas</p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <Link2 className="h-5 w-5 text-blue-500" />
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 rounded-lg shrink-0">
+              <Link2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
             </div>
-            <div>
-              <p className="text-2xl font-bold">{totalLinks}</p>
-              <p className="text-sm text-muted-foreground">Links</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 bg-amber-500/10 rounded-lg">
-              <Eye className="h-5 w-5 text-amber-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{(analytics?.views || 0).toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground">Visualizações</p>
+            <div className="min-w-0">
+              <p className="text-xl sm:text-2xl font-bold">{totalLinks}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Links</p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 bg-pink-500/10 rounded-lg">
-              <MousePointerClick className="h-5 w-5 text-pink-500" />
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+            <div className="p-2 bg-amber-500/10 rounded-lg shrink-0">
+              <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
             </div>
-            <div>
-              <p className="text-2xl font-bold">{(analytics?.clicks || 0).toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground">Cliques</p>
+            <div className="min-w-0">
+              <p className="text-xl sm:text-2xl font-bold">{(analytics?.views || 0).toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Views</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+            <div className="p-2 bg-pink-500/10 rounded-lg shrink-0">
+              <MousePointerClick className="h-4 w-4 sm:h-5 sm:w-5 text-pink-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xl sm:text-2xl font-bold">{(analytics?.clicks || 0).toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Cliques</p>
             </div>
           </CardContent>
         </Card>

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,13 +15,30 @@ import { ptBR } from 'date-fns/locale';
 interface SettingsTabProps {
   linkPage: LinkPage;
   updateLinkPage: (updates: Partial<LinkPage>) => Promise<unknown>;
+  organizationId?: string | null;
 }
 
-export function SettingsTab({ linkPage, updateLinkPage }: SettingsTabProps) {
+export function SettingsTab({ linkPage, updateLinkPage, organizationId }: SettingsTabProps) {
   const [customDomain, setCustomDomain] = useState(linkPage.custom_domain || '');
   const [copied, setCopied] = useState(false);
   
-  const publicUrl = `${window.location.origin}/agencia/@${linkPage.slug}`;
+  // Fetch organization slug
+  const { data: organization } = useQuery({
+    queryKey: ['organization-slug', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('slug')
+        .eq('id', organizationId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
+  });
+  
+  const publicUrl = `${window.location.origin}/${organization?.slug || 'agencia'}/@${linkPage.slug}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(publicUrl)}&color=8b5cf6`;
 
   const handleCopyUrl = async () => {

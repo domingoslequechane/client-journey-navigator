@@ -43,6 +43,22 @@ export default function LinkTreeEditor() {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const lastSavedState = useRef<string | null>(null);
 
+  // Fetch organization slug for public URL
+  const { data: organization } = useQuery({
+    queryKey: ['organization-slug', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('slug')
+        .eq('id', organizationId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
+  });
+
   // Fetch client data
   const { data: client, isLoading: loadingClient } = useQuery({
     queryKey: ['client-for-linktree', clientId],
@@ -244,7 +260,7 @@ export default function LinkTreeEditor() {
     );
   }
 
-  const publicUrl = `/agencia/@${localLinkPage.slug}`;
+  const publicUrl = `/${organization?.slug || 'agencia'}/@${localLinkPage.slug}`;
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
@@ -430,7 +446,8 @@ export default function LinkTreeEditor() {
                   linkPage={localLinkPage} 
                   updateLinkPage={async (updates) => {
                     handleLocalUpdate(updates);
-                  }} 
+                  }}
+                  organizationId={organizationId}
                 />
               </TabsContent>
             </div>
