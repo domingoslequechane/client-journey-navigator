@@ -4,10 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -23,16 +22,33 @@ import {
   ExternalLink,
   BarChart3,
   Copy,
-  Loader2,
+  CheckCircle2,
+  FileEdit,
+  PauseCircle,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function LinkTreeDashboard() {
   const { t } = useTranslation('clients');
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { organizationId } = useOrganizationCurrency();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch organization slug
+  const { data: organization } = useQuery({
+    queryKey: ['organization-slug', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('slug')
+        .eq('id', organizationId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
+  });
 
   // Fetch all link pages for the organization
   const { data: linkPages, isLoading } = useQuery({
@@ -44,7 +60,7 @@ export default function LinkTreeDashboard() {
         .from('link_pages')
         .select(`
           *,
-          clients!inner(id, company_name)
+          clients!inner(id, company_name, paused)
         `)
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
@@ -125,10 +141,40 @@ export default function LinkTreeDashboard() {
   const totalLinks = Object.values(blockCounts || {}).reduce((a, b) => a + b, 0);
   const publishedCount = linkPages?.filter(p => p.is_published).length || 0;
 
+  const getPublicUrl = (slug: string) => {
+    const orgSlug = organization?.slug || 'agencia';
+    return `/agencia/@${slug}`;
+  };
+
   const handleCopyLink = (slug: string) => {
-    const url = `${window.location.origin}/l/${slug}`;
+    const url = `${window.location.origin}${getPublicUrl(slug)}`;
     navigator.clipboard.writeText(url);
-    toast({ title: t('linkTree.linkCopied') });
+    toast({ title: t('linkTree.messages.linkCopied') });
+  };
+
+  const getStatusBadge = (page: typeof filteredPages[0]) => {
+    if (page.clients?.paused) {
+      return (
+        <Badge variant="secondary" className="gap-1">
+          <PauseCircle className="h-3 w-3" />
+          Pausado
+        </Badge>
+      );
+    }
+    if (page.is_published) {
+      return (
+        <Badge variant="default" className="gap-1 bg-green-600 hover:bg-green-700">
+          <CheckCircle2 className="h-3 w-3" />
+          Publicado
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="gap-1">
+        <FileEdit className="h-3 w-3" />
+        Rascunho
+      </Badge>
+    );
   };
 
   if (isLoading) {
@@ -148,13 +194,16 @@ export default function LinkTreeDashboard() {
   return (
     <AnimatedContainer animation="fade-in" className="p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">
-          {t('linkTree.title')} 👋
-        </h1>
-        <p className="text-muted-foreground">
-          {t('linkTree.subtitle')}
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Link2 className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold">Link23</h1>
+          <p className="text-muted-foreground text-sm">
+            Crie e gerencie páginas de links para seus clientes
+          </p>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -166,7 +215,7 @@ export default function LinkTreeDashboard() {
             </div>
             <div>
               <p className="text-2xl font-bold">{linkPages?.length || 0}</p>
-              <p className="text-sm text-muted-foreground">Clientes</p>
+              <p className="text-sm text-muted-foreground">Páginas</p>
             </div>
           </CardContent>
         </Card>
@@ -190,7 +239,7 @@ export default function LinkTreeDashboard() {
             </div>
             <div>
               <p className="text-2xl font-bold">{(analytics?.views || 0).toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground">Views</p>
+              <p className="text-sm text-muted-foreground">Visualizações</p>
             </div>
           </CardContent>
         </Card>
@@ -202,7 +251,7 @@ export default function LinkTreeDashboard() {
             </div>
             <div>
               <p className="text-2xl font-bold">{(analytics?.clicks || 0).toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground">Clicks</p>
+              <p className="text-sm text-muted-foreground">Cliques</p>
             </div>
           </CardContent>
         </Card>
@@ -237,31 +286,32 @@ export default function LinkTreeDashboard() {
             const stats = analytics?.pageStats?.[page.id] || { views: 0, clicks: 0 };
             const linkCount = blockCounts?.[page.id] || 0;
             const clientName = page.clients?.company_name || page.name;
+            const publicPath = getPublicUrl(page.slug);
 
             return (
               <Card key={page.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <CardContent className="p-4 space-y-4">
-                  {/* Header */}
+                  {/* Header - Avatar on left */}
                   <div className="flex items-start gap-3">
-                    <Avatar className="h-12 w-12">
+                    <Avatar className="h-12 w-12 shrink-0">
                       <AvatarImage src={page.logo_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary">
                         {clientName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{clientName}</h3>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold truncate">{clientName}</h3>
+                        {getStatusBadge(page)}
+                      </div>
                       <button 
                         onClick={() => handleCopyLink(page.slug)}
-                        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mt-1"
                       >
-                        /{page.slug}
-                        <Copy className="h-3 w-3" />
+                        <span className="truncate">{publicPath}</span>
+                        <Copy className="h-3 w-3 shrink-0" />
                       </button>
                     </div>
-                    <Badge variant={page.is_published ? 'default' : 'secondary'}>
-                      {page.is_published ? t('linkTree.status.published') : t('linkTree.status.draft')}
-                    </Badge>
                   </div>
 
                   {/* Stats */}
@@ -276,7 +326,7 @@ export default function LinkTreeDashboard() {
                     </div>
                     <div className="text-center">
                       <p className="font-semibold">{stats.clicks.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">Clicks</p>
+                      <p className="text-xs text-muted-foreground">Cliques</p>
                     </div>
                   </div>
 
@@ -292,7 +342,7 @@ export default function LinkTreeDashboard() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => window.open(`/l/${page.slug}`, '_blank')}
+                      onClick={() => window.open(publicPath, '_blank')}
                       disabled={!page.is_published}
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -315,7 +365,7 @@ export default function LinkTreeDashboard() {
           <div className="text-center">
             <Link2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              {searchQuery ? 'Nenhum resultado encontrado' : 'Nenhuma árvore de links criada'}
+              {searchQuery ? 'Nenhum resultado encontrado' : 'Nenhuma página de links criada'}
             </h3>
             <p className="text-muted-foreground mb-4">
               {searchQuery 

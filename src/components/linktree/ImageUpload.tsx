@@ -60,13 +60,12 @@ export function ImageUpload({
     try {
       // Generate unique filename
       const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `linktree-logos/${fileName}`;
+      const fileName = `profiles/${crypto.randomUUID()}.${fileExt}`;
 
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage (linktree-assets bucket)
       const { error: uploadError } = await supabase.storage
-        .from('contracts')
-        .upload(filePath, file, {
+        .from('linktree-assets')
+        .upload(fileName, file, {
           cacheControl: '3600',
           upsert: false,
         });
@@ -75,8 +74,8 @@ export function ImageUpload({
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('contracts')
-        .getPublicUrl(filePath);
+        .from('linktree-assets')
+        .getPublicUrl(fileName);
 
       onImageChange(publicUrl);
       toast({ title: 'Imagem atualizada!' });

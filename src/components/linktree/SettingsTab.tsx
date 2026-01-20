@@ -19,7 +19,7 @@ export function SettingsTab({ linkPage, updateLinkPage }: SettingsTabProps) {
   const [customDomain, setCustomDomain] = useState(linkPage.custom_domain || '');
   const [copied, setCopied] = useState(false);
   
-  const publicUrl = `${window.location.origin}/l/${linkPage.slug}`;
+  const publicUrl = `${window.location.origin}/agencia/@${linkPage.slug}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(publicUrl)}&color=8b5cf6`;
 
   const handleCopyUrl = async () => {

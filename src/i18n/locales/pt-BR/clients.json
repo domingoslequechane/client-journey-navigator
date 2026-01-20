@@ -144,12 +144,19 @@
     "commercial_proposal": "Proposta Comercial"
   },
   "linkTree": {
-    "title": "Árvore de Links",
+    "title": "Link23",
+    "subtitle": "Crie e gerencie páginas de links para seus clientes",
     "manage": "Gerenciar Links",
     "empty": "Nenhuma página de links criada",
     "create": "Criar Página de Links",
     "published": "Publicado",
     "draft": "Rascunho",
+    "paused": "Pausado",
+    "status": {
+      "published": "Publicado",
+      "draft": "Rascunho",
+      "paused": "Pausado"
+    },
     "views": "Visualizações",
     "clicks": "Cliques",
     "ctr": "CTR",

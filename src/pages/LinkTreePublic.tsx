@@ -19,7 +19,7 @@ export default function LinkTreePublic() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen w-full flex items-center justify-center bg-background">
         <div className="space-y-4 w-full max-w-md px-4">
           <Skeleton className="h-24 w-24 rounded-full mx-auto" />
           <Skeleton className="h-6 w-48 mx-auto" />
@@ -36,7 +36,7 @@ export default function LinkTreePublic() {
 
   if (error || !linkPage) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen w-full flex items-center justify-center bg-background">
         <div className="text-center p-8">
           <h1 className="text-2xl font-bold mb-2">Página não encontrada</h1>
           <p className="text-muted-foreground">Esta página de links não existe ou foi removida.</p>
@@ -123,7 +123,7 @@ export default function LinkTreePublic() {
         <link href={fontLink} rel="stylesheet" />
       )}
       <div
-        className="min-h-screen w-full"
+        className="min-h-screen w-full flex items-center justify-center"
         style={{
           backgroundColor: theme.backgroundColor,
           backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined,
@@ -132,10 +132,13 @@ export default function LinkTreePublic() {
           fontFamily: theme.fontFamily,
         }}
       >
-        <div className="min-h-screen w-full" style={{
-          background: theme.backgroundImage ? 'rgba(0,0,0,0.4)' : undefined,
-        }}>
-          <div className="max-w-md mx-auto px-4 py-12 space-y-6">
+        <div 
+          className="min-h-screen w-full flex items-center justify-center" 
+          style={{
+            background: theme.backgroundImage ? 'rgba(0,0,0,0.4)' : undefined,
+          }}
+        >
+          <div className="w-full max-w-md px-4 py-12 space-y-6">
             {/* Profile Section */}
             <div className="text-center space-y-3">
               {linkPage.logo_url && (

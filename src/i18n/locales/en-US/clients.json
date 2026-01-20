@@ -144,12 +144,19 @@
     "commercial_proposal": "Commercial Proposal"
   },
   "linkTree": {
-    "title": "Link Tree",
+    "title": "Link23",
+    "subtitle": "Create and manage link pages for your clients",
     "manage": "Manage Links",
     "empty": "No link page created",
     "create": "Create Link Page",
     "published": "Published",
     "draft": "Draft",
+    "paused": "Paused",
+    "status": {
+      "published": "Published",
+      "draft": "Draft",
+      "paused": "Paused"
+    },
     "views": "Views",
     "clicks": "Clicks",
     "ctr": "CTR",
