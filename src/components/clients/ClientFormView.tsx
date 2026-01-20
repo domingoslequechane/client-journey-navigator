@@ -108,7 +108,7 @@ export function ClientFormView({
 
       <form onSubmit={onSubmit} className="space-y-6 md:space-y-8">
         {/* Company Info */}
-        <AnimatedContainer animation="fade-up" delay={0.1} className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <AnimatedContainer animation="fade-up" delay={0.1} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <Building2 className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Informações da Empresa</h2>
@@ -143,7 +143,7 @@ export function ClientFormView({
         </AnimatedContainer>
 
         {/* Contact Info */}
-        <AnimatedContainer animation="fade-up" delay={0.15} className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <AnimatedContainer animation="fade-up" delay={0.15} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <User className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Contato Principal</h2>
@@ -180,7 +180,7 @@ export function ClientFormView({
         </AnimatedContainer>
 
         {/* Lead Qualification */}
-        <AnimatedContainer animation="fade-up" delay={0.2} className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <AnimatedContainer animation="fade-up" delay={0.2} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <Globe className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Qualificação do Lead</h2>
@@ -284,7 +284,7 @@ export function ClientFormView({
         </AnimatedContainer>
 
         {/* Services */}
-        <AnimatedContainer animation="fade-up" delay={0.25} className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <AnimatedContainer animation="fade-up" delay={0.25} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <DollarSign className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Serviços de Interesse</h2>
@@ -304,7 +304,7 @@ export function ClientFormView({
         </AnimatedContainer>
 
         {/* Notes */}
-        <AnimatedContainer animation="fade-up" delay={0.3} className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <AnimatedContainer animation="fade-up" delay={0.3} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
           <Label>Observações</Label>
           <Textarea 
             value={formData.notes} 

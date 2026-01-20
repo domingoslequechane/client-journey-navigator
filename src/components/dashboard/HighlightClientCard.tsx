@@ -40,7 +40,7 @@ export function HighlightClientCard({ clients, currencySymbol }: HighlightClient
 
   if (!highlightClient) {
     return (
-      <Card className="border-border bg-gradient-to-br from-card to-muted/30">
+      <Card className="bg-card/80 backdrop-blur-sm border-border/50 bg-gradient-to-br from-card/80 to-muted/20">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <Flame className="h-5 w-5 text-destructive" />
@@ -62,7 +62,7 @@ export function HighlightClientCard({ clients, currencySymbol }: HighlightClient
   });
 
   return (
-    <Card className="border-border bg-gradient-to-br from-card to-muted/30">
+    <Card className="bg-card/80 backdrop-blur-sm border-border/50 bg-gradient-to-br from-card/80 to-muted/20">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

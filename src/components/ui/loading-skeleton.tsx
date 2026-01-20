@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export function StatsCardSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+    <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
       <div className="flex items-start justify-between">
         <div className="space-y-2 flex-1">
           <Skeleton className="h-4 w-24" />
@@ -18,7 +18,7 @@ export function StatsCardSkeleton() {
 
 export function ClientCardSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-lg p-4">
+    <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4">
       <div className="flex items-start gap-3">
         <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
         <div className="flex-1 space-y-2">
@@ -38,7 +38,7 @@ export function ClientCardSkeleton() {
 
 export function RecentClientSkeleton() {
   return (
-    <div className="p-4 rounded-lg bg-muted/30">
+    <div className="p-4 rounded-xl bg-muted/20 backdrop-blur-sm border border-border/30">
       <div className="flex items-start gap-3">
         <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
         <div className="flex-1 space-y-2">
@@ -62,7 +62,7 @@ export function RecentClientSkeleton() {
 
 export function QuickActionSkeleton() {
   return (
-    <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30">
+    <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/20 backdrop-blur-sm border border-border/30">
       <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
       <div className="flex-1 space-y-2">
         <Skeleton className="h-4 w-32" />
@@ -84,7 +84,7 @@ export function FunnelColumnSkeleton() {
         </div>
         <Skeleton className="h-3 w-40 mt-2" />
       </div>
-      <div className="flex-1 bg-muted/30 rounded-b-xl p-3 space-y-3 min-h-[400px]">
+      <div className="flex-1 bg-muted/20 backdrop-blur-sm rounded-b-xl p-3 space-y-3 min-h-[400px] border border-t-0 border-border/30">
         {[1, 2, 3].map((i) => (
           <ClientCardSkeleton key={i} />
         ))}
@@ -112,7 +112,7 @@ export function ClientListSkeleton() {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg overflow-hidden">
         {/* Mobile cards */}
         <div className="md:hidden divide-y divide-border">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -192,7 +192,7 @@ export function DashboardSkeleton() {
       </div>
 
       {/* Funnel Overview */}
-      <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+      <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
         <div className="flex justify-between mb-4">
           <div className="space-y-2">
             <Skeleton className="h-5 w-40" />
@@ -209,7 +209,7 @@ export function DashboardSkeleton() {
 
       {/* Two Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
           <div className="flex justify-between mb-6">
             <Skeleton className="h-5 w-36" />
             <Skeleton className="h-8 w-20" />
@@ -220,7 +220,7 @@ export function DashboardSkeleton() {
             ))}
           </div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+        <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
           <Skeleton className="h-5 w-32 mb-6" />
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (

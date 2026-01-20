@@ -110,7 +110,7 @@ export default function SalesFunnel() {
                   <p className="text-xs text-muted-foreground">{t(`stageDescriptions.${stage.id}`)}</p>
                 </div>
                 
-                <div className="flex-1 bg-muted/30 rounded-b-xl p-3 space-y-3 min-h-[400px]">
+                <div className="flex-1 bg-muted/20 backdrop-blur-sm rounded-b-xl p-3 space-y-3 min-h-[400px] border border-t-0 border-border/30">
                   {stageClients.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-sm text-muted-foreground mb-3">{t('emptyStage')}</p>
@@ -132,7 +132,7 @@ export default function SalesFunnel() {
                       >
                         <div
                           onClick={() => handleClientClick(client.id)}
-                          className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-all hover:shadow-md"
+                          className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-4 cursor-pointer shadow-lg transition-all duration-300 hover:shadow-xl hover:border-primary/50"
                         >
                           <div className="flex items-start gap-3">
                             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
