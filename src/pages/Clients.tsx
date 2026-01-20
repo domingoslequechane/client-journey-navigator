@@ -192,7 +192,7 @@ export default function Clients() {
       </AnimatedContainer>
 
       {/* Clients - Mobile Cards / Desktop Table */}
-      <AnimatedContainer animation="fade-up" delay={0.2} className="bg-card border border-border rounded-xl overflow-hidden">
+      <AnimatedContainer animation="fade-up" delay={0.2} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg overflow-hidden">
         {/* Mobile Cards View */}
         <div className="md:hidden divide-y divide-border">
           {filteredClients.map((client) => {

@@ -24,7 +24,7 @@ export function AISuggestionCard({ clients }: AISuggestionCardProps) {
 
   if (isLoading) {
     return (
-      <Card className="border-border bg-gradient-to-br from-primary/5 to-card">
+      <Card className="bg-card/80 backdrop-blur-sm border-border/50 bg-gradient-to-br from-primary/10 to-card/80">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 text-primary animate-spin" />
@@ -46,7 +46,7 @@ export function AISuggestionCard({ clients }: AISuggestionCardProps) {
 
   if (error || !suggestion) {
     return (
-      <Card className="border-border bg-gradient-to-br from-primary/5 to-card">
+      <Card className="bg-card/80 backdrop-blur-sm border-border/50 bg-gradient-to-br from-primary/10 to-card/80">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -71,7 +71,7 @@ export function AISuggestionCard({ clients }: AISuggestionCardProps) {
   const Icon = SUGGESTION_ICONS[suggestion.type] || ArrowRight;
 
   return (
-    <Card className="border-border bg-gradient-to-br from-primary/5 to-card">
+    <Card className="bg-card/80 backdrop-blur-sm border-border/50 bg-gradient-to-br from-primary/10 to-card/80">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

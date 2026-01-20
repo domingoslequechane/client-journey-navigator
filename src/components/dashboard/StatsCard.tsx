@@ -16,11 +16,11 @@ interface StatsCardProps {
 }
 
 const variantStyles = {
-  default: 'bg-card border-border',
-  info: 'bg-info/10 border-info/20',
-  success: 'bg-success/10 border-success/20',
-  warning: 'bg-warning/10 border-warning/20',
-  primary: 'bg-primary/10 border-primary/20',
+  default: 'bg-card/80 backdrop-blur-sm border-border/50',
+  info: 'bg-info/10 backdrop-blur-sm border-info/30',
+  success: 'bg-success/10 backdrop-blur-sm border-success/30',
+  warning: 'bg-warning/10 backdrop-blur-sm border-warning/30',
+  primary: 'bg-primary/10 backdrop-blur-sm border-primary/30',
 };
 
 const iconVariantStyles = {
@@ -33,7 +33,7 @@ const iconVariantStyles = {
 
 export function StatsCard({ title, value, description, icon: Icon, trend, variant = 'default', className }: StatsCardProps) {
   return (
-    <div className={cn('p-3 md:p-6 rounded-xl border transition-all hover:shadow-lg', variantStyles[variant], className)}>
+    <div className={cn('p-3 md:p-6 rounded-xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:border-border/80', variantStyles[variant], className)}>
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-1 md:space-y-2 min-w-0">
           <p className="text-xs md:text-sm text-muted-foreground truncate">{title}</p>
