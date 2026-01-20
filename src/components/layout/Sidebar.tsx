@@ -28,6 +28,7 @@ import {
   Link2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -96,7 +97,7 @@ export function Sidebar() {
       { name: t('navigation.salesFunnel'), href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel', show: canSeeSalesFunnel },
       { name: t('navigation.operationalFlow'), href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational', show: canSeeOperationalFlow },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
-      { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true },
+      { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true, badge: 'beta' },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
       { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam },
@@ -130,6 +131,11 @@ export function Sidebar() {
       >
         <item.icon className="h-5 w-5 shrink-0" />
         {!collapsed && item.name}
+        {!collapsed && item.badge && (
+          <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0 h-4 uppercase font-semibold">
+            {item.badge}
+          </Badge>
+        )}
       </Link>
     );
 
@@ -137,7 +143,14 @@ export function Sidebar() {
       return (
         <Tooltip>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
-          <TooltipContent side="right">{item.name}</TooltipContent>
+          <TooltipContent side="right" className="flex items-center gap-2">
+            {item.name}
+            {item.badge && (
+              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 uppercase font-semibold">
+                {item.badge}
+              </Badge>
+            )}
+          </TooltipContent>
         </Tooltip>
       );
     }

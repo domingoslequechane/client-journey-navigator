@@ -29,7 +29,7 @@ export default function LinkTreeEditor() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { organizationId } = useOrganizationCurrency();
+  const { organizationId, loading: loadingOrg } = useOrganizationCurrency();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'links');
   const [showPreview, setShowPreview] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -215,7 +215,7 @@ export default function LinkTreeEditor() {
     return { text: 'Publicado', variant: 'success' as const, icon: Globe };
   }, [localLinkPage?.is_published, hasUnsavedChanges]);
 
-  if (loadingClient || isLoading) {
+  if (loadingClient || isLoading || loadingOrg || !organizationId) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

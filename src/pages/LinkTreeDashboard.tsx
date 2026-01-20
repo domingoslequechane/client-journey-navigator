@@ -12,6 +12,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
   Users,
   Link2,
   Eye,
@@ -25,6 +33,7 @@ import {
   CheckCircle2,
   FileEdit,
   PauseCircle,
+  Building2,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -33,7 +42,7 @@ export default function LinkTreeDashboard() {
   const navigate = useNavigate();
   const { organizationId } = useOrganizationCurrency();
   const [searchQuery, setSearchQuery] = useState('');
-
+  const [selectClientOpen, setSelectClientOpen] = useState(false);
   // Fetch organization slug
   const { data: organization } = useQuery({
     queryKey: ['organization-slug', organizationId],
@@ -67,6 +76,31 @@ export default function LinkTreeDashboard() {
 
       if (error) throw error;
       return data;
+    },
+    enabled: !!organizationId,
+  });
+
+  // Fetch clients without link pages
+  const { data: clientsWithoutLinks } = useQuery({
+    queryKey: ['clients-without-links', organizationId, linkPages],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      // Get all clients
+      const { data: allClients, error: clientsError } = await supabase
+        .from('clients')
+        .select('id, company_name')
+        .eq('organization_id', organizationId)
+        .eq('paused', false)
+        .order('company_name');
+
+      if (clientsError) throw clientsError;
+
+      // Get clients that already have link pages
+      const clientsWithPages = new Set(linkPages?.map(p => p.client_id) || []);
+
+      // Filter out clients that already have pages
+      return allClients?.filter(c => !clientsWithPages.has(c.id)) || [];
     },
     enabled: !!organizationId,
   });
@@ -272,12 +306,68 @@ export default function LinkTreeDashboard() {
               className="pl-10"
             />
           </div>
-          <Button onClick={() => navigate('/app/clients/new')} className="gap-2 shrink-0">
+          <Button onClick={() => setSelectClientOpen(true)} className="gap-2 shrink-0">
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Novo Cliente</span>
+            <span className="hidden sm:inline">{t('linkTree.newLink')}</span>
           </Button>
         </div>
       </div>
+
+      {/* Select Client Dialog */}
+      <Dialog open={selectClientOpen} onOpenChange={setSelectClientOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('linkTree.selectClient')}</DialogTitle>
+            <DialogDescription>
+              {t('linkTree.selectClientDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-80">
+            <div className="space-y-2 py-2">
+              {clientsWithoutLinks && clientsWithoutLinks.length > 0 ? (
+                clientsWithoutLinks.map(client => (
+                  <Button
+                    key={client.id}
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-auto py-3"
+                    onClick={() => {
+                      navigate(`/app/clients/${client.id}/links`);
+                      setSelectClientOpen(false);
+                    }}
+                  >
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Building2 className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="font-medium">{client.company_name}</span>
+                  </Button>
+                ))
+              ) : (
+                <div className="text-center py-6">
+                  <Building2 className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    {linkPages && linkPages.length > 0 
+                      ? t('linkTree.allClientsHaveLinks')
+                      : t('linkTree.noClientsAvailable')
+                    }
+                  </p>
+                  {(!linkPages || linkPages.length === 0) && (
+                    <Button 
+                      variant="outline" 
+                      className="mt-3"
+                      onClick={() => {
+                        setSelectClientOpen(false);
+                        navigate('/app/clients/new');
+                      }}
+                    >
+                      {t('newClient')}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* Link Pages Grid */}
       {filteredPages.length > 0 ? (
