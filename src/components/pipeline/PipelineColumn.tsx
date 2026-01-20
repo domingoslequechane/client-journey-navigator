@@ -34,7 +34,7 @@ export function PipelineColumn({ stage, clients, onClientClick }: PipelineColumn
         </span>
       </div>
       
-      <div className="bg-muted/50 rounded-b-xl p-3 min-h-[500px] space-y-3">
+      <div className="bg-muted/30 backdrop-blur-sm rounded-b-xl p-3 min-h-[500px] space-y-3 border border-t-0 border-border/30">
         {clients.map((client) => (
           <ClientCard 
             key={client.id} 
