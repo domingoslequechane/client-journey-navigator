@@ -126,9 +126,9 @@ export default function Auth() {
     
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        toast({ title: t('toast.error'), description: t('toast.invalidCredentials'), variant: 'destructive' });
+        toast({ title: 'Erro', description: t('messages.invalidCredentials'), variant: 'destructive' });
       } else {
-        toast({ title: t('toast.error'), description: error.message, variant: 'destructive' });
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       }
       setLoading(false);
       return;
@@ -164,7 +164,7 @@ export default function Auth() {
         user_agent: navigator.userAgent,
       });
 
-      toast({ title: t('toast.welcome'), description: t('toast.loginSuccess') });
+      toast({ title: t('messages.welcomeBack'), description: t('messages.loginSuccess') });
       
       // Redirect system admins to admin panel, preserve route for regular users
       if (adminRole) {
@@ -200,8 +200,8 @@ export default function Auth() {
 
       if (!response.ok) {
         toast({ 
-          title: t('toast.error'), 
-          description: data.error || t('toast.verificationError'), 
+          title: 'Erro', 
+          description: data.error || t('messages.errorSendingCode'), 
           variant: 'destructive' 
         });
         setLoading(false);
@@ -214,14 +214,14 @@ export default function Auth() {
       });
       
       toast({
-        title: t('toast.codeSent'),
-        description: t('toast.checkEmail'),
+        title: t('verifyEmail.codeSent'),
+        description: t('verifyEmail.codeSentDescription'),
       });
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({ 
-        title: t('toast.error'), 
-        description: t('toast.signupError'), 
+        title: 'Erro', 
+        description: t('messages.errorProcessingSignup'), 
         variant: 'destructive' 
       });
     }
@@ -241,10 +241,10 @@ export default function Auth() {
     });
     
     if (error) {
-      toast({ title: t('toast.error'), description: error.message, variant: 'destructive' });
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
       setResetEmailSent(true);
-      toast({ title: t('toast.emailSent'), description: t('toast.checkInbox') });
+      toast({ title: t('messages.emailSent'), description: t('messages.checkInbox') });
     }
     setLoading(false);
   };
@@ -348,7 +348,7 @@ export default function Auth() {
     });
     
     if (error) {
-      toast({ title: t('toast.error'), description: error.message, variant: 'destructive' });
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     }
     setLoading(false);
   };
@@ -431,7 +431,7 @@ export default function Auth() {
                     {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? t('buttons.loggingIn') : t('buttons.login')}
+                    {loading ? t('login.loading') : t('login.submit')}
                   </Button>
 
                   <div className="relative my-4">
