@@ -4,6 +4,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Mail } from 'lucide-react';
 import { SOCIAL_PLATFORMS, GOOGLE_FONTS } from '@/types/linktree';
+import { CarouselBlockPreview } from '@/components/linktree/blocks/CarouselBlockPreview';
+import { ContactFormBlockPreview } from '@/components/linktree/blocks/ContactFormBlockPreview';
 import { useEffect } from 'react';
 
 export default function LinkTreePublic() {
@@ -277,6 +279,26 @@ export default function LinkTreePublic() {
                           </Button>
                         </div>
                       </div>
+                    );
+
+                  case 'carousel':
+                    return (
+                      <CarouselBlockPreview
+                        key={block.id}
+                        block={block}
+                        theme={theme}
+                        onRecordClick={(blockId) => recordAnalyticsEvent(linkPage.id, 'click', blockId)}
+                      />
+                    );
+
+                  case 'contact-form':
+                    return (
+                      <ContactFormBlockPreview
+                        key={block.id}
+                        block={block}
+                        theme={theme}
+                        onRecordClick={(blockId) => recordAnalyticsEvent(linkPage.id, 'click', blockId)}
+                      />
                     );
 
                   default:

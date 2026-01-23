@@ -6,6 +6,8 @@ import { Switch } from '@/components/ui/switch';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ImageUpload } from './ImageUpload';
+import { CarouselBlockEditor } from './blocks/CarouselBlockEditor';
+import { ContactFormBlockEditor } from './blocks/ContactFormBlockEditor';
 import { 
   Plus, 
   GripVertical, 
@@ -17,7 +19,9 @@ import {
   Video,
   Share2,
   Minus,
-  Check
+  Check,
+  Images,
+  MessageSquare
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -44,6 +48,8 @@ const BLOCK_TYPES = [
   { type: 'divider', icon: Minus, label: 'Divisor' },
   { type: 'image', icon: ImageIcon, label: 'Imagem' },
   { type: 'video', icon: Video, label: 'Vídeo' },
+  { type: 'carousel', icon: Images, label: 'Carrossel de Imagens' },
+  { type: 'contact-form', icon: MessageSquare, label: 'Formulário de Contato' },
 ] as const;
 
 export function LinksTab({
@@ -65,12 +71,34 @@ export function LinksTab({
   const blocks = linkPage.blocks || [];
 
   const handleAddBlock = async (type: LinkBlock['type']) => {
+    const getDefaultContent = () => {
+      switch (type) {
+        case 'button':
+          return { title: 'Novo Link', url: 'https://' };
+        case 'text':
+          return { text: 'Texto aqui' };
+        case 'social':
+          return { socials: [] };
+        case 'carousel':
+          return { images: [] };
+        case 'contact-form':
+          return {
+            formConfig: {
+              title: 'Entre em contato',
+              description: 'Preencha o formulário abaixo',
+              submitButtonText: 'Enviar',
+              successMessage: 'Mensagem enviada com sucesso!',
+              fields: { name: true, email: true, phone: false, message: true },
+            },
+          };
+        default:
+          return {};
+      }
+    };
+
     const newBlock: Omit<LinkBlock, 'id' | 'link_page_id' | 'created_at' | 'updated_at' | 'clicks'> = {
       type,
-      content: type === 'button' ? { title: 'Novo Link', url: 'https://' } :
-               type === 'text' ? { text: 'Texto aqui' } :
-               type === 'social' ? { socials: [] } :
-               {},
+      content: getDefaultContent(),
       is_enabled: true,
       sort_order: blocks.length,
     };
@@ -163,17 +191,56 @@ export function LinksTab({
 
         {/* Blocks List */}
         <div className="space-y-2">
-          {blocks.map((block) => (
-            <BlockCard
-              key={block.id}
-              block={block}
-              isEditing={editingBlockId === block.id}
-              onEdit={() => setEditingBlockId(block.id)}
-              onCancelEdit={() => setEditingBlockId(null)}
-              onUpdate={updateBlock}
-              onDelete={deleteBlock}
-            />
-          ))}
+          {blocks.map((block) => {
+            // Handle carousel block
+            if (block.type === 'carousel') {
+              return (
+                <CarouselBlockEditor
+                  key={block.id}
+                  block={block}
+                  isEditing={editingBlockId === block.id}
+                  onEdit={() => setEditingBlockId(block.id)}
+                  onCancelEdit={() => setEditingBlockId(null)}
+                  onUpdate={updateBlock}
+                  onDelete={deleteBlock}
+                  onToggleEnabled={async () => {
+                    await updateBlock({ id: block.id, is_enabled: !block.is_enabled });
+                  }}
+                />
+              );
+            }
+
+            // Handle contact form block
+            if (block.type === 'contact-form') {
+              return (
+                <ContactFormBlockEditor
+                  key={block.id}
+                  block={block}
+                  isEditing={editingBlockId === block.id}
+                  onEdit={() => setEditingBlockId(block.id)}
+                  onCancelEdit={() => setEditingBlockId(null)}
+                  onUpdate={updateBlock}
+                  onDelete={deleteBlock}
+                  onToggleEnabled={async () => {
+                    await updateBlock({ id: block.id, is_enabled: !block.is_enabled });
+                  }}
+                />
+              );
+            }
+
+            // Standard blocks
+            return (
+              <BlockCard
+                key={block.id}
+                block={block}
+                isEditing={editingBlockId === block.id}
+                onEdit={() => setEditingBlockId(block.id)}
+                onCancelEdit={() => setEditingBlockId(null)}
+                onUpdate={updateBlock}
+                onDelete={deleteBlock}
+              />
+            );
+          })}
         </div>
 
         {blocks.length === 0 && (

@@ -14,6 +14,8 @@ import {
   MessageSquare,
   Send
 } from 'lucide-react';
+import { CarouselBlockPreview } from './blocks/CarouselBlockPreview';
+import { ContactFormBlockPreview } from './blocks/ContactFormBlockPreview';
 import type { LinkPage, LinkBlock } from '@/types/linktree';
 
 interface PhonePreviewProps {
@@ -230,6 +232,27 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                         src={block.content.imageUrl}
                         alt=""
                         className="w-full rounded-lg"
+                      />
+                    );
+                  }
+
+                  if (block.type === 'carousel') {
+                    return (
+                      <CarouselBlockPreview
+                        key={block.id}
+                        block={block}
+                        theme={theme}
+                      />
+                    );
+                  }
+
+                  if (block.type === 'contact-form') {
+                    return (
+                      <ContactFormBlockPreview
+                        key={block.id}
+                        block={block}
+                        theme={theme}
+                        isPreview
                       />
                     );
                   }

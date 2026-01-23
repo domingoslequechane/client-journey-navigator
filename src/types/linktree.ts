@@ -1,9 +1,29 @@
 // Link Tree Types
 
+export interface CarouselImage {
+  url: string;
+  alt?: string;
+  link?: string;
+}
+
+export interface ContactFormConfig {
+  title?: string;
+  description?: string;
+  submitButtonText?: string;
+  successMessage?: string;
+  recipientEmail?: string;
+  fields?: {
+    name: boolean;
+    email: boolean;
+    phone: boolean;
+    message: boolean;
+  };
+}
+
 export interface LinkBlock {
   id: string;
   link_page_id: string;
-  type: 'button' | 'text' | 'image' | 'video' | 'social' | 'divider' | 'email-form';
+  type: 'button' | 'text' | 'image' | 'video' | 'social' | 'divider' | 'email-form' | 'carousel' | 'contact-form';
   content: {
     title?: string;
     url?: string;
@@ -11,6 +31,8 @@ export interface LinkBlock {
     videoUrl?: string;
     text?: string;
     socials?: { platform: string; url: string }[];
+    images?: CarouselImage[];
+    formConfig?: ContactFormConfig;
   };
   style?: {
     backgroundColor?: string;
