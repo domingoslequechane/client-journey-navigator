@@ -151,8 +151,8 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
         .insert({
           link_page_id: linkPage.id,
           type: block.type,
-          content: block.content,
-          style: block.style,
+          content: JSON.parse(JSON.stringify(block.content)),
+          style: block.style ? JSON.parse(JSON.stringify(block.style)) : undefined,
           is_enabled: block.is_enabled,
           sort_order: block.sort_order,
         })
@@ -178,8 +178,8 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
         .from('link_blocks')
         .update({
           type: updates.type,
-          content: updates.content,
-          style: updates.style,
+          content: updates.content ? JSON.parse(JSON.stringify(updates.content)) : undefined,
+          style: updates.style ? JSON.parse(JSON.stringify(updates.style)) : undefined,
           is_enabled: updates.is_enabled,
           sort_order: updates.sort_order,
         })
