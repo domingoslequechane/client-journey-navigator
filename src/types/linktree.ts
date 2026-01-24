@@ -38,6 +38,7 @@ export interface LinkBlock {
     backgroundColor?: string;
     textColor?: string;
     isTransparent?: boolean;
+    useOfficialColors?: boolean;
   };
   is_enabled: boolean;
   sort_order: number;

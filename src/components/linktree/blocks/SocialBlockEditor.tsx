@@ -13,7 +13,8 @@ import {
   Copy,
   Plus,
   X,
-  Share2
+  Share2,
+  Palette
 } from 'lucide-react';
 import {
   Select,
@@ -54,6 +55,9 @@ export function SocialBlockEditor({
   const [socials, setSocials] = useState<SocialItem[]>(
     block.content.socials || []
   );
+  const [useOfficialColors, setUseOfficialColors] = useState<boolean>(
+    block.style?.useOfficialColors || false
+  );
 
   const handleAddSocial = () => {
     setSocials([...socials, { platform: 'instagram', url: '' }]);
@@ -75,6 +79,10 @@ export function SocialBlockEditor({
       content: {
         ...block.content,
         socials,
+      },
+      style: {
+        ...block.style,
+        useOfficialColors,
       },
     });
     onCancelEdit();
@@ -130,7 +138,7 @@ export function SocialBlockEditor({
                               return (
                                 <SelectItem key={p.id} value={p.id}>
                                   <div className="flex items-center gap-2">
-                                    <PIcon className="h-4 w-4" />
+                                    <PIcon className="h-4 w-4" style={useOfficialColors ? { color: p.color } : undefined} />
                                     {p.name}
                                   </div>
                                 </SelectItem>
@@ -157,6 +165,38 @@ export function SocialBlockEditor({
                   })}
                 </div>
               </ScrollArea>
+
+              {/* Opção de cores oficiais */}
+              <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">Usar cores oficiais</span>
+                </div>
+                <Switch
+                  checked={useOfficialColors}
+                  onCheckedChange={setUseOfficialColors}
+                />
+              </div>
+
+              {/* Preview das cores */}
+              {useOfficialColors && socials.length > 0 && (
+                <div className="flex gap-2 justify-center py-2">
+                  {socials.slice(0, 6).map((social, idx) => {
+                    const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
+                    const Icon = platform?.icon;
+                    if (!Icon) return null;
+                    return (
+                      <div
+                        key={idx}
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: platform?.color }}
+                      >
+                        <Icon className="h-4 w-4 text-white" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleSave}>
@@ -173,6 +213,9 @@ export function SocialBlockEditor({
               <span className="text-sm">
                 Ícones Sociais ({socialCount} {socialCount === 1 ? 'rede' : 'redes'})
               </span>
+              {block.style?.useOfficialColors && (
+                <span className="text-xs text-muted-foreground">(cores oficiais)</span>
+              )}
             </div>
           )}
         </div>

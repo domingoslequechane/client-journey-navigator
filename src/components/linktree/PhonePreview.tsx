@@ -69,12 +69,17 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
           className="w-full h-full rounded-[32px] overflow-hidden relative"
           style={{
             backgroundColor: theme.backgroundColor,
-            backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
             fontFamily: theme.fontFamily,
           }}
         >
+          {/* Fixed Background Image */}
+          {theme.backgroundImage && (
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: `url(${theme.backgroundImage})` }}
+            />
+          )}
+          
           {/* Overlay for background image */}
           {theme.backgroundImage && (
             <div className="absolute inset-0 bg-black/30" />
@@ -157,6 +162,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                   }
 
                   if (block.type === 'social') {
+                    const useOfficialColors = block.style?.useOfficialColors;
                     return (
                       <div 
                         key={block.id} 
@@ -175,8 +181,8 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                                 rel="noopener noreferrer"
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 flex-shrink-0"
                                 style={{
-                                  backgroundColor: theme.primaryColor,
-                                  color: theme.textColor,
+                                  backgroundColor: useOfficialColors ? platform?.color : theme.primaryColor,
+                                  color: useOfficialColors ? '#ffffff' : theme.textColor,
                                 }}
                               >
                                 <Icon className="h-5 w-5" />
