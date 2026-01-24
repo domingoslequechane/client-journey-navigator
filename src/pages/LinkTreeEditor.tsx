@@ -83,6 +83,7 @@ export default function LinkTreeEditor() {
     addBlock,
     updateBlock,
     deleteBlock,
+    duplicateBlock,
     reorderBlocks,
     togglePublish,
     isCreating,
@@ -434,6 +435,7 @@ export default function LinkTreeEditor() {
                   addBlock={addBlock}
                   updateBlock={updateBlock}
                   deleteBlock={deleteBlock}
+                  duplicateBlock={duplicateBlock}
                   reorderBlocks={reorderBlocks}
                   updateLinkPage={async (updates) => {
                     handleLocalUpdate(updates);

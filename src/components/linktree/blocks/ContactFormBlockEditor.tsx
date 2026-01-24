@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { GripVertical, MessageSquare, Trash2, Check, Pencil } from 'lucide-react';
+import { GripVertical, MessageSquare, Trash2, Check, Pencil, Copy } from 'lucide-react';
 import type { LinkBlock } from '@/types/linktree';
 
 interface ContactFormBlockEditorProps {
@@ -14,6 +14,7 @@ interface ContactFormBlockEditorProps {
   onCancelEdit: () => void;
   onUpdate: (block: Partial<LinkBlock> & { id: string }) => Promise<unknown>;
   onDelete: (blockId: string) => Promise<void>;
+  onDuplicate: (blockId: string) => Promise<unknown>;
   onToggleEnabled: () => void;
 }
 
@@ -38,6 +39,7 @@ export function ContactFormBlockEditor({
   onCancelEdit,
   onUpdate,
   onDelete,
+  onDuplicate,
   onToggleEnabled,
 }: ContactFormBlockEditorProps) {
   const formConfig = (block.content.formConfig as ContactFormConfig) || {
@@ -179,6 +181,9 @@ export function ContactFormBlockEditor({
             <Switch checked={block.is_enabled} onCheckedChange={onToggleEnabled} />
             <Button variant="ghost" size="icon" onClick={onEdit}>
               <Pencil className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
+              <Copy className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
               <Trash2 className="h-4 w-4 text-destructive" />

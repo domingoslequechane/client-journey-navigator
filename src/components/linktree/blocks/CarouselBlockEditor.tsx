@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { Plus, Trash2, GripVertical, ImageIcon, Check, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Trash2, GripVertical, ImageIcon, Check, X, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { LinkBlock } from '@/types/linktree';
@@ -15,6 +16,7 @@ interface CarouselBlockEditorProps {
   onCancelEdit: () => void;
   onUpdate: (block: Partial<LinkBlock> & { id: string }) => Promise<unknown>;
   onDelete: (blockId: string) => Promise<void>;
+  onDuplicate: (blockId: string) => Promise<unknown>;
   onToggleEnabled: () => void;
 }
 
@@ -31,6 +33,7 @@ export function CarouselBlockEditor({
   onCancelEdit,
   onUpdate,
   onDelete,
+  onDuplicate,
   onToggleEnabled,
 }: CarouselBlockEditorProps) {
   const [images, setImages] = useState<CarouselImage[]>(
@@ -170,8 +173,12 @@ export function CarouselBlockEditor({
         </div>
         {!isEditing && (
           <>
+            <Switch checked={block.is_enabled} onCheckedChange={onToggleEnabled} />
             <Button variant="ghost" size="icon" onClick={onEdit}>
               <ImageIcon className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
+              <Copy className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
               <Trash2 className="h-4 w-4 text-destructive" />

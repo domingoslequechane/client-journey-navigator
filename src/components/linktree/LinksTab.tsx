@@ -21,7 +21,8 @@ import {
   Minus,
   Check,
   Images,
-  MessageSquare
+  MessageSquare,
+  Copy
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -36,6 +37,7 @@ interface LinksTabProps {
   addBlock: (block: Omit<LinkBlock, 'id' | 'link_page_id' | 'created_at' | 'updated_at' | 'clicks'>) => Promise<unknown>;
   updateBlock: (block: Partial<LinkBlock> & { id: string }) => Promise<unknown>;
   deleteBlock: (blockId: string) => Promise<void>;
+  duplicateBlock: (blockId: string) => Promise<unknown>;
   reorderBlocks: (orderedBlockIds: string[]) => Promise<void>;
   updateLinkPage: (updates: Partial<LinkPage>) => Promise<unknown>;
   onImageChange?: () => void;
@@ -57,6 +59,7 @@ export function LinksTab({
   addBlock,
   updateBlock,
   deleteBlock,
+  duplicateBlock,
   reorderBlocks,
   updateLinkPage,
   onImageChange,
@@ -203,6 +206,7 @@ export function LinksTab({
                   onCancelEdit={() => setEditingBlockId(null)}
                   onUpdate={updateBlock}
                   onDelete={deleteBlock}
+                  onDuplicate={duplicateBlock}
                   onToggleEnabled={async () => {
                     await updateBlock({ id: block.id, is_enabled: !block.is_enabled });
                   }}
@@ -221,6 +225,7 @@ export function LinksTab({
                   onCancelEdit={() => setEditingBlockId(null)}
                   onUpdate={updateBlock}
                   onDelete={deleteBlock}
+                  onDuplicate={duplicateBlock}
                   onToggleEnabled={async () => {
                     await updateBlock({ id: block.id, is_enabled: !block.is_enabled });
                   }}
@@ -238,6 +243,7 @@ export function LinksTab({
                 onCancelEdit={() => setEditingBlockId(null)}
                 onUpdate={updateBlock}
                 onDelete={deleteBlock}
+                onDuplicate={duplicateBlock}
               />
             );
           })}
@@ -262,9 +268,10 @@ interface BlockCardProps {
   onCancelEdit: () => void;
   onUpdate: (block: Partial<LinkBlock> & { id: string }) => Promise<unknown>;
   onDelete: (blockId: string) => Promise<void>;
+  onDuplicate: (blockId: string) => Promise<unknown>;
 }
 
-function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete }: BlockCardProps) {
+function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete, onDuplicate }: BlockCardProps) {
   const [form, setForm] = useState({
     title: block.content.title || '',
     url: block.content.url || '',
@@ -308,6 +315,9 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete 
           Divisor
         </div>
         <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} />
+        <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
+          <Copy className="h-4 w-4" />
+        </Button>
         <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
@@ -352,6 +362,9 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete 
               <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} />
               <Button variant="ghost" size="icon" onClick={onEdit}>
                 <Pencil className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
+                <Copy className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -484,6 +497,9 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete 
             <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} />
             <Button variant="ghost" size="icon" onClick={onEdit}>
               <Pencil className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
+              <Copy className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
               <Trash2 className="h-4 w-4 text-destructive" />
