@@ -469,7 +469,7 @@ export default function LinkTreeEditor() {
           </Tabs>
         </div>
 
-        {/* Preview Panel - Responsive */}
+        {/* Preview Panel - Only show on lg+ (desktop) or when toggled */}
         <div
           className={`${
             isMobile
