@@ -468,15 +468,15 @@ export default function LinkTreeEditor() {
           </Tabs>
         </div>
 
-        {/* Preview Panel - Centered */}
+        {/* Preview Panel - Responsive */}
         <div
           className={`${
             isMobile
               ? showPreview
                 ? 'flex-1'
                 : 'hidden'
-              : 'w-[450px] border-l'
-          } flex items-center justify-center bg-muted/20 overflow-auto`}
+              : 'w-[320px] lg:w-[380px] xl:w-[420px] border-l'
+          } flex items-center justify-center bg-muted/20 overflow-hidden p-2 lg:p-4`}
         >
           <LinkTreePreview linkPage={deferredLinkPage} />
         </div>
