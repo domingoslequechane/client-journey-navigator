@@ -19,7 +19,7 @@ import { GOOGLE_FONTS } from '@/types/linktree';
 import type { LinkPage, LinkBlock } from '@/types/linktree';
 
 interface LinkTreePreviewProps {
-  linkPage: LinkPage;
+  linkPage: LinkPage | null;
 }
 
 const SOCIAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -38,6 +38,14 @@ const SOCIAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
 };
 
 export function LinkTreePreview({ linkPage }: LinkTreePreviewProps) {
+  if (!linkPage) {
+    return (
+      <div className="w-[320px] h-[620px] rounded-[48px] bg-muted/50 flex items-center justify-center">
+        <p className="text-muted-foreground text-sm">Carregando...</p>
+      </div>
+    );
+  }
+
   const theme = linkPage.theme;
   const blocks = (linkPage.blocks || []).filter(b => b.is_enabled);
 
