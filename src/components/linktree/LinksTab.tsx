@@ -8,6 +8,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ImageUpload } from './ImageUpload';
 import { CarouselBlockEditor } from './blocks/CarouselBlockEditor';
 import { ContactFormBlockEditor } from './blocks/ContactFormBlockEditor';
+import { SocialBlockEditor } from './blocks/SocialBlockEditor';
+import { ImageBlockEditor } from './blocks/ImageBlockEditor';
+import { VideoBlockEditor } from './blocks/VideoBlockEditor';
 import { 
   Plus, 
   GripVertical, 
@@ -195,57 +198,45 @@ export function LinksTab({
         {/* Blocks List */}
         <div className="space-y-2">
           {blocks.map((block) => {
-            // Handle carousel block
-            if (block.type === 'carousel') {
-              return (
-                <CarouselBlockEditor
-                  key={block.id}
-                  block={block}
-                  isEditing={editingBlockId === block.id}
-                  onEdit={() => setEditingBlockId(block.id)}
-                  onCancelEdit={() => setEditingBlockId(null)}
-                  onUpdate={updateBlock}
-                  onDelete={deleteBlock}
-                  onDuplicate={duplicateBlock}
-                  onToggleEnabled={async () => {
-                    await updateBlock({ id: block.id, is_enabled: !block.is_enabled });
-                  }}
-                />
-              );
-            }
+            const commonProps = {
+              key: block.id,
+              block,
+              isEditing: editingBlockId === block.id,
+              onEdit: () => setEditingBlockId(block.id),
+              onCancelEdit: () => setEditingBlockId(null),
+              onUpdate: updateBlock,
+              onDelete: deleteBlock,
+              onDuplicate: duplicateBlock,
+              onToggleEnabled: async () => {
+                await updateBlock({ id: block.id, is_enabled: !block.is_enabled });
+              },
+            };
 
-            // Handle contact form block
-            if (block.type === 'contact-form') {
-              return (
-                <ContactFormBlockEditor
-                  key={block.id}
-                  block={block}
-                  isEditing={editingBlockId === block.id}
-                  onEdit={() => setEditingBlockId(block.id)}
-                  onCancelEdit={() => setEditingBlockId(null)}
-                  onUpdate={updateBlock}
-                  onDelete={deleteBlock}
-                  onDuplicate={duplicateBlock}
-                  onToggleEnabled={async () => {
-                    await updateBlock({ id: block.id, is_enabled: !block.is_enabled });
-                  }}
-                />
-              );
+            switch (block.type) {
+              case 'carousel':
+                return <CarouselBlockEditor {...commonProps} />;
+              case 'contact-form':
+                return <ContactFormBlockEditor {...commonProps} />;
+              case 'social':
+                return <SocialBlockEditor {...commonProps} />;
+              case 'image':
+                return <ImageBlockEditor {...commonProps} />;
+              case 'video':
+                return <VideoBlockEditor {...commonProps} />;
+              default:
+                return (
+                  <BlockCard
+                    key={block.id}
+                    block={block}
+                    isEditing={editingBlockId === block.id}
+                    onEdit={() => setEditingBlockId(block.id)}
+                    onCancelEdit={() => setEditingBlockId(null)}
+                    onUpdate={updateBlock}
+                    onDelete={deleteBlock}
+                    onDuplicate={duplicateBlock}
+                  />
+                );
             }
-
-            // Standard blocks
-            return (
-              <BlockCard
-                key={block.id}
-                block={block}
-                isEditing={editingBlockId === block.id}
-                onEdit={() => setEditingBlockId(block.id)}
-                onCancelEdit={() => setEditingBlockId(null)}
-                onUpdate={updateBlock}
-                onDelete={deleteBlock}
-                onDuplicate={duplicateBlock}
-              />
-            );
           })}
         </div>
 
