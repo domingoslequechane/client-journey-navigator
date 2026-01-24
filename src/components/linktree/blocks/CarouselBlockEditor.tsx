@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Trash2, GripVertical, ImageIcon, Check, Copy } from 'lucide-react';
+import { Plus, Trash2, GripVertical, ImageIcon, Check, Copy, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { LinkBlock } from '@/types/linktree';
@@ -116,21 +116,20 @@ export function CarouselBlockEditor({
   };
 
   return (
-    <Card className={`p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
-      <div className="flex items-start gap-3">
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab mt-1" />
-        <div className="flex-1">
+    <Card className={`p-2 sm:p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
+      <div className="flex items-center gap-2">
+        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
+        <div className="flex-1 min-w-0">
           {isEditing ? (
             <div className="space-y-4">
               <Label>Imagens do Carrossel</Label>
               
-              {/* Image List with ScrollArea */}
               <ScrollArea className="max-h-64">
                 <div className="space-y-2 pr-2">
                   {images.map((img, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                      <img src={img.url} alt="" className="w-12 h-12 object-cover rounded" />
-                      <div className="flex-1 space-y-1">
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg flex-wrap sm:flex-nowrap">
+                      <img src={img.url} alt="" className="w-12 h-12 object-cover rounded flex-shrink-0" />
+                      <div className="flex-1 space-y-1 min-w-0">
                         <Input
                           value={img.alt || ''}
                           onChange={(e) => handleUpdateImage(idx, { alt: e.target.value })}
@@ -147,6 +146,7 @@ export function CarouselBlockEditor({
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-8 w-8 flex-shrink-0"
                         onClick={() => handleRemoveImage(idx)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -156,7 +156,6 @@ export function CarouselBlockEditor({
                 </div>
               </ScrollArea>
 
-              {/* Add Images - Bulk Upload */}
               <div>
                 <label className="cursor-pointer">
                   <input
@@ -170,13 +169,13 @@ export function CarouselBlockEditor({
                   <Button variant="outline" className="w-full gap-2" asChild disabled={uploading}>
                     <span>
                       <Plus className="h-4 w-4" />
-                      {uploading ? uploadProgress || 'Enviando...' : 'Adicionar Imagens (múltiplas)'}
+                      {uploading ? uploadProgress || 'Enviando...' : 'Adicionar Imagens'}
                     </span>
                   </Button>
                 </label>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button size="sm" onClick={handleSave}>
                   <Check className="h-4 w-4 mr-1" /> Salvar
                 </Button>
@@ -187,26 +186,26 @@ export function CarouselBlockEditor({
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <ImageIcon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
+              <ImageIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm truncate">
                 Carrossel ({images.length} {images.length === 1 ? 'imagem' : 'imagens'})
               </span>
             </div>
           )}
         </div>
         {!isEditing && (
-          <>
-            <Switch checked={block.is_enabled} onCheckedChange={onToggleEnabled} />
-            <Button variant="ghost" size="icon" onClick={onEdit}>
-              <ImageIcon className="h-4 w-4" />
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+            <Switch checked={block.is_enabled} onCheckedChange={onToggleEnabled} className="scale-90 sm:scale-100" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={onEdit}>
+              <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
-              <Copy className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDuplicate(block.id)} title="Duplicar">
+              <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
-              <Trash2 className="h-4 w-4 text-destructive" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDelete(block.id)}>
+              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
             </Button>
-          </>
+          </div>
         )}
       </div>
     </Card>

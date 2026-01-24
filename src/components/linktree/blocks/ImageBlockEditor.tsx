@@ -92,10 +92,10 @@ export function ImageBlockEditor({
   };
 
   return (
-    <Card className={`p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
-      <div className="flex items-start gap-3">
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab mt-1" />
-        <div className="flex-1">
+    <Card className={`p-2 sm:p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
+      <div className="flex items-center gap-2">
+        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
+        <div className="flex-1 min-w-0">
           {isEditing ? (
             <div className="space-y-3">
               <div>
@@ -107,7 +107,6 @@ export function ImageBlockEditor({
                 />
               </div>
               
-              {/* Upload ou URL */}
               <div>
                 <Label>Imagem</Label>
                 <div className="flex gap-2 mt-1">
@@ -149,7 +148,7 @@ export function ImageBlockEditor({
                   />
                 </div>
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button size="sm" onClick={handleSave}>
                   <Check className="h-4 w-4 mr-1" /> Salvar
                 </Button>
@@ -159,13 +158,13 @@ export function ImageBlockEditor({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <ImageIcon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <ImageIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm truncate">
                 {block.content.title || 'Imagem'}
               </span>
               {block.content.imageUrl && (
-                <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                <span className="text-xs text-muted-foreground truncate hidden sm:inline">
                   ({block.content.imageUrl})
                 </span>
               )}
@@ -173,18 +172,18 @@ export function ImageBlockEditor({
           )}
         </div>
         {!isEditing && (
-          <>
-            <Switch checked={block.is_enabled} onCheckedChange={onToggleEnabled} />
-            <Button variant="ghost" size="icon" onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+            <Switch checked={block.is_enabled} onCheckedChange={onToggleEnabled} className="scale-90 sm:scale-100" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={onEdit}>
+              <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
-              <Copy className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDuplicate(block.id)} title="Duplicar">
+              <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
-              <Trash2 className="h-4 w-4 text-destructive" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDelete(block.id)}>
+              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
             </Button>
-          </>
+          </div>
         )}
       </div>
     </Card>
