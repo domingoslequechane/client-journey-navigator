@@ -1,41 +1,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Globe, 
-  Instagram, 
-  Youtube, 
-  Twitter, 
-  Facebook, 
-  Linkedin, 
-  MessageCircle,
-  Music,
-  Music2,
-  Github,
-  MessageSquare,
-  Send
-} from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { CarouselBlockPreview } from './blocks/CarouselBlockPreview';
 import { ContactFormBlockPreview } from './blocks/ContactFormBlockPreview';
+import { SOCIAL_PLATFORMS } from '@/types/linktree';
 import type { LinkPage, LinkBlock } from '@/types/linktree';
 
 interface PhonePreviewProps {
   linkPage: LinkPage;
 }
-
-const SOCIAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  instagram: Instagram,
-  youtube: Youtube,
-  twitter: Twitter,
-  facebook: Facebook,
-  linkedin: Linkedin,
-  whatsapp: MessageCircle,
-  spotify: Music,
-  tiktok: Music2,
-  github: Github,
-  discord: MessageSquare,
-  telegram: Send,
-  website: Globe,
-};
 
 export function PhonePreview({ linkPage }: PhonePreviewProps) {
   const theme = linkPage.theme;
@@ -47,24 +20,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
       theme.buttonRadius === 'rounded' ? '12px' :
       theme.buttonRadius === 'soft' ? '8px' : '4px';
 
-    // Individual block style
-    if (block?.style) {
-      if (block.style.isTransparent) {
-        return {
-          backgroundColor: 'transparent',
-          color: block.style.backgroundColor || theme.primaryColor,
-          border: `2px solid ${block.style.backgroundColor || theme.primaryColor}`,
-          borderRadius: baseRadius,
-        };
-      }
-      return {
-        backgroundColor: block.style.backgroundColor || theme.primaryColor,
-        color: block.style.textColor || theme.textColor,
-        borderRadius: baseRadius,
-      };
-    }
-
-    // Theme button style
+    // Theme button style - cores coletivas apenas
     switch (theme.buttonStyle) {
       case 'solid':
         return {
@@ -202,25 +158,32 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
 
                   if (block.type === 'social') {
                     return (
-                      <div key={block.id} className="flex justify-center gap-3 py-2">
-                        {block.content.socials?.map((social) => {
-                          const Icon = SOCIAL_ICONS[social.platform] || Globe;
-                          return (
-                            <a
-                              key={social.platform}
-                              href={social.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110"
-                              style={{
-                                backgroundColor: theme.primaryColor,
-                                color: theme.textColor,
-                              }}
-                            >
-                              <Icon className="h-5 w-5" />
-                            </a>
-                          );
-                        })}
+                      <div 
+                        key={block.id} 
+                        className="w-full overflow-x-auto py-2"
+                      >
+                        <div className="flex justify-center gap-3 min-w-min px-2">
+                          {block.content.socials?.map((social) => {
+                            const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
+                            const Icon = platform?.icon;
+                            if (!Icon) return null;
+                            return (
+                              <a
+                                key={social.platform}
+                                href={social.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 flex-shrink-0"
+                                style={{
+                                  backgroundColor: theme.primaryColor,
+                                  color: theme.textColor,
+                                }}
+                              >
+                                <Icon className="h-5 w-5" />
+                              </a>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   }

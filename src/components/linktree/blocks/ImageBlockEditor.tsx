@@ -10,8 +10,11 @@ import {
   Pencil, 
   Check, 
   Copy,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Upload
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import type { LinkBlock } from '@/types/linktree';
 
 interface ImageBlockEditorProps {
@@ -39,6 +42,42 @@ export function ImageBlockEditor({
     title: block.content.title || '',
     imageUrl: block.content.imageUrl || '',
   });
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Erro', description: 'Apenas imagens são permitidas', variant: 'destructive' });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('linktree-assets')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('linktree-assets')
+        .getPublicUrl(filePath);
+
+      setForm(prev => ({ ...prev, imageUrl: publicUrl }));
+      toast({ title: 'Imagem carregada!' });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({ title: 'Erro ao fazer upload', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     await onUpdate({
@@ -67,21 +106,43 @@ export function ImageBlockEditor({
                   placeholder="Descrição da imagem"
                 />
               </div>
+              
+              {/* Upload ou URL */}
               <div>
-                <Label>URL da Imagem</Label>
-                <Input
-                  value={form.imageUrl}
-                  onChange={(e) => setForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                  placeholder="https://..."
-                />
+                <Label>Imagem</Label>
+                <div className="flex gap-2 mt-1">
+                  <label className="cursor-pointer flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                    />
+                    <Button variant="outline" className="w-full gap-2" asChild disabled={uploading}>
+                      <span>
+                        <Upload className="h-4 w-4" />
+                        {uploading ? 'Enviando...' : 'Upload'}
+                      </span>
+                    </Button>
+                  </label>
+                </div>
+                <div className="mt-2">
+                  <Input
+                    value={form.imageUrl}
+                    onChange={(e) => setForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                    placeholder="ou cole a URL da imagem..."
+                  />
+                </div>
               </div>
+
               {form.imageUrl && (
                 <div className="mt-2">
                   <Label className="text-xs">Preview</Label>
                   <img
                     src={form.imageUrl}
-                    alt={form.title || 'Preview'}
-                    className="w-full max-h-40 object-cover rounded-lg mt-1"
+                    alt="Preview"
+                    className="w-full max-h-40 object-contain rounded-lg mt-1 bg-muted"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}

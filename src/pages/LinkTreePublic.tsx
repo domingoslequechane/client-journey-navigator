@@ -71,43 +71,32 @@ export default function LinkTreePublic() {
     }
   };
 
-  const getButtonVariantStyles = (block: typeof blocks[0]) => {
-    const bgColor = block.style?.backgroundColor || theme.primaryColor;
-    const textColor = block.style?.textColor || theme.textColor;
-    const isTransparent = block.style?.isTransparent;
-
-    if (isTransparent) {
-      return {
-        backgroundColor: 'transparent',
-        color: textColor,
-        border: `2px solid ${bgColor}`,
-      };
-    }
-
+  const getButtonVariantStyles = () => {
+    // Cores coletivas do tema apenas
     switch (theme.buttonStyle) {
       case 'glass':
         return {
-          backgroundColor: `${bgColor}40`,
-          color: textColor,
+          backgroundColor: `${theme.primaryColor}40`,
+          color: theme.textColor,
           backdropFilter: 'blur(10px)',
-          border: `1px solid ${bgColor}60`,
+          border: `1px solid ${theme.primaryColor}60`,
         };
       case 'outline':
         return {
           backgroundColor: 'transparent',
-          color: textColor,
-          border: `2px solid ${bgColor}`,
+          color: theme.textColor,
+          border: `2px solid ${theme.primaryColor}`,
         };
       case 'soft':
         return {
-          backgroundColor: `${bgColor}30`,
-          color: textColor,
+          backgroundColor: `${theme.primaryColor}30`,
+          color: theme.textColor,
         };
       case 'solid':
       default:
         return {
-          backgroundColor: bgColor,
-          color: textColor,
+          backgroundColor: theme.primaryColor,
+          color: theme.textColor,
         };
     }
   };
@@ -195,7 +184,7 @@ export default function LinkTreePublic() {
                         key={block.id}
                         onClick={() => handleBlockClick(block.id, block.content.url)}
                         className={getButtonStyles()}
-                        style={getButtonVariantStyles(block)}
+                        style={getButtonVariantStyles()}
                       >
                         <span className="flex items-center justify-center gap-2">
                           {block.content.title}
@@ -246,24 +235,30 @@ export default function LinkTreePublic() {
 
                   case 'social':
                     return (
-                      <div key={block.id} className="flex justify-center gap-3 py-2">
-                        {block.content.socials?.map((social, idx) => {
-                          const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
-                          const Icon = platform?.icon;
-                          return Icon ? (
-                            <button
-                              key={idx}
-                              onClick={() => handleBlockClick(block.id, social.url)}
-                              className="p-3 rounded-full transition-transform hover:scale-110"
-                              style={{
-                                backgroundColor: `${theme.primaryColor}30`,
-                                color: theme.textColor,
-                              }}
-                            >
-                              <Icon className="h-5 w-5" />
-                            </button>
-                          ) : null;
-                        })}
+                      <div 
+                        key={block.id} 
+                        className="w-full overflow-x-auto py-2"
+                      >
+                        <div className="flex justify-center gap-3 min-w-min px-2">
+                          {block.content.socials?.map((social, idx) => {
+                            const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
+                            const Icon = platform?.icon;
+                            if (!Icon) return null;
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => handleBlockClick(block.id, social.url)}
+                                className="p-3 rounded-full transition-transform hover:scale-110 flex-shrink-0"
+                                style={{
+                                  backgroundColor: `${theme.primaryColor}30`,
+                                  color: theme.textColor,
+                                }}
+                              >
+                                <Icon className="h-5 w-5" />
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
 

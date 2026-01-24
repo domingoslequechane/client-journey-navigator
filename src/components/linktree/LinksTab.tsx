@@ -11,6 +11,7 @@ import { ContactFormBlockEditor } from './blocks/ContactFormBlockEditor';
 import { SocialBlockEditor } from './blocks/SocialBlockEditor';
 import { ImageBlockEditor } from './blocks/ImageBlockEditor';
 import { VideoBlockEditor } from './blocks/VideoBlockEditor';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { 
   Plus, 
   GripVertical, 
@@ -124,6 +125,17 @@ export function LinksTab({
     onImageChange?.();
   };
 
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    if (result.destination.index === result.source.index) return;
+
+    const items = Array.from(blocks);
+    const [reordered] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reordered);
+
+    reorderBlocks(items.map(b => b.id));
+  };
+
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
@@ -195,50 +207,64 @@ export function LinksTab({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Blocks List */}
-        <div className="space-y-2">
-          {blocks.map((block) => {
-            const commonProps = {
-              key: block.id,
-              block,
-              isEditing: editingBlockId === block.id,
-              onEdit: () => setEditingBlockId(block.id),
-              onCancelEdit: () => setEditingBlockId(null),
-              onUpdate: updateBlock,
-              onDelete: deleteBlock,
-              onDuplicate: duplicateBlock,
-              onToggleEnabled: async () => {
-                await updateBlock({ id: block.id, is_enabled: !block.is_enabled });
-              },
-            };
+        {/* Blocks List with Drag and Drop */}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="blocks">
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="space-y-2"
+              >
+                {blocks.map((block, index) => {
+                  const commonProps = {
+                    block,
+                    isEditing: editingBlockId === block.id,
+                    onEdit: () => setEditingBlockId(block.id),
+                    onCancelEdit: () => setEditingBlockId(null),
+                    onUpdate: updateBlock,
+                    onDelete: deleteBlock,
+                    onDuplicate: duplicateBlock,
+                    onToggleEnabled: async () => {
+                      await updateBlock({ id: block.id, is_enabled: !block.is_enabled });
+                    },
+                  };
 
-            switch (block.type) {
-              case 'carousel':
-                return <CarouselBlockEditor {...commonProps} />;
-              case 'contact-form':
-                return <ContactFormBlockEditor {...commonProps} />;
-              case 'social':
-                return <SocialBlockEditor {...commonProps} />;
-              case 'image':
-                return <ImageBlockEditor {...commonProps} />;
-              case 'video':
-                return <VideoBlockEditor {...commonProps} />;
-              default:
-                return (
-                  <BlockCard
-                    key={block.id}
-                    block={block}
-                    isEditing={editingBlockId === block.id}
-                    onEdit={() => setEditingBlockId(block.id)}
-                    onCancelEdit={() => setEditingBlockId(null)}
-                    onUpdate={updateBlock}
-                    onDelete={deleteBlock}
-                    onDuplicate={duplicateBlock}
-                  />
-                );
-            }
-          })}
-        </div>
+                  return (
+                    <Draggable key={block.id} draggableId={block.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={snapshot.isDragging ? 'opacity-80' : ''}
+                        >
+                          {block.type === 'carousel' && <CarouselBlockEditor {...commonProps} />}
+                          {block.type === 'contact-form' && <ContactFormBlockEditor {...commonProps} />}
+                          {block.type === 'social' && <SocialBlockEditor {...commonProps} />}
+                          {block.type === 'image' && <ImageBlockEditor {...commonProps} />}
+                          {block.type === 'video' && <VideoBlockEditor {...commonProps} />}
+                          {!['carousel', 'contact-form', 'social', 'image', 'video'].includes(block.type) && (
+                            <BlockCard
+                              block={block}
+                              isEditing={editingBlockId === block.id}
+                              onEdit={() => setEditingBlockId(block.id)}
+                              onCancelEdit={() => setEditingBlockId(null)}
+                              onUpdate={updateBlock}
+                              onDelete={deleteBlock}
+                              onDuplicate={duplicateBlock}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
 
         {blocks.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
@@ -267,9 +293,6 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
     title: block.content.title || '',
     url: block.content.url || '',
     text: block.content.text || '',
-    backgroundColor: block.style?.backgroundColor || '#8b5cf6',
-    textColor: block.style?.textColor || '#ffffff',
-    isTransparent: block.style?.isTransparent || false,
   });
 
   const handleSave = async () => {
@@ -280,11 +303,6 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
         title: form.title,
         url: form.url,
         text: form.text,
-      },
-      style: {
-        backgroundColor: form.backgroundColor,
-        textColor: form.textColor,
-        isTransparent: form.isTransparent,
       },
     });
     onCancelEdit();
@@ -367,7 +385,7 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
     );
   }
 
-  // Button/Link type
+  // Button/Link type - SEM cores individuais, apenas Título e URL
   return (
     <Card className={`p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
       <div className="flex items-start gap-3">
@@ -391,66 +409,6 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
                   placeholder="https://..."
                 />
               </div>
-              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
-                <Label className="text-xs uppercase text-muted-foreground">Estilo do Botão</Label>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Fundo transparente</span>
-                  <Switch
-                    checked={form.isTransparent}
-                    onCheckedChange={(checked) => setForm(prev => ({ ...prev, isTransparent: checked }))}
-                  />
-                </div>
-                {!form.isTransparent && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs">Cor do fundo</Label>
-                      <div className="flex gap-2 items-center mt-1">
-                        <input
-                          type="color"
-                          value={form.backgroundColor}
-                          onChange={(e) => setForm(prev => ({ ...prev, backgroundColor: e.target.value }))}
-                          className="w-8 h-8 rounded cursor-pointer"
-                        />
-                        <Input
-                          value={form.backgroundColor}
-                          onChange={(e) => setForm(prev => ({ ...prev, backgroundColor: e.target.value }))}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Cor do texto</Label>
-                      <div className="flex gap-2 items-center mt-1">
-                        <input
-                          type="color"
-                          value={form.textColor}
-                          onChange={(e) => setForm(prev => ({ ...prev, textColor: e.target.value }))}
-                          className="w-8 h-8 rounded cursor-pointer"
-                        />
-                        <Input
-                          value={form.textColor}
-                          onChange={(e) => setForm(prev => ({ ...prev, textColor: e.target.value }))}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {/* Preview */}
-                <div>
-                  <Label className="text-xs">Preview</Label>
-                  <div
-                    className="mt-2 py-3 px-4 rounded-full text-center text-sm font-medium"
-                    style={{
-                      backgroundColor: form.isTransparent ? 'transparent' : form.backgroundColor,
-                      color: form.textColor,
-                      border: form.isTransparent ? `2px solid ${form.backgroundColor}` : 'none',
-                    }}
-                  >
-                    {form.title || 'Exemplo de botão'}
-                  </div>
-                </div>
-              </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleSave}>
                   <Check className="h-4 w-4 mr-1" /> Salvar
@@ -463,17 +421,11 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
           ) : (
             <div>
               <div className="flex items-center gap-2">
-                <div
-                  className="w-4 h-4 rounded"
-                  style={{ backgroundColor: block.style?.backgroundColor || '#8b5cf6' }}
-                />
+                <Link2 className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">{block.content.title || 'Link'}</span>
-                {block.style?.isTransparent && (
-                  <span className="text-xs text-muted-foreground">(Transparente)</span>
-                )}
               </div>
               {block.content.url && (
-                <p className="text-xs text-muted-foreground mt-1 truncate">
+                <p className="text-xs text-muted-foreground truncate mt-1">
                   {block.content.url}
                 </p>
               )}
@@ -482,9 +434,6 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
         </div>
         {!isEditing && (
           <>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <span>{block.clicks || 0}</span>
-            </div>
             <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} />
             <Button variant="ghost" size="icon" onClick={onEdit}>
               <Pencil className="h-4 w-4" />

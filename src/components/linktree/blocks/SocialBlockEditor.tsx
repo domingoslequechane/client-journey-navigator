@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   GripVertical, 
   Trash2, 
@@ -101,47 +102,61 @@ export function SocialBlockEditor({
                 </p>
               )}
               
-              <div className="space-y-2">
-                {socials.map((social, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                    <Select
-                      value={social.platform}
-                      onValueChange={(value) => handleUpdateSocial(index, 'platform', value)}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SOCIAL_PLATFORMS.map((platform) => {
-                          const Icon = platform.icon;
-                          return (
-                            <SelectItem key={platform.id} value={platform.id}>
-                              <div className="flex items-center gap-2">
-                                <Icon className="h-4 w-4" />
-                                {platform.name}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      value={social.url}
-                      onChange={(e) => handleUpdateSocial(index, 'url', e.target.value)}
-                      placeholder="https://..."
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleRemoveSocial(index)}
-                    >
-                      <X className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+              {/* ScrollArea para limitar altura vertical */}
+              <ScrollArea className="max-h-48">
+                <div className="space-y-2 pr-2">
+                  {socials.map((social, index) => {
+                    const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
+                    const Icon = platform?.icon;
+                    return (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                        <Select
+                          value={social.platform}
+                          onValueChange={(value) => handleUpdateSocial(index, 'platform', value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue>
+                              {Icon && (
+                                <div className="flex items-center gap-2">
+                                  <Icon className="h-4 w-4" />
+                                  {platform?.name}
+                                </div>
+                              )}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SOCIAL_PLATFORMS.map((p) => {
+                              const PIcon = p.icon;
+                              return (
+                                <SelectItem key={p.id} value={p.id}>
+                                  <div className="flex items-center gap-2">
+                                    <PIcon className="h-4 w-4" />
+                                    {p.name}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          value={social.url}
+                          onChange={(e) => handleUpdateSocial(index, 'url', e.target.value)}
+                          placeholder="https://..."
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleRemoveSocial(index)}
+                        >
+                          <X className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
               
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleSave}>
