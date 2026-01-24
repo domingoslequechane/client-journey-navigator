@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, GripVertical, ImageIcon, Check, X, Copy } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Plus, Trash2, GripVertical, ImageIcon, Check, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { LinkBlock } from '@/types/linktree';
@@ -40,40 +41,59 @@ export function CarouselBlockEditor({
     (block.content.images as CarouselImage[]) || []
   );
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
 
-  const handleAddImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Erro', description: 'Apenas imagens são permitidas', variant: 'destructive' });
-      return;
-    }
+  // Handler para upload em massa
+  const handleAddImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `carousel/${fileName}`;
+    const newImages: CarouselImage[] = [];
+    const totalFiles = Array.from(files).filter(f => f.type.startsWith('image/')).length;
+    let uploaded = 0;
 
-      const { error: uploadError } = await supabase.storage
-        .from('linktree-assets')
-        .upload(filePath, file);
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
 
-      if (uploadError) throw uploadError;
+      try {
+        setUploadProgress(`Enviando ${++uploaded}/${totalFiles}...`);
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        const filePath = `carousel/${fileName}`;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('linktree-assets')
-        .getPublicUrl(filePath);
+        const { error: uploadError } = await supabase.storage
+          .from('linktree-assets')
+          .upload(filePath, file);
 
-      setImages(prev => [...prev, { url: publicUrl, alt: '' }]);
-      toast({ title: 'Imagem adicionada!' });
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({ title: 'Erro ao fazer upload', variant: 'destructive' });
-    } finally {
-      setUploading(false);
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('linktree-assets')
+          .getPublicUrl(filePath);
+
+        newImages.push({ url: publicUrl, alt: '' });
+      } catch (error) {
+        console.error('Upload error:', error);
+      }
     }
+
+    if (newImages.length > 0) {
+      setImages(prev => [...prev, ...newImages]);
+      toast({
+        title: `${newImages.length} ${newImages.length === 1 ? 'imagem adicionada' : 'imagens adicionadas'}!`,
+        description: 'Preencha os campos alt e link de cada uma',
+      });
+    }
+
+    setUploading(false);
+    setUploadProgress('');
+    // Reset input
+    e.target.value = '';
   };
 
   const handleRemoveImage = (index: number) => {
@@ -104,50 +124,53 @@ export function CarouselBlockEditor({
             <div className="space-y-4">
               <Label>Imagens do Carrossel</Label>
               
-              {/* Image List */}
-              <div className="space-y-2">
-                {images.map((img, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                    <img src={img.url} alt="" className="w-12 h-12 object-cover rounded" />
-                    <div className="flex-1 space-y-1">
-                      <Input
-                        value={img.alt || ''}
-                        onChange={(e) => handleUpdateImage(idx, { alt: e.target.value })}
-                        placeholder="Texto alternativo"
-                        className="h-8 text-xs"
-                      />
-                      <Input
-                        value={img.link || ''}
-                        onChange={(e) => handleUpdateImage(idx, { link: e.target.value })}
-                        placeholder="Link (opcional)"
-                        className="h-8 text-xs"
-                      />
+              {/* Image List with ScrollArea */}
+              <ScrollArea className="max-h-64">
+                <div className="space-y-2 pr-2">
+                  {images.map((img, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                      <img src={img.url} alt="" className="w-12 h-12 object-cover rounded" />
+                      <div className="flex-1 space-y-1">
+                        <Input
+                          value={img.alt || ''}
+                          onChange={(e) => handleUpdateImage(idx, { alt: e.target.value })}
+                          placeholder="Texto alternativo"
+                          className="h-8 text-xs"
+                        />
+                        <Input
+                          value={img.link || ''}
+                          onChange={(e) => handleUpdateImage(idx, { link: e.target.value })}
+                          placeholder="Link (opcional)"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveImage(idx)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveImage(idx)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </ScrollArea>
 
-              {/* Add Image */}
+              {/* Add Images - Bulk Upload */}
               <div>
                 <label className="cursor-pointer">
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     className="hidden"
-                    onChange={handleAddImage}
+                    onChange={handleAddImages}
                     disabled={uploading}
                   />
                   <Button variant="outline" className="w-full gap-2" asChild disabled={uploading}>
                     <span>
                       <Plus className="h-4 w-4" />
-                      {uploading ? 'Enviando...' : 'Adicionar Imagem'}
+                      {uploading ? uploadProgress || 'Enviando...' : 'Adicionar Imagens (múltiplas)'}
                     </span>
                   </Button>
                 </label>
