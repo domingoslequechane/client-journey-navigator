@@ -279,16 +279,28 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
 }
 
 // Hook for public link page (no auth required)
-export function usePublicLinkPage(slug: string | undefined) {
+export function usePublicLinkPage(slug: string | undefined, orgSlug: string | undefined) {
   return useQuery({
-    queryKey: ['public-link-page', slug],
+    queryKey: ['public-link-page', orgSlug, slug],
     queryFn: async () => {
-      if (!slug) return null;
+      if (!slug || !orgSlug) return null;
 
+      // First, get the organization by slug
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', orgSlug)
+        .maybeSingle();
+
+      if (orgError) throw orgError;
+      if (!org) return null;
+
+      // Then get the link page for this organization
       const { data, error } = await supabase
         .from('link_pages')
         .select('*')
         .eq('slug', slug)
+        .eq('organization_id', org.id)
         .eq('is_published', true)
         .maybeSingle();
 
@@ -323,7 +335,7 @@ export function usePublicLinkPage(slug: string | undefined) {
         blocks: blocks as LinkBlock[],
       } as LinkPage;
     },
-    enabled: !!slug,
+    enabled: !!slug && !!orgSlug,
   });
 }
 
