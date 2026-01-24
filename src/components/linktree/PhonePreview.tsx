@@ -58,15 +58,15 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
   };
 
   return (
-    <div className="relative">
-      {/* Phone Frame */}
-      <div className="relative w-[280px] h-[580px] bg-black rounded-[40px] p-3 shadow-2xl">
+    <div className="relative flex items-center justify-center w-full">
+      {/* Phone Frame - Responsive */}
+      <div className="relative w-full max-w-[260px] lg:max-w-[280px] aspect-[280/580] bg-black rounded-[36px] lg:rounded-[40px] p-2 lg:p-3 shadow-2xl">
         {/* Dynamic Island */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-10" />
+        <div className="absolute top-3 lg:top-4 left-1/2 -translate-x-1/2 w-20 lg:w-24 h-5 lg:h-6 bg-black rounded-full z-10" />
         
         {/* Screen */}
         <div
-          className="w-full h-full rounded-[32px] overflow-hidden relative"
+          className="w-full h-full rounded-[28px] lg:rounded-[32px] overflow-hidden relative"
           style={{
             backgroundColor: theme.backgroundColor,
             fontFamily: theme.fontFamily,
@@ -86,12 +86,12 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
           )}
           
           <ScrollArea className="h-full relative z-10">
-            <div className="p-4 pt-10 pb-8 flex flex-col items-center min-h-full">
+            <div className="p-3 lg:p-4 pt-8 lg:pt-10 pb-6 lg:pb-8 flex flex-col items-center min-h-full">
               {/* Profile */}
-              <Avatar className="h-20 w-20 border-4 border-white/20 mb-3">
+              <Avatar className="h-16 w-16 lg:h-20 lg:w-20 border-4 border-white/20 mb-2 lg:mb-3">
                 <AvatarImage src={linkPage.logo_url || undefined} />
                 <AvatarFallback 
-                  className="text-2xl"
+                  className="text-xl lg:text-2xl"
                   style={{ backgroundColor: theme.primaryColor, color: theme.textColor }}
                 >
                   {linkPage.name.charAt(0).toUpperCase()}
@@ -99,7 +99,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
               </Avatar>
               
               <h1 
-                className="font-bold text-lg mb-1 text-center"
+                className="font-bold text-base lg:text-lg mb-1 text-center truncate w-full px-2"
                 style={{ color: theme.textColor }}
               >
                 {linkPage.name}
@@ -107,7 +107,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
               
               {linkPage.bio && (
                 <p 
-                  className="text-sm text-center mb-4 px-4"
+                  className="text-xs lg:text-sm text-center mb-3 lg:mb-4 px-3 lg:px-4 line-clamp-2"
                   style={{ color: `${theme.textColor}cc` }}
                 >
                   {linkPage.bio}
@@ -115,14 +115,14 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
               )}
 
               <p 
-                className="text-xs mb-6"
+                className="text-[10px] lg:text-xs mb-4 lg:mb-6 truncate w-full text-center px-4"
                 style={{ color: `${theme.textColor}99` }}
               >
                 @{linkPage.slug}
               </p>
 
               {/* Blocks */}
-              <div className="w-full space-y-3 px-2">
+              <div className="w-full space-y-2 lg:space-y-3 px-1 lg:px-2">
                 {blocks.map((block) => {
                   if (block.type === 'button') {
                     return (
@@ -131,7 +131,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                         href={block.content.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block w-full py-3 px-4 text-center text-sm font-medium transition-transform hover:scale-[1.02]"
+                        className="block w-full py-2.5 lg:py-3 px-3 lg:px-4 text-center text-xs lg:text-sm font-medium transition-transform hover:scale-[1.02] break-words"
                         style={getButtonStyle(block)}
                       >
                         {block.content.title || 'Link'}
@@ -143,7 +143,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                     return (
                       <p
                         key={block.id}
-                        className="text-center text-sm px-2"
+                        className="text-center text-xs lg:text-sm px-2 break-words"
                         style={{ color: theme.textColor }}
                       >
                         {block.content.text}
@@ -155,7 +155,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                     return (
                       <hr
                         key={block.id}
-                        className="border-t my-4"
+                        className="border-t my-3 lg:my-4"
                         style={{ borderColor: `${theme.textColor}30` }}
                       />
                     );
@@ -166,9 +166,9 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                     return (
                       <div 
                         key={block.id} 
-                        className="w-full overflow-x-auto py-2"
+                        className="w-full overflow-x-auto py-1 lg:py-2"
                       >
-                        <div className="flex justify-center gap-3 min-w-min px-2">
+                        <div className="flex justify-center gap-2 lg:gap-3 min-w-min px-1 lg:px-2">
                           {block.content.socials?.map((social) => {
                             const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
                             const Icon = platform?.icon;
@@ -179,13 +179,13 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                                 href={social.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 flex-shrink-0"
+                                className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 flex-shrink-0"
                                 style={{
                                   backgroundColor: useOfficialColors ? platform?.color : theme.primaryColor,
                                   color: useOfficialColors ? '#ffffff' : theme.textColor,
                                 }}
                               >
-                                <Icon className="h-5 w-5" />
+                                <Icon className="h-4 w-4 lg:h-5 lg:w-5" />
                               </a>
                             );
                           })}
@@ -231,9 +231,9 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
               </div>
 
               {/* Footer */}
-              <div className="mt-auto pt-8">
+              <div className="mt-auto pt-6 lg:pt-8">
                 <p 
-                  className="text-[10px]"
+                  className="text-[9px] lg:text-[10px]"
                   style={{ color: `${theme.textColor}66` }}
                 >
                   Feito com Qualify
@@ -245,10 +245,10 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
       </div>
 
       {/* URL Bar */}
-      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-muted/80 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2 text-xs">
-        <Globe className="h-3 w-3" />
+      <div className="absolute -top-7 lg:-top-8 left-1/2 -translate-x-1/2 bg-muted/80 backdrop-blur-sm rounded-lg px-2 lg:px-3 py-1 lg:py-1.5 flex items-center gap-1 lg:gap-2 text-[10px] lg:text-xs max-w-[90%]">
+        <Globe className="h-2.5 w-2.5 lg:h-3 lg:w-3 flex-shrink-0" />
         <span className="text-muted-foreground">/l/</span>
-        <span className="font-medium">{linkPage.slug}</span>
+        <span className="font-medium truncate">{linkPage.slug}</span>
       </div>
     </div>
   );
