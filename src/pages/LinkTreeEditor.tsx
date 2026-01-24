@@ -7,7 +7,7 @@ import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Link2, Palette, BarChart3, Settings, Globe, ExternalLink, Loader2, Plus, Eye, EyeOff, Save, Undo2, Redo2, Check, GlobeLock, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Link2, Palette, BarChart3, Settings, Globe, ExternalLink, Loader2, Plus, Eye, EyeOff, Save, Undo2, Redo2, Check, GlobeLock, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { toast } from '@/hooks/use-toast';
 import { LinksTab } from '@/components/linktree/LinksTab';
@@ -33,6 +33,7 @@ export default function LinkTreeEditor() {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'links');
   const [showPreview, setShowPreview] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'fit' | 'full'>('fit');
   
   // Local state for instant preview updates
   const [localLinkPage, setLocalLinkPage] = useState<LinkPage | null>(null);
@@ -476,9 +477,40 @@ export default function LinkTreeEditor() {
                 ? 'flex-1'
                 : 'hidden'
               : 'w-[320px] lg:w-[380px] xl:w-[420px] border-l'
-          } flex items-center justify-center bg-muted/20 overflow-hidden p-2 lg:p-4`}
+          } flex flex-col bg-muted/20 overflow-hidden min-w-0`}
         >
-          <LinkTreePreview linkPage={deferredLinkPage} />
+          {/* Toggle Fit/100% */}
+          <div className="flex justify-center gap-1 p-2 border-b bg-muted/10 shrink-0">
+            <Button
+              variant={previewMode === 'fit' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setPreviewMode('fit')}
+              className="gap-1 h-7 text-xs"
+            >
+              <Minimize2 className="h-3 w-3" />
+              Ajustar
+            </Button>
+            <Button
+              variant={previewMode === 'full' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setPreviewMode('full')}
+              className="gap-1 h-7 text-xs"
+            >
+              <Maximize2 className="h-3 w-3" />
+              100%
+            </Button>
+          </div>
+
+          {/* Preview Container */}
+          <div className={`flex-1 min-w-0 ${
+            previewMode === 'fit' 
+              ? 'flex items-center justify-center p-2 lg:p-4 overflow-hidden' 
+              : 'overflow-auto p-4'
+          }`}>
+            <div className={`min-w-0 ${previewMode === 'fit' ? 'transform scale-[0.75] sm:scale-[0.8] lg:scale-[0.85] xl:scale-90 origin-center' : ''}`}>
+              <LinkTreePreview linkPage={deferredLinkPage} />
+            </div>
+          </div>
         </div>
       </div>
     </div>
