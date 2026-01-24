@@ -110,21 +110,27 @@ export default function LinkTreePublic() {
         <link href={fontLink} rel="stylesheet" />
       )}
       <div
-        className="min-h-screen w-full flex items-center justify-center"
+        className="min-h-screen w-full relative"
         style={{
           backgroundColor: theme.backgroundColor,
-          backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
           fontFamily: theme.fontFamily,
         }}
       >
-        <div 
-          className="min-h-screen w-full flex items-center justify-center" 
-          style={{
-            background: theme.backgroundImage ? 'rgba(0,0,0,0.4)' : undefined,
-          }}
-        >
+        {/* Fixed Background Image */}
+        {theme.backgroundImage && (
+          <div 
+            className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${theme.backgroundImage})` }}
+          />
+        )}
+        
+        {/* Overlay */}
+        {theme.backgroundImage && (
+          <div className="fixed inset-0 bg-black/40" />
+        )}
+        
+        {/* Content */}
+        <div className="relative z-10 min-h-screen w-full flex items-center justify-center">
           <div className="w-full max-w-md px-4 py-12 space-y-6">
             {/* Profile Section */}
             <div className="text-center space-y-3">
@@ -234,6 +240,7 @@ export default function LinkTreePublic() {
                     ) : null;
 
                   case 'social':
+                    const useOfficialColors = block.style?.useOfficialColors;
                     return (
                       <div 
                         key={block.id} 
@@ -250,8 +257,8 @@ export default function LinkTreePublic() {
                                 onClick={() => handleBlockClick(block.id, social.url)}
                                 className="p-3 rounded-full transition-transform hover:scale-110 flex-shrink-0"
                                 style={{
-                                  backgroundColor: `${theme.primaryColor}30`,
-                                  color: theme.textColor,
+                                  backgroundColor: useOfficialColors ? platform?.color : `${theme.primaryColor}30`,
+                                  color: useOfficialColors ? '#ffffff' : theme.textColor,
                                 }}
                               >
                                 <Icon className="h-5 w-5" />
