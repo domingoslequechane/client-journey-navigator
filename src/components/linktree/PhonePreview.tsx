@@ -1,13 +1,95 @@
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Globe } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CarouselBlockPreview } from './blocks/CarouselBlockPreview';
 import { ContactFormBlockPreview } from './blocks/ContactFormBlockPreview';
 import { SOCIAL_PLATFORMS } from '@/types/linktree';
-import type { LinkPage, LinkBlock } from '@/types/linktree';
+import type { LinkPage, LinkBlock, LinkPageTheme } from '@/types/linktree';
 
 interface PhonePreviewProps {
   linkPage: LinkPage;
+}
+
+interface SocialIconsCarouselProps {
+  socials: Array<{ platform: string; url: string }>;
+  useOfficialColors?: boolean;
+  theme: LinkPageTheme;
+}
+
+const MAX_VISIBLE_ICONS = 5;
+
+function SocialIconsCarousel({ socials, useOfficialColors, theme }: SocialIconsCarouselProps) {
+  const [startIndex, setStartIndex] = useState(0);
+  const hasMore = socials.length > MAX_VISIBLE_ICONS;
+  const visibleSocials = hasMore ? socials.slice(startIndex, startIndex + MAX_VISIBLE_ICONS) : socials;
+  
+  const canGoNext = startIndex + MAX_VISIBLE_ICONS < socials.length;
+  const canGoPrev = startIndex > 0;
+
+  const handleNext = () => {
+    if (canGoNext) {
+      setStartIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (canGoPrev) {
+      setStartIndex(prev => prev - 1);
+    }
+  };
+
+  return (
+    <div className="w-full py-1 lg:py-2">
+      <div className="flex items-center justify-center gap-1">
+        {hasMore && (
+          <button
+            onClick={handlePrev}
+            disabled={!canGoPrev}
+            className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity disabled:opacity-30"
+            style={{ color: theme.textColor }}
+          >
+            <ChevronLeft className="h-3 w-3" />
+          </button>
+        )}
+        
+        <div className="flex gap-2 lg:gap-3">
+          {visibleSocials.map((social, idx) => {
+            const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
+            const Icon = platform?.icon;
+            if (!Icon) return null;
+            return (
+              <a
+                key={`${social.platform}-${startIndex + idx}`}
+                href={social.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 flex-shrink-0"
+                style={{
+                  backgroundColor: useOfficialColors ? platform?.color : theme.primaryColor,
+                  color: useOfficialColors ? '#ffffff' : theme.textColor,
+                }}
+              >
+                <Icon className="h-4 w-4 lg:h-5 lg:w-5" />
+              </a>
+            );
+          })}
+        </div>
+        
+        {hasMore && (
+          <button
+            onClick={handleNext}
+            disabled={!canGoNext}
+            className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity disabled:opacity-30"
+            style={{ color: theme.textColor }}
+          >
+            <ChevronRight className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function PhonePreview({ linkPage }: PhonePreviewProps) {
@@ -163,34 +245,14 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
 
                   if (block.type === 'social') {
                     const useOfficialColors = block.style?.useOfficialColors;
+                    const socials = block.content.socials || [];
                     return (
-                      <div 
-                        key={block.id} 
-                        className="w-full overflow-x-auto py-1 lg:py-2"
-                      >
-                        <div className="flex justify-center gap-2 lg:gap-3 min-w-min px-1 lg:px-2">
-                          {block.content.socials?.map((social) => {
-                            const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
-                            const Icon = platform?.icon;
-                            if (!Icon) return null;
-                            return (
-                              <a
-                                key={social.platform}
-                                href={social.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 flex-shrink-0"
-                                style={{
-                                  backgroundColor: useOfficialColors ? platform?.color : theme.primaryColor,
-                                  color: useOfficialColors ? '#ffffff' : theme.textColor,
-                                }}
-                              >
-                                <Icon className="h-4 w-4 lg:h-5 lg:w-5" />
-                              </a>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      <SocialIconsCarousel 
+                        key={block.id}
+                        socials={socials}
+                        useOfficialColors={useOfficialColors}
+                        theme={theme}
+                      />
                     );
                   }
 
@@ -232,12 +294,15 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
 
               {/* Footer */}
               <div className="mt-auto pt-6 lg:pt-8">
-                <p 
-                  className="text-[9px] lg:text-[10px]"
+                <a 
+                  href="https://qualify.onixagence.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[9px] lg:text-[10px] hover:underline"
                   style={{ color: `${theme.textColor}66` }}
                 >
-                  Feito com Qualify
-                </p>
+                  Feito com ❤️ usando Qualify
+                </a>
               </div>
             </div>
           </ScrollArea>
