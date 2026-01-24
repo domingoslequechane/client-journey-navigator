@@ -1,8 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { usePublicLinkPage, recordAnalyticsEvent } from '@/hooks/useLinkPage';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Mail } from 'lucide-react';
+import { ExternalLink, Mail, TreeDeciduous } from 'lucide-react';
 import { SOCIAL_PLATFORMS, GOOGLE_FONTS } from '@/types/linktree';
 import { CarouselBlockPreview } from '@/components/linktree/blocks/CarouselBlockPreview';
 import { ContactFormBlockPreview } from '@/components/linktree/blocks/ContactFormBlockPreview';
@@ -22,17 +21,13 @@ export default function LinkTreePublic() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-background">
-        <div className="space-y-4 w-full max-w-md px-4">
-          <Skeleton className="h-24 w-24 rounded-full mx-auto" />
-          <Skeleton className="h-6 w-48 mx-auto" />
-          <Skeleton className="h-4 w-64 mx-auto" />
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="relative">
+          <TreeDeciduous className="h-16 w-16 text-primary animate-pulse" />
         </div>
+        <p className="mt-4 text-white/80 text-sm animate-pulse">
+          Carregando sua árvore de links...
+        </p>
       </div>
     );
   }
@@ -144,20 +139,42 @@ export default function LinkTreePublic() {
           <div className="w-full max-w-md px-4 py-12 space-y-6">
             {/* Profile Section */}
             <div className="text-center space-y-3">
-              {linkPage.logo_url && (
-                <img
-                  src={linkPage.logo_url}
-                  alt={linkPage.name}
-                  className="w-24 h-24 rounded-full mx-auto object-cover border-4"
-                  style={{ borderColor: theme.primaryColor }}
-                />
-              )}
+              {/* Avatar com fallback - SEMPRE renderiza */}
+              <div 
+                className="w-24 h-24 rounded-full mx-auto flex items-center justify-center border-4 overflow-hidden"
+                style={{ 
+                  borderColor: theme.primaryColor,
+                  backgroundColor: linkPage.logo_url ? 'transparent' : theme.primaryColor
+                }}
+              >
+                {linkPage.logo_url ? (
+                  <img
+                    src={linkPage.logo_url}
+                    alt={linkPage.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span 
+                    className="text-3xl font-bold"
+                    style={{ color: theme.textColor }}
+                  >
+                    {linkPage.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
               <h1
                 className="text-2xl font-bold"
                 style={{ color: theme.textColor }}
               >
                 {linkPage.name}
               </h1>
+              {/* Slug @handle */}
+              <p
+                className="text-xs opacity-60"
+                style={{ color: theme.textColor }}
+              >
+                @{linkPage.slug}
+              </p>
               {linkPage.bio && (
                 <p
                   className="text-sm opacity-80"
