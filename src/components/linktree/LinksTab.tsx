@@ -138,17 +138,17 @@ export function LinksTab({
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-4 space-y-4 max-w-2xl mx-auto">
-        {/* Profile Section - Simplified */}
-        <Card className="p-4">
-          <div className="flex items-center gap-4">
+      <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 max-w-2xl mx-auto">
+        {/* Profile Section - Responsive */}
+        <Card className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
             <ImageUpload
               currentImageUrl={linkPage.logo_url}
               onImageChange={handleLogoChange}
               name={linkPage.name}
               size="lg"
             />
-            <div className="flex-1">
+            <div className="flex-1 w-full text-center sm:text-left">
               {editingProfile ? (
                 <div className="space-y-2">
                   <Input
@@ -161,7 +161,7 @@ export function LinksTab({
                     onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
                     placeholder="Bio (opcional)"
                   />
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 justify-center sm:justify-start">
                     <Button size="sm" onClick={handleSaveProfile}>
                       <Check className="h-4 w-4 mr-1" /> Salvar
                     </Button>
@@ -172,8 +172,8 @@ export function LinksTab({
                 </div>
               ) : (
                 <div>
-                  <h3 className="font-semibold">{linkPage.name}</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="font-semibold truncate">{linkPage.name}</h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
                     {linkPage.bio || 'Clique para adicionar bio'}
                   </p>
                   <Button 
@@ -317,17 +317,17 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
 
   if (block.type === 'divider') {
     return (
-      <Card className="p-3 flex items-center gap-3">
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-        <div className="flex-1 flex items-center gap-2 text-sm text-muted-foreground">
-          <Minus className="h-4 w-4" />
-          Divisor
+      <Card className="p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
+        <div className="flex-1 flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+          <Minus className="h-4 w-4 flex-shrink-0" />
+          <span className="truncate">Divisor</span>
         </div>
         <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} />
-        <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
+        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 hidden sm:inline-flex" onClick={() => onDuplicate(block.id)} title="Duplicar">
           <Copy className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => onDelete(block.id)}>
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
       </Card>
@@ -336,10 +336,10 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
 
   if (block.type === 'text') {
     return (
-      <Card className={`p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
-        <div className="flex items-start gap-3">
-          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab mt-1" />
-          <div className="flex-1">
+      <Card className={`p-2 sm:p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
+        <div className="flex items-start gap-2 sm:gap-3">
+          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab mt-1 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
             {isEditing ? (
               <div className="space-y-3">
                 <div>
@@ -350,7 +350,7 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
                     placeholder="Seu texto aqui"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button size="sm" onClick={handleSave}>
                     <Check className="h-4 w-4 mr-1" /> Salvar
                   </Button>
@@ -361,24 +361,24 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Type className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{block.content.text || 'Texto'}</span>
+                <Type className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm truncate">{block.content.text || 'Texto'}</span>
               </div>
             )}
           </div>
           {!isEditing && (
-            <>
+            <div className="flex items-center gap-1 flex-shrink-0">
               <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} />
-              <Button variant="ghost" size="icon" onClick={onEdit}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
                 <Pencil className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => onDuplicate(block.id)} title="Duplicar">
                 <Copy className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(block.id)}>
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
-            </>
+            </div>
           )}
         </div>
       </Card>
@@ -387,10 +387,10 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
 
   // Button/Link type - SEM cores individuais, apenas Título e URL
   return (
-    <Card className={`p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
-      <div className="flex items-start gap-3">
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab mt-3" />
-        <div className="flex-1">
+    <Card className={`p-2 sm:p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
+      <div className="flex items-start gap-2 sm:gap-3">
+        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab mt-2 sm:mt-3 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
           {isEditing ? (
             <div className="space-y-3">
               <div>
@@ -409,7 +409,7 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
                   placeholder="https://..."
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button size="sm" onClick={handleSave}>
                   <Check className="h-4 w-4 mr-1" /> Salvar
                 </Button>
@@ -419,10 +419,10 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
               </div>
             </div>
           ) : (
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <Link2 className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{block.content.title || 'Link'}</span>
+                <Link2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="font-medium truncate">{block.content.title || 'Link'}</span>
               </div>
               {block.content.url && (
                 <p className="text-xs text-muted-foreground truncate mt-1">
@@ -433,18 +433,18 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
           )}
         </div>
         {!isEditing && (
-          <>
+          <div className="flex items-center gap-1 flex-shrink-0">
             <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} />
-            <Button variant="ghost" size="icon" onClick={onEdit}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
+            <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => onDuplicate(block.id)} title="Duplicar">
               <Copy className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(block.id)}>
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
-          </>
+          </div>
         )}
       </div>
     </Card>

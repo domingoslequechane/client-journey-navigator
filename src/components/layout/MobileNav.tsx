@@ -24,7 +24,8 @@ import {
   Moon,
   LogOut,
   X,
-  RefreshCw
+  RefreshCw,
+  Link2
 } from 'lucide-react';
 import {
   Drawer,
@@ -95,12 +96,15 @@ export function MobileNav() {
 
   // Build "More" menu items
   const moreItems = useMemo(() => {
-    const items: { name: string; href: string; icon: typeof GraduationCap; show: boolean }[] = [];
+    const items: { name: string; href: string; icon: typeof GraduationCap; show: boolean; badge?: string }[] = [];
 
     // Add Clients to more menu on mobile
     if (canSeeClients) {
       items.push({ name: t('navigation.clients'), href: '/app/clients', icon: Building2, show: true });
     }
+
+    // Add Link23 to more menu
+    items.push({ name: 'Link23', href: '/app/link-trees', icon: Link2, show: true, badge: 'beta' });
 
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },
@@ -221,8 +225,13 @@ export function MobileNav() {
                       : 'hover:bg-muted text-foreground'
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
-                  <span className="font-medium">{item.name}</span>
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  <span className="font-medium flex-1">{item.name}</span>
+                  {item.badge && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase font-semibold">
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
