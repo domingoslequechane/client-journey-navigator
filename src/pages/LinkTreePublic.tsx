@@ -9,8 +9,9 @@ import { ContactFormBlockPreview } from '@/components/linktree/blocks/ContactFor
 import { useEffect } from 'react';
 
 export default function LinkTreePublic() {
-  const { orgSlug, slug } = useParams<{ orgSlug: string; slug: string }>();
-  const { data: linkPage, isLoading, error } = usePublicLinkPage(slug, orgSlug);
+  const { orgSlug, handle } = useParams<{ orgSlug: string; handle: string }>();
+  const cleanSlug = handle?.startsWith('@') ? handle.slice(1) : handle;
+  const { data: linkPage, isLoading, error } = usePublicLinkPage(cleanSlug, orgSlug);
 
   // Record page view
   useEffect(() => {
