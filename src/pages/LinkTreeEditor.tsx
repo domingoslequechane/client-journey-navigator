@@ -29,7 +29,7 @@ export default function LinkTreeEditor() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { organizationId, loading: loadingOrg } = useOrganizationCurrency();
+  const { organizationId, loading: orgLoading } = useOrganizationCurrency();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'links');
   const [showPreview, setShowPreview] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -215,10 +215,22 @@ export default function LinkTreeEditor() {
     return { text: 'Publicado', variant: 'success' as const, icon: Globe };
   }, [localLinkPage?.is_published, hasUnsavedChanges]);
 
-  if (loadingClient || isLoading || loadingOrg || !organizationId) {
+  if (loadingClient || orgLoading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!organizationId) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] gap-4">
+        <p className="text-muted-foreground">Organização não encontrada</p>
+        <Button onClick={() => navigate('/app/dashboard')} variant="outline">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar ao Dashboard
+        </Button>
       </div>
     );
   }
