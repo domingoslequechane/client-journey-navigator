@@ -261,6 +261,40 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
     });
   }, [linkPage, updateLinkPage]);
 
+  // Duplicate block
+  const duplicateBlock = useMutation({
+    mutationFn: async (blockId: string) => {
+      const blockToDuplicate = linkPage?.blocks?.find(b => b.id === blockId);
+      if (!blockToDuplicate || !linkPage?.id) throw new Error('Block not found');
+      
+      const newSortOrder = linkPage.blocks?.length || 0;
+      
+      const { data, error } = await supabase
+        .from('link_blocks')
+        .insert({
+          link_page_id: linkPage.id,
+          type: blockToDuplicate.type,
+          content: JSON.parse(JSON.stringify(blockToDuplicate.content)),
+          style: blockToDuplicate.style ? JSON.parse(JSON.stringify(blockToDuplicate.style)) : null,
+          is_enabled: blockToDuplicate.is_enabled,
+          sort_order: newSortOrder,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['link-page', clientId] });
+      toast({ title: 'Bloco duplicado!' });
+    },
+    onError: (error: Error) => {
+      console.error('Error duplicating block:', error);
+      toast({ title: 'Erro', description: 'Não foi possível duplicar o bloco', variant: 'destructive' });
+    },
+  });
+
   return {
     linkPage,
     isLoading,
@@ -271,6 +305,7 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
     addBlock: addBlock.mutateAsync,
     updateBlock: updateBlock.mutateAsync,
     deleteBlock: deleteBlock.mutateAsync,
+    duplicateBlock: duplicateBlock.mutateAsync,
     reorderBlocks: reorderBlocks.mutateAsync,
     togglePublish,
     isCreating: createLinkPage.isPending,
@@ -278,48 +313,33 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
   };
 }
 
-// Hook for public link page (no auth required)
+// Hook for public link page (no auth required) - uses RPC to bypass RLS
 export function usePublicLinkPage(slug: string | undefined, orgSlug: string | undefined) {
   return useQuery({
     queryKey: ['public-link-page', orgSlug, slug],
     queryFn: async () => {
       if (!slug || !orgSlug) return null;
 
-      // First, get the organization by slug
-      const { data: org, error: orgError } = await supabase
-        .from('organizations')
-        .select('id')
-        .eq('slug', orgSlug)
-        .maybeSingle();
+      // Use secure RPC that bypasses RLS for public access
+      const { data, error } = await supabase.rpc('get_public_link_page', {
+        p_org_slug: orgSlug,
+        p_page_slug: slug,
+      });
 
-      if (orgError) throw orgError;
-      if (!org) return null;
-
-      // Then get the link page for this organization
-      const { data, error } = await supabase
-        .from('link_pages')
-        .select('*')
-        .eq('slug', slug)
-        .eq('organization_id', org.id)
-        .eq('is_published', true)
-        .maybeSingle();
-
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching public link page:', error);
+        throw error;
+      }
+      
       if (!data) return null;
 
-      // Fetch blocks
-      const { data: blocks, error: blocksError } = await supabase
-        .from('link_blocks')
-        .select('*')
-        .eq('link_page_id', data.id)
-        .eq('is_enabled', true)
-        .order('sort_order', { ascending: true });
-
-      if (blocksError) throw blocksError;
-
+      // Parse the JSONB response
+      const pageData = data as Record<string, unknown>;
+      
       // Parse theme safely
-      const theme = (typeof data.theme === 'object' && data.theme !== null && !Array.isArray(data.theme))
-        ? data.theme as unknown as LinkPageTheme
+      const rawTheme = pageData.theme;
+      const theme = (typeof rawTheme === 'object' && rawTheme !== null && !Array.isArray(rawTheme))
+        ? rawTheme as unknown as LinkPageTheme
         : {
             backgroundColor: '#1a1a2e',
             primaryColor: '#a3e635',
@@ -329,10 +349,24 @@ export function usePublicLinkPage(slug: string | undefined, orgSlug: string | un
             buttonRadius: 'pill' as const,
           };
 
+      // Parse blocks array
+      const rawBlocks = pageData.blocks;
+      const blocks = Array.isArray(rawBlocks) ? rawBlocks as LinkBlock[] : [];
+
       return {
-        ...data,
+        id: pageData.id as string,
+        client_id: pageData.client_id as string,
+        organization_id: pageData.organization_id as string,
+        name: pageData.name as string,
+        slug: pageData.slug as string,
+        logo_url: pageData.logo_url as string | undefined,
+        bio: pageData.bio as string | undefined,
         theme,
-        blocks: blocks as LinkBlock[],
+        is_published: pageData.is_published as boolean,
+        custom_domain: pageData.custom_domain as string | undefined,
+        created_at: pageData.created_at as string,
+        updated_at: pageData.updated_at as string,
+        blocks,
       } as LinkPage;
     },
     enabled: !!slug && !!orgSlug,

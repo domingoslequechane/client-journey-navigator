@@ -1535,6 +1535,10 @@ export type Database = {
         Args: { p_feature_type: string; p_organization_id: string }
         Returns: number
       }
+      get_public_link_page: {
+        Args: { p_org_slug: string; p_page_slug: string }
+        Returns: Json
+      }
       get_user_organization_id: { Args: { user_uuid: string }; Returns: string }
       get_user_organizations: {
         Args: { user_uuid: string }
