@@ -435,24 +435,38 @@ export const LINK_TREE_TEMPLATES: LinkTreeTemplate[] = [
   },
 ];
 
-import { Instagram, Music2, Youtube, Twitter, Facebook, Linkedin, MessageCircle, Music, Globe, Github, MessageSquare, Send, Twitch } from 'lucide-react';
-import { Pin } from 'lucide-react';
+import { 
+  FaInstagram, 
+  FaTiktok, 
+  FaYoutube, 
+  FaXTwitter, 
+  FaFacebook, 
+  FaLinkedin, 
+  FaWhatsapp, 
+  FaSpotify, 
+  FaGlobe, 
+  FaPinterest, 
+  FaGithub, 
+  FaDiscord, 
+  FaTelegram, 
+  FaTwitch 
+} from 'react-icons/fa6';
 
 export const SOCIAL_PLATFORMS = [
-  { id: 'instagram', name: 'Instagram', icon: Instagram, color: '#E4405F' },
-  { id: 'tiktok', name: 'TikTok', icon: Music2, color: '#000000' },
-  { id: 'youtube', name: 'YouTube', icon: Youtube, color: '#FF0000' },
-  { id: 'twitter', name: 'X (Twitter)', icon: Twitter, color: '#1DA1F2' },
-  { id: 'facebook', name: 'Facebook', icon: Facebook, color: '#1877F2' },
-  { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: '#0A66C2' },
-  { id: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, color: '#25D366' },
-  { id: 'spotify', name: 'Spotify', icon: Music, color: '#1DB954' },
-  { id: 'website', name: 'Website', icon: Globe, color: '#6366F1' },
-  { id: 'pinterest', name: 'Pinterest', icon: Globe, color: '#E60023' },
-  { id: 'github', name: 'GitHub', icon: Github, color: '#181717' },
-  { id: 'discord', name: 'Discord', icon: MessageSquare, color: '#5865F2' },
-  { id: 'telegram', name: 'Telegram', icon: Send, color: '#26A5E4' },
-  { id: 'twitch', name: 'Twitch', icon: Twitch, color: '#9146FF' },
+  { id: 'instagram', name: 'Instagram', icon: FaInstagram, color: '#E4405F' },
+  { id: 'tiktok', name: 'TikTok', icon: FaTiktok, color: '#000000' },
+  { id: 'youtube', name: 'YouTube', icon: FaYoutube, color: '#FF0000' },
+  { id: 'twitter', name: 'X (Twitter)', icon: FaXTwitter, color: '#000000' },
+  { id: 'facebook', name: 'Facebook', icon: FaFacebook, color: '#1877F2' },
+  { id: 'linkedin', name: 'LinkedIn', icon: FaLinkedin, color: '#0A66C2' },
+  { id: 'whatsapp', name: 'WhatsApp', icon: FaWhatsapp, color: '#25D366' },
+  { id: 'spotify', name: 'Spotify', icon: FaSpotify, color: '#1DB954' },
+  { id: 'website', name: 'Website', icon: FaGlobe, color: '#6366F1' },
+  { id: 'pinterest', name: 'Pinterest', icon: FaPinterest, color: '#E60023' },
+  { id: 'github', name: 'GitHub', icon: FaGithub, color: '#181717' },
+  { id: 'discord', name: 'Discord', icon: FaDiscord, color: '#5865F2' },
+  { id: 'telegram', name: 'Telegram', icon: FaTelegram, color: '#26A5E4' },
+  { id: 'twitch', name: 'Twitch', icon: FaTwitch, color: '#9146FF' },
 ];
 
 // Google Fonts available
