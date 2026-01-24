@@ -278,21 +278,23 @@ export default function LinkTreeEditor() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Single Header Row */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-background shrink-0">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+      {/* Header - Responsive with wrap on mobile */}
+      <div className="flex flex-wrap items-center gap-2 px-3 py-3 border-b bg-background shrink-0">
+        {/* Row 1: Back + Title */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-2">
-            <h1 className="font-semibold">{localLinkPage.name}</h1>
-            <span className="text-xs text-muted-foreground">@{localLinkPage.slug}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="font-semibold truncate">{localLinkPage.name}</h1>
+            <span className="text-xs text-muted-foreground flex-shrink-0">@{localLinkPage.slug}</span>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        {/* Row 2 on mobile: All actions */}
+        <div className="flex items-center gap-1 flex-wrap justify-end">
           {/* Undo/Redo */}
-          <div className="flex items-center gap-1 border-r pr-2 mr-2">
+          <div className="flex items-center gap-0.5">
             <Button
               variant="ghost"
               size="icon"
@@ -316,15 +318,11 @@ export default function LinkTreeEditor() {
           </div>
 
           {/* Save Status */}
-          <div className="hidden sm:flex items-center gap-2 mr-2">
+          <div className="flex items-center gap-1 px-1">
             {isUpdating ? (
-              <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
-              </span>
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
             ) : hasUnsavedChanges ? (
-              <span className="flex items-center gap-1 text-xs text-amber-600">
-                <span className="h-1.5 w-1.5 bg-amber-500 rounded-full animate-pulse" />
-              </span>
+              <span className="h-1.5 w-1.5 bg-amber-500 rounded-full animate-pulse" />
             ) : (
               <Check className="h-3 w-3 text-green-500" />
             )}
@@ -334,9 +332,9 @@ export default function LinkTreeEditor() {
           {isMobile && (
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
               onClick={() => setShowPreview(!showPreview)}
-              className="gap-2"
+              className="h-8 w-8"
             >
               {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
@@ -348,7 +346,7 @@ export default function LinkTreeEditor() {
             size="sm"
             onClick={handleSave}
             disabled={isUpdating || !hasUnsavedChanges}
-            className="gap-2"
+            className="gap-1 h-8 px-2"
           >
             <Save className="h-4 w-4" />
             <span className="hidden sm:inline">Salvar</span>
@@ -361,7 +359,7 @@ export default function LinkTreeEditor() {
             onClick={handlePublish}
             disabled={isUpdating}
             className={cn(
-              'gap-2',
+              'gap-1 h-8 px-2',
               publishButtonState.variant === 'success' && 'bg-green-600 hover:bg-green-700 text-white',
               publishButtonState.variant === 'warning' && 'border-amber-500 text-amber-600 hover:bg-amber-50'
             )}
@@ -375,6 +373,7 @@ export default function LinkTreeEditor() {
             <Button
               variant="ghost"
               size="icon"
+              className="h-8 w-8"
               onClick={() => window.open(publicUrl, '_blank')}
             >
               <ExternalLink className="h-4 w-4" />

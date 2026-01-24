@@ -39,7 +39,8 @@ export function SettingsTab({ linkPage, updateLinkPage, organizationId }: Settin
   });
   
   const publicUrl = `${window.location.origin}/${organization?.slug || 'agencia'}/@${linkPage.slug}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(publicUrl)}&color=8b5cf6`;
+  // QR Code preto (000000) para melhor leitura
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(publicUrl)}&color=000000&format=svg`;
 
   const handleCopyUrl = async () => {
     try {
@@ -57,11 +58,23 @@ export function SettingsTab({ linkPage, updateLinkPage, organizationId }: Settin
     toast({ title: 'Domínio salvo!' });
   };
 
-  const handleDownloadQR = () => {
-    const link = document.createElement('a');
-    link.href = qrCodeUrl;
-    link.download = `qrcode-${linkPage.slug}.png`;
-    link.click();
+  const handleDownloadQR = async () => {
+    try {
+      // Fetch SVG and trigger download
+      const response = await fetch(qrCodeUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `qrcode-${linkPage.slug}.svg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast({ title: 'QR Code baixado!' });
+    } catch {
+      toast({ title: 'Erro ao baixar', variant: 'destructive' });
+    }
   };
 
   const handleShare = async () => {
