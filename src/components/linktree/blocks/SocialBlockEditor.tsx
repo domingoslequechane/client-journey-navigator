@@ -110,8 +110,8 @@ export function SocialBlockEditor({
                 </p>
               )}
               
-              <ScrollArea className="max-h-48">
-                <div className="space-y-2 pr-2">
+              <ScrollArea className="h-[280px]">
+                <div className="space-y-2 pr-3">
                   {socials.map((social, index) => {
                     const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
                     const Icon = platform?.icon;
