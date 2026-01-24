@@ -127,16 +127,16 @@ export function LinkTreePreview({ linkPage }: LinkTreePreviewProps) {
       )}
       
       {/* Phone Frame - Responsive */}
-      <div className="relative w-full max-w-[280px] lg:max-w-[320px] flex items-center justify-center">
+      <div className="relative w-[280px] lg:w-[320px] flex-shrink-0 flex items-center justify-center">
         {/* URL Bar */}
-        <div className="absolute -top-7 lg:-top-8 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm rounded-lg px-2 lg:px-3 py-1 lg:py-1.5 flex items-center gap-1 lg:gap-2 text-[10px] lg:text-xs shadow-sm border z-20 max-w-[90%]">
+        <div className="absolute -top-7 lg:-top-8 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm rounded-lg px-2 lg:px-3 py-1 lg:py-1.5 flex items-center gap-1 lg:gap-2 text-[10px] lg:text-xs shadow-sm border z-20 w-[90%]">
           <Globe className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-muted-foreground flex-shrink-0" />
-          <span className="text-muted-foreground">/l/</span>
-          <span className="font-medium truncate">{linkPage.slug}</span>
+          <span className="text-muted-foreground flex-shrink-0">/l/</span>
+          <span className="font-medium truncate min-w-0">{linkPage.slug}</span>
         </div>
 
         {/* Phone Body */}
-        <div className="relative w-full bg-foreground rounded-[40px] lg:rounded-[48px] p-2 lg:p-3 shadow-2xl">
+        <div className="relative w-full bg-foreground rounded-[40px] lg:rounded-[48px] p-2 lg:p-3 shadow-2xl overflow-hidden">
           {/* Dynamic Island */}
           <div className="absolute top-3 lg:top-4 left-1/2 -translate-x-1/2 w-24 lg:w-28 h-6 lg:h-7 bg-foreground rounded-full z-10" />
           
@@ -175,7 +175,7 @@ export function LinkTreePreview({ linkPage }: LinkTreePreviewProps) {
                 </Avatar>
                 
                 <h1 
-                  className="font-bold text-lg lg:text-xl mb-1 text-center truncate w-full px-2"
+                  className="font-bold text-lg lg:text-xl mb-1 text-center truncate w-full max-w-full px-2 overflow-hidden"
                   style={{ color: theme.textColor }}
                 >
                   {linkPage.name}
@@ -183,7 +183,7 @@ export function LinkTreePreview({ linkPage }: LinkTreePreviewProps) {
                 
                 {linkPage.bio && (
                   <p 
-                    className="text-xs lg:text-sm text-center mb-2 px-3 lg:px-4 leading-relaxed line-clamp-2"
+                    className="text-xs lg:text-sm text-center mb-2 px-3 lg:px-4 leading-relaxed line-clamp-2 max-w-full overflow-hidden"
                     style={{ color: `${theme.textColor}cc` }}
                   >
                     {linkPage.bio}
@@ -191,14 +191,14 @@ export function LinkTreePreview({ linkPage }: LinkTreePreviewProps) {
                 )}
 
                 <p 
-                  className="text-[10px] lg:text-xs mb-4 lg:mb-6 truncate w-full text-center px-4"
+                  className="text-[10px] lg:text-xs mb-4 lg:mb-6 truncate w-full max-w-full text-center px-4 overflow-hidden"
                   style={{ color: `${theme.textColor}80` }}
                 >
                   @{linkPage.slug}
                 </p>
 
                 {/* Blocks */}
-                <div className="w-full space-y-2 lg:space-y-3 px-1">
+                <div className="w-full space-y-2 lg:space-y-3 px-1 overflow-hidden">
                   {blocks.map((block) => {
                     if (block.type === 'button') {
                       return (
@@ -207,10 +207,10 @@ export function LinkTreePreview({ linkPage }: LinkTreePreviewProps) {
                           href={block.content.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 w-full py-3 lg:py-3.5 px-3 lg:px-4 text-center text-xs lg:text-sm font-medium transition-transform hover:scale-[1.02] active:scale-[0.98] break-words"
+                          className="flex items-center justify-center gap-2 w-full py-3 lg:py-3.5 px-3 lg:px-4 text-center text-xs lg:text-sm font-medium transition-transform hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
                           style={getButtonStyle(block)}
                         >
-                          {block.content.title || 'Link'}
+                          <span className="truncate min-w-0">{block.content.title || 'Link'}</span>
                           <ExternalLink className="h-3 w-3 lg:h-3.5 lg:w-3.5 opacity-60 flex-shrink-0" />
                         </a>
                       );
@@ -220,7 +220,7 @@ export function LinkTreePreview({ linkPage }: LinkTreePreviewProps) {
                       return (
                         <p
                           key={block.id}
-                          className="text-center text-xs lg:text-sm px-2 py-1 lg:py-2 break-words"
+                          className="text-center text-xs lg:text-sm px-2 py-1 lg:py-2 break-words overflow-hidden"
                           style={{ color: theme.textColor }}
                         >
                           {block.content.text}

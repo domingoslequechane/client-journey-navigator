@@ -58,9 +58,9 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
   };
 
   return (
-    <div className="relative flex items-center justify-center w-full">
+    <div className="relative flex items-center justify-center w-[260px] lg:w-[280px] flex-shrink-0">
       {/* Phone Frame - Responsive */}
-      <div className="relative w-full max-w-[260px] lg:max-w-[280px] aspect-[280/580] bg-black rounded-[36px] lg:rounded-[40px] p-2 lg:p-3 shadow-2xl">
+      <div className="relative w-full aspect-[280/580] bg-black rounded-[36px] lg:rounded-[40px] p-2 lg:p-3 shadow-2xl overflow-hidden">
         {/* Dynamic Island */}
         <div className="absolute top-3 lg:top-4 left-1/2 -translate-x-1/2 w-20 lg:w-24 h-5 lg:h-6 bg-black rounded-full z-10" />
         
@@ -99,7 +99,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
               </Avatar>
               
               <h1 
-                className="font-bold text-base lg:text-lg mb-1 text-center truncate w-full px-2"
+                className="font-bold text-base lg:text-lg mb-1 text-center truncate w-full max-w-full px-2 overflow-hidden"
                 style={{ color: theme.textColor }}
               >
                 {linkPage.name}
@@ -107,7 +107,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
               
               {linkPage.bio && (
                 <p 
-                  className="text-xs lg:text-sm text-center mb-3 lg:mb-4 px-3 lg:px-4 line-clamp-2"
+                  className="text-xs lg:text-sm text-center mb-3 lg:mb-4 px-3 lg:px-4 line-clamp-2 max-w-full overflow-hidden"
                   style={{ color: `${theme.textColor}cc` }}
                 >
                   {linkPage.bio}
@@ -115,14 +115,14 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
               )}
 
               <p 
-                className="text-[10px] lg:text-xs mb-4 lg:mb-6 truncate w-full text-center px-4"
+                className="text-[10px] lg:text-xs mb-4 lg:mb-6 truncate w-full max-w-full text-center px-4 overflow-hidden"
                 style={{ color: `${theme.textColor}99` }}
               >
                 @{linkPage.slug}
               </p>
 
               {/* Blocks */}
-              <div className="w-full space-y-2 lg:space-y-3 px-1 lg:px-2">
+              <div className="w-full space-y-2 lg:space-y-3 px-1 lg:px-2 overflow-hidden">
                 {blocks.map((block) => {
                   if (block.type === 'button') {
                     return (
@@ -131,7 +131,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                         href={block.content.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block w-full py-2.5 lg:py-3 px-3 lg:px-4 text-center text-xs lg:text-sm font-medium transition-transform hover:scale-[1.02] break-words"
+                        className="block w-full py-2.5 lg:py-3 px-3 lg:px-4 text-center text-xs lg:text-sm font-medium transition-transform hover:scale-[1.02] truncate overflow-hidden"
                         style={getButtonStyle(block)}
                       >
                         {block.content.title || 'Link'}
@@ -245,10 +245,10 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
       </div>
 
       {/* URL Bar */}
-      <div className="absolute -top-7 lg:-top-8 left-1/2 -translate-x-1/2 bg-muted/80 backdrop-blur-sm rounded-lg px-2 lg:px-3 py-1 lg:py-1.5 flex items-center gap-1 lg:gap-2 text-[10px] lg:text-xs max-w-[90%]">
+      <div className="absolute -top-7 lg:-top-8 left-1/2 -translate-x-1/2 bg-muted/80 backdrop-blur-sm rounded-lg px-2 lg:px-3 py-1 lg:py-1.5 flex items-center gap-1 lg:gap-2 text-[10px] lg:text-xs w-[90%]">
         <Globe className="h-2.5 w-2.5 lg:h-3 lg:w-3 flex-shrink-0" />
-        <span className="text-muted-foreground">/l/</span>
-        <span className="font-medium truncate">{linkPage.slug}</span>
+        <span className="text-muted-foreground flex-shrink-0">/l/</span>
+        <span className="font-medium truncate min-w-0">{linkPage.slug}</span>
       </div>
     </div>
   );
