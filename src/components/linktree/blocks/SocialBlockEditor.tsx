@@ -91,13 +91,13 @@ export function SocialBlockEditor({
   const socialCount = block.content.socials?.length || 0;
 
   return (
-    <Card className={`p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
-      <div className="flex items-start gap-3">
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab mt-1" />
-        <div className="flex-1">
+    <Card className={`p-2 sm:p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
+      <div className="flex items-center gap-2">
+        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
+        <div className="flex-1 min-w-0">
           {isEditing ? (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <Label>Redes Sociais</Label>
                 <Button type="button" size="sm" variant="outline" onClick={handleAddSocial}>
                   <Plus className="h-4 w-4 mr-1" /> Adicionar
@@ -110,19 +110,18 @@ export function SocialBlockEditor({
                 </p>
               )}
               
-              {/* ScrollArea para limitar altura vertical */}
               <ScrollArea className="max-h-48">
                 <div className="space-y-2 pr-2">
                   {socials.map((social, index) => {
                     const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
                     const Icon = platform?.icon;
                     return (
-                      <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                      <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg flex-wrap sm:flex-nowrap">
                         <Select
                           value={social.platform}
                           onValueChange={(value) => handleUpdateSocial(index, 'platform', value)}
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-full sm:w-32">
                             <SelectValue>
                               {Icon && (
                                 <div className="flex items-center gap-2">
@@ -150,12 +149,13 @@ export function SocialBlockEditor({
                           value={social.url}
                           onChange={(e) => handleUpdateSocial(index, 'url', e.target.value)}
                           placeholder="https://..."
-                          className="flex-1"
+                          className="flex-1 min-w-0"
                         />
                         <Button
                           type="button"
                           size="icon"
                           variant="ghost"
+                          className="h-8 w-8 flex-shrink-0"
                           onClick={() => handleRemoveSocial(index)}
                         >
                           <X className="h-4 w-4 text-destructive" />
@@ -166,7 +166,6 @@ export function SocialBlockEditor({
                 </div>
               </ScrollArea>
 
-              {/* Opção de cores oficiais */}
               <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-2">
                   <Palette className="h-4 w-4 text-muted-foreground" />
@@ -178,9 +177,8 @@ export function SocialBlockEditor({
                 />
               </div>
 
-              {/* Preview das cores */}
               {useOfficialColors && socials.length > 0 && (
-                <div className="flex gap-2 justify-center py-2">
+                <div className="flex gap-2 justify-center py-2 flex-wrap">
                   {socials.slice(0, 6).map((social, idx) => {
                     const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
                     const Icon = platform?.icon;
@@ -198,7 +196,7 @@ export function SocialBlockEditor({
                 </div>
               )}
               
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button size="sm" onClick={handleSave}>
                   <Check className="h-4 w-4 mr-1" /> Salvar
                 </Button>
@@ -209,29 +207,26 @@ export function SocialBlockEditor({
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Share2 className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
+              <Share2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm truncate">
                 Ícones Sociais ({socialCount} {socialCount === 1 ? 'rede' : 'redes'})
               </span>
-              {block.style?.useOfficialColors && (
-                <span className="text-xs text-muted-foreground">(cores oficiais)</span>
-              )}
             </div>
           )}
         </div>
         {!isEditing && (
-          <>
-            <Switch checked={block.is_enabled} onCheckedChange={onToggleEnabled} />
-            <Button variant="ghost" size="icon" onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+            <Switch checked={block.is_enabled} onCheckedChange={onToggleEnabled} className="scale-90 sm:scale-100" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={onEdit}>
+              <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDuplicate(block.id)} title="Duplicar">
-              <Copy className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDuplicate(block.id)} title="Duplicar">
+              <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)}>
-              <Trash2 className="h-4 w-4 text-destructive" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDelete(block.id)}>
+              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
             </Button>
-          </>
+          </div>
         )}
       </div>
     </Card>

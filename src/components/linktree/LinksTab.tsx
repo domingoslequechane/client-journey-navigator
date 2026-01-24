@@ -317,19 +317,23 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
 
   if (block.type === 'divider') {
     return (
-      <Card className="p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
-        <div className="flex-1 flex items-center gap-2 text-sm text-muted-foreground min-w-0">
-          <Minus className="h-4 w-4 flex-shrink-0" />
-          <span className="truncate">Divisor</span>
+      <Card className="p-2 sm:p-3">
+        <div className="flex items-center gap-2">
+          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
+          <div className="flex-1 flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+            <Minus className="h-4 w-4 flex-shrink-0" />
+            <span className="truncate">Divisor</span>
+          </div>
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+            <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} className="scale-90 sm:scale-100" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDuplicate(block.id)} title="Duplicar">
+              <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDelete(block.id)}>
+              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
+            </Button>
+          </div>
         </div>
-        <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} />
-        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 hidden sm:inline-flex" onClick={() => onDuplicate(block.id)} title="Duplicar">
-          <Copy className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => onDelete(block.id)}>
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
       </Card>
     );
   }
@@ -337,8 +341,8 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
   if (block.type === 'text') {
     return (
       <Card className={`p-2 sm:p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
-        <div className="flex items-start gap-2 sm:gap-3">
-          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab mt-1 flex-shrink-0" />
+        <div className="flex items-center gap-2">
+          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
           <div className="flex-1 min-w-0">
             {isEditing ? (
               <div className="space-y-3">
@@ -367,16 +371,16 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
             )}
           </div>
           {!isEditing && (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} />
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
-                <Pencil className="h-4 w-4" />
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+              <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} className="scale-90 sm:scale-100" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={onEdit}>
+                <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => onDuplicate(block.id)} title="Duplicar">
-                <Copy className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDuplicate(block.id)} title="Duplicar">
+                <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(block.id)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDelete(block.id)}>
+                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
               </Button>
             </div>
           )}
@@ -388,8 +392,8 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
   // Button/Link type - SEM cores individuais, apenas Título e URL
   return (
     <Card className={`p-2 sm:p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
-      <div className="flex items-start gap-2 sm:gap-3">
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab mt-2 sm:mt-3 flex-shrink-0" />
+      <div className="flex items-center gap-2">
+        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
         <div className="flex-1 min-w-0">
           {isEditing ? (
             <div className="space-y-3">
@@ -422,10 +426,10 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <Link2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <span className="font-medium truncate">{block.content.title || 'Link'}</span>
+                <span className="font-medium truncate text-sm">{block.content.title || 'Link'}</span>
               </div>
               {block.content.url && (
-                <p className="text-xs text-muted-foreground truncate mt-1">
+                <p className="text-xs text-muted-foreground truncate mt-0.5 pl-6">
                   {block.content.url}
                 </p>
               )}
@@ -433,16 +437,16 @@ function BlockCard({ block, isEditing, onEdit, onCancelEdit, onUpdate, onDelete,
           )}
         </div>
         {!isEditing && (
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} />
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+            <Switch checked={block.is_enabled} onCheckedChange={handleToggleEnabled} className="scale-90 sm:scale-100" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={onEdit}>
+              <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => onDuplicate(block.id)} title="Duplicar">
-              <Copy className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDuplicate(block.id)} title="Duplicar">
+              <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(block.id)}>
-              <Trash2 className="h-4 w-4 text-destructive" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => onDelete(block.id)}>
+              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
             </Button>
           </div>
         )}
