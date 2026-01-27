@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Check, Loader2 } from 'lucide-react';
+import { Send, Check, Loader2, AlertCircle } from 'lucide-react';
 import type { LinkBlock, LinkPageTheme } from '@/types/linktree';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContactFormBlockPreviewProps {
   block: LinkBlock;
   theme: LinkPageTheme;
   isPreview?: boolean;
   onRecordClick?: (blockId: string) => void;
+  linkPageName?: string;
 }
 
 interface ContactFormConfig {
@@ -30,7 +32,8 @@ export function ContactFormBlockPreview({
   block, 
   theme, 
   isPreview = false,
-  onRecordClick 
+  onRecordClick,
+  linkPageName = 'Página de Links'
 }: ContactFormBlockPreviewProps) {
   const formConfig = (block.content.formConfig as ContactFormConfig) || {
     title: 'Entre em contato',
@@ -48,27 +51,53 @@ export function ContactFormBlockPreview({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     
     if (isPreview) {
       // No actual submission in preview mode
       return;
     }
 
+    // Validate recipient email
+    if (!formConfig.recipientEmail) {
+      setErrorMessage('Formulário não configurado corretamente.');
+      return;
+    }
+
     onRecordClick?.(block.id);
     setIsSubmitting(true);
 
-    // Simulate form submission (in real app, this would send to an API)
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const response = await supabase.functions.invoke('send-contact-form', {
+        body: {
+          recipientEmail: formConfig.recipientEmail,
+          pageName: linkPageName,
+          senderName: formData.name || undefined,
+          senderEmail: formData.email,
+          senderPhone: formData.phone || undefined,
+          message: formData.message || undefined,
+        },
+      });
 
-    setIsSuccess(true);
-    setIsSubmitting(false);
-    setFormData({ name: '', email: '', phone: '', message: '' });
+      if (response.error) {
+        throw new Error(response.error.message || 'Erro ao enviar mensagem');
+      }
 
-    // Reset success state after a delay
-    setTimeout(() => setIsSuccess(false), 3000);
+      setIsSuccess(true);
+      setFormData({ name: '', email: '', phone: '', message: '' });
+
+      // Reset success state after a delay
+      setTimeout(() => setIsSuccess(false), 5000);
+    } catch (error: any) {
+      console.error('Error sending contact form:', error);
+      setErrorMessage(error.message || 'Erro ao enviar mensagem. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const buttonRadius = 
@@ -119,6 +148,16 @@ export function ContactFormBlockPreview({
         >
           {formConfig.description}
         </p>
+      )}
+
+      {errorMessage && (
+        <div 
+          className="flex items-center gap-2 p-3 rounded-lg mb-4"
+          style={{ backgroundColor: '#ef444420', color: '#ef4444' }}
+        >
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <p className="text-sm">{errorMessage}</p>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-3">

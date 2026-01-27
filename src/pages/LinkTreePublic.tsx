@@ -397,6 +397,7 @@ export default function LinkTreePublic() {
                         block={block}
                         theme={theme}
                         onRecordClick={(blockId) => recordAnalyticsEvent(linkPage.id, 'click', blockId)}
+                        linkPageName={linkPage.name}
                       />
                     );
 
