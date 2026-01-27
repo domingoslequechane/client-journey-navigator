@@ -72,6 +72,13 @@ export function ContactFormBlockPreview({
     setIsSubmitting(true);
 
     try {
+      console.log('[ContactForm] Sending form data:', {
+        recipientEmail: formConfig.recipientEmail,
+        pageName: linkPageName,
+        senderEmail: formData.email,
+        hasSenderName: !!formData.name,
+      });
+
       const response = await supabase.functions.invoke('send-contact-form', {
         body: {
           recipientEmail: formConfig.recipientEmail,
@@ -83,8 +90,16 @@ export function ContactFormBlockPreview({
         },
       });
 
+      console.log('[ContactForm] Response:', response);
+
       if (response.error) {
+        console.error('[ContactForm] Error response:', response.error);
         throw new Error(response.error.message || 'Erro ao enviar mensagem');
+      }
+
+      if (response.data?.error) {
+        console.error('[ContactForm] Data error:', response.data.error);
+        throw new Error(response.data.error || 'Erro ao enviar mensagem');
       }
 
       setIsSuccess(true);

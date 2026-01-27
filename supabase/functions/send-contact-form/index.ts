@@ -17,15 +17,19 @@ interface ContactFormRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("Received contact form request");
+  console.log("Received contact form request - Method:", req.method, "URL:", req.url);
 
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
+    console.log("Handling OPTIONS preflight");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { recipientEmail, pageName, senderName, senderEmail, senderPhone, message }: ContactFormRequest = await req.json();
+    const body = await req.text();
+    console.log("Raw request body:", body);
+    
+    const { recipientEmail, pageName, senderName, senderEmail, senderPhone, message }: ContactFormRequest = JSON.parse(body);
 
     console.log("Contact form data:", { recipientEmail, pageName, senderEmail, hasSenderName: !!senderName });
 
