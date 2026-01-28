@@ -1117,6 +1117,7 @@ export type Database = {
           max_clients: number | null
           max_contract_templates: number | null
           max_contracts_per_month: number | null
+          max_studio_generations: number | null
           max_team_members: number | null
           plan_type: Database["public"]["Enums"]["plan_type"]
         }
@@ -1128,6 +1129,7 @@ export type Database = {
           max_clients?: number | null
           max_contract_templates?: number | null
           max_contracts_per_month?: number | null
+          max_studio_generations?: number | null
           max_team_members?: number | null
           plan_type: Database["public"]["Enums"]["plan_type"]
         }
@@ -1139,6 +1141,7 @@ export type Database = {
           max_clients?: number | null
           max_contract_templates?: number | null
           max_contracts_per_month?: number | null
+          max_studio_generations?: number | null
           max_team_members?: number | null
           plan_type?: Database["public"]["Enums"]["plan_type"]
         }
@@ -1272,6 +1275,204 @@ export type Database = {
           },
           {
             foreignKeyName: "service_invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studio_ai_learnings: {
+        Row: {
+          content: string
+          context: string | null
+          created_at: string
+          id: string
+          learning_type: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          learning_type: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          learning_type?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_ai_learnings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "studio_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studio_flyer_ratings: {
+        Row: {
+          created_at: string
+          feedback: string | null
+          flyer_id: string
+          id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback?: string | null
+          flyer_id: string
+          id?: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string | null
+          flyer_id?: string
+          id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_flyer_ratings_flyer_id_fkey"
+            columns: ["flyer_id"]
+            isOneToOne: false
+            referencedRelation: "studio_flyers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studio_flyers: {
+        Row: {
+          created_at: string
+          created_by: string
+          generation_mode: string | null
+          id: string
+          image_url: string
+          model: string | null
+          niche: string | null
+          organization_id: string
+          project_id: string
+          prompt: string
+          size: string | null
+          style: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          generation_mode?: string | null
+          id?: string
+          image_url: string
+          model?: string | null
+          niche?: string | null
+          organization_id: string
+          project_id: string
+          prompt: string
+          size?: string | null
+          style?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          generation_mode?: string | null
+          id?: string
+          image_url?: string
+          model?: string | null
+          niche?: string | null
+          organization_id?: string
+          project_id?: string
+          prompt?: string
+          size?: string | null
+          style?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_flyers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "studio_flyers_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "studio_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studio_projects: {
+        Row: {
+          ai_instructions: string | null
+          ai_restrictions: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          font_family: string | null
+          id: string
+          logo_images: string[] | null
+          name: string
+          niche: string | null
+          organization_id: string
+          primary_color: string | null
+          reference_images: string[] | null
+          secondary_color: string | null
+          template_image: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_instructions?: string | null
+          ai_restrictions?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          font_family?: string | null
+          id?: string
+          logo_images?: string[] | null
+          name: string
+          niche?: string | null
+          organization_id: string
+          primary_color?: string | null
+          reference_images?: string[] | null
+          secondary_color?: string | null
+          template_image?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_instructions?: string | null
+          ai_restrictions?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          font_family?: string | null
+          id?: string
+          logo_images?: string[] | null
+          name?: string
+          niche?: string | null
+          organization_id?: string
+          primary_color?: string | null
+          reference_images?: string[] | null
+          secondary_color?: string | null
+          template_image?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_projects_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
