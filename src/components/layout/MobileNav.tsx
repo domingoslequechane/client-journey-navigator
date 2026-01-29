@@ -25,7 +25,8 @@ import {
   LogOut,
   X,
   RefreshCw,
-  Link2
+  Link2,
+  Palette
 } from 'lucide-react';
 import {
   Drawer,
@@ -104,7 +105,10 @@ export function MobileNav() {
     }
 
     // Add Link23 to more menu
-    items.push({ name: 'Link23', href: '/app/link-trees', icon: Link2, show: true, badge: 'beta' });
+    items.push({ name: 'Link23', href: '/app/link-trees', icon: Link2, show: true });
+
+    // Add Studio AI to more menu
+    items.push({ name: 'Studio AI', href: '/app/studio', icon: Palette, show: true, badge: 'novo' });
 
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },

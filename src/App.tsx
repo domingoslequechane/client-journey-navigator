@@ -31,6 +31,9 @@ import Team from "./pages/Team";
 import AIAssistant from "./pages/AIAssistant";
 import LinkTreeEditor from "./pages/LinkTreeEditor";
 import LinkTreeDashboard from "./pages/LinkTreeDashboard";
+import StudioDashboard from "./pages/studio/StudioDashboard";
+import StudioEditor from "./pages/studio/StudioEditor";
+import NewStudioProject from "./pages/studio/NewStudioProject";
 import Settings from "./pages/Settings";
 import Upgrade from "./pages/Upgrade";
 import Pricing from "./pages/Pricing";
@@ -136,6 +139,10 @@ const App = () => (
                 <Route path="ai-assistant" element={<AIAssistant />} />
                 <Route path="link-trees" element={<LinkTreeDashboard />} />
                 <Route path="clients/:clientId/links" element={<LinkTreeEditor />} />
+                <Route path="studio" element={<StudioDashboard />} />
+                <Route path="studio/new" element={<NewStudioProject />} />
+                <Route path="studio/:projectId" element={<StudioEditor />} />
+                <Route path="studio/:projectId/edit" element={<NewStudioProject />} />
                 <Route path="settings" element={
                   <RoleProtectedRoute requireSettings>
                     <Settings />
