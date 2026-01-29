@@ -25,7 +25,8 @@ import {
   TrendingUp,
   Rocket,
   RefreshCw,
-  Link2
+  Link2,
+  Palette
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -97,7 +98,8 @@ export function Sidebar() {
       { name: t('navigation.salesFunnel'), href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel', show: canSeeSalesFunnel },
       { name: t('navigation.operationalFlow'), href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational', show: canSeeOperationalFlow },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
-      { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true, badge: 'novo' },
+      { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true },
+      { name: 'Studio AI', href: '/app/studio', icon: Palette, tutorialId: 'sidebar-studio', show: true, badge: 'novo' },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
       { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam },
