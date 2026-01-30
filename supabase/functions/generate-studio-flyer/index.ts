@@ -65,57 +65,52 @@ serve(async (req) => {
     // Build prompt with project context
     const enhancedPrompt = buildEnhancedPrompt(project, prompt, style, size);
 
-    // Get Lovable API key for image generation
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY not configured");
-      return new Response(JSON.stringify({ error: "API key not configured" }), {
+    // Get Gemini API key for image generation
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY not configured");
+      return new Response(JSON.stringify({ error: "Gemini API key not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Generating image with Lovable AI Gateway");
+    console.log("Generating image with Google Gemini API");
     console.log("Enhanced prompt:", enhancedPrompt.substring(0, 200) + "...");
 
-    // Call Lovable AI Gateway for image generation using gemini-2.5-flash-image
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [
-          {
-            role: "user",
-            content: enhancedPrompt
+    // Call Gemini API directly for image generation
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: enhancedPrompt }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseModalities: ["TEXT", "IMAGE"]
           }
-        ]
-      }),
-    });
+        }),
+      }
+    );
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("Lovable AI Gateway error:", aiResponse.status, errorText);
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error("Gemini API error:", geminiResponse.status, errorText);
       
       // Handle rate limiting
-      if (aiResponse.status === 429) {
+      if (geminiResponse.status === 429) {
         return new Response(JSON.stringify({ 
           error: "Rate limit exceeded. Please try again in a moment.",
         }), {
           status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      // Handle payment required
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ 
-          error: "AI credits exhausted. Please add funds to your workspace.",
-        }), {
-          status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -129,45 +124,27 @@ serve(async (req) => {
       });
     }
 
-    const aiData = await aiResponse.json();
-    console.log("AI Gateway response received");
+    const geminiData = await geminiResponse.json();
+    console.log("Gemini API response received");
 
-    // Extract image URL from response
+    // Extract image from Gemini response
     let imageUrl = null;
 
-    // The gemini-2.5-flash-image model returns images in the response
-    if (aiData.choices?.[0]?.message?.content) {
-      const content = aiData.choices[0].message.content;
-      
-      // Check if content is an array with image parts
-      if (Array.isArray(content)) {
-        for (const part of content) {
-          if (part.type === "image_url" && part.image_url?.url) {
-            imageUrl = part.image_url.url;
-            break;
-          }
+    // Gemini returns images in candidates[0].content.parts[]
+    if (geminiData.candidates?.[0]?.content?.parts) {
+      for (const part of geminiData.candidates[0].content.parts) {
+        if (part.inlineData?.data && part.inlineData?.mimeType) {
+          imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          break;
         }
-      } else if (typeof content === "string") {
-        // Check if it's a base64 data URL
-        if (content.startsWith("data:image/")) {
-          imageUrl = content;
-        }
-      }
-    }
-
-    // Also check for inline_data in the response structure
-    if (!imageUrl && aiData.choices?.[0]?.message?.inline_data) {
-      const inlineData = aiData.choices[0].message.inline_data;
-      if (inlineData.data && inlineData.mime_type) {
-        imageUrl = `data:${inlineData.mime_type};base64,${inlineData.data}`;
       }
     }
 
     if (!imageUrl) {
-      console.error("No image in response:", JSON.stringify(aiData).substring(0, 1000));
+      console.error("No image in response:", JSON.stringify(geminiData).substring(0, 1000));
       return new Response(JSON.stringify({ 
         error: "No image generated. The AI may not have understood the request.",
-        response: aiData 
+        response: geminiData 
       }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -225,7 +202,7 @@ serve(async (req) => {
         size: size || "1080x1080",
         style: style || "vivid",
         niche: project.niche,
-        model: "gemini-flash-image",
+        model: "gemini-2.0-flash-exp-image-generation",
         generation_mode: mode || "original",
       })
       .select()
