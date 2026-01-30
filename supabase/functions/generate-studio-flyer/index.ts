@@ -75,38 +75,40 @@ serve(async (req) => {
       });
     }
 
-    console.log("Generating image with Google Gemini API");
+    console.log("Generating image with Google Imagen 3 API");
     console.log("Enhanced prompt:", enhancedPrompt.substring(0, 200) + "...");
 
-    // Call Gemini API directly for image generation
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GEMINI_API_KEY}`,
+    // Call Imagen 3 API for image generation
+    const imagenResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          contents: [
+          instances: [
             {
-              parts: [
-                { text: enhancedPrompt }
-              ]
+              prompt: enhancedPrompt
             }
           ],
-          generationConfig: {
-            responseModalities: ["TEXT", "IMAGE"]
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: size === "1080x1920" ? "9:16" : size === "1920x1080" ? "16:9" : "1:1",
+            outputOptions: {
+              mimeType: "image/png"
+            }
           }
         }),
       }
     );
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error("Gemini API error:", geminiResponse.status, errorText);
+    if (!imagenResponse.ok) {
+      const errorText = await imagenResponse.text();
+      console.error("Imagen API error:", imagenResponse.status, errorText);
       
       // Handle rate limiting
-      if (geminiResponse.status === 429) {
+      if (imagenResponse.status === 429) {
         return new Response(JSON.stringify({ 
           error: "Rate limit exceeded. Please try again in a moment.",
         }), {
@@ -124,27 +126,23 @@ serve(async (req) => {
       });
     }
 
-    const geminiData = await geminiResponse.json();
-    console.log("Gemini API response received");
+    const imagenData = await imagenResponse.json();
+    console.log("Imagen API response received");
 
-    // Extract image from Gemini response
+    // Extract image from Imagen response
     let imageUrl = null;
 
-    // Gemini returns images in candidates[0].content.parts[]
-    if (geminiData.candidates?.[0]?.content?.parts) {
-      for (const part of geminiData.candidates[0].content.parts) {
-        if (part.inlineData?.data && part.inlineData?.mimeType) {
-          imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          break;
-        }
-      }
+    // Imagen returns images in predictions[].bytesBase64Encoded
+    if (imagenData.predictions?.[0]?.bytesBase64Encoded) {
+      const base64Data = imagenData.predictions[0].bytesBase64Encoded;
+      imageUrl = `data:image/png;base64,${base64Data}`;
     }
 
     if (!imageUrl) {
-      console.error("No image in response:", JSON.stringify(geminiData).substring(0, 1000));
+      console.error("No image in response:", JSON.stringify(imagenData).substring(0, 1000));
       return new Response(JSON.stringify({ 
         error: "No image generated. The AI may not have understood the request.",
-        response: geminiData 
+        response: imagenData 
       }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -202,7 +200,7 @@ serve(async (req) => {
         size: size || "1080x1080",
         style: style || "vivid",
         niche: project.niche,
-        model: "gemini-2.0-flash-exp-image-generation",
+        model: "imagen-3.0-generate-002",
         generation_mode: mode || "original",
       })
       .select()
