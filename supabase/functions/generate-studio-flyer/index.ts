@@ -63,67 +63,63 @@ serve(async (req) => {
     }
 
     // Build prompt with project context
-    const enhancedPrompt = buildEnhancedPrompt(project, prompt, style);
+    const enhancedPrompt = buildEnhancedPrompt(project, prompt, style, size);
 
-    // Get Gemini API key
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      console.error("GEMINI_API_KEY not configured");
+    // Get Lovable API key for image generation
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY not configured");
       return new Response(JSON.stringify({ error: "API key not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Parse size
-    const [width, height] = (size || "1080x1080").split("x").map(Number);
-    
-    // Choose Gemini model
-    const geminiModel = model === "gemini-pro" 
-      ? "gemini-2.0-flash-exp" 
-      : "gemini-2.0-flash-exp";
-
-    console.log("Generating with model:", geminiModel);
+    console.log("Generating image with Lovable AI Gateway");
     console.log("Enhanced prompt:", enhancedPrompt.substring(0, 200) + "...");
 
-    // Call Gemini API for image generation
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `Generate a professional marketing flyer image with the following specifications:
-
-${enhancedPrompt}
-
-IMPORTANT INSTRUCTIONS:
-- Create a visually stunning, professional flyer design
-- Use the brand colors specified
-- Make text readable and well-positioned
-- Ensure high contrast for legibility
-- Create a design suitable for social media marketing
-- The image should be ${width}x${height} pixels
-- Style: ${style === 'vivid' ? 'vibrant and eye-catching colors' : 'natural and professional tones'}`
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            responseModalities: ["image", "text"],
-            responseMimeType: "image/png"
+    // Call Lovable AI Gateway for image generation using gemini-2.5-flash-image
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages: [
+          {
+            role: "user",
+            content: enhancedPrompt
           }
-        }),
-      }
-    );
+        ]
+      }),
+    });
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error("Gemini API error:", geminiResponse.status, errorText);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error("Lovable AI Gateway error:", aiResponse.status, errorText);
+      
+      // Handle rate limiting
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ 
+          error: "Rate limit exceeded. Please try again in a moment.",
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      // Handle payment required
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ 
+          error: "AI credits exhausted. Please add funds to your workspace.",
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
       return new Response(JSON.stringify({ 
         error: "Failed to generate image",
         details: errorText 
@@ -133,57 +129,89 @@ IMPORTANT INSTRUCTIONS:
       });
     }
 
-    const geminiData = await geminiResponse.json();
-    console.log("Gemini response received");
+    const aiData = await aiResponse.json();
+    console.log("AI Gateway response received");
 
-    // Extract image from response
-    let imageBase64 = null;
-    let imageMimeType = "image/png";
+    // Extract image URL from response
+    let imageUrl = null;
 
-    if (geminiData.candidates?.[0]?.content?.parts) {
-      for (const part of geminiData.candidates[0].content.parts) {
-        if (part.inlineData) {
-          imageBase64 = part.inlineData.data;
-          imageMimeType = part.inlineData.mimeType || "image/png";
-          break;
+    // The gemini-2.5-flash-image model returns images in the response
+    if (aiData.choices?.[0]?.message?.content) {
+      const content = aiData.choices[0].message.content;
+      
+      // Check if content is an array with image parts
+      if (Array.isArray(content)) {
+        for (const part of content) {
+          if (part.type === "image_url" && part.image_url?.url) {
+            imageUrl = part.image_url.url;
+            break;
+          }
+        }
+      } else if (typeof content === "string") {
+        // Check if it's a base64 data URL
+        if (content.startsWith("data:image/")) {
+          imageUrl = content;
         }
       }
     }
 
-    if (!imageBase64) {
-      console.error("No image in response:", JSON.stringify(geminiData).substring(0, 500));
+    // Also check for inline_data in the response structure
+    if (!imageUrl && aiData.choices?.[0]?.message?.inline_data) {
+      const inlineData = aiData.choices[0].message.inline_data;
+      if (inlineData.data && inlineData.mime_type) {
+        imageUrl = `data:${inlineData.mime_type};base64,${inlineData.data}`;
+      }
+    }
+
+    if (!imageUrl) {
+      console.error("No image in response:", JSON.stringify(aiData).substring(0, 1000));
       return new Response(JSON.stringify({ 
-        error: "No image generated",
-        response: geminiData 
+        error: "No image generated. The AI may not have understood the request.",
+        response: aiData 
       }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Upload image to Supabase Storage
-    const imageBuffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
-    const fileName = `flyers/${projectId}/${Date.now()}.png`;
+    // If it's a base64 data URL, upload to storage
+    let publicUrl = imageUrl;
+    
+    if (imageUrl.startsWith("data:image/")) {
+      // Extract base64 data and mime type
+      const matches = imageUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
+      if (matches) {
+        const mimeType = matches[1];
+        const base64Data = matches[2];
+        const extension = mimeType.split("/")[1] || "png";
+        
+        // Convert base64 to binary
+        const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+        const fileName = `flyers/${projectId}/${Date.now()}.${extension}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("studio-assets")
-      .upload(fileName, imageBuffer, {
-        contentType: imageMimeType,
-        upsert: false,
-      });
+        const { error: uploadError } = await supabase.storage
+          .from("studio-assets")
+          .upload(fileName, imageBuffer, {
+            contentType: mimeType,
+            upsert: false,
+          });
 
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
-      return new Response(JSON.stringify({ error: "Failed to save image" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          return new Response(JSON.stringify({ error: "Failed to save image" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Get public URL
+        const { data: { publicUrl: storageUrl } } = supabase.storage
+          .from("studio-assets")
+          .getPublicUrl(fileName);
+        
+        publicUrl = storageUrl;
+      }
     }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from("studio-assets")
-      .getPublicUrl(fileName);
 
     // Save flyer to database
     const { data: flyer, error: flyerError } = await supabase
@@ -197,7 +225,7 @@ IMPORTANT INSTRUCTIONS:
         size: size || "1080x1080",
         style: style || "vivid",
         niche: project.niche,
-        model: model || "gemini-flash",
+        model: "gemini-flash-image",
         generation_mode: mode || "original",
       })
       .select()
@@ -232,36 +260,58 @@ IMPORTANT INSTRUCTIONS:
   }
 });
 
-function buildEnhancedPrompt(project: any, userPrompt: string, style: string): string {
+function buildEnhancedPrompt(project: any, userPrompt: string, style: string, size: string): string {
+  const [width, height] = (size || "1080x1080").split("x").map(Number);
+  
   const parts: string[] = [];
+  
+  parts.push("Create a professional marketing flyer image with the following specifications:");
+  parts.push("");
 
   // Brand context
-  parts.push(`BRAND: ${project.name}`);
+  parts.push(`BRAND NAME: ${project.name}`);
   
   if (project.niche) {
-    parts.push(`INDUSTRY: ${project.niche}`);
+    parts.push(`INDUSTRY/NICHE: ${project.niche}`);
   }
 
   // Colors
-  parts.push(`PRIMARY COLOR: ${project.primary_color}`);
-  parts.push(`SECONDARY COLOR: ${project.secondary_color}`);
+  parts.push(`PRIMARY BRAND COLOR: ${project.primary_color}`);
+  parts.push(`SECONDARY BRAND COLOR: ${project.secondary_color}`);
   
   if (project.font_family) {
     parts.push(`FONT STYLE: ${project.font_family}`);
   }
 
-  // User request
-  parts.push(`\nUSER REQUEST: ${userPrompt}`);
+  parts.push("");
+  parts.push(`IMAGE SIZE: ${width}x${height} pixels`);
+  parts.push(`STYLE: ${style === 'vivid' ? 'Vibrant, eye-catching, bold colors' : 'Natural, professional, subtle tones'}`);
+  
+  parts.push("");
+  parts.push("DESIGN REQUEST:");
+  parts.push(userPrompt);
 
   // AI instructions from project
   if (project.ai_instructions) {
-    parts.push(`\nBRAND GUIDELINES: ${project.ai_instructions}`);
+    parts.push("");
+    parts.push("BRAND GUIDELINES:");
+    parts.push(project.ai_instructions);
   }
 
   // Restrictions
   if (project.ai_restrictions) {
-    parts.push(`\nRESTRICTIONS: ${project.ai_restrictions}`);
+    parts.push("");
+    parts.push("RESTRICTIONS (DO NOT INCLUDE):");
+    parts.push(project.ai_restrictions);
   }
+
+  parts.push("");
+  parts.push("IMPORTANT REQUIREMENTS:");
+  parts.push("- Create a visually stunning, professional flyer design");
+  parts.push("- Use the brand colors prominently");
+  parts.push("- Ensure text is readable with good contrast");
+  parts.push("- Make the design suitable for social media marketing");
+  parts.push("- Output only the image, no additional text");
 
   return parts.join("\n");
 }
