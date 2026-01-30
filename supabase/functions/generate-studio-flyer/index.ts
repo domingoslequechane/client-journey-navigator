@@ -75,78 +75,91 @@ serve(async (req) => {
       });
     }
 
-    console.log("Generating image with Google Imagen 3 API");
+    console.log("Generating image with Google Gemini API (gemini-2.5-flash-image)");
     console.log("Enhanced prompt:", enhancedPrompt.substring(0, 200) + "...");
 
-    // Call Imagen 3 API for image generation
-    const imagenResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${GEMINI_API_KEY}`,
+    // NOTE: Imagen endpoints can return 404 depending on account/billing/rollout.
+    // gemini-2.5-flash-image is the recommended image model and supports generateContent.
+    const geminiResponse = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-goog-api-key": GEMINI_API_KEY,
         },
         body: JSON.stringify({
-          instances: [
+          contents: [
             {
-              prompt: enhancedPrompt
-            }
+              role: "user",
+              parts: [{ text: enhancedPrompt }],
+            },
           ],
-          parameters: {
-            sampleCount: 1,
-            aspectRatio: size === "1080x1920" ? "9:16" : size === "1920x1080" ? "16:9" : "1:1",
-            outputOptions: {
-              mimeType: "image/png"
-            }
-          }
+          generationConfig: {
+            responseModalities: ["TEXT", "IMAGE"],
+          },
         }),
       }
     );
 
-    if (!imagenResponse.ok) {
-      const errorText = await imagenResponse.text();
-      console.error("Imagen API error:", imagenResponse.status, errorText);
-      
-      // Handle rate limiting
-      if (imagenResponse.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: "Rate limit exceeded. Please try again in a moment.",
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error("Gemini API error:", geminiResponse.status, errorText);
+
+      if (geminiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({
+            error: "Rate limit exceeded. Please try again in a moment.",
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
-      
-      return new Response(JSON.stringify({ 
-        error: "Failed to generate image",
-        details: errorText 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+      return new Response(
+        JSON.stringify({
+          error: "Failed to generate image",
+          details: errorText,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    const imagenData = await imagenResponse.json();
-    console.log("Imagen API response received");
+    const geminiData = await geminiResponse.json();
+    console.log("Gemini API response received");
 
-    // Extract image from Imagen response
-    let imageUrl = null;
+    // Extract image from Gemini response
+    let imageUrl: string | null = null;
 
-    // Imagen returns images in predictions[].bytesBase64Encoded
-    if (imagenData.predictions?.[0]?.bytesBase64Encoded) {
-      const base64Data = imagenData.predictions[0].bytesBase64Encoded;
-      imageUrl = `data:image/png;base64,${base64Data}`;
+    const parts = geminiData?.candidates?.[0]?.content?.parts;
+    if (Array.isArray(parts)) {
+      for (const part of parts) {
+        const inline = part?.inlineData ?? part?.inline_data;
+        if (inline?.data && (inline?.mimeType || inline?.mime_type)) {
+          const mimeType = inline?.mimeType ?? inline?.mime_type;
+          imageUrl = `data:${mimeType};base64,${inline.data}`;
+          break;
+        }
+      }
     }
 
     if (!imageUrl) {
-      console.error("No image in response:", JSON.stringify(imagenData).substring(0, 1000));
-      return new Response(JSON.stringify({ 
-        error: "No image generated. The AI may not have understood the request.",
-        response: imagenData 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("No image in response:", JSON.stringify(geminiData).substring(0, 1000));
+      return new Response(
+        JSON.stringify({
+          error: "No image generated. The AI may not have understood the request.",
+          response: geminiData,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     // If it's a base64 data URL, upload to storage
@@ -200,7 +213,7 @@ serve(async (req) => {
         size: size || "1080x1080",
         style: style || "vivid",
         niche: project.niche,
-        model: "imagen-3.0-generate-002",
+        model: "gemini-2.5-flash-image",
         generation_mode: mode || "original",
       })
       .select()
