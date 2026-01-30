@@ -75,13 +75,18 @@ serve(async (req) => {
       });
     }
 
-    console.log("Generating image with Google Gemini API (gemini-2.5-flash-image)");
+    // Select model based on user choice
+    // Flash = gemini-2.5-flash-image (faster, good quality)
+    // Pro = gemini-3-pro-image-preview (slower, best quality - Nano banana Pro)
+    const selectedModel = model === 'gemini-pro' 
+      ? 'gemini-3-pro-image-preview' 
+      : 'gemini-2.5-flash-image';
+
+    console.log(`Generating image with Google Gemini API (${selectedModel})`);
     console.log("Enhanced prompt:", enhancedPrompt.substring(0, 200) + "...");
 
-    // NOTE: Imagen endpoints can return 404 depending on account/billing/rollout.
-    // gemini-2.5-flash-image is the recommended image model and supports generateContent.
     const geminiResponse = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+      `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`,
       {
         method: "POST",
         headers: {
@@ -213,7 +218,7 @@ serve(async (req) => {
         size: size || "1080x1080",
         style: style || "vivid",
         niche: project.niche,
-        model: "gemini-2.5-flash-image",
+        model: selectedModel,
         generation_mode: mode || "original",
       })
       .select()
