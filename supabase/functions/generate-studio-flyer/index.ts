@@ -62,6 +62,26 @@ serve(async (req) => {
       });
     }
 
+    // Get organization plan type to determine which model to use
+    const { data: org, error: orgError } = await supabase
+      .from("organizations")
+      .select("plan_type")
+      .eq("id", project.organization_id)
+      .single();
+
+    if (orgError) {
+      console.error("Organization error:", orgError);
+    }
+
+    const planType = org?.plan_type || "free";
+    const isPremiumPlan = planType === "pro" || planType === "agency";
+
+    // Select model based on plan: Pro/Agency get gemini-2.0-flash-exp (higher quality)
+    // Others get gemini-2.5-flash-image (faster, good quality)
+    const selectedModel = isPremiumPlan 
+      ? "gemini-2.0-flash-exp" 
+      : "gemini-2.5-flash-image";
+
     // Build prompt with project context
     const enhancedPrompt = buildEnhancedPrompt(project, prompt, style, size);
 
@@ -75,13 +95,12 @@ serve(async (req) => {
       });
     }
 
-    console.log("Generating image with Google Gemini API (gemini-2.5-flash-image)");
+    console.log(`Generating image with Google Gemini API (${selectedModel}) - Plan: ${planType}`);
     console.log("Enhanced prompt:", enhancedPrompt.substring(0, 200) + "...");
 
-    // NOTE: Imagen endpoints can return 404 depending on account/billing/rollout.
-    // gemini-2.5-flash-image is the recommended image model and supports generateContent.
+    // Call Gemini API for image generation
     const geminiResponse = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+      `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`,
       {
         method: "POST",
         headers: {
@@ -213,7 +232,7 @@ serve(async (req) => {
         size: size || "1080x1080",
         style: style || "vivid",
         niche: project.niche,
-        model: "gemini-2.5-flash-image",
+        model: selectedModel,
         generation_mode: mode || "original",
       })
       .select()
