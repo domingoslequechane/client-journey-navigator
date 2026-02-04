@@ -55,6 +55,7 @@ export function useUserRole() {
       canSeeTeam: isAdmin,
       canSeeSettings: true, // All users can see settings, but tabs are restricted
       canSeeSubscription: isAdmin,
+      canSeeFinance: isAdmin || isSales, // Finance module access
       
       // Dashboard visibility
       canAddClient: isAdmin || isSales,
@@ -63,6 +64,11 @@ export function useUserRole() {
       canEditClient: isAdmin || isSales,
       canSeeContracts: isAdmin || isSales,
       canSuspendClient: isAdmin,
+      
+      // Finance module actions
+      canManageFinance: isAdmin || isSales, // Full CRUD
+      canViewFinance: isAdmin || isSales || isOperations, // Read-only for operations
+      canDeleteFinanceRecords: isAdmin, // Only admin can delete
       
       // Get stages visible to user for recent clients
       getVisibleStages: () => {
