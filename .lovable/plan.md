@@ -1,362 +1,411 @@
 
-# Plano de Integração: Studio Creator no Qualify
+# Plano de Integração: Módulo de Controle Financeiro
 
 ## Visão Geral
 
-O **Studio Creator** (também chamado "FlyerAI") é uma aplicação para geração de flyers/materiais gráficos usando IA (Gemini). Será integrado como um novo módulo dentro do Qualify, acessível em `/app/studio`.
+Integrar um módulo completo de controle financeiro ao Qualify, permitindo que cada agência gerencie seu fluxo de caixa de forma individual com base na sua carteira de clientes.
 
 ---
 
-## Análise do Studio Creator
+## 1. Estrutura do Módulo
 
-### Funcionalidades Identificadas
-
-1. **Gestão de Clientes de Design** - Clientes com branding (cores, logos, fontes, instruções AI)
-2. **Geração de Flyers com AI** - Usando Gemini API para criar imagens
-3. **Sistema de Aprendizagem AI** - Memória de preferências por cliente
-4. **Avaliação de Flyers** - Sistema de rating 1-5 estrelas
-5. **Upload de Imagens de Referência** - Logos e imagens de inspiração
-6. **Múltiplos Modos de Geração** - Original, Cópia, Inspiração, Template
-
-### Estrutura de Base de Dados (Studio Creator)
-
+### Novas Páginas (5)
 ```text
-+---------------------+       +---------------------+
-|      clients        |       |   generated_flyers  |
-+---------------------+       +---------------------+
-| id (uuid)           |<----->| id (uuid)           |
-| user_id             |       | client_id           |
-| name                |       | user_id             |
-| description         |       | prompt              |
-| niche               |       | image_url           |
-| primary_color       |       | size                |
-| secondary_color     |       | style               |
-| font_family         |       | niche               |
-| ai_instructions     |       | created_at          |
-| ai_restrictions     |       +---------------------+
-| logo_images[]       |              |
-| reference_images[]  |              v
-| template_image      |       +---------------------+
-| created_at          |       |   flyer_ratings     |
-+---------------------+       +---------------------+
-        |                     | id (uuid)           |
-        v                     | flyer_id            |
-+---------------------+       | user_id             |
-| ai_learning_history |       | rating (1-5)        |
-+---------------------+       | feedback            |
-| id (uuid)           |       | created_at          |
-| client_id           |       +---------------------+
-| user_id             |
-| learning_type       |
-| content             |
-| context             |
-| created_at          |
-+---------------------+
+src/pages/finance/
+  FinanceDashboard.tsx    -> /app/finance
+  FinanceTransactions.tsx -> /app/finance/transactions
+  FinanceProjects.tsx     -> /app/finance/projects
+  FinanceGoals.tsx        -> /app/finance/goals
+  FinanceReports.tsx      -> /app/finance/reports
 ```
 
-### Componentes Customizados
-
-- **ColorPickerInput** - Seletor de cores com preview
-- **ImageUploader** - Upload múltiplo de imagens para Supabase Storage
-- **StarRating** - Componente de avaliação 5 estrelas
-- **ImagePreviewModal** - Modal para visualizar imagens em tamanho grande
-
-### Edge Function
-
-- **generate-flyer** - Função complexa (~960 linhas) que:
-  - Integra com Gemini API (Flash e Pro)
-  - Suporta múltiplos modos de geração
-  - Processa imagens de referência
-  - Gera prompts otimizados para flyers brasileiros
-
----
-
-## Estratégia de Integração
-
-### Abordagem: Módulo Isolado com Multi-Tenancy
-
-O Studio será integrado como módulo dentro do Qualify, mas os dados serão isolados por **organização** (não por usuário individual).
-
-### Estrutura de Rotas Proposta
-
+### Novos Componentes
 ```text
-/app/studio                    -> Dashboard principal (lista de projetos/clientes de design)
-/app/studio/new               -> Criar novo projeto de design
-/app/studio/:projectId        -> Editor de geração de flyers
-/app/studio/:projectId/edit   -> Editar configurações do projeto
+src/components/finance/
+  TransactionModal.tsx      -> Modal criar/editar lançamento
+  TransactionCard.tsx       -> Card de transação na lista
+  ProjectModal.tsx          -> Modal criar/editar projeto
+  ProjectCard.tsx           -> Card de projeto
+  GoalModal.tsx             -> Modal criar/editar meta
+  GoalCard.tsx              -> Card de meta com progresso
+  FinanceStatsCard.tsx      -> Cards de resumo (receita, despesa, saldo)
+  MonthlyEvolutionChart.tsx -> Gráfico evolução mensal (área)
+  ExpensesPieChart.tsx      -> Gráfico despesas por categoria
+  MonthlyComparisonChart.tsx-> Gráfico comparativo mensal (barras)
+  ClientRevenueCard.tsx     -> Card cliente com receita total
+  FinanceSidebar.tsx        -> Sub-navegação do módulo
 ```
 
 ---
 
-## Fase 1: Preparação da Base de Dados
+## 2. Base de Dados (Novas Tabelas)
 
-### Novas Tabelas (com multi-tenancy)
+### Tabela: financial_transactions
+```text
+- id (uuid, PK)
+- organization_id (uuid, FK -> organizations)
+- type (enum: 'income' | 'expense')
+- amount (decimal)
+- description (text)
+- date (date)
+- category_id (uuid, FK -> financial_categories, opcional)
+- client_id (uuid, FK -> clients, opcional)
+- payment_method (text: 'transfer' | 'mpesa' | 'emola' | 'cash' | 'other')
+- notes (text, opcional)
+- created_by (uuid)
+- created_at (timestamp)
+- updated_at (timestamp)
+```
 
-```sql
--- Projetos de design (equivalente a "clients" do Studio Creator)
-CREATE TABLE studio_projects (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    created_by UUID NOT NULL REFERENCES auth.users(id),
-    name TEXT NOT NULL,
-    description TEXT,
-    niche TEXT,
-    primary_color TEXT,
-    secondary_color TEXT,
-    font_family TEXT DEFAULT 'Inter',
-    ai_instructions TEXT,
-    ai_restrictions TEXT,
-    logo_images TEXT[],
-    reference_images TEXT[],
-    template_image TEXT,
-    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
-);
+### Tabela: financial_categories
+```text
+- id (uuid, PK)
+- organization_id (uuid, FK)
+- name (text)
+- type (enum: 'income' | 'expense')
+- color (text, opcional)
+- created_at (timestamp)
+```
 
--- Flyers gerados
-CREATE TABLE studio_flyers (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    project_id UUID NOT NULL REFERENCES studio_projects(id) ON DELETE CASCADE,
-    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    created_by UUID NOT NULL REFERENCES auth.users(id),
-    prompt TEXT NOT NULL,
-    image_url TEXT NOT NULL,
-    size TEXT DEFAULT '1080x1080',
-    style TEXT DEFAULT 'vivid',
-    niche TEXT,
-    model TEXT DEFAULT 'gemini-flash',
-    generation_mode TEXT DEFAULT 'original',
-    created_at TIMESTAMPTZ DEFAULT now() NOT NULL
-);
+### Tabela: financial_projects
+```text
+- id (uuid, PK)
+- organization_id (uuid, FK)
+- name (text)
+- description (text, opcional)
+- client_id (uuid, FK -> clients, opcional)
+- budget (decimal)
+- status (enum: 'planning' | 'in_progress' | 'completed' | 'cancelled')
+- start_date (date)
+- end_date (date, opcional)
+- created_by (uuid)
+- created_at (timestamp)
+- updated_at (timestamp)
+```
 
--- Avaliações de flyers
-CREATE TABLE studio_flyer_ratings (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    flyer_id UUID NOT NULL REFERENCES studio_flyers(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES auth.users(id),
-    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-    feedback TEXT,
-    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-    UNIQUE(flyer_id, user_id)
-);
-
--- Histórico de aprendizagem AI
-CREATE TABLE studio_ai_learnings (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    project_id UUID NOT NULL REFERENCES studio_projects(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES auth.users(id),
-    learning_type TEXT NOT NULL CHECK (learning_type IN ('preference', 'correction', 'style', 'feedback')),
-    content TEXT NOT NULL,
-    context TEXT,
-    created_at TIMESTAMPTZ DEFAULT now() NOT NULL
-);
+### Tabela: financial_goals
+```text
+- id (uuid, PK)
+- organization_id (uuid, FK)
+- name (text)
+- target_amount (decimal)
+- current_amount (decimal, default 0)
+- goal_type (enum: 'monthly' | 'quarterly' | 'yearly')
+- year (integer)
+- month (integer, opcional para quarterly/yearly)
+- created_at (timestamp)
+- updated_at (timestamp)
 ```
 
 ### Políticas RLS
-
-```sql
--- studio_projects
-ALTER TABLE studio_projects ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view organization projects"
-    ON studio_projects FOR SELECT
-    USING (user_belongs_to_org(auth.uid(), organization_id));
-
-CREATE POLICY "Users can create organization projects"
-    ON studio_projects FOR INSERT
-    WITH CHECK (user_belongs_to_org(auth.uid(), organization_id));
-
-CREATE POLICY "Users can update organization projects"
-    ON studio_projects FOR UPDATE
-    USING (user_belongs_to_org(auth.uid(), organization_id));
-
-CREATE POLICY "Admins can delete organization projects"
-    ON studio_projects FOR DELETE
-    USING (is_admin(auth.uid()) AND user_belongs_to_org(auth.uid(), organization_id));
-
--- (Políticas similares para as outras tabelas)
-```
-
-### Storage Bucket
-
-```sql
--- Criar bucket para assets do studio
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('studio-assets', 'studio-assets', true);
-
--- Políticas de acesso
-CREATE POLICY "Users can upload studio assets"
-    ON storage.objects FOR INSERT
-    WITH CHECK (bucket_id = 'studio-assets' AND auth.uid() IS NOT NULL);
-
-CREATE POLICY "Anyone can view studio assets"
-    ON storage.objects FOR SELECT
-    USING (bucket_id = 'studio-assets');
-```
+- Todas as tabelas terão RLS habilitado
+- Acesso restrito a organization_id do usuário autenticado
+- Operações INSERT/UPDATE/DELETE apenas para admin e roles permitidos
 
 ---
 
-## Fase 2: Edge Function
-
-### Criar generate-studio-flyer
-
-Adaptar a edge function existente para:
-- Usar os nomes das novas tabelas
-- Incluir organization_id nos inserts
-- Manter toda a lógica de geração Gemini
-
-**Secrets necessários:**
-- `GEMINI_API_KEY` - Chave da API Gemini (precisa ser adicionada)
-
----
-
-## Fase 3: Componentes React
-
-### Estrutura de Ficheiros
+## 3. Hooks Personalizados
 
 ```text
-src/
-├── components/
-│   └── studio/
-│       ├── ColorPickerInput.tsx      (copiar)
-│       ├── ImageUploader.tsx         (adaptar bucket)
-│       ├── StarRating.tsx            (copiar)
-│       ├── ImagePreviewModal.tsx     (copiar)
-│       ├── ProjectCard.tsx           (novo)
-│       ├── FlyerGallery.tsx          (novo)
-│       ├── GenerationPanel.tsx       (novo - extrair do Dashboard)
-│       ├── ProjectForm.tsx           (novo)
-│       └── AIMemoryPanel.tsx         (novo)
-├── pages/
-│   └── studio/
-│       ├── StudioDashboard.tsx       (lista de projetos)
-│       ├── StudioEditor.tsx          (gerador de flyers)
-│       └── NewStudioProject.tsx      (criar projeto)
-└── hooks/
-    └── useStudioProject.ts           (hook para operações CRUD)
+src/hooks/finance/
+  useFinanceStats.ts       -> Estatísticas (receita, despesa, saldo)
+  useTransactions.ts       -> CRUD de lançamentos + filtros
+  useFinanceProjects.ts    -> CRUD de projetos
+  useFinanceGoals.ts       -> CRUD de metas + cálculo progresso
+  useFinanceReports.ts     -> Dados agregados para relatórios
+  useFinanceCategories.ts  -> CRUD de categorias
 ```
-
-### Componentes a Copiar (com ajustes)
-
-1. **ColorPickerInput** - Copiar diretamente
-2. **StarRating** - Copiar diretamente  
-3. **ImageUploader** - Adaptar para usar bucket `studio-assets`
-4. **ImagePreviewModal** - Copiar diretamente
-
-### Componentes a Criar
-
-1. **StudioDashboard** - Grid de projetos com cards
-2. **StudioEditor** - Interface de geração (refatorar Dashboard original)
-3. **ProjectForm** - Formulário de criação/edição de projeto
 
 ---
 
-## Fase 4: Rotas e Navegação
+## 4. Tipos TypeScript
 
-### Adicionar ao App.tsx
+```text
+src/types/finance.ts
 
-```tsx
-// Importar páginas
-import StudioDashboard from "./pages/studio/StudioDashboard";
-import StudioEditor from "./pages/studio/StudioEditor";
-import NewStudioProject from "./pages/studio/NewStudioProject";
+export type TransactionType = 'income' | 'expense';
+export type PaymentMethod = 'transfer' | 'mpesa' | 'emola' | 'cash' | 'other';
+export type ProjectStatus = 'planning' | 'in_progress' | 'completed' | 'cancelled';
+export type GoalType = 'monthly' | 'quarterly' | 'yearly';
 
-// Adicionar rotas dentro de /app
-<Route path="studio" element={<StudioDashboard />} />
-<Route path="studio/new" element={<NewStudioProject />} />
-<Route path="studio/:projectId" element={<StudioEditor />} />
-<Route path="studio/:projectId/edit" element={<NewStudioProject />} />
+export interface Transaction {
+  id: string;
+  type: TransactionType;
+  amount: number;
+  description: string;
+  date: string;
+  categoryId?: string;
+  categoryName?: string;
+  clientId?: string;
+  clientName?: string;
+  paymentMethod: PaymentMethod;
+  notes?: string;
+}
+
+export interface FinanceProject { ... }
+export interface FinanceGoal { ... }
+export interface FinanceCategory { ... }
+export interface FinanceStats { ... }
 ```
 
-### Adicionar ao Sidebar
+---
 
-```tsx
-// Em Sidebar.tsx, adicionar item de menu
+## 5. Navegação e Rotas
+
+### Sidebar Principal
+Adicionar novo item no sidebar:
+```text
+{ 
+  name: 'Finanças', 
+  href: '/app/finance', 
+  icon: Wallet,
+  show: canSeeFinance // admin + sales
+}
+```
+
+### Sub-navegação Financeira
+Dentro das páginas de finanças, usar tabs ou sidebar interno:
+```text
+- Dashboard (visão geral)
+- Lançamentos (receitas/despesas)
+- Projetos (orçamentos)
+- Metas (OKRs)
+- Relatórios (análises)
+```
+
+### App.tsx - Novas Rotas
+```text
+<Route path="finance" element={<FinanceDashboard />} />
+<Route path="finance/transactions" element={<FinanceTransactions />} />
+<Route path="finance/projects" element={<FinanceProjects />} />
+<Route path="finance/goals" element={<FinanceGoals />} />
+<Route path="finance/reports" element={<FinanceReports />} />
+```
+
+---
+
+## 6. Funcionalidades por Página
+
+### 6.1 Dashboard Financeiro (/app/finance)
+- Cards: Receita Total, Crescimento, Despesas, Saldo Líquido
+- Gráfico de Receitas (evolução anual)
+- Gráfico de Despesas (donut por categoria)
+- Comparativo Mensal (barras receita vs despesa)
+- Metas Activas (resumo)
+- Últimos Lançamentos (5 mais recentes)
+- Contadores: Total Clientes, Total Projetos
+
+### 6.2 Lançamentos (/app/finance/transactions)
+- Cards resumo: Receitas, Despesas, Saldo
+- Pesquisa por descrição/cliente
+- Filtro: Todos | Receitas | Despesas
+- Lista de lançamentos com:
+  - Ícone (seta verde/vermelha)
+  - Descrição + data
+  - Cliente associado (se houver)
+  - Método de pagamento
+  - Valor (verde/vermelho)
+  - Botões editar/excluir
+- Modal "Novo Lançamento":
+  - Tipo (Receita/Despesa)
+  - Valor
+  - Descrição
+  - Data
+  - Categoria
+  - Cliente (opcional, pesquisável)
+  - Método de Pagamento
+  - Notas (opcional)
+
+### 6.3 Projetos (/app/finance/projects)
+- Cards: Total Projetos, Activos, Orçamento Total
+- Pesquisa
+- Filtro por status
+- Grid de cards de projetos com:
+  - Badge de status
+  - Nome + descrição
+  - Cliente associado
+  - Data início
+  - Valor do orçamento
+  - Botões editar/excluir
+- Modal "Novo Projeto":
+  - Nome
+  - Descrição
+  - Status
+  - Orçamento
+  - Data Início/Fim
+  - Cliente (pesquisável)
+
+### 6.4 Metas & OKRs (/app/finance/goals)
+- Cards: Total Metas, Metas Atingidas
+- Lista de metas com:
+  - Nome
+  - Tipo + período
+  - Barra de progresso
+  - Actual vs Meta
+  - Botões editar/excluir
+- Modal "Nova Meta":
+  - Nome
+  - Valor alvo
+  - Tipo (Mensal/Trimestral/Anual)
+  - Ano/Mês
+
+### 6.5 Relatórios (/app/finance/reports)
+- Seletor de ano
+- Cards: Receitas do Ano, Despesas do Ano, Lucro Líquido
+- Gráfico Evolução Mensal (área com receitas + despesas)
+- Gráfico Lucro Mensal (barras)
+- Gráfico Por Categoria (donut)
+- Botão Exportar CSV
+
+---
+
+## 7. Integração com Sistema Existente
+
+### Clientes
+- Reutilizar tabela `clients` existente
+- Lançamentos podem ter `client_id` opcional
+- Projetos podem ter `client_id` opcional
+- Na página de clientes, mostrar total de receita por cliente
+
+### Moeda
+- Usar hook `useOrganizationCurrency` existente
+- Formatação consistente com resto do sistema
+
+### Permissões
+- Estender `useUserRole` para incluir `canSeeFinance`
+- Admin e Sales têm acesso completo
+- Operations tem acesso somente leitura
+
+---
+
+## 8. Traduções (i18n)
+
+Criar ficheiros:
+```text
+src/i18n/locales/pt-BR/finance.json
+src/i18n/locales/en-US/finance.json
+```
+
+Chaves principais:
+```text
 {
-  icon: Sparkles,
-  label: "Studio AI",
-  href: "/app/studio",
+  "title": "Finanças",
+  "dashboard": "Dashboard",
+  "transactions": "Lançamentos",
+  "projects": "Projetos",
+  "goals": "Metas",
+  "reports": "Relatórios",
+  "income": "Receita",
+  "expense": "Despesa",
+  "balance": "Saldo",
+  ...
 }
 ```
 
 ---
 
-## Fase 5: Limites por Plano
+## 9. Ordem de Implementação
 
-### Adicionar à tabela plan_limits
+### Fase 1 - Fundação
+1. Criar tipos TypeScript (`src/types/finance.ts`)
+2. Criar migração das tabelas no Supabase
+3. Configurar RLS policies
+4. Atualizar `types.ts` do Supabase
 
+### Fase 2 - Lançamentos (Core)
+5. Criar hook `useTransactions`
+6. Criar componentes `TransactionModal` e `TransactionCard`
+7. Criar página `FinanceTransactions`
+8. Adicionar rota no App.tsx
+
+### Fase 3 - Dashboard
+9. Criar hook `useFinanceStats`
+10. Criar componentes de gráficos
+11. Criar página `FinanceDashboard`
+12. Adicionar item no Sidebar
+
+### Fase 4 - Projetos
+13. Criar hook `useFinanceProjects`
+14. Criar componentes de projetos
+15. Criar página `FinanceProjects`
+
+### Fase 5 - Metas
+16. Criar hook `useFinanceGoals`
+17. Criar componentes de metas
+18. Criar página `FinanceGoals`
+
+### Fase 6 - Relatórios
+19. Criar hook `useFinanceReports`
+20. Criar página `FinanceReports` com exportação CSV
+
+### Fase 7 - Finalização
+21. Adicionar traduções i18n
+22. Testes e ajustes de UI
+23. Documentação
+
+---
+
+## 10. Detalhes Técnicos
+
+### Componentes Reutilizáveis
+- `StatsCard` existente (dashboard)
+- `Card`, `Button`, `Input`, `Select`, `Dialog` (shadcn/ui)
+- `ChartContainer`, `AreaChart`, `BarChart`, `PieChart` (recharts)
+- `Table` para listas (opcional)
+
+### Padrões a Seguir
+- Usar `AnimatedContainer` para animações
+- Usar `toast` para feedback
+- Usar `Skeleton` para loading states
+- Usar `useOrganizationCurrency` para moeda
+- Seguir estrutura de hooks existentes
+
+### Migração SQL Exemplo
 ```sql
-ALTER TABLE plan_limits ADD COLUMN max_studio_generations INTEGER DEFAULT NULL;
+CREATE TYPE transaction_type AS ENUM ('income', 'expense');
+CREATE TYPE payment_method AS ENUM ('transfer', 'mpesa', 'emola', 'cash', 'other');
+CREATE TYPE project_status AS ENUM ('planning', 'in_progress', 'completed', 'cancelled');
+CREATE TYPE goal_type AS ENUM ('monthly', 'quarterly', 'yearly');
 
--- Definir limites
-UPDATE plan_limits SET max_studio_generations = 10 WHERE plan_type = 'free';
-UPDATE plan_limits SET max_studio_generations = 50 WHERE plan_type = 'bussola';
-UPDATE plan_limits SET max_studio_generations = 200 WHERE plan_type = 'arco';
-UPDATE plan_limits SET max_studio_generations = NULL WHERE plan_type = 'catapulta'; -- Ilimitado
+CREATE TABLE financial_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL REFERENCES organizations(id),
+  type transaction_type NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  description TEXT NOT NULL,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  category_id UUID REFERENCES financial_categories(id),
+  client_id UUID REFERENCES clients(id),
+  payment_method payment_method NOT NULL DEFAULT 'transfer',
+  notes TEXT,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Similar para outras tabelas...
+
+-- RLS
+ALTER TABLE financial_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own org transactions"
+ON financial_transactions FOR SELECT
+USING (organization_id = (
+  SELECT COALESCE(current_organization_id, organization_id)
+  FROM profiles WHERE id = auth.uid()
+));
+
+-- Policies para INSERT, UPDATE, DELETE...
 ```
 
-### Tracking de Uso
-
-Usar a tabela `usage_tracking` existente com `feature_type = 'studio_generations'`.
-
 ---
 
-## Resumo de Ficheiros
+## Resumo
 
-### Novos Ficheiros a Criar
+Este módulo financeiro será integrado de forma nativa ao Qualify, reutilizando:
+- Sistema de clientes existente
+- Arquitectura multi-tenant
+- Componentes UI padronizados
+- Sistema de moedas e permissões
 
-| Ficheiro | Descrição |
-|----------|-----------|
-| `src/pages/studio/StudioDashboard.tsx` | Dashboard com lista de projetos |
-| `src/pages/studio/StudioEditor.tsx` | Interface principal de geração |
-| `src/pages/studio/NewStudioProject.tsx` | Formulário de novo projeto |
-| `src/components/studio/ColorPickerInput.tsx` | Seletor de cores |
-| `src/components/studio/ImageUploader.tsx` | Upload de imagens |
-| `src/components/studio/StarRating.tsx` | Avaliação 5 estrelas |
-| `src/components/studio/ImagePreviewModal.tsx` | Modal de preview |
-| `src/components/studio/ProjectCard.tsx` | Card de projeto |
-| `src/components/studio/FlyerGallery.tsx` | Galeria de flyers gerados |
-| `src/components/studio/GenerationPanel.tsx` | Painel de geração |
-| `src/components/studio/AIMemoryPanel.tsx` | Gestão de memória AI |
-| `src/hooks/useStudioProject.ts` | Hook CRUD para projetos |
-| `supabase/functions/generate-studio-flyer/index.ts` | Edge function |
-
-### Ficheiros a Modificar
-
-| Ficheiro | Modificação |
-|----------|-------------|
-| `src/App.tsx` | Adicionar rotas do studio |
-| `src/components/layout/Sidebar.tsx` | Adicionar menu Studio AI |
-| `src/components/layout/MobileNav.tsx` | Adicionar item móvel |
-
----
-
-## Considerações Importantes
-
-### Integração com Clientes Existentes
-
-Uma opção futura seria permitir associar um `studio_project` a um `client` existente do CRM, para reutilizar dados de branding. Isso não está incluído neste plano inicial.
-
-### API Key do Gemini
-
-Será necessário adicionar o secret `GEMINI_API_KEY` nas configurações do Supabase para que a edge function funcione.
-
-### Custos da API
-
-A geração de imagens com Gemini tem custos. Considerar:
-- Mostrar contador de gerações restantes
-- Alertar quando próximo do limite
-- Bloquear gerações quando limite atingido
-
----
-
-## Resultado Esperado
-
-Após implementação, os usuários do Qualify poderão:
-
-1. Aceder ao **Studio AI** através do menu lateral
-2. Criar **projetos de design** com configurações de marca
-3. Gerar **flyers profissionais** usando IA (Gemini)
-4. Avaliar flyers e a IA aprender preferências
-5. Fazer download dos flyers gerados
-6. Ter limites de geração de acordo com o plano de subscrição
+Resultado: Cada agência terá controle total sobre seu fluxo de caixa, vinculado à sua carteira de clientes.
