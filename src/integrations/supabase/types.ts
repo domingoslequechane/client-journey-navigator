@@ -549,6 +549,218 @@ export type Database = {
           },
         ]
       }
+      financial_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          type: Database["public"]["Enums"]["financial_transaction_type"]
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          type: Database["public"]["Enums"]["financial_transaction_type"]
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          type?: Database["public"]["Enums"]["financial_transaction_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_goals: {
+        Row: {
+          created_at: string
+          current_amount: number
+          goal_type: Database["public"]["Enums"]["financial_goal_type"]
+          id: string
+          month: number | null
+          name: string
+          organization_id: string
+          target_amount: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          current_amount?: number
+          goal_type?: Database["public"]["Enums"]["financial_goal_type"]
+          id?: string
+          month?: number | null
+          name: string
+          organization_id: string
+          target_amount: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          current_amount?: number
+          goal_type?: Database["public"]["Enums"]["financial_goal_type"]
+          id?: string
+          month?: number | null
+          name?: string
+          organization_id?: string
+          target_amount?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_goals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_projects: {
+        Row: {
+          budget: number
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          organization_id: string
+          start_date: string
+          status: Database["public"]["Enums"]["financial_project_status"]
+          updated_at: string
+        }
+        Insert: {
+          budget?: number
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["financial_project_status"]
+          updated_at?: string
+        }
+        Update: {
+          budget?: number
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["financial_project_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transactions: {
+        Row: {
+          amount: number
+          category_id: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string
+          id: string
+          notes: string | null
+          organization_id: string
+          payment_method: Database["public"]["Enums"]["financial_payment_method"]
+          type: Database["public"]["Enums"]["financial_transaction_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          payment_method?: Database["public"]["Enums"]["financial_payment_method"]
+          type: Database["public"]["Enums"]["financial_transaction_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          payment_method?: Database["public"]["Enums"]["financial_payment_method"]
+          type?: Database["public"]["Enums"]["financial_transaction_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_template_settings: {
         Row: {
           created_at: string | null
@@ -1806,6 +2018,19 @@ export type Database = {
         | "task_completed"
         | "task_uncompleted"
       app_role: "admin" | "moderator" | "user" | "proprietor"
+      financial_goal_type: "monthly" | "quarterly" | "yearly"
+      financial_payment_method:
+        | "transfer"
+        | "mpesa"
+        | "emola"
+        | "cash"
+        | "other"
+      financial_project_status:
+        | "planning"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      financial_transaction_type: "income" | "expense"
       journey_stage:
         | "prospeccao"
         | "reuniao"
@@ -1964,6 +2189,15 @@ export const Constants = {
         "task_uncompleted",
       ],
       app_role: ["admin", "moderator", "user", "proprietor"],
+      financial_goal_type: ["monthly", "quarterly", "yearly"],
+      financial_payment_method: ["transfer", "mpesa", "emola", "cash", "other"],
+      financial_project_status: [
+        "planning",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      financial_transaction_type: ["income", "expense"],
       journey_stage: [
         "prospeccao",
         "reuniao",
