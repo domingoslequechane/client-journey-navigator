@@ -26,7 +26,8 @@ import {
   Rocket,
   RefreshCw,
   Link2,
-  Palette
+  Palette,
+  Wallet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,7 +58,8 @@ export function Sidebar() {
     canSeeClients, 
     canSeeTeam, 
     canSeeSettings, 
-    canSeeSubscription 
+    canSeeSubscription,
+    canSeeFinance 
   } = useUserRole();
 
   const currentPlan = PLAN_CONFIG[planType] || PLAN_CONFIG.free;
@@ -98,6 +100,7 @@ export function Sidebar() {
       { name: t('navigation.salesFunnel'), href: '/app/sales-funnel', icon: Kanban, tutorialId: 'sidebar-funnel', show: canSeeSalesFunnel },
       { name: t('navigation.operationalFlow'), href: '/app/operational-flow', icon: Workflow, tutorialId: 'sidebar-operational', show: canSeeOperationalFlow },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
+      { name: 'Finanças', href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canSeeFinance },
       { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true },
       { name: 'Studio AI', href: '/app/studio', icon: Palette, tutorialId: 'sidebar-studio', show: true, badge: 'novo' },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
@@ -105,7 +108,7 @@ export function Sidebar() {
       { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam },
     ];
     return allItems.filter(item => item.show);
-  }, [canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, t]);
+  }, [canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, canSeeFinance, t]);
 
   const handleSignOut = async () => {
     await signOut();

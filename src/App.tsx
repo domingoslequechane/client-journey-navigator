@@ -51,6 +51,7 @@ import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
 import AdminSupport from "./pages/admin/AdminSupport";
 import PartnerProgram from "./pages/PartnerProgram";
 import LinkTreePublic from "./pages/LinkTreePublic";
+import { FinanceDashboard, FinanceTransactions, FinanceProjects, FinanceGoals, FinanceReports } from "./pages/finance";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -156,6 +157,31 @@ const App = () => (
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="support" element={<SupportFeedback />} />
                 <Route path="upgrade" element={<Upgrade />} />
+                <Route path="finance" element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
+                    <FinanceDashboard />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="finance/transactions" element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
+                    <FinanceTransactions />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="finance/projects" element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
+                    <FinanceProjects />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="finance/goals" element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
+                    <FinanceGoals />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="finance/reports" element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
+                    <FinanceReports />
+                  </RoleProtectedRoute>
+                } />
               </Route>
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminLayout />}>

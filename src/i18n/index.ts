@@ -14,6 +14,7 @@ import ptBRLanding from './locales/pt-BR/landing.json';
 import ptBRTeam from './locales/pt-BR/team.json';
 import ptBRNotifications from './locales/pt-BR/notifications.json';
 import ptBRSupport from './locales/pt-BR/support.json';
+import ptBRFinance from './locales/pt-BR/finance.json';
 
 // en-US translations
 import enUSCommon from './locales/en-US/common.json';
@@ -27,6 +28,7 @@ import enUSLanding from './locales/en-US/landing.json';
 import enUSTeam from './locales/en-US/team.json';
 import enUSNotifications from './locales/en-US/notifications.json';
 import enUSSupport from './locales/en-US/support.json';
+import enUSFinance from './locales/en-US/finance.json';
 
 const resources = {
   'pt-BR': {
@@ -41,6 +43,7 @@ const resources = {
     team: ptBRTeam,
     notifications: ptBRNotifications,
     support: ptBRSupport,
+    finance: ptBRFinance,
   },
   'en-US': {
     common: enUSCommon,
@@ -54,6 +57,7 @@ const resources = {
     team: enUSTeam,
     notifications: enUSNotifications,
     support: enUSSupport,
+    finance: enUSFinance,
   },
 };
 
@@ -64,7 +68,7 @@ i18n
     resources,
     fallbackLng: 'pt-BR',
     defaultNS: 'common',
-    ns: ['common', 'auth', 'dashboard', 'clients', 'settings', 'pipeline', 'ai', 'landing', 'team', 'notifications', 'support'],
+    ns: ['common', 'auth', 'dashboard', 'clients', 'settings', 'pipeline', 'ai', 'landing', 'team', 'notifications', 'support', 'finance'],
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
