@@ -14,11 +14,9 @@ import { OnboardingTutorial } from '@/components/onboarding/OnboardingTutorial';
 import { DashboardSkeleton } from '@/components/ui/loading-skeleton';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SALES_FUNNEL_STAGES, OPERATIONAL_FLOW_STAGES, ALL_STAGES } from '@/types';
-import { Users, TrendingUp, TrendingDown, Target, Award, ArrowRight, UserPlus, Kanban, Workflow, Phone, Loader2, DollarSign, Flame, Wallet } from 'lucide-react';
+import { Users, TrendingUp, TrendingDown, Award, ArrowRight, DollarSign, Flame, Wallet } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
@@ -28,11 +26,6 @@ import { formatPhoneNumber } from '@/lib/phone-utils';
 import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
 
 type Client = Tables<'clients'>;
-
-// Stages each role is responsible for
-const SALES_STAGES = ['prospeccao', 'reuniao', 'contratacao'];
-const OPERATIONS_STAGES = ['producao', 'trafego'];
-const CAMPAIGN_STAGES = ['trafego', 'retencao', 'fidelizacao'];
 
 export default function Dashboard() {
   const { t } = useTranslation('dashboard');
@@ -99,7 +92,6 @@ export default function Dashboard() {
   const totalClients = clients.length;
   // Clientes activos = não pausados
   const activeClients = clients.filter(c => !c.paused).length;
-  const qualifiedLeads = clients.filter(c => c.qualification === 'qualified' || c.qualification === 'hot').length;
   const hotLeads = clients.filter(c => c.qualification === 'hot').length;
   
   // Taxa de conversão = clientes que chegaram a contratação ou além
@@ -121,17 +113,6 @@ export default function Dashboard() {
       .filter(c => c.monthly_budget && !c.paused && operationalStages.includes(c.current_stage))
       .reduce((sum, c) => sum + Number(c.monthly_budget || 0), 0);
   }, [clients]);
-
-  // Quick actions based on role
-  const quickActions = useMemo(() => {
-    const allActions = [
-      { title: 'Novo Cliente', description: 'Cadastre um novo lead no sistema', icon: UserPlus, href: '/app/new-client', color: 'text-primary', show: canAddClient },
-      { title: 'Funil de Vendas', description: 'Kanban visual da jornada do cliente', icon: Kanban, href: '/app/sales-funnel', color: 'text-success', show: canSeeSales },
-      { title: 'Fluxo Operacional', description: 'Acompanhe clientes em produção', icon: Workflow, href: '/app/operational-flow', color: 'text-chart-5', show: canSeeOperations },
-    ];
-
-    return allActions.filter(action => action.show);
-  }, [canAddClient, canSeeSales, canSeeOperations]);
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -157,6 +138,43 @@ export default function Dashboard() {
           </p>
         </div>
       </AnimatedContainer>
+
+      {/* Finance Summary Section - FIRST */}
+      {canManageFinance && (
+        <AnimatedContainer animation="fade-up" delay={0.05} className="mb-6 md:mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">{t('financeOverview.title', 'Resumo Financeiro do Mês')}</h2>
+            <Link to="/app/finance">
+              <Button variant="ghost" size="sm">
+                {t('financeOverview.viewDetails', 'Ver detalhes')} <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatsCard
+              title={t('financeOverview.income', 'Receitas')}
+              value={`${currencySymbol} ${financeStats.monthlyIncome.toLocaleString()}`}
+              description={t('financeOverview.thisMonth', 'Este mês')}
+              icon={TrendingUp}
+              variant="success"
+            />
+            <StatsCard
+              title={t('financeOverview.expenses', 'Despesas')}
+              value={`${currencySymbol} ${financeStats.monthlyExpenses.toLocaleString()}`}
+              description={t('financeOverview.thisMonth', 'Este mês')}
+              icon={TrendingDown}
+              variant="warning"
+            />
+            <StatsCard
+              title={t('financeOverview.balance', 'Saldo')}
+              value={`${currencySymbol} ${financeStats.netBalance.toLocaleString()}`}
+              description={t('financeOverview.net', 'Líquido')}
+              icon={Wallet}
+              variant={financeStats.netBalance >= 0 ? 'success' : 'warning'}
+            />
+          </div>
+        </AnimatedContainer>
+      )}
 
       {/* Stats Cards - Show relevant stats based on role */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
@@ -220,43 +238,6 @@ export default function Dashboard() {
           <AISuggestionCard clients={clients} />
         </AnimatedContainer>
       </div>
-
-      {/* Finance Summary Section */}
-      {canManageFinance && (
-        <AnimatedContainer animation="fade-up" delay={0.5}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">{t('financeOverview.title', 'Resumo Financeiro do Mês')}</h2>
-            <Link to="/app/finance">
-              <Button variant="ghost" size="sm">
-                {t('financeOverview.viewDetails', 'Ver detalhes')} <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatsCard
-              title={t('financeOverview.income', 'Receitas')}
-              value={`${currencySymbol} ${financeStats.monthlyIncome.toLocaleString()}`}
-              description={t('financeOverview.thisMonth', 'Este mês')}
-              icon={TrendingUp}
-              variant="success"
-            />
-            <StatsCard
-              title={t('financeOverview.expenses', 'Despesas')}
-              value={`${currencySymbol} ${financeStats.monthlyExpenses.toLocaleString()}`}
-              description={t('financeOverview.thisMonth', 'Este mês')}
-              icon={TrendingDown}
-              variant="warning"
-            />
-            <StatsCard
-              title={t('financeOverview.balance', 'Saldo')}
-              value={`${currencySymbol} ${financeStats.netBalance.toLocaleString()}`}
-              description={t('financeOverview.net', 'Líquido')}
-              icon={Wallet}
-              variant={financeStats.netBalance >= 0 ? 'success' : 'warning'}
-            />
-          </div>
-        </AnimatedContainer>
-      )}
     </div>
   );
 }

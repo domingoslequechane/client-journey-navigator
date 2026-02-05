@@ -9,10 +9,8 @@ import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 import { supabase } from '@/integrations/supabase/client';
 import {
   LayoutDashboard,
-  Building2,
   Kanban,
   Sparkles,
-  Workflow,
   MoreHorizontal,
   GraduationCap,
   Users,
@@ -26,7 +24,9 @@ import {
   X,
   RefreshCw,
   Link2,
-  Palette
+  Palette,
+  Wallet,
+  Building2
 } from 'lucide-react';
 import {
   Drawer,
@@ -50,7 +50,7 @@ export function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation('common');
-  const { canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, isAdmin } = useUserRole();
+  const { canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, isAdmin, canManageFinance } = useUserRole();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const isKeyboardVisible = useKeyboardVisible();
@@ -84,11 +84,16 @@ export function MobileNav() {
        items.push({ name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, show: true });
     }
 
+    // Add Finance if user has access
+    if (canManageFinance) {
+      items.push({ name: t('navigation.finance', 'Finanças'), href: '/app/finance', icon: Wallet, show: true });
+    }
+
     // AI Assistant for everyone
     items.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, show: true });
 
     return items;
-  }, [canSeeSalesFunnel, canSeeOperationalFlow, t]);
+  }, [canSeeSalesFunnel, canSeeOperationalFlow, canManageFinance, t]);
 
   // Build "More" menu items
   const moreItems = useMemo(() => {
