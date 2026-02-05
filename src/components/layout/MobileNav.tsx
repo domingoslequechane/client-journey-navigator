@@ -79,14 +79,9 @@ export function MobileNav() {
       { name: t('navigation.home'), href: '/app', icon: LayoutDashboard, show: true },
     ];
 
-    // Add Sales Funnel if available
-    if (canSeeSalesFunnel) {
-      items.push({ name: t('navigation.funnel'), href: '/app/sales-funnel', icon: Kanban, show: true });
-    }
-
-    // Always show Operational Flow in main nav if user has access
-    if (canSeeOperationalFlow) {
-      items.push({ name: t('navigation.flow'), href: '/app/operational-flow', icon: Workflow, show: true });
+     // Add Pipeline if user has access to either funnel
+     if (canSeeSalesFunnel || canSeeOperationalFlow) {
+       items.push({ name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, show: true });
     }
 
     // AI Assistant for everyone

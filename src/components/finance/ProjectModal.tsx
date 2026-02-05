@@ -123,8 +123,8 @@ export function ProjectModal({
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
+                 <FormItem>
+                   <FormLabel>Nome <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <Input placeholder="Nome do projeto" {...field} />
                   </FormControl>
@@ -146,57 +146,59 @@ export function ProjectModal({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="budget"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Orçamento</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {(Object.keys(PROJECT_STATUS_LABELS) as ProjectStatus[]).map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {PROJECT_STATUS_LABELS[status]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
+             <div className="grid grid-cols-2 gap-4">
+               <FormField
+                 control={form.control}
+                 name="budget"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Orçamento <span className="text-destructive">*</span></FormLabel>
+                     <FormControl>
+                       <Input
+                         type="number"
+                         step="0.01"
+                         placeholder="0.00"
+                         {...field}
+                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                       />
+                     </FormControl>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
+ 
+               <FormField
+                 control={form.control}
+                 name="status"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
+                     <Select onValueChange={field.onChange} value={field.value}>
+                       <FormControl>
+                         <SelectTrigger>
+                           <SelectValue />
+                         </SelectTrigger>
+                       </FormControl>
+                       <SelectContent>
+                         {(Object.keys(PROJECT_STATUS_LABELS) as ProjectStatus[]).map((status) => (
+                           <SelectItem key={status} value={status}>
+                             {PROJECT_STATUS_LABELS[status]}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </FormItem>
+                 )}
+               />
+             </div>
+ 
+             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="startDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data Início</FormLabel>
+                   <FormLabel>Data Início <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
