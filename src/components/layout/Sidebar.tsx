@@ -38,6 +38,8 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { LanguageSelector } from '@/components/ui/language-selector';
 
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
+const TABLET_MIN = 768;
+const TABLET_MAX = 1024;
 
 const PLAN_CONFIG = {
   free: { name: 'plans.compass', icon: Compass },
@@ -65,16 +67,32 @@ export function Sidebar() {
   const currentPlan = PLAN_CONFIG[planType] || PLAN_CONFIG.free;
   const PlanIcon = currentPlan.icon;
 
-  const [collapsed, setCollapsed] = useState(() => {
+  const [manualCollapsed, setManualCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';
   });
 
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  // Detect tablet viewport
+  useEffect(() => {
+    const checkTablet = () => {
+      const width = window.innerWidth;
+      setIsTablet(width >= TABLET_MIN && width < TABLET_MAX);
+    };
+    
+    checkTablet();
+    window.addEventListener('resize', checkTablet);
+    return () => window.removeEventListener('resize', checkTablet);
+  }, []);
+
+  // Effective collapsed state: auto-collapse on tablet OR manual toggle
+  const collapsed = isTablet || manualCollapsed;
 
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
-  }, [collapsed]);
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(manualCollapsed));
+  }, [manualCollapsed]);
 
   // Check if user has multiple organizations
   useEffect(() => {
@@ -98,12 +116,12 @@ export function Sidebar() {
     const allItems = [
       { name: t('navigation.dashboard'), href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true },
        { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canSeeSalesFunnel || canSeeOperationalFlow },
-      { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
       { name: 'Finanças', href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canSeeFinance },
       { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true },
       { name: 'Studio AI', href: '/app/studio', icon: Palette, tutorialId: 'sidebar-studio', show: true, badge: 'novo' },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
+      { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
       { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam },
     ];
     return allItems.filter(item => item.show);
@@ -446,7 +464,7 @@ export function Sidebar() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() => setManualCollapsed(!manualCollapsed)}
             className={cn(
               "w-full mt-2 text-muted-foreground hover:bg-accent",
               collapsed ? "justify-center px-2" : "justify-start gap-3 px-3"

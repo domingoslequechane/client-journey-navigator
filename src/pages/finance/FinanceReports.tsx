@@ -66,12 +66,12 @@ export default function FinanceReports() {
   return (
     <AnimatedContainer animation="fade-in">
       <div className="p-4 md:p-8 space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col gap-4">
           <div>
             <h1 className="text-2xl font-bold">Relatórios</h1>
             <p className="text-muted-foreground">Análises financeiras detalhadas</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
@@ -84,7 +84,7 @@ export default function FinanceReports() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={exportToCSV}>
+            <Button variant="outline" onClick={exportToCSV} className="flex-shrink-0">
               <Download className="h-4 w-4 mr-2" />
               Exportar CSV
             </Button>

@@ -148,7 +148,7 @@ export function TransactionModal({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             {/* Row 1: Tipo + Valor */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="type"
@@ -210,7 +210,7 @@ export function TransactionModal({
             />
 
             {/* Row 3: Data + Categoria */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="date"
@@ -258,7 +258,7 @@ export function TransactionModal({
             </div>
 
             {/* Row 4: Método de Pagamento + Cliente */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="paymentMethod"
