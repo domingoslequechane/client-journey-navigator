@@ -1,145 +1,203 @@
 
-# Plano: Corrigir Preenchimento de Campos ao Editar
+# Plano: Destacar Nome do Cliente e Expandir Filtro de Busca
 
-## Problema Identificado
+## Resumo das Mudanças
 
-Os modais de edição (TransactionModal, ProjectModal, GoalModal) não preenchem os campos com os dados existentes porque:
+1. Destacar o nome do cliente no card de transação (atualmente está como texto secundário)
+2. Expandir o filtro de busca para pesquisar por: descrição, tipo, nome do cliente e categoria
 
-1. O hook `useForm` define `defaultValues` apenas na **inicialização**
-2. Quando a prop `transaction`/`project`/`goal` muda (ao clicar editar), o formulário **não é atualizado**
-3. O modal reutiliza a mesma instância do hook, mantendo os valores antigos
+---
 
-## Causa Técnica
+## 1. Destacar Nome do Cliente no TransactionCard
 
-```typescript
-// PROBLEMA: defaultValues só é lido UMA VEZ
-const form = useForm({
-  defaultValues: {
-    name: project?.name || '',  // Não atualiza quando project muda
-    // ...
-  },
-});
+### Problema Atual
+O nome do cliente está misturado com informações secundárias (data, método de pagamento) na linha inferior, com estilo `text-muted-foreground`:
+
+```tsx
+<div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+  <span>{format(...)}</span>
+  {transaction.clientName && (
+    <>
+      <span>•</span>
+      <span className="truncate">{transaction.clientName}</span>  // Pouco visível
+    </>
+  )}
+  ...
+</div>
 ```
 
-## Solução
+### Solução
+Mover o nome do cliente para a linha principal, junto com a descrição, com destaque visual:
 
-Adicionar um `useEffect` que chama `form.reset()` com os novos valores sempre que o modal abre ou o item de edição muda:
+```text
+Antes:
++50 Créditos Lovable [Tecnologia]
+04 fev 2026 • OJ Comercial • Transferência
+
+Depois:
++50 Créditos Lovable [Tecnologia]
+OJ Comercial                         <- Nome do cliente em destaque
+04 fev 2026 • Transferência
+```
+
+### Implementação
+No TransactionCard, reorganizar:
+- Linha 1: Descrição + Badge de categoria
+- Linha 2: Nome do cliente com `font-medium text-foreground` (visível e destacado)
+- Linha 3: Data + Método de pagamento (muted)
+
+### Arquivo Afetado
+- `src/components/finance/TransactionCard.tsx`
+
+---
+
+## 2. Expandir Filtro de Busca
+
+### Problema Atual
+O hook `useTransactions` filtra apenas pela descrição:
 
 ```typescript
-useEffect(() => {
-  if (open) {
-    form.reset({
-      name: project?.name || '',
-      description: project?.description || '',
-      // ... todos os campos
+if (filters?.search) {
+  query = query.ilike('description', `%${filters.search}%`);
+}
+```
+
+### Solução
+Realizar a filtragem no frontend após buscar todos os dados, permitindo pesquisar por múltiplos campos:
+- Descrição
+- Tipo de lançamento (Receita/Despesa)
+- Nome da empresa (cliente)
+- Categoria
+
+### Implementação
+
+#### A) No hook useTransactions
+Remover o filtro de search do query do Supabase (server-side) e fazer a filtragem no frontend:
+
+```typescript
+// Buscar todos os dados e filtrar localmente
+const filteredTransactions = useMemo(() => {
+  if (!filters?.search) return transactions;
+  
+  const searchLower = filters.search.toLowerCase();
+  return transactions.filter(t => 
+    t.description.toLowerCase().includes(searchLower) ||
+    t.clientName?.toLowerCase().includes(searchLower) ||
+    t.categoryName?.toLowerCase().includes(searchLower) ||
+    (t.type === 'income' && 'receita'.includes(searchLower)) ||
+    (t.type === 'expense' && 'despesa'.includes(searchLower))
+  );
+}, [transactions, filters?.search]);
+```
+
+#### B) Atualizar placeholder do input de busca
+Indicar ao usuário os campos pesquisáveis:
+
+```tsx
+<Input
+  placeholder="Pesquisar por descrição, cliente, categoria..."
+  ...
+/>
+```
+
+### Arquivos Afetados
+- `src/hooks/finance/useTransactions.ts` - Filtro local multi-campo
+- `src/pages/finance/FinanceTransactions.tsx` - Atualizar placeholder
+
+---
+
+## Detalhes Técnicos
+
+### TransactionCard - Nova Estrutura
+
+```tsx
+{/* Content */}
+<div className="flex-1 min-w-0">
+  {/* Linha 1: Descrição + Categoria */}
+  <div className="flex items-center gap-2">
+    <p className="font-medium truncate">{transaction.description}</p>
+    {transaction.categoryName && (
+      <Badge variant="outline" ...>
+        {transaction.categoryName}
+      </Badge>
+    )}
+  </div>
+  
+  {/* Linha 2: Nome do Cliente (Destacado) */}
+  {transaction.clientName && (
+    <p className="text-sm font-medium text-foreground mt-1 truncate">
+      {transaction.clientName}
+    </p>
+  )}
+  
+  {/* Linha 3: Data + Método de Pagamento */}
+  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+    <span>{format(...)}</span>
+    <span>•</span>
+    <span>{PAYMENT_METHOD_LABELS[transaction.paymentMethod]}</span>
+  </div>
+</div>
+```
+
+### useTransactions - Filtro Multi-Campo
+
+```typescript
+export function useTransactions(filters?: TransactionFilters) {
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  
+  // Fetch sem filtro de search
+  const fetchTransactions = useCallback(async () => {
+    // ... query sem ilike('description', ...)
+  }, [organizationId, filters?.type, filters?.categoryId, filters?.clientId, filters?.startDate, filters?.endDate]);
+  
+  // Filtro local para busca multi-campo
+  const transactions = useMemo(() => {
+    if (!filters?.search) return allTransactions;
+    
+    const searchLower = filters.search.toLowerCase();
+    return allTransactions.filter(t => {
+      // Descrição
+      if (t.description.toLowerCase().includes(searchLower)) return true;
+      // Nome do cliente
+      if (t.clientName?.toLowerCase().includes(searchLower)) return true;
+      // Categoria
+      if (t.categoryName?.toLowerCase().includes(searchLower)) return true;
+      // Tipo
+      if (t.type === 'income' && 'receita'.includes(searchLower)) return true;
+      if (t.type === 'expense' && 'despesa'.includes(searchLower)) return true;
+      return false;
     });
-  }
-}, [open, project, form]);
+  }, [allTransactions, filters?.search]);
+  
+  // Recalcular totais baseado nos filtrados
+  const totals = transactions.reduce(...);
+  
+  return { transactions, ... };
+}
 ```
-
-Isso garante que:
-- Ao abrir para **criar**: campos limpos com valores padrão
-- Ao abrir para **editar**: campos preenchidos com dados existentes
 
 ---
 
 ## Arquivos a Modificar
 
-### 1. TransactionModal.tsx
-
-Adicionar `useEffect` para resetar o formulário:
-
-```typescript
-useEffect(() => {
-  if (open) {
-    form.reset({
-      type: transaction?.type || 'income',
-      amount: transaction?.amount || 0,
-      description: transaction?.description || '',
-      date: transaction?.date || format(new Date(), 'yyyy-MM-dd'),
-      categoryId: transaction?.categoryId || undefined,
-      clientId: transaction?.clientId || undefined,
-      paymentMethod: transaction?.paymentMethod || 'transfer',
-      notes: transaction?.notes || '',
-    });
-  }
-}, [open, transaction, form]);
-```
-
-Remover o `useEffect` que limpa `categoryId` quando type muda (linha 115-117), pois isso estava apagando a categoria durante edição.
-
-### 2. ProjectModal.tsx
-
-Adicionar `useEffect` para resetar o formulário:
-
-```typescript
-useEffect(() => {
-  if (open) {
-    form.reset({
-      name: project?.name || '',
-      description: project?.description || '',
-      clientId: project?.clientId || '',
-      budget: project?.budget || 0,
-      status: project?.status || 'planning',
-      startDate: project?.startDate || format(new Date(), 'yyyy-MM-dd'),
-      endDate: project?.endDate || '',
-    });
-  }
-}, [open, project, form]);
-```
-
-### 3. GoalModal.tsx
-
-Adicionar `useEffect` para resetar o formulário:
-
-```typescript
-useEffect(() => {
-  if (open) {
-    form.reset({
-      name: goal?.name || '',
-      targetAmount: goal?.targetAmount || 0,
-      goalType: goal?.goalType || 'monthly',
-      year: goal?.year || currentYear,
-      month: goal?.month || new Date().getMonth() + 1,
-    });
-  }
-}, [open, goal, form, currentYear]);
-```
+1. `src/components/finance/TransactionCard.tsx` - Destacar nome do cliente
+2. `src/hooks/finance/useTransactions.ts` - Filtro multi-campo local
+3. `src/pages/finance/FinanceTransactions.tsx` - Atualizar placeholder da busca
 
 ---
 
-## Detalhes Tecnicos
+## Ordem de Implementação
 
-### Imports Necessarios
-
-Adicionar `useEffect` aos imports existentes:
-
-```typescript
-import { useState, useEffect } from 'react';
-```
-
-### Remocao de Codigo Problematico
-
-No TransactionModal, remover o efeito que limpa a categoria:
-
-```typescript
-// REMOVER este useEffect - causa apagamento da categoria ao editar
-useEffect(() => {
-  form.setValue('categoryId', undefined);
-}, [transactionType, form]);
-```
-
-### Ordem de Implementacao
-
-1. TransactionModal.tsx - Adicionar useEffect + remover limpeza de categoria
-2. ProjectModal.tsx - Adicionar useEffect
-3. GoalModal.tsx - Adicionar useEffect
+1. TransactionCard.tsx - Reorganizar layout para destacar cliente
+2. useTransactions.ts - Implementar filtro local multi-campo
+3. FinanceTransactions.tsx - Atualizar placeholder do input
 
 ---
 
 ## Resultado Esperado
 
-Apos a correcao:
-- Clicar em "Editar" em qualquer lancamento, projeto ou meta preenchera todos os campos
-- Tipo, valor, descricao, data, categoria, cliente, metodo de pagamento e notas serao carregados
-- Criar novo item continuara funcionando normalmente com campos limpos
+Após a correção:
+- O nome do cliente aparece em destaque abaixo da descrição
+- A busca filtra por descrição, nome do cliente, categoria e tipo
+- O placeholder indica os campos pesquisáveis
+- Os totais são recalculados baseados nos resultados filtrados
