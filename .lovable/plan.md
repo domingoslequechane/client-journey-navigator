@@ -1,203 +1,180 @@
 
-# Plano: Destacar Nome do Cliente e Expandir Filtro de Busca
 
-## Resumo das Mudanças
+# Plano: Melhorar Layout do TransactionCard
 
-1. Destacar o nome do cliente no card de transação (atualmente está como texto secundário)
-2. Expandir o filtro de busca para pesquisar por: descrição, tipo, nome do cliente e categoria
+## Análise das Imagens de Referência
+
+### Layout Atual (Imagem 1 - Problemático)
+- Informações dispersas e difíceis de ler
+- Layout em grid que fragmenta a informação
+- Categoria no topo mas sem contexto claro
+- Descrição truncada demais
+
+### Layout Desejado (Imagem 2 - Referência)
+- Layout em lista horizontal limpo
+- **Linha 1**: Descrição completa como título principal
+- **Linha 2**: Data • Nome do Cliente (cor verde) • Método de Pagamento
+- **Direita**: Valor com cor (verde para receita, vermelho para despesa)
+- **Ações**: Ícones de editar/excluir visíveis diretamente
 
 ---
 
-## 1. Destacar Nome do Cliente no TransactionCard
+## Mudanças Propostas
 
-### Problema Atual
-O nome do cliente está misturado com informações secundárias (data, método de pagamento) na linha inferior, com estilo `text-muted-foreground`:
-
-```tsx
-<div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-  <span>{format(...)}</span>
-  {transaction.clientName && (
-    <>
-      <span>•</span>
-      <span className="truncate">{transaction.clientName}</span>  // Pouco visível
-    </>
-  )}
-  ...
-</div>
-```
-
-### Solução
-Mover o nome do cliente para a linha principal, junto com a descrição, com destaque visual:
+### Nova Estrutura do TransactionCard
 
 ```text
-Antes:
-+50 Créditos Lovable [Tecnologia]
-04 fev 2026 • OJ Comercial • Transferência
-
-Depois:
-+50 Créditos Lovable [Tecnologia]
-OJ Comercial                         <- Nome do cliente em destaque
-04 fev 2026 • Transferência
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  [Ícone]  Concepção + Treinamento (Bar Code) & Configuração...    +5750,00 Mt  [✎] [🗑]  │
+│           02/02/2026 • OJ Comercial • Emola              [Consultoria]         │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Implementação
-No TransactionCard, reorganizar:
-- Linha 1: Descrição + Badge de categoria
-- Linha 2: Nome do cliente com `font-medium text-foreground` (visível e destacado)
-- Linha 3: Data + Método de pagamento (muted)
+### Estrutura Visual:
+- **Ícone**: Seta verde (receita) ou vermelha (despesa) à esquerda
+- **Linha 1**: Descrição (título principal, sem truncar excessivo)
+- **Linha 2**: Data • **Nome do Cliente** (cor primária/verde) • Método de Pagamento
+- **Direita**: Valor grande com cor apropriada
+- **Badge de Categoria**: Posicionado ao lado do método de pagamento ou no canto
+- **Ações**: Botões de editar e excluir visíveis (sem dropdown em desktop)
 
-### Arquivo Afetado
+---
+
+## Implementação Detalhada
+
+### Arquivo: `src/components/finance/TransactionCard.tsx`
+
+```tsx
+return (
+  <Card className="hover:shadow-md transition-shadow">
+    <CardContent className="p-4">
+      <div className="flex items-start gap-4">
+        {/* Ícone */}
+        <div className={cn(
+          'p-2 rounded-full shrink-0 mt-1',
+          isIncome ? 'bg-emerald-500/10' : 'bg-destructive/10'
+        )}>
+          {isIncome ? (
+            <ArrowDownLeft className="h-5 w-5 text-emerald-500" />
+          ) : (
+            <ArrowUpRight className="h-5 w-5 text-destructive" />
+          )}
+        </div>
+
+        {/* Conteúdo Principal */}
+        <div className="flex-1 min-w-0">
+          {/* Linha 1: Descrição */}
+          <p className="font-medium text-foreground line-clamp-2">
+            {transaction.description}
+          </p>
+          
+          {/* Linha 2: Data + Cliente (destaque) + Método + Categoria */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5 text-sm">
+            <span className="text-muted-foreground">
+              {format(new Date(transaction.date), 'dd/MM/yyyy', { locale: ptBR })}
+            </span>
+            
+            {transaction.clientName && (
+              <>
+                <span className="text-muted-foreground">•</span>
+                <span className="font-medium text-primary">
+                  {transaction.clientName}
+                </span>
+              </>
+            )}
+            
+            <span className="text-muted-foreground">•</span>
+            <span className="text-muted-foreground">
+              {PAYMENT_METHOD_LABELS[transaction.paymentMethod]}
+            </span>
+            
+            {transaction.categoryName && (
+              <Badge 
+                variant="outline" 
+                className="ml-auto"
+                style={{ 
+                  borderColor: transaction.categoryColor,
+                  color: transaction.categoryColor 
+                }}
+              >
+                {transaction.categoryName}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Valor */}
+        <div className="text-right shrink-0">
+          <p className={cn(
+            'text-lg font-semibold whitespace-nowrap',
+            isIncome ? 'text-emerald-500' : 'text-destructive'
+          )}>
+            {isIncome ? '+' : '-'}{transaction.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} {currencySymbol}
+          </p>
+        </div>
+
+        {/* Ações - Visíveis diretamente */}
+        {canManage && (
+          <div className="flex items-center gap-1 shrink-0">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={() => onEdit(transaction)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={() => onDelete(transaction.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+);
+```
+
+---
+
+## Pontos-Chave do Design
+
+| Elemento | Estilo |
+|----------|--------|
+| Descrição | `font-medium text-foreground line-clamp-2` |
+| Nome do Cliente | `font-medium text-primary` (cor verde/primária em destaque) |
+| Data e Método | `text-muted-foreground text-sm` |
+| Categoria | Badge com cor personalizada, posicionado com `ml-auto` |
+| Valor | `text-lg font-semibold` com cor verde (receita) ou vermelho (despesa) |
+| Ações | Botões visíveis diretamente, sem dropdown |
+
+---
+
+## Benefícios
+
+1. **Hierarquia Visual Clara**: Descrição em destaque, metadados secundários abaixo
+2. **Nome do Cliente Destacado**: Cor primária (verde) para fácil identificação
+3. **Categoria Bem Posicionada**: No canto direito da linha de metadados
+4. **Ações Visíveis**: Editar e excluir sem precisar de clique extra
+5. **Layout Responsivo**: `flex-wrap` permite quebra de linha em mobile
+
+---
+
+## Arquivo a Modificar
+
 - `src/components/finance/TransactionCard.tsx`
-
----
-
-## 2. Expandir Filtro de Busca
-
-### Problema Atual
-O hook `useTransactions` filtra apenas pela descrição:
-
-```typescript
-if (filters?.search) {
-  query = query.ilike('description', `%${filters.search}%`);
-}
-```
-
-### Solução
-Realizar a filtragem no frontend após buscar todos os dados, permitindo pesquisar por múltiplos campos:
-- Descrição
-- Tipo de lançamento (Receita/Despesa)
-- Nome da empresa (cliente)
-- Categoria
-
-### Implementação
-
-#### A) No hook useTransactions
-Remover o filtro de search do query do Supabase (server-side) e fazer a filtragem no frontend:
-
-```typescript
-// Buscar todos os dados e filtrar localmente
-const filteredTransactions = useMemo(() => {
-  if (!filters?.search) return transactions;
-  
-  const searchLower = filters.search.toLowerCase();
-  return transactions.filter(t => 
-    t.description.toLowerCase().includes(searchLower) ||
-    t.clientName?.toLowerCase().includes(searchLower) ||
-    t.categoryName?.toLowerCase().includes(searchLower) ||
-    (t.type === 'income' && 'receita'.includes(searchLower)) ||
-    (t.type === 'expense' && 'despesa'.includes(searchLower))
-  );
-}, [transactions, filters?.search]);
-```
-
-#### B) Atualizar placeholder do input de busca
-Indicar ao usuário os campos pesquisáveis:
-
-```tsx
-<Input
-  placeholder="Pesquisar por descrição, cliente, categoria..."
-  ...
-/>
-```
-
-### Arquivos Afetados
-- `src/hooks/finance/useTransactions.ts` - Filtro local multi-campo
-- `src/pages/finance/FinanceTransactions.tsx` - Atualizar placeholder
-
----
-
-## Detalhes Técnicos
-
-### TransactionCard - Nova Estrutura
-
-```tsx
-{/* Content */}
-<div className="flex-1 min-w-0">
-  {/* Linha 1: Descrição + Categoria */}
-  <div className="flex items-center gap-2">
-    <p className="font-medium truncate">{transaction.description}</p>
-    {transaction.categoryName && (
-      <Badge variant="outline" ...>
-        {transaction.categoryName}
-      </Badge>
-    )}
-  </div>
-  
-  {/* Linha 2: Nome do Cliente (Destacado) */}
-  {transaction.clientName && (
-    <p className="text-sm font-medium text-foreground mt-1 truncate">
-      {transaction.clientName}
-    </p>
-  )}
-  
-  {/* Linha 3: Data + Método de Pagamento */}
-  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-    <span>{format(...)}</span>
-    <span>•</span>
-    <span>{PAYMENT_METHOD_LABELS[transaction.paymentMethod]}</span>
-  </div>
-</div>
-```
-
-### useTransactions - Filtro Multi-Campo
-
-```typescript
-export function useTransactions(filters?: TransactionFilters) {
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  
-  // Fetch sem filtro de search
-  const fetchTransactions = useCallback(async () => {
-    // ... query sem ilike('description', ...)
-  }, [organizationId, filters?.type, filters?.categoryId, filters?.clientId, filters?.startDate, filters?.endDate]);
-  
-  // Filtro local para busca multi-campo
-  const transactions = useMemo(() => {
-    if (!filters?.search) return allTransactions;
-    
-    const searchLower = filters.search.toLowerCase();
-    return allTransactions.filter(t => {
-      // Descrição
-      if (t.description.toLowerCase().includes(searchLower)) return true;
-      // Nome do cliente
-      if (t.clientName?.toLowerCase().includes(searchLower)) return true;
-      // Categoria
-      if (t.categoryName?.toLowerCase().includes(searchLower)) return true;
-      // Tipo
-      if (t.type === 'income' && 'receita'.includes(searchLower)) return true;
-      if (t.type === 'expense' && 'despesa'.includes(searchLower)) return true;
-      return false;
-    });
-  }, [allTransactions, filters?.search]);
-  
-  // Recalcular totais baseado nos filtrados
-  const totals = transactions.reduce(...);
-  
-  return { transactions, ... };
-}
-```
-
----
-
-## Arquivos a Modificar
-
-1. `src/components/finance/TransactionCard.tsx` - Destacar nome do cliente
-2. `src/hooks/finance/useTransactions.ts` - Filtro multi-campo local
-3. `src/pages/finance/FinanceTransactions.tsx` - Atualizar placeholder da busca
-
----
-
-## Ordem de Implementação
-
-1. TransactionCard.tsx - Reorganizar layout para destacar cliente
-2. useTransactions.ts - Implementar filtro local multi-campo
-3. FinanceTransactions.tsx - Atualizar placeholder do input
 
 ---
 
 ## Resultado Esperado
 
-Após a correção:
-- O nome do cliente aparece em destaque abaixo da descrição
-- A busca filtra por descrição, nome do cliente, categoria e tipo
-- O placeholder indica os campos pesquisáveis
-- Os totais são recalculados baseados nos resultados filtrados
+- Layout similar à imagem 2 de referência
+- Nome do cliente em cor destacada (verde/primária)
+- Descrição legível sem truncamento excessivo
+- Duas colunas no grid de cards conforme já existe
+- Ações de editar/excluir visíveis diretamente
