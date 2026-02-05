@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useEffect, useState as useReactState } from 'react';
+ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -90,6 +89,22 @@ export function TransactionModal({
   const transactionType = form.watch('type');
   const filteredCategories = getCategoriesByType(transactionType);
 
+   // Reset form when modal opens or transaction changes
+   useEffect(() => {
+     if (open) {
+       form.reset({
+         type: transaction?.type || 'income',
+         amount: transaction?.amount || 0,
+         description: transaction?.description || '',
+         date: transaction?.date || format(new Date(), 'yyyy-MM-dd'),
+         categoryId: transaction?.categoryId || undefined,
+         clientId: transaction?.clientId || undefined,
+         paymentMethod: transaction?.paymentMethod || 'transfer',
+         notes: transaction?.notes || '',
+       });
+     }
+   }, [open, transaction, form]);
+ 
   // Load clients
   const loadClients = async () => {
     if (!organizationId) return;
@@ -110,11 +125,6 @@ export function TransactionModal({
     loadClients();
     form.setValue('clientId', clientId);
   };
-
-  // Reset category when type changes
-  useEffect(() => {
-    form.setValue('categoryId', undefined);
-  }, [transactionType, form]);
 
   const handleSubmit = async (values: z.infer<typeof schema>) => {
     setLoading(true);
