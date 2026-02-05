@@ -1,4 +1,4 @@
-import { useState } from 'react';
+ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -65,6 +65,19 @@ export function GoalModal({
 
   const goalType = form.watch('goalType');
 
+   // Reset form when modal opens or goal changes
+   useEffect(() => {
+     if (open) {
+       form.reset({
+         name: goal?.name || '',
+         targetAmount: goal?.targetAmount || 0,
+         goalType: goal?.goalType || 'monthly',
+         year: goal?.year || currentYear,
+         month: goal?.month || new Date().getMonth() + 1,
+       });
+     }
+   }, [open, goal, form, currentYear]);
+ 
   const handleSubmit = async (values: z.infer<typeof schema>) => {
     setLoading(true);
     const formData: GoalFormData = {

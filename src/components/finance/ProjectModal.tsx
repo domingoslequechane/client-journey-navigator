@@ -1,4 +1,4 @@
-import { useState } from 'react';
+ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -73,6 +73,21 @@ export function ProjectModal({
     },
   });
 
+   // Reset form when modal opens or project changes
+   useEffect(() => {
+     if (open) {
+       form.reset({
+         name: project?.name || '',
+         description: project?.description || '',
+         clientId: project?.clientId || '',
+         budget: project?.budget || 0,
+         status: project?.status || 'planning',
+         startDate: project?.startDate || format(new Date(), 'yyyy-MM-dd'),
+         endDate: project?.endDate || '',
+       });
+     }
+   }, [open, project, form]);
+ 
   const searchClients = async (search: string) => {
     if (!organizationId || search.length < 2) {
       setClients([]);
