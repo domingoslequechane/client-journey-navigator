@@ -4,3 +4,4 @@ export { useFinanceProjects } from './useFinanceProjects';
 export { useFinanceGoals } from './useFinanceGoals';
 export { useFinanceStats } from './useFinanceStats';
 export { useFinanceReports } from './useFinanceReports';
+export { useQuickFinanceStats } from './useQuickFinanceStats';

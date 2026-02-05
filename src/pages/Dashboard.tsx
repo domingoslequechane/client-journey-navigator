@@ -14,7 +14,7 @@ import { OnboardingTutorial } from '@/components/onboarding/OnboardingTutorial';
 import { DashboardSkeleton } from '@/components/ui/loading-skeleton';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SALES_FUNNEL_STAGES, OPERATIONAL_FLOW_STAGES, ALL_STAGES } from '@/types';
-import { Users, TrendingUp, Target, Award, ArrowRight, UserPlus, Kanban, Workflow, Phone, Loader2, DollarSign, Flame } from 'lucide-react';
+import { Users, TrendingUp, TrendingDown, Target, Award, ArrowRight, UserPlus, Kanban, Workflow, Phone, Loader2, DollarSign, Flame, Wallet } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useQuickFinanceStats } from '@/hooks/finance';
 import { formatPhoneNumber } from '@/lib/phone-utils';
 import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
 
@@ -42,11 +43,13 @@ export default function Dashboard() {
     canSeeSalesFunnel: canSeeSales, 
     canSeeOperationalFlow: canSeeOperations,
     canAddClient,
-    getVisibleStages
+    getVisibleStages,
+    canManageFinance
   } = useUserRole();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const { currencySymbol } = useOrganizationCurrency();
+  const financeStats = useQuickFinanceStats();
 
   useEffect(() => {
     if (!roleLoading) {
@@ -217,6 +220,43 @@ export default function Dashboard() {
           <AISuggestionCard clients={clients} />
         </AnimatedContainer>
       </div>
+
+      {/* Finance Summary Section */}
+      {canManageFinance && (
+        <AnimatedContainer animation="fade-up" delay={0.5}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">{t('financeOverview.title', 'Resumo Financeiro do Mês')}</h2>
+            <Link to="/app/finance">
+              <Button variant="ghost" size="sm">
+                {t('financeOverview.viewDetails', 'Ver detalhes')} <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatsCard
+              title={t('financeOverview.income', 'Receitas')}
+              value={`${currencySymbol} ${financeStats.monthlyIncome.toLocaleString()}`}
+              description={t('financeOverview.thisMonth', 'Este mês')}
+              icon={TrendingUp}
+              variant="success"
+            />
+            <StatsCard
+              title={t('financeOverview.expenses', 'Despesas')}
+              value={`${currencySymbol} ${financeStats.monthlyExpenses.toLocaleString()}`}
+              description={t('financeOverview.thisMonth', 'Este mês')}
+              icon={TrendingDown}
+              variant="warning"
+            />
+            <StatsCard
+              title={t('financeOverview.balance', 'Saldo')}
+              value={`${currencySymbol} ${financeStats.netBalance.toLocaleString()}`}
+              description={t('financeOverview.net', 'Líquido')}
+              icon={Wallet}
+              variant={financeStats.netBalance >= 0 ? 'success' : 'warning'}
+            />
+          </div>
+        </AnimatedContainer>
+      )}
     </div>
   );
 }

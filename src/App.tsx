@@ -51,7 +51,7 @@ import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
 import AdminSupport from "./pages/admin/AdminSupport";
 import PartnerProgram from "./pages/PartnerProgram";
 import LinkTreePublic from "./pages/LinkTreePublic";
-import { FinanceDashboard, FinanceTransactions, FinanceProjects, FinanceGoals, FinanceReports } from "./pages/finance";
+import { FinanceTransactions, FinanceProjects, FinanceGoals, FinanceReports } from "./pages/finance";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -159,7 +159,7 @@ const App = () => (
                 <Route path="upgrade" element={<Upgrade />} />
                 <Route path="finance" element={
                   <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
-                    <FinanceDashboard />
+                    <FinanceTransactions />
                   </RoleProtectedRoute>
                 } />
                 <Route path="finance/transactions" element={

@@ -33,6 +33,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import type { Transaction, TransactionFormData, TransactionType, PaymentMethod } from '@/types/finance';
 import { PAYMENT_METHOD_LABELS } from '@/types/finance';
+import { Plus } from 'lucide-react';
+import { QuickClientModal } from './QuickClientModal';
 
 const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   income: 'Receita',
@@ -48,7 +50,7 @@ const schema = z.object({
   date: z.string().min(1, 'Data é obrigatória'),
   categoryId: z.string().optional(),
   clientId: z.string().optional(),
-  paymentMethod: z.enum(['transfer', 'mpesa', 'emola', 'cash', 'other']),
+  paymentMethod: z.enum(['transfer', 'mpesa', 'emola', 'cash', 'cheque', 'other']),
   notes: z.string().optional(),
 });
 
@@ -67,6 +69,7 @@ export function TransactionModal({
 }: TransactionModalProps) {
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
+  const [quickClientOpen, setQuickClientOpen] = useState(false);
   const { categories, getCategoriesByType } = useFinanceCategories();
   const { organizationId } = useOrganizationCurrency();
 
@@ -87,20 +90,26 @@ export function TransactionModal({
   const transactionType = form.watch('type');
   const filteredCategories = getCategoriesByType(transactionType);
 
-  // Load clients on mount
+  // Load clients
+  const loadClients = async () => {
+    if (!organizationId) return;
+    const { data } = await supabase
+      .from('clients')
+      .select('id, company_name')
+      .eq('organization_id', organizationId)
+      .order('company_name')
+      .limit(100);
+    setClients(data || []);
+  };
+
   useEffect(() => {
-    const loadClients = async () => {
-      if (!organizationId) return;
-      const { data } = await supabase
-        .from('clients')
-        .select('id, company_name')
-        .eq('organization_id', organizationId)
-        .order('company_name')
-        .limit(50);
-      setClients(data || []);
-    };
     if (open) loadClients();
   }, [organizationId, open]);
+
+  const handleClientCreated = (clientId: string) => {
+    loadClients();
+    form.setValue('clientId', clientId);
+  };
 
   // Reset category when type changes
   useEffect(() => {
@@ -145,7 +154,7 @@ export function TransactionModal({
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo</FormLabel>
+                    <FormLabel>Tipo <span className="text-destructive">*</span></FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -169,7 +178,7 @@ export function TransactionModal({
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valor</FormLabel>
+                    <FormLabel>Valor <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -191,7 +200,7 @@ export function TransactionModal({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel>Descrição <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <Input placeholder="Descrição do lançamento" {...field} />
                   </FormControl>
@@ -207,7 +216,7 @@ export function TransactionModal({
                 name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data</FormLabel>
+                    <FormLabel>Data <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -255,7 +264,7 @@ export function TransactionModal({
                 name="paymentMethod"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pagamento</FormLabel>
+                    <FormLabel>Pagamento <span className="text-destructive">*</span></FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -280,21 +289,31 @@ export function TransactionModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || NONE_VALUE}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Nenhum" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value={NONE_VALUE}>Nenhum</SelectItem>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.company_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <Select onValueChange={field.onChange} value={field.value || NONE_VALUE}>
+                        <FormControl>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Nenhum" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value={NONE_VALUE}>Nenhum</SelectItem>
+                          {clients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.company_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setQuickClientOpen(true)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </FormItem>
                 )}
               />
@@ -328,6 +347,12 @@ export function TransactionModal({
             </div>
           </form>
         </Form>
+
+        <QuickClientModal
+          open={quickClientOpen}
+          onOpenChange={setQuickClientOpen}
+          onClientCreated={handleClientCreated}
+        />
       </DialogContent>
     </Dialog>
   );
