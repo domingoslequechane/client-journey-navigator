@@ -1,411 +1,262 @@
 
-# Plano de Integração: Módulo de Controle Financeiro
+# Plano: Ajustes e Melhorias no Módulo Financeiro
 
-## Visão Geral
+## Resumo das Mudanças
 
-Integrar um módulo completo de controle financeiro ao Qualify, permitindo que cada agência gerencie seu fluxo de caixa de forma individual com base na sua carteira de clientes.
-
----
-
-## 1. Estrutura do Módulo
-
-### Novas Páginas (5)
-```text
-src/pages/finance/
-  FinanceDashboard.tsx    -> /app/finance
-  FinanceTransactions.tsx -> /app/finance/transactions
-  FinanceProjects.tsx     -> /app/finance/projects
-  FinanceGoals.tsx        -> /app/finance/goals
-  FinanceReports.tsx      -> /app/finance/reports
-```
-
-### Novos Componentes
-```text
-src/components/finance/
-  TransactionModal.tsx      -> Modal criar/editar lançamento
-  TransactionCard.tsx       -> Card de transação na lista
-  ProjectModal.tsx          -> Modal criar/editar projeto
-  ProjectCard.tsx           -> Card de projeto
-  GoalModal.tsx             -> Modal criar/editar meta
-  GoalCard.tsx              -> Card de meta com progresso
-  FinanceStatsCard.tsx      -> Cards de resumo (receita, despesa, saldo)
-  MonthlyEvolutionChart.tsx -> Gráfico evolução mensal (área)
-  ExpensesPieChart.tsx      -> Gráfico despesas por categoria
-  MonthlyComparisonChart.tsx-> Gráfico comparativo mensal (barras)
-  ClientRevenueCard.tsx     -> Card cliente com receita total
-  FinanceSidebar.tsx        -> Sub-navegação do módulo
-```
+O módulo financeiro será integrado de forma mais orgânica com o resto da aplicação, com melhorias de UX e novas funcionalidades.
 
 ---
 
-## 2. Base de Dados (Novas Tabelas)
+## 1. Remover Dashboard Financeiro Separado
 
-### Tabela: financial_transactions
-```text
-- id (uuid, PK)
-- organization_id (uuid, FK -> organizations)
-- type (enum: 'income' | 'expense')
-- amount (decimal)
-- description (text)
-- date (date)
-- category_id (uuid, FK -> financial_categories, opcional)
-- client_id (uuid, FK -> clients, opcional)
-- payment_method (text: 'transfer' | 'mpesa' | 'emola' | 'cash' | 'other')
-- notes (text, opcional)
-- created_by (uuid)
-- created_at (timestamp)
-- updated_at (timestamp)
-```
+**Problema:** O módulo tem um dashboard próprio redundante.
 
-### Tabela: financial_categories
-```text
-- id (uuid, PK)
-- organization_id (uuid, FK)
-- name (text)
-- type (enum: 'income' | 'expense')
-- color (text, opcional)
-- created_at (timestamp)
-```
+**Solução:**
+- Remover a página `FinanceDashboard.tsx` 
+- Redirecionar `/app/finance` diretamente para `/app/finance/transactions` (Lançamentos)
+- Adicionar resumos financeiros (Receita, Despesas, Saldo) ao Dashboard principal
 
-### Tabela: financial_projects
-```text
-- id (uuid, PK)
-- organization_id (uuid, FK)
-- name (text)
-- description (text, opcional)
-- client_id (uuid, FK -> clients, opcional)
-- budget (decimal)
-- status (enum: 'planning' | 'in_progress' | 'completed' | 'cancelled')
-- start_date (date)
-- end_date (date, opcional)
-- created_by (uuid)
-- created_at (timestamp)
-- updated_at (timestamp)
-```
-
-### Tabela: financial_goals
-```text
-- id (uuid, PK)
-- organization_id (uuid, FK)
-- name (text)
-- target_amount (decimal)
-- current_amount (decimal, default 0)
-- goal_type (enum: 'monthly' | 'quarterly' | 'yearly')
-- year (integer)
-- month (integer, opcional para quarterly/yearly)
-- created_at (timestamp)
-- updated_at (timestamp)
-```
-
-### Políticas RLS
-- Todas as tabelas terão RLS habilitado
-- Acesso restrito a organization_id do usuário autenticado
-- Operações INSERT/UPDATE/DELETE apenas para admin e roles permitidos
+**Arquivos afetados:**
+- `src/App.tsx` - Alterar rota `/app/finance` para apontar para `FinanceTransactions`
+- `src/pages/Dashboard.tsx` - Adicionar cards de resumo financeiro
+- `src/components/finance/FinanceSidebar.tsx` - Remover link "Dashboard"
+- `src/pages/finance/index.ts` - Remover export do `FinanceDashboard`
+- Deletar `src/pages/finance/FinanceDashboard.tsx`
 
 ---
 
-## 3. Hooks Personalizados
+## 2. Corrigir Layout (Espaçamento/Bordas)
 
-```text
-src/hooks/finance/
-  useFinanceStats.ts       -> Estatísticas (receita, despesa, saldo)
-  useTransactions.ts       -> CRUD de lançamentos + filtros
-  useFinanceProjects.ts    -> CRUD de projetos
-  useFinanceGoals.ts       -> CRUD de metas + cálculo progresso
-  useFinanceReports.ts     -> Dados agregados para relatórios
-  useFinanceCategories.ts  -> CRUD de categorias
-```
+**Problema:** As páginas financeiras não têm o padding consistente com o resto da app.
 
----
+**Solução:**
+- Adicionar `p-4 md:p-8` às páginas financeiras (igual ao Dashboard principal)
+- Aplicar em todas as páginas: Transactions, Projects, Goals, Reports
 
-## 4. Tipos TypeScript
-
-```text
-src/types/finance.ts
-
-export type TransactionType = 'income' | 'expense';
-export type PaymentMethod = 'transfer' | 'mpesa' | 'emola' | 'cash' | 'other';
-export type ProjectStatus = 'planning' | 'in_progress' | 'completed' | 'cancelled';
-export type GoalType = 'monthly' | 'quarterly' | 'yearly';
-
-export interface Transaction {
-  id: string;
-  type: TransactionType;
-  amount: number;
-  description: string;
-  date: string;
-  categoryId?: string;
-  categoryName?: string;
-  clientId?: string;
-  clientName?: string;
-  paymentMethod: PaymentMethod;
-  notes?: string;
-}
-
-export interface FinanceProject { ... }
-export interface FinanceGoal { ... }
-export interface FinanceCategory { ... }
-export interface FinanceStats { ... }
-```
+**Arquivos afetados:**
+- `src/pages/finance/FinanceTransactions.tsx`
+- `src/pages/finance/FinanceProjects.tsx`
+- `src/pages/finance/FinanceGoals.tsx`
+- `src/pages/finance/FinanceReports.tsx`
 
 ---
 
-## 5. Navegação e Rotas
+## 3. Criar Categorias Padrão via Migração
 
-### Sidebar Principal
-Adicionar novo item no sidebar:
-```text
-{ 
-  name: 'Finanças', 
-  href: '/app/finance', 
-  icon: Wallet,
-  show: canSeeFinance // admin + sales
-}
-```
+**Problema:** Dropdown de categoria está vazio porque não existem categorias no banco.
 
-### Sub-navegação Financeira
-Dentro das páginas de finanças, usar tabs ou sidebar interno:
-```text
-- Dashboard (visão geral)
-- Lançamentos (receitas/despesas)
-- Projetos (orçamentos)
-- Metas (OKRs)
-- Relatórios (análises)
-```
+**Solução:**
+Criar migração SQL para inserir categorias padrão para cada organização:
 
-### App.tsx - Novas Rotas
-```text
-<Route path="finance" element={<FinanceDashboard />} />
-<Route path="finance/transactions" element={<FinanceTransactions />} />
-<Route path="finance/projects" element={<FinanceProjects />} />
-<Route path="finance/goals" element={<FinanceGoals />} />
-<Route path="finance/reports" element={<FinanceReports />} />
-```
+**Categorias de Receita (income):**
+- Serviços
+- Consultoria
+- Venda de Produto
+- Comissões
+- Outras Receitas
+
+**Categorias de Despesa (expense):**
+- Salários
+- Marketing
+- Tecnologia
+- Aluguel
+- Transporte
+- Alimentação
+- Material de Escritório
+- Impostos
+- Outras Despesas
+
+**Implementação:** Criar trigger que popula categorias quando uma organização é criada, e executar INSERT para organizações existentes.
 
 ---
 
-## 6. Funcionalidades por Página
+## 4. Adicionar Método de Pagamento "Cheque"
 
-### 6.1 Dashboard Financeiro (/app/finance)
-- Cards: Receita Total, Crescimento, Despesas, Saldo Líquido
-- Gráfico de Receitas (evolução anual)
-- Gráfico de Despesas (donut por categoria)
-- Comparativo Mensal (barras receita vs despesa)
-- Metas Activas (resumo)
-- Últimos Lançamentos (5 mais recentes)
-- Contadores: Total Clientes, Total Projetos
+**Problema:** Cheque não está disponível como opção de pagamento.
 
-### 6.2 Lançamentos (/app/finance/transactions)
-- Cards resumo: Receitas, Despesas, Saldo
-- Pesquisa por descrição/cliente
-- Filtro: Todos | Receitas | Despesas
-- Lista de lançamentos com:
-  - Ícone (seta verde/vermelha)
-  - Descrição + data
-  - Cliente associado (se houver)
-  - Método de pagamento
-  - Valor (verde/vermelho)
-  - Botões editar/excluir
-- Modal "Novo Lançamento":
-  - Tipo (Receita/Despesa)
-  - Valor
-  - Descrição
-  - Data
-  - Categoria
-  - Cliente (opcional, pesquisável)
-  - Método de Pagamento
-  - Notas (opcional)
-
-### 6.3 Projetos (/app/finance/projects)
-- Cards: Total Projetos, Activos, Orçamento Total
-- Pesquisa
-- Filtro por status
-- Grid de cards de projetos com:
-  - Badge de status
-  - Nome + descrição
-  - Cliente associado
-  - Data início
-  - Valor do orçamento
-  - Botões editar/excluir
-- Modal "Novo Projeto":
-  - Nome
-  - Descrição
-  - Status
-  - Orçamento
-  - Data Início/Fim
-  - Cliente (pesquisável)
-
-### 6.4 Metas & OKRs (/app/finance/goals)
-- Cards: Total Metas, Metas Atingidas
-- Lista de metas com:
-  - Nome
-  - Tipo + período
-  - Barra de progresso
-  - Actual vs Meta
-  - Botões editar/excluir
-- Modal "Nova Meta":
-  - Nome
-  - Valor alvo
-  - Tipo (Mensal/Trimestral/Anual)
-  - Ano/Mês
-
-### 6.5 Relatórios (/app/finance/reports)
-- Seletor de ano
-- Cards: Receitas do Ano, Despesas do Ano, Lucro Líquido
-- Gráfico Evolução Mensal (área com receitas + despesas)
-- Gráfico Lucro Mensal (barras)
-- Gráfico Por Categoria (donut)
-- Botão Exportar CSV
+**Solução:**
+- Adicionar `cheque` ao enum `financial_payment_method` no banco
+- Atualizar tipo `PaymentMethod` em `src/types/finance.ts`
+- Atualizar `PAYMENT_METHOD_LABELS` com tradução
+- Atualizar tipos Supabase gerados
 
 ---
 
-## 7. Integração com Sistema Existente
+## 5. Opção para Criar Cliente no Dropdown
 
-### Clientes
-- Reutilizar tabela `clients` existente
-- Lançamentos podem ter `client_id` opcional
-- Projetos podem ter `client_id` opcional
-- Na página de clientes, mostrar total de receita por cliente
+**Problema:** Se o cliente não existe, não há como criá-lo diretamente do modal.
 
-### Moeda
-- Usar hook `useOrganizationCurrency` existente
-- Formatação consistente com resto do sistema
-
-### Permissões
-- Estender `useUserRole` para incluir `canSeeFinance`
-- Admin e Sales têm acesso completo
-- Operations tem acesso somente leitura
+**Solução:**
+- Adicionar botão "+ Novo Cliente" no final do dropdown de clientes
+- Ao clicar, abrir modal simplificado de criação rápida de cliente
+- Após criar, selecionar automaticamente o novo cliente
+- Criar componente `QuickClientModal.tsx`
 
 ---
 
-## 8. Traduções (i18n)
+## 6. Indicador de Campos Obrigatórios (*)
 
-Criar ficheiros:
-```text
-src/i18n/locales/pt-BR/finance.json
-src/i18n/locales/en-US/finance.json
-```
+**Problema:** Não está claro quais campos são obrigatórios.
 
-Chaves principais:
-```text
-{
-  "title": "Finanças",
-  "dashboard": "Dashboard",
-  "transactions": "Lançamentos",
-  "projects": "Projetos",
-  "goals": "Metas",
-  "reports": "Relatórios",
-  "income": "Receita",
-  "expense": "Despesa",
-  "balance": "Saldo",
-  ...
-}
-```
+**Solução:**
+- Adicionar `*` vermelho após labels de campos obrigatórios
+- Aplicar em `TransactionModal`, `ProjectModal`, `GoalModal`
+- Campos obrigatórios: Tipo, Valor, Descrição, Data, Método de Pagamento
 
 ---
 
-## 9. Ordem de Implementação
+## 7. Layout de 2 Transações por Linha
 
-### Fase 1 - Fundação
-1. Criar tipos TypeScript (`src/types/finance.ts`)
-2. Criar migração das tabelas no Supabase
-3. Configurar RLS policies
-4. Atualizar `types.ts` do Supabase
+**Problema:** Transações ocupam 1 por linha, desperdício de espaço.
 
-### Fase 2 - Lançamentos (Core)
-5. Criar hook `useTransactions`
-6. Criar componentes `TransactionModal` e `TransactionCard`
-7. Criar página `FinanceTransactions`
-8. Adicionar rota no App.tsx
-
-### Fase 3 - Dashboard
-9. Criar hook `useFinanceStats`
-10. Criar componentes de gráficos
-11. Criar página `FinanceDashboard`
-12. Adicionar item no Sidebar
-
-### Fase 4 - Projetos
-13. Criar hook `useFinanceProjects`
-14. Criar componentes de projetos
-15. Criar página `FinanceProjects`
-
-### Fase 5 - Metas
-16. Criar hook `useFinanceGoals`
-17. Criar componentes de metas
-18. Criar página `FinanceGoals`
-
-### Fase 6 - Relatórios
-19. Criar hook `useFinanceReports`
-20. Criar página `FinanceReports` com exportação CSV
-
-### Fase 7 - Finalização
-21. Adicionar traduções i18n
-22. Testes e ajustes de UI
-23. Documentação
+**Solução:**
+- Alterar grid de transações para `grid-cols-1 md:grid-cols-2`
+- Ajustar `TransactionCard` para layout mais compacto
+- Manter responsividade (1 coluna em mobile, 2 em desktop)
 
 ---
 
-## 10. Detalhes Técnicos
+## 8. Integrar Resumo Financeiro no Dashboard Principal
 
-### Componentes Reutilizáveis
-- `StatsCard` existente (dashboard)
-- `Card`, `Button`, `Input`, `Select`, `Dialog` (shadcn/ui)
-- `ChartContainer`, `AreaChart`, `BarChart`, `PieChart` (recharts)
-- `Table` para listas (opcional)
+**Problema:** Dados financeiros isolados do dashboard principal.
 
-### Padrões a Seguir
-- Usar `AnimatedContainer` para animações
-- Usar `toast` para feedback
-- Usar `Skeleton` para loading states
-- Usar `useOrganizationCurrency` para moeda
-- Seguir estrutura de hooks existentes
+**Solução:**
+Adicionar seção ao Dashboard principal:
+- Card: Receita do Mês (verde)
+- Card: Despesas do Mês (vermelho)  
+- Card: Saldo Líquido
+- Link "Ver detalhes" para `/app/finance/transactions`
 
-### Migração SQL Exemplo
+Criar hook `useQuickFinanceStats` para buscar resumo rápido.
+
+---
+
+## Ordem de Implementação
+
+1. Migração SQL: Categorias padrão + Cheque como pagamento
+2. Corrigir layout das páginas (padding)
+3. Remover FinanceDashboard e ajustar rotas
+4. Atualizar FinanceSidebar (remover Dashboard)
+5. Adicionar indicadores `*` nos campos obrigatórios
+6. Alterar grid de transações para 2 colunas
+7. Criar QuickClientModal para criação rápida
+8. Integrar resumos financeiros no Dashboard principal
+9. Atualizar tipos e traduções
+
+---
+
+## Detalhes Técnicos
+
+### Migração SQL para Categorias Padrão
+
 ```sql
-CREATE TYPE transaction_type AS ENUM ('income', 'expense');
-CREATE TYPE payment_method AS ENUM ('transfer', 'mpesa', 'emola', 'cash', 'other');
-CREATE TYPE project_status AS ENUM ('planning', 'in_progress', 'completed', 'cancelled');
-CREATE TYPE goal_type AS ENUM ('monthly', 'quarterly', 'yearly');
+-- Adicionar cheque ao enum
+ALTER TYPE financial_payment_method ADD VALUE 'cheque';
 
-CREATE TABLE financial_transactions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID NOT NULL REFERENCES organizations(id),
-  type transaction_type NOT NULL,
-  amount DECIMAL(12,2) NOT NULL,
-  description TEXT NOT NULL,
-  date DATE NOT NULL DEFAULT CURRENT_DATE,
-  category_id UUID REFERENCES financial_categories(id),
-  client_id UUID REFERENCES clients(id),
-  payment_method payment_method NOT NULL DEFAULT 'transfer',
-  notes TEXT,
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- Função para criar categorias padrão
+CREATE OR REPLACE FUNCTION create_default_finance_categories()
+RETURNS trigger AS $$
+BEGIN
+  -- Categorias de Receita
+  INSERT INTO financial_categories (organization_id, name, type, color) VALUES
+    (NEW.id, 'Serviços', 'income', '#22c55e'),
+    (NEW.id, 'Consultoria', 'income', '#3b82f6'),
+    (NEW.id, 'Venda de Produto', 'income', '#14b8a6'),
+    (NEW.id, 'Comissões', 'income', '#f59e0b'),
+    (NEW.id, 'Outras Receitas', 'income', '#8b5cf6');
+  
+  -- Categorias de Despesa
+  INSERT INTO financial_categories (organization_id, name, type, color) VALUES
+    (NEW.id, 'Salários', 'expense', '#ef4444'),
+    (NEW.id, 'Marketing', 'expense', '#ec4899'),
+    (NEW.id, 'Tecnologia', 'expense', '#3b82f6'),
+    (NEW.id, 'Aluguel', 'expense', '#f97316'),
+    (NEW.id, 'Transporte', 'expense', '#84cc16'),
+    (NEW.id, 'Alimentação', 'expense', '#f59e0b'),
+    (NEW.id, 'Material de Escritório', 'expense', '#6366f1'),
+    (NEW.id, 'Impostos', 'expense', '#64748b'),
+    (NEW.id, 'Outras Despesas', 'expense', '#78716c');
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger para novas organizações
+CREATE TRIGGER on_organization_created_finance_categories
+  AFTER INSERT ON organizations
+  FOR EACH ROW EXECUTE FUNCTION create_default_finance_categories();
+
+-- Criar categorias para organizações existentes
+INSERT INTO financial_categories (organization_id, name, type, color)
+SELECT o.id, c.name, c.type::financial_transaction_type, c.color
+FROM organizations o
+CROSS JOIN (VALUES
+  ('Serviços', 'income', '#22c55e'),
+  ('Consultoria', 'income', '#3b82f6'),
+  ('Outras Receitas', 'income', '#8b5cf6'),
+  ('Salários', 'expense', '#ef4444'),
+  ('Marketing', 'expense', '#ec4899'),
+  ('Tecnologia', 'expense', '#3b82f6'),
+  ('Outras Despesas', 'expense', '#78716c')
+) AS c(name, type, color)
+WHERE NOT EXISTS (
+  SELECT 1 FROM financial_categories fc 
+  WHERE fc.organization_id = o.id
 );
+```
 
--- Similar para outras tabelas...
+### Atualização de Tipos
 
--- RLS
-ALTER TABLE financial_transactions ENABLE ROW LEVEL SECURITY;
+```typescript
+// src/types/finance.ts
+export type PaymentMethod = 'transfer' | 'mpesa' | 'emola' | 'cash' | 'cheque' | 'other';
 
-CREATE POLICY "Users can view own org transactions"
-ON financial_transactions FOR SELECT
-USING (organization_id = (
-  SELECT COALESCE(current_organization_id, organization_id)
-  FROM profiles WHERE id = auth.uid()
-));
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  transfer: 'Transferência',
+  mpesa: 'M-Pesa',
+  emola: 'E-Mola',
+  cash: 'Dinheiro',
+  cheque: 'Cheque',
+  other: 'Outro',
+};
+```
 
--- Policies para INSERT, UPDATE, DELETE...
+### QuickClientModal (Simplificado)
+
+Campos mínimos para criação rápida:
+- Nome da Empresa (obrigatório)
+- Nome do Contacto
+- Telefone
+- Email
+
+### Layout TransactionModal com Labels Obrigatórios
+
+```tsx
+<FormLabel>Tipo <span className="text-destructive">*</span></FormLabel>
+<FormLabel>Valor <span className="text-destructive">*</span></FormLabel>
+<FormLabel>Descrição <span className="text-destructive">*</span></FormLabel>
 ```
 
 ---
 
-## Resumo
+## Arquivos a Criar
 
-Este módulo financeiro será integrado de forma nativa ao Qualify, reutilizando:
-- Sistema de clientes existente
-- Arquitectura multi-tenant
-- Componentes UI padronizados
-- Sistema de moedas e permissões
+1. `src/components/finance/QuickClientModal.tsx` - Modal criação rápida de cliente
 
-Resultado: Cada agência terá controle total sobre seu fluxo de caixa, vinculado à sua carteira de clientes.
+## Arquivos a Modificar
+
+1. `src/App.tsx` - Rota `/app/finance` → `FinanceTransactions`
+2. `src/pages/Dashboard.tsx` - Adicionar resumos financeiros
+3. `src/pages/finance/FinanceTransactions.tsx` - Layout, grid 2 colunas
+4. `src/pages/finance/FinanceProjects.tsx` - Padding
+5. `src/pages/finance/FinanceGoals.tsx` - Padding
+6. `src/pages/finance/FinanceReports.tsx` - Padding
+7. `src/components/finance/FinanceSidebar.tsx` - Remover Dashboard
+8. `src/components/finance/TransactionModal.tsx` - Campos obrigatórios, QuickClient
+9. `src/components/finance/TransactionCard.tsx` - Layout compacto
+10. `src/types/finance.ts` - Adicionar `cheque`
+11. `src/i18n/locales/*/finance.json` - Tradução cheque
+
+## Arquivos a Deletar
+
+1. `src/pages/finance/FinanceDashboard.tsx`
