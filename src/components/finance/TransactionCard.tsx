@@ -1,17 +1,11 @@
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { ArrowDownLeft, ArrowUpRight, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useLocale } from '@/hooks/useLocale';
 import type { Transaction } from '@/types/finance';
 import { PAYMENT_METHOD_LABELS } from '@/types/finance';
 
@@ -29,15 +23,16 @@ export function TransactionCard({
   canManage = true,
 }: TransactionCardProps) {
   const { currencySymbol } = useOrganizationCurrency();
+  const { dateLocale } = useLocale();
   const isIncome = transaction.type === 'income';
 
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          {/* Icon */}
+        <div className="flex items-start gap-3 sm:gap-4">
+          {/* Ícone */}
           <div className={cn(
-            'p-2 rounded-full shrink-0',
+            'p-2 rounded-full shrink-0 mt-0.5',
             isIncome ? 'bg-emerald-500/10' : 'bg-destructive/10'
           )}>
             {isIncome ? (
@@ -47,14 +42,37 @@ export function TransactionCard({
             )}
           </div>
 
-          {/* Content */}
+          {/* Conteúdo Principal */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-medium truncate">{transaction.description}</p>
+            {/* Linha 1: Descrição */}
+            <p className="font-medium text-foreground line-clamp-2">
+              {transaction.description}
+            </p>
+            
+            {/* Linha 2: Data + Cliente (destaque) + Método + Categoria */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5 text-sm">
+              <span className="text-muted-foreground">
+                {format(new Date(transaction.date), 'dd/MM/yyyy', { locale: dateLocale })}
+              </span>
+              
+              {transaction.clientName && (
+                <>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="font-medium text-primary">
+                    {transaction.clientName}
+                  </span>
+                </>
+              )}
+              
+              <span>•</span>
+              <span className="text-muted-foreground">
+                {PAYMENT_METHOD_LABELS[transaction.paymentMethod]}
+              </span>
+              
               {transaction.categoryName && (
                 <Badge 
                   variant="outline" 
-                  className="shrink-0"
+                  className="ml-auto shrink-0"
                   style={{ 
                     borderColor: transaction.categoryColor,
                     color: transaction.categoryColor 
@@ -64,48 +82,38 @@ export function TransactionCard({
                 </Badge>
               )}
             </div>
-            {transaction.clientName && (
-              <p className="text-sm font-medium text-foreground mt-1 truncate">
-                {transaction.clientName}
-              </p>
-            )}
-            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-              <span>{format(new Date(transaction.date), 'dd MMM yyyy', { locale: ptBR })}</span>
-              <span>•</span>
-              <span>{PAYMENT_METHOD_LABELS[transaction.paymentMethod]}</span>
-            </div>
           </div>
 
-          {/* Amount */}
-          <p className={cn(
-            'text-lg font-semibold shrink-0',
-            isIncome ? 'text-emerald-500' : 'text-destructive'
-          )}>
-            {isIncome ? '+' : '-'} {currencySymbol} {transaction.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
+          {/* Valor */}
+          <div className="text-right shrink-0">
+            <p className={cn(
+              'text-lg font-semibold whitespace-nowrap',
+              isIncome ? 'text-emerald-500' : 'text-destructive'
+            )}>
+              {isIncome ? '+' : '-'}{transaction.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} {currencySymbol}
+            </p>
+          </div>
 
-          {/* Actions */}
+          {/* Ações - Visíveis diretamente */}
           {canManage && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(transaction)}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => onDelete(transaction.id)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={() => onEdit(transaction)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-destructive hover:text-destructive"
+                onClick={() => onDelete(transaction.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>
