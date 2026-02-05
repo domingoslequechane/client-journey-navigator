@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { 
-  LayoutDashboard, 
   ArrowLeftRight, 
   FolderKanban, 
   Target, 
@@ -10,8 +9,7 @@ import {
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/app/finance', icon: LayoutDashboard, key: 'dashboard' },
-  { name: 'Lançamentos', href: '/app/finance/transactions', icon: ArrowLeftRight, key: 'transactions' },
+  { name: 'Lançamentos', href: '/app/finance', icon: ArrowLeftRight, key: 'transactions' },
   { name: 'Projetos', href: '/app/finance/projects', icon: FolderKanban, key: 'projects' },
   { name: 'Metas', href: '/app/finance/goals', icon: Target, key: 'goals' },
   { name: 'Relatórios', href: '/app/finance/reports', icon: FileBarChart, key: 'reports' },
@@ -24,8 +22,9 @@ export function FinanceSidebar() {
   return (
     <nav className="flex gap-1 overflow-x-auto pb-2 md:pb-0">
       {navigation.map((item) => {
-        const isActive = location.pathname === item.href || 
-          (item.href === '/app/finance' && location.pathname === '/app/finance');
+        const isActive = item.key === 'transactions' 
+          ? (location.pathname === '/app/finance' || location.pathname === '/app/finance/transactions')
+          : location.pathname === item.href;
         
         return (
           <Link

@@ -1,7 +1,7 @@
 // Financial Module Types
 
 export type TransactionType = 'income' | 'expense';
-export type PaymentMethod = 'transfer' | 'mpesa' | 'emola' | 'cash' | 'other';
+export type PaymentMethod = 'transfer' | 'mpesa' | 'emola' | 'cash' | 'cheque' | 'other';
 export type ProjectStatus = 'planning' | 'in_progress' | 'completed' | 'cancelled';
 export type GoalType = 'monthly' | 'quarterly' | 'yearly';
 
@@ -144,6 +144,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   mpesa: 'M-Pesa',
   emola: 'E-Mola',
   cash: 'Dinheiro',
+  cheque: 'Cheque',
   other: 'Outro',
 };
 

@@ -65,6 +65,7 @@
     "mpesa": "M-Pesa",
     "emola": "E-Mola",
     "cash": "Dinheiro",
+    "cheque": "Cheque",
     "other": "Outro"
   },
   "projectStatuses": {

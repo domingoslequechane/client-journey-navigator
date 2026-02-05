@@ -2025,6 +2025,7 @@ export type Database = {
         | "emola"
         | "cash"
         | "other"
+        | "cheque"
       financial_project_status:
         | "planning"
         | "in_progress"
@@ -2190,7 +2191,14 @@ export const Constants = {
       ],
       app_role: ["admin", "moderator", "user", "proprietor"],
       financial_goal_type: ["monthly", "quarterly", "yearly"],
-      financial_payment_method: ["transfer", "mpesa", "emola", "cash", "other"],
+      financial_payment_method: [
+        "transfer",
+        "mpesa",
+        "emola",
+        "cash",
+        "other",
+        "cheque",
+      ],
       financial_project_status: [
         "planning",
         "in_progress",

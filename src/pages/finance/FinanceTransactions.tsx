@@ -76,7 +76,7 @@ export default function FinanceTransactions() {
 
   return (
     <AnimatedContainer animation="fade-in">
-      <div className="space-y-6">
+      <div className="p-4 md:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold">Lançamentos</h1>
@@ -135,11 +135,11 @@ export default function FinanceTransactions() {
         </div>
 
         {/* Transactions List */}
-        <div className="space-y-2">
+        <div className="grid gap-2 grid-cols-1 md:grid-cols-2">
           {loading ? (
-            [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20" />)
+            [...Array(6)].map((_, i) => <Skeleton key={i} className="h-20" />)
           ) : transactions.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="col-span-full text-center py-12">
               <p className="text-muted-foreground">Nenhum lançamento encontrado</p>
               {canManageFinance && (
                 <Button 
