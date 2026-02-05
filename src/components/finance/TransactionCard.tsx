@@ -64,14 +64,13 @@ export function TransactionCard({
                 </Badge>
               )}
             </div>
+            {transaction.clientName && (
+              <p className="text-sm font-medium text-foreground mt-1 truncate">
+                {transaction.clientName}
+              </p>
+            )}
             <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
               <span>{format(new Date(transaction.date), 'dd MMM yyyy', { locale: ptBR })}</span>
-              {transaction.clientName && (
-                <>
-                  <span>•</span>
-                  <span className="truncate">{transaction.clientName}</span>
-                </>
-              )}
               <span>•</span>
               <span>{PAYMENT_METHOD_LABELS[transaction.paymentMethod]}</span>
             </div>

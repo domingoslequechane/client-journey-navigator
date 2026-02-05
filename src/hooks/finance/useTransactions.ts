@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import type { Transaction, TransactionFormData, TransactionFilters, TransactionType, PaymentMethod } from '@/types/finance';
 
 export function useTransactions(filters?: TransactionFilters) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const { organizationId } = useOrganizationCurrency();
   const { user } = useAuth();
@@ -40,15 +40,12 @@ export function useTransactions(filters?: TransactionFilters) {
       if (filters?.endDate) {
         query = query.lte('date', filters.endDate);
       }
-      if (filters?.search) {
-        query = query.ilike('description', `%${filters.search}%`);
-      }
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      setTransactions(data?.map(t => ({
+      setAllTransactions(data?.map(t => ({
         id: t.id,
         organizationId: t.organization_id,
         type: t.type as TransactionType,
@@ -71,11 +68,26 @@ export function useTransactions(filters?: TransactionFilters) {
     } finally {
       setLoading(false);
     }
-  }, [organizationId, filters?.type, filters?.categoryId, filters?.clientId, filters?.startDate, filters?.endDate, filters?.search]);
+  }, [organizationId, filters?.type, filters?.categoryId, filters?.clientId, filters?.startDate, filters?.endDate]);
 
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+
+  // Filtro local para busca multi-campo
+  const transactions = useMemo(() => {
+    if (!filters?.search) return allTransactions;
+    
+    const searchLower = filters.search.toLowerCase();
+    return allTransactions.filter(t => {
+      if (t.description.toLowerCase().includes(searchLower)) return true;
+      if (t.clientName?.toLowerCase().includes(searchLower)) return true;
+      if (t.categoryName?.toLowerCase().includes(searchLower)) return true;
+      if (t.type === 'income' && 'receita'.includes(searchLower)) return true;
+      if (t.type === 'expense' && 'despesa'.includes(searchLower)) return true;
+      return false;
+    });
+  }, [allTransactions, filters?.search]);
 
   const createTransaction = async (data: TransactionFormData): Promise<Transaction | null> => {
     if (!organizationId || !user) return null;
@@ -123,7 +135,7 @@ export function useTransactions(filters?: TransactionFilters) {
         updatedAt: newTransaction.updated_at,
       };
 
-      setTransactions(prev => [transaction, ...prev]);
+      setAllTransactions(prev => [transaction, ...prev]);
       toast({ title: 'Lançamento criado com sucesso' });
       return transaction;
     } catch (error) {
@@ -170,7 +182,7 @@ export function useTransactions(filters?: TransactionFilters) {
 
       if (error) throw error;
 
-      setTransactions(prev => prev.filter(t => t.id !== id));
+      setAllTransactions(prev => prev.filter(t => t.id !== id));
       toast({ title: 'Lançamento excluído' });
       return true;
     } catch (error) {
