@@ -108,119 +108,125 @@ export function GoalModal({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome da meta" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="targetAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Valor Alvo</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="goalType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {(Object.keys(GOAL_TYPE_LABELS) as GoalType[]).map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {GOAL_TYPE_LABELS[type]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="year"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ano</FormLabel>
-                  <Select 
-                    onValueChange={(v) => field.onChange(parseInt(v))} 
-                    value={field.value.toString()}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {[currentYear - 1, currentYear, currentYear + 1].map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-
-            {goalType === 'monthly' && (
-              <FormField
-                control={form.control}
-                name="month"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mês</FormLabel>
-                    <Select 
-                      onValueChange={(v) => field.onChange(parseInt(v))} 
-                      value={field.value?.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {months.map((month) => (
-                          <SelectItem key={month.value} value={month.value.toString()}>
-                            {month.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-            )}
+             <FormField
+               control={form.control}
+               name="name"
+               render={({ field }) => (
+                 <FormItem>
+                   <FormLabel>Nome <span className="text-destructive">*</span></FormLabel>
+                   <FormControl>
+                     <Input placeholder="Nome da meta" {...field} />
+                   </FormControl>
+                   <FormMessage />
+                 </FormItem>
+               )}
+             />
+ 
+             <div className="grid grid-cols-2 gap-4">
+               <FormField
+                 control={form.control}
+                 name="targetAmount"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Valor Alvo <span className="text-destructive">*</span></FormLabel>
+                     <FormControl>
+                       <Input
+                         type="number"
+                         step="0.01"
+                         placeholder="0.00"
+                         {...field}
+                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                       />
+                     </FormControl>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
+ 
+               <FormField
+                 control={form.control}
+                 name="goalType"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Tipo <span className="text-destructive">*</span></FormLabel>
+                     <Select onValueChange={field.onChange} value={field.value}>
+                       <FormControl>
+                         <SelectTrigger>
+                           <SelectValue />
+                         </SelectTrigger>
+                       </FormControl>
+                       <SelectContent>
+                         {(Object.keys(GOAL_TYPE_LABELS) as GoalType[]).map((type) => (
+                           <SelectItem key={type} value={type}>
+                             {GOAL_TYPE_LABELS[type]}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </FormItem>
+                 )}
+               />
+             </div>
+ 
+             <div className="grid grid-cols-2 gap-4">
+               <FormField
+                 control={form.control}
+                 name="year"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Ano <span className="text-destructive">*</span></FormLabel>
+                     <Select 
+                       onValueChange={(v) => field.onChange(parseInt(v))} 
+                       value={field.value.toString()}
+                     >
+                       <FormControl>
+                         <SelectTrigger>
+                           <SelectValue />
+                         </SelectTrigger>
+                       </FormControl>
+                       <SelectContent>
+                         {[currentYear - 1, currentYear, currentYear + 1].map((year) => (
+                           <SelectItem key={year} value={year.toString()}>
+                             {year}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </FormItem>
+                 )}
+               />
+ 
+               {goalType === 'monthly' ? (
+                 <FormField
+                   control={form.control}
+                   name="month"
+                   render={({ field }) => (
+                     <FormItem>
+                       <FormLabel>Mês</FormLabel>
+                       <Select 
+                         onValueChange={(v) => field.onChange(parseInt(v))} 
+                         value={field.value?.toString()}
+                       >
+                         <FormControl>
+                           <SelectTrigger>
+                             <SelectValue />
+                           </SelectTrigger>
+                         </FormControl>
+                         <SelectContent>
+                           {months.map((month) => (
+                             <SelectItem key={month.value} value={month.value.toString()}>
+                               {month.label}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                     </FormItem>
+                   )}
+                 />
+               ) : (
+                 <div /> 
+               )}
+             </div>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button

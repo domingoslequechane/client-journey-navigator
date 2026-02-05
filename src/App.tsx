@@ -20,8 +20,8 @@ import SetPassword from "./pages/SetPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AcceptInvite from "./pages/AcceptInvite";
 import Dashboard from "./pages/Dashboard";
-import SalesFunnel from "./pages/SalesFunnel";
-import OperationalFlow from "./pages/OperationalFlow";
+ import Pipeline from "./pages/Pipeline";
+ import { Navigate } from "react-router-dom";
 import Clients from "./pages/Clients";
 import NewClient from "./pages/NewClient";
 import EditClient from "./pages/EditClient";
@@ -105,16 +105,9 @@ const App = () => (
                 }
               >
                 <Route index element={<Dashboard />} />
-                <Route path="sales-funnel" element={
-                  <RoleProtectedRoute requireSalesFunnel>
-                    <SalesFunnel />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="operational-flow" element={
-                  <RoleProtectedRoute requireOperationalFlow>
-                    <OperationalFlow />
-                  </RoleProtectedRoute>
-                } />
+                 <Route path="pipeline" element={<Pipeline />} />
+                 <Route path="sales-funnel" element={<Navigate to="/app/pipeline?tab=sales" replace />} />
+                 <Route path="operational-flow" element={<Navigate to="/app/pipeline?tab=operations" replace />} />
                 <Route path="clients" element={
                   <RoleProtectedRoute requireClients>
                     <Clients />
