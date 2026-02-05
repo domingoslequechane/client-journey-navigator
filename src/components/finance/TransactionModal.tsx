@@ -39,6 +39,8 @@ const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   expense: 'Despesa',
 };
 
+const NONE_VALUE = '__none__';
+
 const schema = z.object({
   type: z.enum(['income', 'expense']),
   amount: z.number().positive('Valor deve ser positivo'),
@@ -113,8 +115,8 @@ export function TransactionModal({
       description: values.description,
       date: values.date,
       paymentMethod: values.paymentMethod,
-      categoryId: values.categoryId || undefined,
-      clientId: values.clientId || undefined,
+      categoryId: values.categoryId === NONE_VALUE ? undefined : values.categoryId,
+      clientId: values.clientId === NONE_VALUE ? undefined : values.clientId,
       notes: values.notes || undefined,
     };
     const success = await onSave(formData);
@@ -220,14 +222,14 @@ export function TransactionModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <Select onValueChange={field.onChange} value={field.value || NONE_VALUE}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Sem categoria" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Sem categoria</SelectItem>
+                        <SelectItem value={NONE_VALUE}>Sem categoria</SelectItem>
                         {filteredCategories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
                             <div className="flex items-center gap-2">
@@ -278,14 +280,14 @@ export function TransactionModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <Select onValueChange={field.onChange} value={field.value || NONE_VALUE}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Nenhum" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Nenhum</SelectItem>
+                        <SelectItem value={NONE_VALUE}>Nenhum</SelectItem>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.company_name}
