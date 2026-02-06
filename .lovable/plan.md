@@ -1,180 +1,92 @@
 
 
-# Plano: Melhorar Layout do TransactionCard
+# Plano: Migrar QIA para Lovable AI Gateway (Gemini 2.5 Flash)
 
-## Análise das Imagens de Referência
+## Resumo
 
-### Layout Atual (Imagem 1 - Problemático)
-- Informações dispersas e difíceis de ler
-- Layout em grid que fragmenta a informação
-- Categoria no topo mas sem contexto claro
-- Descrição truncada demais
-
-### Layout Desejado (Imagem 2 - Referência)
-- Layout em lista horizontal limpo
-- **Linha 1**: Descrição completa como título principal
-- **Linha 2**: Data • Nome do Cliente (cor verde) • Método de Pagamento
-- **Direita**: Valor com cor (verde para receita, vermelho para despesa)
-- **Ações**: Ícones de editar/excluir visíveis diretamente
+Trocar ambas as edge functions da QIA (chat e sugestoes) de **OpenAI API direta** (`gpt-4o-mini`) para o **Lovable AI Gateway** usando o modelo **`google/gemini-2.5-flash`**.
 
 ---
 
-## Mudanças Propostas
+## O Que Muda
 
-### Nova Estrutura do TransactionCard
+| Aspecto | Antes | Depois |
+|---------|-------|--------|
+| API | `api.openai.com` | `ai.gateway.lovable.dev` |
+| Chave | `OPENAI_API_KEY` | `LOVABLE_API_KEY` (ja configurada) |
+| Modelo | `gpt-4o-mini` | `google/gemini-2.5-flash` |
+| Funcoes afetadas | 2 edge functions | 2 edge functions |
 
-```text
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  [Ícone]  Concepção + Treinamento (Bar Code) & Configuração...    +5750,00 Mt  [✎] [🗑]  │
-│           02/02/2026 • OJ Comercial • Emola              [Consultoria]         │
-└──────────────────────────────────────────────────────────────────────────────┘
+---
+
+## Arquivos a Modificar
+
+### 1. `supabase/functions/chat/index.ts`
+
+Mudancas:
+- Trocar a variavel de ambiente de `OPENAI_API_KEY` para `LOVABLE_API_KEY`
+- Trocar o endpoint de `https://api.openai.com/v1/chat/completions` para `https://ai.gateway.lovable.dev/v1/chat/completions`
+- Trocar o modelo de `gpt-4o-mini` para `google/gemini-2.5-flash`
+- Atualizar o log de `"Calling OpenAI API with gpt-4o-mini"` para `"Calling Lovable AI Gateway with gemini-2.5-flash"`
+- Atualizar mensagens de erro para referenciar "Lovable AI" em vez de "OpenAI"
+
+### 2. `supabase/functions/generate-ai-suggestion/index.ts`
+
+Mudancas:
+- Trocar `OPENAI_API_KEY` para `LOVABLE_API_KEY`
+- Trocar o endpoint de `https://api.openai.com/v1/chat/completions` para `https://ai.gateway.lovable.dev/v1/chat/completions`
+- Trocar o modelo de `gpt-4o-mini` para `google/gemini-2.5-flash`
+- Atualizar logs e mensagens de erro
+
+---
+
+## Detalhes Tecnicos
+
+### Edge Function: `chat/index.ts`
+
+Linhas afetadas (aproximadamente):
+- **Linha 141**: `OPENAI_API_KEY` passa a `LOVABLE_API_KEY`
+- **Linha 144**: Verificacao da chave atualizada
+- **Linha 283**: Log atualizado
+- **Linhas 285-301**: Endpoint, header de Authorization e modelo atualizados
+- **Linhas 304-322**: Mensagens de erro referenciando "Lovable AI" em vez de "OpenAI"
+
+```typescript
+// ANTES
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+  body: JSON.stringify({ model: "gpt-4o-mini", ... }),
+});
+
+// DEPOIS
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+  body: JSON.stringify({ model: "google/gemini-2.5-flash", ... }),
+});
 ```
 
-### Estrutura Visual:
-- **Ícone**: Seta verde (receita) ou vermelha (despesa) à esquerda
-- **Linha 1**: Descrição (título principal, sem truncar excessivo)
-- **Linha 2**: Data • **Nome do Cliente** (cor primária/verde) • Método de Pagamento
-- **Direita**: Valor grande com cor apropriada
-- **Badge de Categoria**: Posicionado ao lado do método de pagamento ou no canto
-- **Ações**: Botões de editar e excluir visíveis (sem dropdown em desktop)
+### Edge Function: `generate-ai-suggestion/index.ts`
+
+Linhas afetadas:
+- **Linha 6**: Variavel `openAIApiKey` renomeada para `lovableApiKey`
+- **Linha 43-45**: Verificacao da chave atualizada
+- **Linhas 112-128**: Endpoint, Authorization header e modelo atualizados
+- **Linhas 131-134**: Mensagens de erro atualizadas
 
 ---
 
-## Implementação Detalhada
+## Nenhuma Mudanca no Frontend
 
-### Arquivo: `src/components/finance/TransactionCard.tsx`
-
-```tsx
-return (
-  <Card className="hover:shadow-md transition-shadow">
-    <CardContent className="p-4">
-      <div className="flex items-start gap-4">
-        {/* Ícone */}
-        <div className={cn(
-          'p-2 rounded-full shrink-0 mt-1',
-          isIncome ? 'bg-emerald-500/10' : 'bg-destructive/10'
-        )}>
-          {isIncome ? (
-            <ArrowDownLeft className="h-5 w-5 text-emerald-500" />
-          ) : (
-            <ArrowUpRight className="h-5 w-5 text-destructive" />
-          )}
-        </div>
-
-        {/* Conteúdo Principal */}
-        <div className="flex-1 min-w-0">
-          {/* Linha 1: Descrição */}
-          <p className="font-medium text-foreground line-clamp-2">
-            {transaction.description}
-          </p>
-          
-          {/* Linha 2: Data + Cliente (destaque) + Método + Categoria */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5 text-sm">
-            <span className="text-muted-foreground">
-              {format(new Date(transaction.date), 'dd/MM/yyyy', { locale: ptBR })}
-            </span>
-            
-            {transaction.clientName && (
-              <>
-                <span className="text-muted-foreground">•</span>
-                <span className="font-medium text-primary">
-                  {transaction.clientName}
-                </span>
-              </>
-            )}
-            
-            <span className="text-muted-foreground">•</span>
-            <span className="text-muted-foreground">
-              {PAYMENT_METHOD_LABELS[transaction.paymentMethod]}
-            </span>
-            
-            {transaction.categoryName && (
-              <Badge 
-                variant="outline" 
-                className="ml-auto"
-                style={{ 
-                  borderColor: transaction.categoryColor,
-                  color: transaction.categoryColor 
-                }}
-              >
-                {transaction.categoryName}
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Valor */}
-        <div className="text-right shrink-0">
-          <p className={cn(
-            'text-lg font-semibold whitespace-nowrap',
-            isIncome ? 'text-emerald-500' : 'text-destructive'
-          )}>
-            {isIncome ? '+' : '-'}{transaction.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} {currencySymbol}
-          </p>
-        </div>
-
-        {/* Ações - Visíveis diretamente */}
-        {canManage && (
-          <div className="flex items-center gap-1 shrink-0">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8"
-              onClick={() => onEdit(transaction)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => onDelete(transaction.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-    </CardContent>
-  </Card>
-);
-```
+A pagina `AIAssistant.tsx` e o hook `useAISuggestion.ts` ja chamam as edge functions via `supabase.functions.invoke` ou `fetch` ao endpoint da edge function. Nenhuma alteracao e necessaria no lado do cliente.
 
 ---
 
-## Pontos-Chave do Design
+## Vantagens
 
-| Elemento | Estilo |
-|----------|--------|
-| Descrição | `font-medium text-foreground line-clamp-2` |
-| Nome do Cliente | `font-medium text-primary` (cor verde/primária em destaque) |
-| Data e Método | `text-muted-foreground text-sm` |
-| Categoria | Badge com cor personalizada, posicionado com `ml-auto` |
-| Valor | `text-lg font-semibold` com cor verde (receita) ou vermelho (despesa) |
-| Ações | Botões visíveis diretamente, sem dropdown |
+1. **Sem necessidade de chave OpenAI** - `LOVABLE_API_KEY` ja esta configurada automaticamente
+2. **Custo-beneficio** - Gemini 2.5 Flash oferece bom equilibrio entre velocidade e qualidade
+3. **Streaming mantido** - O Lovable AI Gateway suporta streaming SSE da mesma forma
+4. **Compatibilidade** - API compativel com OpenAI, mesma estrutura de request/response
 
----
-
-## Benefícios
-
-1. **Hierarquia Visual Clara**: Descrição em destaque, metadados secundários abaixo
-2. **Nome do Cliente Destacado**: Cor primária (verde) para fácil identificação
-3. **Categoria Bem Posicionada**: No canto direito da linha de metadados
-4. **Ações Visíveis**: Editar e excluir sem precisar de clique extra
-5. **Layout Responsivo**: `flex-wrap` permite quebra de linha em mobile
-
----
-
-## Arquivo a Modificar
-
-- `src/components/finance/TransactionCard.tsx`
-
----
-
-## Resultado Esperado
-
-- Layout similar à imagem 2 de referência
-- Nome do cliente em cor destacada (verde/primária)
-- Descrição legível sem truncamento excessivo
-- Duas colunas no grid de cards conforme já existe
-- Ações de editar/excluir visíveis diretamente
