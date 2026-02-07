@@ -1631,6 +1631,7 @@ export type Database = {
         Row: {
           ai_instructions: string | null
           ai_restrictions: string | null
+          client_id: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -1649,6 +1650,7 @@ export type Database = {
         Insert: {
           ai_instructions?: string | null
           ai_restrictions?: string | null
+          client_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -1667,6 +1669,7 @@ export type Database = {
         Update: {
           ai_instructions?: string | null
           ai_restrictions?: string | null
+          client_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -1683,6 +1686,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "studio_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "studio_projects_organization_id_fkey"
             columns: ["organization_id"]

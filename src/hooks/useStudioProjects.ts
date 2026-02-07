@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +9,6 @@ export function useStudioProjects() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Get current organization ID
   const getOrganizationId = useCallback(async (): Promise<string | null> => {
     if (!user) return null;
     
@@ -22,7 +21,6 @@ export function useStudioProjects() {
     return data?.current_organization_id || data?.organization_id || null;
   }, [user]);
 
-  // Fetch all projects
   const { data: projects, isLoading: projectsLoading, refetch: refetchProjects } = useQuery({
     queryKey: ['studio-projects', user?.id],
     queryFn: async () => {
@@ -41,7 +39,6 @@ export function useStudioProjects() {
     enabled: !!user,
   });
 
-  // Create project
   const createProject = useMutation({
     mutationFn: async (project: Partial<StudioProject>) => {
       const orgId = await getOrganizationId();
@@ -61,6 +58,7 @@ export function useStudioProjects() {
           logo_images: project.logo_images,
           reference_images: project.reference_images,
           template_image: project.template_image,
+          client_id: (project as any).client_id || null,
           organization_id: orgId,
           created_by: user.id,
         })
@@ -79,7 +77,6 @@ export function useStudioProjects() {
     },
   });
 
-  // Update project
   const updateProject = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<StudioProject> & { id: string }) => {
       const { data, error } = await supabase
@@ -101,7 +98,6 @@ export function useStudioProjects() {
     },
   });
 
-  // Delete project
   const deleteProject = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -135,7 +131,6 @@ export function useStudioProject(projectId: string | undefined) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch single project
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['studio-project', projectId],
     queryFn: async () => {
@@ -153,7 +148,6 @@ export function useStudioProject(projectId: string | undefined) {
     enabled: !!projectId && !!user,
   });
 
-  // Fetch flyers for project
   const { data: flyers, isLoading: flyersLoading, refetch: refetchFlyers } = useQuery({
     queryKey: ['studio-flyers', projectId],
     queryFn: async () => {
@@ -171,7 +165,28 @@ export function useStudioProject(projectId: string | undefined) {
     enabled: !!projectId && !!user,
   });
 
-  // Generate flyer
+  // Fetch ratings for flyers
+  const { data: ratingsData } = useQuery({
+    queryKey: ['studio-flyer-ratings', projectId, user?.id],
+    queryFn: async () => {
+      if (!projectId || !user) return {};
+
+      const { data, error } = await supabase
+        .from('studio_flyer_ratings')
+        .select('flyer_id, rating, feedback')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      const ratingsMap: Record<string, { rating: number; feedback: string | null }> = {};
+      for (const r of data || []) {
+        ratingsMap[r.flyer_id] = { rating: r.rating, feedback: r.feedback };
+      }
+      return ratingsMap;
+    },
+    enabled: !!projectId && !!user,
+  });
+
   const generateFlyer = useMutation({
     mutationFn: async (settings: {
       prompt: string;
@@ -179,6 +194,7 @@ export function useStudioProject(projectId: string | undefined) {
       style: string;
       mode: string;
       model: string;
+      [key: string]: any;
     }) => {
       if (!projectId || !project) throw new Error('No project');
 
@@ -200,6 +216,76 @@ export function useStudioProject(projectId: string | undefined) {
     },
   });
 
+  const deleteFlyer = useMutation({
+    mutationFn: async (flyerId: string) => {
+      const { error } = await supabase
+        .from('studio_flyers')
+        .delete()
+        .eq('id', flyerId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['studio-flyers', projectId] });
+      toast.success('Flyer eliminado!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao eliminar flyer: ' + error.message);
+    },
+  });
+
+  const rateFlyer = useMutation({
+    mutationFn: async ({ flyerId, rating, feedback }: { flyerId: string; rating: number; feedback?: string }) => {
+      if (!user) throw new Error('Not authenticated');
+
+      // Upsert: update if exists, insert if not
+      const { data: existing } = await supabase
+        .from('studio_flyer_ratings')
+        .select('id')
+        .eq('flyer_id', flyerId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('studio_flyer_ratings')
+          .update({ rating, feedback: feedback || null })
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('studio_flyer_ratings')
+          .insert({
+            flyer_id: flyerId,
+            user_id: user.id,
+            rating,
+            feedback: feedback || null,
+          });
+        if (error) throw error;
+      }
+
+      // Store as AI learning for future improvements
+      if (feedback && project) {
+        await supabase
+          .from('studio_ai_learnings')
+          .insert({
+            project_id: projectId!,
+            user_id: user.id,
+            learning_type: 'feedback',
+            content: `Rating: ${rating}/5. ${feedback}`,
+            context: JSON.stringify({ flyerId, rating }),
+          });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['studio-flyer-ratings', projectId] });
+      toast.success('Avaliação salva! A IA vai aprender com seu feedback.');
+    },
+    onError: (error) => {
+      toast.error('Erro ao avaliar: ' + error.message);
+    },
+  });
+
   return {
     project,
     projectLoading,
@@ -207,5 +293,8 @@ export function useStudioProject(projectId: string | undefined) {
     flyersLoading,
     refetchFlyers,
     generateFlyer,
+    deleteFlyer,
+    rateFlyer,
+    ratings: ratingsData || {},
   };
 }
