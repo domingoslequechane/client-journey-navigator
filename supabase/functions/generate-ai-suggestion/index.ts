@@ -34,44 +34,82 @@ interface AISuggestion {
   action: string;
 }
 
-function extractJsonFromResponse(content: string): AISuggestion {
-  // Step 1: Try direct parse
-  try {
-    return JSON.parse(content);
-  } catch { /* continue */ }
+function extractJsonFromResponse(content: string, clients: Array<{id: string; company: string}>): AISuggestion {
+  const cleanedVariants = [
+    content,
+    // Strip markdown code blocks
+    content.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '').trim(),
+  ];
 
-  // Step 2: Extract from markdown code blocks (```json ... ```)
-  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) {
+  for (const variant of cleanedVariants) {
+    // Try direct parse
     try {
-      return JSON.parse(codeBlockMatch[1].trim());
+      const parsed = JSON.parse(variant);
+      if (parsed && parsed.type) return parsed;
     } catch { /* continue */ }
-  }
 
-  // Step 3: Find JSON object pattern in mixed text
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    try {
-      return JSON.parse(jsonMatch[0]);
-    } catch {
-      // Try to repair truncated JSON by balancing braces
-      let repaired = jsonMatch[0];
-      let braces = 0, brackets = 0;
-      for (const char of repaired) {
-        if (char === '{') braces++;
-        if (char === '}') braces--;
-        if (char === '[') brackets++;
-        if (char === ']') brackets--;
-      }
-      while (brackets > 0) { repaired += ']'; brackets--; }
-      while (braces > 0) { repaired += '}'; braces--; }
+    // Find JSON object in text
+    const jsonMatch = variant.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      let candidate = jsonMatch[0];
+      
+      // Clean control chars and trailing commas
+      candidate = candidate
+        .replace(/[\x00-\x1F\x7F]/g, ' ')
+        .replace(/,\s*}/g, '}')
+        .replace(/,\s*]/g, ']');
+
       try {
-        return JSON.parse(repaired);
-      } catch { /* continue */ }
+        const parsed = JSON.parse(candidate);
+        if (parsed && parsed.type) return parsed;
+      } catch {
+        // Try to repair by balancing braces/brackets and closing open strings
+        let repaired = candidate;
+        
+        // Close any unclosed string values by finding last unmatched quote
+        let inString = false;
+        let lastQuotePos = -1;
+        for (let i = 0; i < repaired.length; i++) {
+          if (repaired[i] === '"' && (i === 0 || repaired[i-1] !== '\\')) {
+            inString = !inString;
+            lastQuotePos = i;
+          }
+        }
+        if (inString) {
+          repaired += '"';
+        }
+
+        // Balance braces and brackets
+        let braces = 0, brackets = 0;
+        for (const char of repaired) {
+          if (char === '{') braces++;
+          if (char === '}') braces--;
+          if (char === '[') brackets++;
+          if (char === ']') brackets--;
+        }
+        while (brackets > 0) { repaired += ']'; brackets--; }
+        while (braces > 0) { repaired += '}'; braces--; }
+
+        try {
+          const parsed = JSON.parse(repaired);
+          if (parsed && parsed.type) return parsed;
+        } catch { /* continue */ }
+      }
     }
   }
 
-  throw new Error('Could not extract valid JSON from AI response');
+  // Fallback: return a generic suggestion using the first client
+  console.warn('Could not parse AI response, returning fallback suggestion. Raw:', content.substring(0, 200));
+  const fallbackClient = clients[0] || { id: 'unknown', company: 'Cliente' };
+  return {
+    type: 'followup',
+    clientId: fallbackClient.id,
+    clientName: fallbackClient.company,
+    message: 'Recomendamos fazer um follow-up com este cliente para manter o relacionamento ativo.',
+    priority: 'medium',
+    conversionChance: 50,
+    action: 'Fazer follow-up',
+  };
 }
 
 serve(async (req) => {
@@ -164,7 +202,8 @@ Responda APENAS com um JSON válido no formato:
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 1024,
+        response_format: { type: 'json_object' },
       }),
     });
 
@@ -183,7 +222,7 @@ Responda APENAS com um JSON válido no formato:
 
     console.log('Gemini response:', content);
 
-    const suggestion: AISuggestion = extractJsonFromResponse(content);
+    const suggestion: AISuggestion = extractJsonFromResponse(content, clientsData);
 
     return new Response(
       JSON.stringify({ suggestion }),
