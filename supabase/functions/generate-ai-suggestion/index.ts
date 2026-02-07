@@ -34,6 +34,46 @@ interface AISuggestion {
   action: string;
 }
 
+function extractJsonFromResponse(content: string): AISuggestion {
+  // Step 1: Try direct parse
+  try {
+    return JSON.parse(content);
+  } catch { /* continue */ }
+
+  // Step 2: Extract from markdown code blocks (```json ... ```)
+  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    try {
+      return JSON.parse(codeBlockMatch[1].trim());
+    } catch { /* continue */ }
+  }
+
+  // Step 3: Find JSON object pattern in mixed text
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch {
+      // Try to repair truncated JSON by balancing braces
+      let repaired = jsonMatch[0];
+      let braces = 0, brackets = 0;
+      for (const char of repaired) {
+        if (char === '{') braces++;
+        if (char === '}') braces--;
+        if (char === '[') brackets++;
+        if (char === ']') brackets--;
+      }
+      while (brackets > 0) { repaired += ']'; brackets--; }
+      while (braces > 0) { repaired += '}'; braces--; }
+      try {
+        return JSON.parse(repaired);
+      } catch { /* continue */ }
+    }
+  }
+
+  throw new Error('Could not extract valid JSON from AI response');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -138,17 +178,12 @@ Responda APENAS com um JSON válido no formato:
     const content = data.choices[0]?.message?.content;
 
     if (!content) {
-      throw new Error('No content in OpenAI response');
+      throw new Error('No content in Gemini response');
     }
 
-    console.log('OpenAI response:', content);
+    console.log('Gemini response:', content);
 
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Could not parse JSON from response');
-    }
-
-    const suggestion: AISuggestion = JSON.parse(jsonMatch[0]);
+    const suggestion: AISuggestion = extractJsonFromResponse(content);
 
     return new Response(
       JSON.stringify({ suggestion }),
