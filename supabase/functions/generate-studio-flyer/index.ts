@@ -185,9 +185,15 @@ function buildProductPreservationPrompt(params: {
 
   let p = buildCoreInstructions(sizeConfig);
 
-  p += `\n\nMODE: Product preservation — The reference image contains the EXACT product to advertise.
-CRITICAL: The product MUST remain 100% IDENTICAL (shape, color, texture, logos). Do NOT redesign it.
-Extract the product, place it as hero element (40-60% of canvas), and design ONLY the background, layout, and text around it.`;
+  p += `\n\nMODE: Product preservation (IMAGE EDITING TASK)
+CRITICAL RULE: The attached image contains the EXACT product to advertise.
+You MUST keep this product 100% IDENTICAL — same shape, color, texture, labels, logos, and packaging.
+Do NOT substitute it with any other product. Do NOT reinterpret, reimagine, or redraw it.
+Do NOT generate a similar-looking product. The product in the attached image is the ONLY product allowed.
+Your task: Extract the product from the attached image and design a professional flyer AROUND it.
+Only create/modify: background, geometric shapes, text layout, lighting effects, decorative elements.
+The product itself is UNTOUCHABLE — treat it as a sacred, immutable element.
+PRODUCT DESCRIPTION (from user): "${prompt}"`;
 
   if (clientName) p += `\nBrand: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
@@ -198,8 +204,8 @@ Extract the product, place it as hero element (40-60% of canvas), and design ONL
   if (aiInstructions) p += `\nDirection: ${aiInstructions}`;
   if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
 
-  p += `\n\nFLYER TEXT CONTENT:\n${prompt}`;
-  p += `\n\nDesign a professional flyer around the PRESERVED product. Bold geometric background, premium quality.`;
+  p += `\n\nFLYER TEXT CONTENT (render this text on the flyer):\n${prompt}`;
+  p += `\n\nDesign a premium flyer AROUND the preserved product. The product from the image must appear EXACTLY as-is. Bold geometric background, premium agency quality.`;
 
   return p;
 }
@@ -330,30 +336,44 @@ async function callGeminiWithRetry(
   model: string,
   parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>,
   apiKey: string,
-  maxRetries: number = 2
+  maxRetries: number = 2,
+  isProductMode: boolean = false
 ): Promise<{ imageData: string; mimeType: string } | { error: string; status: number; response?: unknown }> {
+  
+  // Separate text and image parts for retry logic
+  const textParts = parts.filter(p => 'text' in p);
+  const imageParts = parts.filter(p => 'inlineData' in p);
   
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const isRetry = attempt > 0;
     
-    // On retry, simplify: remove images and use a shorter prompt
     let currentParts = parts;
     if (isRetry) {
       console.log(`Retry attempt ${attempt}: simplifying request...`);
-      // Keep only the text part (first element) and simplify it
-      const textPart = parts.find(p => 'text' in p) as { text: string } | undefined;
+      const textPart = textParts[0] as { text: string } | undefined;
+      
       if (textPart) {
-        // On first retry, keep images but shorten text. On second retry, drop images entirely.
         if (attempt === 1) {
-          currentParts = parts; // keep everything, just retry
+          // First retry: keep everything, just retry
+          currentParts = parts;
         } else {
-          // Drop all images, use simplified text
-          const simplifiedText = textPart.text
-            .replace(/DESIGN RULES:[\s\S]*?NO AI artifacts[^\n]*\n/g, 
-              'Create a professional, photorealistic commercial flyer. Premium agency quality. Bold geometric design with depth.\n')
-            .substring(0, 800);
-          currentParts = [{ text: simplifiedText }];
-          console.log("Retry with simplified prompt (no images), length:", simplifiedText.length);
+          // Second retry: simplify text
+          if (isProductMode && imageParts.length > 0) {
+            // PRODUCT MODE: NEVER drop the product image — only simplify text
+            const simplifiedText = `Create a professional commercial flyer featuring the EXACT product shown in the attached image. 
+Keep the product 100% identical. Design only the background and text layout around it.
+Text content: ${textPart.text.match(/FLYER TEXT CONTENT[^\n]*\n([\s\S]*?)(?:\n\n|$)/)?.[1] || textPart.text.substring(textPart.text.length - 200)}`;
+            currentParts = [{ text: simplifiedText }, ...imageParts];
+            console.log("Product mode retry: simplified text but KEPT product image");
+          } else {
+            // Non-product mode: drop images, simplify text
+            const simplifiedText = textPart.text
+              .replace(/DESIGN RULES:[\s\S]*?NO AI artifacts[^\n]*\n/g, 
+                'Create a professional, photorealistic commercial flyer. Premium agency quality. Bold geometric design with depth.\n')
+              .substring(0, 800);
+            currentParts = [{ text: simplifiedText }];
+            console.log("Retry with simplified prompt (no images), length:", simplifiedText.length);
+          }
         }
       }
     }
@@ -414,6 +434,11 @@ async function callGeminiWithRetry(
         if (attempt < maxRetries) {
           await new Promise(r => setTimeout(r, 1000));
           continue;
+        }
+        
+        // For product mode, give a specific error since we can't generate without the product
+        if (isProductMode) {
+          return { error: "A imagem do produto foi bloqueada pela IA. Tente com uma imagem diferente do produto.", status: 500, response: data };
         }
         return { error: "Image generation was blocked. Try a different prompt.", status: 500, response: data };
       }
@@ -490,6 +515,7 @@ serve(async (req) => {
       projectId, prompt, size = '1080x1080', style = 'vivid',
       mode = 'original', model = 'gemini-flash', niche, mood,
       colors, elements, preserveProduct = false,
+      productImage,
       layoutReferences = [], additionalReferences = [],
     } = await req.json();
 
@@ -631,16 +657,27 @@ serve(async (req) => {
 
     // Collect reference images
     const allReferenceImages: string[] = [];
+    
+    // Product image gets ABSOLUTE PRIORITY in product mode
+    if (finalMode === 'product' && productImage) {
+      allReferenceImages.push(productImage);
+      console.log("Product mode: product image added as PRIMARY reference");
+    }
+    
     if (finalMode === 'template' && project.template_image) {
       allReferenceImages.push(project.template_image);
     }
-    allReferenceImages.push(...layoutReferences);
-    allReferenceImages.push(...additionalReferences);
-    if (project.reference_images) {
-      allReferenceImages.push(...project.reference_images);
+    
+    // In product mode, ONLY use the product image — no other references that could confuse the AI
+    if (finalMode !== 'product') {
+      allReferenceImages.push(...layoutReferences);
+      allReferenceImages.push(...additionalReferences);
+      if (project.reference_images) {
+        allReferenceImages.push(...project.reference_images);
+      }
     }
 
-    // Limit images: fewer images = less likely to be blocked
+    // Limit images: product mode gets exactly 1 (the product), others get up to 2
     const maxImages = finalMode === 'product' ? 1 : (finalMode === 'template' ? 2 : 2);
     const imagesToProcess = allReferenceImages.slice(0, maxImages);
 
@@ -656,7 +693,7 @@ serve(async (req) => {
     }
 
     // Call Gemini with retry logic
-    const result = await callGeminiWithRetry(selectedModel, parts, GEMINI_API_KEY);
+    const result = await callGeminiWithRetry(selectedModel, parts, GEMINI_API_KEY, 2, finalMode === 'product');
 
     if ('error' in result) {
       return new Response(JSON.stringify({
