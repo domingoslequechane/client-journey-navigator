@@ -2,6 +2,7 @@ export interface StudioProject {
   id: string;
   organization_id: string;
   created_by: string;
+  client_id: string | null;
   name: string;
   description: string | null;
   niche: string | null;
@@ -51,8 +52,8 @@ export interface StudioAILearning {
   created_at: string;
 }
 
-// 5 modos de geração
-export type GenerationMode = 'original' | 'copy' | 'inspiration' | 'product' | 'template';
+// 3 modos de geração (removidos Produto Exato e Template)
+export type GenerationMode = 'original' | 'copy' | 'inspiration';
 
 // Tamanhos disponíveis
 export type FlyerSize = '1080x1080' | '1080x1920' | '1920x1080' | '1080x1350' | '1280x720';
@@ -101,17 +102,10 @@ export type FlyerMood =
   | 'Luxuoso'
   | 'Corporativo';
 
-// Cores
+// Cores simplificadas
 export type FlyerColorScheme = 
-  | 'Laranja/Cinza'
-  | 'Azul/Laranja'
-  | 'Vermelho/Preto'
-  | 'Amarelo/Roxo'
-  | 'Verde/Branco'
-  | 'Preto/Dourado'
-  | 'Azul/Branco'
-  | 'Rosa/Roxo'
-  | 'Cores do Cliente';
+  | 'Cores do Cliente'
+  | 'Aleatórias (IA escolhe)';
 
 // Elementos visuais
 export type FlyerElement = 
@@ -131,15 +125,11 @@ export interface GenerationSettings {
   style: 'vivid' | 'natural';
   mode: GenerationMode;
   model: 'gemini-flash' | 'gemini-pro';
-  // Novos campos
-  niche?: FlyerNiche;
+  // Campos opcionais
   mood?: FlyerMood;
   colors?: FlyerColorScheme;
   elements?: FlyerElement;
   preserveProduct?: boolean;
-  // Imagens de referência
-  layoutReferences?: string[];
-  additionalReferences?: string[];
   productImage?: string;
 }
 
@@ -164,8 +154,7 @@ export const MOOD_OPTIONS: FlyerMood[] = [
 ];
 
 export const COLOR_SCHEME_OPTIONS: FlyerColorScheme[] = [
-  'Laranja/Cinza', 'Azul/Laranja', 'Vermelho/Preto', 'Amarelo/Roxo',
-  'Verde/Branco', 'Preto/Dourado', 'Azul/Branco', 'Rosa/Roxo', 'Cores do Cliente'
+  'Cores do Cliente', 'Aleatórias (IA escolhe)'
 ];
 
 export const ELEMENT_OPTIONS: FlyerElement[] = [
@@ -175,8 +164,13 @@ export const ELEMENT_OPTIONS: FlyerElement[] = [
 
 export const MODE_OPTIONS: { value: GenerationMode; label: string; description: string }[] = [
   { value: 'original', label: 'Criação Original', description: 'Design 100% original com estética brasileira' },
-  { value: 'copy', label: 'Cópia de Template', description: 'Copia layout exato de uma referência' },
+  { value: 'copy', label: 'Cópia de Referência', description: 'Copia layout exato das referências do projeto' },
   { value: 'inspiration', label: 'Inspiração', description: 'Original mas inspirado nas referências' },
-  { value: 'product', label: 'Produto Exato', description: 'Preserva o produto 100% idêntico' },
-  { value: 'template', label: 'Memória de Template', description: 'Usa template aprovado do cliente' },
+];
+
+export const FONT_OPTIONS = [
+  'Inter', 'Roboto', 'Poppins', 'Montserrat', 'Open Sans', 'Lato',
+  'Playfair Display', 'Bebas Neue', 'Oswald', 'Raleway', 'Nunito',
+  'Source Sans Pro', 'PT Sans', 'Ubuntu', 'Merriweather',
+  'Dancing Script', 'Pacifico', 'Lobster', 'Righteous', 'Archivo Black',
 ];

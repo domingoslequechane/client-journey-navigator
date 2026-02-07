@@ -13,12 +13,16 @@ import type { GenerationSettings } from '@/types/studio';
 export default function StudioEditor() {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { project, projectLoading, flyers, flyersLoading, generateFlyer, refetchFlyers } = useStudioProject(projectId);
+  const { 
+    project, projectLoading, 
+    flyers, flyersLoading, 
+    generateFlyer, refetchFlyers,
+    deleteFlyer, rateFlyer, ratings 
+  } = useStudioProject(projectId);
   const { incrementUsage } = usePlanLimits();
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // TODO: Add studio generations limit to usePlanLimits hook
-  const remainingGenerations = null; // null = unlimited for now
+  const remainingGenerations = null;
 
   const handleGenerate = async (settings: GenerationSettings) => {
     if (!project) return;
@@ -39,6 +43,14 @@ export default function StudioEditor() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleDeleteFlyer = (flyerId: string) => {
+    deleteFlyer.mutate(flyerId);
+  };
+
+  const handleRateFlyer = (flyerId: string, rating: number, feedback?: string) => {
+    rateFlyer.mutate({ flyerId, rating, feedback });
   };
 
   if (projectLoading) {
@@ -81,7 +93,6 @@ export default function StudioEditor() {
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Color preview */}
           <div className="flex gap-1">
             <div
               className="w-6 h-6 rounded-full border"
@@ -114,6 +125,9 @@ export default function StudioEditor() {
               <FlyerGallery
                 flyers={flyers}
                 loading={flyersLoading}
+                onRate={handleRateFlyer}
+                onDelete={handleDeleteFlyer}
+                ratings={ratings}
               />
             </TabsContent>
             <TabsContent value="reference" className="mt-4">
