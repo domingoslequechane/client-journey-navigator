@@ -188,7 +188,7 @@ export function ProjectForm({ project, onSubmit, isSubmitting }: ProjectFormProp
             Configure as definições de marca para geração de flyers
           </p>
         </div>
-        <Button type="submit" disabled={isSubmitting || !selectedClientId}>
+        <Button type="submit" disabled={isSubmitting || (!selectedClientId && !project)}>
           {isSubmitting ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (
