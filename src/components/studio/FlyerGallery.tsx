@@ -39,7 +39,7 @@ interface FlyerGalleryProps {
 const ITEMS_PER_PAGE = 9;
 
 export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, className }: FlyerGalleryProps) {
-  const [previewFlyer, setPreviewFlyer] = useState<StudioFlyer | null>(null);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [deleteFlyer, setDeleteFlyer] = useState<StudioFlyer | null>(null);
   const [feedbackFlyer, setFeedbackFlyer] = useState<StudioFlyer | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
@@ -51,6 +51,12 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
     currentPage * ITEMS_PER_PAGE,
     (currentPage + 1) * ITEMS_PER_PAGE
   );
+
+  // Build navigation data for all flyers (not just paginated)
+  const allFlyerImages = flyers.map(f => ({
+    url: f.image_url,
+    title: f.prompt,
+  }));
 
   const handleDownload = async (flyer: StudioFlyer) => {
     try {
@@ -92,6 +98,12 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
     setFeedbackText(existing?.feedback || '');
   };
 
+  const openPreview = (flyer: StudioFlyer) => {
+    // Find the flyer's global index (across all pages)
+    const globalIndex = flyers.findIndex(f => f.id === flyer.id);
+    setPreviewIndex(globalIndex >= 0 ? globalIndex : 0);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -109,6 +121,8 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
       </div>
     );
   }
+
+  const previewFlyer = previewIndex !== null ? flyers[previewIndex] : null;
 
   return (
     <>
@@ -133,7 +147,7 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
                       <Button
                         size="icon"
                         variant="secondary"
-                        onClick={() => setPreviewFlyer(flyer)}
+                        onClick={() => openPreview(flyer)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -241,13 +255,16 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
         )}
       </div>
 
-      {/* Image Preview Modal */}
+      {/* Image Preview Modal with navigation */}
       {previewFlyer && (
         <ImagePreviewModal
-          open={!!previewFlyer}
-          onOpenChange={(open) => !open && setPreviewFlyer(null)}
+          open={previewIndex !== null}
+          onOpenChange={(open) => !open && setPreviewIndex(null)}
           imageUrl={previewFlyer.image_url}
           title={previewFlyer.prompt}
+          allImages={allFlyerImages}
+          currentIndex={previewIndex!}
+          onNavigate={(index) => setPreviewIndex(index)}
         />
       )}
 
