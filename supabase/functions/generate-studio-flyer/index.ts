@@ -43,7 +43,7 @@ const NICHE_STYLE: Record<string, string> = {
 };
 
 // Concise design system core - optimized for token efficiency
-function buildCoreInstructions(sizeConfig: typeof SIZE_CONFIG[string], hasReferences: boolean = false): string {
+function buildCoreInstructions(sizeConfig: typeof SIZE_CONFIG[string], hasReferences: boolean = false, hasLogos: boolean = false): string {
   let core = `You are an elite Brazilian graphic designer creating a premium commercial flyer (${sizeConfig.width}×${sizeConfig.height}px, ${sizeConfig.aspectRatio}).
 
 MANDATORY DESIGN RULES:
@@ -55,11 +55,73 @@ MANDATORY DESIGN RULES:
 6. FINISHING: Subtle grain texture, vignette edges, directional light rays/glows, consistent shadow direction. Premium agency quality.
 7. ABSOLUTE RULES: NO AI artifacts. NO cartoon/illustration style. NO flat design. ALL products must look like real 3D photographs. All text sharp, readable, correctly spelled, never cut off.`;
 
+  if (hasLogos) {
+    core += `\n8. COMPANY LOGO: One or more of the attached images is the company LOGO. You MUST place the logo prominently on the flyer (top-left or top-center, ~10-15% of canvas width). The logo must be clearly visible, never cropped, never distorted, never omitted. It is MANDATORY to include the logo in the final output.`;
+  }
+
   if (hasReferences) {
     core += `\n\n⚠️ REFERENCE IMAGES ATTACHED: Study the attached reference image(s) carefully. They define the QUALITY BAR and VISUAL STYLE you must match or exceed. Analyze their: composition, 3D product rendering style, geometric shapes, color palette, typography weight, background treatment, and overall professional finish. Your output must be AT LEAST as polished and impactful as these references.`;
   }
 
   return core;
+}
+
+// Helper: build mandatory brand config block
+function buildMandatoryBrandConfig(params: {
+  colors?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  fontFamily?: string;
+  aiInstructions?: string;
+  aiRestrictions?: string;
+  hasLogos?: boolean;
+}): string {
+  const { colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos } = params;
+  let block = '';
+
+  if (colors === 'Cores do Cliente' && (primaryColor || secondaryColor)) {
+    block += `\n\nMANDATORY BRAND COLORS (non-negotiable):
+- Primary: ${primaryColor || 'auto'} — use as the DOMINANT color (backgrounds, large shapes, accents). This MUST be the most visible color.
+- Secondary: ${secondaryColor || 'auto'} — use as SUPPORTING color (badges, highlights, contrast elements, CTA buttons).
+Do NOT invent other color schemes. Do NOT ignore these colors. These brand colors define the visual identity and MUST be followed.`;
+  }
+
+  if (fontFamily) {
+    block += `\nMANDATORY FONT STYLE: ${fontFamily}. All headlines and text MUST reflect this typeface personality and weight. Do NOT use a different font.`;
+  }
+
+  if (aiInstructions) {
+    block += `\n\nCREATIVE DIRECTOR ORDERS (must follow exactly — these are direct orders from the client):\n${aiInstructions}`;
+  }
+
+  if (aiRestrictions) {
+    block += `\n\nABSOLUTE PROHIBITIONS (violating ANY of these = complete failure):\n${aiRestrictions}`;
+  }
+
+  return block;
+}
+
+// Helper: build final checklist
+function buildFinalChecklist(params: {
+  hasLogos?: boolean;
+  primaryColor?: string;
+  secondaryColor?: string;
+  fontFamily?: string;
+  aiInstructions?: string;
+  colors?: string;
+}): string {
+  const { hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors } = params;
+  let checklist = '\n\nFINAL CHECKLIST — your output MUST satisfy ALL of these requirements:';
+  if (hasLogos) checklist += '\n✓ Company logo placed prominently (top-left or top-center, clearly visible)';
+  if (colors === 'Cores do Cliente') {
+    if (primaryColor) checklist += `\n✓ Primary color ${primaryColor} is the DOMINANT color`;
+    if (secondaryColor) checklist += `\n✓ Secondary color ${secondaryColor} is visible as accent`;
+  }
+  if (fontFamily) checklist += `\n✓ ${fontFamily} typography style used for all text`;
+  checklist += '\n✓ Photorealistic 3D product rendering (NOT flat, NOT cartoon, NOT illustrated)';
+  checklist += '\n✓ Premium Brazilian agency quality with depth layers';
+  if (aiInstructions) checklist += '\n✓ Creative director orders followed exactly';
+  return checklist;
 }
 
 // Mode-specific prompt builders (concise versions)
@@ -79,12 +141,13 @@ function buildOriginalPrompt(params: {
   aiMemoryContext?: string;
   clientContext?: string;
   hasReferences?: boolean;
+  hasLogos?: boolean;
 }): string {
   const { prompt, sizeConfig, clientName, niche, mood, colors, elements,
     primaryColor, secondaryColor, fontFamily, aiInstructions, 
-    aiRestrictions, aiMemoryContext, clientContext, hasReferences } = params;
+    aiRestrictions, aiMemoryContext, clientContext, hasReferences, hasLogos } = params;
 
-  let p = buildCoreInstructions(sizeConfig, hasReferences);
+  let p = buildCoreInstructions(sizeConfig, hasReferences, hasLogos);
 
   if (hasReferences) {
     p += `\n\nMODE: Original creation guided by references — Create a 100% unique design but MATCH the visual quality, 3D rendering style, composition complexity, and professional finish of the attached reference image(s). The references are your quality standard.`;
@@ -96,21 +159,22 @@ function buildOriginalPrompt(params: {
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry style: ${NICHE_STYLE[niche]}`;
   if (mood) p += `\nMood: ${mood}`;
   if (elements) p += `\nHero element: ${elements}`;
-  if (fontFamily) p += `\nFont: ${fontFamily}`;
 
-  if (colors === 'Cores do Cliente' && (primaryColor || secondaryColor)) {
-    p += `\nBrand colors: primary=${primaryColor || 'auto'}, secondary=${secondaryColor || 'auto'}`;
-  } else if (colors === 'Aleatórias (IA escolhe)') {
+  // Mandatory brand configurations
+  p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
+
+  if (colors === 'Aleatórias (IA escolhe)') {
     p += `\nColors: Choose a harmonious high-impact palette for this industry.`;
   }
 
   if (clientContext) p += `\nClient info: ${clientContext}`;
-  if (aiInstructions) p += `\nCreative direction: ${aiInstructions}`;
   if (aiMemoryContext) p += `\nLearned preferences: ${aiMemoryContext}`;
-  if (aiRestrictions) p += `\nRestrictions: ${aiRestrictions}`;
 
   p += `\n\nFLYER TEXT CONTENT (render ONLY this on the flyer):\n${prompt}`;
   p += `\n\nCreate a jaw-dropping, scroll-stopping, high-conversion commercial flyer. The product MUST be a photorealistic 3D render with studio lighting — NOT flat, NOT illustrated. Premium Brazilian agency quality.`;
+
+  // Final checklist
+  p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
 
   return p;
 }
@@ -149,31 +213,35 @@ function buildInspirationPrompt(params: {
   secondaryColor?: string;
   fontFamily?: string;
   aiInstructions?: string;
+  aiRestrictions?: string;
   aiMemoryContext?: string;
   clientContext?: string;
   referenceCount: number;
+  hasLogos?: boolean;
 }): string {
   const { prompt, sizeConfig, clientName, niche, mood, colors,
-    primaryColor, secondaryColor, fontFamily, aiInstructions, 
-    aiMemoryContext, clientContext, referenceCount } = params;
+    primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions,
+    aiMemoryContext, clientContext, referenceCount, hasLogos } = params;
 
-  let p = buildCoreInstructions(sizeConfig, true);
+  let p = buildCoreInstructions(sizeConfig, true, hasLogos);
 
   p += `\n\nMODE: Creative inspiration — Study the ${referenceCount} reference image(s) carefully. Absorb their 3D product rendering, composition, geometric shapes, color palette, and professional finish. Then create something ORIGINAL that SURPASSES them in quality and impact.`;
 
   if (clientName) p += `\nBrand: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
   if (mood) p += `\nMood: ${mood}`;
-  if (fontFamily) p += `\nFont: ${fontFamily}`;
-  if (colors === 'Cores do Cliente' && (primaryColor || secondaryColor)) {
-    p += `\nBrand colors: primary=${primaryColor || 'auto'}, secondary=${secondaryColor || 'auto'}`;
-  }
+
+  // Mandatory brand configurations
+  p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
+
   if (clientContext) p += `\nClient: ${clientContext}`;
-  if (aiInstructions) p += `\nDirection: ${aiInstructions}`;
   if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
 
   p += `\n\nFLYER TEXT CONTENT:\n${prompt}`;
   p += `\n\nCreate an original masterpiece inspired by the references. Match their 3D photorealistic quality. Surpass them in impact.`;
+
+  // Final checklist
+  p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
 
   return p;
 }
@@ -187,13 +255,16 @@ function buildProductPreservationPrompt(params: {
   secondaryColor?: string;
   fontFamily?: string;
   aiInstructions?: string;
+  aiRestrictions?: string;
   aiMemoryContext?: string;
   clientContext?: string;
+  hasLogos?: boolean;
+  colors?: string;
 }): string {
   const { prompt, sizeConfig, clientName, niche,
-    primaryColor, secondaryColor, fontFamily, aiInstructions, aiMemoryContext, clientContext } = params;
+    primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, aiMemoryContext, clientContext, hasLogos, colors } = params;
 
-  let p = buildCoreInstructions(sizeConfig, true);
+  let p = buildCoreInstructions(sizeConfig, true, hasLogos);
 
   p += `\n\nMODE: Product preservation (IMAGE EDITING TASK)
 CRITICAL RULE: The attached image contains the EXACT product to advertise.
@@ -207,15 +278,18 @@ PRODUCT DESCRIPTION (from user): "${prompt}"`;
 
   if (clientName) p += `\nBrand: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
-  if (primaryColor) p += `\nPrimary color: ${primaryColor}`;
-  if (secondaryColor) p += `\nSecondary color: ${secondaryColor}`;
-  if (fontFamily) p += `\nFont: ${fontFamily}`;
+
+  // Mandatory brand configurations
+  p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
+
   if (clientContext) p += `\nClient: ${clientContext}`;
-  if (aiInstructions) p += `\nDirection: ${aiInstructions}`;
   if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
 
   p += `\n\nFLYER TEXT CONTENT (render this text on the flyer):\n${prompt}`;
   p += `\n\nDesign a premium flyer AROUND the preserved product. The product from the image must appear EXACTLY as-is. Bold geometric background, premium agency quality.`;
+
+  // Final checklist
+  p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
 
   return p;
 }
@@ -229,15 +303,18 @@ function buildTemplateMemoryPrompt(params: {
   secondaryColor?: string;
   fontFamily?: string;
   aiInstructions?: string;
+  aiRestrictions?: string;
   aiMemoryContext?: string;
   clientContext?: string;
   hasProductImage: boolean;
+  hasLogos?: boolean;
+  colors?: string;
 }): string {
   const { prompt, sizeConfig, clientName, niche,
     primaryColor, secondaryColor, fontFamily, 
-    aiInstructions, aiMemoryContext, clientContext, hasProductImage } = params;
+    aiInstructions, aiRestrictions, aiMemoryContext, clientContext, hasProductImage, hasLogos, colors } = params;
 
-  let p = buildCoreInstructions(sizeConfig, true);
+  let p = buildCoreInstructions(sizeConfig, true, hasLogos);
 
   p += `\n\nMODE: Strict template replication — The FIRST reference image is the approved template.
 Copy pixel-perfect: logo position, typography, colors, geometric shapes, layout grid, footer structure.
@@ -245,15 +322,18 @@ Replace ONLY: product image${hasProductImage ? ' (use SECOND image)' : ''} and t
 
   if (clientName) p += `\nClient: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
-  if (primaryColor) p += `\nPrimary: ${primaryColor}`;
-  if (secondaryColor) p += `\nSecondary: ${secondaryColor}`;
-  if (fontFamily) p += `\nFont: ${fontFamily}`;
+
+  // Mandatory brand configurations
+  p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
+
   if (clientContext) p += `\nClient info: ${clientContext}`;
-  if (aiInstructions) p += `\nInstructions: ${aiInstructions}`;
   if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
 
   p += `\n\nFLYER TEXT CONTENT:\n${prompt}`;
   p += `\n\nGenerate visually IDENTICAL to template. Only product and text differ.`;
+
+  // Final checklist
+  p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
 
   return p;
 }
@@ -596,6 +676,10 @@ serve(async (req) => {
     const projectHasReferences = (project.reference_images && project.reference_images.length > 0) 
       || layoutReferences.length > 0 || additionalReferences.length > 0;
 
+    // Determine if project has logo images
+    const hasLogos = !!(project.logo_images && project.logo_images.length > 0);
+    console.log("Project logos:", hasLogos ? project.logo_images.length : 0);
+
     // Build prompt
     const baseParams = {
       prompt, sizeConfig,
@@ -607,6 +691,8 @@ serve(async (req) => {
       aiInstructions: project.ai_instructions,
       aiMemoryContext,
       clientContext,
+      hasLogos,
+      colors,
     };
 
     let enhancedPrompt: string;
@@ -629,19 +715,23 @@ serve(async (req) => {
         const allRefs = [...layoutReferences, ...additionalReferences, ...(project.reference_images || [])];
         enhancedPrompt = buildInspirationPrompt({
           ...baseParams,
-          mood, colors,
+          mood,
+          aiRestrictions: project.ai_restrictions,
           referenceCount: allRefs.length || 1,
         });
         break;
       }
       case 'product':
-        enhancedPrompt = buildProductPreservationPrompt(baseParams);
+        enhancedPrompt = buildProductPreservationPrompt({
+          ...baseParams,
+          aiRestrictions: project.ai_restrictions,
+        });
         break;
       case 'original':
       default:
         enhancedPrompt = buildOriginalPrompt({
           ...baseParams,
-          mood, colors, elements,
+          mood, elements,
           aiRestrictions: project.ai_restrictions,
           hasReferences: projectHasReferences,
         });
@@ -692,8 +782,17 @@ serve(async (req) => {
       }
     }
 
-    // Limit images: product mode gets exactly 1 (the product), others get up to 2
-    const maxImages = finalMode === 'product' ? 1 : (finalMode === 'template' ? 2 : 2);
+    // ALWAYS include logo images in ALL modes — logos are mandatory
+    const logoCount = (project.logo_images && project.logo_images.length > 0) 
+      ? Math.min(project.logo_images.length, 2) : 0;
+    if (logoCount > 0) {
+      const logosToAdd = project.logo_images.slice(0, 2);
+      allReferenceImages.push(...logosToAdd);
+      console.log(`Added ${logosToAdd.length} logo image(s) to reference images`);
+    }
+
+    // Limit images: product mode gets 1 product + logos, others get up to 2 refs + logos
+    const maxImages = finalMode === 'product' ? (1 + logoCount) : (2 + logoCount);
     const imagesToProcess = allReferenceImages.slice(0, maxImages);
 
     console.log("Reference images:", imagesToProcess.length);

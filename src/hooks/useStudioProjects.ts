@@ -89,8 +89,9 @@ export function useStudioProjects() {
       if (error) throw error;
       return data as StudioProject;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['studio-projects'] });
+      queryClient.invalidateQueries({ queryKey: ['studio-project', data.id] });
       toast.success('Projeto atualizado!');
     },
     onError: (error) => {
