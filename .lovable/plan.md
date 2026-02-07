@@ -1,92 +1,82 @@
 
+# Fix: Product Image Not Being Sent to AI
 
-# Plano: Migrar QIA para Lovable AI Gateway (Gemini 2.5 Flash)
+## Problem
+When "Preservar Produto Exato" is enabled and a product image is uploaded, the image is completely ignored by the edge function. The variable `productImage` is never extracted from the request body, so Gemini receives a prompt asking to "preserve the product" but has no actual product image to reference. This causes the AI to hallucinate a random product (e.g., tires instead of teflon tape).
 
-## Resumo
+## Root Cause
+In `supabase/functions/generate-studio-flyer/index.ts`, line 489-494:
+- `productImage` is not destructured from the request body
+- In the image collection logic (lines 632-645), the product image is never added to `allReferenceImages`
+- For `product` mode, `maxImages = 1`, but since `productImage` is not in the array, it either sends nothing or an unrelated project reference image
 
-Trocar ambas as edge functions da QIA (chat e sugestoes) de **OpenAI API direta** (`gpt-4o-mini`) para o **Lovable AI Gateway** usando o modelo **`google/gemini-2.5-flash`**.
+## Solution
 
----
+### 1. Edge Function - Extract and prioritize the product image
+**File:** `supabase/functions/generate-studio-flyer/index.ts`
 
-## O Que Muda
+- Add `productImage` to the destructured request body parameters
+- In the image collection logic, when `finalMode === 'product'` and `productImage` exists, insert it as the FIRST image (highest priority)
+- Ensure it is the ONLY image sent in product mode (no other references that could confuse the AI)
 
-| Aspecto | Antes | Depois |
-|---------|-------|--------|
-| API | `api.openai.com` | `ai.gateway.lovable.dev` |
-| Chave | `OPENAI_API_KEY` | `LOVABLE_API_KEY` (ja configurada) |
-| Modelo | `gpt-4o-mini` | `google/gemini-2.5-flash` |
-| Funcoes afetadas | 2 edge functions | 2 edge functions |
+### 2. Edge Function - Strengthen the product preservation prompt
+**File:** `supabase/functions/generate-studio-flyer/index.ts`
 
----
+Update `buildProductPreservationPrompt()` to use Gemini's image editing approach:
+- Frame the instruction as an image editing task: "The attached image contains the product. Extract it and build the flyer AROUND it"
+- Add explicit instructions: "Do NOT replace, substitute, reinterpret, or reimagine the product. The product in the image is the ONLY product that should appear"
+- Specify what the product IS (using the user's prompt text) to avoid confusion
 
-## Arquivos a Modificar
+### 3. Edge Function - Improve retry logic for product mode
+**File:** `supabase/functions/generate-studio-flyer/index.ts`
 
-### 1. `supabase/functions/chat/index.ts`
+In `callGeminiWithRetry`, when in product mode:
+- NEVER drop the product image on retry (current logic removes all images on attempt 3, which defeats the purpose)
+- The product image must always be present -- if all retries fail with the image, return a meaningful error rather than generating without the product
 
-Mudancas:
-- Trocar a variavel de ambiente de `OPENAI_API_KEY` para `LOVABLE_API_KEY`
-- Trocar o endpoint de `https://api.openai.com/v1/chat/completions` para `https://ai.gateway.lovable.dev/v1/chat/completions`
-- Trocar o modelo de `gpt-4o-mini` para `google/gemini-2.5-flash`
-- Atualizar o log de `"Calling OpenAI API with gpt-4o-mini"` para `"Calling Lovable AI Gateway with gemini-2.5-flash"`
-- Atualizar mensagens de erro para referenciar "Lovable AI" em vez de "OpenAI"
+## Technical Details
 
-### 2. `supabase/functions/generate-ai-suggestion/index.ts`
-
-Mudancas:
-- Trocar `OPENAI_API_KEY` para `LOVABLE_API_KEY`
-- Trocar o endpoint de `https://api.openai.com/v1/chat/completions` para `https://ai.gateway.lovable.dev/v1/chat/completions`
-- Trocar o modelo de `gpt-4o-mini` para `google/gemini-2.5-flash`
-- Atualizar logs e mensagens de erro
-
----
-
-## Detalhes Tecnicos
-
-### Edge Function: `chat/index.ts`
-
-Linhas afetadas (aproximadamente):
-- **Linha 141**: `OPENAI_API_KEY` passa a `LOVABLE_API_KEY`
-- **Linha 144**: Verificacao da chave atualizada
-- **Linha 283**: Log atualizado
-- **Linhas 285-301**: Endpoint, header de Authorization e modelo atualizados
-- **Linhas 304-322**: Mensagens de erro referenciando "Lovable AI" em vez de "OpenAI"
-
-```typescript
-// ANTES
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-const response = await fetch("https://api.openai.com/v1/chat/completions", {
-  headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-  body: JSON.stringify({ model: "gpt-4o-mini", ... }),
-});
-
-// DEPOIS
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-  headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
-  body: JSON.stringify({ model: "google/gemini-2.5-flash", ... }),
-});
+Changes to the request body destructuring:
+```
+const {
+  projectId, prompt, size, style, mode, model, niche, mood,
+  colors, elements, preserveProduct = false,
+  productImage,                                    // <-- ADD THIS
+  layoutReferences = [], additionalReferences = [],
+} = await req.json();
 ```
 
-### Edge Function: `generate-ai-suggestion/index.ts`
+Changes to image collection logic:
+```
+const allReferenceImages: string[] = [];
 
-Linhas afetadas:
-- **Linha 6**: Variavel `openAIApiKey` renomeada para `lovableApiKey`
-- **Linha 43-45**: Verificacao da chave atualizada
-- **Linhas 112-128**: Endpoint, Authorization header e modelo atualizados
-- **Linhas 131-134**: Mensagens de erro atualizadas
+// Product image gets ABSOLUTE PRIORITY in product mode
+if (finalMode === 'product' && productImage) {
+  allReferenceImages.push(productImage);
+}
+// ... rest of reference image logic
+```
 
----
+Changes to product preservation prompt -- use image editing framing:
+```
+p += `\n\nMODE: Product preservation (IMAGE EDITING)
+CRITICAL RULE: The attached image contains the EXACT product to advertise.
+You MUST keep this product 100% IDENTICAL — same shape, color, texture, labels, and logos.
+Do NOT substitute it with any other product. Do NOT reinterpret it.
+Your task: Extract the product from the image and design a professional flyer AROUND it.
+Only create/modify: background, geometric shapes, text layout, lighting effects.
+The product itself is UNTOUCHABLE.`;
+```
 
-## Nenhuma Mudanca no Frontend
+Changes to retry logic for product mode:
+```
+// In callGeminiWithRetry, on final retry:
+// If product mode, keep the product image even in simplified prompt
+if (isProductMode) {
+  // Keep image parts, only simplify text
+  currentParts = [simplifiedTextPart, ...imageParts];
+}
+```
 
-A pagina `AIAssistant.tsx` e o hook `useAISuggestion.ts` ja chamam as edge functions via `supabase.functions.invoke` ou `fetch` ao endpoint da edge function. Nenhuma alteracao e necessaria no lado do cliente.
-
----
-
-## Vantagens
-
-1. **Sem necessidade de chave OpenAI** - `LOVABLE_API_KEY` ja esta configurada automaticamente
-2. **Custo-beneficio** - Gemini 2.5 Flash oferece bom equilibrio entre velocidade e qualidade
-3. **Streaming mantido** - O Lovable AI Gateway suporta streaming SSE da mesma forma
-4. **Compatibilidade** - API compativel com OpenAI, mesma estrutura de request/response
-
+## Files Modified
+1. `supabase/functions/generate-studio-flyer/index.ts` -- all changes in this single file
