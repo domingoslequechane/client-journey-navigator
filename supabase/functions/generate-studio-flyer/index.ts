@@ -260,21 +260,30 @@ function buildProductPreservationPrompt(params: {
   clientContext?: string;
   hasLogos?: boolean;
   colors?: string;
+  allowManipulation?: boolean;
 }): string {
   const { prompt, sizeConfig, clientName, niche,
-    primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, aiMemoryContext, clientContext, hasLogos, colors } = params;
+    primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, aiMemoryContext, clientContext, hasLogos, colors, allowManipulation } = params;
 
   let p = buildCoreInstructions(sizeConfig, true, hasLogos);
 
-  p += `\n\nMODE: Product preservation (IMAGE EDITING TASK)
+  if (allowManipulation) {
+    p += `\n\nMODE: Product-based creative design (IMAGE EDITING TASK WITH MANIPULATION ALLOWED)
+The attached image contains the product to advertise. You MUST use THIS EXACT product as the hero element.
+MANIPULATION PERMITTED: You are allowed to creatively manipulate the product — adjust lighting, change angles, add dramatic effects, reflections, shadows, or 3D transformations. The product should remain RECOGNIZABLE (same brand, same packaging, same core identity) but you have creative freedom to make it look MORE impressive, dramatic, and professional.
+Your task: Use the product from the attached image as the hero, manipulate it creatively for maximum visual impact, and design a premium flyer around it.`;
+  } else {
+    p += `\n\nMODE: Product preservation (IMAGE EDITING TASK)
 CRITICAL RULE: The attached image contains the EXACT product to advertise.
 You MUST keep this product 100% IDENTICAL — same shape, color, texture, labels, logos, and packaging.
 Do NOT substitute it with any other product. Do NOT reinterpret, reimagine, or redraw it.
 Do NOT generate a similar-looking product. The product in the attached image is the ONLY product allowed.
 Your task: Extract the product from the attached image and design a professional flyer AROUND it.
 Only create/modify: background, geometric shapes, text layout, lighting effects, decorative elements.
-The product itself is UNTOUCHABLE — treat it as a sacred, immutable element.
-PRODUCT DESCRIPTION (from user): "${prompt}"`;
+The product itself is UNTOUCHABLE — treat it as a sacred, immutable element.`;
+  }
+
+  p += `\nPRODUCT DESCRIPTION (from user): "${prompt}"`;
 
   if (clientName) p += `\nBrand: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
@@ -286,7 +295,12 @@ PRODUCT DESCRIPTION (from user): "${prompt}"`;
   if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
 
   p += `\n\nFLYER TEXT CONTENT (render this text on the flyer):\n${prompt}`;
-  p += `\n\nDesign a premium flyer AROUND the preserved product. The product from the image must appear EXACTLY as-is. Bold geometric background, premium agency quality.`;
+  
+  if (allowManipulation) {
+    p += `\n\nDesign a premium flyer with the product as hero. You may creatively enhance the product's appearance (lighting, angle, effects) while maintaining its identity. Bold geometric background, premium agency quality.`;
+  } else {
+    p += `\n\nDesign a premium flyer AROUND the preserved product. The product from the image must appear EXACTLY as-is. Bold geometric background, premium agency quality.`;
+  }
 
   // Final checklist
   p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
@@ -605,7 +619,7 @@ serve(async (req) => {
       projectId, prompt, size = '1080x1080', style = 'vivid',
       mode = 'original', model = 'gemini-flash', niche, mood,
       colors, elements, preserveProduct = false,
-      productImage,
+      productImage, allowManipulation = false,
       layoutReferences = [], additionalReferences = [],
     } = await req.json();
 
@@ -725,6 +739,7 @@ serve(async (req) => {
         enhancedPrompt = buildProductPreservationPrompt({
           ...baseParams,
           aiRestrictions: project.ai_restrictions,
+          allowManipulation,
         });
         break;
       case 'original':

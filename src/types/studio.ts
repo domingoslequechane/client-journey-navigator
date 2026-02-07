@@ -131,6 +131,7 @@ export interface GenerationSettings {
   elements?: FlyerElement;
   preserveProduct?: boolean;
   productImage?: string;
+  allowManipulation?: boolean;
 }
 
 // Constantes

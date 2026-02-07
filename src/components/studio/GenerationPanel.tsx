@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Sparkles, Loader2, Wand2, Copy, Image as ImageIcon, 
-  Shield, Plus, X, Zap, ChevronDown, ChevronUp, Upload
+  Shield, Plus, X, Zap, ChevronDown, ChevronUp, Upload, Unlock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -60,6 +60,25 @@ const ELEMENT_LIST: FlyerElement[] = [
   'Ícones', 'Formas Geométricas', 'Gradientes', 'Texturas'
 ];
 
+// Storage key for persisting settings per project
+function getSettingsKey(projectId: string): string {
+  return `studio-gen-settings-${projectId}`;
+}
+
+interface PersistedSettings {
+  size: FlyerSize;
+  style: 'vivid' | 'natural';
+  mode: GenerationMode;
+  model: 'gemini-flash' | 'gemini-pro';
+  mood?: FlyerMood;
+  colors: FlyerColorScheme;
+  elements?: FlyerElement;
+  preserveProduct: boolean;
+  productImage: string;
+  allowManipulation: boolean;
+  showAdvanced: boolean;
+}
+
 export function GenerationPanel({
   project,
   onGenerate,
@@ -67,21 +86,44 @@ export function GenerationPanel({
   remainingGenerations,
   className,
 }: GenerationPanelProps) {
+  // Load persisted settings for this project
+  const loadPersistedSettings = useCallback((): Partial<PersistedSettings> => {
+    try {
+      const stored = localStorage.getItem(getSettingsKey(project.id));
+      if (stored) return JSON.parse(stored);
+    } catch { /* ignore */ }
+    return {};
+  }, [project.id]);
+
+  const persisted = loadPersistedSettings();
+
   const [prompt, setPrompt] = useState('');
-  const [size, setSize] = useState<FlyerSize>('1080x1080');
-  const [style, setStyle] = useState<'vivid' | 'natural'>('vivid');
-  const [mode, setMode] = useState<GenerationMode>('original');
-  const [model, setModel] = useState<'gemini-flash' | 'gemini-pro'>('gemini-flash');
+  const [size, setSize] = useState<FlyerSize>(persisted.size || '1080x1080');
+  const [style, setStyle] = useState<'vivid' | 'natural'>(persisted.style || 'vivid');
+  const [mode, setMode] = useState<GenerationMode>(persisted.mode || 'original');
+  const [model, setModel] = useState<'gemini-flash' | 'gemini-pro'>(persisted.model || 'gemini-flash');
   
-  const [mood, setMood] = useState<FlyerMood | undefined>();
-  const [colors, setColors] = useState<FlyerColorScheme>('Cores do Cliente');
-  const [elements, setElements] = useState<FlyerElement | undefined>();
-  const [preserveProduct, setPreserveProduct] = useState(false);
-  const [productImage, setProductImage] = useState<string>('');
+  const [mood, setMood] = useState<FlyerMood | undefined>(persisted.mood);
+  const [colors, setColors] = useState<FlyerColorScheme>(persisted.colors || 'Cores do Cliente');
+  const [elements, setElements] = useState<FlyerElement | undefined>(persisted.elements);
+  const [preserveProduct, setPreserveProduct] = useState(persisted.preserveProduct || false);
+  const [productImage, setProductImage] = useState<string>(persisted.productImage || '');
+  const [allowManipulation, setAllowManipulation] = useState(persisted.allowManipulation || false);
   const [uploadingProduct, setUploadingProduct] = useState(false);
   
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(persisted.showAdvanced || false);
   const productInputRef = useRef<HTMLInputElement>(null);
+
+  // Persist settings whenever they change
+  useEffect(() => {
+    const settings: PersistedSettings = {
+      size, style, mode, model, mood, colors, elements,
+      preserveProduct, productImage, allowManipulation, showAdvanced,
+    };
+    try {
+      localStorage.setItem(getSettingsKey(project.id), JSON.stringify(settings));
+    } catch { /* ignore full storage */ }
+  }, [size, style, mode, model, mood, colors, elements, preserveProduct, productImage, allowManipulation, showAdvanced, project.id]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -97,7 +139,8 @@ export function GenerationPanel({
       elements,
       preserveProduct,
       productImage: preserveProduct ? productImage : undefined,
-    });
+      allowManipulation: preserveProduct ? allowManipulation : undefined,
+    } as GenerationSettings & { allowManipulation?: boolean });
   };
 
   const handleProductUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -342,9 +385,9 @@ export function GenerationPanel({
             />
           </div>
 
-          {/* Product Image Upload - shown when preserve is enabled */}
+          {/* Product Image Upload + Manipulation toggle - shown when preserve is enabled */}
           {preserveProduct && (
-            <div className="p-3 rounded-lg border border-dashed space-y-2">
+            <div className="p-3 rounded-lg border border-dashed space-y-3">
               <Label className="text-xs">Imagem do Produto</Label>
               {productImage ? (
                 <div className="relative w-24 h-24 rounded-lg overflow-hidden border group">
@@ -381,8 +424,29 @@ export function GenerationPanel({
                 className="hidden"
                 onChange={handleProductUpload}
               />
+
+              {/* Manipulation permission toggle */}
+              <div className="flex items-center justify-between p-2.5 rounded-lg border border-primary/30 bg-primary/5">
+                <div className="flex items-center gap-2">
+                  <Unlock className="h-3.5 w-3.5 text-primary" />
+                  <div>
+                    <span className="text-xs font-medium">Permitir Manipulação</span>
+                    <p className="text-[10px] text-muted-foreground">
+                      A IA pode ajustar iluminação, ângulo e efeitos no produto
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={allowManipulation}
+                  onCheckedChange={setAllowManipulation}
+                />
+              </div>
+
               <p className="text-[10px] text-muted-foreground">
-                O produto será preservado 100% idêntico no flyer gerado
+                {allowManipulation 
+                  ? 'O produto será usado como base, mas a IA pode manipulá-lo criativamente'
+                  : 'O produto será preservado 100% idêntico no flyer gerado'
+                }
               </p>
             </div>
           )}
