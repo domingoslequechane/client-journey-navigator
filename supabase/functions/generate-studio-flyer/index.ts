@@ -43,18 +43,23 @@ const NICHE_STYLE: Record<string, string> = {
 };
 
 // Concise design system core - optimized for token efficiency
-function buildCoreInstructions(sizeConfig: typeof SIZE_CONFIG[string]): string {
-  return `You are an elite graphic designer creating a professional commercial flyer (${sizeConfig.width}×${sizeConfig.height}px, ${sizeConfig.aspectRatio}).
+function buildCoreInstructions(sizeConfig: typeof SIZE_CONFIG[string], hasReferences: boolean = false): string {
+  let core = `You are an elite Brazilian graphic designer creating a premium commercial flyer (${sizeConfig.width}×${sizeConfig.height}px, ${sizeConfig.aspectRatio}).
 
-DESIGN RULES:
-- Create DEPTH with 3-5 layers: textured background → geometric shapes → hero product → text overlay → accent effects
-- Hero product/subject: photorealistic 3D, 40-60% of canvas, studio-lit (key+fill+rim light), slightly angled
-- Bold geometric elements: large circles, rounded rectangles, diagonal color blocks (inspired by top Brazilian design agencies)
-- Typography hierarchy: ultra-bold headline → medium subhead → bold CTA/price badge → clean contact info with icons
-- Max 3-4 colors: primary, secondary, accent, neutral. High contrast text. Dark backgrounds for premium feel
-- Professional finishing: subtle grain texture, vignette, light effects, consistent shadow direction
-- The result must be indistinguishable from premium human agency work — NO AI artifacts, NO cartoon/illustration style
-- All text must be sharp, readable, correctly spelled, and never cut off`;
+MANDATORY DESIGN RULES:
+1. DEPTH LAYERS: textured/dark background → bold geometric shapes (circles, rounded rectangles, diagonal color blocks) → hero 3D product → text overlay → accent light effects
+2. HERO PRODUCT: Must be a photorealistic 3D render (NOT illustration, NOT flat, NOT cartoon). 40-60% of canvas. Studio lighting: key light + fill light + rim light. Slightly angled for dramatic 3D effect. Realistic shadows and reflections.
+3. GEOMETRIC ELEMENTS: Large bold shapes inspired by top Brazilian design agencies — overlapping circles, rounded rectangle cards, diagonal color stripes. These create visual structure and depth.
+4. TYPOGRAPHY: Ultra-bold Impact/Montserrat headline → medium weight subhead → bold CTA/price badge → clean contact info with small icons (phone, email, location)
+5. COLORS: Max 3-4 colors with high contrast. Dark/textured backgrounds for premium feel. Color accent blocks behind text for readability.
+6. FINISHING: Subtle grain texture, vignette edges, directional light rays/glows, consistent shadow direction. Premium agency quality.
+7. ABSOLUTE RULES: NO AI artifacts. NO cartoon/illustration style. NO flat design. ALL products must look like real 3D photographs. All text sharp, readable, correctly spelled, never cut off.`;
+
+  if (hasReferences) {
+    core += `\n\n⚠️ REFERENCE IMAGES ATTACHED: Study the attached reference image(s) carefully. They define the QUALITY BAR and VISUAL STYLE you must match or exceed. Analyze their: composition, 3D product rendering style, geometric shapes, color palette, typography weight, background treatment, and overall professional finish. Your output must be AT LEAST as polished and impactful as these references.`;
+  }
+
+  return core;
 }
 
 // Mode-specific prompt builders (concise versions)
@@ -73,14 +78,19 @@ function buildOriginalPrompt(params: {
   aiRestrictions?: string;
   aiMemoryContext?: string;
   clientContext?: string;
+  hasReferences?: boolean;
 }): string {
   const { prompt, sizeConfig, clientName, niche, mood, colors, elements,
     primaryColor, secondaryColor, fontFamily, aiInstructions, 
-    aiRestrictions, aiMemoryContext, clientContext } = params;
+    aiRestrictions, aiMemoryContext, clientContext, hasReferences } = params;
 
-  let p = buildCoreInstructions(sizeConfig);
+  let p = buildCoreInstructions(sizeConfig, hasReferences);
 
-  p += `\n\nMODE: Original creation — 100% unique, bold, innovative design.`;
+  if (hasReferences) {
+    p += `\n\nMODE: Original creation guided by references — Create a 100% unique design but MATCH the visual quality, 3D rendering style, composition complexity, and professional finish of the attached reference image(s). The references are your quality standard.`;
+  } else {
+    p += `\n\nMODE: Original creation — 100% unique, bold, innovative design.`;
+  }
   
   if (clientName) p += `\nBrand: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry style: ${NICHE_STYLE[niche]}`;
@@ -100,7 +110,7 @@ function buildOriginalPrompt(params: {
   if (aiRestrictions) p += `\nRestrictions: ${aiRestrictions}`;
 
   p += `\n\nFLYER TEXT CONTENT (render ONLY this on the flyer):\n${prompt}`;
-  p += `\n\nCreate a jaw-dropping, scroll-stopping, high-conversion commercial flyer. Premium agency quality.`;
+  p += `\n\nCreate a jaw-dropping, scroll-stopping, high-conversion commercial flyer. The product MUST be a photorealistic 3D render with studio lighting — NOT flat, NOT illustrated. Premium Brazilian agency quality.`;
 
   return p;
 }
@@ -113,17 +123,17 @@ function buildCopyPrompt(params: {
 }): string {
   const { prompt, sizeConfig, niche, clientContext } = params;
 
-  let p = buildCoreInstructions(sizeConfig);
+  let p = buildCoreInstructions(sizeConfig, true);
 
   p += `\n\nMODE: Template replication — COPY the first reference image EXACTLY.
-Copy pixel-perfect: layout grid, spacing, colors, typography style, geometric shapes, decorative elements.
+Copy pixel-perfect: layout grid, spacing, colors, typography style, geometric shapes, decorative elements, 3D product rendering style.
 Replace ONLY: product/subject image and text content with what's specified below.`;
 
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
   if (clientContext) p += `\nClient: ${clientContext}`;
 
   p += `\n\nFLYER TEXT CONTENT:\n${prompt}`;
-  p += `\n\nReplicate the template EXACTLY. Only differences: product image and text. Photorealistic quality.`;
+  p += `\n\nReplicate the template EXACTLY. Only differences: product image and text. Photorealistic 3D quality.`;
 
   return p;
 }
@@ -147,9 +157,9 @@ function buildInspirationPrompt(params: {
     primaryColor, secondaryColor, fontFamily, aiInstructions, 
     aiMemoryContext, clientContext, referenceCount } = params;
 
-  let p = buildCoreInstructions(sizeConfig);
+  let p = buildCoreInstructions(sizeConfig, true);
 
-  p += `\n\nMODE: Creative inspiration — Study the ${referenceCount} reference image(s), absorb their composition, colors, and style, then create something ORIGINAL that SURPASSES them.`;
+  p += `\n\nMODE: Creative inspiration — Study the ${referenceCount} reference image(s) carefully. Absorb their 3D product rendering, composition, geometric shapes, color palette, and professional finish. Then create something ORIGINAL that SURPASSES them in quality and impact.`;
 
   if (clientName) p += `\nBrand: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
@@ -163,7 +173,7 @@ function buildInspirationPrompt(params: {
   if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
 
   p += `\n\nFLYER TEXT CONTENT:\n${prompt}`;
-  p += `\n\nCreate an original masterpiece inspired by the references. Surpass them in quality and impact.`;
+  p += `\n\nCreate an original masterpiece inspired by the references. Match their 3D photorealistic quality. Surpass them in impact.`;
 
   return p;
 }
@@ -183,7 +193,7 @@ function buildProductPreservationPrompt(params: {
   const { prompt, sizeConfig, clientName, niche,
     primaryColor, secondaryColor, fontFamily, aiInstructions, aiMemoryContext, clientContext } = params;
 
-  let p = buildCoreInstructions(sizeConfig);
+  let p = buildCoreInstructions(sizeConfig, true);
 
   p += `\n\nMODE: Product preservation (IMAGE EDITING TASK)
 CRITICAL RULE: The attached image contains the EXACT product to advertise.
@@ -227,7 +237,7 @@ function buildTemplateMemoryPrompt(params: {
     primaryColor, secondaryColor, fontFamily, 
     aiInstructions, aiMemoryContext, clientContext, hasProductImage } = params;
 
-  let p = buildCoreInstructions(sizeConfig);
+  let p = buildCoreInstructions(sizeConfig, true);
 
   p += `\n\nMODE: Strict template replication — The FIRST reference image is the approved template.
 Copy pixel-perfect: logo position, typography, colors, geometric shapes, layout grid, footer structure.
@@ -582,6 +592,10 @@ serve(async (req) => {
     const sizeConfig = SIZE_CONFIG[size] || SIZE_CONFIG["1080x1080"];
     const finalMode = preserveProduct ? 'product' : mode;
 
+    // Determine if project has reference images available
+    const projectHasReferences = (project.reference_images && project.reference_images.length > 0) 
+      || layoutReferences.length > 0 || additionalReferences.length > 0;
+
     // Build prompt
     const baseParams = {
       prompt, sizeConfig,
@@ -629,6 +643,7 @@ serve(async (req) => {
           ...baseParams,
           mood, colors, elements,
           aiRestrictions: project.ai_restrictions,
+          hasReferences: projectHasReferences,
         });
         break;
     }
