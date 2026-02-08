@@ -1,149 +1,139 @@
 
 
-# Fix: Logo Always Included, Real-Time Project Updates, and Stronger Configuration Enforcement
+# Multi-Layer Collaborative Flyer Generation ("Creative Team" Strategy)
 
-## Problems Identified
+## The Problem
 
-### 1. Company Logo is NEVER sent to the AI
-The project stores `logo_images` (uploaded logos), but the edge function **completely ignores them**. There is zero code in `generate-studio-flyer/index.ts` that reads or sends `logo_images` to Gemini. The AI has no way to include the company logo because it never receives it.
+Currently, generation is a single shot: one prompt goes to Gemini and whatever comes back is the final result. The AI often ignores configurations, produces inconsistent quality, and has no self-correction mechanism.
 
-### 2. Project updates are not applied in real-time
-When you edit a project (colors, references, instructions, etc.) and save, the `updateProject` mutation invalidates query key `['studio-projects']` (the list), but **not** `['studio-project', projectId]` (the individual project used by the editor). React Query serves stale cached data, so the generation uses old settings until you do a full page refresh.
+## The Strategy: 4-Layer Creative Team
 
-### 3. AI ignores configurations (colors, font, 3D style, instructions)
-The prompt includes settings like `Font: Inter` and `Brand colors: primary=#FF0000` as optional hints, but there is no mandatory enforcement. The AI treats them as suggestions and often ignores them in favor of its own aesthetic choices.
+The idea is to simulate a professional design team workflow where multiple roles collaborate before delivering the final result:
 
----
-
-## Solution
-
-### Fix 1: Always include logo images in every generation
-
-**File:** `supabase/functions/generate-studio-flyer/index.ts`
-
-- Read `project.logo_images` from the fetched project data
-- Add logo images as reference images in ALL modes (not just specific modes)
-- Add explicit prompt instructions: "The attached images include the company LOGO. You MUST place the logo prominently on the flyer (typically top-left or top-center). Never omit it."
-- Logo images are sent AFTER the primary reference/product images, but are always present
-
-Changes:
-- In the image collection section (around line 674), add logo images for all modes
-- In `buildCoreInstructions()`, add a mandatory rule about logo placement when logos are available
-- Pass a `hasLogos` flag to prompt builders
-
-### Fix 2: Invalidate the correct query key after project updates
-
-**File:** `src/hooks/useStudioProjects.ts`
-
-The `updateProject` mutation's `onSuccess` currently only invalidates `['studio-projects']`. It must also invalidate `['studio-project', id]` so the editor page immediately receives the updated data.
-
-Changes:
-- In `updateProject.onSuccess`, also invalidate the specific project query key using the project ID from the mutation variables
-- This ensures that when you navigate back to the editor after editing, React Query fetches fresh project data
-
-### Fix 3: Enforce configurations as mandatory rules, not suggestions
-
-**File:** `supabase/functions/generate-studio-flyer/index.ts`
-
-Change how brand settings are injected into the prompt. Instead of soft hints like `Font: Inter`, use mandatory directives:
-
-- Colors: "MANDATORY BRAND COLORS: Primary #FF0000 and Secondary #00FF00. These MUST be the dominant colors. Do NOT use other color schemes."
-- Font: "MANDATORY TYPOGRAPHY: Use [font] style. Headlines must reflect this font weight and personality."
-- AI Instructions: Move from optional append to a "CREATIVE DIRECTOR ORDERS" section that the AI must follow
-- AI Restrictions: Frame as "ABSOLUTE PROHIBITIONS" that cannot be violated
-
-Also add a "configuration summary checkpoint" at the end of every prompt:
-```
-CHECKLIST — your output MUST include ALL of these:
-[ ] Company logo visible and prominent
-[ ] Primary color (#XX) is dominant
-[ ] Secondary color (#XX) is accent
-[ ] [Font] typography style used
-[ ] 3D photorealistic product rendering (not flat)
-[ ] [Any AI instructions]
+```text
++-------------------+     +-------------------+     +-------------------+     +-------------------+
+|  LAYER 1          |     |  LAYER 2          |     |  LAYER 3          |     |  LAYER 4          |
+|  Art Director     | --> |  Designer         | --> |  Quality Control  | --> |  Retoucher        |
+|                   |     |                   |     |                   |     |                   |
+|  Analyzes refs,   |     |  Generates the    |     |  Reviews result   |     |  Applies fixes    |
+|  brand config,    |     |  flyer using the  |     |  vs. the brief    |     |  and refinements  |
+|  and writes a     |     |  structured brief |     |  and references,  |     |  to deliver the   |
+|  detailed design  |     |  as a precise     |     |  lists concrete   |     |  polished final   |
+|  brief            |     |  blueprint        |     |  fixes needed     |     |  flyer            |
++-------------------+     +-------------------+     +-------------------+     +-------------------+
+   Text-only model           Image model             Text-only model           Image editing model
+   (fast, cheap)             (current flow)           (fast, cheap)             (image refinement)
 ```
 
----
+## How Each Layer Works
 
-## Technical Details
+### Layer 1 -- Art Director (Text-only, Gemini Flash)
+- **Input**: Reference images + logo + brand config (colors, font, instructions, restrictions)
+- **Output**: A structured JSON design brief
+- **What it does**: Deeply analyzes the reference images and project settings, then produces a precise blueprint with:
+  - Exact layout description (where logo goes, where text goes, where product goes)
+  - Color usage plan (which areas use primary, which use secondary)
+  - Typography hierarchy (headline size, subhead, CTA positioning)
+  - Background treatment description
+  - Geometric elements to include
+  - Quality benchmarks from the references
 
-### Edge Function Changes (`supabase/functions/generate-studio-flyer/index.ts`)
+This layer uses a fast text model because it only needs to think and analyze, not generate images. It studies the references in much more detail than a single-shot prompt ever could.
 
-**1. Logo injection in image collection (after line ~693):**
-```typescript
-// ALWAYS include logo images — in ALL modes
-if (project.logo_images && project.logo_images.length > 0) {
-  const maxLogos = 2;
-  const logosToAdd = project.logo_images.slice(0, maxLogos);
-  allReferenceImages.push(...logosToAdd);
-  console.log(`Added ${logosToAdd.length} logo image(s)`);
-}
+### Layer 2 -- Designer (Image generation, Gemini Pro)
+- **Input**: The Art Director's structured brief + reference images + logo
+- **Output**: First draft of the flyer
+- **What it does**: Takes the precise blueprint and generates the flyer. Because the brief is highly structured and specific (not vague like "make it professional"), the AI has much clearer instructions to follow.
+
+### Layer 3 -- Quality Control (Text-only, Gemini Flash)
+- **Input**: Generated flyer image + reference images + design brief + brand config
+- **Output**: A structured review with specific fixes needed
+- **What it does**: Compares the generated flyer against:
+  - The original references (does it match the quality and style?)
+  - The brand config (are the correct colors dominant? Is the logo present?)
+  - The design brief (did the designer follow the art director's plan?)
+  - Returns a pass/fail verdict and specific improvements needed
+
+If the result passes quality control (score above threshold), skip Layer 4 and return immediately (saves time and cost).
+
+### Layer 4 -- Retoucher (Image editing, Gemini Pro)
+- **Input**: Generated flyer + specific fixes from QC + reference images
+- **Output**: Polished final flyer
+- **What it does**: Takes the generated flyer and applies the specific improvements identified by quality control. This is an image editing task, not a full regeneration, so the core design is preserved while fixing issues.
+
+## Smart Optimizations
+
+1. **Early Exit**: If Layer 3 (QC) gives a high score (e.g., 9+/10), skip Layer 4 entirely and return the flyer as-is. This saves time when the first generation is already good.
+
+2. **Parallel Processing**: Layer 1 (analysis) happens before generation but adds only 2-3 seconds since it uses the fast Flash model for text-only analysis.
+
+3. **Cost Control**: Layers 1 and 3 use the cheaper Flash text model (no image generation). Only Layers 2 and 4 use the expensive Pro image model. Total cost is roughly 2x current (2 image calls instead of 1) for significantly better results.
+
+4. **Product Mode Awareness**: In product preservation mode, the QC layer specifically checks if the product was preserved correctly. The refinement layer is told to never alter the product.
+
+5. **Template Mode Shortcut**: In template/copy mode, the Art Director layer focuses specifically on extracting exact layout positions from the template image, making the copy more precise.
+
+## Technical Implementation
+
+### File: `supabase/functions/generate-studio-flyer/index.ts`
+
+**New function: `analyzeReferencesAndBuildBrief()`**
+- Makes a text-only API call to Gemini Flash
+- Sends reference images + brand config
+- Uses tool calling / structured output to get back a JSON brief with fields like:
+  - `layout_description`: where each element goes
+  - `color_plan`: which colors go where
+  - `typography_plan`: font sizes, weights, positions
+  - `background_treatment`: gradient/texture/solid description
+  - `geometric_elements`: shapes to include
+  - `quality_notes`: specific quality benchmarks from references
+
+**New function: `reviewGeneratedFlyer()`**
+- Makes a text-only API call to Gemini Flash
+- Sends: generated image + references + brief + brand config
+- Returns structured review:
+  - `score`: 1-10
+  - `logo_present`: boolean
+  - `colors_correct`: boolean
+  - `improvements`: string[] (specific actionable fixes)
+  - `pass`: boolean (score >= 8)
+
+**New function: `refineFlyer()`**
+- Makes an image editing API call to Gemini Pro
+- Sends: generated image + specific improvements list
+- Returns the refined image
+
+**Updated main flow:**
+```text
+1. Receive request (same as today)
+2. Fetch project, client, learnings (same as today)
+3. NEW: Call analyzeReferencesAndBuildBrief() -- Layer 1
+4. Build enhanced prompt using the structured brief instead of raw config
+5. Generate flyer with Gemini (existing callGeminiWithRetry) -- Layer 2
+6. NEW: Call reviewGeneratedFlyer() -- Layer 3
+7. IF review.pass === true: return flyer (early exit, save cost)
+8. IF review.pass === false: Call refineFlyer() with improvements -- Layer 4
+9. Upload and save the final image (same as today)
 ```
 
-Adjust `maxImages` to accommodate logos (increase limit by number of logos added).
+**Model usage per layer:**
+- Layer 1 (Art Director): `gemini-2.5-flash` (text-only, fast, cheap)
+- Layer 2 (Designer): `gemini-3-pro-image-preview` or `gemini-2.5-flash-image` (current logic)
+- Layer 3 (Quality Control): `gemini-2.5-flash` (text-only, fast, cheap)
+- Layer 4 (Retoucher): `gemini-3-pro-image-preview` (image editing, only when needed)
 
-**2. Update `buildCoreInstructions` to enforce logos:**
-```typescript
-function buildCoreInstructions(sizeConfig, hasReferences, hasLogos) {
-  // ... existing rules ...
-  if (hasLogos) {
-    core += `\n8. COMPANY LOGO: One of the attached images is the company LOGO. You MUST place it prominently on the flyer (top-left or top-center, ~10-15% of canvas width). The logo must be clearly visible, never cropped, never distorted, never omitted.`;
-  }
-}
-```
+**Timeout considerations:**
+- Edge functions have a 150-second timeout
+- Layer 1 (text): ~3-5 seconds
+- Layer 2 (image gen): ~15-30 seconds
+- Layer 3 (text review): ~3-5 seconds
+- Layer 4 (image refine): ~15-30 seconds (only if needed)
+- Total worst case: ~70 seconds -- well within limits
 
-**3. Enforce brand configurations as mandatory:**
+### No frontend changes needed
 
-Update all prompt builders to frame colors, font, and instructions as mandatory:
-```typescript
-// Instead of: if (primaryColor) p += `\nPrimary color: ${primaryColor}`;
-// Use:
-if (colors === 'Cores do Cliente' && (primaryColor || secondaryColor)) {
-  p += `\n\nMANDATORY BRAND COLORS (non-negotiable):
-- Primary: ${primaryColor} — use as the DOMINANT color (backgrounds, shapes, accents)
-- Secondary: ${secondaryColor} — use as SUPPORTING color (badges, highlights, contrast elements)
-Do NOT invent other color schemes. These brand colors define the visual identity.`;
-}
-
-if (fontFamily) {
-  p += `\nMANDATORY FONT STYLE: ${fontFamily}. All text must reflect this typeface personality and weight.`;
-}
-
-if (aiInstructions) {
-  p += `\n\nCREATIVE DIRECTOR ORDERS (must follow exactly):\n${aiInstructions}`;
-}
-
-if (aiRestrictions) {
-  p += `\n\nABSOLUTE PROHIBITIONS (violating these = failure):\n${aiRestrictions}`;
-}
-```
-
-**4. Add configuration checklist at end of every prompt:**
-```typescript
-// Before returning the prompt, append a mandatory checklist
-let checklist = '\n\nFINAL CHECKLIST — your output MUST satisfy ALL:';
-if (hasLogos) checklist += '\n- Company logo placed prominently';
-if (primaryColor) checklist += `\n- Primary color ${primaryColor} is dominant`;
-if (secondaryColor) checklist += `\n- Secondary color ${secondaryColor} is visible`;
-if (fontFamily) checklist += `\n- ${fontFamily} typography style`;
-checklist += '\n- Photorealistic 3D rendering (NOT flat/cartoon)';
-if (aiInstructions) checklist += '\n- Creative director orders followed';
-p += checklist;
-```
-
-### Hook Changes (`src/hooks/useStudioProjects.ts`)
-
-**In `updateProject` mutation's `onSuccess`:**
-```typescript
-onSuccess: (data) => {
-  queryClient.invalidateQueries({ queryKey: ['studio-projects'] });
-  queryClient.invalidateQueries({ queryKey: ['studio-project', data.id] });
-  toast.success('Projeto atualizado!');
-},
-```
-
----
+The frontend already shows a loading state during generation. The only difference is that generation will take slightly longer (30-60 seconds instead of 15-30 seconds) but the quality will be significantly better. The same API contract (request/response) is preserved.
 
 ## Files Modified
-1. `supabase/functions/generate-studio-flyer/index.ts` — Logo injection, mandatory config enforcement, checklist
-2. `src/hooks/useStudioProjects.ts` — Cache invalidation fix for real-time updates
+1. `supabase/functions/generate-studio-flyer/index.ts` -- Add 3 new functions (analyzeReferences, reviewFlyer, refineFlyer) and update the main handler flow to use the 4-layer pipeline
+
