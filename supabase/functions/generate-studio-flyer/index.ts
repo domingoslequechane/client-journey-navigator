@@ -193,25 +193,65 @@ function buildCopyPrompt(params: {
   niche?: string;
   clientContext?: string;
   designBrief?: DesignBrief | null;
+  primaryColor?: string;
+  secondaryColor?: string;
+  fontFamily?: string;
+  hasLogos?: boolean;
 }): string {
-  const { prompt, sizeConfig, niche, clientContext, designBrief } = params;
+  const { prompt, sizeConfig, niche, clientContext, designBrief, primaryColor, secondaryColor, fontFamily, hasLogos } = params;
 
-  let p = buildCoreInstructions(sizeConfig, true);
+  // COPY mode uses a completely different prompt strategy — strict template replication
+  let p = `You are replicating a FIXED TEMPLATE. This is NOT creative work — it is STRICT LAYOUT REPRODUCTION with different content.
 
-  p += `\n\nMODE: Template replication — COPY the first reference image EXACTLY.
-Copy pixel-perfect: layout grid, spacing, colors, typography style, geometric shapes, decorative elements, 3D product rendering style.
-Replace ONLY: product/subject image and text content with what's specified below.`;
+CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})
 
-  if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
-  if (clientContext) p += `\nClient: ${clientContext}`;
+CRITICAL RULES FOR TEMPLATE REPLICATION:
+1. The reference image IS the template. Your output must have IDENTICAL element positions, sizes, colors, and decorative elements.
+2. You change ONLY: the product/hero image and text words. EVERYTHING ELSE must be identical.
+3. Every decorative element (lines, dots, shapes, badges, bars) must be reproduced EXACTLY in the same position, same color, same size.
+4. The footer structure must be IDENTICAL — same number of columns, same icons, same layout, same background color.
+5. Background treatment must be the SAME TYPE — if blurred photo, use similar blurred photo; if solid, use same color; if gradient, use same gradient.
+6. Typography hierarchy must be IDENTICAL — same font weights, same relative sizes, same alignment, same colors for each text level.
+7. Color scheme must be IDENTICAL — use the EXACT SAME colors as the reference for backgrounds, text, shapes, accents.
+8. Spacing and margins must match — the whitespace between elements must be the same.
+9. The overall "feel" and "energy" of the flyer must be indistinguishable from the reference.`;
 
-  // Inject Art Director's design brief if available
-  if (designBrief) {
-    p += buildDesignBriefSection(designBrief);
+  if (hasLogos) {
+    p += `\n10. COMPANY LOGO: Place the logo in EXACTLY the same position and size as shown in the reference template. If the reference has a logo badge in the footer, replicate that exact badge.`;
   }
 
-  p += `\n\nFLYER TEXT CONTENT:\n${prompt}`;
-  p += `\n\nReplicate the template EXACTLY. Only differences: product image and text. Photorealistic 3D quality.`;
+  // Inject the zone map from Art Director (this is the KEY differentiator)
+  if (designBrief?.zone_map) {
+    p += `\n\n=== EXACT ELEMENT POSITIONS — Follow these coordinates as ABSOLUTE RULES ===\n${designBrief.zone_map}\n=== END POSITIONS ===`;
+  }
+  if (designBrief?.decorative_elements) {
+    p += `\n\n=== DECORATIVE ELEMENTS TO REPRODUCE EXACTLY ===\n${designBrief.decorative_elements}\n=== END DECORATIVE ===`;
+  }
+  if (designBrief?.footer_structure) {
+    p += `\n\n=== FOOTER TEMPLATE — Reproduce this EXACTLY ===\n${designBrief.footer_structure}\n=== END FOOTER ===`;
+  }
+
+  // Still inject the rest of the design brief for layout/color/typography context
+  if (designBrief) {
+    p += `\n\n=== ADDITIONAL DESIGN CONTEXT ===`;
+    p += `\nLAYOUT: ${designBrief.layout_description}`;
+    p += `\nCOLOR PLAN: ${designBrief.color_plan}`;
+    p += `\nTYPOGRAPHY: ${designBrief.typography_plan}`;
+    p += `\nBACKGROUND: ${designBrief.background_treatment}`;
+    if (designBrief.template_layout) {
+      p += `\nTEMPLATE POSITIONS: ${designBrief.template_layout}`;
+    }
+    p += `\n=== END CONTEXT ===`;
+  }
+
+  if (niche && NICHE_STYLE[niche]) p += `\nIndustry context: ${NICHE_STYLE[niche]}`;
+  if (clientContext) p += `\nClient info: ${clientContext}`;
+  if (primaryColor) p += `\nBrand primary color: ${primaryColor}`;
+  if (secondaryColor) p += `\nBrand secondary color: ${secondaryColor}`;
+  if (fontFamily) p += `\nFont style: ${fontFamily}`;
+
+  p += `\n\nNEW TEXT CONTENT TO USE (replace the reference's text with this):\n${prompt}`;
+  p += `\n\nGenerate the flyer with IDENTICAL layout to the template reference image. The ONLY differences should be the product/hero image and text content. Everything else — positions, colors, decorative elements, footer, typography sizes — must be a near-perfect match.`;
 
   return p;
 }
@@ -480,6 +520,9 @@ interface DesignBrief {
   logo_placement: string;
   quality_notes: string;
   template_layout?: string; // For copy/template modes — exact positions
+  zone_map?: string; // COPY mode: Precise percentage-based element positions
+  decorative_elements?: string; // COPY mode: Exact decorative element catalog
+  footer_structure?: string; // COPY mode: Exact footer column layout
 }
 
 function buildDesignBriefSection(brief: DesignBrief): string {
@@ -492,6 +535,15 @@ function buildDesignBriefSection(brief: DesignBrief): string {
   section += `\nLOGO PLACEMENT: ${brief.logo_placement}`;
   if (brief.template_layout) {
     section += `\nTEMPLATE LAYOUT POSITIONS: ${brief.template_layout}`;
+  }
+  if (brief.zone_map) {
+    section += `\n\nEXACT ELEMENT POSITIONS (follow these coordinates precisely):\n${brief.zone_map}`;
+  }
+  if (brief.decorative_elements) {
+    section += `\n\nDECORATIVE ELEMENTS TO REPRODUCE EXACTLY:\n${brief.decorative_elements}`;
+  }
+  if (brief.footer_structure) {
+    section += `\n\nFOOTER TEMPLATE (reproduce exactly):\n${brief.footer_structure}`;
   }
   section += `\nQUALITY BENCHMARK: ${brief.quality_notes}`;
   section += `\n=== END BRIEF ===`;
@@ -523,8 +575,55 @@ async function analyzeReferencesAndBuildBrief(
   const startTime = Date.now();
 
   const isCopyOrTemplate = config.mode === 'copy' || config.mode === 'template';
+  const isCopyMode = config.mode === 'copy';
 
-  const analysisPrompt = `You are a Senior Art Director at a top Brazilian design agency. Analyze the attached reference image(s) and produce a precise design brief for your designer team.
+  // COPY mode uses a specialized ultra-precise extraction prompt
+  let analysisPrompt: string;
+
+  if (isCopyMode) {
+    analysisPrompt = `You are a Senior Art Director at a top Brazilian design agency. The attached reference image is a FIXED TEMPLATE that must be replicated EXACTLY. Your job is to extract a precise ZONE MAP of every single element.
+
+CONTEXT:
+- Final flyer size: ${config.sizeConfig.width}×${config.sizeConfig.height}px (${config.sizeConfig.aspectRatio})
+- Industry/Niche: ${config.niche || 'General'}
+- Brand primary color: ${config.primaryColor || 'not set'}
+- Brand secondary color: ${config.secondaryColor || 'not set'}
+- Font family: ${config.fontFamily || 'not set'}
+- Has company logos attached: ${config.hasLogos ? 'YES' : 'NO'}
+- User prompt: "${config.prompt}"
+${config.aiInstructions ? `- Client orders: ${config.aiInstructions}` : ''}
+${config.aiRestrictions ? `- Client restrictions: ${config.aiRestrictions}` : ''}
+
+COPY MODE ANALYSIS — Extract EXACT element positions as percentage zones.
+Divide the canvas into a precise coordinate system (0%=left/top, 100%=right/bottom).
+
+For EACH element visible in the reference image, measure and provide:
+- Element name
+- Position: x_start%, y_start%, x_end%, y_end%
+- Style details (color hex, font weight, size relative to canvas height)
+
+Be EXTREMELY precise. Count every decorative element: lines, dots, bars, shapes, badges, icons.
+Measure the EXACT footer structure: how many columns, what content in each column.
+Map the EXACT typography hierarchy: which text is biggest, which is smallest, exact colors.
+
+Respond with a JSON object using EXACTLY these keys (all values must be strings):
+{
+  "layout_description": "Overall grid structure and flow — vertical sections, column splits, content zones",
+  "color_plan": "EXACT colors used: background hex, text hex for each level, shape fill hex, accent hex. Map each element to its specific hex color",
+  "typography_plan": "Typography hierarchy: headline (weight, size as % of canvas height, color hex), subheadline (same), body text (same), CTA text (same). Alignment for each.",
+  "background_treatment": "EXACT background: type (solid/gradient/photo/blurred photo), colors/direction, any overlays or textures",
+  "geometric_elements": "Every geometric/decorative element: lines (position, thickness, color), dots (position, size, color), shapes (type, position, color, opacity), badges (position, style)",
+  "logo_placement": "Exact logo position as percentage zone, size, any background behind it",
+  "template_layout": "Complete element-by-element positional map: logo at [x:A-B%, y:C-D%], headline at [x:A-B%, y:C-D%], product at [x:A-B%, y:C-D%], etc.",
+  "zone_map": "PRECISE ZONE MAP — list every element with exact percentage coordinates:\n- Element: x_start%-x_end%, y_start%-y_end% (style details)\nExample:\n- Decorative bars: x:3-12%, y:8-9% (orange #F59E0B, 2 horizontal lines + 2 dots)\n- Headline line 1: x:3-50%, y:15-22% (bold black, ~5% canvas height)\n- Product photo: x:45-95%, y:5-80% (centered, dominant, photorealistic)\nList ALL visible elements in order from top to bottom.",
+  "decorative_elements": "Catalog of ALL decorative elements: how many lines (with exact position, length, color, thickness), how many dots/circles (with exact position, size, color), shapes (position, type, fill color, border), stickers/badges (position, content, style). Be exhaustive — miss nothing.",
+  "footer_structure": "Footer analysis: total height as % of canvas, number of columns, content of each column (e.g., col1: logo badge on dark bg, col2: phone icon + number centered, col3: location icon + address), dividers between columns, background color of footer strip.",
+  "quality_notes": "Key quality benchmarks: lighting, shadow realism, color vibrancy, texture detail, polish level, specific techniques observed"
+}
+
+IMPORTANT: Respond ONLY with the JSON object. Be EXHAUSTIVELY detailed — the designer will use your zone map as absolute coordinates to place every element.`;
+  } else {
+    analysisPrompt = `You are a Senior Art Director at a top Brazilian design agency. Analyze the attached reference image(s) and produce a precise design brief for your designer team.
 
 CONTEXT:
 - Final flyer size: ${config.sizeConfig.width}×${config.sizeConfig.height}px (${config.sizeConfig.aspectRatio})
@@ -538,7 +637,7 @@ CONTEXT:
 ${config.aiInstructions ? `- Client creative orders: ${config.aiInstructions}` : ''}
 ${config.aiRestrictions ? `- Client restrictions: ${config.aiRestrictions}` : ''}
 
-${isCopyOrTemplate ? `COPY/TEMPLATE MODE — You MUST analyze the reference image as an EXACT TEMPLATE to replicate. Map every element position precisely: where the logo sits, where headlines go, where the product is placed, footer structure, badge positions, etc. The designer will need to replicate this layout pixel-perfect.` : `INSPIRATION/ORIGINAL MODE — Analyze the references for quality benchmarks, style cues, and design patterns to inspire an original creation that matches or exceeds their quality.`}
+${isCopyOrTemplate ? `TEMPLATE MODE — You MUST analyze the reference image as an EXACT TEMPLATE to replicate. Map every element position precisely: where the logo sits, where headlines go, where the product is placed, footer structure, badge positions, etc. The designer will need to replicate this layout pixel-perfect.` : `INSPIRATION/ORIGINAL MODE — Analyze the references for quality benchmarks, style cues, and design patterns to inspire an original creation that matches or exceeds their quality.`}
 
 Respond with a JSON object using EXACTLY these keys (all values must be strings):
 {
@@ -553,6 +652,7 @@ Respond with a JSON object using EXACTLY these keys (all values must be strings)
 }
 
 IMPORTANT: Respond ONLY with the JSON object, no other text. Every value must be a detailed, actionable instruction string.`;
+  }
 
   const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
     { text: analysisPrompt },
@@ -572,7 +672,7 @@ IMPORTANT: Respond ONLY with the JSON object, no other text. Every value must be
           contents: [{ role: "user", parts }],
           generationConfig: {
             responseMimeType: "application/json",
-            maxOutputTokens: 2048,
+            maxOutputTokens: isCopyMode ? 4096 : 2048, // COPY mode needs more detail
           },
           safetySettings: SAFETY_SETTINGS,
         }),
@@ -643,6 +743,9 @@ async function reviewGeneratedFlyer(
   console.log("=== LAYER 3: QUALITY CONTROL — Reviewing generated flyer ===");
   const startTime = Date.now();
 
+  const isCopyMode = config.mode === 'copy';
+  const passThreshold = isCopyMode ? 9 : 8; // COPY mode requires higher bar
+
   let reviewPrompt = `You are a Quality Control specialist at a premium design agency. Compare the FIRST attached image (the generated flyer) against the REMAINING attached images (reference images) and the design brief below.
 
 BRAND REQUIREMENTS TO VERIFY:
@@ -663,6 +766,31 @@ ${config.preserveProduct ? '- PRODUCT PRESERVATION: The product from the referen
 - Geometric elements: ${config.designBrief.geometric_elements}
 - Logo: ${config.designBrief.logo_placement}
 ${config.designBrief.template_layout ? `- Template layout: ${config.designBrief.template_layout}` : ''}`;
+
+    // COPY mode: add zone map for element-by-element comparison
+    if (isCopyMode) {
+      if (config.designBrief.zone_map) {
+        reviewPrompt += `\n\nZONE MAP TO COMPARE AGAINST (check each element position):\n${config.designBrief.zone_map}`;
+      }
+      if (config.designBrief.decorative_elements) {
+        reviewPrompt += `\n\nDECORATIVE ELEMENTS THAT MUST BE PRESENT:\n${config.designBrief.decorative_elements}`;
+      }
+      if (config.designBrief.footer_structure) {
+        reviewPrompt += `\n\nFOOTER STRUCTURE TO MATCH:\n${config.designBrief.footer_structure}`;
+      }
+    }
+  }
+
+  if (isCopyMode) {
+    reviewPrompt += `\n\nCOPY MODE REVIEW — Be EXTRA STRICT on layout fidelity:
+- Compare element positions zone-by-zone against the zone map
+- Check that EVERY decorative element (lines, dots, bars, shapes) is present and in the correct position
+- Verify footer structure matches exactly (same columns, same layout)
+- Check that typography hierarchy is identical (same relative sizes, same colors, same weights)
+- Check that the color scheme is identical to the reference
+- Score must be >= ${passThreshold} to pass (higher bar for COPY mode)
+
+Focus especially on POSITIONAL ACCURACY — elements should be in the same zones as the reference.`;
   }
 
   reviewPrompt += `\n\nScore the generated flyer from 1-10 and identify SPECIFIC, ACTIONABLE improvements.
@@ -675,10 +803,10 @@ Respond with a JSON object using EXACTLY these keys:
   "layout_matches": <boolean — does the layout match the brief/references?>,
   "text_readable": <boolean — is all text sharp, readable, and correctly placed?>,
   "improvements": [<array of specific actionable fix strings, max 5 items>],
-  "pass": <boolean — true if score >= 8>
+  "pass": <boolean — true if score >= ${passThreshold}>
 }
 
-Be strict but fair. Focus on: logo presence, color accuracy, layout fidelity, text quality, 3D product realism, overall professional finish.
+${isCopyMode ? 'Be VERY strict. The output must be near-identical to the reference template. Any misplaced element, missing decorative detail, or wrong color is a deduction.' : 'Be strict but fair.'} Focus on: logo presence, color accuracy, layout fidelity, text quality, 3D product realism, overall professional finish.
 Respond ONLY with the JSON object.`;
 
   const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
@@ -755,12 +883,37 @@ async function refineFlyer(
     primaryColor?: string;
     secondaryColor?: string;
     hasLogos: boolean;
+    mode: string;
   }
 ): Promise<{ imageData: string; mimeType: string } | null> {
   console.log("=== LAYER 4: RETOUCHER — Refining flyer ===");
   const startTime = Date.now();
 
-  let refinePrompt = `You are a professional design retoucher. The FIRST attached image is a flyer that needs specific improvements. ${referenceImageParts.length > 0 ? 'The OTHER attached images are the reference/brand images to match.' : ''}
+  const isCopyMode = config.mode === 'copy';
+
+  let refinePrompt: string;
+
+  if (isCopyMode) {
+    // COPY mode: focus on layout repositioning, not general quality
+    refinePrompt = `You are a professional design retoucher specializing in LAYOUT PRECISION. The FIRST attached image is a flyer that was generated to replicate a template. ${referenceImageParts.length > 0 ? 'The OTHER attached images are the ORIGINAL TEMPLATE to match.' : ''}
+
+YOUR TASK: Fix the positional and layout issues listed below. The output must look IDENTICAL to the reference template.
+
+LAYOUT FIXES TO APPLY:
+${improvements.map((imp, i) => `${i + 1}. ${imp}`).join('\n')}
+
+CRITICAL RULES:
+- Focus on REPOSITIONING elements to match the reference template exactly
+- Fix colors to match the reference if they differ
+- Ensure decorative elements (lines, dots, bars, shapes) match the reference precisely
+- Footer structure must be identical to the reference
+- Typography hierarchy (sizes, weights, colors) must match the reference
+- PRESERVE the overall content and text — only adjust positions, colors, and decorative elements
+- This is a PRECISION ADJUSTMENT, not a redesign
+
+Output: The refined flyer image with all layout corrections applied. Same dimensions.`;
+  } else {
+    refinePrompt = `You are a professional design retoucher. The FIRST attached image is a flyer that needs specific improvements. ${referenceImageParts.length > 0 ? 'The OTHER attached images are the reference/brand images to match.' : ''}
 
 SPECIFIC IMPROVEMENTS TO APPLY (do ALL of these):
 ${improvements.map((imp, i) => `${i + 1}. ${imp}`).join('\n')}
@@ -776,6 +929,7 @@ ${config.primaryColor ? `- Primary brand color: ${config.primaryColor} (should b
 ${config.secondaryColor ? `- Secondary brand color: ${config.secondaryColor} (accent)` : ''}
 
 Output: The refined flyer image with all improvements applied. Same dimensions and orientation.`;
+  }
 
   const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
     { text: refinePrompt },
@@ -1225,6 +1379,10 @@ serve(async (req) => {
           niche: niche || project.niche,
           clientContext,
           designBrief,
+          primaryColor: project.primary_color,
+          secondaryColor: project.secondary_color,
+          fontFamily: project.font_family,
+          hasLogos,
         });
         break;
       case 'inspiration': {
@@ -1255,8 +1413,8 @@ serve(async (req) => {
         break;
     }
 
-    // Select model
-    const selectedModel = (finalMode === 'product' || finalMode === 'template' || model === 'gemini-pro')
+    // Select model — COPY mode always uses Pro for higher precision
+    const selectedModel = (finalMode === 'product' || finalMode === 'template' || finalMode === 'copy' || model === 'gemini-pro')
       ? AI_MODELS["gemini-pro"]
       : AI_MODELS["gemini-flash"];
 
@@ -1329,6 +1487,7 @@ serve(async (req) => {
             primaryColor: project.primary_color,
             secondaryColor: project.secondary_color,
             hasLogos,
+            mode: finalMode,
           }
         );
 
