@@ -468,7 +468,7 @@ export default function Auth() {
                         fill="#EA4335"
                       />
                     </svg>
-                    {t('buttons.continueWithGoogle')}
+                    {t('social.continueWithGoogle')}
                   </Button>
                 </form>
               </TabsContent>
@@ -480,7 +480,7 @@ export default function Auth() {
                     <Input
                       id="signup-name"
                       type="text"
-                      placeholder={t('placeholders.name')}
+                      placeholder={t('placeholders.fullName')}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
@@ -505,7 +505,7 @@ export default function Auth() {
                       <Input
                         id="signup-password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder={t('placeholders.minChars')}
+                        placeholder={t('placeholders.password')}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -546,7 +546,7 @@ export default function Auth() {
                     {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? t('buttons.creatingAccount') : t('buttons.createAccount')}
+                    {loading ? t('signup.loading') : t('signup.submit')}
                   </Button>
                 </form>
               </TabsContent>
