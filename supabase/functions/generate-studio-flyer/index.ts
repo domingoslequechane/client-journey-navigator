@@ -1124,24 +1124,31 @@ serve(async (req) => {
     }
 
     const userId = claimsData.user.id;
+    const userEmail = claimsData.user.email;
 
-    // Check daily limit (5 generations per user)
-    const today = new Date().toISOString().split('T')[0];
-    const { count: dailyCount, error: countError } = await supabase
-      .from("studio_flyers")
-      .select("*", { count: 'exact', head: true })
-      .eq("created_by", userId)
-      .gte("created_at", today);
+    // Check if user is exempt from limits (development accounts)
+    const EXEMPT_EMAILS = ["domingosf.lequuechane@gmail.com", "onixagence.geral@gmail.com"];
+    const isExempt = userEmail && EXEMPT_EMAILS.includes(userEmail);
 
-    if (countError) {
-      console.error("Error checking daily limit:", countError);
-    } else if (dailyCount !== null && dailyCount >= 5) {
-      return new Response(JSON.stringify({ 
-        error: "Limite diário atingido. Você pode gerar até 5 flyers por dia durante a fase Beta. O limite será resetado à meia-noite." 
-      }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!isExempt) {
+      // Check daily limit (5 generations per user)
+      const today = new Date().toISOString().split('T')[0];
+      const { count: dailyCount, error: countError } = await supabase
+        .from("studio_flyers")
+        .select("*", { count: 'exact', head: true })
+        .eq("created_by", userId)
+        .gte("created_at", today);
+
+      if (countError) {
+        console.error("Error checking daily limit:", countError);
+      } else if (dailyCount !== null && dailyCount >= 5) {
+        return new Response(JSON.stringify({ 
+          error: "Limite diário atingido. Você pode gerar até 5 flyers por dia durante a fase Beta. O limite será resetado à meia-noite." 
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const {

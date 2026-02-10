@@ -16,6 +16,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { 
   GenerationMode, 
@@ -89,6 +90,8 @@ export function GenerationPanel({
   dailyCount = 0,
   className,
 }: GenerationPanelProps) {
+  const { user } = useAuth();
+  
   // Load persisted settings for this project
   const loadPersistedSettings = useCallback((): Partial<PersistedSettings> => {
     try {
@@ -118,8 +121,11 @@ export function GenerationPanel({
   const productInputRef = useRef<HTMLInputElement>(null);
 
   const DAILY_LIMIT = 5;
+  const EXEMPT_EMAILS = ["domingosf.lequuechane@gmail.com", "onixagence.geral@gmail.com"];
+  const isExempt = user?.email && EXEMPT_EMAILS.includes(user.email);
+  
   const remainingGenerations = Math.max(0, DAILY_LIMIT - dailyCount);
-  const limitReached = dailyCount >= DAILY_LIMIT;
+  const limitReached = !isExempt && dailyCount >= DAILY_LIMIT;
 
   // Persist settings whenever they change
   useEffect(() => {
@@ -204,9 +210,16 @@ export function GenerationPanel({
             </div>
           </div>
           <div className="text-right">
-            <Badge variant={limitReached ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0">
-              {remainingGenerations} / {DAILY_LIMIT} hoje
-            </Badge>
+            {!isExempt && (
+              <Badge variant={limitReached ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0">
+                {remainingGenerations} / {DAILY_LIMIT} hoje
+              </Badge>
+            )}
+            {isExempt && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
+                Dev: Ilimitado
+              </Badge>
+            )}
           </div>
         </div>
       </CardHeader>
