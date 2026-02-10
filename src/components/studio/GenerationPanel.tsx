@@ -106,6 +106,7 @@ export function GenerationPanel({
   const persisted = loadPersistedSettings();
 
   const [prompt, setPrompt] = useState('');
+  const [autoCopy, setAutoCopy] = useState(false);
   const [size, setSize] = useState<FlyerSize>(persisted.size || '1080x1080');
   const [style, setStyle] = useState<'vivid' | 'natural'>(persisted.style || 'vivid');
   const [mode, setMode] = useState<GenerationMode>(persisted.mode || 'original');
@@ -141,7 +142,7 @@ export function GenerationPanel({
   }, [size, style, mode, model, mood, colors, elements, preserveProduct, productImage, allowManipulation, showAdvanced, project.id]);
 
   const handleGenerate = async () => {
-    if (!prompt.trim() || limitReached) return;
+    if ((!prompt.trim() && !autoCopy) || limitReached) return;
 
     const isProductMode = mode === 'product';
     const isTemplateMode = mode === 'template';
@@ -195,7 +196,7 @@ export function GenerationPanel({
     }
   };
 
-  const canGenerate = prompt.trim().length > 0 && !isGenerating && !limitReached &&
+  const canGenerate = (prompt.trim().length > 0 || autoCopy) && !isGenerating && !limitReached &&
     (!preserveProduct || productImage);
 
   return (
@@ -273,15 +274,30 @@ export function GenerationPanel({
 
         {/* Prompt */}
         <div className="space-y-2">
-          <Label htmlFor="prompt">Descrição do Flyer</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="prompt">Descrição do Flyer</Label>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-medium text-muted-foreground">Copy por IA</span>
+              <Switch
+                checked={autoCopy}
+                onCheckedChange={setAutoCopy}
+                disabled={limitReached}
+              />
+            </div>
+          </div>
           <Textarea
             id="prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Ex: Promoção de Black Friday com 50% de desconto em todos os produtos..."
+            placeholder={autoCopy ? "Opcional: Dê uma direção para a IA (ex: Foco em preço baixo)" : "Ex: Promoção de Black Friday com 50% de desconto em todos os produtos..."}
             className="min-h-[100px] resize-none"
             disabled={limitReached}
           />
+          {autoCopy && (
+            <p className="text-[10px] text-primary font-medium animate-pulse">
+              ✨ A QIA criará uma copy persuasiva baseada no nicho e contexto do cliente.
+            </p>
+          )}
         </div>
 
         {/* Size Selection - Visual geometric shapes */}

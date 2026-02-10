@@ -848,6 +848,42 @@ IMPORTANT: Respond ONLY with the JSON object. Be extremely detailed and professi
     }
 
     const brief: DesignBrief = JSON.parse(jsonStr);
+
+    // If prompt is empty or very short, and we have niche/context, the Art Director should suggest a copy
+    if (config.prompt.length < 10) {
+      console.log("Layer 1: Generating suggested copy since user prompt is empty/short");
+      const copyPrompt = `Based on the niche "${config.niche || 'General'}" and the design style analyzed, write a high-conversion, short commercial copy in Portuguese (PT-PT) for this flyer.
+      Include a catchy headline, a subheadline or benefit, and a call to action.
+      Keep it under 20 words total.
+      Respond ONLY with the suggested text.`;
+
+      const copyResponse = await fetch(
+        `${GEMINI_API_BASE}/models/${AI_MODELS["gemini-flash-text"]}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: copyPrompt }, ...imageParts] }],
+            generationConfig: { maxOutputTokens: 200 },
+            safetySettings: SAFETY_SETTINGS,
+          }),
+        }
+      );
+
+      if (copyResponse.ok) {
+        const copyData = await copyResponse.json();
+        const suggestedCopy = copyData?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (suggestedCopy) {
+          console.log("Layer 1: Suggested copy generated:", suggestedCopy);
+          // We'll inject this into the brief to be used by the designer
+          (brief as any).suggested_copy = suggestedCopy.trim();
+        }
+      }
+    }
+
     const elapsed = Date.now() - startTime;
     console.log(`Layer 1 (Art Director): Brief generated in ${elapsed}ms`);
     
@@ -1436,8 +1472,13 @@ serve(async (req) => {
       );
     }
 
+    // Use suggested copy if user prompt is empty
+    const finalPrompt = (prompt.trim() === "" && (designBrief as any)?.suggested_copy)
+      ? (designBrief as any).suggested_copy
+      : prompt;
+
     const baseParams = {
-      prompt, sizeConfig,
+      prompt: finalPrompt, sizeConfig,
       clientName: project.name,
       niche: niche || project.niche,
       primaryColor: project.primary_color,
@@ -1462,7 +1503,7 @@ serve(async (req) => {
         break;
       case 'copy':
         enhancedPrompt = buildCopyPrompt({
-          prompt, sizeConfig,
+          prompt: finalPrompt, sizeConfig,
           niche: niche || project.niche,
           clientContext,
           designBrief,
@@ -1476,6 +1517,7 @@ serve(async (req) => {
         const allRefs = [...layoutReferences, ...additionalReferences, ...(project.reference_images || [])];
         enhancedPrompt = buildInspirationPrompt({
           ...baseParams,
+          prompt: finalPrompt,
           mood,
           aiRestrictions: project.ai_restrictions,
           referenceCount: allRefs.length || 1,
@@ -1485,6 +1527,7 @@ serve(async (req) => {
       case 'product':
         enhancedPrompt = buildProductPreservationPrompt({
           ...baseParams,
+          prompt: finalPrompt,
           aiRestrictions: project.ai_restrictions,
           allowManipulation,
         });
@@ -1493,6 +1536,7 @@ serve(async (req) => {
       default:
         enhancedPrompt = buildOriginalPrompt({
           ...baseParams,
+          prompt: finalPrompt,
           mood, elements,
           aiRestrictions: project.ai_restrictions,
           hasReferences: projectHasReferences,
@@ -1552,7 +1596,7 @@ REGRAS CRITICAS:
           fontFamily: project.font_family,
           hasLogos,
           mode: finalMode,
-          prompt,
+          prompt: finalPrompt,
           preserveProduct: finalMode === 'product',
         }
       );
@@ -1607,7 +1651,7 @@ REGRAS CRITICAS:
         project_id: projectId,
         organization_id: project.organization_id,
         created_by: userId,
-        prompt,
+        prompt: finalPrompt,
         image_url: publicUrl,
         size: size || "1080x1080",
         style: style || "vivid",
