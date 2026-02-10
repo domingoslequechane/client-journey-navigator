@@ -121,7 +121,7 @@ export function GenerationPanel({
   const productInputRef = useRef<HTMLInputElement>(null);
 
   const DAILY_LIMIT = 5;
-  const EXEMPT_EMAILS = ["domingosf.lequechane@gmail.com", "onixagence.geral@gmail.com"];
+  const EXEMPT_EMAILS = ["domingosf.lequechane@gmail.com"];
   const isExempt = user?.email && EXEMPT_EMAILS.includes(user.email);
   
   const remainingGenerations = Math.max(0, DAILY_LIMIT - dailyCount);

@@ -1127,7 +1127,7 @@ serve(async (req) => {
     const userEmail = claimsData.user.email;
 
     // Check if user is exempt from limits (development accounts)
-    const EXEMPT_EMAILS = ["domingosf.lequechane@gmail.com", "onixagence.geral@gmail.com"];
+    const EXEMPT_EMAILS = ["domingosf.lequechane@gmail.com"];
     const isExempt = userEmail && EXEMPT_EMAILS.includes(userEmail);
 
     if (!isExempt) {
