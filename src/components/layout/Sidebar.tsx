@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -118,7 +120,7 @@ export function Sidebar() {
        { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canSeeSalesFunnel || canSeeOperationalFlow },
       { name: 'Finanças', href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canSeeFinance },
       { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true },
-      { name: 'Studio AI', href: '/app/studio', icon: Palette, tutorialId: 'sidebar-studio', show: true, badge: 'novo' },
+      { name: 'Studio AI', href: '/app/studio', icon: Palette, tutorialId: 'sidebar-studio', show: true, badge: 'Beta' },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
@@ -146,7 +148,7 @@ export function Sidebar() {
         className={cn(
           'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
           isActive
-            ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
+            ? 'bg-primary text-primary-foreground'
             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
           collapsed && 'justify-center px-2'
         )}
@@ -269,7 +271,7 @@ export function Sidebar() {
                   className={cn(
                     'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     location.pathname === '/app/support'
-                      ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
                 >
@@ -284,7 +286,7 @@ export function Sidebar() {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 location.pathname === '/app/support'
-                  ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
+                  ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
             >
@@ -306,7 +308,7 @@ export function Sidebar() {
                   className={cn(
                     'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     location.pathname === '/app/settings'
-                      ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
                 >
@@ -322,7 +324,7 @@ export function Sidebar() {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 location.pathname === '/app/settings'
-                  ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
+                  ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
             >
@@ -341,7 +343,7 @@ export function Sidebar() {
                     className={cn(
                       'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
                       location.pathname === '/app/subscription'
-                        ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
+                        ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                   >
@@ -366,7 +368,7 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   location.pathname === '/app/subscription'
-                    ? 'bg-primary text-primary-foreground [&>svg]:text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 )}
               >

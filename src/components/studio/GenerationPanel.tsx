@@ -1,7 +1,9 @@
+"use client";
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Sparkles, Loader2, Wand2, Copy, Image as ImageIcon, 
-  Shield, Plus, X, Zap, ChevronDown, ChevronUp, Upload, Unlock
+  Shield, Plus, X, Zap, ChevronDown, ChevronUp, Upload, Unlock, Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -9,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -28,7 +31,7 @@ interface GenerationPanelProps {
   project: StudioProject;
   onGenerate: (settings: GenerationSettings) => Promise<void>;
   isGenerating: boolean;
-  remainingGenerations?: number | null;
+  dailyCount?: number;
   className?: string;
 }
 
@@ -83,7 +86,7 @@ export function GenerationPanel({
   project,
   onGenerate,
   isGenerating,
-  remainingGenerations,
+  dailyCount = 0,
   className,
 }: GenerationPanelProps) {
   // Load persisted settings for this project
@@ -114,6 +117,10 @@ export function GenerationPanel({
   const [showAdvanced, setShowAdvanced] = useState(persisted.showAdvanced || false);
   const productInputRef = useRef<HTMLInputElement>(null);
 
+  const DAILY_LIMIT = 5;
+  const remainingGenerations = Math.max(0, DAILY_LIMIT - dailyCount);
+  const limitReached = dailyCount >= DAILY_LIMIT;
+
   // Persist settings whenever they change
   useEffect(() => {
     const settings: PersistedSettings = {
@@ -126,7 +133,7 @@ export function GenerationPanel({
   }, [size, style, mode, model, mood, colors, elements, preserveProduct, productImage, allowManipulation, showAdvanced, project.id]);
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() || limitReached) return;
 
     await onGenerate({
       prompt: prompt.trim(),
@@ -177,8 +184,7 @@ export function GenerationPanel({
     }
   };
 
-  const canGenerate = prompt.trim().length > 0 && !isGenerating && 
-    (remainingGenerations === null || remainingGenerations === undefined || remainingGenerations > 0) &&
+  const canGenerate = prompt.trim().length > 0 && !isGenerating && !limitReached &&
     (!preserveProduct || productImage);
 
   return (
@@ -197,15 +203,24 @@ export function GenerationPanel({
               </span>
             </div>
           </div>
-          {remainingGenerations !== null && remainingGenerations !== undefined && (
-            <span className="text-sm text-muted-foreground">
-              {remainingGenerations} restantes
-            </span>
-          )}
+          <div className="text-right">
+            <Badge variant={limitReached ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0">
+              {remainingGenerations} / {DAILY_LIMIT} hoje
+            </Badge>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {limitReached && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-start gap-2">
+            <Lock className="h-4 w-4 shrink-0 mt-0.5" />
+            <p>
+              <strong>Limite diário atingido.</strong> Você pode gerar até 5 flyers por dia durante a fase Beta. O limite será resetado à meia-noite.
+            </p>
+          </div>
+        )}
+
         {/* Mode Selection - 3 modes */}
         <div className="space-y-2">
           <Label>Modo de Geração</Label>
@@ -240,6 +255,7 @@ export function GenerationPanel({
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Ex: Promoção de Black Friday com 50% de desconto em todos os produtos..."
             className="min-h-[100px] resize-none"
+            disabled={limitReached}
           />
         </div>
 
@@ -390,6 +406,7 @@ export function GenerationPanel({
             <Switch
               checked={preserveProduct}
               onCheckedChange={setPreserveProduct}
+              disabled={limitReached}
             />
           </div>
 
@@ -412,7 +429,7 @@ export function GenerationPanel({
                 <button
                   type="button"
                   onClick={() => productInputRef.current?.click()}
-                  disabled={uploadingProduct}
+                  disabled={uploadingProduct || limitReached}
                   className="w-24 h-24 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors"
                 >
                   {uploadingProduct ? (
@@ -447,6 +464,7 @@ export function GenerationPanel({
                 <Switch
                   checked={allowManipulation}
                   onCheckedChange={setAllowManipulation}
+                  disabled={limitReached}
                 />
               </div>
 
@@ -515,6 +533,11 @@ export function GenerationPanel({
               <Loader2 className="h-4 w-4 animate-spin" />
               Gerando...
             </>
+          ) : limitReached ? (
+            <>
+              <Lock className="h-4 w-4" />
+              Limite Diário Atingido
+            </>
           ) : (
             <>
               <Sparkles className="h-4 w-4" />
@@ -522,12 +545,6 @@ export function GenerationPanel({
             </>
           )}
         </Button>
-
-        {remainingGenerations === 0 && (
-          <p className="text-sm text-destructive text-center">
-            Você atingiu o limite de gerações do seu plano.
-          </p>
-        )}
       </CardContent>
     </Card>
   );

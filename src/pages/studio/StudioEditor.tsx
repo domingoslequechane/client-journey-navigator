@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Settings, Loader2, Sparkles } from 'lucide-react';
@@ -19,7 +21,8 @@ export default function StudioEditor() {
     project, projectLoading, 
     flyers, flyersLoading, 
     generateFlyer, refetchFlyers,
-    deleteFlyer, rateFlyer, ratings 
+    deleteFlyer, rateFlyer, ratings,
+    dailyCount, refetchDailyCount
   } = useStudioProject(projectId);
   const { incrementUsage } = usePlanLimits();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -39,6 +42,7 @@ export default function StudioEditor() {
         toast.success('Flyer gerado com sucesso!');
         await incrementUsage('studio_generations' as any);
         refetchFlyers();
+        refetchDailyCount();
       }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao gerar flyer');
@@ -169,6 +173,7 @@ export default function StudioEditor() {
             project={project}
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
+            dailyCount={dailyCount}
           />
         </div>
       </div>

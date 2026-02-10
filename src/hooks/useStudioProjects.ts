@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -166,6 +168,24 @@ export function useStudioProject(projectId: string | undefined) {
     enabled: !!projectId && !!user,
   });
 
+  // Fetch daily generation count for the user
+  const { data: dailyCount = 0, refetch: refetchDailyCount } = useQuery({
+    queryKey: ['studio-daily-count', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const today = new Date().toISOString().split('T')[0];
+      const { count, error } = await supabase
+        .from('studio_flyers')
+        .select('*', { count: 'exact', head: true })
+        .eq('created_by', user.id)
+        .gte('created_at', today);
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+
   // Fetch ratings for flyers
   const { data: ratingsData } = useQuery({
     queryKey: ['studio-flyer-ratings', projectId, user?.id],
@@ -211,6 +231,7 @@ export function useStudioProject(projectId: string | undefined) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['studio-flyers', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['studio-daily-count', user?.id] });
     },
     onError: (error) => {
       toast.error('Erro na geração: ' + error.message);
@@ -228,6 +249,7 @@ export function useStudioProject(projectId: string | undefined) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['studio-flyers', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['studio-daily-count', user?.id] });
       toast.success('Flyer eliminado!');
     },
     onError: (error) => {
@@ -297,5 +319,7 @@ export function useStudioProject(projectId: string | undefined) {
     deleteFlyer,
     rateFlyer,
     ratings: ratingsData || {},
+    dailyCount,
+    refetchDailyCount,
   };
 }

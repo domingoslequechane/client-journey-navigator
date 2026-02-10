@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -108,7 +110,7 @@ export function MobileNav() {
     items.push({ name: 'Link23', href: '/app/link-trees', icon: Link2, show: true });
 
     // Add Studio AI to more menu
-    items.push({ name: 'Studio AI', href: '/app/studio', icon: Palette, show: true, badge: 'novo' });
+    items.push({ name: 'Studio AI', href: '/app/studio', icon: Palette, show: true, badge: 'Beta' });
 
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },

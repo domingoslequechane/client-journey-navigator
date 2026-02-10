@@ -1125,6 +1125,25 @@ serve(async (req) => {
 
     const userId = claimsData.user.id;
 
+    // Check daily limit (5 generations per user)
+    const today = new Date().toISOString().split('T')[0];
+    const { count: dailyCount, error: countError } = await supabase
+      .from("studio_flyers")
+      .select("*", { count: 'exact', head: true })
+      .eq("created_by", userId)
+      .gte("created_at", today);
+
+    if (countError) {
+      console.error("Error checking daily limit:", countError);
+    } else if (dailyCount !== null && dailyCount >= 5) {
+      return new Response(JSON.stringify({ 
+        error: "Limite diário atingido. Você pode gerar até 5 flyers por dia durante a fase Beta. O limite será resetado à meia-noite." 
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const {
       projectId, prompt, size = '1080x1080', style = 'vivid',
       mode = 'original', model = 'gemini-flash', niche, mood,
