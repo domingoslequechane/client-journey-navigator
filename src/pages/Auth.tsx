@@ -21,7 +21,7 @@ import { SuspendedDialog } from '@/components/auth/SuspendedDialog';
 
 const createAuthSchema = (t: (key: string) => string) => z.object({
   email: z.string().email({ message: t('validation.invalidEmail') }),
-  password: z.string().min(6, { message: t('validation.minPassword') }),
+  password: z.string().min(1, { message: t('validation.required') }), // Relaxed for login
   confirmPassword: z.string().optional(),
   fullName: z.string().min(2, { message: t('validation.minName') }).optional(),
 }).refine((data) => {
@@ -97,6 +97,13 @@ export default function Auth() {
       const data = isSignUp 
         ? { email, password, confirmPassword, fullName } 
         : { email, password };
+      
+      // For signup, we still want min 6 chars
+      if (isSignUp && password.length < 6) {
+        setErrors({ password: t('validation.minPassword') });
+        return false;
+      }
+
       authSchema.parse(data);
       setErrors({});
       return true;
@@ -119,55 +126,72 @@ export default function Auth() {
     if (!validateForm(false)) return;
     
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    
-    if (error) {
-      if (error.message.includes('Invalid login credentials')) {
-        toast({ title: 'Erro', description: t('messages.invalidCredentials'), variant: 'destructive' });
-      } else {
-        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-      }
-      setLoading(false);
-      return;
-    }
-
-    if (data.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('suspended')
-        .eq('id', data.user.id)
-        .single();
+    try {
+      // Normalize email
+      const cleanEmail = email.trim().toLowerCase();
       
-      if (profile?.suspended === true) {
-        await supabase.auth.signOut();
-        setSuspendedDialogOpen(true);
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email: cleanEmail, 
+        password 
+      });
+      
+      if (error) {
+        console.error('Login error details:', error);
+        
+        let errorMessage = error.message;
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = t('messages.invalidCredentials');
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = t('messages.emailNotVerified');
+        }
+        
+        toast({ title: 'Erro no login', description: errorMessage, variant: 'destructive' });
         setLoading(false);
         return;
       }
 
-      const { data: adminRole } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', data.user.id)
-        .eq('role', 'proprietor')
-        .maybeSingle();
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('suspended')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profile?.suspended === true) {
+          await supabase.auth.signOut();
+          setSuspendedDialogOpen(true);
+          setLoading(false);
+          return;
+        }
 
-      await supabase.from('login_history').insert({
-        user_id: data.user.id,
-        provider: 'email',
-        user_agent: navigator.userAgent,
-      });
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .eq('role', 'proprietor')
+          .maybeSingle();
 
-      toast({ title: t('messages.welcomeBack'), description: t('messages.loginSuccess') });
-      
-      if (adminRole) {
-        navigate('/admin');
-      } else {
-        const from = (location.state as any)?.from?.pathname || '/app';
-        navigate(from);
+        await supabase.from('login_history').insert({
+          user_id: data.user.id,
+          provider: 'email',
+          user_agent: navigator.userAgent,
+        });
+
+        toast({ title: t('messages.welcomeBack'), description: t('messages.loginSuccess') });
+        
+        if (adminRole) {
+          navigate('/admin');
+        } else {
+          const from = (location.state as any)?.from?.pathname || '/app';
+          navigate(from);
+        }
       }
+    } catch (err: any) {
+      console.error('Unexpected login error:', err);
+      toast({ title: 'Erro inesperado', description: 'Ocorreu uma falha ao tentar entrar. Tente novamente.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
