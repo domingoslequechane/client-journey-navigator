@@ -271,10 +271,18 @@ export default function LandingPage() {
             </p>
             
             {/* CTA único */}
-            <div 
+            <div
               className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in"
               style={{ animationDelay: '0.6s' }}
             >
+              <Link to="/demo">
+                <Button size="lg" variant="outline" className="text-lg sm:text-xl px-6 sm:px-10 py-6 sm:py-7 gap-2 sm:gap-3 hover:scale-105 transition-all">
+                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
+                  Testar agora (sem cadastro)
+                  <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
+                </Button>
+              </Link>
+
               <Link to="/auth">
                 <Button size="lg" className="text-lg sm:text-xl px-6 sm:px-10 py-6 sm:py-7 gap-2 sm:gap-3 shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105">
                   <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -285,8 +293,8 @@ export default function LandingPage() {
               </Link>
               
               {canInstall && !isInstalled && (
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   variant="outline"
                   onClick={install}
                   className="text-lg px-6 py-6 gap-2 hover:scale-105 transition-all"

@@ -19,6 +19,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import SetPassword from "./pages/SetPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AcceptInvite from "./pages/AcceptInvite";
+import Demo from "./pages/Demo";
 import Dashboard from "./pages/Dashboard";
  import Pipeline from "./pages/Pipeline";
  import { Navigate } from "react-router-dom";
@@ -84,6 +85,7 @@ const App = () => (
               <InstallPromptBanner />
               <Routes>
               <Route path="/" element={<LandingPage />} />
+              <Route path="/demo/*" element={<Demo />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/parcerias" element={<PartnerProgram />} />
               <Route path="/auth" element={<Auth />} />
