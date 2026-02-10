@@ -24,21 +24,21 @@ const SIZE_CONFIG: Record<string, { aspectRatio: string; orientation: string; wi
 };
 
 const NICHE_STYLE: Record<string, string> = {
-  'Construção': 'Industrial Power: High-contrast 3D renders of heavy materials (cement, steel, bricks). Dramatic low-angle lighting. Palette: Safety Orange, Charcoal, and Concrete Gray. Textures: Scratched metal, rough concrete.',
-  'Mobiliário': 'Minimalist Luxury: Soft, diffused studio lighting. Focus on textures (velvet, wood grain, marble). Palette: Earthy tones, Cream, Gold accents. Composition: Spacious, clean, high-end editorial feel.',
-  'Automóvel': 'High-Speed Dynamic: Motion blur backgrounds, sharp metallic reflections, rim lighting to define curves. Palette: Deep Black, Electric Blue, or Racing Red. Textures: Carbon fiber, polished chrome.',
-  'Imobiliário': 'Modern Living: Bright, airy, natural sunlight. Wide-angle perspectives. Palette: Navy Blue, Gold, Crisp White. Elements: Glass reflections, architectural blueprints, luxury keys.',
-  'Restaurante': 'Gourmet Sensorial: Macro photography style. Steam effects, water droplets, vibrant colors. Palette: Warm Red, Deep Gold, Dark Wood. Lighting: Moody, spotlighting the dish.',
-  'Beleza': 'Ethereal Glow: Soft-focus backgrounds, pearlescent textures, flawless lighting. Palette: Rose Gold, Pastel Pink, Silk White. Elements: Floating petals, liquid splashes, soft shadows.',
-  'Saúde': 'Clinical Trust: Bright, high-key lighting. Clean, sterile environments. Palette: Medical Blue, Mint Green, Pure White. Elements: Soft gradients, glass textures, professional icons.',
-  'Tecnologia': 'Cyber-Future: Neon glows, circuit patterns, dark glass reflections. Palette: Deep Black, Electric Purple, Cyan. Lighting: Backlit elements, digital bokeh.',
-  'Moda': 'Editorial Edge: High-fashion photography style. Dramatic shadows, bold typography. Palette: Monochrome with one bold accent color. Textures: Fabric weaves, leather, silk.',
-  'Fitness': 'Raw Energy: High-contrast, gritty textures, sweat droplets. Dynamic action angles. Palette: Black, Neon Yellow, or Fire Red. Lighting: Harsh side-lighting to define muscles/shapes.',
-  'Pet Shop': 'Playful Warmth: Soft textures, bright friendly colors, bokeh backgrounds. Palette: Sunny Yellow, Sky Blue, Grass Green. Elements: Paw prints, floating bubbles, soft fur textures.',
-  'Agricultura': 'Natural Abundance: Golden hour lighting, organic textures (soil, wheat, leaves). Palette: Deep Green, Harvest Gold, Earth Brown. Elements: Sun flares, dew drops.',
-  'Ótica': 'Crystal Clarity: Sharp focus, lens flares, transparent textures. Palette: Navy, Silver, Crystal Clear. Lighting: Precise spotlights, reflections on glass.',
-  'Farmácia': 'Wellness Balance: Clean, organized, trustworthy. Soft shadows. Palette: Health Green, Clean White, Trust Blue. Elements: Leaf motifs, soft gradients.',
-  'Joalharia': 'Precious Brilliance: Macro focus on sparkle, caustic light effects, deep shadows. Palette: Velvet Black, Pure Gold, Diamond White. Lighting: Multiple tiny spotlights.',
+  'Construção': 'Industrial Power: High-contrast 3D renders of heavy materials (cement bags like Votoran/Cauê, red bricks, orange ceramic tiles, concrete blocks, steel rebars, wheelbarrows). Dramatic low-angle lighting. Palette: Safety Orange, Charcoal, and Concrete Gray. Textures: Scratched metal, rough concrete.',
+  'Mobiliário': 'Minimalist Luxury: Soft, diffused studio lighting. Focus on textures (velvet, wood grain, marble). Products: sofas, dining tables, wooden chairs, wardrobes, beds with premium fabrics. Palette: Earthy tones, Cream, Gold accents. Composition: Spacious, clean, high-end editorial feel.',
+  'Automóvel': 'High-Speed Dynamic: Motion blur backgrounds, sharp metallic reflections, rim lighting to define curves. Products: cars, motorcycles, tires, car parts, engine components, polished chrome. Palette: Deep Black, Electric Blue, or Racing Red. Textures: Carbon fiber, polished chrome.',
+  'Imobiliário': 'Modern Living: Bright, airy, natural sunlight. Wide-angle perspectives. Products: modern houses, apartments, buildings, real estate keys. Palette: Navy Blue, Gold, Crisp White. Elements: Glass reflections, architectural blueprints, luxury keys.',
+  'Restaurante': 'Gourmet Sensorial: Macro photography style. Steam effects, water droplets, vibrant colors. Products: gourmet dishes, fresh ingredients, professional plating, steam. Palette: Warm Red, Deep Gold, Dark Wood. Lighting: Moody, spotlighting the dish.',
+  'Beleza': 'Ethereal Glow: Soft-focus backgrounds, pearlescent textures, flawless lighting. Products: cosmetic products, makeup brushes, skincare bottles. Palette: Rose Gold, Pastel Pink, Silk White. Elements: Floating petals, liquid splashes, soft shadows.',
+  'Saúde': 'Clinical Trust: Bright, high-key lighting. Clean, sterile environments. Products: medical equipment, stethoscopes, pills. Palette: Medical Blue, Mint Green, Pure White. Elements: Soft gradients, glass textures, professional icons.',
+  'Tecnologia': 'Cyber-Future: Neon glows, circuit patterns, dark glass reflections. Products: smartphones, laptops, circuit boards. Palette: Deep Black, Electric Purple, Cyan. Lighting: Backlit elements, digital bokeh.',
+  'Moda': 'Editorial Edge: High-fashion photography style. Dramatic shadows, bold typography. Products: clothing items, fabric textures, fashion accessories. Palette: Monochrome with one bold accent color. Textures: Fabric weaves, leather, silk.',
+  'Fitness': 'Raw Energy: High-contrast, gritty textures, sweat droplets. Dynamic action angles. Products: gym equipment, dumbbells, protein supplements. Palette: Black, Neon Yellow, or Fire Red. Lighting: Harsh side-lighting to define muscles/shapes.',
+  'Pet Shop': 'Playful Warmth: Soft textures, bright friendly colors, bokeh backgrounds. Products: pet food bags, dog toys, cat accessories. Palette: Sunny Yellow, Sky Blue, Grass Green. Elements: Paw prints, floating bubbles, soft fur textures.',
+  'Agricultura': 'Natural Abundance: Golden hour lighting, organic textures (soil, wheat, leaves). Products: tractors, seeds, crops, farming tools. Palette: Deep Green, Harvest Gold, Earth Brown. Elements: Sun flares, dew drops.',
+  'Ótica': 'Crystal Clarity: Sharp focus, lens flares, transparent textures. Products: eyeglasses, sunglasses, contact lens cases. Palette: Navy, Silver, Crystal Clear. Lighting: Precise spotlights, reflections on glass.',
+  'Farmácia': 'Wellness Balance: Clean, organized, trustworthy. Soft shadows. Products: medicine bottles, pharmacy symbols. Palette: Health Green, Clean White, Trust Blue. Elements: Leaf motifs, soft gradients.',
+  'Joalharia': 'Precious Brilliance: Macro focus on sparkle, caustic light effects, deep shadows. Products: gold rings, diamond necklaces, luxury watches. Palette: Velvet Black, Pure Gold, Diamond White. Lighting: Multiple tiny spotlights.',
   'Eventos': 'Celebration Spark: Bokeh lights, glitter, confetti, elegant gradients. Palette: Champagne Gold, Midnight Black, Pearl White. Lighting: Warm, festive, glowing.',
   'Educação': 'Academic Prestige: Classic textures (paper, old wood, leather). Warm library lighting. Palette: Oxford Blue, Burgundy, Parchment. Elements: Ink strokes, subtle paper grain.',
 };
@@ -201,17 +201,61 @@ function buildOriginalPrompt(params: {
   designBrief?: DesignBrief | null;
 }): string {
   const { prompt, sizeConfig, clientName, niche, mood, colors, elements,
-    primaryColor, secondaryColor, fontFamily, aiInstructions, 
+    primaryColor, secondaryColor, fontFamily, aiInstructions,
     aiRestrictions, aiMemoryContext, clientContext, hasReferences, hasLogos, designBrief } = params;
 
-  let p = buildCoreInstructions(sizeConfig, hasReferences, hasLogos);
+  let p = `You are a BRAZILIAN PROFESSIONAL GRAPHIC DESIGNER from a top Sao Paulo marketing agency.
 
-  if (hasReferences) {
-    p += `\n\nMODE: Original creation guided by references — Create a 100% unique design but MATCH the visual quality, 3D rendering style, composition complexity, and professional finish of the attached reference image(s). The references are your quality standard.`;
-  } else {
-    p += `\n\nMODE: Original creation — 100% unique, bold, innovative design.`;
-  }
-  
+ESTUDO DAS CARACTERISTICAS DE FLYERS BRASILEIROS:
+
+1. **PRODUTOS 3D FOTORREALISTAS** - O produto DEVE parecer uma fotografia real
+   - Sacos de cimento com rotulos visiveis
+   - Tijolos com textura e furos realistas
+   - Telhas com sombras precisas
+   - Materiais de construcao com iluminacao de estudio
+
+2. **FUNDOS GEOMETRICOS OUSADOS**
+   - Circulos e semicirculos coloridos grandes
+   - Cards/paineis de retangulos arredondados
+   - Blocos de cores diagonais
+   - Formas geometricas sobrepostas
+
+3. **PALETAS DE CORES VIBRANTES**
+   - Laranja + Cinza (construcao)
+   - Azul + Laranja (comercial)
+   - Vermelho + Preto + Branco (varejo)
+   - Amarelo + Azul Escuro (industrial)
+
+4. **HIERARQUIA TIPOGRAFICA**
+   - Titulo principal: Bold, grande, impactante
+   - Subtitulo: Peso medio
+   - Preco/detalhes: Claro, proeminente
+   - Info de contato: Icone WhatsApp + telefone
+
+5. **ELEMENTOS PROFISSIONAIS**
+   - Logo da empresa (canto)
+   - Selos/badges de qualidade
+   - Handles de redes sociais
+   - Contato WhatsApp com icone
+
+REQUISITOS DE RENDERIZACAO DO PRODUTO:
+- Render 3D FOTORREALISTA (nao ilustracao, nao cartoon)
+- Qualidade de fotografia profissional de produto
+- Iluminacao de estudio com sombras suaves
+- Texturas e materiais precisos
+- Posicionado como ELEMENTO HERO (grande, proeminente)
+- Levemente angulado para composicao dinamica
+
+PROIBIDO:
+- Produtos cartoon ou ilustrados
+- Design flat sem elementos 3D
+- Estetica generica de stock photo
+- Layouts bagunçados sem hierarquia clara
+- Elementos de baixa qualidade ou pixelados
+- Texto cortado ou ilegivel
+
+CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio}).`;
+
   if (clientName) p += `\nBrand: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry style: ${NICHE_STYLE[niche]}`;
   if (mood) p += `\nMood: ${mood}`;
@@ -219,19 +263,18 @@ function buildOriginalPrompt(params: {
 
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
-  if (colors === 'Aleatórias (IA escolhe)') {
-    p += `\nColors: Choose a harmonious high-impact palette for this industry.`;
-  }
-
   if (clientContext) p += `\nClient info: ${clientContext}`;
-  if (aiMemoryContext) p += `\nLearned preferences: ${aiMemoryContext}`;
+  if (aiMemoryContext) p += `\n\n=== LEARNED PREFERENCES ===\n${aiMemoryContext}`;
 
   if (designBrief) {
     p += buildDesignBriefSection(designBrief);
   }
 
-  p += `\n\nFLYER TEXT CONTENT (render ONLY this on the flyer):\n${prompt}`;
-  p += `\n\nCreate a jaw-dropping, scroll-stopping, high-conversion commercial flyer. The product MUST be a photorealistic 3D render with studio lighting — NOT flat, NOT illustrated. Premium Brazilian agency quality.`;
+  p += `\n\n════════════════════════════════════════════════════════════════
+FLYER TEXT CONTENT (ONLY this text should appear on the flyer):
+════════════════════════════════════════════════════════════════
+${prompt}
+════════════════════════════════════════════════════════════════`;
 
   p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
 
@@ -251,55 +294,48 @@ function buildCopyPrompt(params: {
 }): string {
   const { prompt, sizeConfig, niche, clientContext, designBrief, primaryColor, secondaryColor, fontFamily, hasLogos } = params;
 
-  let p = `You are replicating a FIXED TEMPLATE. This is NOT creative work — it is STRICT LAYOUT REPRODUCTION with different content.
+  let p = `You are a BRAZILIAN PROFESSIONAL GRAPHIC DESIGNER specializing in social media marketing flyers.
 
-CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})
+=== CRITICAL: BRAZILIAN COMMERCIAL FLYER STYLE ===
+- REAL 3D PRODUCT PHOTOGRAPHY ou renders fotorrealistas
+- Formas geometricas ousadas (circulos, retangulos arredondados)
+- Blocos de cores vibrantes e contrastantes
+- Estetica profissional brasileira de redes sociais
+- Produto como ELEMENTO HERO, grande e proeminente
+- Tipografia limpa com fontes de impacto
 
-CRITICAL RULES FOR TEMPLATE REPLICATION:
-1. The reference image IS the template. Your output must have IDENTICAL element positions, sizes, colors, and decorative elements.
-2. You change ONLY: the product/hero image and text words. EVERYTHING ELSE must be identical.
-3. Every decorative element (lines, dots, shapes, badges, bars) must be reproduced EXACTLY in the same position, same color, same size.
-4. The footer structure must be IDENTICAL — same number of columns, same icons, same layout, same background color.
-5. Background treatment must be the SAME TYPE — if blurred photo, use similar blurred photo; if solid, use same color; if gradient, use same gradient.
-6. Typography hierarchy must be IDENTICAL — same font weights, same relative sizes, same alignment, same colors for each text level.
-7. Color scheme must be IDENTICAL — use the EXACT SAME colors as the reference for backgrounds, text, shapes, accents.
-8. Spacing and margins must match — the whitespace between elements must be the same.
-9. The overall "feel" and "energy" of the flyer must be indistinguishable from the reference.`;
+=== MODE: TEMPLATE REPLICATION ===
+A PRIMEIRA IMAGEM fornecida e o TEMPLATE que deve ser COPIADO.
 
-  if (hasLogos) {
-    p += `\n10. COMPANY LOGO: Place the logo in EXACTLY the same position and size as shown in the reference template. If the reference has a logo badge in the footer, replicate that exact badge.`;
-  }
+COPIAR EXATAMENTE:
+- Layout e posicionamento de TODOS os elementos
+- Paleta de cores EXATA
+- Estilo e hierarquia tipografica
+- Estilo de fotografia 3D fotorrealista
+- Formas geometricas do fundo
+- Posicionamento do logo e informacoes de contato
+
+=== QUALITY REQUIREMENTS ===
+- Renders fotorrealistas (como fotografia profissional)
+- Ultra-alta definicao 8K
+- Iluminacao de estudio nos produtos
+- Sombras e reflexos nitidos
+- Design comercial de qualidade de revista
+
+CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})`;
 
   if (designBrief?.zone_map) {
     p += `\n\n=== EXACT ELEMENT POSITIONS — Follow these coordinates as ABSOLUTE RULES ===\n${designBrief.zone_map}\n=== END POSITIONS ===`;
   }
-  if (designBrief?.decorative_elements) {
-    p += `\n\n=== DECORATIVE ELEMENTS TO REPRODUCE EXACTLY ===\n${designBrief.decorative_elements}\n=== END DECORATIVE ===`;
-  }
-  if (designBrief?.footer_structure) {
-    p += `\n\n=== FOOTER TEMPLATE — Reproduce this EXACTLY ===\n${designBrief.footer_structure}\n=== END FOOTER ===`;
-  }
-
-  if (designBrief) {
-    p += `\n\n=== ADDITIONAL DESIGN CONTEXT ===`;
-    p += `\nLAYOUT: ${designBrief.layout_description}`;
-    p += `\nCOLOR PLAN: ${designBrief.color_plan}`;
-    p += `\nTYPOGRAPHY: ${designBrief.typography_plan}`;
-    p += `\nBACKGROUND: ${designBrief.background_treatment}`;
-    if (designBrief.template_layout) {
-      p += `\nTEMPLATE POSITIONS: ${designBrief.template_layout}`;
-    }
-    p += `\n=== END CONTEXT ===`;
-  }
 
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry context: ${NICHE_STYLE[niche]}`;
   if (clientContext) p += `\nClient info: ${clientContext}`;
-  if (primaryColor) p += `\nBrand primary color: ${primaryColor}`;
-  if (secondaryColor) p += `\nBrand secondary color: ${secondaryColor}`;
-  if (fontFamily) p += `\nFont style: ${fontFamily}`;
 
-  p += `\n\nNEW TEXT CONTENT TO USE (replace the reference's text with this):\n${prompt}`;
-  p += `\n\nGenerate the flyer with IDENTICAL layout to the template reference image. The ONLY differences should be the product/hero image and text content. Everything else — positions, colors, decorative elements, footer, typography sizes — must be a near-perfect match.`;
+  p += `\n\n════════════════════════════════════════════════════════════════
+FLYER TEXT CONTENT (ONLY this text should appear on the flyer):
+════════════════════════════════════════════════════════════════
+${prompt}
+════════════════════════════════════════════════════════════════`;
 
   return p;
 }
@@ -326,9 +362,39 @@ function buildInspirationPrompt(params: {
     primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions,
     aiMemoryContext, clientContext, referenceCount, hasLogos, designBrief } = params;
 
-  let p = buildCoreInstructions(sizeConfig, true, hasLogos);
+  let p = `You are a BRAZILIAN PROFESSIONAL GRAPHIC DESIGNER from a top Sao Paulo design agency.
 
-  p += `\n\nMODE: Creative inspiration — Study the ${referenceCount} reference image(s) carefully. Absorb their 3D product rendering, composition, geometric shapes, color palette, typography weight, background treatment, and professional finish. Then create something ORIGINAL that SURPASSES them in quality and impact.`;
+ELEMENTOS OBRIGATORIOS:
+1. RENDERS 3D FOTORREALISTAS - Produtos devem parecer fotografias reais
+2. FORMAS GEOMETRICAS OUSADAS - Blocos coloridos, circulos, retangulos arredondados
+3. COMBINACOES DE CORES VIBRANTES - Laranja/Cinza, Azul/Laranja, Vermelho/Preto
+4. TIPOGRAFIA PROFISSIONAL - Fontes bold de impacto, hierarquia clara
+5. ELEMENTOS DE REDES SOCIAIS - Icone WhatsApp, handle Instagram, telefones
+6. SELOS DE QUALIDADE - "Qualidade", estrelas, certificacoes
+
+=== MODE: CREATIVE INSPIRATION ===
+INSPIRE-SE APENAS NO MOOD/ESTILO:
+- O MOOD e ENERGIA geral da referencia
+- A DIRECAO DE ESTILO (ex: bold, elegante, industrial)
+- O NIVEL DE ESTETICA COMERCIAL (qualidade profissional)
+- Como produtos sao posicionados como elementos hero
+
+╔══════════════════════════════════════════════╗
+║  CRITICAL: NAO COPIAR DAS IMAGENS DE REF    ║
+╚══════════════════════════════════════════════╝
+
+NAO COPIAR:
+- Cores ou gradientes de fundo (criar COMPLETAMENTE NOVOS)
+- Padroes ou texturas de fundo (criar ORIGINAIS)
+- Imagens ou fotos de fundo (usar INTEIRAMENTE DIFERENTES)
+- Posicionamento exato de layout ou composicao
+- Paleta de cores da referencia
+
+A referencia e APENAS para entender o MOOD e DIRECAO DE ESTILO.
+Voce DEVE criar um design de fundo 100% ORIGINAL.
+REMINDER: The BACKGROUND must be 100% ORIGINAL.
+
+CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})`;
 
   if (clientName) p += `\nBrand: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
@@ -337,16 +403,17 @@ function buildInspirationPrompt(params: {
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
   if (clientContext) p += `\nClient: ${clientContext}`;
-  if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
+  if (aiMemoryContext) p += `\n\n=== LEARNED PREFERENCES ===\n${aiMemoryContext}`;
 
   if (designBrief) {
     p += buildDesignBriefSection(designBrief);
   }
 
-  p += `\n\nFLYER TEXT CONTENT:\n${prompt}`;
-  p += `\n\nCreate an original masterpiece inspired by the references. Match their 3D photorealistic quality. Surpass them in impact.`;
-
-  p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
+  p += `\n\n════════════════════════════════════════════════════════════════
+FLYER TEXT CONTENT (ONLY this text should appear on the flyer):
+════════════════════════════════════════════════════════════════
+${prompt}
+════════════════════════════════════════════════════════════════`;
 
   return p;
 }
@@ -371,25 +438,64 @@ function buildProductPreservationPrompt(params: {
   const { prompt, sizeConfig, clientName, niche,
     primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, aiMemoryContext, clientContext, hasLogos, colors, allowManipulation, designBrief } = params;
 
-  let p = buildCoreInstructions(sizeConfig, true, hasLogos);
+  let p = `SYSTEM / TRAINING INSTRUCTION (DO NOT IGNORE):
 
-  if (allowManipulation) {
-    p += `\n\nMODE: Product-based creative design (IMAGE EDITING TASK WITH MANIPULATION ALLOWED)
-The attached image contains the product to advertise. You MUST use THIS EXACT product as the hero element.
-MANIPULATION PERMITTED: You are allowed to creatively manipulate the product — adjust lighting, change angles, add dramatic effects, reflections, shadows, or 3D transformations. The product should remain RECOGNIZABLE (same brand, same packaging, same core identity) but you have creative freedom to make it look MORE impressive, dramatic, and professional.
-Your task: Use the product from the attached image as the hero, manipulate it creatively for maximum visual impact, and design a premium flyer around it.`;
-  } else {
-    p += `\n\nMODE: Product preservation (IMAGE EDITING TASK)
-CRITICAL RULE: The attached image contains the EXACT product to advertise.
-You MUST keep this product 100% IDENTICAL — same shape, color, texture, labels, logos, and packaging.
-Do NOT substitute it with any other product. Do NOT reinterpret, reimagine, or redraw it.
-Do NOT generate a similar-looking product. The product in the attached image is the ONLY product allowed.
-Your task: Extract the product from the attached image and design a professional flyer AROUND it.
-Only create/modify: background, geometric shapes, text layout, lighting effects, decorative elements.
-The product itself is UNTOUCHABLE — treat it as a sacred, immutable element.`;
-  }
+╔══════════════════════════════════════════════╗
+║  STRICT PRODUCT PRESERVATION MODE            ║
+║  LEGAL COMPLIANCE                            ║
+╚══════════════════════════════════════════════╝
 
-  p += `\nPRODUCT DESCRIPTION (from user): "${prompt}"`;
+NAO PERMITIDO:
+- Redesenhar o produto
+- Recriar o produto
+- Reinterpretar o produto
+- Estilizar o produto
+- Melhorar o produto
+- Substituir o produto
+- Imaginar um novo produto
+
+ATRIBUTOS QUE NAO PODEM SER ALTERADOS:
+- Forma, Tamanho, Proporcoes
+- Materiais, Cores, Texturas
+- Emissao de luz, Detalhes de design
+- Logos/rotulos no produto
+- Texto visivel no produto
+- Marcas, Numeros de modelo
+- Angulo do produto (manter similar)
+
+ACOES ESTRITAMENTE PROIBIDAS:
+- Gerar produto "similar"
+- Criar nova versao do produto
+- Modernizar ou melhorar
+- Usar versoes genericas/stock
+- Criar interpretacoes 3D ou renders
+- Criar versoes ilustradas
+- Ajustar estetica do produto
+- Remover ou adicionar partes
+
+PROCESSO:
+1. EXTRAIR o produto exato da imagem de referencia
+2. COLOCAR como elemento hero no flyer
+3. Produto deve ser PIXEL-PERFECT identico
+4. APENAS desenhar o FUNDO e LAYOUT ao redor
+
+Pense nisso como uma operacao de RECORTE DE FOTO:
+- Recortar o produto da referencia
+- Colar em um novo fundo desenhado
+- Adicionar texto, cores, elementos decorativos AO REDOR
+
+⚠️ REQUISITO LEGAL CRITICO - CONDICAO DE FALHA:
+Se a imagem gerada nao usar o EXATO MESMO produto da
+referencia (incluindo TODOS os detalhes, proporcoes, cores,
+logos, rotulos e texturas), o resultado e LEGALMENTE INVALIDO.
+
+Isso e necessario para evitar PROCESSOS POR PUBLICIDADE FALSA.
+
+A imagem de referencia mostra o PRODUTO REAL que esta sendo vendido.
+Qualquer modificacao constitui PUBLICIDADE ENGANOSA que e
+ILEGAL na maioria dos paises.
+
+CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})`;
 
   if (clientName) p += `\nBrand: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
@@ -397,21 +503,17 @@ The product itself is UNTOUCHABLE — treat it as a sacred, immutable element.`;
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
   if (clientContext) p += `\nClient: ${clientContext}`;
-  if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
+  if (aiMemoryContext) p += `\n\n=== LEARNED PREFERENCES ===\n${aiMemoryContext}`;
 
   if (designBrief) {
     p += buildDesignBriefSection(designBrief);
   }
 
-  p += `\n\nFLYER TEXT CONTENT (render this text on the flyer):\n${prompt}`;
-  
-  if (allowManipulation) {
-    p += `\n\nDesign a premium flyer with the product as hero. You may creatively enhance the product's appearance (lighting, angle, effects) while maintaining its identity. Bold geometric background, premium agency quality.`;
-  } else {
-    p += `\n\nDesign a premium flyer AROUND the preserved product. The product from the image must appear EXACTLY as-is. Bold geometric background, premium agency quality.`;
-  }
-
-  p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
+  p += `\n\n════════════════════════════════════════════════════════════════
+FLYER TEXT CONTENT (ONLY this text should appear on the flyer):
+════════════════════════════════════════════════════════════════
+${prompt}
+════════════════════════════════════════════════════════════════`;
 
   return p;
 }
@@ -434,31 +536,83 @@ function buildTemplateMemoryPrompt(params: {
   designBrief?: DesignBrief | null;
 }): string {
   const { prompt, sizeConfig, clientName, niche,
-    primaryColor, secondaryColor, fontFamily, 
+    primaryColor, secondaryColor, fontFamily,
     aiInstructions, aiRestrictions, aiMemoryContext, clientContext, hasProductImage, hasLogos, colors, designBrief } = params;
 
-  let p = buildCoreInstructions(sizeConfig, true, hasLogos);
+  let p = `SYSTEM / TRAINING INSTRUCTION (CRITICAL - DO NOT IGNORE):
 
-  p += `\n\nMODE: Strict template replication — The FIRST reference image is the approved template.
-Copy pixel-perfect: logo position, typography, colors, geometric shapes, layout grid, footer structure.
-Replace ONLY: product image${hasProductImage ? ' (use SECOND image)' : ''} and text content.`;
+╔══════════════════════════════════════════════╗
+║  STRICT TEMPLATE REPLICATION MODE            ║
+║  CLIENT: ${clientName || 'Approved Client'}                   ║
+║  APPROVED TEMPLATE - MANDATORY COMPLIANCE    ║
+╚══════════════════════════════════════════════╝
 
-  if (clientName) p += `\nClient: ${clientName}`;
+A PRIMEIRA IMAGEM e o TEMPLATE OFICIAL APROVADO.
+Este template representa a identidade visual do cliente e foi
+APROVADO pela agencia. Voce DEVE segui-lo EXATAMENTE.
+
+COPIAR PIXEL-PERFECT:
+□ Posicao e tamanho do logo (EXATO mesmo canto/posicao)
+□ Estilo e posicao dos icones de redes sociais
+□ Tipografia do titulo (estilo, cor, tamanho, posicao)
+□ Paleta de cores (valores HEX EXATOS - nao desviar)
+□ Formas geometricas do fundo (circulos, retangulos, curvas)
+□ Estrutura do rodape com layout de contatos
+□ Grid de layout geral e espacamento
+□ Estilo visual e mood
+□ Elementos decorativos (linhas, formas, icones)
+□ Hierarquia e posicionamento de texto
+
+O QUE SUBSTITUIR:
+□ Imagem do produto → Usar o NOVO produto fornecido
+□ Conteudo do texto → Usar o NOVO copy fornecido
+□ Detalhes especificos (watts, precos, specs) → Do novo copy
+□ Nome/titulo do produto → Do novo copy
+
+PROCESSO DE REPLICACAO:
+1. ANALISAR a estrutura do template completamente
+2. IDENTIFICAR posicao de cada elemento visual
+3. RECRIAR a EXATA mesma estrutura de layout
+4. COLOCAR o novo produto na MESMA posicao do original
+5. COMBINAR cores pixel-por-pixel
+6. COMBINAR estilo tipografico exatamente
+7. MANTER todos os elementos decorativos nas mesmas posicoes
+8. APENAS mudar: imagem do produto + conteudo do texto
+
+⚠️ O layout do template e LEGALMENTE APROVADO pelo cliente
+⚠️ Desvio da estrutura do template NAO e PERMITIDO
+⚠️ Esta e a identidade de marca estabelecida do cliente
+⚠️ Consistencia em todos os flyers e OBRIGATORIA
+
+PROIBIDO:
+❌ Mover o logo para posicao diferente
+❌ Mudar o esquema de cores do fundo
+❌ Alterar o layout das formas geometricas
+❌ Modificar o grid de posicionamento de texto
+❌ Usar estilos tipograficos diferentes
+❌ Mudar a composicao geral
+❌ "Melhorar" ou "modernizar" o design
+❌ Adicionar elementos nao presentes no template
+❌ Remover elementos do template
+
+CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})`;
+
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
 
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
   if (clientContext) p += `\nClient info: ${clientContext}`;
-  if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
+  if (aiMemoryContext) p += `\n\n=== LEARNED PREFERENCES ===\n${aiMemoryContext}`;
 
   if (designBrief) {
     p += buildDesignBriefSection(designBrief);
   }
 
-  p += `\n\nFLYER TEXT CONTENT:\n${prompt}`;
-  p += `\n\nGenerate visually IDENTICAL to template. Only product and text differ.`;
-
-  p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
+  p += `\n\n════════════════════════════════════════════════════════════════
+FLYER TEXT CONTENT (ONLY this text should appear on the flyer):
+════════════════════════════════════════════════════════════════
+${prompt}
+════════════════════════════════════════════════════════════════`;
 
   return p;
 }
@@ -976,7 +1130,7 @@ async function callGeminiWithRetry(
   model: string,
   parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>,
   apiKey: string,
-  maxRetries: number = 2,
+  maxRetries: number = 3,
   isProductMode: boolean = false
 ): Promise<{ imageData: string; mimeType: string } | { error: string; status: number; response?: unknown }> {
   
@@ -996,13 +1150,13 @@ async function callGeminiWithRetry(
           currentParts = parts;
         } else {
           if (isProductMode && imageParts.length > 0) {
-            const simplifiedText = `Create a professional commercial flyer featuring the EXACT product shown in the attached image. 
+            const simplifiedText = `Create a professional commercial flyer featuring the EXACT product shown in the attached image.
 Keep the product 100% identical. Design only the background and text layout around it.
 Text content: ${textPart.text.match(/FLYER TEXT CONTENT[^\n]*\n([\s\S]*?)(?:\n\n|$)/)?.[1] || textPart.text.substring(textPart.text.length - 200)}`;
             currentParts = [{ text: simplifiedText }, ...imageParts];
           } else {
             const simplifiedText = textPart.text
-              .replace(/DESIGN RULES:[\s\S]*?NO AI artifacts[^\n]*\n/g, 
+              .replace(/ESTUDO DAS CARACTERISTICAS[\s\S]*?PROIBIDO:[^\n]*\n/g,
                 'Create a professional, photorealistic commercial flyer. Premium agency quality. Bold geometric design with depth.\n')
               .substring(0, 800);
             currentParts = [{ text: simplifiedText }];
@@ -1035,12 +1189,13 @@ Text content: ${textPart.text.match(/FLYER TEXT CONTENT[^\n]*\n([\s\S]*?)(?:\n\n
         const errorText = await response.text();
         console.error(`Gemini API error (attempt ${attempt}):`, response.status, errorText);
 
-        if (response.status === 429) {
+        if (response.status === 429 || response.status === 503) {
           if (attempt < maxRetries) {
-            await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+            const delay = Math.pow(2, attempt) * 2000; // 2s, 4s, 8s
+            await new Promise(r => setTimeout(r, delay));
             continue;
           }
-          return { error: "Rate limit exceeded. Please try again in a moment.", status: 429 };
+          return { error: "Rate limit exceeded or service unavailable. Please try again in a moment.", status: response.status };
         }
 
         if (attempt < maxRetries) continue;
@@ -1231,26 +1386,27 @@ serve(async (req) => {
     const allReferenceImages: string[] = [];
     if (finalMode === 'product' && productImage) {
       allReferenceImages.push(productImage);
-    }
-    if (finalMode === 'template' && project.template_image) {
+    } else if (finalMode === 'template' && project.template_image) {
       allReferenceImages.push(project.template_image);
-    }
-    if (finalMode !== 'product') {
-      allReferenceImages.push(...layoutReferences);
-      allReferenceImages.push(...additionalReferences);
-      if (project.reference_images) {
-        allReferenceImages.push(...project.reference_images);
+      if (productImage) allReferenceImages.push(productImage);
+    } else if (finalMode === 'copy' && layoutReferences.length > 0) {
+      allReferenceImages.push(layoutReferences[0]);
+      if (productImage) allReferenceImages.push(productImage);
+    } else {
+      if (layoutReferences.length > 0) allReferenceImages.push(layoutReferences[0]);
+      if (additionalReferences.length > 0) allReferenceImages.push(additionalReferences[0]);
+      if (allReferenceImages.length < 2 && project.reference_images?.length > 0) {
+        allReferenceImages.push(project.reference_images[0]);
       }
     }
 
-    const logoCount = (project.logo_images && project.logo_images.length > 0) 
-      ? Math.min(project.logo_images.length, 2) : 0;
-    if (logoCount > 0) {
-      allReferenceImages.push(...project.logo_images.slice(0, 2));
-    }
+    // Limit to 2 reference images max as per competitor training
+    const imagesToProcess = allReferenceImages.slice(0, 2);
 
-    const maxImages = finalMode === 'product' ? (1 + logoCount) : (3 + logoCount);
-    const imagesToProcess = allReferenceImages.slice(0, maxImages);
+    // Add one logo if available
+    if (hasLogos && project.logo_images && project.logo_images.length > 0) {
+      imagesToProcess.push(project.logo_images[0]);
+    }
 
     const fetchedImageResults = await Promise.all(
       imagesToProcess.map((url, i) => fetchImageAsInlineData(url, i))
@@ -1347,6 +1503,18 @@ serve(async (req) => {
     const selectedModel = (finalMode === 'product' || finalMode === 'template' || finalMode === 'copy' || model === 'gemini-pro')
       ? AI_MODELS["gemini-pro"]
       : AI_MODELS["gemini-flash"];
+
+    // Add Carousel instructions if applicable
+    if (size === '1080x1350') {
+      const carouselPrompt = `PAGINA 1 de 1 em um CARROSSEL INDIVIDUAL.
+REGRAS CRITICAS:
+- Cada pagina tem sua PROPRIA composicao e layout independente
+- MAS manter a MESMA identidade visual (cores, tipografia, elementos de marca)
+- Mesma paleta de cores em todas as paginas
+- Mesma hierarquia tipografica e escolha de fontes
+- Cada pagina tem composicao/arranjo UNICO\n\n`;
+      enhancedPrompt = carouselPrompt + enhancedPrompt;
+    }
 
     const generationParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
       { text: enhancedPrompt },

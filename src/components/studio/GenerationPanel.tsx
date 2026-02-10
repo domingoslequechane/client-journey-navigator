@@ -40,6 +40,8 @@ const MODE_OPTIONS: { value: GenerationMode; label: string; icon: typeof Wand2; 
   { value: 'original', label: 'Original', icon: Wand2, description: 'Design 100% original de alta fidelidade' },
   { value: 'copy', label: 'Cópia', icon: Copy, description: 'Replicação precisa de layout e zonas' },
   { value: 'inspiration', label: 'Inspiração', icon: ImageIcon, description: 'Inspirado em referências de elite' },
+  { value: 'product', label: 'Produto', icon: Shield, description: 'Preserva o produto exato da foto' },
+  { value: 'template', icon: Zap, label: 'Template', description: 'Usa layout aprovado com novo produto' },
 ];
 
 const SIZE_LIST: { value: FlyerSize; label: string; aspect: string; w: number; h: number }[] = [
@@ -141,6 +143,9 @@ export function GenerationPanel({
   const handleGenerate = async () => {
     if (!prompt.trim() || limitReached) return;
 
+    const isProductMode = mode === 'product';
+    const isTemplateMode = mode === 'template';
+
     await onGenerate({
       prompt: prompt.trim(),
       size,
@@ -150,9 +155,9 @@ export function GenerationPanel({
       mood,
       colors,
       elements,
-      preserveProduct,
-      productImage: preserveProduct ? productImage : undefined,
-      allowManipulation: preserveProduct ? allowManipulation : undefined,
+      preserveProduct: isProductMode || preserveProduct,
+      productImage: (isProductMode || preserveProduct) ? productImage : undefined,
+      allowManipulation: (isProductMode || preserveProduct) ? allowManipulation : undefined,
     } as GenerationSettings & { allowManipulation?: boolean });
   };
 
@@ -234,27 +239,34 @@ export function GenerationPanel({
           </div>
         )}
 
-        {/* Mode Selection - 3 modes */}
+        {/* Mode Selection - 5 modes */}
         <div className="space-y-2">
           <Label>Modo de Geração</Label>
           <div className="grid grid-cols-3 gap-2">
             {MODE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setMode(option.value)}
-                className={cn(
-                  'flex flex-col items-center gap-1.5 p-3 rounded-lg border text-center transition-all',
-                  mode === option.value
-                    ? 'border-primary bg-primary/5 shadow-sm'
-                    : 'border-border hover:border-primary/50'
-                )}
-              >
-                <option.icon className={cn(
-                  'h-5 w-5',
-                  mode === option.value ? 'text-primary' : 'text-muted-foreground'
-                )} />
-                <span className="font-medium text-xs">{option.label}</span>
-              </button>
+              <Tooltip key={option.value}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setMode(option.value)}
+                    className={cn(
+                      'flex flex-col items-center gap-1.5 p-2.5 rounded-lg border text-center transition-all',
+                      mode === option.value
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-border hover:border-primary/50'
+                    )}
+                  >
+                    <option.icon className={cn(
+                      'h-5 w-5',
+                      mode === option.value ? 'text-primary' : 'text-muted-foreground'
+                    )} />
+                    <span className="font-medium text-[11px]">{option.label}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="font-bold">{option.label}</p>
+                  <p className="text-xs">{option.description}</p>
+                </TooltipContent>
+              </Tooltip>
             ))}
           </div>
         </div>
@@ -409,24 +421,33 @@ export function GenerationPanel({
           </Select>
         </div>
 
-        {/* Preserve Product Toggle */}
+        {/* Preserve Product Toggle / Product Mode Section */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/30 bg-destructive/5">
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-destructive" />
-              <span className="text-sm font-medium text-destructive">Preservar Produto Exato</span>
+          {mode !== 'product' && (
+            <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-destructive" />
+                <span className="text-sm font-medium text-destructive">Preservar Produto Exato</span>
+              </div>
+              <Switch
+                checked={preserveProduct}
+                onCheckedChange={setPreserveProduct}
+                disabled={limitReached}
+              />
             </div>
-            <Switch
-              checked={preserveProduct}
-              onCheckedChange={setPreserveProduct}
-              disabled={limitReached}
-            />
-          </div>
+          )}
 
-          {/* Product Image Upload + Manipulation toggle - shown when preserve is enabled */}
-          {preserveProduct && (
+          {/* Product Image Upload + Manipulation toggle - shown when preserve is enabled or in product mode */}
+          {(preserveProduct || mode === 'product') && (
             <div className="p-3 rounded-lg border border-dashed space-y-3">
-              <Label className="text-xs">Imagem do Produto</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Imagem do Produto</Label>
+                {mode === 'product' && (
+                  <Badge variant="outline" className="text-[9px] uppercase border-destructive/50 text-destructive">
+                    Obrigatório
+                  </Badge>
+                )}
+              </div>
               {productImage ? (
                 <div className="relative w-24 h-24 rounded-lg overflow-hidden border group">
                   <img src={productImage} alt="Produto" className="w-full h-full object-cover" />

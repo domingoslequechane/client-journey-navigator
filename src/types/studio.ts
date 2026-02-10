@@ -52,8 +52,8 @@ export interface StudioAILearning {
   created_at: string;
 }
 
-// 3 modos de geração (removidos Produto Exato e Template)
-export type GenerationMode = 'original' | 'copy' | 'inspiration';
+// 5 modos de geração
+export type GenerationMode = 'original' | 'copy' | 'inspiration' | 'product' | 'template';
 
 // Tamanhos disponíveis
 export type FlyerSize = '1080x1080' | '1080x1920' | '1920x1080' | '1080x1350' | '1280x720';
@@ -165,8 +165,10 @@ export const ELEMENT_OPTIONS: FlyerElement[] = [
 
 export const MODE_OPTIONS: { value: GenerationMode; label: string; description: string }[] = [
   { value: 'original', label: 'Criação Original', description: 'Design 100% original com estética brasileira' },
-  { value: 'copy', label: 'Cópia de Referência', description: 'Copia layout exato das referências do projeto' },
-  { value: 'inspiration', label: 'Inspiração', description: 'Original mas inspirado nas referências' },
+  { value: 'copy', label: 'Cópia de Template', description: 'Replicação exata de um flyer existente' },
+  { value: 'inspiration', label: 'Inspiração', description: 'Original inspirado no mood da referência' },
+  { value: 'product', label: 'Produto Exato', description: 'Preserva o produto da foto sem alterações' },
+  { value: 'template', label: 'Template Memory', description: 'Reutiliza layout aprovado com novo produto' },
 ];
 
 export const FONT_OPTIONS = [
