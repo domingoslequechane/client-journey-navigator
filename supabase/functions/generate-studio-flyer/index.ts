@@ -24,23 +24,23 @@ const SIZE_CONFIG: Record<string, { aspectRatio: string; orientation: string; wi
 };
 
 const NICHE_STYLE: Record<string, string> = {
-  'Construção': 'Industrial: 3D cement bags, bricks, steel rebars. Orange+Charcoal palette. Strong dramatic lighting.',
-  'Mobiliário': 'Luxury furniture: wood grain, velvet sofas, warm ambient lighting. Brown+Gold+Cream palette.',
-  'Automóvel': 'Automotive: metallic paint, chrome rims, motion blur. Black+Orange/Red palette.',
-  'Imobiliário': 'Real estate: modern buildings, luxury interiors, golden keys. Navy+Gold+White palette.',
-  'Restaurante': 'Food: gourmet dishes with steam, dark moody backgrounds. Red+Gold+Dark Wood palette.',
-  'Beleza': 'Beauty: cosmetics, skincare bottles with droplets, soft lighting. Rose Gold+Pink+White palette.',
-  'Saúde': 'Medical: clean clinical look, stethoscopes, trustworthy. Blue+White+Green palette.',
-  'Tecnologia': 'Tech: smartphones, neon reflections, dark environments. Black+Electric Blue/Purple palette.',
-  'Moda': 'Fashion: editorial style, fabric textures, dramatic lighting. Black+White+bold accent palette.',
-  'Fitness': 'Sports: gym equipment, high contrast, dynamic angles. Black+Red/Orange palette.',
-  'Pet Shop': 'Pet: colorful toys, warm friendly photography. Orange+Blue+Green palette.',
-  'Agricultura': 'Agriculture: tractors, golden fields, natural sunlight. Green+Brown+Gold palette.',
-  'Ótica': 'Optical: designer eyeglasses, lens reflections, sharp focus. Navy+Silver+White palette.',
-  'Farmácia': 'Pharmacy: clean packaging, health supplements, bright whites. Green+White+Blue palette.',
-  'Joalharia': 'Jewelry: gold rings, diamonds, dramatic spotlighting. Black+Gold+White palette.',
-  'Eventos': 'Events: elegant decorations, bokeh lights, celebration mood. Gold+Black+White palette.',
-  'Educação': 'Education: books, graduation caps, warm library lighting. Navy+Gold+White palette.',
+  'Construção': 'Industrial Power: High-contrast 3D renders of heavy materials (cement, steel, bricks). Dramatic low-angle lighting. Palette: Safety Orange, Charcoal, and Concrete Gray. Textures: Scratched metal, rough concrete.',
+  'Mobiliário': 'Minimalist Luxury: Soft, diffused studio lighting. Focus on textures (velvet, wood grain, marble). Palette: Earthy tones, Cream, Gold accents. Composition: Spacious, clean, high-end editorial feel.',
+  'Automóvel': 'High-Speed Dynamic: Motion blur backgrounds, sharp metallic reflections, rim lighting to define curves. Palette: Deep Black, Electric Blue, or Racing Red. Textures: Carbon fiber, polished chrome.',
+  'Imobiliário': 'Modern Living: Bright, airy, natural sunlight. Wide-angle perspectives. Palette: Navy Blue, Gold, Crisp White. Elements: Glass reflections, architectural blueprints, luxury keys.',
+  'Restaurante': 'Gourmet Sensorial: Macro photography style. Steam effects, water droplets, vibrant colors. Palette: Warm Red, Deep Gold, Dark Wood. Lighting: Moody, spotlighting the dish.',
+  'Beleza': 'Ethereal Glow: Soft-focus backgrounds, pearlescent textures, flawless lighting. Palette: Rose Gold, Pastel Pink, Silk White. Elements: Floating petals, liquid splashes, soft shadows.',
+  'Saúde': 'Clinical Trust: Bright, high-key lighting. Clean, sterile environments. Palette: Medical Blue, Mint Green, Pure White. Elements: Soft gradients, glass textures, professional icons.',
+  'Tecnologia': 'Cyber-Future: Neon glows, circuit patterns, dark glass reflections. Palette: Deep Black, Electric Purple, Cyan. Lighting: Backlit elements, digital bokeh.',
+  'Moda': 'Editorial Edge: High-fashion photography style. Dramatic shadows, bold typography. Palette: Monochrome with one bold accent color. Textures: Fabric weaves, leather, silk.',
+  'Fitness': 'Raw Energy: High-contrast, gritty textures, sweat droplets. Dynamic action angles. Palette: Black, Neon Yellow, or Fire Red. Lighting: Harsh side-lighting to define muscles/shapes.',
+  'Pet Shop': 'Playful Warmth: Soft textures, bright friendly colors, bokeh backgrounds. Palette: Sunny Yellow, Sky Blue, Grass Green. Elements: Paw prints, floating bubbles, soft fur textures.',
+  'Agricultura': 'Natural Abundance: Golden hour lighting, organic textures (soil, wheat, leaves). Palette: Deep Green, Harvest Gold, Earth Brown. Elements: Sun flares, dew drops.',
+  'Ótica': 'Crystal Clarity: Sharp focus, lens flares, transparent textures. Palette: Navy, Silver, Crystal Clear. Lighting: Precise spotlights, reflections on glass.',
+  'Farmácia': 'Wellness Balance: Clean, organized, trustworthy. Soft shadows. Palette: Health Green, Clean White, Trust Blue. Elements: Leaf motifs, soft gradients.',
+  'Joalharia': 'Precious Brilliance: Macro focus on sparkle, caustic light effects, deep shadows. Palette: Velvet Black, Pure Gold, Diamond White. Lighting: Multiple tiny spotlights.',
+  'Eventos': 'Celebration Spark: Bokeh lights, glitter, confetti, elegant gradients. Palette: Champagne Gold, Midnight Black, Pearl White. Lighting: Warm, festive, glowing.',
+  'Educação': 'Academic Prestige: Classic textures (paper, old wood, leather). Warm library lighting. Palette: Oxford Blue, Burgundy, Parchment. Elements: Ink strokes, subtle paper grain.',
 };
 
 interface DesignBrief {
@@ -50,6 +50,8 @@ interface DesignBrief {
   background_treatment: string;
   geometric_elements: string;
   logo_placement: string;
+  lighting_and_depth: string;
+  visual_energy: string;
   quality_notes: string;
   template_layout?: string;
   zone_map?: string;
@@ -58,23 +60,39 @@ interface DesignBrief {
 }
 
 function buildCoreInstructions(sizeConfig: typeof SIZE_CONFIG[string], hasReferences: boolean = false, hasLogos: boolean = false): string {
-  let core = `You are an elite Brazilian graphic designer creating a premium commercial flyer (${sizeConfig.width}×${sizeConfig.height}px, ${sizeConfig.aspectRatio}).
+  let core = `You are a World-Class Creative Director and Senior Graphic Designer at a top-tier global advertising agency. Your goal is to create a flyer so professional and polished that it is indistinguishable from high-end human-made commercial art.
 
-MANDATORY DESIGN RULES:
-1. DEPTH LAYERS: textured/dark background → bold geometric shapes (circles, rounded rectangles, diagonal color blocks) → hero 3D product → text overlay → accent light effects
-2. HERO PRODUCT: Must be a photorealistic 3D render (NOT illustration, NOT flat, NOT cartoon). 40-60% of canvas. Studio lighting: key light + fill light + rim light. Slightly angled for dramatic 3D effect. Realistic shadows and reflections.
-3. GEOMETRIC ELEMENTS: Large bold shapes inspired by top Brazilian design agencies — overlapping circles, rounded rectangle cards, diagonal color stripes. These create visual structure and depth.
-4. TYPOGRAPHY: Ultra-bold Impact/Montserrat headline → medium weight subhead → bold CTA/price badge → clean contact info with small icons (phone, email, location)
-5. COLORS: Max 3-4 colors with high contrast. Dark/textured backgrounds for premium feel. Color accent blocks behind text for readability.
-6. FINISHING: Subtle grain texture, vignette edges, directional light rays/glows, consistent shadow direction. Premium agency quality.
-7. ABSOLUTE RULES: NO AI artifacts. NO cartoon/illustration style. NO flat design. ALL products must look like real 3D photographs. All text sharp, readable, correctly spelled, never cut off.`;
+CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio}).
+
+ABSOLUTE DESIGN PILLARS:
+1. VISUAL DEPTH & LAYERING: Create a multi-layered composition. Use foreground elements (blurred or sharp), midground (hero product), and background (textures, shapes, gradients). Use "Atmospheric Perspective" (subtle haze or blur for distant elements).
+2. MASTERFUL LIGHTING: Implement a professional 3-point lighting setup for the hero product:
+   - Key Light: Primary source, creating form and dimension.
+   - Fill Light: Softens shadows, reveals detail.
+   - Rim Light: Sharp highlight on the edges to separate the product from the background.
+   - Add "Global Illumination" and "Ambient Occlusion" for realistic contact shadows.
+3. TYPOGRAPHY HIERARCHY: Use a maximum of 2-3 font families.
+   - Headline: Bold, high-impact, creative placement (e.g., partially behind the product).
+   - Subheads: Clean, legible, supporting the headline.
+   - Body/Details: Perfectly aligned, using professional tracking and leading.
+   - CTA: High-contrast, button-like or badge-style, impossible to miss.
+4. GEOMETRIC SOPHISTICATION: Use bold, modern geometric shapes (circles, slanted blocks, rounded cards) to guide the eye. These should feel integrated, not just "placed". Use overlays and blending modes (Multiply, Screen, Overlay) for depth.
+5. TEXTURES & OVERLAYS: Incorporate subtle textures (paper grain, brushed metal, soft bokeh, light leaks, or window-shadow overlays) to add "soul" and realism to the design.
+6. COLOR HARMONY: Use professional color theory (Analogous, Complementary, or Triadic). Ensure colors are vibrant but balanced. Use gradients with 3+ stops for a premium feel.
+7. NEGATIVE SPACE: Do not clutter. Use whitespace (or "empty" space) strategically to let the design breathe and focus the viewer's attention on the hero.
+
+ABSOLUTE PROHIBITIONS:
+- NO AI artifacts (distorted limbs, melting edges, nonsensical text).
+- NO flat, boring designs.
+- NO cartoonish or illustrative styles unless explicitly requested.
+- NO generic "stock photo" look. Everything must feel custom-designed.`;
 
   if (hasLogos) {
-    core += `\n8. COMPANY LOGO: One or more of the attached images is the company LOGO. You MUST place the logo prominently on the flyer (top-left or top-center, ~10-15% of canvas width). The logo must be clearly visible, never cropped, never distorted, never omitted. It is MANDATORY to include the logo in the final output.`;
+    core += `\n\n8. LOGO INTEGRATION: The company logo is MANDATORY. Place it with "Brand Respect" — give it clear space, ensure it's perfectly legible, and align it with the overall grid. It should feel like it belongs to the design, not an afterthought.`;
   }
 
   if (hasReferences) {
-    core += `\n\n⚠️ REFERENCE IMAGES ATTACHED: Study the attached reference image(s) carefully. They define the QUALITY BAR and VISUAL STYLE you must match or exceed. Analyze their: composition, 3D product rendering style, geometric shapes, color palette, typography weight, background treatment, and overall professional finish. Your output must be AT LEAST as polished and impactful as these references.`;
+    core += `\n\n⚠️ REFERENCE BENCHMARKS: The attached images represent the ELITE QUALITY BAR. Analyze their composition, lighting, and "vibe". Your output must match or EXCEED this level of professional execution.`;
   }
 
   return core;
@@ -144,6 +162,8 @@ function buildDesignBriefSection(brief: DesignBrief): string {
   section += `\nBACKGROUND: ${brief.background_treatment}`;
   section += `\nGEOMETRIC ELEMENTS: ${brief.geometric_elements}`;
   section += `\nLOGO PLACEMENT: ${brief.logo_placement}`;
+  section += `\nLIGHTING & DEPTH: ${brief.lighting_and_depth}`;
+  section += `\nVISUAL ENERGY: ${brief.visual_energy}`;
   if (brief.template_layout) {
     section += `\nTEMPLATE LAYOUT POSITIONS: ${brief.template_layout}`;
   }
@@ -596,7 +616,7 @@ Respond with a JSON object using EXACTLY these keys (all values must be strings)
 
 IMPORTANT: Respond ONLY with the JSON object. Be EXHAUSTIVELY detailed — the designer will use your zone map as absolute coordinates to place every element.`;
   } else {
-    analysisPrompt = `You are a Senior Art Director at a top Brazilian design agency. Analyze the attached reference image(s) and produce a precise design brief for your designer team.
+    analysisPrompt = `You are a World-Class Art Director at a top-tier global advertising agency. Analyze the attached reference image(s) with extreme precision to produce a high-fidelity design brief.
 
 CONTEXT:
 - Final flyer size: ${config.sizeConfig.width}×${config.sizeConfig.height}px (${config.sizeConfig.aspectRatio})
@@ -605,26 +625,28 @@ CONTEXT:
 - Brand primary color: ${config.primaryColor || 'not set'}
 - Brand secondary color: ${config.secondaryColor || 'not set'}
 - Font family: ${config.fontFamily || 'not set'}
-- Has company logos attached: ${config.hasLogos ? 'YES — one or more images are the company logo' : 'NO'}
+- Has company logos attached: ${config.hasLogos ? 'YES' : 'NO'}
 - User prompt: "${config.prompt}"
 ${config.aiInstructions ? `- Client creative orders: ${config.aiInstructions}` : ''}
 ${config.aiRestrictions ? `- Client restrictions: ${config.aiRestrictions}` : ''}
 
-${isCopyOrTemplate ? `TEMPLATE MODE — You MUST analyze the reference image as an EXACT TEMPLATE to replicate. Map every element position precisely: where the logo sits, where headlines go, where the product is placed, footer structure, badge positions, etc. The designer will need to replicate this layout pixel-perfect.` : `INSPIRATION/ORIGINAL MODE — Analyze the references for quality benchmarks, style cues, and design patterns to inspire an original creation that matches or exceeds their quality.`}
+${isCopyOrTemplate ? `TEMPLATE MODE — Analyze the reference as an EXACT TEMPLATE. Map every element position precisely: logo, headlines, product, footer, badges, etc. The designer must replicate this layout pixel-perfect.` : `INSPIRATION/ORIGINAL MODE — Analyze the references for elite quality benchmarks, lighting patterns, and sophisticated design cues to inspire a masterpiece.`}
 
 Respond with a JSON object using EXACTLY these keys (all values must be strings):
 {
-  "layout_description": "Precise description of element placement — where the hero product goes (position, size relative to canvas), where headline text sits, subhead position, CTA/price badge location, contact info strip location, and overall grid/flow",
-  "color_plan": "Which colors are used where — background color/gradient, shape fill colors, text colors, accent/highlight colors. Map each area to a specific color",
-  "typography_plan": "Font sizes (relative: large/medium/small), weights (bold/regular/light), text alignment, headline style, subhead style, CTA style, and any decorative text effects",
-  "background_treatment": "Exact description of background — solid color, gradient (direction + colors), texture type, pattern, image overlay, or combination",
-  "geometric_elements": "All geometric shapes used — circles (position, size, color), rectangles (rounded?), diagonal stripes, overlapping shapes, decorative lines, their layering order",
-  "logo_placement": "Where the company logo should be placed — position (top-left, top-center, etc.), approximate size relative to canvas, any effects (shadow, glow, border)",
-  ${isCopyOrTemplate ? `"template_layout": "EXACT pixel-level mapping of every element: logo at [position] sized [X%], headline at [position] spanning [width], product centered at [position] taking [X%] of canvas, footer at bottom with [elements], badges/stickers at [position]",` : ''}
-  "quality_notes": "Key quality benchmarks from the references — lighting quality, shadow realism, color vibrancy level, texture detail, overall polish level, specific techniques observed (glow effects, grain, reflections, etc.)"
+  "layout_description": "Detailed grid and flow analysis. Where is the focal point? How does the eye travel? Describe the exact placement of the hero product, headlines, and CTA.",
+  "color_plan": "Sophisticated color palette analysis. Identify primary, secondary, and accent hex codes. Describe how gradients and blending modes are used.",
+  "typography_plan": "Exhaustive typography hierarchy. Identify font styles (Serif/Sans/Display), weights, relative sizes, tracking/leading, and creative text effects (shadows, outlines, overlays).",
+  "background_treatment": "Deep analysis of the background. Is it a 3D environment, a textured surface, or a complex gradient? Describe any overlays like light leaks, window shadows, or grain.",
+  "geometric_elements": "Catalog of all graphic elements. Describe shapes, lines, and patterns. How do they interact with the product and text? Mention layering and transparency.",
+  "logo_placement": "Precise logo positioning and integration strategy. How is it balanced with other elements?",
+  "lighting_and_depth": "Analyze the lighting setup. Where is the key light? Are there rim lights or reflections? Describe the depth of field and layering strategy.",
+  "visual_energy": "Describe the 'vibe' or 'mood'. Is it aggressive, elegant, tech-focused, or organic? How is this energy achieved through design?",
+  ${isCopyOrTemplate ? `"template_layout": "EXACT pixel-level mapping of every element: logo at [position] sized [X%], headline at [position], product at [position], footer at bottom, badges at [position]",` : ''}
+  "quality_notes": "Identify the 'secret sauce' that makes these references look professional. Mention specific high-end techniques like caustic lights, sub-surface scattering, or advanced compositing."
 }
 
-IMPORTANT: Respond ONLY with the JSON object, no other text. Every value must be a detailed, actionable instruction string.`;
+IMPORTANT: Respond ONLY with the JSON object. Be extremely detailed and professional.`;
   }
 
   const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
@@ -732,6 +754,8 @@ ${config.preserveProduct ? '- PRODUCT PRESERVATION: The product from the referen
 - Background: ${config.designBrief.background_treatment}
 - Geometric elements: ${config.designBrief.geometric_elements}
 - Logo: ${config.designBrief.logo_placement}
+- Lighting & Depth: ${config.designBrief.lighting_and_depth}
+- Visual Energy: ${config.designBrief.visual_energy}
 ${config.designBrief.template_layout ? `- Template layout: ${config.designBrief.template_layout}` : ''}`;
 
     if (isCopyMode) {
@@ -760,19 +784,21 @@ Focus especially on POSITIONAL ACCURACY — elements should be in the same zones
   }
 
   reviewPrompt += `\n\nScore the generated flyer from 1-10 and identify SPECIFIC, ACTIONABLE improvements.
+A score of 10 means it looks like it was made by a top-tier human designer and is ready for a national ad campaign.
 
 Respond with a JSON object using EXACTLY these keys:
 {
   "score": <number 1-10>,
-  "logo_present": <boolean — is the company logo clearly visible?>,
-  "colors_correct": <boolean — are brand colors dominant as required?>,
+  "logo_present": <boolean — is the company logo clearly visible and well-integrated?>,
+  "colors_correct": <boolean — are brand colors dominant and harmonious?>,
   "layout_matches": <boolean — does the layout match the brief/references?>,
-  "text_readable": <boolean — is all text sharp, readable, and correctly placed?>,
+  "text_readable": <boolean — is all text sharp, readable, and professionally typeset?>,
+  "lighting_realistic": <boolean — is the lighting on the product and elements realistic and consistent?>,
   "improvements": [<array of specific actionable fix strings, max 5 items>],
   "pass": <boolean — true if score >= ${passThreshold}>
 }
 
-${isCopyMode ? 'Be VERY strict. The output must be near-identical to the reference template. Any misplaced element, missing decorative detail, or wrong color is a deduction.' : 'Be strict but fair.'} Focus on: logo presence, color accuracy, layout fidelity, text quality, 3D product realism, overall professional finish.
+Focus on: logo presence, color accuracy, layout fidelity, text quality, 3D product realism, lighting consistency, and overall professional finish.
 Respond ONLY with the JSON object.`;
 
   const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
@@ -870,22 +896,20 @@ CRITICAL RULES:
 
 Output: The refined flyer image with all layout corrections applied. Same dimensions.`;
   } else {
-    refinePrompt = `You are a professional design retoucher. The FIRST attached image is a flyer that needs specific improvements. ${referenceImageParts.length > 0 ? 'The OTHER attached images are the reference/brand images to match.' : ''}
+    refinePrompt = `You are a World-Class Design Retoucher. The FIRST attached image is a flyer that needs final professional polish. ${referenceImageParts.length > 0 ? 'The OTHER attached images are the reference/brand images to match.' : ''}
 
 SPECIFIC IMPROVEMENTS TO APPLY (do ALL of these):
 ${improvements.map((imp, i) => `${i + 1}. ${imp}`).join('\n')}
 
-RULES:
-- PRESERVE the overall layout and composition — this is a refinement, NOT a redesign
-- Fix ONLY the issues listed above
-- Keep all existing text content exactly as-is (same words, same placement)
-- Maintain the existing 3D product rendering
+RETOUCHING RULES:
+- ENHANCE LIGHTING: Add rim lights, fix shadows, and ensure global illumination is consistent.
+- COLOR GRADE: Apply professional color grading to make the image "pop" and feel cohesive.
+- SHARPEN & CLEAN: Ensure all text is razor-sharp and remove any minor AI artifacts.
+- PRESERVE CONTENT: Keep all existing text content exactly as-is.
 ${config.preserveProduct ? '- CRITICAL: Do NOT alter the product in any way — it must remain 100% identical' : ''}
-${config.hasLogos ? '- Ensure the company logo is prominently visible (if missing, add it top-left or top-center)' : ''}
-${config.primaryColor ? `- Primary brand color: ${config.primaryColor} (should be dominant)` : ''}
-${config.secondaryColor ? `- Secondary brand color: ${config.secondaryColor} (accent)` : ''}
+${config.hasLogos ? '- Ensure the company logo is perfectly integrated and visible.' : ''}
 
-Output: The refined flyer image with all improvements applied. Same dimensions and orientation.`;
+Output: The refined, high-fidelity flyer image. Same dimensions.`;
   }
 
   const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [

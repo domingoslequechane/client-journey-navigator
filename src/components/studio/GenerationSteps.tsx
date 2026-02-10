@@ -16,33 +16,33 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { 
-    id: 1, 
-    title: 'Art Director', 
-    description: 'Analisando referências e mapeando zonas de layout...', 
+  {
+    id: 1,
+    title: 'Art Director',
+    description: 'Analisando referências, mapeando zonas de layout e definindo hierarquia visual...',
     icon: Search,
-    duration: 8000 
+    duration: 10000
   },
-  { 
-    id: 2, 
-    title: 'Designer', 
-    description: 'Renderizando produto 3D e compondo elementos visuais...', 
+  {
+    id: 2,
+    title: 'Designer',
+    description: 'Renderizando produto 3D com iluminação de estúdio e compondo elementos gráficos...',
     icon: Wand2,
-    duration: 25000 
+    duration: 30000
   },
-  { 
-    id: 3, 
-    title: 'Quality Control', 
-    description: 'Verificando fidelidade, cores e legibilidade do texto...', 
+  {
+    id: 3,
+    title: 'Quality Control',
+    description: 'Verificando fidelidade ao brief, harmonia de cores e legibilidade tipográfica...',
     icon: ShieldCheck,
-    duration: 7000 
+    duration: 10000
   },
-  { 
-    id: 4, 
-    title: 'Retoucher', 
-    description: 'Aplicando polimento final e efeitos de iluminação...', 
+  {
+    id: 4,
+    title: 'Retoucher',
+    description: 'Aplicando color grading, polimento final e efeitos atmosféricos de iluminação...',
     icon: PenTool,
-    duration: 10000 
+    duration: 15000
   }
 ];
 
@@ -142,7 +142,7 @@ export function GenerationSteps({ isGenerating, mode }: GenerationStepsProps) {
       </div>
 
       <p className="text-[10px] text-center text-muted-foreground italic">
-        O processo completo leva cerca de 45-60 segundos para garantir qualidade máxima.
+        O processo de alta fidelidade leva cerca de 60-90 segundos para garantir um resultado profissional impecável.
       </p>
     </div>
   );

@@ -33,9 +33,9 @@ interface GenerationPanelProps {
 }
 
 const MODE_OPTIONS: { value: GenerationMode; label: string; icon: typeof Wand2; description: string }[] = [
-  { value: 'original', label: 'Original', icon: Wand2, description: 'Design 100% original' },
-  { value: 'copy', label: 'Cópia', icon: Copy, description: 'Copia layout das referências' },
-  { value: 'inspiration', label: 'Inspiração', icon: ImageIcon, description: 'Inspirado em referências' },
+  { value: 'original', label: 'Original', icon: Wand2, description: 'Design 100% original de alta fidelidade' },
+  { value: 'copy', label: 'Cópia', icon: Copy, description: 'Replicação precisa de layout e zonas' },
+  { value: 'inspiration', label: 'Inspiração', icon: ImageIcon, description: 'Inspirado em referências de elite' },
 ];
 
 const SIZE_LIST: { value: FlyerSize; label: string; aspect: string; w: number; h: number }[] = [
@@ -185,10 +185,18 @@ export function GenerationPanel({
     <Card className={cn('', className)}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Gerar Flyer
-          </CardTitle>
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Gerar Flyer
+            </CardTitle>
+            <div className="flex items-center gap-1.5">
+              <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-green-600 uppercase tracking-tighter">
+                High-Fidelity Engine Active
+              </span>
+            </div>
+          </div>
           {remainingGenerations !== null && remainingGenerations !== undefined && (
             <span className="text-sm text-muted-foreground">
               {remainingGenerations} restantes
