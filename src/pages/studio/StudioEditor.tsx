@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Settings, Loader2 } from 'lucide-react';
+import { ArrowLeft, Settings, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { GenerationPanel } from '@/components/studio/GenerationPanel';
 import { FlyerGallery } from '@/components/studio/FlyerGallery';
+import { GenerationSteps } from '@/components/studio/GenerationSteps';
 import { useStudioProject } from '@/hooks/useStudioProjects';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { toast } from 'sonner';
@@ -21,13 +23,13 @@ export default function StudioEditor() {
   } = useStudioProject(projectId);
   const { incrementUsage } = usePlanLimits();
   const [isGenerating, setIsGenerating] = useState(false);
-
-  const remainingGenerations = null;
+  const [currentMode, setCurrentMode] = useState('original');
 
   const handleGenerate = async (settings: GenerationSettings) => {
     if (!project) return;
 
     setIsGenerating(true);
+    setCurrentMode(settings.mode);
     try {
       const result = await generateFlyer.mutateAsync(settings);
       
@@ -104,7 +106,7 @@ export default function StudioEditor() {
             />
           </div>
           
-          <Button variant="outline" size="icon" asChild>
+          <Button variant="outline" size="icon" asChild title="Configurações do Projeto">
             <Link to={`/app/studio/${projectId}/edit`}>
               <Settings className="h-4 w-4" />
             </Link>
@@ -122,6 +124,12 @@ export default function StudioEditor() {
               <TabsTrigger value="reference">Referências</TabsTrigger>
             </TabsList>
             <TabsContent value="generated" className="mt-4">
+              {isGenerating && (
+                <div className="mb-6">
+                  <GenerationSteps isGenerating={isGenerating} mode={currentMode} />
+                </div>
+              )}
+              
               <FlyerGallery
                 flyers={flyers}
                 loading={flyersLoading}
@@ -134,12 +142,15 @@ export default function StudioEditor() {
               {project.reference_images && project.reference_images.length > 0 ? (
                 <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
                   {project.reference_images.map((url, index) => (
-                    <div key={url} className="aspect-square rounded-lg overflow-hidden border">
+                    <div key={url} className="aspect-square rounded-lg overflow-hidden border relative group">
                       <img
                         src={url}
                         alt={`Referência ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Badge variant="secondary">Referência</Badge>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -158,7 +169,6 @@ export default function StudioEditor() {
             project={project}
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
-            remainingGenerations={remainingGenerations}
           />
         </div>
       </div>

@@ -1,5 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// @ts-nocheck
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +12,6 @@ const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const AI_MODELS = {
   "gemini-flash": "gemini-2.5-flash-image",
   "gemini-pro": "gemini-3-pro-image-preview",
-  // Text-only model for analysis layers (no image generation needed)
   "gemini-flash-text": "gemini-2.5-flash",
 } as const;
 
@@ -23,7 +23,6 @@ const SIZE_CONFIG: Record<string, { aspectRatio: string; orientation: string; wi
   "1280x720": { aspectRatio: "16:9", orientation: "YouTube Thumbnail", width: 1280, height: 720 },
 };
 
-// Compact niche intelligence - focused keywords only
 const NICHE_STYLE: Record<string, string> = {
   'Construção': 'Industrial: 3D cement bags, bricks, steel rebars. Orange+Charcoal palette. Strong dramatic lighting.',
   'Mobiliário': 'Luxury furniture: wood grain, velvet sofas, warm ambient lighting. Brown+Gold+Cream palette.',
@@ -44,7 +43,20 @@ const NICHE_STYLE: Record<string, string> = {
   'Educação': 'Education: books, graduation caps, warm library lighting. Navy+Gold+White palette.',
 };
 
-// Concise design system core - optimized for token efficiency
+interface DesignBrief {
+  layout_description: string;
+  color_plan: string;
+  typography_plan: string;
+  background_treatment: string;
+  geometric_elements: string;
+  logo_placement: string;
+  quality_notes: string;
+  template_layout?: string;
+  zone_map?: string;
+  decorative_elements?: string;
+  footer_structure?: string;
+}
+
 function buildCoreInstructions(sizeConfig: typeof SIZE_CONFIG[string], hasReferences: boolean = false, hasLogos: boolean = false): string {
   let core = `You are an elite Brazilian graphic designer creating a premium commercial flyer (${sizeConfig.width}×${sizeConfig.height}px, ${sizeConfig.aspectRatio}).
 
@@ -68,7 +80,6 @@ MANDATORY DESIGN RULES:
   return core;
 }
 
-// Helper: build mandatory brand config block
 function buildMandatoryBrandConfig(params: {
   colors?: string;
   primaryColor?: string;
@@ -103,7 +114,6 @@ Do NOT invent other color schemes. Do NOT ignore these colors. These brand color
   return block;
 }
 
-// Helper: build final checklist
 function buildFinalChecklist(params: {
   hasLogos?: boolean;
   primaryColor?: string;
@@ -126,7 +136,31 @@ function buildFinalChecklist(params: {
   return checklist;
 }
 
-// Mode-specific prompt builders (concise versions)
+function buildDesignBriefSection(brief: DesignBrief): string {
+  let section = `\n\n=== ART DIRECTOR'S DESIGN BRIEF (follow this precisely) ===`;
+  section += `\nLAYOUT: ${brief.layout_description}`;
+  section += `\nCOLOR PLAN: ${brief.color_plan}`;
+  section += `\nTYPOGRAPHY: ${brief.typography_plan}`;
+  section += `\nBACKGROUND: ${brief.background_treatment}`;
+  section += `\nGEOMETRIC ELEMENTS: ${brief.geometric_elements}`;
+  section += `\nLOGO PLACEMENT: ${brief.logo_placement}`;
+  if (brief.template_layout) {
+    section += `\nTEMPLATE LAYOUT POSITIONS: ${brief.template_layout}`;
+  }
+  if (brief.zone_map) {
+    section += `\n\nEXACT ELEMENT POSITIONS (follow these coordinates precisely):\n${brief.zone_map}`;
+  }
+  if (brief.decorative_elements) {
+    section += `\n\nDECORATIVE ELEMENTS TO REPRODUCE EXACTLY:\n${brief.decorative_elements}`;
+  }
+  if (brief.footer_structure) {
+    section += `\n\nFOOTER TEMPLATE (reproduce exactly):\n${brief.footer_structure}`;
+  }
+  section += `\nQUALITY BENCHMARK: ${brief.quality_notes}`;
+  section += `\n=== END BRIEF ===`;
+  return section;
+}
+
 function buildOriginalPrompt(params: {
   prompt: string;
   sizeConfig: typeof SIZE_CONFIG[string];
@@ -163,7 +197,6 @@ function buildOriginalPrompt(params: {
   if (mood) p += `\nMood: ${mood}`;
   if (elements) p += `\nHero element: ${elements}`;
 
-  // Mandatory brand configurations
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
   if (colors === 'Aleatórias (IA escolhe)') {
@@ -173,7 +206,6 @@ function buildOriginalPrompt(params: {
   if (clientContext) p += `\nClient info: ${clientContext}`;
   if (aiMemoryContext) p += `\nLearned preferences: ${aiMemoryContext}`;
 
-  // Inject Art Director's design brief if available
   if (designBrief) {
     p += buildDesignBriefSection(designBrief);
   }
@@ -181,7 +213,6 @@ function buildOriginalPrompt(params: {
   p += `\n\nFLYER TEXT CONTENT (render ONLY this on the flyer):\n${prompt}`;
   p += `\n\nCreate a jaw-dropping, scroll-stopping, high-conversion commercial flyer. The product MUST be a photorealistic 3D render with studio lighting — NOT flat, NOT illustrated. Premium Brazilian agency quality.`;
 
-  // Final checklist
   p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
 
   return p;
@@ -200,7 +231,6 @@ function buildCopyPrompt(params: {
 }): string {
   const { prompt, sizeConfig, niche, clientContext, designBrief, primaryColor, secondaryColor, fontFamily, hasLogos } = params;
 
-  // COPY mode uses a completely different prompt strategy — strict template replication
   let p = `You are replicating a FIXED TEMPLATE. This is NOT creative work — it is STRICT LAYOUT REPRODUCTION with different content.
 
 CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})
@@ -220,7 +250,6 @@ CRITICAL RULES FOR TEMPLATE REPLICATION:
     p += `\n10. COMPANY LOGO: Place the logo in EXACTLY the same position and size as shown in the reference template. If the reference has a logo badge in the footer, replicate that exact badge.`;
   }
 
-  // Inject the zone map from Art Director (this is the KEY differentiator)
   if (designBrief?.zone_map) {
     p += `\n\n=== EXACT ELEMENT POSITIONS — Follow these coordinates as ABSOLUTE RULES ===\n${designBrief.zone_map}\n=== END POSITIONS ===`;
   }
@@ -231,7 +260,6 @@ CRITICAL RULES FOR TEMPLATE REPLICATION:
     p += `\n\n=== FOOTER TEMPLATE — Reproduce this EXACTLY ===\n${designBrief.footer_structure}\n=== END FOOTER ===`;
   }
 
-  // Still inject the rest of the design brief for layout/color/typography context
   if (designBrief) {
     p += `\n\n=== ADDITIONAL DESIGN CONTEXT ===`;
     p += `\nLAYOUT: ${designBrief.layout_description}`;
@@ -286,13 +314,11 @@ function buildInspirationPrompt(params: {
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
   if (mood) p += `\nMood: ${mood}`;
 
-  // Mandatory brand configurations
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
   if (clientContext) p += `\nClient: ${clientContext}`;
   if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
 
-  // Inject Art Director's design brief if available
   if (designBrief) {
     p += buildDesignBriefSection(designBrief);
   }
@@ -300,7 +326,6 @@ function buildInspirationPrompt(params: {
   p += `\n\nFLYER TEXT CONTENT:\n${prompt}`;
   p += `\n\nCreate an original masterpiece inspired by the references. Match their 3D photorealistic quality. Surpass them in impact.`;
 
-  // Final checklist
   p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
 
   return p;
@@ -349,13 +374,11 @@ The product itself is UNTOUCHABLE — treat it as a sacred, immutable element.`;
   if (clientName) p += `\nBrand: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
 
-  // Mandatory brand configurations
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
   if (clientContext) p += `\nClient: ${clientContext}`;
   if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
 
-  // Inject Art Director's design brief if available
   if (designBrief) {
     p += buildDesignBriefSection(designBrief);
   }
@@ -368,7 +391,6 @@ The product itself is UNTOUCHABLE — treat it as a sacred, immutable element.`;
     p += `\n\nDesign a premium flyer AROUND the preserved product. The product from the image must appear EXACTLY as-is. Bold geometric background, premium agency quality.`;
   }
 
-  // Final checklist
   p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
 
   return p;
@@ -404,13 +426,11 @@ Replace ONLY: product image${hasProductImage ? ' (use SECOND image)' : ''} and t
   if (clientName) p += `\nClient: ${clientName}`;
   if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
 
-  // Mandatory brand configurations
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
   if (clientContext) p += `\nClient info: ${clientContext}`;
   if (aiMemoryContext) p += `\nPreferences: ${aiMemoryContext}`;
 
-  // Inject Art Director's design brief if available
   if (designBrief) {
     p += buildDesignBriefSection(designBrief);
   }
@@ -418,7 +438,6 @@ Replace ONLY: product image${hasProductImage ? ' (use SECOND image)' : ''} and t
   p += `\n\nFLYER TEXT CONTENT:\n${prompt}`;
   p += `\n\nGenerate visually IDENTICAL to template. Only product and text differ.`;
 
-  // Final checklist
   p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
 
   return p;
@@ -435,7 +454,6 @@ function buildClientContext(client: Record<string, unknown> | null): string {
   return parts.join(' | ');
 }
 
-// Safety settings to prevent overly cautious blocking
 const SAFETY_SETTINGS = [
   { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
   { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
@@ -443,7 +461,6 @@ const SAFETY_SETTINGS = [
   { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
 ];
 
-// Fetch and encode an image URL to inline data
 async function fetchImageAsInlineData(
   imgUrl: string,
   index: number
@@ -507,49 +524,6 @@ async function fetchImageAsInlineData(
   }
 }
 
-// ==========================================
-// LAYER 1: ART DIRECTOR — Analyze references and build a design brief
-// ==========================================
-
-interface DesignBrief {
-  layout_description: string;
-  color_plan: string;
-  typography_plan: string;
-  background_treatment: string;
-  geometric_elements: string;
-  logo_placement: string;
-  quality_notes: string;
-  template_layout?: string; // For copy/template modes — exact positions
-  zone_map?: string; // COPY mode: Precise percentage-based element positions
-  decorative_elements?: string; // COPY mode: Exact decorative element catalog
-  footer_structure?: string; // COPY mode: Exact footer column layout
-}
-
-function buildDesignBriefSection(brief: DesignBrief): string {
-  let section = `\n\n=== ART DIRECTOR'S DESIGN BRIEF (follow this precisely) ===`;
-  section += `\nLAYOUT: ${brief.layout_description}`;
-  section += `\nCOLOR PLAN: ${brief.color_plan}`;
-  section += `\nTYPOGRAPHY: ${brief.typography_plan}`;
-  section += `\nBACKGROUND: ${brief.background_treatment}`;
-  section += `\nGEOMETRIC ELEMENTS: ${brief.geometric_elements}`;
-  section += `\nLOGO PLACEMENT: ${brief.logo_placement}`;
-  if (brief.template_layout) {
-    section += `\nTEMPLATE LAYOUT POSITIONS: ${brief.template_layout}`;
-  }
-  if (brief.zone_map) {
-    section += `\n\nEXACT ELEMENT POSITIONS (follow these coordinates precisely):\n${brief.zone_map}`;
-  }
-  if (brief.decorative_elements) {
-    section += `\n\nDECORATIVE ELEMENTS TO REPRODUCE EXACTLY:\n${brief.decorative_elements}`;
-  }
-  if (brief.footer_structure) {
-    section += `\n\nFOOTER TEMPLATE (reproduce exactly):\n${brief.footer_structure}`;
-  }
-  section += `\nQUALITY BENCHMARK: ${brief.quality_notes}`;
-  section += `\n=== END BRIEF ===`;
-  return section;
-}
-
 async function analyzeReferencesAndBuildBrief(
   apiKey: string,
   imageParts: Array<{ inlineData: { mimeType: string; data: string } }>,
@@ -577,7 +551,6 @@ async function analyzeReferencesAndBuildBrief(
   const isCopyOrTemplate = config.mode === 'copy' || config.mode === 'template';
   const isCopyMode = config.mode === 'copy';
 
-  // COPY mode uses a specialized ultra-precise extraction prompt
   let analysisPrompt: string;
 
   if (isCopyMode) {
@@ -615,7 +588,7 @@ Respond with a JSON object using EXACTLY these keys (all values must be strings)
   "geometric_elements": "Every geometric/decorative element: lines (position, thickness, color), dots (position, size, color), shapes (type, position, color, opacity), badges (position, style)",
   "logo_placement": "Exact logo position as percentage zone, size, any background behind it",
   "template_layout": "Complete element-by-element positional map: logo at [x:A-B%, y:C-D%], headline at [x:A-B%, y:C-D%], product at [x:A-B%, y:C-D%], etc.",
-  "zone_map": "PRECISE ZONE MAP — list every element with exact percentage coordinates:\n- Element: x_start%-x_end%, y_start%-y_end% (style details)\nExample:\n- Decorative bars: x:3-12%, y:8-9% (orange #F59E0B, 2 horizontal lines + 2 dots)\n- Headline line 1: x:3-50%, y:15-22% (bold black, ~5% canvas height)\n- Product photo: x:45-95%, y:5-80% (centered, dominant, photorealistic)\nList ALL visible elements in order from top to bottom.",
+  "zone_map": "PRECISE ZONE MAP — list every element with exact percentage coordinates:\\n- Element: x_start%-x_end%, y_start%-y_end% (style details)\\nExample:\\n- Decorative bars: x:3-12%, y:8-9% (orange #F59E0B, 2 horizontal lines + 2 dots)\\n- Headline line 1: x:3-50%, y:15-22% (bold black, ~5% canvas height)\\n- Product photo: x:45-95%, y:5-80% (centered, dominant, photorealistic)\\nList ALL visible elements in order from top to bottom.",
   "decorative_elements": "Catalog of ALL decorative elements: how many lines (with exact position, length, color, thickness), how many dots/circles (with exact position, size, color), shapes (position, type, fill color, border), stickers/badges (position, content, style). Be exhaustive — miss nothing.",
   "footer_structure": "Footer analysis: total height as % of canvas, number of columns, content of each column (e.g., col1: logo badge on dark bg, col2: phone icon + number centered, col3: location icon + address), dividers between columns, background color of footer strip.",
   "quality_notes": "Key quality benchmarks: lighting, shadow realism, color vibrancy, texture detail, polish level, specific techniques observed"
@@ -672,7 +645,7 @@ IMPORTANT: Respond ONLY with the JSON object, no other text. Every value must be
           contents: [{ role: "user", parts }],
           generationConfig: {
             responseMimeType: "application/json",
-            maxOutputTokens: isCopyMode ? 4096 : 2048, // COPY mode needs more detail
+            maxOutputTokens: isCopyMode ? 4096 : 2048,
           },
           safetySettings: SAFETY_SETTINGS,
         }),
@@ -693,7 +666,6 @@ IMPORTANT: Respond ONLY with the JSON object, no other text. Every value must be
       return null;
     }
 
-    // Parse the JSON response — handle potential markdown wrapping
     let jsonStr = textContent.trim();
     if (jsonStr.startsWith('```')) {
       jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
@@ -702,18 +674,13 @@ IMPORTANT: Respond ONLY with the JSON object, no other text. Every value must be
     const brief: DesignBrief = JSON.parse(jsonStr);
     const elapsed = Date.now() - startTime;
     console.log(`Layer 1 (Art Director): Brief generated in ${elapsed}ms`);
-    console.log("Brief keys:", Object.keys(brief).join(', '));
     
     return brief;
   } catch (e) {
     console.error("Layer 1 (Art Director) error:", e);
-    return null; // Non-fatal — continue without brief
+    return null;
   }
 }
-
-// ==========================================
-// LAYER 3: QUALITY CONTROL — Review generated flyer
-// ==========================================
 
 interface QualityReview {
   score: number;
@@ -744,7 +711,7 @@ async function reviewGeneratedFlyer(
   const startTime = Date.now();
 
   const isCopyMode = config.mode === 'copy';
-  const passThreshold = isCopyMode ? 9 : 8; // COPY mode requires higher bar
+  const passThreshold = isCopyMode ? 9 : 8;
 
   let reviewPrompt = `You are a Quality Control specialist at a premium design agency. Compare the FIRST attached image (the generated flyer) against the REMAINING attached images (reference images) and the design brief below.
 
@@ -767,7 +734,6 @@ ${config.preserveProduct ? '- PRODUCT PRESERVATION: The product from the referen
 - Logo: ${config.designBrief.logo_placement}
 ${config.designBrief.template_layout ? `- Template layout: ${config.designBrief.template_layout}` : ''}`;
 
-    // COPY mode: add zone map for element-by-element comparison
     if (isCopyMode) {
       if (config.designBrief.zone_map) {
         reviewPrompt += `\n\nZONE MAP TO COMPARE AGAINST (check each element position):\n${config.designBrief.zone_map}`;
@@ -811,8 +777,8 @@ Respond ONLY with the JSON object.`;
 
   const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
     { text: reviewPrompt },
-    generatedImageData, // Generated flyer goes first
-    ...referenceImageParts.slice(0, 2), // Max 2 reference images for comparison
+    generatedImageData,
+    ...referenceImageParts.slice(0, 2),
   ];
 
   try {
@@ -857,21 +823,13 @@ Respond ONLY with the JSON object.`;
     const review: QualityReview = JSON.parse(jsonStr);
     const elapsed = Date.now() - startTime;
     console.log(`Layer 3 (QC): Score ${review.score}/10, Pass: ${review.pass}, Time: ${elapsed}ms`);
-    console.log(`  Logo: ${review.logo_present}, Colors: ${review.colors_correct}, Layout: ${review.layout_matches}, Text: ${review.text_readable}`);
-    if (review.improvements.length > 0) {
-      console.log(`  Improvements needed: ${review.improvements.join(' | ')}`);
-    }
 
     return review;
   } catch (e) {
     console.error("Layer 3 (QC) error:", e);
-    return null; // Non-fatal — treat as pass
+    return null;
   }
 }
-
-// ==========================================
-// LAYER 4: RETOUCHER — Refine the generated flyer
-// ==========================================
 
 async function refineFlyer(
   apiKey: string,
@@ -894,7 +852,6 @@ async function refineFlyer(
   let refinePrompt: string;
 
   if (isCopyMode) {
-    // COPY mode: focus on layout repositioning, not general quality
     refinePrompt = `You are a professional design retoucher specializing in LAYOUT PRECISION. The FIRST attached image is a flyer that was generated to replicate a template. ${referenceImageParts.length > 0 ? 'The OTHER attached images are the ORIGINAL TEMPLATE to match.' : ''}
 
 YOUR TASK: Fix the positional and layout issues listed below. The output must look IDENTICAL to the reference template.
@@ -965,13 +922,11 @@ Output: The refined flyer image with all improvements applied. Same dimensions a
 
     const data = await response.json();
 
-    // Check for blocking
     if (data?.promptFeedback?.blockReason) {
       console.warn(`Layer 4: Blocked - ${data.promptFeedback.blockReason}`);
       return null;
     }
 
-    // Extract refined image
     const responseParts = data?.candidates?.[0]?.content?.parts;
     if (Array.isArray(responseParts)) {
       for (const part of responseParts) {
@@ -989,13 +944,10 @@ Output: The refined flyer image with all improvements applied. Same dimensions a
     return null;
   } catch (e) {
     console.error("Layer 4 (Retoucher) error:", e);
-    return null; // Non-fatal — use original image
+    return null;
   }
 }
 
-// ==========================================
-// Call Gemini API with retry logic (Layer 2: Designer)
-// ==========================================
 async function callGeminiWithRetry(
   model: string,
   parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>,
@@ -1004,7 +956,6 @@ async function callGeminiWithRetry(
   isProductMode: boolean = false
 ): Promise<{ imageData: string; mimeType: string } | { error: string; status: number; response?: unknown }> {
   
-  // Separate text and image parts for retry logic
   const textParts = parts.filter(p => 'text' in p);
   const imageParts = parts.filter(p => 'inlineData' in p);
   
@@ -1018,25 +969,19 @@ async function callGeminiWithRetry(
       
       if (textPart) {
         if (attempt === 1) {
-          // First retry: keep everything, just retry
           currentParts = parts;
         } else {
-          // Second retry: simplify text
           if (isProductMode && imageParts.length > 0) {
-            // PRODUCT MODE: NEVER drop the product image — only simplify text
             const simplifiedText = `Create a professional commercial flyer featuring the EXACT product shown in the attached image. 
 Keep the product 100% identical. Design only the background and text layout around it.
 Text content: ${textPart.text.match(/FLYER TEXT CONTENT[^\n]*\n([\s\S]*?)(?:\n\n|$)/)?.[1] || textPart.text.substring(textPart.text.length - 200)}`;
             currentParts = [{ text: simplifiedText }, ...imageParts];
-            console.log("Product mode retry: simplified text but KEPT product image");
           } else {
-            // Non-product mode: drop images, simplify text
             const simplifiedText = textPart.text
               .replace(/DESIGN RULES:[\s\S]*?NO AI artifacts[^\n]*\n/g, 
                 'Create a professional, photorealistic commercial flyer. Premium agency quality. Bold geometric design with depth.\n')
               .substring(0, 800);
             currentParts = [{ text: simplifiedText }];
-            console.log("Retry with simplified prompt (no images), length:", simplifiedText.length);
           }
         }
       }
@@ -1074,40 +1019,24 @@ Text content: ${textPart.text.match(/FLYER TEXT CONTENT[^\n]*\n([\s\S]*?)(?:\n\n
           return { error: "Rate limit exceeded. Please try again in a moment.", status: 429 };
         }
 
-        if (response.status === 403 || response.status === 401) {
-          return { error: "API authentication error. Check API key.", status: 500 };
-        }
-
         if (attempt < maxRetries) continue;
         return { error: "Failed to generate image", status: 500 };
       }
 
       const data = await response.json();
-      console.log(`Gemini response (attempt ${attempt}):`, 
-        JSON.stringify({
-          blockReason: data?.promptFeedback?.blockReason,
-          finishReason: data?.candidates?.[0]?.finishReason,
-          hasContent: !!data?.candidates?.[0]?.content?.parts,
-          partsCount: data?.candidates?.[0]?.content?.parts?.length,
-        })
-      );
 
-      // Check for blocked response
       if (data?.promptFeedback?.blockReason) {
         console.warn(`Blocked (attempt ${attempt}): ${data.promptFeedback.blockReason}`);
         if (attempt < maxRetries) {
           await new Promise(r => setTimeout(r, 1000));
           continue;
         }
-        
-        // For product mode, give a specific error since we can't generate without the product
         if (isProductMode) {
           return { error: "A imagem do produto foi bloqueada pela IA. Tente com uma imagem diferente do produto.", status: 500, response: data };
         }
         return { error: "Image generation was blocked. Try a different prompt.", status: 500, response: data };
       }
 
-      // Extract image
       const responseParts = data?.candidates?.[0]?.content?.parts;
       if (Array.isArray(responseParts)) {
         for (const part of responseParts) {
@@ -1119,8 +1048,6 @@ Text content: ${textPart.text.match(/FLYER TEXT CONTENT[^\n]*\n([\s\S]*?)(?:\n\n
         }
       }
 
-      // No image found
-      console.warn(`No image in response (attempt ${attempt})`);
       if (attempt < maxRetries) {
         await new Promise(r => setTimeout(r, 1000));
         continue;
@@ -1140,9 +1067,6 @@ Text content: ${textPart.text.match(/FLYER TEXT CONTENT[^\n]*\n([\s\S]*?)(?:\n\n
   return { error: "All retry attempts failed", status: 500 };
 }
 
-// ==========================================
-// API HANDLER — 4-Layer Creative Team Pipeline
-// ==========================================
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -1157,9 +1081,11 @@ serve(async (req) => {
       });
     }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      supabaseUrl,
+      supabaseServiceKey,
       { global: { headers: { Authorization: authHeader } } }
     );
 
@@ -1190,7 +1116,6 @@ serve(async (req) => {
       });
     }
 
-    // Get project
     const { data: project, error: projectError } = await supabase
       .from("studio_projects")
       .select("*")
@@ -1198,14 +1123,12 @@ serve(async (req) => {
       .single();
 
     if (projectError || !project) {
-      console.error("Project error:", projectError);
       return new Response(JSON.stringify({ error: "Project not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch client context
     let clientContext = "";
     if (project.client_id) {
       try {
@@ -1222,7 +1145,6 @@ serve(async (req) => {
       }
     }
 
-    // Fetch AI learning history
     let aiMemoryContext = "";
     try {
       const { data: learnings } = await supabase
@@ -1234,7 +1156,6 @@ serve(async (req) => {
 
       if (learnings && learnings.length > 0) {
         aiMemoryContext = learnings.map(l => `[${l.learning_type}]: ${l.content}`).join('; ');
-        // Keep memory context concise
         if (aiMemoryContext.length > 500) {
           aiMemoryContext = aiMemoryContext.substring(0, 500);
         }
@@ -1245,14 +1166,9 @@ serve(async (req) => {
 
     const sizeConfig = SIZE_CONFIG[size] || SIZE_CONFIG["1080x1080"];
     const finalMode = preserveProduct ? 'product' : mode;
-
-    // Determine if project has reference images available
     const projectHasReferences = (project.reference_images && project.reference_images.length > 0) 
       || layoutReferences.length > 0 || additionalReferences.length > 0;
-
-    // Determine if project has logo images
     const hasLogos = !!(project.logo_images && project.logo_images.length > 0);
-    console.log("Project logos:", hasLogos ? project.logo_images.length : 0);
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
@@ -1262,27 +1178,13 @@ serve(async (req) => {
       });
     }
 
-    console.log("=== 4-LAYER CREATIVE TEAM PIPELINE ===");
-    console.log("Mode:", finalMode, "| Model:", model, "| Client:", project.name);
-    console.log("Size:", size);
-
-    // =====================================================
-    // STEP 1: Collect and fetch ALL reference images upfront
-    // =====================================================
-
     const allReferenceImages: string[] = [];
-    
-    // Product image gets ABSOLUTE PRIORITY in product mode
     if (finalMode === 'product' && productImage) {
       allReferenceImages.push(productImage);
-      console.log("Product mode: product image added as PRIMARY reference");
     }
-    
     if (finalMode === 'template' && project.template_image) {
       allReferenceImages.push(project.template_image);
     }
-    
-    // In product mode, ONLY use the product image — no other references that could confuse the AI
     if (finalMode !== 'product') {
       allReferenceImages.push(...layoutReferences);
       allReferenceImages.push(...additionalReferences);
@@ -1291,22 +1193,15 @@ serve(async (req) => {
       }
     }
 
-    // ALWAYS include logo images in ALL modes — logos are mandatory
     const logoCount = (project.logo_images && project.logo_images.length > 0) 
       ? Math.min(project.logo_images.length, 2) : 0;
     if (logoCount > 0) {
-      const logosToAdd = project.logo_images.slice(0, 2);
-      allReferenceImages.push(...logosToAdd);
-      console.log(`Added ${logosToAdd.length} logo image(s)`);
+      allReferenceImages.push(...project.logo_images.slice(0, 2));
     }
 
-    // Limit images: product mode gets 1 product + logos, others get up to 3 refs + logos
     const maxImages = finalMode === 'product' ? (1 + logoCount) : (3 + logoCount);
     const imagesToProcess = allReferenceImages.slice(0, maxImages);
 
-    console.log("Total reference images to fetch:", imagesToProcess.length);
-
-    // Fetch all images in parallel (shared across all layers)
     const fetchedImageResults = await Promise.all(
       imagesToProcess.map((url, i) => fetchImageAsInlineData(url, i))
     );
@@ -1314,15 +1209,8 @@ serve(async (req) => {
     const validImageParts = fetchedImageResults.filter(
       (r): r is { inlineData: { mimeType: string; data: string } } => r !== null
     );
-    console.log("Successfully fetched images:", validImageParts.length);
-
-    // =====================================================
-    // LAYER 1: ART DIRECTOR — Analyze references & build brief
-    // =====================================================
 
     let designBrief: DesignBrief | null = null;
-
-    // Only run Layer 1 if we have reference images to analyze
     if (validImageParts.length > 0) {
       designBrief = await analyzeReferencesAndBuildBrief(
         GEMINI_API_KEY,
@@ -1342,12 +1230,6 @@ serve(async (req) => {
       );
     }
 
-    // =====================================================
-    // LAYER 2: DESIGNER — Generate the flyer
-    // =====================================================
-
-    console.log("=== LAYER 2: DESIGNER — Generating flyer ===");
-
     const baseParams = {
       prompt, sizeConfig,
       clientName: project.name,
@@ -1360,11 +1242,10 @@ serve(async (req) => {
       clientContext,
       hasLogos,
       colors,
-      designBrief, // Inject Art Director's brief
+      designBrief,
     };
 
     let enhancedPrompt: string;
-
     switch (finalMode) {
       case 'template':
         enhancedPrompt = buildTemplateMemoryPrompt({
@@ -1413,20 +1294,15 @@ serve(async (req) => {
         break;
     }
 
-    // Select model — COPY mode always uses Pro for higher precision
     const selectedModel = (finalMode === 'product' || finalMode === 'template' || finalMode === 'copy' || model === 'gemini-pro')
       ? AI_MODELS["gemini-pro"]
       : AI_MODELS["gemini-flash"];
 
-    console.log("Prompt length:", enhancedPrompt.length, "chars | Model:", selectedModel);
-
-    // Build content parts for Layer 2
     const generationParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
       { text: enhancedPrompt },
       ...validImageParts,
     ];
 
-    // Call Gemini with retry logic (Layer 2)
     const generationResult = await callGeminiWithRetry(selectedModel, generationParts, GEMINI_API_KEY, 2, finalMode === 'product');
 
     if ('error' in generationResult) {
@@ -1439,16 +1315,9 @@ serve(async (req) => {
       });
     }
 
-    console.log("Layer 2 (Designer): Flyer generated successfully");
-
-    // =====================================================
-    // LAYER 3: QUALITY CONTROL — Review the generated flyer
-    // =====================================================
-
     let finalImageData = generationResult.imageData;
     let finalMimeType = generationResult.mimeType;
 
-    // Only run QC if we have references to compare against
     if (validImageParts.length > 0) {
       const generatedImagePart = {
         inlineData: { mimeType: finalMimeType, data: finalImageData },
@@ -1470,13 +1339,7 @@ serve(async (req) => {
         }
       );
 
-      // =====================================================
-      // LAYER 4: RETOUCHER — Refine if QC failed
-      // =====================================================
-
       if (review && !review.pass && review.improvements.length > 0) {
-        console.log(`QC score ${review.score}/10 — triggering Layer 4 refinement`);
-
         const refinedResult = await refineFlyer(
           GEMINI_API_KEY,
           generatedImagePart,
@@ -1494,22 +1357,9 @@ serve(async (req) => {
         if (refinedResult) {
           finalImageData = refinedResult.imageData;
           finalMimeType = refinedResult.mimeType;
-          console.log("Layer 4: Using refined image");
-        } else {
-          console.log("Layer 4: Refinement failed, using original Layer 2 output");
         }
-      } else if (review) {
-        console.log(`QC score ${review.score}/10 — PASSED, skipping Layer 4 (early exit)`);
-      } else {
-        console.log("QC skipped (no review), using Layer 2 output directly");
       }
-    } else {
-      console.log("No reference images — skipping Layers 3 & 4");
     }
-
-    // =====================================================
-    // UPLOAD & SAVE — Same as before
-    // =====================================================
 
     const extension = finalMimeType.split("/")[1] || "png";
     const imageBuffer = Uint8Array.from(atob(finalImageData), c => c.charCodeAt(0));
@@ -1523,7 +1373,6 @@ serve(async (req) => {
       });
 
     if (uploadError) {
-      console.error("Upload error:", uploadError);
       return new Response(JSON.stringify({ error: "Failed to save image" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1534,7 +1383,6 @@ serve(async (req) => {
       .from("studio-assets")
       .getPublicUrl(fileName);
 
-    // Save flyer record
     const { data: flyer, error: flyerError } = await supabase
       .from("studio_flyers")
       .insert({
@@ -1553,15 +1401,11 @@ serve(async (req) => {
       .single();
 
     if (flyerError) {
-      console.error("Flyer save error:", flyerError);
       return new Response(JSON.stringify({ error: "Failed to save flyer record" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    console.log("=== PIPELINE COMPLETE ===");
-    console.log("Flyer generated successfully:", flyer.id);
 
     return new Response(JSON.stringify({
       success: true,
@@ -1572,7 +1416,6 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Generate flyer error:", error);
     return new Response(JSON.stringify({
       error: error instanceof Error ? error.message : "Unknown error",
     }), {
