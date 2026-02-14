@@ -5,16 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useTransactions } from '@/hooks/finance';
@@ -28,13 +18,13 @@ import type { Transaction, TransactionFormData, TransactionFilters } from '@/typ
 
 export default function FinanceTransactions() {
   const { currencySymbol } = useOrganizationCurrency();
-  const { canManageFinance, canDeleteFinanceRecords } = useUserRole();
+  const { canManageFinance } = useUserRole();
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  
 
   const filters: TransactionFilters = useMemo(() => ({
     type: typeFilter,
@@ -47,7 +37,6 @@ export default function FinanceTransactions() {
     totals, 
     createTransaction, 
     updateTransaction, 
-    deleteTransaction 
   } = useTransactions(filters);
 
   const formatCurrency = (value: number) => {
@@ -65,13 +54,6 @@ export default function FinanceTransactions() {
   const handleEditTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
     setModalOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (deleteId) {
-      await deleteTransaction(deleteId);
-      setDeleteId(null);
-    }
   };
 
   return (
@@ -135,11 +117,11 @@ export default function FinanceTransactions() {
         </div>
 
         {/* Transactions List */}
-        <div className="grid gap-2 grid-cols-1 md:grid-cols-2">
+        <div className="grid gap-3 grid-cols-1">
           {loading ? (
             [...Array(6)].map((_, i) => <Skeleton key={i} className="h-20" />)
           ) : transactions.length === 0 ? (
-            <div className="col-span-full text-center py-12">
+            <div className="text-center py-12">
               <p className="text-muted-foreground">Nenhum lançamento encontrado</p>
               {canManageFinance && (
                 <Button 
@@ -158,7 +140,6 @@ export default function FinanceTransactions() {
                 key={transaction.id}
                 transaction={transaction}
                 onEdit={handleEditTransaction}
-                onDelete={(id) => setDeleteId(id)}
                 canManage={canManageFinance}
               />
             ))
@@ -171,23 +152,6 @@ export default function FinanceTransactions() {
           transaction={editingTransaction}
           onSave={handleSaveTransaction}
         />
-
-        <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Excluir Lançamento</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Excluir
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </AnimatedContainer>
   );
