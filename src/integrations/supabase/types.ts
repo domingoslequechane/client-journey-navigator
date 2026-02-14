@@ -472,6 +472,133 @@ export type Database = {
           },
         ]
       }
+      editorial_plans: {
+        Row: {
+          client_id: string
+          content: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          month: number
+          organization_id: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          client_id: string
+          content?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month: number
+          organization_id: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          client_id?: string
+          content?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month?: number
+          organization_id?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_plans_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      editorial_tasks: {
+        Row: {
+          client_id: string
+          content_type: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          plan_id: string | null
+          platform: string | null
+          scheduled_date: string
+          scheduled_time: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          plan_id?: string | null
+          platform?: string | null
+          scheduled_date: string
+          scheduled_time?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          plan_id?: string | null
+          platform?: string | null
+          scheduled_date?: string
+          scheduled_time?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_tasks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_tasks_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_otps: {
         Row: {
           created_at: string
