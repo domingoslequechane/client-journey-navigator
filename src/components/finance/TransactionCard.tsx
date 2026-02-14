@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { ArrowDownLeft, ArrowUpRight, Pencil, Trash2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Pencil } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,14 +12,12 @@ import { PAYMENT_METHOD_LABELS } from '@/types/finance';
 interface TransactionCardProps {
   transaction: Transaction;
   onEdit: (transaction: Transaction) => void;
-  onDelete: (id: string) => void;
   canManage?: boolean;
 }
 
 export function TransactionCard({
   transaction,
   onEdit,
-  onDelete,
   canManage = true,
 }: TransactionCardProps) {
   const { currencySymbol } = useOrganizationCurrency();
@@ -94,9 +92,9 @@ export function TransactionCard({
             </p>
           </div>
 
-          {/* Ações - Visíveis diretamente */}
+          {/* Ação de editar */}
           {canManage && (
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="shrink-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -104,14 +102,6 @@ export function TransactionCard({
                 onClick={() => onEdit(transaction)}
               >
                 <Pencil className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-destructive hover:text-destructive"
-                onClick={() => onDelete(transaction.id)}
-              >
-                <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           )}

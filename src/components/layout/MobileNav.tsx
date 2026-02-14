@@ -26,7 +26,7 @@ import {
   X,
   RefreshCw,
   Link2,
-  Palette,
+  CalendarDays,
   Wallet,
   Building2
 } from 'lucide-react';
@@ -109,8 +109,8 @@ export function MobileNav() {
     // Add Link23 to more menu
     items.push({ name: 'Link23', href: '/app/link-trees', icon: Link2, show: true });
 
-    // Add Studio AI to more menu
-    items.push({ name: 'Studio AI', href: '/app/studio', icon: Palette, show: true, badge: 'Beta' });
+    // Add Editorial Calendar to more menu
+    items.push({ name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, show: true });
 
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },

@@ -28,7 +28,7 @@ import {
   Rocket,
   RefreshCw,
   Link2,
-  Palette,
+  CalendarDays,
   Wallet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -120,7 +120,7 @@ export function Sidebar() {
        { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canSeeSalesFunnel || canSeeOperationalFlow },
       { name: 'Finanças', href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canSeeFinance },
       { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true },
-      { name: 'Studio AI', href: '/app/studio', icon: Palette, tutorialId: 'sidebar-studio', show: true, badge: 'Beta' },
+      { name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: true },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
@@ -155,11 +155,6 @@ export function Sidebar() {
       >
         <item.icon className="h-5 w-5 shrink-0" />
         {!collapsed && item.name}
-        {!collapsed && item.badge && (
-          <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0 h-4 uppercase font-semibold">
-            {item.badge}
-          </Badge>
-        )}
       </Link>
     );
 
@@ -167,13 +162,8 @@ export function Sidebar() {
       return (
         <Tooltip>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
-          <TooltipContent side="right" className="flex items-center gap-2">
+          <TooltipContent side="right">
             {item.name}
-            {item.badge && (
-              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 uppercase font-semibold">
-                {item.badge}
-              </Badge>
-            )}
           </TooltipContent>
         </Tooltip>
       );
