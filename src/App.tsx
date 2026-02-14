@@ -53,6 +53,7 @@ import AdminSupport from "./pages/admin/AdminSupport";
 import PartnerProgram from "./pages/PartnerProgram";
 import LinkTreePublic from "./pages/LinkTreePublic";
 import { FinanceTransactions, FinanceProjects, FinanceGoals, FinanceReports } from "./pages/finance";
+import Editorial from "./pages/Editorial";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -177,6 +178,7 @@ const App = () => (
                     <FinanceReports />
                   </RoleProtectedRoute>
                 } />
+                <Route path="editorial" element={<Editorial />} />
               </Route>
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminLayout />}>
