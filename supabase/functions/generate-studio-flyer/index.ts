@@ -1343,15 +1343,24 @@ serve(async (req) => {
     }
 
     const {
-      projectId, prompt, size = '1080x1080', style = 'vivid',
+      projectId, prompt = '', size = '1080x1080', style = 'vivid',
       mode = 'original', model = 'gemini-flash', niche, mood,
       colors, elements, preserveProduct = false,
       productImage, allowManipulation = false,
+      autoCopy = false,
       layoutReferences = [], additionalReferences = [],
     } = await req.json();
 
-    if (!projectId || !prompt) {
-      return new Response(JSON.stringify({ error: "projectId and prompt are required" }), {
+    if (!projectId) {
+      return new Response(JSON.stringify({ error: "projectId is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // If no prompt and not autoCopy mode, require a prompt
+    if (!prompt && !autoCopy) {
+      return new Response(JSON.stringify({ error: "prompt is required (or enable autoCopy)" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

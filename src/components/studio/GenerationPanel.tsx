@@ -159,7 +159,8 @@ export function GenerationPanel({
       preserveProduct: isProductMode || preserveProduct,
       productImage: (isProductMode || preserveProduct) ? productImage : undefined,
       allowManipulation: (isProductMode || preserveProduct) ? allowManipulation : undefined,
-    } as GenerationSettings & { allowManipulation?: boolean });
+      autoCopy,
+    } as GenerationSettings & { allowManipulation?: boolean; autoCopy?: boolean });
   };
 
   const handleProductUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
