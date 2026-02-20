@@ -112,6 +112,9 @@ export function MobileNav() {
     // Add Editorial Calendar to more menu
     items.push({ name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, show: true });
 
+    // Add Studio AI to more menu
+    items.push({ name: 'Studio AI', href: '/app/studio', icon: Sparkles, show: true });
+
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },
       { name: t('navigation.notifications'), href: '/app/notifications', icon: Bell, show: true },
