@@ -75,6 +75,7 @@ export function ProjectForm({ project, onSubmit, isSubmitting }: ProjectFormProp
     font_family: 'Inter',
     ai_instructions: '',
     ai_restrictions: '',
+    footer_text: '',
     logo_images: [] as string[],
     reference_images: [] as string[],
     template_image: '',
@@ -119,6 +120,7 @@ export function ProjectForm({ project, onSubmit, isSubmitting }: ProjectFormProp
         font_family: project.font_family || 'Inter',
         ai_instructions: project.ai_instructions || '',
         ai_restrictions: project.ai_restrictions || '',
+        footer_text: project.footer_text || '',
         logo_images: project.logo_images || [],
         reference_images: project.reference_images || [],
         template_image: project.template_image || '',
@@ -442,6 +444,20 @@ export function ProjectForm({ project, onSubmit, isSubmitting }: ProjectFormProp
                 placeholder="Ex: Não usar cor vermelha. Evitar textos em inglês..."
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="footer_text">Rodapé Padrão</Label>
+              <Textarea
+                id="footer_text"
+                value={formData.footer_text}
+                onChange={(e) => updateField('footer_text', e.target.value)}
+                placeholder="Ex: 📞 +258 84 000 0000 | 📍 Av. Julius Nyerere, Maputo | @empresa.maputo"
+                rows={2}
+              />
+              <p className="text-xs text-muted-foreground">
+                Texto fixo que aparece no rodapé de todos os flyers gerados neste projeto.
+              </p>
             </div>
           </CardContent>
         </Card>

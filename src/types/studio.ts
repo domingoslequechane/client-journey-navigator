@@ -11,6 +11,7 @@ export interface StudioProject {
   font_family: string;
   ai_instructions: string | null;
   ai_restrictions: string | null;
+  footer_text: string | null;
   logo_images: string[];
   reference_images: string[];
   template_image: string | null;
@@ -71,22 +72,41 @@ export interface SizeConfig {
 // Nichos com produtos específicos
 export type FlyerNiche = 
   | 'Construção'
+  | 'Material de Construção'
+  | 'Material Decorativo'
   | 'Mobiliário'
   | 'Automóvel'
+  | 'Peças Automóveis'
   | 'Imobiliário'
   | 'Restaurante'
+  | 'Padaria & Confeitaria'
+  | 'Supermercado'
   | 'Beleza'
+  | 'Barbearia'
   | 'Saúde'
+  | 'Clínica Médica'
+  | 'Farmácia'
   | 'Tecnologia'
+  | 'Informática'
   | 'Moda'
+  | 'Calçados'
   | 'Fitness'
   | 'Pet Shop'
   | 'Agricultura'
   | 'Ótica'
-  | 'Farmácia'
   | 'Joalharia'
   | 'Eventos'
   | 'Educação'
+  | 'Contabilidade'
+  | 'Advocacia'
+  | 'Seguros'
+  | 'Logística'
+  | 'Gráfica & Impressão'
+  | 'Limpeza & Higiene'
+  | 'Eletrodomésticos'
+  | 'Eletrônicos'
+  | 'Papelaria'
+  | 'Brinquedos'
   | 'Outro';
 
 // Tom/Mood
@@ -144,9 +164,15 @@ export const SIZE_OPTIONS: SizeConfig[] = [
 ];
 
 export const NICHE_OPTIONS: FlyerNiche[] = [
-  'Construção', 'Mobiliário', 'Automóvel', 'Imobiliário', 'Restaurante',
-  'Beleza', 'Saúde', 'Tecnologia', 'Moda', 'Fitness', 'Pet Shop',
-  'Agricultura', 'Ótica', 'Farmácia', 'Joalharia', 'Eventos', 'Educação', 'Outro'
+  'Construção', 'Material de Construção', 'Material Decorativo', 'Mobiliário',
+  'Automóvel', 'Peças Automóveis', 'Imobiliário',
+  'Restaurante', 'Padaria & Confeitaria', 'Supermercado',
+  'Beleza', 'Barbearia', 'Saúde', 'Clínica Médica', 'Farmácia',
+  'Tecnologia', 'Informática', 'Moda', 'Calçados', 'Fitness',
+  'Pet Shop', 'Agricultura', 'Ótica', 'Joalharia', 'Eventos', 'Educação',
+  'Contabilidade', 'Advocacia', 'Seguros', 'Logística',
+  'Gráfica & Impressão', 'Limpeza & Higiene', 'Eletrodomésticos',
+  'Eletrônicos', 'Papelaria', 'Brinquedos', 'Outro'
 ];
 
 export const MOOD_OPTIONS: FlyerMood[] = [
