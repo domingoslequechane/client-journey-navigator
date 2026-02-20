@@ -24,23 +24,42 @@ const SIZE_CONFIG: Record<string, { aspectRatio: string; orientation: string; wi
 };
 
 const NICHE_STYLE: Record<string, string> = {
-  'Construção': 'Industrial Power: High-contrast 3D renders of heavy materials (cement bags like Votoran/Cauê, red bricks, orange ceramic tiles, concrete blocks, steel rebars, wheelbarrows). Dramatic low-angle lighting. Palette: Safety Orange, Charcoal, and Concrete Gray. Textures: Scratched metal, rough concrete.',
-  'Mobiliário': 'Minimalist Luxury: Soft, diffused studio lighting. Focus on textures (velvet, wood grain, marble). Products: sofas, dining tables, wooden chairs, wardrobes, beds with premium fabrics. Palette: Earthy tones, Cream, Gold accents. Composition: Spacious, clean, high-end editorial feel.',
-  'Automóvel': 'High-Speed Dynamic: Motion blur backgrounds, sharp metallic reflections, rim lighting to define curves. Products: cars, motorcycles, tires, car parts, engine components, polished chrome. Palette: Deep Black, Electric Blue, or Racing Red. Textures: Carbon fiber, polished chrome.',
-  'Imobiliário': 'Modern Living: Bright, airy, natural sunlight. Wide-angle perspectives. Products: modern houses, apartments, buildings, real estate keys. Palette: Navy Blue, Gold, Crisp White. Elements: Glass reflections, architectural blueprints, luxury keys.',
-  'Restaurante': 'Gourmet Sensorial: Macro photography style. Steam effects, water droplets, vibrant colors. Products: gourmet dishes, fresh ingredients, professional plating, steam. Palette: Warm Red, Deep Gold, Dark Wood. Lighting: Moody, spotlighting the dish.',
-  'Beleza': 'Ethereal Glow: Soft-focus backgrounds, pearlescent textures, flawless lighting. Products: cosmetic products, makeup brushes, skincare bottles. Palette: Rose Gold, Pastel Pink, Silk White. Elements: Floating petals, liquid splashes, soft shadows.',
-  'Saúde': 'Clinical Trust: Bright, high-key lighting. Clean, sterile environments. Products: medical equipment, stethoscopes, pills. Palette: Medical Blue, Mint Green, Pure White. Elements: Soft gradients, glass textures, professional icons.',
-  'Tecnologia': 'Cyber-Future: Neon glows, circuit patterns, dark glass reflections. Products: smartphones, laptops, circuit boards. Palette: Deep Black, Electric Purple, Cyan. Lighting: Backlit elements, digital bokeh.',
-  'Moda': 'Editorial Edge: High-fashion photography style. Dramatic shadows, bold typography. Products: clothing items, fabric textures, fashion accessories. Palette: Monochrome with one bold accent color. Textures: Fabric weaves, leather, silk.',
-  'Fitness': 'Raw Energy: High-contrast, gritty textures, sweat droplets. Dynamic action angles. Products: gym equipment, dumbbells, protein supplements. Palette: Black, Neon Yellow, or Fire Red. Lighting: Harsh side-lighting to define muscles/shapes.',
-  'Pet Shop': 'Playful Warmth: Soft textures, bright friendly colors, bokeh backgrounds. Products: pet food bags, dog toys, cat accessories. Palette: Sunny Yellow, Sky Blue, Grass Green. Elements: Paw prints, floating bubbles, soft fur textures.',
-  'Agricultura': 'Natural Abundance: Golden hour lighting, organic textures (soil, wheat, leaves). Products: tractors, seeds, crops, farming tools. Palette: Deep Green, Harvest Gold, Earth Brown. Elements: Sun flares, dew drops.',
-  'Ótica': 'Crystal Clarity: Sharp focus, lens flares, transparent textures. Products: eyeglasses, sunglasses, contact lens cases. Palette: Navy, Silver, Crystal Clear. Lighting: Precise spotlights, reflections on glass.',
-  'Farmácia': 'Wellness Balance: Clean, organized, trustworthy. Soft shadows. Products: medicine bottles, pharmacy symbols. Palette: Health Green, Clean White, Trust Blue. Elements: Leaf motifs, soft gradients.',
-  'Joalharia': 'Precious Brilliance: Macro focus on sparkle, caustic light effects, deep shadows. Products: gold rings, diamond necklaces, luxury watches. Palette: Velvet Black, Pure Gold, Diamond White. Lighting: Multiple tiny spotlights.',
-  'Eventos': 'Celebration Spark: Bokeh lights, glitter, confetti, elegant gradients. Palette: Champagne Gold, Midnight Black, Pearl White. Lighting: Warm, festive, glowing.',
-  'Educação': 'Academic Prestige: Classic textures (paper, old wood, leather). Warm library lighting. Palette: Oxford Blue, Burgundy, Parchment. Elements: Ink strokes, subtle paper grain.',
+  'Construção': 'Industrial Power: Bold 3D renders of heavy materials (cement bags, bricks, tiles, steel). Safety Orange + Charcoal + Concrete Gray palette. Scratched metal textures, dramatic low-angle lighting.',
+  'Material de Construção': 'Construction Retail: Warehouse aesthetic, bold pricing banners, real product photography. Orange + Gray + White. Price tags, stock badges, heavy material renders.',
+  'Material Decorativo': 'Interior Elegance: Tiles, paints, wallpapers shown in styled rooms. Soft neutral palette with gold accents. Lifestyle staging, marble textures, architectural details.',
+  'Mobiliário': 'Minimalist Luxury: Soft studio lighting, wood grain and velvet textures. Earthy tones, Cream, Gold. Editorial spacing, premium feel.',
+  'Automóvel': 'High-Speed Dynamic: Motion blur, metallic reflections, rim lighting. Deep Black, Electric Blue or Racing Red. Carbon fiber, polished chrome.',
+  'Peças Automóveis': 'Technical Precision: Workshop lighting, macro product details, exploded part views. Steel Gray + Red + Black. Industrial fonts, technical diagrams.',
+  'Imobiliário': 'Modern Living: Bright airy interiors, wide-angle architecture. Navy Blue + Gold + White. Glass reflections, luxury keys, blueprint elements.',
+  'Restaurante': 'Gourmet Sensorial: Steam, macro food, vibrant plating. Warm Red + Gold + Dark Wood. Moody spotlighting on dish hero.',
+  'Padaria & Confeitaria': 'Warm Artisan: Golden croissants, pastel macarons, rustic wood boards. Cream + Brown + Pastel Pink. Soft warm lighting, flour dust effects.',
+  'Supermercado': 'Retail Promotion: Bright bold price flags, product stacks, color-coded category strips. Primary colors + White. High energy promotional style.',
+  'Beleza': 'Ethereal Glow: Pearlescent textures, flawless product lighting. Rose Gold + Pastel Pink + Silk White. Floating petals, liquid splashes.',
+  'Barbearia': 'Urban Barber: Dark moody backgrounds, vintage razor tools, leather textures. Black + Gold + Red. Retro typography, sharp masculine lines.',
+  'Saúde': 'Clinical Trust: High-key bright, clean environments. Medical Blue + Mint + Pure White. Soft gradients, professional iconography.',
+  'Clínica Médica': 'Healthcare Premium: Warm and approachable yet clinical. Teal + White + Light Blue. Doctor imagery, care symbols, soft shadows.',
+  'Tecnologia': 'Cyber-Future: Neon glows, circuit patterns, dark glass reflections. Deep Black + Electric Purple + Cyan. Backlit elements, digital bokeh.',
+  'Informática': 'Tech Retail: Product-forward, clean specs layout, glowing screens. Dark + Blue + Silver. Laptop/PC hero renders, comparison layouts.',
+  'Moda': 'Editorial Edge: High-fashion, dramatic shadows, bold typography. Monochrome + one bold accent. Fabric textures, leather, silk.',
+  'Calçados': 'Footwear Drama: Floating shoe on minimal background, shadow play, material close-ups. White + Black + Accent pop. Dynamic angled compositions.',
+  'Fitness': 'Raw Energy: High-contrast, gritty textures, sweat drops. Black + Neon Yellow or Fire Red. Harsh side-lighting, muscle definition.',
+  'Pet Shop': 'Playful Warmth: Bright friendly colors, bokeh, soft fur. Sunny Yellow + Sky Blue + Grass Green. Paw prints, playful bubbles.',
+  'Agricultura': 'Natural Abundance: Golden hour, organic textures, soil and leaves. Deep Green + Harvest Gold + Earth Brown. Sun flares, dew drops.',
+  'Ótica': 'Crystal Clarity: Lens flares, transparent textures, sharp focus. Navy + Silver + Crystal Clear. Precise spotlights, glass reflections.',
+  'Farmácia': 'Wellness Balance: Clean, organized, trustworthy. Health Green + White + Trust Blue. Leaf motifs, soft gradients.',
+  'Joalharia': 'Precious Brilliance: Caustic sparkle effects, deep velvet shadows. Velvet Black + Pure Gold + Diamond White. Multiple tiny spotlights, macro gem details.',
+  'Eventos': 'Celebration Spark: Bokeh lights, glitter, confetti, gradients. Champagne Gold + Midnight Black + Pearl White. Festive glowing atmosphere.',
+  'Educação': 'Academic Prestige: Classic paper textures, library warmth. Oxford Blue + Burgundy + Parchment. Ink strokes, subtle paper grain.',
+  'Contabilidade': 'Corporate Trust: Clean charts, professional graphs, precise grid layouts. Navy + Gray + Green. Number elements, financial icons, authoritative typography.',
+  'Advocacia': 'Legal Authority: Classic dark leather, scales of justice, marble textures. Deep Navy + Gold + Black. Heavy serif fonts, official seals.',
+  'Seguros': 'Security & Trust: Shield motifs, family protection imagery. Blue + White + Teal. Safety icons, reassuring gradients.',
+  'Logística': 'Global Movement: Trucks, cargo, route maps, dynamic arrows. Orange + Dark Blue + Gray. Bold directional elements, speed lines.',
+  'Gráfica & Impressão': 'Print Craft: Color swatches, CMYK elements, paper textures. Vibrant spectrum + Black + White. Creative layering, type-as-art.',
+  'Limpeza & Higiene': 'Fresh & Clean: Soap bubbles, water splashes, bright whites. Aqua Blue + White + Fresh Green. Crisp product shots, cleanliness cues.',
+  'Eletrodomésticos': 'Home Innovation: Lifestyle photography, modern kitchens, product close-ups. Stainless Steel + White + Accent color. Premium appliance renders.',
+  'Eletrônicos': 'Consumer Tech: Glowing screens, product hero shots, tech specs. Dark + Neon Accent. Dramatic spotlighting, floating device renders.',
+  'Papelaria': 'Creative & Colorful: Flat-lay product shots, vibrant stationery, artistic backdrops. Bright + Pastel palette. Clean minimalist or playful aesthetic.',
+  'Brinquedos': 'Joy & Wonder: Bright primary colors, playful typography, happy imagery. Red + Yellow + Blue + Green. Fun, energetic, child-friendly compositions.',
 };
 
 interface DesignBrief {
@@ -199,87 +218,44 @@ function buildOriginalPrompt(params: {
   hasReferences?: boolean;
   hasLogos?: boolean;
   designBrief?: DesignBrief | null;
+  footerText?: string;
 }): string {
   const { prompt, sizeConfig, clientName, niche, mood, colors, elements,
     primaryColor, secondaryColor, fontFamily, aiInstructions,
-    aiRestrictions, aiMemoryContext, clientContext, hasReferences, hasLogos, designBrief } = params;
+    aiRestrictions, aiMemoryContext, clientContext, hasLogos, designBrief, footerText } = params;
 
-  let p = `You are a BRAZILIAN PROFESSIONAL GRAPHIC DESIGNER from a top Sao Paulo marketing agency.
+  let p = `SYSTEM — PHOTOSHOP MASTER / SENIOR ART DIRECTOR
+World-class Brazilian advertising agency. Output must be indistinguishable from professional hand-crafted design.
 
-ESTUDO DAS CARACTERISTICAS DE FLYERS BRASILEIROS:
+CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})
+${clientName ? `BRAND: ${clientName}` : ''}${niche && NICHE_STYLE[niche] ? `\nINDUSTRY: ${NICHE_STYLE[niche]}` : ''}${mood ? `\nMOOD: ${mood}` : ''}${elements ? `\nHERO ELEMENT: ${elements}` : ''}
 
-1. **PRODUTOS 3D FOTORREALISTAS** - O produto DEVE parecer uma fotografia real
-   - Sacos de cimento com rotulos visiveis
-   - Tijolos com textura e furos realistas
-   - Telhas com sombras precisas
-   - Materiais de construcao com iluminacao de estudio
+MASTER TECHNIQUES:
+① PRODUCT: Photorealistic 3D render. Studio 3-point lighting (key+fill+rim). Global Illumination. Sub-surface scattering. Material-accurate textures. Product as hero (55-70% visual weight).
+② COMPOSITION: Rule of thirds + golden ratio. Diagonal or Z-pattern layout. Foreground bokeh, midground hero, background depth.
+③ TYPOGRAPHY: 2 font families max. Bold headline, badge-style CTA. Professional tracking/leading. Text partially behind or overlapping shapes for depth.
+④ GEOMETRY: 3-5 geometric shapes interacting with product (circles, diagonal blocks, arcs). Multiply/Screen blending modes. Micro-elements: thin lines, dots, grain.
+⑤ COLOR: 3+ stop gradients. Color grading with complementary shadow casts. 4.5:1 contrast minimum on text.
+⑥ LIGHTING: 3-point product lighting + atmospheric background layer. Specular highlights, subtle lens flares, vignette edges.
 
-2. **FUNDOS GEOMETRICOS OUSADOS**
-   - Circulos e semicirculos coloridos grandes
-   - Cards/paineis de retangulos arredondados
-   - Blocos de cores diagonais
-   - Formas geometricas sobrepostas
-
-3. **PALETAS DE CORES VIBRANTES**
-   - Laranja + Cinza (construcao)
-   - Azul + Laranja (comercial)
-   - Vermelho + Preto + Branco (varejo)
-   - Amarelo + Azul Escuro (industrial)
-
-4. **HIERARQUIA TIPOGRAFICA**
-   - Titulo principal: Bold, grande, impactante
-   - Subtitulo: Peso medio
-   - Preco/detalhes: Claro, proeminente
-   - Info de contato: Icone WhatsApp + telefone
-
-5. **ELEMENTOS PROFISSIONAIS**
-   - Logo da empresa (canto)
-   - Selos/badges de qualidade
-   - Handles de redes sociais
-   - Contato WhatsApp com icone
-
-REQUISITOS DE RENDERIZACAO DO PRODUTO:
-- Render 3D FOTORREALISTA (nao ilustracao, nao cartoon)
-- Qualidade de fotografia profissional de produto
-- Iluminacao de estudio com sombras suaves
-- Texturas e materiais precisos
-- Posicionado como ELEMENTO HERO (grande, proeminente)
-- Levemente angulado para composicao dinamica
-
-PROIBIDO:
-- Produtos cartoon ou ilustrados
-- Design flat sem elementos 3D
-- Estetica generica de stock photo
-- Layouts bagunçados sem hierarquia clara
-- Elementos de baixa qualidade ou pixelados
-- Texto cortado ou ilegivel
-
-CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio}).`;
-
-  if (clientName) p += `\nBrand: ${clientName}`;
-  if (niche && NICHE_STYLE[niche]) p += `\nIndustry style: ${NICHE_STYLE[niche]}`;
-  if (mood) p += `\nMood: ${mood}`;
-  if (elements) p += `\nHero element: ${elements}`;
+PROHIBITIONS: No flat design, no AI artifacts, no stock-photo look, no cartoon products, no cluttered layouts, no unreadable text.`;
 
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
-  if (clientContext) p += `\nClient info: ${clientContext}`;
-  if (aiMemoryContext) p += `\n\n=== LEARNED PREFERENCES ===\n${aiMemoryContext}`;
+  if (clientContext) p += `\nBRAND CONTEXT: ${clientContext}`;
+  if (aiMemoryContext) p += `\nLEARNED PREFS: ${aiMemoryContext}`;
+  if (designBrief) p += buildDesignBriefSection(designBrief);
 
-  if (designBrief) {
-    p += buildDesignBriefSection(designBrief);
+  if (footerText) {
+    p += `\nFOOTER (mandatory — exact text in styled footer bar at bottom): "${footerText}"`;
   }
 
-  p += `\n\n════════════════════════════════════════════════════════════════
-FLYER TEXT CONTENT (ONLY this text should appear on the flyer):
-════════════════════════════════════════════════════════════════
-${prompt}
-════════════════════════════════════════════════════════════════`;
+  p += `\n\nFLYER TEXT:\n${prompt}`;
 
   p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
-
   return p;
 }
+
 
 function buildCopyPrompt(params: {
   prompt: string;
@@ -1318,8 +1294,8 @@ serve(async (req) => {
     const userEmail = claimsData.user.email;
 
     // Check if user is exempt from limits (development accounts)
-    const EXEMPT_EMAILS = ["domingosf.lequechane@gmail.com"];
-    const isExempt = userEmail && EXEMPT_EMAILS.includes(userEmail);
+    const EXEMPT_EMAILS = ["domingosf.lequechane@gmail.com", "onixagence.geral@gmail.com"];
+    const isExempt = userEmail && EXEMPT_EMAILS.some(e => userEmail.toLowerCase().includes(e.split('@')[0].toLowerCase()));
 
     if (!isExempt) {
       // Check daily limit (5 generations per user)
@@ -1349,6 +1325,7 @@ serve(async (req) => {
       productImage, allowManipulation = false,
       autoCopy = false,
       layoutReferences = [], additionalReferences = [],
+      footerText = '',
     } = await req.json();
 
     if (!projectId) {
@@ -1499,6 +1476,7 @@ serve(async (req) => {
       hasLogos,
       colors,
       designBrief,
+      footerText: footerText || (project as any).footer_text || '',
     };
 
     let enhancedPrompt: string;
