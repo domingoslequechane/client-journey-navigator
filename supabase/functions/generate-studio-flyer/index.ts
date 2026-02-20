@@ -12,7 +12,7 @@ const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const AI_MODELS = {
   "gemini-flash": "gemini-2.5-flash-image",
   "gemini-pro": "gemini-3-pro-image-preview",
-  "gemini-flash-text": "gemini-2.5-flash",
+  "gemini-flash-text": "gemini-2.5-flash", // v2 - updated 2026-02-20
 } as const;
 
 const SIZE_CONFIG: Record<string, { aspectRatio: string; orientation: string; width: number; height: number }> = {
