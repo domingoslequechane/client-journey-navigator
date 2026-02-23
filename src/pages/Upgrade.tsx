@@ -15,19 +15,14 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-
-// Plan images
-import planBussola from '@/assets/plans/plan-bussola.png';
 import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
 import planCatapulta from '@/assets/plans/plan-catapulta.png';
 
 type PlanType = 'free' | 'starter' | 'pro' | 'agency';
 
-// Plan order for upgrade/downgrade comparison
 const PLAN_ORDER: PlanType[] = ['free', 'starter', 'pro', 'agency'];
 
-// Get button label based on plan comparison
 const getButtonLabel = (targetPlan: PlanType, currentPlan: PlanType): string => {
   const currentIndex = PLAN_ORDER.indexOf(currentPlan);
   const targetIndex = PLAN_ORDER.indexOf(targetPlan);
@@ -37,7 +32,6 @@ const getButtonLabel = (targetPlan: PlanType, currentPlan: PlanType): string => 
   return 'Plano Atual';
 };
 
-// Plan colors (HSL values)
 export const planColors: Record<PlanType, { primary: string; bg: string; border: string; text: string }> = {
   free: {
     primary: 'hsl(142, 71%, 45%)',
@@ -65,8 +59,7 @@ export const planColors: Record<PlanType, { primary: string; bg: string; border:
   },
 };
 
-export const planImages: Record<PlanType, string> = {
-  free: planBussola,
+export const planImages: Record<string, string> = {
   starter: planLanca,
   pro: planArco,
   agency: planCatapulta,
@@ -95,32 +88,7 @@ interface PlanConfig {
   };
 }
 
-const plans: Record<PlanType, PlanConfig> = {
-  free: {
-    name: 'Bússola',
-    price: 0,
-    priceLabel: 'Grátis',
-    description: 'Para começar sua jornada',
-    features: [
-      { text: '3 clientes ativos', included: true },
-      { text: 'Funil de vendas ilimitado', included: true },
-      { text: '3 contratos/mês', included: true },
-      { text: '90 mensagens IA/mês', included: true },
-      { text: '1 usuário', included: true },
-      { text: 'Academia', included: true },
-      { text: 'Finanças', included: false },
-      { text: 'Social Media', included: false },
-      { text: 'Studio AI', included: false },
-      { text: 'Link23', included: false },
-    ],
-    limits: {
-      clients: '3 ativos',
-      contracts: '3/mês',
-      ai: '90 msgs/mês',
-      team: '1 usuário',
-      templates: '1 template',
-    },
-  },
+const plans: Record<string, PlanConfig> = {
   starter: {
     name: 'Lança',
     price: 19,
@@ -261,10 +229,8 @@ export default function Upgrade() {
       return;
     }
 
-    // If current plan is free, skip manage-subscription and go straight to checkout
-    // because the subscription ID in the DB may not exist in LemonSqueezy
+    // If current plan is free, go straight to checkout
     if (currentPlan === 'free') {
-      console.log('Current plan is free, going straight to checkout');
       await handleSubscribe(newPlanType);
       return;
     }
@@ -279,7 +245,6 @@ export default function Upgrade() {
         },
       });
 
-      // When edge function returns non-2xx, error is set and data may be null
       if (response.error || response.data?.error) {
         console.log('Change plan failed, falling back to checkout:', response.error?.message || response.data?.error);
         setChangingPlan(null);
@@ -294,7 +259,6 @@ export default function Upgrade() {
 
       await refetch();
     } catch (error: any) {
-      // Any unexpected error also falls back to checkout
       console.log('Change plan exception, falling back to checkout:', error);
       setChangingPlan(null);
       await handleSubscribe(newPlanType);
@@ -312,7 +276,6 @@ export default function Upgrade() {
     );
   }
 
-  // Non-admin users cannot change plans
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background py-8 px-4">
@@ -353,10 +316,9 @@ export default function Upgrade() {
     );
   }
 
-  const currentPlan = activePlanType || currentPlanType || 'free';
+  const currentPlan = activePlanType || currentPlanType || 'starter';
 
   const allPlans: { key: PlanType; config: PlanConfig }[] = [
-    { key: 'free', config: plans.free },
     { key: 'starter', config: plans.starter },
     { key: 'pro', config: plans.pro },
     { key: 'agency', config: plans.agency },
@@ -365,7 +327,6 @@ export default function Upgrade() {
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
         <div className="text-center space-y-4">
           <Link to="/app" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
             <ArrowLeft className="h-4 w-4" />
@@ -374,54 +335,49 @@ export default function Upgrade() {
           
           <h1 className="text-3xl font-bold">Escolha o plano ideal para sua agência</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Escale suas operações com o plano que melhor se adapta às suas necessidades.
+            Todos os planos incluem <strong>14 dias grátis</strong>. Escale suas operações com o plano que melhor se adapta.
           </p>
         </div>
 
-
-        {/* Current Plan Banner */}
         <Card 
           className="border-2"
           style={{ 
-            borderColor: planColors[currentPlan].border,
-            backgroundColor: planColors[currentPlan].bg 
+            borderColor: planColors[currentPlan]?.border || planColors.starter.border,
+            backgroundColor: planColors[currentPlan]?.bg || planColors.starter.bg,
           }}
         >
           <CardContent className="flex items-center justify-between py-4">
             <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5" style={{ color: planColors[currentPlan].primary }} />
+              <CheckCircle2 className="h-5 w-5" style={{ color: planColors[currentPlan]?.primary || planColors.starter.primary }} />
               <span>
-                Você está no plano <strong>{planNames[currentPlan].codename}</strong> ({planNames[currentPlan].name})
+                Você está no plano <strong>{planNames[currentPlan]?.codename || 'Lança'}</strong> ({planNames[currentPlan]?.name || 'Crescimento'})
               </span>
             </div>
             <Badge 
               variant="outline" 
               style={{ 
-                borderColor: planColors[currentPlan].primary,
-                color: planColors[currentPlan].text 
+                borderColor: planColors[currentPlan]?.primary || planColors.starter.primary,
+                color: planColors[currentPlan]?.text || planColors.starter.text,
               }}
             >
-              {isActive ? 'Ativo' : 'Plano Atual'}
+              {isTrialing ? `Trial (${trialDaysLeft}d)` : isActive ? 'Ativo' : 'Plano Atual'}
             </Badge>
           </CardContent>
         </Card>
 
-        {/* Pricing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {allPlans.map(({ key: planKey, config: plan }) => {
-            const isCurrentPlan = currentPlan === planKey && isActive;
+            const isCurrentPlan = currentPlan === planKey && (isActive || isTrialing);
             const isLoading = creatingCheckout === planKey || changingPlan === planKey;
             const colors = planColors[planKey];
             const planInfo = planNames[planKey];
             const hasActiveSubscription = isActive && subscription?.lemonsqueezySubscriptionId;
 
-            // Determine if this is upgrade or downgrade
             const currentIndex = PLAN_ORDER.indexOf(currentPlan);
             const targetIndex = PLAN_ORDER.indexOf(planKey);
             const isUpgrade = targetIndex > currentIndex;
 
-            const neonColorClass = planKey === 'free' ? 'neon-border-green' : 
-                                   planKey === 'starter' ? 'neon-border-blue' : 
+            const neonColorClass = planKey === 'starter' ? 'neon-border-blue' : 
                                    planKey === 'pro' ? 'neon-border-purple' : 'neon-border-orange';
 
             return (
@@ -432,11 +388,8 @@ export default function Upgrade() {
                 } ${isCurrentPlan ? `neon-pulse ${neonColorClass}` : ''}`}
                 style={{
                   borderColor: plan.popular && !isCurrentPlan ? colors.border : undefined,
-                  ...(plan.popular && !isCurrentPlan ? { '--ring-color': colors.primary } as any : {}),
-                  ringColor: plan.popular && !isCurrentPlan ? colors.primary : undefined,
                 }}
               >
-                {/* Current Plan Badge - Top Left Inside Card */}
                 {isCurrentPlan && (
                   <Badge 
                     className="absolute top-3 left-3 z-20 shadow-lg text-white"
@@ -446,7 +399,6 @@ export default function Upgrade() {
                   </Badge>
                 )}
 
-                {/* Plan Image */}
                 <div 
                   className="relative h-48 overflow-hidden"
                   style={{ backgroundColor: colors.bg }}
@@ -473,21 +425,11 @@ export default function Upgrade() {
                   </CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="pt-2">
-                    {planKey === 'free' ? (
-                      <>
-                        <span className="text-3xl font-bold" style={{ color: colors.text }}>
-                          Grátis
-                        </span>
-                        <p className="text-xs text-muted-foreground">para sempre</p>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-3xl font-bold" style={{ color: colors.text }}>
-                          ${plan.price}
-                        </span>
-                        <span className="text-muted-foreground">/mês</span>
-                      </>
-                    )}
+                    <span className="text-3xl font-bold" style={{ color: colors.text }}>
+                      ${plan.price}
+                    </span>
+                    <span className="text-muted-foreground">/mês</span>
+                    <p className="text-sm text-primary font-medium mt-1">14 dias grátis</p>
                   </div>
                   <p className="text-xs italic text-muted-foreground mt-1">
                     {planInfo.tagline}
@@ -523,53 +465,29 @@ export default function Upgrade() {
                       Plano Atual
                     </Button>
                   ) : hasActiveSubscription ? (
-                    // User has active subscription - use change-plan API (but free plan needs checkout since it's $0 on LemonSqueezy)
-                    planKey === 'free' ? (
-                      // Free plan requires checkout to capture payment info (even at $0)
-                      <Button 
-                        onClick={() => handleSubscribe(planKey)}
-                        disabled={isLoading || creatingCheckout !== null || changingPlan !== null}
-                        className="w-full gap-2 text-white"
-                        style={{ backgroundColor: colors.primary }}
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Processando...
-                          </>
-                        ) : (
-                          <>
+                    <Button 
+                      onClick={() => handleChangePlan(planKey)}
+                      disabled={isLoading || creatingCheckout !== null || changingPlan !== null}
+                      className="w-full gap-2 text-white"
+                      style={{ backgroundColor: colors.primary }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          {isUpgrade ? 'Fazendo Upgrade...' : 'Fazendo Downgrade...'}
+                        </>
+                      ) : (
+                        <>
+                          {isUpgrade ? (
+                            <Crown className="h-4 w-4" />
+                          ) : (
                             <CreditCard className="h-4 w-4" />
-                            Mudar para Grátis
-                          </>
-                        )}
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={() => handleChangePlan(planKey)}
-                        disabled={isLoading || creatingCheckout !== null || changingPlan !== null}
-                        className="w-full gap-2 text-white"
-                        style={{ backgroundColor: colors.primary }}
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            {isUpgrade ? 'Fazendo Upgrade...' : 'Fazendo Downgrade...'}
-                          </>
-                        ) : (
-                          <>
-                            {isUpgrade ? (
-                              <Crown className="h-4 w-4" />
-                            ) : (
-                              <CreditCard className="h-4 w-4" />
-                            )}
-                            {getButtonLabel(planKey, currentPlan)}
-                          </>
-                        )}
-                      </Button>
-                    )
+                          )}
+                          {getButtonLabel(planKey, currentPlan)}
+                        </>
+                      )}
+                    </Button>
                   ) : (
-                    // No subscription - create new checkout
                     <Button 
                       onClick={() => handleSubscribe(planKey)}
                       disabled={isLoading || creatingCheckout !== null}
@@ -584,7 +502,7 @@ export default function Upgrade() {
                       ) : (
                         <>
                           <CreditCard className="h-4 w-4" />
-                          Assinar Agora
+                          Começar Grátis
                         </>
                       )}
                     </Button>
@@ -595,7 +513,6 @@ export default function Upgrade() {
           })}
         </div>
 
-        {/* Comparison Table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -609,7 +526,6 @@ export default function Upgrade() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">Recurso</th>
-                    <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.free.text }}>Bússola</th>
                     <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.starter.text }}>Lança</th>
                     <th className="text-center py-3 px-4 font-medium" style={{ backgroundColor: planColors.pro.bg, color: planColors.pro.text }}>Arco</th>
                     <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.agency.text }}>Catapulta</th>
@@ -618,35 +534,30 @@ export default function Upgrade() {
                 <tbody>
                   <tr className="border-b">
                     <td className="py-3 px-4">Clientes</td>
-                    <td className="text-center py-3 px-4">{plans.free.limits.clients}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.clients}</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.clients}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.clients}</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Contratos</td>
-                    <td className="text-center py-3 px-4">{plans.free.limits.contracts}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.contracts}</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.contracts}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.contracts}</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Assistente IA</td>
-                    <td className="text-center py-3 px-4">{plans.free.limits.ai}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.ai}</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.ai}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.ai}</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Equipe</td>
-                    <td className="text-center py-3 px-4">{plans.free.limits.team}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.team}</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.team}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.team}</td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4">Templates</td>
-                    <td className="text-center py-3 px-4">{plans.free.limits.templates}</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.templates}</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.templates}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.templates}</td>
@@ -657,10 +568,9 @@ export default function Upgrade() {
           </CardContent>
         </Card>
 
-        {/* Payment Info */}
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
+            14 dias grátis em qualquer plano. Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
           </p>
         </div>
 

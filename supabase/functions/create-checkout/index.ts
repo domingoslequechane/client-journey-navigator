@@ -8,27 +8,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Input validation schema - now includes "free" as bussola plan
 const CheckoutRequestSchema = z.object({
   organizationId: z.string().uuid("ID da organização inválido"),
-  planType: z.enum(["free", "starter", "pro", "agency"]),
+  planType: z.enum(["starter", "pro", "agency"]),
   userEmail: z.string().email("Email inválido").max(255, "Email muito longo").optional(),
   userName: z.string().max(100, "Nome muito longo").optional(),
 });
 
-// Get variant ID based on plan type
 const getVariantId = (planType: string): string | undefined => {
   const normalizeId = (v?: string | null) => v?.trim().replace(/^["']+|["']+$/g, "");
 
   const variants: Record<string, string | undefined> = {
-    // "free" now maps to the Bússola paid plan ($3/month)
-    free: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_BUSSOLA")) || normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID")),
     starter: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_STARTER")),
     pro: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_PRO")),
     agency: normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID_AGENCY")),
   };
 
-  // Fallback to default LEMONSQUEEZY_VARIANT_ID if specific variant not found
   return variants[planType] || normalizeId(Deno.env.get("LEMONSQUEEZY_VARIANT_ID"));
 };
 
@@ -43,8 +38,6 @@ const handler = async (req: Request): Promise<Response> => {
     const apiKey = (Deno.env.get("LEMONSQUEEZY_API_KEY") ?? "").trim();
     const storeId = normalizeId(Deno.env.get("LEMONSQUEEZY_STORE_ID"));
 
-    // Force test mode by default (per your request).
-    // If you ever need to go live, set LEMONSQUEEZY_TEST_MODE="false".
     const testModeEnv = (Deno.env.get("LEMONSQUEEZY_TEST_MODE") ?? "").trim().toLowerCase();
     const testMode = testModeEnv !== "false";
 
@@ -59,7 +52,6 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Verify authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -72,7 +64,6 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify the user's JWT
     const token = authHeader.replace("Bearer ", "");
     const {
       data: { user },
@@ -88,7 +79,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const body = await req.json();
 
-    // Validate input with Zod
     const validationResult = CheckoutRequestSchema.safeParse(body);
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.errors);
@@ -103,7 +93,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { organizationId, planType, userEmail, userName } = validationResult.data;
 
-    // Get the correct variant ID for the plan
     const variantId = getVariantId(planType);
 
     if (!variantId) {
@@ -114,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Resolve store ID from the variant -> product (prevents mismatch between configured storeId and variant).
+    // Resolve store ID from the variant
     let resolvedStoreId = storeId;
     try {
       const lemonHeaders = {
@@ -144,18 +133,8 @@ const handler = async (req: Request): Promise<Response> => {
             if (storeIdFromProduct) {
               resolvedStoreId = String(storeIdFromProduct);
             }
-          } else {
-            console.warn("Failed to fetch product for variant (continuing with configured storeId)", {
-              status: productRes.status,
-              body: productText,
-            });
           }
         }
-      } else {
-        console.warn("Failed to fetch variant details (continuing with configured storeId)", {
-          status: variantRes.status,
-          body: variantText,
-        });
       }
     } catch (e) {
       console.warn("Store resolve error (continuing with configured storeId)", e);
@@ -175,14 +154,12 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Get the origin for redirect URL - redirect to onboarding with success param
     const origin = req.headers.get("origin") || "https://qualify.onixagence.com";
     const redirectUrl = `${origin}/app/onboarding?success=true`;
 
     console.log("Creating checkout", {
       organizationId,
       planType,
-      configuredStoreId: storeId,
       resolvedStoreId,
       variantId,
       testMode,
@@ -190,7 +167,6 @@ const handler = async (req: Request): Promise<Response> => {
       redirectUrl,
     });
 
-    // Build checkout_data - only include fields that have values
     const checkoutDataPayload: Record<string, unknown> = {
       email: userEmail || user.email,
       custom: {
@@ -200,12 +176,11 @@ const handler = async (req: Request): Promise<Response> => {
       },
     };
     
-    // Only add name if it's provided and not empty
     if (userName && userName.trim()) {
       checkoutDataPayload.name = userName.trim();
     }
 
-    // Create checkout session with LemonSqueezy API
+    // Create checkout session with 14-day trial
     const checkoutResponse = await fetch("https://api.lemonsqueezy.com/v1/checkouts", {
       method: "POST",
       headers: {
@@ -218,6 +193,7 @@ const handler = async (req: Request): Promise<Response> => {
           type: "checkouts",
           attributes: {
             test_mode: testMode,
+            trial_period_days: 14,
             checkout_data: checkoutDataPayload,
             product_options: {
               redirect_url: redirectUrl,
@@ -253,13 +229,6 @@ const handler = async (req: Request): Promise<Response> => {
           error: "Failed to create checkout session",
           lemonsqueezy_status: checkoutResponse.status,
           lemonsqueezy_error: errorText,
-          context: {
-            planType,
-            configuredStoreId: storeId,
-            resolvedStoreId,
-            variantId,
-            testMode,
-          },
         }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
