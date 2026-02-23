@@ -1,223 +1,200 @@
 
 
-# Modulo Social Media -- Fase 1: Gestao e Aprovacao Funcional (Hibrido)
+# Social Media Automatico com Late.dev API
 
 ## Resumo
 
-Tornar o modulo Social Media totalmente funcional com persistencia no Supabase, sistema de aprovacao pelo cliente, e arquitetura preparada para integracao futura com servico de publicacao automatica (ex: Ayrshare). Tudo multi-tenant, por organizacao e por cliente.
+Integrar o modulo Social Media com a **Late.dev API** (getlate.dev) -- API unificada para 13 plataformas sociais. Conexao OAuth em poucos cliques (headless mode), publicacao automatica por agendamento, e SDK oficial em Node.js.
+
+## Custo
+
+- **Free**: $0/mes -- 2 social sets, 20 posts/mes (para testar)
+- **Build**: $16/mes -- 10 social sets, 120 posts/mes
+- **Accelerate**: $41/mes -- social sets ilimitados, 1000 posts/mes (recomendado para agencias)
+
+Cada "social set" = um grupo de contas sociais (1 por plataforma). Ideal: 1 social set por cliente da agencia.
+
+## Plataformas Suportadas
+
+Instagram, Facebook, LinkedIn, TikTok, X (Twitter), YouTube, Pinterest, Threads, Reddit, Bluesky, Google Business, Telegram, Snapchat
 
 ---
 
-## Fase 1A: Persistencia e CRUD real (o que sera feito agora)
+## Como vai funcionar para o usuario
 
-### 1. Tabelas no Supabase
+### Conectar conta (2-3 cliques)
 
-Duas tabelas novas:
+1. No Dashboard Social Media, clica "Conectar Instagram" (ou outra rede)
+2. Abre popup com a pagina OAuth da rede social (via Late.dev headless mode)
+3. Usuario faz login e autoriza
+4. Popup fecha, card muda para "Conectado" com dados reais
 
-**`social_accounts`** -- Contas de redes sociais conectadas por organizacao/cliente
+### Agendar e publicar automaticamente
 
-| Coluna | Tipo | Descricao |
-|---|---|---|
-| id | uuid PK | |
-| organization_id | uuid FK | Isolamento multi-tenant |
-| client_id | uuid FK (nullable) | Conta vinculada a um cliente especifico (opcional) |
-| platform | text | instagram, facebook, linkedin, tiktok, twitter, youtube, pinterest, threads |
-| account_name | text | Nome da conta/pagina |
-| username | text | @ ou URL |
-| avatar_url | text (nullable) | Foto de perfil |
-| access_token | text (nullable) | Token de acesso (para fase 2 -- criptografado) |
-| is_connected | boolean | Se esta ativa |
-| followers_count | integer | Contagem de seguidores (manual ou automatica) |
-| created_at / updated_at | timestamps | |
+1. Cria post: texto + imagem/video + seleciona redes + data/hora
+2. Clica "Agendar"
+3. Post salvo com status `scheduled`
+4. Late.dev publica automaticamente no horario marcado (agendamento nativo da API)
+5. Status atualiza para `published` ou `failed`
 
-**`social_posts`** -- Posts agendados/publicados
-
-| Coluna | Tipo | Descricao |
-|---|---|---|
-| id | uuid PK | |
-| organization_id | uuid FK | |
-| client_id | uuid FK (nullable) | Post vinculado a cliente |
-| created_by | uuid | Quem criou |
-| content | text | Texto do post |
-| media_urls | jsonb | Array de URLs de midias |
-| platforms | text[] | Array de plataformas |
-| content_type | text | feed, stories, reels, carousel, video, text |
-| hashtags | text[] | |
-| scheduled_at | timestamptz | Data/hora de publicacao |
-| status | text | draft, pending_approval, approved, scheduled, published, failed, rejected |
-| approval_token | uuid (nullable) | Token unico para link de aprovacao publica |
-| approved_by | text (nullable) | Nome/email de quem aprovou |
-| approved_at | timestamptz (nullable) | |
-| rejection_reason | text (nullable) | |
-| published_at | timestamptz (nullable) | |
-| metrics | jsonb (nullable) | likes, comments, shares, reach, impressions |
-| notes | text (nullable) | Notas internas |
-| created_at / updated_at | timestamps | |
-
-### 2. RLS Policies
-
-- Todas as tabelas com RLS habilitado
-- Acesso baseado em `user_belongs_to_org(auth.uid(), organization_id)`
-- Admins podem gerir todas as contas/posts da organizacao
-- Membros podem criar e ver posts da sua organizacao
-
-### 3. Storage
-
-- Novo bucket `social-media` (publico) para upload de imagens/videos dos posts
-
-### 4. Codigo Frontend
-
-**Hooks novos:**
-- `useSocialAccounts()` -- CRUD de contas conectadas (por organizacao)
-- `useSocialPosts()` -- CRUD de posts com filtros (plataforma, status, cliente, data)
-
-**Componentes atualizados:**
-- `SocialDashboard.tsx` -- Dados reais do Supabase em vez de mock
-- `PostModal.tsx` -- Upload real de imagens para storage, salvar no Supabase
-- `SocialCalendar.tsx` -- Posts reais carregados por mes
-- `PostCard.tsx` -- Acoes reais (editar, excluir, enviar para aprovacao)
-- `MetricsDashboard.tsx` -- Metricas agregadas dos posts reais
-
-**Novas funcionalidades:**
-- Filtro por cliente (cada agencia gere multiplos clientes)
-- Status "Enviar para aprovacao" que gera um link publico
-- Upload de multiplas imagens por post
-
-### 5. Sistema de Aprovacao pelo Cliente
-
-- Ao clicar "Enviar para aprovacao", gera-se um `approval_token` unico
-- Uma pagina publica `/approve/:token` mostra o post com preview
-- O cliente (sem login) pode: Aprovar, Rejeitar (com motivo), ou Comentar
-- O status do post atualiza automaticamente
-- Notificacao para a equipa quando o cliente responde
-
-### 6. Pagina publica de aprovacao
-
-Nova rota publica: `/approve/:token`
-- Mostra o preview do post (conteudo, midias, plataformas alvo)
-- Botoes: "Aprovar" (verde), "Solicitar alteracoes" (amarelo com campo de texto)
-- Sem necessidade de login -- o token e a autenticacao
-- Design limpo e profissional com logo da agencia
+**Vantagem**: Late.dev tem agendamento nativo -- nao precisamos de cron job. A API aceita `scheduledDate` e publica automaticamente.
 
 ---
 
-## Fase 1B: Preparacao para Publicacao Automatica (arquitetura apenas)
+## Arquitetura Tecnica
 
-A arquitetura das tabelas ja inclui campos para `access_token` na tabela `social_accounts`, preparando para integracao futura com:
+### Edge Functions novas
 
-- **Ayrshare** (~$30/mes): API unificada para Instagram, Facebook, LinkedIn, TikTok, X, Pinterest
-- Ou **Buffer API**, **Publer API**, **SocialBee API**
+**1. `social-connect/index.ts`**
+- Recebe: `organization_id`, `platform`
+- Verifica se organizacao ja tem um `late_profile_id` (social set)
+- Se nao: cria perfil via `POST https://getlate.dev/api/v1/social-sets` 
+- Gera URL de conexao OAuth: `GET https://getlate.dev/api/v1/connect/{platform}?profileId={id}&headless=true`
+- Retorna URL para o frontend abrir em popup
 
-A integracao futura sera:
-1. Edge function `publish-social-post` que envia post para API do servico escolhido
-2. Cron job (ou trigger) que verifica posts com status "scheduled" e `scheduled_at <= now()`
-3. Webhook de callback para atualizar status para "published" ou "failed"
+**2. `social-sync-accounts/index.ts`**
+- Chamado apos o usuario fechar popup de conexao
+- Consulta `GET https://getlate.dev/api/v1/social-sets/{id}` para obter contas conectadas
+- Sincroniza tabela `social_accounts` no Supabase (plataforma, username, avatar, status)
 
-Isso NAO sera implementado agora -- apenas a estrutura de dados esta preparada.
+**3. `social-publish/index.ts`**
+- Recebe: `post_id`
+- Busca dados do post no Supabase
+- Chama `POST https://getlate.dev/api/v1/posts` com:
+  - `text`: conteudo
+  - `platforms`: array de plataformas
+  - `mediaUrls`: array de URLs de midia
+  - `scheduledDate`: data/hora ISO (se agendado)
+  - `profileId`: social set da organizacao
+- Atualiza `social_posts` com `late_post_id` e status
 
----
+**4. `social-webhook/index.ts`** (opcional, para receber callbacks)
+- Recebe notificacoes de status de publicacao (sucesso/falha)
+- Atualiza status do post no Supabase
 
-## Detalhes Tecnicos
+### Alteracoes no banco de dados
 
-### Migracao SQL
+Migracao SQL:
 
 ```text
--- Tabela social_accounts
-CREATE TABLE social_accounts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id uuid NOT NULL,
-  client_id uuid,
-  platform text NOT NULL,
-  account_name text NOT NULL DEFAULT '',
-  username text NOT NULL DEFAULT '',
-  avatar_url text,
-  access_token text,
-  is_connected boolean NOT NULL DEFAULT true,
-  followers_count integer DEFAULT 0,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+-- Adicionar coluna para mapear organizacao ao Late.dev social set
+ALTER TABLE organizations ADD COLUMN late_profile_id TEXT;
 
--- Tabela social_posts com todos os campos de aprovacao
-CREATE TABLE social_posts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id uuid NOT NULL,
-  client_id uuid,
-  created_by uuid,
-  content text NOT NULL DEFAULT '',
-  media_urls jsonb DEFAULT '[]',
-  platforms text[] NOT NULL DEFAULT '{}',
-  content_type text NOT NULL DEFAULT 'feed',
-  hashtags text[] DEFAULT '{}',
-  scheduled_at timestamptz,
-  status text NOT NULL DEFAULT 'draft',
-  approval_token uuid DEFAULT gen_random_uuid(),
-  approved_by text,
-  approved_at timestamptz,
-  rejection_reason text,
-  published_at timestamptz,
-  metrics jsonb,
-  notes text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+-- Adicionar coluna para rastrear post no Late.dev
+ALTER TABLE social_posts ADD COLUMN late_post_id TEXT;
 
--- RLS + Policies para ambas
--- Storage bucket social-media
+-- Adicionar coluna para client-level social sets
+ALTER TABLE social_accounts ADD COLUMN late_profile_id TEXT;
 ```
 
-### Novos arquivos
+### Secret necessario
 
-| Arquivo | Descricao |
-|---|---|
-| `src/hooks/useSocialAccounts.ts` | Hook para CRUD de contas sociais |
-| `src/hooks/useSocialPosts.ts` | Hook para CRUD de posts |
-| `src/pages/SocialApproval.tsx` | Pagina publica de aprovacao |
+- `LATE_API_KEY` -- API Key da conta Late.dev (obtida em https://getlate.dev/dashboard)
 
-### Arquivos modificados
+---
 
-| Arquivo | Mudanca |
-|---|---|
-| `src/pages/SocialMedia.tsx` | Substituir dados mock por hooks reais |
-| `src/components/social-media/SocialDashboard.tsx` | Dados reais + filtro por cliente |
-| `src/components/social-media/PostModal.tsx` | Upload real + salvar no Supabase |
-| `src/components/social-media/PostCard.tsx` | Acoes reais + botao de aprovacao |
-| `src/components/social-media/SocialCalendar.tsx` | Carregar posts reais por mes |
-| `src/components/social-media/MetricsDashboard.tsx` | Metricas dos posts reais |
-| `src/App.tsx` | Nova rota `/approve/:token` |
-| `src/lib/social-media-mock.ts` | Manter tipos, remover dados mock hardcoded |
+## Alteracoes no Frontend
 
-### Fluxo do sistema de aprovacao
+### `SocialDashboard.tsx`
+- Botao "Conectar" chama edge function `social-connect`
+- Abre URL retornada em popup (`window.open`)
+- Listener `window.addEventListener('focus')` detecta retorno do popup
+- Chama `social-sync-accounts` para sincronizar contas conectadas
+- Remove formulario manual de nome/username
+- Mostra avatar e username reais
+
+### `PostModal.tsx`
+- Remove selector manual de status (draft/published/etc)
+- Dois botoes claros:
+  - "Salvar Rascunho" (status: `draft`)
+  - "Publicar Agora" (chama `social-publish` imediatamente)
+  - "Agendar" (chama `social-publish` com `scheduledDate`)
+- Upload de imagens continua no Supabase Storage
+- As URLs publicas sao passadas para a Late API
+
+### `PostCard.tsx`
+- Status `failed`: mostra botao "Tentar novamente" (re-chama `social-publish`)
+- Status `published`: indicador visual de sucesso
+- Status `scheduled`: mostra data/hora agendada com countdown
+
+### `useSocialAccounts.ts`
+- Novo metodo `connectPlatform(platform)` que chama edge function `social-connect`
+- Novo metodo `syncAccounts()` que chama `social-sync-accounts`
+- Novo metodo `disconnectPlatform(accountId)` que remove conexao
+
+### `useSocialPosts.ts`
+- Novo metodo `publishPost(postId)` que chama `social-publish`
+- Novo metodo `schedulePost(postId, scheduledAt)` que chama `social-publish` com data
+- Novo metodo `retryPost(postId)` para tentar novamente posts falhados
+- Remover opcao de status manual `published`
+
+---
+
+## Fluxos
+
+### Conectar conta social
 
 ```text
-Agencia cria post (status: draft)
-    |
-    v
-Agencia clica "Enviar para aprovacao" (status: pending_approval)
-    |
-    v
-Sistema gera link: /approve/{approval_token}
-    |
-    v
-Cliente abre link (sem login)
-    |
-    +---> Aprova (status: approved -> scheduled)
-    |
-    +---> Rejeita com motivo (status: rejected)
-    |
-    v
-Notificacao para equipa da agencia
+1. Usuario clica "Conectar Instagram"
+2. Frontend -> Edge Function social-connect
+3. Edge Function -> Late API: criar social set (se nao existe) + gerar URL OAuth
+4. Frontend abre URL em popup
+5. Usuario faz login OAuth no Instagram
+6. Popup fecha/redireciona
+7. Frontend detecta foco -> chama social-sync-accounts
+8. Edge Function -> Late API: GET social set para obter contas
+9. Supabase social_accounts atualizado
+10. UI atualiza: card "Instagram Conectado" com avatar real
 ```
 
-### Conectividade simples de contas
+### Publicar post agendado
 
-Na fase atual, a "conexao" de conta e manual:
-1. Admin clica "Conectar" numa plataforma
-2. Preenche: nome da conta, username, avatar (opcional)
-3. Conta fica registrada e disponivel para selecao ao criar posts
+```text
+1. Usuario cria post com texto, imagem, plataformas e data/hora
+2. Clica "Agendar"
+3. Frontend salva post no Supabase (status: scheduled)
+4. Frontend chama social-publish com scheduledDate
+5. Edge Function -> Late API: POST /posts com scheduledDate
+6. Late API agenda internamente (sem cron job nosso)
+7. No horario marcado, Late publica automaticamente
+8. (Opcional) Webhook atualiza status para published
+```
 
-Na fase futura (com Ayrshare ou similar):
-1. Admin clica "Conectar"
-2. Redireciona para login OAuth da rede social
-3. Token armazenado automaticamente na tabela `social_accounts`
+### Publicar imediatamente
 
+```text
+1. Usuario cria post e clica "Publicar Agora"
+2. Frontend salva post no Supabase (status: publishing)
+3. Frontend chama social-publish sem scheduledDate
+4. Edge Function -> Late API: POST /posts (publica imediatamente)
+5. Resposta atualiza status para published ou failed
+```
+
+---
+
+## Arquivos a criar/modificar
+
+| Arquivo | Acao | Descricao |
+|---|---|---|
+| `supabase/functions/social-connect/index.ts` | Criar | Cria social set + gera URL OAuth |
+| `supabase/functions/social-sync-accounts/index.ts` | Criar | Sincroniza contas conectadas |
+| `supabase/functions/social-publish/index.ts` | Criar | Publica ou agenda post via Late API |
+| `supabase/functions/social-webhook/index.ts` | Criar | Recebe callbacks de status (opcional) |
+| Migracao SQL | Criar | Adicionar colunas `late_profile_id` e `late_post_id` |
+| `src/hooks/useSocialAccounts.ts` | Modificar | Metodos de conexao OAuth real |
+| `src/hooks/useSocialPosts.ts` | Modificar | Metodos de publicacao/agendamento |
+| `src/components/social-media/SocialDashboard.tsx` | Modificar | Conexao via OAuth popup |
+| `src/components/social-media/PostModal.tsx` | Modificar | Simplificar para Rascunho/Agendar/Publicar |
+| `src/components/social-media/PostCard.tsx` | Modificar | Status automatico + retry |
+
+---
+
+## Prerequisito
+
+Antes de implementar:
+
+1. Criar conta gratuita em https://getlate.dev
+2. Gerar API Key no dashboard
+3. Fornecer a API Key para configurar como secret `LATE_API_KEY` no Supabase
+
+Pode comecar com o plano **Free** ($0) para testar, depois fazer upgrade conforme necessidade.
