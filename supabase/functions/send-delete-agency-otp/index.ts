@@ -60,7 +60,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { email, organizationName } = validationResult.data;
+    const { organizationName } = validationResult.data;
+    // Always use the authenticated user's email for consistency
+    const email = user.email!;
 
     // Verify user is admin of the organization
     const { data: profile } = await supabase
