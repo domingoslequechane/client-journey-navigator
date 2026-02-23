@@ -70,10 +70,11 @@ export function DeleteAgencyModal({
         throw new Error(data.error || 'Erro ao enviar código');
       }
 
+      setOtpCode('');
       setStep('otp');
       toast({
         title: 'Código enviado!',
-        description: 'Verifique seu e-mail para o código de verificação',
+        description: 'Verifique seu e-mail e use apenas o código mais recente',
       });
     } catch (error: any) {
       console.error('Error sending OTP:', error);
@@ -220,7 +221,7 @@ export function DeleteAgencyModal({
           <DialogTitle>Digite o código de verificação</DialogTitle>
           <DialogDescription>
             Enviamos um código de 6 dígitos para <strong>{user?.email}</strong>. 
-            Digite-o abaixo para confirmar a exclusão.
+            Digite abaixo apenas o código mais recente enviado por e-mail.
           </DialogDescription>
         </DialogHeader>
 

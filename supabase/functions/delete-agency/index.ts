@@ -100,25 +100,30 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Verify OTP (with normalized email matching)
-    const { data: otpCandidates, error: otpError } = await supabase
+    // Verify OTP against the latest code sent to this authenticated user
+    const { data: latestOtpRecord, error: otpLookupError } = await supabase
       .from("email_otps")
       .select("id, email, otp_code, expires_at, created_at")
-      .eq("otp_code", normalizedOtpCode)
+      .ilike("email", normalizedUserEmail)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(1)
+      .maybeSingle();
 
-    const otpRecord =
-      otpCandidates?.find(
-        (record) => record.email?.trim().toLowerCase() === normalizedUserEmail,
-      ) ?? null;
-
-    if (otpError || !otpRecord) {
+    if (otpLookupError || !latestOtpRecord) {
       return new Response(
         JSON.stringify({ error: "Código inválido ou desatualizado. Use o código mais recente enviado por e-mail." }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    if (latestOtpRecord.otp_code !== normalizedOtpCode) {
+      return new Response(
+        JSON.stringify({ error: "Código inválido ou desatualizado. Use o código mais recente enviado por e-mail." }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const otpRecord = latestOtpRecord;
 
     // Check if OTP is expired
     if (new Date(otpRecord.expires_at) < new Date()) {
