@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Clock, Pencil, Trash2, Eye, Heart, MessageCircle, Share2, MousePointer, Bookmark, Send, RefreshCw, Zap } from 'lucide-react';
@@ -6,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { STATUS_CONFIG, CONTENT_TYPE_CONFIG, type PostStatus, type ContentType } from '@/lib/social-media-mock';
 import { PlatformIcon } from './PlatformIcon';
+import { ConfirmActionModal } from './ConfirmActionModal';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 
 interface PostCardProps {
@@ -18,6 +20,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, onPublish }: PostCardProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const statusCfg = STATUS_CONFIG[post.status as PostStatus] || STATUS_CONFIG.draft;
   const contentTypeCfg = CONTENT_TYPE_CONFIG[post.content_type as ContentType] || CONTENT_TYPE_CONFIG.feed;
   const mediaUrl = post.media_urls?.[0] || null;
@@ -103,12 +106,25 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
                 <RefreshCw className="h-3.5 w-3.5" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDelete(post.id)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setConfirmDelete(true)}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
       </CardContent>
+
+      <ConfirmActionModal
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Excluir post"
+        description="Tem certeza que deseja excluir este post? Esta ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        variant="destructive"
+        onConfirm={() => {
+          onDelete(post.id);
+          setConfirmDelete(false);
+        }}
+      />
     </Card>
   );
 }
