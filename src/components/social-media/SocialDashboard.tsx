@@ -2,40 +2,39 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { PLATFORM_CONFIG, ALL_PLATFORMS, type SocialPlatform } from '@/lib/social-media-mock';
 import { useSocialAccounts, type SocialAccount } from '@/hooks/useSocialAccounts';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
 import { PlatformIcon } from './PlatformIcon';
 import { AccountManagementModal } from './AccountManagementModal';
 import { ConnectPlatformModal } from './ConnectPlatformModal';
-import { ConfirmActionModal } from './ConfirmActionModal';
-import { ClientFilterSelect } from './ClientFilterSelect';
 import { cn } from '@/lib/utils';
 
-export function SocialDashboard() {
-  const [selectedClient, setSelectedClient] = useState('all');
-  const { accounts, isLoading: loadingAccounts, deleteAccount, connectPlatform, syncAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
-  const { posts, isLoading: loadingPosts } = useSocialPosts();
+interface SocialDashboardProps {
+  selectedClient: string;
+}
 
-  // Modal states
+export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
+  const clientId = selectedClient !== 'all' ? selectedClient : undefined;
+  const { accounts, isLoading: loadingAccounts, deleteAccount, connectPlatform, syncAccounts } = useSocialAccounts(clientId);
+  const { posts } = useSocialPosts();
+
   const [managingAccount, setManagingAccount] = useState<SocialAccount | null>(null);
   const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);
 
-  // Build account map by platform
   const accountsByPlatform = new Map<SocialPlatform, SocialAccount>();
   accounts.forEach(a => accountsByPlatform.set(a.platform as SocialPlatform, a));
 
   const connectedAccounts = accounts.filter(a => a.is_connected);
   const disconnectedPlatforms = ALL_PLATFORMS.filter(p => !accountsByPlatform.has(p));
 
-  // Stats from real posts
   const totalFollowers = connectedAccounts.reduce((sum, a) => sum + (a.followers_count || 0), 0);
   const publishedCount = posts.filter(p => p.status === 'published').length;
   const scheduledCount = posts.filter(p => p.status === 'scheduled' || p.status === 'approved').length;
   const pendingCount = posts.filter(p => p.status === 'pending_approval').length;
 
-  const handleConnect = (platform: SocialPlatform, _viaMeta?: boolean) => {
+  const handleConnect = (platform: SocialPlatform) => {
     setConnectingPlatform(null);
     connectPlatform.mutate(platform);
   };
@@ -50,35 +49,15 @@ export function SocialDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Client filter */}
-      <div className="flex items-center justify-between gap-4">
-        <ClientFilterSelect
-          value={selectedClient}
-          onChange={setSelectedClient}
-          className="w-[240px]"
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={handleSync}
-          disabled={syncAccounts.isPending}
-        >
-          <RefreshCw className={cn("h-4 w-4", syncAccounts.isPending && "animate-spin")} />
-          Sincronizar
-        </Button>
-      </div>
-
       {selectedClient === 'all' && (
         <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
           <p className="text-sm text-muted-foreground">
-            Selecione um cliente para gerenciar suas contas de redes sociais. 
+            Selecione um cliente para gerenciar suas contas de redes sociais.
             Só é possível conectar redes de clientes registrados.
           </p>
         </div>
       )}
 
-      {/* Connected accounts */}
       {selectedClient !== 'all' && (
         <div>
           <h2 className="text-lg font-semibold mb-4">Contas sociais do cliente</h2>
@@ -138,7 +117,6 @@ export function SocialDashboard() {
         </div>
       </div>
 
-      {/* Account Management Modal */}
       <AccountManagementModal
         open={!!managingAccount}
         onOpenChange={(v) => !v && setManagingAccount(null)}
@@ -148,7 +126,6 @@ export function SocialDashboard() {
         isSyncing={syncAccounts.isPending}
       />
 
-      {/* Connect Platform Modal */}
       <ConnectPlatformModal
         open={!!connectingPlatform}
         onOpenChange={(v) => !v && setConnectingPlatform(null)}

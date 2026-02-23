@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, Pencil, Trash2, Eye, Heart, MessageCircle, Share2, MousePointer, Bookmark, Send, RefreshCw, Zap } from 'lucide-react';
+import { Clock, Pencil, Trash2, Eye, Heart, MessageCircle, Share2, MousePointer, Bookmark, Send, RefreshCw, Zap, Copy, TrendingUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,25 +17,26 @@ interface PostCardProps {
   onSendForApproval?: (id: string) => void;
   onRetry?: (postId: string) => void;
   onPublish?: (postId: string, publishNow: boolean) => void;
+  onClone?: (post: SocialPostRow) => void;
+  onBoost?: (post: SocialPostRow) => void;
 }
 
-export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, onPublish }: PostCardProps) {
+export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, onPublish, onClone, onBoost }: PostCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const statusCfg = STATUS_CONFIG[post.status as PostStatus] || STATUS_CONFIG.draft;
   const contentTypeCfg = CONTENT_TYPE_CONFIG[post.content_type as ContentType] || CONTENT_TYPE_CONFIG.feed;
   const mediaUrl = post.media_urls?.[0] || null;
   const metrics = post.metrics as Record<string, number> | null;
+  const isPublished = post.status === 'published';
 
   return (
     <Card className="hover:border-primary/30 transition-colors">
       <CardContent className="p-4">
         <div className="flex gap-4">
-          {/* Media thumbnail */}
           {mediaUrl && (
             <img src={mediaUrl} alt="" className="w-24 h-24 rounded-lg object-cover shrink-0" />
           )}
 
-          {/* Content */}
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               {post.client_name && (
@@ -64,7 +65,6 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
               )}
             </div>
 
-            {/* Metrics */}
             {metrics && (
               <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
                 {metrics.likes != null && <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{metrics.likes.toLocaleString()}</span>}
@@ -76,7 +76,6 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
               </div>
             )}
 
-            {/* Hashtags */}
             {post.hashtags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {post.hashtags.map(tag => (
@@ -88,11 +87,13 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
 
           {/* Actions */}
           <div className="flex flex-col gap-1 shrink-0">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(post)}>
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
+            {!isPublished && (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(post)} title="Editar">
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )}
             {post.status === 'draft' && onSendForApproval && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--warning))]" onClick={() => onSendForApproval(post.id)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--warning))]" onClick={() => onSendForApproval(post.id)} title="Enviar para aprovação">
                 <Send className="h-3.5 w-3.5" />
               </Button>
             )}
@@ -106,9 +107,21 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
                 <RefreshCw className="h-3.5 w-3.5" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setConfirmDelete(true)}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            {onClone && (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onClone(post)} title="Clonar post">
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {onBoost && isPublished && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => onBoost(post)} title="Impulsionar">
+                <TrendingUp className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {!isPublished && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setConfirmDelete(true)} title="Excluir">
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter } from 'lucide-react';
+import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,7 +11,9 @@ import { MetricsDashboard } from '@/components/social-media/MetricsDashboard';
 import { ClientFilterSelect } from '@/components/social-media/ClientFilterSelect';
 import { type SocialPlatform, type PostStatus, PLATFORM_CONFIG, STATUS_CONFIG } from '@/lib/social-media-mock';
 import { useSocialPosts, type SocialPostRow } from '@/hooks/useSocialPosts';
+import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'reports';
 
@@ -30,27 +32,37 @@ export default function SocialMedia() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState<TabValue>('dashboard');
 
+  // Global client filter
+  const [selectedClient, setSelectedClient] = useState<string>('all');
+
   // Filters for posts tab
   const [searchQuery, setSearchQuery] = useState('');
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [clientFilter, setClientFilter] = useState<string>('all');
 
   const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval, publishPost } = useSocialPosts();
+  const { syncAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
+
+  const hasClientSelected = selectedClient !== 'all';
+
+  // Filter posts by selected client globally
+  const clientPosts = useMemo(() => {
+    if (!hasClientSelected) return posts;
+    return posts.filter(p => p.client_id === selectedClient);
+  }, [posts, selectedClient, hasClientSelected]);
 
   const filteredPosts = useMemo(() => {
-    return posts.filter(post => {
+    return clientPosts.filter(post => {
       if (searchQuery && !post.content.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (platformFilter !== 'all' && !post.platforms.includes(platformFilter as SocialPlatform)) return false;
       if (statusFilter !== 'all' && post.status !== statusFilter) return false;
-      if (clientFilter !== 'all' && post.client_id !== clientFilter) return false;
       return true;
     }).sort((a, b) => {
       const dateA = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
       const dateB = b.scheduled_at ? new Date(b.scheduled_at).getTime() : 0;
       return dateB - dateA;
     });
-  }, [posts, searchQuery, platformFilter, statusFilter]);
+  }, [clientPosts, searchQuery, platformFilter, statusFilter]);
 
   const handleCreatePost = (date?: string) => {
     setEditingPost(null);
@@ -77,7 +89,6 @@ export default function SocialMedia() {
     if (editingPost) {
       updatePost.mutate({ id: editingPost.id, ...data } as any, {
         onSuccess: () => {
-          // If status is scheduled or published, trigger Late.dev publish
           if (data.status === 'scheduled' || data.status === 'published') {
             publishPost.mutate({ postId: editingPost.id, publishNow: data.status === 'published' });
           }
@@ -86,7 +97,6 @@ export default function SocialMedia() {
     } else {
       createPost.mutate(data as any, {
         onSuccess: (newPost: any) => {
-          // If status is scheduled or published, trigger Late.dev publish
           if (data.status === 'scheduled' || data.status === 'published') {
             publishPost.mutate({ postId: newPost.id, publishNow: data.status === 'published' });
           }
@@ -111,29 +121,76 @@ export default function SocialMedia() {
     publishPost.mutate({ postId, publishNow: true });
   };
 
-  // Stats
-  const draftCount = posts.filter(p => p.status === 'draft').length;
-  const scheduledCount = posts.filter(p => p.status === 'scheduled').length;
-  const publishedCount = posts.filter(p => p.status === 'published').length;
-  const pendingCount = posts.filter(p => p.status === 'pending_approval').length;
+  const handleClonePost = (post: SocialPostRow) => {
+    createPost.mutate({
+      content: post.content,
+      media_urls: post.media_urls || [],
+      platforms: post.platforms,
+      content_type: post.content_type || 'feed',
+      hashtags: post.hashtags || [],
+      scheduled_at: new Date().toISOString(),
+      status: 'draft',
+      client_id: post.client_id,
+    } as any, {
+      onSuccess: () => {
+        toast.success('Post clonado como rascunho!');
+      }
+    });
+  };
+
+  const handleBoostPost = (post: SocialPostRow) => {
+    toast.info('Funcionalidade de impulsionamento em breve!');
+  };
+
+  const handleSync = () => {
+    syncAccounts.mutate();
+  };
+
+  // Stats from client-filtered posts
+  const draftCount = clientPosts.filter(p => p.status === 'draft').length;
+  const scheduledCount = clientPosts.filter(p => p.status === 'scheduled').length;
+  const publishedCount = clientPosts.filter(p => p.status === 'published').length;
+  const pendingCount = clientPosts.filter(p => p.status === 'pending_approval').length;
 
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Share2 className="h-6 w-6 text-primary" />
-            Social Media
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Gerencie e agende posts para suas redes sociais
-          </p>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Share2 className="h-6 w-6 text-primary" />
+              Social Media
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Gerencie e agende posts para suas redes sociais
+            </p>
+          </div>
         </div>
-        <Button onClick={() => { setActiveTab('schedule'); handleCreatePost(); }} className="gap-2">
-          <CalendarPlus className="h-4 w-4" />
-          Agendar Post
-        </Button>
+
+        {/* Global controls bar */}
+        <div className="flex flex-wrap items-center gap-3">
+          <ClientFilterSelect value={selectedClient} onChange={setSelectedClient} className="w-[240px]" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={handleSync}
+            disabled={syncAccounts.isPending || !hasClientSelected}
+          >
+            <RefreshCw className={cn("h-4 w-4", syncAccounts.isPending && "animate-spin")} />
+            Sincronizar
+          </Button>
+          <div className="flex-1" />
+          <Button
+            onClick={() => { setActiveTab('schedule'); handleCreatePost(); }}
+            className="gap-2"
+            disabled={!hasClientSelected}
+          >
+            <Plus className="h-4 w-4" />
+            Novo Post
+          </Button>
+        </div>
       </div>
 
       {/* Navigation tabs */}
@@ -158,10 +215,19 @@ export default function SocialMedia() {
         })}
       </div>
 
-      {/* Tab content */}
-      {activeTab === 'dashboard' && <SocialDashboard />}
+      {/* No client selected message */}
+      {!hasClientSelected && activeTab !== 'dashboard' && (
+        <div className="rounded-lg border border-border bg-muted/50 p-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            Selecione um cliente acima para visualizar e gerenciar seus posts.
+          </p>
+        </div>
+      )}
 
-      {activeTab === 'schedule' && (
+      {/* Tab content */}
+      {activeTab === 'dashboard' && <SocialDashboard selectedClient={selectedClient} />}
+
+      {activeTab === 'schedule' && hasClientSelected && (
         <div className="text-center py-8">
           <CalendarPlus className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
           <h2 className="text-lg font-semibold mb-2">Agendar novo post</h2>
@@ -170,22 +236,23 @@ export default function SocialMedia() {
           </p>
           <Button onClick={() => handleCreatePost()} className="gap-2">
             <Plus className="h-4 w-4" />
-            Criar Post
+            Novo Post
           </Button>
         </div>
       )}
 
-      {activeTab === 'calendar' && (
+      {activeTab === 'calendar' && hasClientSelected && (
         <SocialCalendar
-          posts={posts}
+          posts={clientPosts}
           currentMonth={currentMonth}
           onMonthChange={setCurrentMonth}
           onCreatePost={handleCreatePost}
           onEditPost={handleEditPost}
+          selectedClient={selectedClient}
         />
       )}
 
-      {activeTab === 'posts' && (
+      {activeTab === 'posts' && hasClientSelected && (
         <div className="space-y-4">
           {/* Quick stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -207,7 +274,7 @@ export default function SocialMedia() {
             </div>
           </div>
 
-          {/* Filters */}
+          {/* Filters - removed ClientFilterSelect */}
           <div className="flex flex-wrap gap-3">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -218,7 +285,6 @@ export default function SocialMedia() {
                 className="pl-9"
               />
             </div>
-            <ClientFilterSelect value={clientFilter} onChange={setClientFilter} className="w-[200px]" />
             <Select value={platformFilter} onValueChange={setPlatformFilter}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Canal" />
@@ -261,6 +327,8 @@ export default function SocialMedia() {
                   onSendForApproval={handleSendForApproval}
                   onRetry={handleRetryPost}
                   onPublish={handlePublishPost}
+                  onClone={handleClonePost}
+                  onBoost={handleBoostPost}
                 />
               ))
             )}
@@ -268,7 +336,7 @@ export default function SocialMedia() {
         </div>
       )}
 
-      {activeTab === 'reports' && <MetricsDashboard posts={posts} />}
+      {activeTab === 'reports' && hasClientSelected && <MetricsDashboard posts={clientPosts} selectedClient={selectedClient} />}
 
       <PostModal
         open={modalOpen}

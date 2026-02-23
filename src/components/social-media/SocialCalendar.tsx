@@ -20,6 +20,7 @@ interface SocialCalendarProps {
   onMonthChange: (date: Date) => void;
   onCreatePost: (date?: string) => void;
   onEditPost: (post: SocialPostRow) => void;
+  selectedClient?: string;
 }
 
 export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePost, onEditPost }: SocialCalendarProps) {
@@ -233,7 +234,12 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
             <SheetTitle className="capitalize">{selectedDateLabel}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4">
-            <Button size="sm" className="w-full gap-2" onClick={() => { setSheetOpen(false); onCreatePost(selectedDate || undefined); }}>
+            <Button
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => { setSheetOpen(false); onCreatePost(selectedDate || undefined); }}
+              disabled={selectedDate ? new Date(selectedDate + 'T23:59:59') < new Date(new Date().toDateString()) : false}
+            >
               <Plus className="h-4 w-4" /> Novo post neste dia
             </Button>
             {selectedDayPosts.length === 0 ? (
