@@ -6,7 +6,7 @@ import { Rocket, Sparkles, Info } from 'lucide-react';
 
 // Plan names mapping
 const planNames: Record<PlanType, string> = {
-  free: 'Legado',
+  free: 'Sem Plano',
   starter: 'Lança',
   pro: 'Arco',
   agency: 'Catapulta',

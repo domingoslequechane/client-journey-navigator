@@ -66,7 +66,7 @@ export const planImages: Record<string, string> = {
 };
 
 export const planNames: Record<PlanType, { name: string; codename: string; tagline: string }> = {
-  free: { name: 'Essencial', codename: 'Bússola', tagline: 'Encontre o caminho certo para começar!' },
+  free: { name: 'Sem Plano', codename: 'Sem Plano', tagline: 'Selecione um plano para começar.' },
   starter: { name: 'Crescimento', codename: 'Lança', tagline: 'Lance sua marca no mundo digital!' },
   pro: { name: 'Profissional', codename: 'Arco', tagline: 'Alcance resultados com precisão!' },
   agency: { name: 'Agência', codename: 'Catapulta', tagline: 'Imponha sua agência no mercado!' },
@@ -229,8 +229,8 @@ export default function Upgrade() {
       return;
     }
 
-    // If current plan is free, go straight to checkout
-    if (currentPlan === 'free') {
+    // If no active subscription, go straight to checkout
+    if (currentPlan === 'free' || !subscription?.lemonsqueezySubscriptionId) {
       await handleSubscribe(newPlanType);
       return;
     }
@@ -316,7 +316,7 @@ export default function Upgrade() {
     );
   }
 
-  const currentPlan = activePlanType || currentPlanType || 'starter';
+  const currentPlan = activePlanType || currentPlanType || 'free';
 
   const allPlans: { key: PlanType; config: PlanConfig }[] = [
     { key: 'starter', config: plans.starter },
@@ -335,7 +335,7 @@ export default function Upgrade() {
           
           <h1 className="text-3xl font-bold">Escolha o plano ideal para sua agência</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Todos os planos incluem <strong>14 dias grátis</strong>. Escale suas operações com o plano que melhor se adapta.
+            Escale suas operações com o plano que melhor se adapta à sua agência. Informações de cartão são obrigatórias.
           </p>
         </div>
 
@@ -429,7 +429,7 @@ export default function Upgrade() {
                       ${plan.price}
                     </span>
                     <span className="text-muted-foreground">/mês</span>
-                    <p className="text-sm text-primary font-medium mt-1">14 dias grátis</p>
+                    <p className="text-sm text-primary font-medium mt-1">Cartão obrigatório</p>
                   </div>
                   <p className="text-xs italic text-muted-foreground mt-1">
                     {planInfo.tagline}
