@@ -14,7 +14,17 @@ interface PlanLimits {
   maxAIMessagesPerMonth: number | null;
   maxTeamMembers: number | null;
   maxContractTemplates: number | null;
+  maxStudioGenerations: number | null;
+  maxSocialAccounts: number | null;
+  maxSocialPostsPerMonth: number | null;
+  maxLinkPages: number | null;
   canExportData: boolean;
+  hasFinanceModule: boolean;
+  hasStudioModule: boolean;
+  hasLinktreeModule: boolean;
+  hasEditorialModule: boolean;
+  hasSocialModule: boolean;
+  hasSocialInbox: boolean;
 }
 
 interface Usage {
@@ -23,6 +33,10 @@ interface Usage {
   aiMessagesThisMonth: number;
   teamMembersCount: number;
   contractTemplatesCount: number;
+  studioGenerationsThisMonth: number;
+  socialAccountsCount: number;
+  socialPostsThisMonth: number;
+  linkPagesCount: number;
 }
 
 interface UsePlanLimitsReturn {
@@ -36,12 +50,26 @@ interface UsePlanLimitsReturn {
   canInviteTeamMember: boolean;
   canExportData: boolean;
   canAddContractTemplate: boolean;
+  canAccessFinance: boolean;
+  canAccessStudio: boolean;
+  canAccessLinkTree: boolean;
+  canAccessEditorial: boolean;
+  canAccessSocialMedia: boolean;
+  canAccessSocialInbox: boolean;
+  canAddSocialAccount: boolean;
+  canPublishSocialPost: boolean;
+  canAddLinkPage: boolean;
+  canGenerateFlyer: boolean;
   remainingClients: number | null;
   remainingContracts: number | null;
   remainingAIMessages: number | null;
   remainingTeamMembers: number | null;
   remainingContractTemplates: number | null;
-  incrementUsage: (featureType: 'contracts' | 'ai_messages') => Promise<void>;
+  remainingSocialAccounts: number | null;
+  remainingSocialPosts: number | null;
+  remainingLinkPages: number | null;
+  remainingStudioGenerations: number | null;
+  incrementUsage: (featureType: 'contracts' | 'ai_messages' | 'studio_generations' | 'social_posts') => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -52,7 +80,29 @@ const DEFAULT_LIMITS: PlanLimits = {
   maxAIMessagesPerMonth: 90,
   maxTeamMembers: 1,
   maxContractTemplates: 1,
+  maxStudioGenerations: 10,
+  maxSocialAccounts: 0,
+  maxSocialPostsPerMonth: 0,
+  maxLinkPages: 0,
   canExportData: false,
+  hasFinanceModule: false,
+  hasStudioModule: false,
+  hasLinktreeModule: false,
+  hasEditorialModule: false,
+  hasSocialModule: false,
+  hasSocialInbox: false,
+};
+
+const DEFAULT_USAGE: Usage = {
+  clientsCount: 0,
+  contractsThisMonth: 0,
+  aiMessagesThisMonth: 0,
+  teamMembersCount: 0,
+  contractTemplatesCount: 0,
+  studioGenerationsThisMonth: 0,
+  socialAccountsCount: 0,
+  socialPostsThisMonth: 0,
+  linkPagesCount: 0,
 };
 
 export function usePlanLimits(): UsePlanLimitsReturn {
@@ -60,13 +110,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
   const [loading, setLoading] = useState(true);
   const [planType, setPlanType] = useState<PlanType>('free');
   const [limits, setLimits] = useState<PlanLimits>(DEFAULT_LIMITS);
-  const [usage, setUsage] = useState<Usage>({
-    clientsCount: 0,
-    contractsThisMonth: 0,
-    aiMessagesThisMonth: 0,
-    teamMembersCount: 0,
-    contractTemplatesCount: 0,
-  });
+  const [usage, setUsage] = useState<Usage>(DEFAULT_USAGE);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -78,7 +122,6 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     try {
       setLoading(true);
 
-      // Get user's organization and plan type (prefer current_organization_id)
       const { data: profile } = await supabase
         .from('profiles')
         .select('organization_id, current_organization_id')
@@ -94,7 +137,6 @@ export function usePlanLimits(): UsePlanLimitsReturn {
 
       setOrganizationId(orgId);
 
-      // Get organization with plan_type
       const { data: organization } = await supabase
         .from('organizations')
         .select('plan_type')
@@ -104,7 +146,6 @@ export function usePlanLimits(): UsePlanLimitsReturn {
       const currentPlanType = (organization?.plan_type as PlanType) || 'free';
       setPlanType(currentPlanType);
 
-      // Get plan limits
       const { data: planLimitsData } = await supabase
         .from('plan_limits')
         .select('*')
@@ -112,50 +153,83 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         .single();
 
       if (planLimitsData) {
+        const d = planLimitsData as any;
         setLimits({
-          maxClients: planLimitsData.max_clients,
-          maxContractsPerMonth: planLimitsData.max_contracts_per_month,
-          maxAIMessagesPerMonth: planLimitsData.max_ai_messages_per_month,
-          maxTeamMembers: planLimitsData.max_team_members,
-          maxContractTemplates: (planLimitsData as any).max_contract_templates ?? 1,
-          canExportData: (planLimitsData as any).can_export_data ?? false,
+          maxClients: d.max_clients,
+          maxContractsPerMonth: d.max_contracts_per_month,
+          maxAIMessagesPerMonth: d.max_ai_messages_per_month,
+          maxTeamMembers: d.max_team_members,
+          maxContractTemplates: d.max_contract_templates ?? 1,
+          maxStudioGenerations: d.max_studio_generations ?? 10,
+          maxSocialAccounts: d.max_social_accounts ?? 0,
+          maxSocialPostsPerMonth: d.max_social_posts_per_month ?? 0,
+          maxLinkPages: d.max_link_pages ?? 0,
+          canExportData: d.can_export_data ?? false,
+          hasFinanceModule: d.has_finance_module ?? false,
+          hasStudioModule: d.has_studio_module ?? false,
+          hasLinktreeModule: d.has_linktree_module ?? false,
+          hasEditorialModule: d.has_editorial_module ?? false,
+          hasSocialModule: d.has_social_module ?? false,
+          hasSocialInbox: d.has_social_inbox ?? false,
         });
       }
 
       // Get current usage counts
-      const [clientsResult, teamResult, contractsUsage, aiUsage, templatesResult] = await Promise.all([
-        // Count only operational clients (production, campaigns, retention, loyalty)
-        // Sales funnel clients (prospecting, qualification, closing) are unlimited
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+
+      const [
+        clientsResult, teamResult, contractsUsage, aiUsage,
+        templatesResult, studioUsage, socialAccountsResult,
+        socialPostsUsage, linkPagesResult,
+      ] = await Promise.all([
         supabase
           .from('clients')
           .select('id', { count: 'exact', head: true })
           .eq('organization_id', orgId)
           .in('current_stage', OPERATIONAL_STAGES),
-        // Count active team members from organization_members
         supabase
           .from('organization_members')
           .select('id', { count: 'exact', head: true })
           .eq('organization_id', orgId)
           .eq('is_active', true),
-        // Get contracts usage this month
         supabase
           .from('usage_tracking')
           .select('usage_count')
           .eq('organization_id', orgId)
           .eq('feature_type', 'contracts')
-          .gte('period_start', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+          .gte('period_start', monthStart)
           .maybeSingle(),
-        // Get AI messages usage this month
         supabase
           .from('usage_tracking')
           .select('usage_count')
           .eq('organization_id', orgId)
           .eq('feature_type', 'ai_messages')
-          .gte('period_start', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+          .gte('period_start', monthStart)
           .maybeSingle(),
-        // Count contract templates
         supabase
           .from('contract_templates')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', orgId),
+        supabase
+          .from('usage_tracking')
+          .select('usage_count')
+          .eq('organization_id', orgId)
+          .eq('feature_type', 'studio_generations')
+          .gte('period_start', monthStart)
+          .maybeSingle(),
+        supabase
+          .from('social_accounts')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', orgId),
+        supabase
+          .from('usage_tracking')
+          .select('usage_count')
+          .eq('organization_id', orgId)
+          .eq('feature_type', 'social_posts')
+          .gte('period_start', monthStart)
+          .maybeSingle(),
+        supabase
+          .from('link_pages')
           .select('id', { count: 'exact', head: true })
           .eq('organization_id', orgId),
       ]);
@@ -166,6 +240,10 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         contractsThisMonth: contractsUsage.data?.usage_count || 0,
         aiMessagesThisMonth: aiUsage.data?.usage_count || 0,
         contractTemplatesCount: templatesResult.count || 0,
+        studioGenerationsThisMonth: studioUsage.data?.usage_count || 0,
+        socialAccountsCount: socialAccountsResult.count || 0,
+        socialPostsThisMonth: socialPostsUsage.data?.usage_count || 0,
+        linkPagesCount: linkPagesResult.count || 0,
       });
     } catch (error) {
       console.error('Error fetching plan limits:', error);
@@ -178,7 +256,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     fetchData();
   }, [fetchData]);
 
-  const incrementUsage = useCallback(async (featureType: 'contracts' | 'ai_messages') => {
+  const incrementUsage = useCallback(async (featureType: 'contracts' | 'ai_messages' | 'studio_generations' | 'social_posts') => {
     if (!organizationId) return;
 
     try {
@@ -189,51 +267,60 @@ export function usePlanLimits(): UsePlanLimitsReturn {
 
       if (error) throw error;
 
-      // Update local state
+      const fieldMap: Record<string, keyof Usage> = {
+        contracts: 'contractsThisMonth',
+        ai_messages: 'aiMessagesThisMonth',
+        studio_generations: 'studioGenerationsThisMonth',
+        social_posts: 'socialPostsThisMonth',
+      };
+
       setUsage(prev => ({
         ...prev,
-        [featureType === 'contracts' ? 'contractsThisMonth' : 'aiMessagesThisMonth']: data,
+        [fieldMap[featureType]]: data,
       }));
     } catch (error) {
       console.error('Error incrementing usage:', error);
     }
   }, [organizationId]);
 
-  // Calculate remaining limits
-  const remainingClients = limits.maxClients !== null 
-    ? Math.max(0, limits.maxClients - usage.clientsCount)
-    : null;
-    
-  const remainingContracts = limits.maxContractsPerMonth !== null
-    ? Math.max(0, limits.maxContractsPerMonth - usage.contractsThisMonth)
-    : null;
-    
-  const remainingAIMessages = limits.maxAIMessagesPerMonth !== null
-    ? Math.max(0, limits.maxAIMessagesPerMonth - usage.aiMessagesThisMonth)
-    : null;
-    
-  const remainingTeamMembers = limits.maxTeamMembers !== null
-    ? Math.max(0, limits.maxTeamMembers - usage.teamMembersCount)
-    : null;
+  // Helper for remaining calculation
+  const remaining = (max: number | null, current: number) =>
+    max !== null ? Math.max(0, max - current) : null;
 
-  const remainingContractTemplates = limits.maxContractTemplates !== null
-    ? Math.max(0, limits.maxContractTemplates - usage.contractTemplatesCount)
-    : null;
+  const remainingClients = remaining(limits.maxClients, usage.clientsCount);
+  const remainingContracts = remaining(limits.maxContractsPerMonth, usage.contractsThisMonth);
+  const remainingAIMessages = remaining(limits.maxAIMessagesPerMonth, usage.aiMessagesThisMonth);
+  const remainingTeamMembers = remaining(limits.maxTeamMembers, usage.teamMembersCount);
+  const remainingContractTemplates = remaining(limits.maxContractTemplates, usage.contractTemplatesCount);
+  const remainingSocialAccounts = remaining(limits.maxSocialAccounts, usage.socialAccountsCount);
+  const remainingSocialPosts = remaining(limits.maxSocialPostsPerMonth, usage.socialPostsThisMonth);
+  const remainingLinkPages = remaining(limits.maxLinkPages, usage.linkPagesCount);
+  const remainingStudioGenerations = remaining(limits.maxStudioGenerations, usage.studioGenerationsThisMonth);
 
-  // Calculate permissions
-  const canAddClient = limits.maxClients === null || usage.clientsCount < limits.maxClients;
-  
-  const canGenerateContract = limits.maxContractsPerMonth === null || 
-    usage.contractsThisMonth < limits.maxContractsPerMonth;
-    
-  const canAccessAI = limits.maxAIMessagesPerMonth === null || 
+  // Permissions
+  const canUnlimited = (max: number | null, current: number) =>
+    max === null || current < max;
+
+  const canAddClient = canUnlimited(limits.maxClients, usage.clientsCount);
+  const canGenerateContract = canUnlimited(limits.maxContractsPerMonth, usage.contractsThisMonth);
+  const canAccessAI = limits.maxAIMessagesPerMonth === null ||
     (limits.maxAIMessagesPerMonth > 0 && usage.aiMessagesThisMonth < limits.maxAIMessagesPerMonth);
-    
-  const canInviteTeamMember = limits.maxTeamMembers === null || 
-    usage.teamMembersCount < limits.maxTeamMembers;
+  const canInviteTeamMember = canUnlimited(limits.maxTeamMembers, usage.teamMembersCount);
+  const canAddContractTemplate = canUnlimited(limits.maxContractTemplates, usage.contractTemplatesCount);
 
-  const canAddContractTemplate = limits.maxContractTemplates === null ||
-    usage.contractTemplatesCount < limits.maxContractTemplates;
+  // Module access
+  const canAccessFinance = limits.hasFinanceModule;
+  const canAccessStudio = limits.hasStudioModule;
+  const canAccessLinkTree = limits.hasLinktreeModule;
+  const canAccessEditorial = limits.hasEditorialModule;
+  const canAccessSocialMedia = limits.hasSocialModule;
+  const canAccessSocialInbox = limits.hasSocialInbox;
+
+  // Granular limits
+  const canAddSocialAccount = limits.hasSocialModule && canUnlimited(limits.maxSocialAccounts, usage.socialAccountsCount);
+  const canPublishSocialPost = limits.hasSocialModule && canUnlimited(limits.maxSocialPostsPerMonth, usage.socialPostsThisMonth);
+  const canAddLinkPage = limits.hasLinktreeModule && canUnlimited(limits.maxLinkPages, usage.linkPagesCount);
+  const canGenerateFlyer = limits.hasStudioModule && canUnlimited(limits.maxStudioGenerations, usage.studioGenerationsThisMonth);
 
   return {
     loading,
@@ -246,11 +333,25 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     canInviteTeamMember,
     canExportData: limits.canExportData,
     canAddContractTemplate,
+    canAccessFinance,
+    canAccessStudio,
+    canAccessLinkTree,
+    canAccessEditorial,
+    canAccessSocialMedia,
+    canAccessSocialInbox,
+    canAddSocialAccount,
+    canPublishSocialPost,
+    canAddLinkPage,
+    canGenerateFlyer,
     remainingClients,
     remainingContracts,
     remainingAIMessages,
     remainingTeamMembers,
     remainingContractTemplates,
+    remainingSocialAccounts,
+    remainingSocialPosts,
+    remainingLinkPages,
+    remainingStudioGenerations,
     incrementUsage,
     refetch: fetchData,
   };
