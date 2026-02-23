@@ -19,7 +19,7 @@ import { Link } from 'react-router-dom';
 import { DocumentType, DOCUMENT_TYPE_LABELS } from '@/types';
 
 const PLAN_NAMES: Record<PlanType, string> = {
-  free: 'Bússola',
+  free: 'Legado',
   starter: 'Lança',
   pro: 'Arco',
   agency: 'Catapulta',

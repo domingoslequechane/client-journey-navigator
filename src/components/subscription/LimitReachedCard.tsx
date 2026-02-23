@@ -15,7 +15,7 @@ interface LimitReachedCardProps {
 }
 
 const PLAN_NAMES: Record<PlanType, string> = {
-  free: 'Bússola',
+  free: 'Legado',
   starter: 'Lança',
   pro: 'Arco',
   agency: 'Catapulta',

@@ -13,7 +13,7 @@ interface UpgradePromptProps {
 }
 
 const planNames: Record<PlanType, string> = {
-  free: 'Bússola',
+  free: 'Legado',
   starter: 'Lança',
   pro: 'Arco',
   agency: 'Catapulta',
