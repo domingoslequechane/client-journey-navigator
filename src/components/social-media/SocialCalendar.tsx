@@ -7,18 +7,19 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { type SocialPost, type SocialPlatform, type PostStatus, PLATFORM_CONFIG, STATUS_CONFIG } from '@/lib/social-media-mock';
+import { type SocialPlatform, type PostStatus, PLATFORM_CONFIG, STATUS_CONFIG } from '@/lib/social-media-mock';
 import { PlatformIcon } from './PlatformIcon';
+import type { SocialPostRow } from '@/hooks/useSocialPosts';
 import { cn } from '@/lib/utils';
 
 const WEEK_DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 interface SocialCalendarProps {
-  posts: SocialPost[];
+  posts: SocialPostRow[];
   currentMonth: Date;
   onMonthChange: (date: Date) => void;
   onCreatePost: (date?: string) => void;
-  onEditPost: (post: SocialPost) => void;
+  onEditPost: (post: SocialPostRow) => void;
 }
 
 export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePost, onEditPost }: SocialCalendarProps) {
@@ -43,9 +44,10 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
   }, [currentMonth]);
 
   const postsByDate = useMemo(() => {
-    const map: Record<string, SocialPost[]> = {};
+    const map: Record<string, SocialPostRow[]> = {};
     filteredPosts.forEach(post => {
-      const key = format(parseISO(post.scheduledAt), 'yyyy-MM-dd');
+      if (!post.scheduled_at) return;
+      const key = format(parseISO(post.scheduled_at), 'yyyy-MM-dd');
       if (!map[key]) map[key] = [];
       map[key].push(post);
     });
@@ -65,23 +67,22 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
     ? format(parseISO(selectedDate), "EEEE, dd 'de' MMMM", { locale: ptBR })
     : '';
 
-  // List view posts for current month
   const monthPosts = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
     return filteredPosts
       .filter(p => {
-        const d = parseISO(p.scheduledAt);
+        if (!p.scheduled_at) return false;
+        const d = parseISO(p.scheduled_at);
         return d >= monthStart && d <= monthEnd;
       })
-      .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+      .sort((a, b) => new Date(a.scheduled_at!).getTime() - new Date(b.scheduled_at!).getTime());
   }, [filteredPosts, currentMonth]);
 
   return (
     <>
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        {/* Month navigation */}
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}>
             <ChevronLeft className="h-4 w-4" />
@@ -92,12 +93,9 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => onMonthChange(new Date())} className="text-muted-foreground text-xs">
-            Hoje
-          </Button>
+          <Button variant="ghost" size="sm" onClick={() => onMonthChange(new Date())} className="text-muted-foreground text-xs">Hoje</Button>
         </div>
 
-        {/* Filters & view toggle */}
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="h-8 w-[130px] text-xs">
@@ -125,16 +123,10 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
           </Select>
 
           <div className="flex border border-border rounded-md">
-            <button
-              onClick={() => setView('list')}
-              className={cn("p-1.5 rounded-l-md transition-colors", view === 'list' ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
-            >
+            <button onClick={() => setView('list')} className={cn("p-1.5 rounded-l-md transition-colors", view === 'list' ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
               <List className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => setView('calendar')}
-              className={cn("p-1.5 rounded-r-md transition-colors", view === 'calendar' ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
-            >
+            <button onClick={() => setView('calendar')} className={cn("p-1.5 rounded-r-md transition-colors", view === 'calendar' ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
               <CalendarDays className="h-4 w-4" />
             </button>
           </div>
@@ -166,38 +158,28 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
                       todayFlag && "bg-primary/5",
                     )}
                   >
-                    <div className={cn(
-                      "text-xs font-semibold mb-1.5",
-                      todayFlag && "text-primary",
-                      !isCurrentMonth && "text-muted-foreground"
-                    )}>
+                    <div className={cn("text-xs font-semibold mb-1.5", todayFlag && "text-primary", !isCurrentMonth && "text-muted-foreground")}>
                       {format(day, 'd')}
                       {todayFlag && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-primary align-middle" />}
                     </div>
                     {dayPosts.length > 0 && (
                       <div className="space-y-1">
-                        {dayPosts.slice(0, 3).map(post => {
-                          const statusColor = STATUS_CONFIG[post.status].color;
-                          return (
-                            <div key={post.id} className="flex items-center gap-1">
-                              {post.platforms.slice(0, 2).map(p => (
-                                <PlatformIcon key={p} platform={p} size="xs" />
-                              ))}
-                              <span className="text-[10px] leading-tight truncate text-muted-foreground flex-1">
-                                {post.clientName || post.content.substring(0, 15)}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">
-                                {format(parseISO(post.scheduledAt), 'HH:mm')}
-                              </span>
-                              {post.status === 'published' && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))]" />
-                              )}
-                              {post.status === 'scheduled' && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--info))]" />
-                              )}
-                            </div>
-                          );
-                        })}
+                        {dayPosts.slice(0, 3).map(post => (
+                          <div key={post.id} className="flex items-center gap-1">
+                            {post.platforms.slice(0, 2).map(p => (
+                              <PlatformIcon key={p} platform={p} size="xs" />
+                            ))}
+                            <span className="text-[10px] leading-tight truncate text-muted-foreground flex-1">
+                              {post.client_name || post.content.substring(0, 15)}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {post.scheduled_at ? format(parseISO(post.scheduled_at), 'HH:mm') : ''}
+                            </span>
+                            {post.status === 'published' && <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))]" />}
+                            {post.status === 'scheduled' && <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--info))]" />}
+                            {post.status === 'pending_approval' && <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--warning))]" />}
+                          </div>
+                        ))}
                         {dayPosts.length > 3 && (
                           <div className="text-[10px] text-primary font-medium">+{dayPosts.length - 3} mais</div>
                         )}
@@ -210,7 +192,6 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
           </CardContent>
         </Card>
       ) : (
-        /* List view */
         <Card>
           <CardContent className="p-4">
             {monthPosts.length === 0 ? (
@@ -220,7 +201,7 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
             ) : (
               <div className="space-y-2">
                 {monthPosts.map(post => {
-                  const statusCfg = STATUS_CONFIG[post.status];
+                  const statusCfg = STATUS_CONFIG[post.status as PostStatus] || STATUS_CONFIG.draft;
                   return (
                     <button key={post.id} onClick={() => onEditPost(post)} className="w-full text-left">
                       <div className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 transition-colors">
@@ -232,7 +213,7 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
                         <div className="flex-1 min-w-0">
                           <p className="text-sm truncate">{post.content}</p>
                           <p className="text-[10px] text-muted-foreground">
-                            {post.clientName} · {format(parseISO(post.scheduledAt), "dd/MM · HH:mm")}
+                            {post.client_name} · {post.scheduled_at ? format(parseISO(post.scheduled_at), "dd/MM · HH:mm") : 'Sem data'}
                           </p>
                         </div>
                         <Badge variant={statusCfg.variant} className="text-[10px] shrink-0">{statusCfg.label}</Badge>
@@ -246,7 +227,6 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
         </Card>
       )}
 
-      {/* Day Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader className="pb-4">
@@ -263,7 +243,7 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
               </div>
             ) : (
               selectedDayPosts.map(post => {
-                const statusCfg = STATUS_CONFIG[post.status];
+                const statusCfg = STATUS_CONFIG[post.status as PostStatus] || STATUS_CONFIG.draft;
                 return (
                   <button key={post.id} onClick={() => { setSheetOpen(false); onEditPost(post); }} className="w-full text-left">
                     <Card className="hover:border-primary/50 transition-colors">
@@ -276,7 +256,7 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
                           <Badge variant={statusCfg.variant} className="text-[10px]">{statusCfg.label}</Badge>
                         </div>
                         <p className="text-[10px] text-muted-foreground">
-                          {format(parseISO(post.scheduledAt), 'HH:mm')} · {post.clientName}
+                          {post.scheduled_at ? format(parseISO(post.scheduled_at), 'HH:mm') : ''} · {post.client_name}
                         </p>
                       </CardContent>
                     </Card>

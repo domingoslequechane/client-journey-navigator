@@ -8,9 +8,8 @@ import { SocialDashboard } from '@/components/social-media/SocialDashboard';
 import { PostCard } from '@/components/social-media/PostCard';
 import { PostModal } from '@/components/social-media/PostModal';
 import { MetricsDashboard } from '@/components/social-media/MetricsDashboard';
-import { PlatformIcon } from '@/components/social-media/PlatformIcon';
-import { type SocialPost, type SocialPlatform, type PostStatus, MOCK_POSTS, PLATFORM_CONFIG, STATUS_CONFIG } from '@/lib/social-media-mock';
-import { toast } from '@/hooks/use-toast';
+import { type SocialPlatform, type PostStatus, PLATFORM_CONFIG, STATUS_CONFIG } from '@/lib/social-media-mock';
+import { useSocialPosts, type SocialPostRow } from '@/hooks/useSocialPosts';
 import { cn } from '@/lib/utils';
 
 type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'reports';
@@ -24,9 +23,8 @@ const TABS: { value: TabValue; label: string; icon: React.ComponentType<{ classN
 ];
 
 export default function SocialMedia() {
-  const [posts, setPosts] = useState<SocialPost[]>(MOCK_POSTS);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<SocialPost | null>(null);
+  const [editingPost, setEditingPost] = useState<SocialPostRow | null>(null);
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState<TabValue>('dashboard');
@@ -36,13 +34,19 @@ export default function SocialMedia() {
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval } = useSocialPosts();
+
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
       if (searchQuery && !post.content.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (platformFilter !== 'all' && !post.platforms.includes(platformFilter as SocialPlatform)) return false;
       if (statusFilter !== 'all' && post.status !== statusFilter) return false;
       return true;
-    }).sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
+    }).sort((a, b) => {
+      const dateA = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
+      const dateB = b.scheduled_at ? new Date(b.scheduled_at).getTime() : 0;
+      return dateB - dateA;
+    });
   }, [posts, searchQuery, platformFilter, statusFilter]);
 
   const handleCreatePost = (date?: string) => {
@@ -51,31 +55,42 @@ export default function SocialMedia() {
     setModalOpen(true);
   };
 
-  const handleEditPost = (post: SocialPost) => {
+  const handleEditPost = (post: SocialPostRow) => {
     setEditingPost(post);
     setModalOpen(true);
   };
 
-  const handleSave = (data: Omit<SocialPost, 'id'>) => {
+  const handleSave = (data: {
+    content: string;
+    media_urls: string[];
+    platforms: SocialPlatform[];
+    content_type: string;
+    hashtags: string[];
+    scheduled_at: string;
+    status: string;
+    client_id?: string | null;
+    notes?: string;
+  }) => {
     if (editingPost) {
-      setPosts(prev => prev.map(p => p.id === editingPost.id ? { ...p, ...data } : p));
-      toast({ title: 'Post atualizado!' });
+      updatePost.mutate({ id: editingPost.id, ...data } as any);
     } else {
-      const newPost: SocialPost = { ...data, id: crypto.randomUUID() };
-      setPosts(prev => [newPost, ...prev]);
-      toast({ title: 'Post criado!' });
+      createPost.mutate(data as any);
     }
   };
 
   const handleDelete = (id: string) => {
-    setPosts(prev => prev.filter(p => p.id !== id));
-    toast({ title: 'Post excluído!' });
+    deletePost.mutate(id);
+  };
+
+  const handleSendForApproval = (id: string) => {
+    sendForApproval.mutate(id);
   };
 
   // Stats
   const draftCount = posts.filter(p => p.status === 'draft').length;
   const scheduledCount = posts.filter(p => p.status === 'scheduled').length;
   const publishedCount = posts.filter(p => p.status === 'published').length;
+  const pendingCount = posts.filter(p => p.status === 'pending_approval').length;
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -96,7 +111,7 @@ export default function SocialMedia() {
         </Button>
       </div>
 
-      {/* Navigation tabs - MLabs style */}
+      {/* Navigation tabs */}
       <div className="flex items-center gap-1 border-b border-border overflow-x-auto">
         {TABS.map(tab => {
           const Icon = tab.icon;
@@ -119,9 +134,7 @@ export default function SocialMedia() {
       </div>
 
       {/* Tab content */}
-      {activeTab === 'dashboard' && (
-        <SocialDashboard />
-      )}
+      {activeTab === 'dashboard' && <SocialDashboard />}
 
       {activeTab === 'schedule' && (
         <div className="text-center py-8">
@@ -150,10 +163,14 @@ export default function SocialMedia() {
       {activeTab === 'posts' && (
         <div className="space-y-4">
           {/* Quick stats */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="rounded-lg border border-border bg-card p-4 text-center">
               <p className="text-2xl font-bold">{draftCount}</p>
               <p className="text-xs text-muted-foreground">Rascunhos</p>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4 text-center">
+              <p className="text-2xl font-bold text-[hsl(var(--warning))]">{pendingCount}</p>
+              <p className="text-xs text-muted-foreground">Aguardando</p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4 text-center">
               <p className="text-2xl font-bold text-[hsl(var(--info))]">{scheduledCount}</p>
@@ -183,16 +200,12 @@ export default function SocialMedia() {
               <SelectContent>
                 <SelectItem value="all">Todos os canais</SelectItem>
                 {(Object.keys(PLATFORM_CONFIG) as SocialPlatform[]).map(p => (
-                  <SelectItem key={p} value={p}>
-                    <span className="flex items-center gap-2">
-                      {PLATFORM_CONFIG[p].label}
-                    </span>
-                  </SelectItem>
+                  <SelectItem key={p} value={p}>{PLATFORM_CONFIG[p].label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -206,22 +219,28 @@ export default function SocialMedia() {
 
           {/* Posts list */}
           <div className="space-y-3">
-            {filteredPosts.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+            ) : filteredPosts.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <p>Nenhum post encontrado</p>
               </div>
             ) : (
               filteredPosts.map(post => (
-                <PostCard key={post.id} post={post} onEdit={handleEditPost} onDelete={handleDelete} />
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  onEdit={handleEditPost}
+                  onDelete={handleDelete}
+                  onSendForApproval={handleSendForApproval}
+                />
               ))
             )}
           </div>
         </div>
       )}
 
-      {activeTab === 'reports' && (
-        <MetricsDashboard />
-      )}
+      {activeTab === 'reports' && <MetricsDashboard posts={posts} />}
 
       <PostModal
         open={modalOpen}

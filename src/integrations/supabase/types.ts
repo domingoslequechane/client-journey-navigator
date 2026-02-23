@@ -1621,6 +1621,150 @@ export type Database = {
           },
         ]
       }
+      social_accounts: {
+        Row: {
+          access_token: string | null
+          account_name: string
+          avatar_url: string | null
+          client_id: string | null
+          created_at: string
+          followers_count: number | null
+          id: string
+          is_connected: boolean
+          organization_id: string
+          platform: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          access_token?: string | null
+          account_name?: string
+          avatar_url?: string | null
+          client_id?: string | null
+          created_at?: string
+          followers_count?: number | null
+          id?: string
+          is_connected?: boolean
+          organization_id: string
+          platform: string
+          updated_at?: string
+          username?: string
+        }
+        Update: {
+          access_token?: string | null
+          account_name?: string
+          avatar_url?: string | null
+          client_id?: string | null
+          created_at?: string
+          followers_count?: number | null
+          id?: string
+          is_connected?: boolean
+          organization_id?: string
+          platform?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_accounts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_posts: {
+        Row: {
+          approval_token: string | null
+          approved_at: string | null
+          approved_by: string | null
+          client_id: string | null
+          content: string
+          content_type: string
+          created_at: string
+          created_by: string | null
+          hashtags: string[] | null
+          id: string
+          media_urls: Json | null
+          metrics: Json | null
+          notes: string | null
+          organization_id: string
+          platforms: string[]
+          published_at: string | null
+          rejection_reason: string | null
+          scheduled_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approval_token?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          client_id?: string | null
+          content?: string
+          content_type?: string
+          created_at?: string
+          created_by?: string | null
+          hashtags?: string[] | null
+          id?: string
+          media_urls?: Json | null
+          metrics?: Json | null
+          notes?: string | null
+          organization_id: string
+          platforms?: string[]
+          published_at?: string | null
+          rejection_reason?: string | null
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_token?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          client_id?: string | null
+          content?: string
+          content_type?: string
+          created_at?: string
+          created_by?: string | null
+          hashtags?: string[] | null
+          id?: string
+          media_urls?: Json | null
+          metrics?: Json | null
+          notes?: string | null
+          organization_id?: string
+          platforms?: string[]
+          published_at?: string | null
+          rejection_reason?: string | null
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_posts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_posts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       studio_ai_learnings: {
         Row: {
           content: string
