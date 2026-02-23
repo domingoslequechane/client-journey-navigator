@@ -100,3 +100,9 @@ verify_jwt = false
 
 [functions.social-publish]
 verify_jwt = false
+
+[functions.social-fetch-messages]
+verify_jwt = false
+
+[functions.social-reply-message]
+verify_jwt = false

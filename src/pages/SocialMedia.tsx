@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw } from 'lucide-react';
+import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,22 +8,25 @@ import { SocialDashboard } from '@/components/social-media/SocialDashboard';
 import { PostCard } from '@/components/social-media/PostCard';
 import { PostModal } from '@/components/social-media/PostModal';
 import { MetricsDashboard } from '@/components/social-media/MetricsDashboard';
+import { SocialInbox } from '@/components/social-media/SocialInbox';
 import { ClientFilterSelect } from '@/components/social-media/ClientFilterSelect';
 import { ConnectAccountsGuardModal } from '@/components/social-media/ConnectAccountsGuardModal';
 import { ConnectPlatformModal } from '@/components/social-media/ConnectPlatformModal';
 import { type SocialPlatform, type PostStatus, PLATFORM_CONFIG, STATUS_CONFIG } from '@/lib/social-media-mock';
 import { useSocialPosts, type SocialPostRow } from '@/hooks/useSocialPosts';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useSocialMessages } from '@/hooks/useSocialMessages';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'reports';
+type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'inbox' | 'reports';
 
 const TABS: { value: TabValue; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { value: 'schedule', label: 'Agendar Post', icon: CalendarPlus },
   { value: 'calendar', label: 'Calendário', icon: CalendarDays },
   { value: 'posts', label: 'Posts', icon: ListFilter },
+  { value: 'inbox', label: 'Inbox', icon: MessageCircle },
   { value: 'reports', label: 'Relatórios', icon: BarChart3 },
 ];
 
@@ -44,6 +47,7 @@ export default function SocialMedia() {
 
   const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval, publishPost } = useSocialPosts();
   const { accounts, syncAccounts, connectPlatform } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
+  const { unreadCount } = useSocialMessages(selectedClient !== 'all' ? selectedClient : undefined);
 
   const [connectGuardOpen, setConnectGuardOpen] = useState(false);
   const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);
@@ -221,6 +225,11 @@ export default function SocialMedia() {
             >
               <Icon className="h-4 w-4" />
               {tab.label}
+              {tab.value === 'inbox' && unreadCount > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                  {unreadCount}
+                </span>
+              )}
             </button>
           );
         })}
@@ -346,6 +355,8 @@ export default function SocialMedia() {
           </div>
         </div>
       )}
+
+      {activeTab === 'inbox' && hasClientSelected && <SocialInbox selectedClient={selectedClient} />}
 
       {activeTab === 'reports' && hasClientSelected && <MetricsDashboard posts={clientPosts} selectedClient={selectedClient} />}
 

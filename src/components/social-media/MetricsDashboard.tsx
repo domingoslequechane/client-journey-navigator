@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Users, Eye, Heart, MousePointer, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, Users, Eye, Heart, MousePointer, BarChart3, RefreshCw } from 'lucide-react';
 import { PLATFORM_CONFIG, type SocialPlatform } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 import { PlatformIcon } from './PlatformIcon';
+import { cn } from '@/lib/utils';
 
 interface MetricsDashboardProps {
   posts: SocialPostRow[];
@@ -12,7 +14,7 @@ interface MetricsDashboardProps {
 }
 
 export function MetricsDashboard({ posts, selectedClient }: MetricsDashboardProps) {
-  const { accounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
+  const { accounts, syncAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
 
   const totalFollowers = accounts.reduce((sum, a) => sum + (a.followers_count || 0), 0);
   const totalPosts = posts.length;
@@ -59,6 +61,21 @@ export function MetricsDashboard({ posts, selectedClient }: MetricsDashboardProp
 
   return (
     <div className="space-y-6">
+      {/* Refresh button */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-muted-foreground">Métricas em tempo real</h3>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => syncAccounts.mutate()}
+          disabled={syncAccounts.isPending}
+        >
+          <RefreshCw className={cn("h-4 w-4", syncAccounts.isPending && "animate-spin")} />
+          Atualizar métricas
+        </Button>
+      </div>
+
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Card>
