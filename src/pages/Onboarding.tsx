@@ -224,7 +224,19 @@ export default function Onboarding() {
 
       clearDraft();
       toast.success('Agência configurada com sucesso!');
-      navigate('/app');
+      
+      // Check if user has active subscription, if not redirect to select-plan
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('organization_id', organizationId!)
+        .maybeSingle();
+      
+      if (sub?.status === 'active' || sub?.status === 'trialing') {
+        navigate('/app');
+      } else {
+        navigate('/select-plan');
+      }
     } catch (error: any) {
       console.error('Error in onboarding:', error);
       toast.error(error.message || 'Erro ao configurar agência. Tente novamente.');

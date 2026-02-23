@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, Loader2 } from 'lucide-react';
 
 const PLAN_NAMES: Record<PlanType, string> = {
-  free: 'Legado',
+  free: 'Sem Plano',
   starter: 'Lança',
   pro: 'Arco',
   agency: 'Catapulta',

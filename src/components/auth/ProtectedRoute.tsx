@@ -185,49 +185,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       }
     };
 
-    const checkPlanSelection = async () => {
-      if (!user) return;
-      
-      // Get profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id, current_organization_id')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      const orgId = profile?.current_organization_id || profile?.organization_id;
-      
-      if (!orgId) {
-        // No organization means needs to select plan
-        return;
-      }
-      
-      // Check if has active subscription
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('status')
-        .eq('organization_id', orgId)
-        .maybeSingle();
-      
-      // If no subscription or not active, may need plan selection
-      // But allow if has organization with proper name (for webhook delay)
-      if (!subscription || subscription.status === 'trialing') {
-        // Check organization for trial
-        const { data: org } = await supabase
-          .from('organizations')
-          .select('trial_ends_at, name')
-          .eq('id', orgId)
-          .single();
-        
-        // If trial is active or org has proper name, allow access
-        if (org && new Date(org.trial_ends_at) > new Date()) {
-          return;
-        }
-        if (org && !org.name.includes("'s Agency") && org.name !== 'Agency') {
-          return;
-        }
-      }
-    };
+    // Plan selection check removed — access is now gated by subscription status in the render logic below
 
     if (!subLoading && organization) {
       checkOnboarding();
@@ -245,7 +203,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         if (!orgId) {
           // Realmente não tem organização - precisa de onboarding
           setNeedsOnboarding(true);
-          checkPlanSelection();
         }
         // Se tem orgId, aguardar o useSubscription carregar a organization
       };
@@ -310,14 +267,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
   }
 
-  // Redirect to upgrade if user doesn't have active subscription
-  // Allow access to: dashboard (read-only), subscription, upgrade, clients (for export)
+  // Redirect to select-plan if user doesn't have active subscription
+  // Allow access to settings (for agency config) and onboarding
   const allowedPathsWithoutSubscription = [
-    '/app',
-    '/app/subscription',
-    '/app/upgrade',
-    '/app/clients',
     '/app/settings',
+    '/app/onboarding',
+    '/app/select-organization',
   ];
   
   const isAllowedWithoutSubscription = allowedPathsWithoutSubscription.some(
@@ -325,7 +280,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   );
 
   if (!hasAccess && !isAllowedWithoutSubscription) {
-    return <Navigate to="/app/upgrade" replace />;
+    return <Navigate to="/select-plan" replace />;
   }
 
   // All checks passed - render children

@@ -223,7 +223,7 @@ export default function SelectPlan() {
             Escolha seu plano
           </h1>
           <p className="text-muted-foreground text-lg">
-            Todos os planos incluem <strong>14 dias grátis</strong> para você testar à vontade
+            Selecione um plano para começar a usar o Qualify. Informações de cartão são obrigatórias.
           </p>
         </div>
 
@@ -269,7 +269,7 @@ export default function SelectPlan() {
                       <span className="text-muted-foreground">{plan.period}</span>
                     </div>
                     <p className="text-sm text-primary font-medium mt-1">
-                      14 dias grátis
+                      Cartão obrigatório
                     </p>
                   </div>
 
@@ -301,7 +301,7 @@ export default function SelectPlan() {
                       </>
                     ) : (
                       <>
-                        Começar Grátis
+                        Assinar Agora
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </>
                     )}
@@ -313,7 +313,7 @@ export default function SelectPlan() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-8 max-w-lg">
-          14 dias grátis em qualquer plano. Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
+          Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
         </p>
       </div>
     </PublicBackground>

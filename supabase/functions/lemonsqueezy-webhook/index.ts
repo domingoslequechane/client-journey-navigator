@@ -36,9 +36,8 @@ async function verifySignature(payload: string, signature: string, secret: strin
   }
 }
 
-// Plan prices in cents (with 50% discount applied)
+// Plan prices in cents
 const PLAN_PRICES: Record<string, number> = {
-  free: 200,     // $2
   starter: 500,  // $5
   pro: 1200,     // $12
   agency: 3000   // $30
@@ -66,8 +65,8 @@ const getPlanTypeFromVariant = (variantId: string): string => {
   if (normalizedVariantId === proVariant) return 'pro';
   if (normalizedVariantId === agencyVariant) return 'agency';
   
-  // Default to free if no match
-  return 'free';
+  // Default to starter if no match
+  return 'starter';
 };
 
 // Get payment amount from LemonSqueezy data or fallback to plan prices

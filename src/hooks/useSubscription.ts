@@ -115,23 +115,22 @@ export function useSubscription(): UseSubscriptionReturn {
     fetchSubscriptionData();
   }, [user]);
 
-  // Calculate trial days left based on organization's trial_ends_at
-  const trialDaysLeft = organization?.trialEndsAt
-    ? Math.max(0, Math.ceil((new Date(organization.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 0;
-
   const planType = organization?.planType || 'free';
   
-  // Determine subscription status
-  // isTrialing = has trial days left AND no active paid subscription
-  const isActive = subscription?.status === 'active' || subscription?.status === 'past_due';
-  const isTrialing = trialDaysLeft > 0 && !isActive;
+  // Determine subscription status — access is gated by LemonSqueezy subscription only
+  const isActive = subscription?.status === 'active';
+  const isTrialing = subscription?.status === 'trialing';
   const isPaidPlan = ['starter', 'pro', 'agency'].includes(planType);
   const isPastDue = subscription?.status === 'past_due';
   const isCancelled = subscription?.status === 'cancelled' || subscription?.status === 'expired';
   const cancelAtPeriodEnd = subscription?.cancelAtPeriodEnd || false;
   
-  // User has access only if they have an active subscription or are in trial
+  // Trial days left from organization data (informational only)
+  const trialDaysLeft = organization?.trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(organization.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+  
+  // Access requires an active or trialing subscription record from LemonSqueezy
   const hasActiveSubscription = isActive || isTrialing;
   const hasAccess = hasActiveSubscription;
 
