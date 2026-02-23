@@ -10,12 +10,26 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { PostPreview } from './PostPreview';
 import { PlatformIcon } from './PlatformIcon';
+import { AICaptionModal } from './AICaptionModal';
+import { ConfirmActionModal } from './ConfirmActionModal';
 import { type SocialPlatform, type ContentType, PLATFORM_CONFIG, CONTENT_TYPE_CONFIG, ALL_PLATFORMS } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Upload, Calendar, Clock, Hash, Send, Loader2, X, Image as ImageIcon, Zap } from 'lucide-react';
+import { Upload, Calendar, Clock, Hash, Send, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers } from 'lucide-react';
+
+// Which content types each platform supports
+const PLATFORM_CONTENT_TYPES: Record<SocialPlatform, ContentType[]> = {
+  instagram: ['feed', 'stories', 'reels', 'carousel'],
+  facebook: ['feed', 'stories', 'reels', 'carousel', 'video'],
+  linkedin: ['feed', 'carousel', 'video', 'text'],
+  tiktok: ['video', 'reels'],
+  twitter: ['feed', 'text', 'carousel'],
+  youtube: ['video', 'reels'],
+  pinterest: ['feed', 'carousel', 'video'],
+  threads: ['feed', 'text', 'carousel'],
+};
 
 interface PostModalProps {
   open: boolean;
@@ -37,10 +51,17 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
   const [hashtags, setHashtags] = useState('');
   const [previewPlatform, setPreviewPlatform] = useState<SocialPlatform>('instagram');
   const [uploading, setUploading] = useState(false);
+  const [multiImageMode, setMultiImageMode] = useState<'carousel' | 'individual'>('carousel');
+  const [showAICaptionModal, setShowAICaptionModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const connectedPlatforms = accounts.filter(a => a.is_connected).map(a => a.platform as SocialPlatform);
   const hasLateAccounts = accounts.some(a => a.is_connected && a.late_account_id);
+
+  // Available content types based on selected platforms
+  const availableContentTypes = platforms.length > 0
+    ? Array.from(new Set(platforms.flatMap(p => PLATFORM_CONTENT_TYPES[p] || ['feed'])))
+    : Object.keys(CONTENT_TYPE_CONFIG) as ContentType[];
 
   useEffect(() => {
     if (post) {
@@ -64,8 +85,16 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
       setContentType('feed');
       setHashtags('');
       setPreviewPlatform('instagram');
+      setMultiImageMode('carousel');
     }
   }, [post, open, defaultDate]);
+
+  // Auto-switch content type if not available for selected platforms
+  useEffect(() => {
+    if (!availableContentTypes.includes(contentType) && availableContentTypes.length > 0) {
+      setContentType(availableContentTypes[0] as ContentType);
+    }
+  }, [platforms]);
 
   const togglePlatform = (p: SocialPlatform) => {
     setPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
@@ -87,6 +116,10 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
         newUrls.push(urlData.publicUrl);
       }
       setMediaUrls(prev => [...prev, ...newUrls]);
+      // Auto-set carousel if multiple images
+      if (mediaUrls.length + newUrls.length > 1) {
+        setMultiImageMode('carousel');
+      }
     } catch (err: any) {
       console.error('Upload error:', err);
     } finally {
@@ -98,15 +131,18 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
     setMediaUrls(prev => prev.filter((_, i) => i !== index));
   };
 
-  const buildPostData = (status: string) => ({
-    content,
-    media_urls: mediaUrls,
-    platforms,
-    scheduled_at: `${date}T${time}:00`,
-    status,
-    content_type: contentType,
-    hashtags: hashtags ? hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
-  });
+  const buildPostData = (status: string) => {
+    const effectiveContentType = mediaUrls.length > 1 && multiImageMode === 'carousel' ? 'carousel' : contentType;
+    return {
+      content,
+      media_urls: mediaUrls,
+      platforms,
+      scheduled_at: `${date}T${time}:00`,
+      status,
+      content_type: effectiveContentType,
+      hashtags: hashtags ? hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
+    };
+  };
 
   const handleSaveDraft = () => {
     if (!content.trim() || platforms.length === 0) return;
@@ -126,95 +162,137 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
     onOpenChange(false);
   };
 
+  const handleAICaptionGenerated = (caption: string) => {
+    setContent(caption);
+    // Extract hashtags from caption
+    const hashtagMatches = caption.match(/#\w+/g);
+    if (hashtagMatches) {
+      const tags = hashtagMatches.map(t => t.replace('#', ''));
+      setHashtags(tags.join(', '));
+    }
+  };
+
   const minCharLimit = Math.min(...platforms.map(p => PLATFORM_CONFIG[p]?.charLimit || 2200));
   const isOverLimit = content.length > minCharLimit;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-lg">{post ? 'Editar Post' : 'Novo Post'}</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg">{post ? 'Editar Post' : 'Novo Post'}</DialogTitle>
+          </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          {/* Left column - Form */}
-          <div className="space-y-5">
-            {/* Step 1: Select channels */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold flex items-center gap-2">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">1</span>
-                Selecione os canais
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {ALL_PLATFORMS.map(p => {
-                  const isConnected = connectedPlatforms.includes(p);
-                  const isSelected = platforms.includes(p);
-                  return (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+            {/* Left column - Form */}
+            <div className="space-y-5">
+              {/* Step 1: Select channels */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">1</span>
+                  Selecione os canais
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_PLATFORMS.map(p => {
+                    const isConnected = connectedPlatforms.includes(p);
+                    const isSelected = platforms.includes(p);
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => isConnected && togglePlatform(p)}
+                        disabled={!isConnected}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all",
+                          isSelected
+                            ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                            : isConnected
+                            ? "border-border hover:border-primary/50"
+                            : "border-border opacity-40 cursor-not-allowed"
+                        )}
+                      >
+                        <PlatformIcon platform={p} size="sm" />
+                        {PLATFORM_CONFIG[p].label}
+                        {!isConnected && <Badge variant="outline" className="text-[8px] px-1 py-0">Não conectado</Badge>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Step 2: Content type */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
+                  Formato do conteúdo
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {availableContentTypes.map(t => (
                     <button
-                      key={p}
+                      key={t}
                       type="button"
-                      onClick={() => isConnected && togglePlatform(p)}
-                      disabled={!isConnected}
+                      onClick={() => setContentType(t as ContentType)}
                       className={cn(
                         "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all",
-                        isSelected
+                        contentType === t
                           ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                          : isConnected
-                          ? "border-border hover:border-primary/50"
-                          : "border-border opacity-40 cursor-not-allowed"
+                          : "border-border hover:border-primary/50"
                       )}
                     >
-                      <PlatformIcon platform={p} size="sm" />
-                      {PLATFORM_CONFIG[p].label}
-                      {!isConnected && <Badge variant="outline" className="text-[8px] px-1 py-0">Não conectado</Badge>}
+                      <span>{CONTENT_TYPE_CONFIG[t]?.icon}</span>
+                      {CONTENT_TYPE_CONFIG[t]?.label}
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Step 2: Content */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold flex items-center gap-2">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
-                Texto do post
-              </Label>
-              <Textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Digite o seu texto..." className="min-h-[140px]" />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                  <Input value={hashtags} onChange={e => setHashtags(e.target.value)} placeholder="hashtags separadas por vírgula" className="h-7 text-xs w-[200px]" />
+                  ))}
                 </div>
-                <p className={cn("text-xs", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
-                  {content.length}/{minCharLimit}
+                <p className="text-[11px] text-muted-foreground">
+                  Formatos disponíveis baseados nos canais selecionados
                 </p>
               </div>
-            </div>
 
-            <Separator />
+              <Separator />
 
-            {/* Step 3: Media */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold flex items-center gap-2">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
-                Mídias
-              </Label>
-              <div className="grid grid-cols-2 gap-3">
-                <Select value={contentType} onValueChange={v => setContentType(v as ContentType)}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Tipo de conteúdo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(CONTENT_TYPE_CONFIG) as ContentType[]).map(t => (
-                      <SelectItem key={t} value={t}>{CONTENT_TYPE_CONFIG[t].icon} {CONTENT_TYPE_CONFIG[t].label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" className="h-9 gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              {/* Step 3: Content text + AI */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
+                    Texto do post
+                  </Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-xs h-7"
+                    onClick={() => setShowAICaptionModal(true)}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Legenda com IA
+                  </Button>
+                </div>
+                <Textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Digite o seu texto..." className="min-h-[140px]" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Input value={hashtags} onChange={e => setHashtags(e.target.value)} placeholder="hashtags separadas por vírgula" className="h-7 text-xs w-[200px]" />
+                  </div>
+                  <p className={cn("text-xs", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
+                    {content.length}/{minCharLimit}
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Step 4: Media */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
+                  Mídias
+                </Label>
+                <Button variant="outline" className="h-9 gap-2 w-full" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  Upload
+                  Enviar imagens ou vídeos
                 </Button>
                 <input
                   ref={fileInputRef}
@@ -224,96 +302,161 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                   className="hidden"
                   onChange={e => handleFileUpload(e.target.files)}
                 />
-              </div>
-              {mediaUrls.length === 0 && (
-                <div
-                  className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-                  <p className="text-sm text-muted-foreground font-medium">Imagens, vídeos ou documentos</p>
-                  <p className="text-xs text-muted-foreground mt-1">Envie arquivos clicando aqui ou arrastando</p>
-                </div>
-              )}
-              {mediaUrls.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {mediaUrls.map((url, i) => (
-                    <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden">
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      <button onClick={() => removeMedia(i)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs">
-                        <X className="h-3 w-3" />
-                      </button>
+
+                {mediaUrls.length === 0 && (
+                  <div
+                    className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                    <p className="text-sm text-muted-foreground font-medium">Imagens, vídeos ou documentos</p>
+                    <p className="text-xs text-muted-foreground mt-1">Envie arquivos clicando aqui ou arrastando</p>
+                  </div>
+                )}
+
+                {mediaUrls.length > 0 && (
+                  <div className="space-y-3">
+                    {/* Multi-image mode selector */}
+                    {mediaUrls.length > 1 && (
+                      <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/50">
+                        <span className="text-xs font-medium text-muted-foreground mr-2">Modo de publicação:</span>
+                        <button
+                          type="button"
+                          onClick={() => setMultiImageMode('carousel')}
+                          className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                            multiImageMode === 'carousel'
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background border border-border hover:border-primary/50"
+                          )}
+                        >
+                          <Layers className="h-3.5 w-3.5" />
+                          Carrossel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setMultiImageMode('individual')}
+                          className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                            multiImageMode === 'individual'
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background border border-border hover:border-primary/50"
+                          )}
+                        >
+                          <LayoutGrid className="h-3.5 w-3.5" />
+                          Individual ({mediaUrls.length} posts)
+                        </button>
+                      </div>
+                    )}
+
+                    {multiImageMode === 'individual' && mediaUrls.length > 1 && (
+                      <p className="text-[11px] text-muted-foreground bg-muted/50 rounded-lg p-2">
+                        💡 Cada imagem será publicada como um post separado com o mesmo texto e configurações. Tudo será salvo de uma só vez.
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      {mediaUrls.map((url, i) => (
+                        <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden group">
+                          <img src={url} alt="" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors" />
+                          {multiImageMode === 'carousel' && mediaUrls.length > 1 && (
+                            <span className="absolute bottom-1 left-1 text-[10px] font-bold bg-foreground/70 text-background px-1.5 py-0.5 rounded">
+                              {i + 1}/{mediaUrls.length}
+                            </span>
+                          )}
+                          <button onClick={() => removeMedia(i)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Step 5: Schedule */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">5</span>
+                  Data e horário
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-9" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="h-9" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right column - Preview */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Preview</Label>
+              {platforms.length > 0 ? (
+                <>
+                  <div className="flex gap-1 flex-wrap">
+                    {platforms.map(p => (
+                      <button key={p} onClick={() => setPreviewPlatform(p)} className={cn("p-1.5 rounded-lg transition-colors", previewPlatform === p ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-muted")}>
+                        <PlatformIcon platform={p} size="sm" />
+                      </button>
+                    ))}
+                  </div>
+                  <PostPreview content={content} mediaUrl={mediaUrls[0]} platform={previewPlatform} />
+                  {mediaUrls.length > 1 && multiImageMode === 'carousel' && (
+                    <div className="flex gap-1 overflow-x-auto py-1">
+                      {mediaUrls.map((url, i) => (
+                        <img key={i} src={url} alt="" className="w-12 h-12 rounded object-cover shrink-0 border border-border" />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="border border-border rounded-xl p-8 text-center">
+                  <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                  <p className="text-sm text-muted-foreground">Aguardando conteúdo.</p>
                 </div>
               )}
             </div>
-
-            <Separator />
-
-            {/* Step 4: Schedule */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold flex items-center gap-2">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
-                Data e horário
-              </Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-9" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="h-9" />
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* Right column - Preview */}
-          <div className="space-y-3">
-            <Label className="text-sm font-semibold">Preview</Label>
-            {platforms.length > 0 ? (
-              <>
-                <div className="flex gap-1 flex-wrap">
-                  {platforms.map(p => (
-                    <button key={p} onClick={() => setPreviewPlatform(p)} className={cn("p-1.5 rounded-lg transition-colors", previewPlatform === p ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-muted")}>
-                      <PlatformIcon platform={p} size="sm" />
-                    </button>
-                  ))}
-                </div>
-                <PostPreview content={content} mediaUrl={mediaUrls[0]} platform={previewPlatform} />
-              </>
-            ) : (
-              <div className="border border-border rounded-xl p-8 text-center">
-                <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground">Aguardando conteúdo.</p>
-              </div>
-            )}
-          </div>
-        </div>
+          <Separator />
 
-        <Separator />
-
-        <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={handleSaveDraft} disabled={!content.trim() || platforms.length === 0}>
-              Rascunho
-            </Button>
-            <Button variant="outline" onClick={handleSchedule} disabled={!content.trim() || platforms.length === 0} className="gap-2">
-              <Calendar className="h-4 w-4" />
-              Agendar
-            </Button>
-            {hasLateAccounts && (
-              <Button onClick={handlePublishNow} disabled={!content.trim() || platforms.length === 0} className="gap-2">
-                <Zap className="h-4 w-4" />
-                Publicar Agora
+          <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={handleSaveDraft} disabled={!content.trim() || platforms.length === 0}>
+                Rascunho
               </Button>
-            )}
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+              <Button variant="outline" onClick={handleSchedule} disabled={!content.trim() || platforms.length === 0} className="gap-2">
+                <Calendar className="h-4 w-4" />
+                Agendar
+              </Button>
+              {hasLateAccounts && (
+                <Button onClick={handlePublishNow} disabled={!content.trim() || platforms.length === 0} className="gap-2">
+                  <Zap className="h-4 w-4" />
+                  Publicar Agora
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AICaptionModal
+        open={showAICaptionModal}
+        onOpenChange={setShowAICaptionModal}
+        platforms={platforms}
+        contentType={contentType}
+        mediaUrls={mediaUrls}
+        onCaptionGenerated={handleAICaptionGenerated}
+      />
+    </>
   );
 }
