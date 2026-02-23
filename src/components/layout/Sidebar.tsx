@@ -228,7 +228,7 @@ export function Sidebar() {
         collapsed ? "w-16" : "w-64"
       )}>
         <div className={cn(
-          "flex h-16 items-center gap-2 px-4 border-b border-border",
+          "flex h-16 items-center gap-2 px-4 border-b border-border my-2",
           collapsed && "justify-center px-2"
         )}>
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
