@@ -1,0 +1,141 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const lateApiKey = Deno.env.get("LATE_API_KEY");
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: claims, error: claimsError } = await supabase.auth.getClaims(
+      authHeader.replace("Bearer ", "")
+    );
+    if (claimsError || !claims?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claims.claims.sub as string;
+    const { message_id, reply_content } = await req.json();
+
+    if (!message_id || !reply_content) {
+      return new Response(
+        JSON.stringify({ error: "message_id and reply_content are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get user's organization
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("current_organization_id")
+      .eq("id", userId)
+      .single();
+
+    if (!profile?.current_organization_id) {
+      return new Response(
+        JSON.stringify({ error: "No organization found" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const orgId = profile.current_organization_id;
+
+    const serviceClient = createClient(
+      supabaseUrl,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Get the message
+    const { data: message, error: msgError } = await serviceClient
+      .from("social_messages")
+      .select("*")
+      .eq("id", message_id)
+      .eq("organization_id", orgId)
+      .single();
+
+    if (msgError || !message) {
+      return new Response(
+        JSON.stringify({ error: "Message not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get organization's late_profile_id
+    const { data: org } = await serviceClient
+      .from("organizations")
+      .select("late_profile_id")
+      .eq("id", orgId)
+      .single();
+
+    // Try to send via Late.dev if configured
+    if (org?.late_profile_id && lateApiKey && message.external_id) {
+      try {
+        const endpoint = message.message_type === "comment"
+          ? `https://api.getlate.dev/v1/profiles/${org.late_profile_id}/comments/${message.external_id}/reply`
+          : `https://api.getlate.dev/v1/profiles/${org.late_profile_id}/messages/${message.external_id}/reply`;
+
+        const lateResponse = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${lateApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ content: reply_content }),
+        });
+
+        if (!lateResponse.ok) {
+          console.error("Late.dev reply error:", await lateResponse.text());
+        }
+      } catch (err) {
+        console.error("Late.dev reply failed:", err);
+      }
+    }
+
+    // Update the message in DB
+    const { error: updateError } = await serviceClient
+      .from("social_messages")
+      .update({
+        reply_content,
+        replied_at: new Date().toISOString(),
+        is_read: true,
+      })
+      .eq("id", message_id);
+
+    if (updateError) throw updateError;
+
+    return new Response(
+      JSON.stringify({ success: true }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
