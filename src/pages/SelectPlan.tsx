@@ -169,6 +169,35 @@ export default function SelectPlan() {
     setLoadingPlan(planKey);
 
     try {
+      // Free plan: activate directly without LemonSqueezy checkout
+      if (planKey === 'free') {
+        const { error: orgError } = await supabase
+          .from('organizations')
+          .update({ plan_type: 'free' })
+          .eq('id', organizationId);
+
+        if (orgError) throw orgError;
+
+        // Create a subscription record for consistency
+        const { error: subError } = await supabase
+          .from('subscriptions')
+          .upsert({
+            organization_id: organizationId,
+            status: 'active',
+            plan_type: 'free',
+            current_period_start: new Date().toISOString(),
+            current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          }, { onConflict: 'organization_id' });
+
+        if (subError) {
+          console.warn('Could not create subscription record:', subError);
+        }
+
+        toast.success('Plano Bússola ativado com sucesso!');
+        navigate('/app/onboarding');
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -193,6 +222,13 @@ export default function SelectPlan() {
           }),
         }
       );
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        const textResponse = await response.text();
+        console.error('Non-JSON response from checkout:', textResponse.substring(0, 200));
+        throw new Error('Erro inesperado ao criar checkout. Tente novamente.');
+      }
 
       const data = await response.json();
 
