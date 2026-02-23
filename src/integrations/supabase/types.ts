@@ -1687,6 +1687,81 @@ export type Database = {
           },
         ]
       }
+      social_messages: {
+        Row: {
+          client_id: string | null
+          content: string
+          created_at: string
+          external_id: string | null
+          id: string
+          is_read: boolean
+          message_type: string
+          organization_id: string
+          platform: string
+          post_id: string | null
+          received_at: string
+          replied_at: string | null
+          reply_content: string | null
+          sender_avatar_url: string | null
+          sender_name: string
+          sender_username: string | null
+          social_account_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          content: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          organization_id: string
+          platform: string
+          post_id?: string | null
+          received_at?: string
+          replied_at?: string | null
+          reply_content?: string | null
+          sender_avatar_url?: string | null
+          sender_name: string
+          sender_username?: string | null
+          social_account_id: string
+        }
+        Update: {
+          client_id?: string | null
+          content?: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          organization_id?: string
+          platform?: string
+          post_id?: string | null
+          received_at?: string
+          replied_at?: string | null
+          reply_content?: string | null
+          sender_avatar_url?: string | null
+          sender_name?: string
+          sender_username?: string | null
+          social_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_messages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_posts: {
         Row: {
           approval_token: string | null
