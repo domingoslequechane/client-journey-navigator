@@ -193,7 +193,6 @@ const handler = async (req: Request): Promise<Response> => {
           type: "checkouts",
           attributes: {
             test_mode: testMode,
-            trial_period_days: 14,
             checkout_data: checkoutDataPayload,
             product_options: {
               redirect_url: redirectUrl,
