@@ -106,7 +106,7 @@ REGRAS OBRIGATÓRIAS:
           { role: "user", content: userContent },
         ],
         temperature: 0.8,
-        max_tokens: 800,
+        max_tokens: 4096,
       }),
     });
 
