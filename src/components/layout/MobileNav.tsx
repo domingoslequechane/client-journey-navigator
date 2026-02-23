@@ -28,7 +28,8 @@ import {
   Link2,
   CalendarDays,
   Wallet,
-  Building2
+  Building2,
+  Share2
 } from 'lucide-react';
 import {
   Drawer,
@@ -111,6 +112,9 @@ export function MobileNav() {
 
     // Add Editorial Calendar to more menu
     items.push({ name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, show: true });
+
+    // Add Social Media to more menu
+    items.push({ name: 'Social Media', href: '/app/social-media', icon: Share2, show: true });
 
     // Add Studio AI to more menu
     items.push({ name: 'Studio AI', href: '/app/studio', icon: Sparkles, show: true });

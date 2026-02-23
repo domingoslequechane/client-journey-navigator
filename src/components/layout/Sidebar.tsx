@@ -29,7 +29,8 @@ import {
   RefreshCw,
   Link2,
   CalendarDays,
-  Wallet
+  Wallet,
+  Share2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -121,6 +122,7 @@ export function Sidebar() {
       { name: 'Finanças', href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canSeeFinance },
       { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true },
       { name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: true },
+      { name: 'Social Media', href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: true },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
       { name: 'Studio AI', href: '/app/studio', icon: Workflow, tutorialId: 'sidebar-studio', show: true },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
