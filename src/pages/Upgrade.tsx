@@ -261,6 +261,14 @@ export default function Upgrade() {
       return;
     }
 
+    // If current plan is free, skip manage-subscription and go straight to checkout
+    // because the subscription ID in the DB may not exist in LemonSqueezy
+    if (currentPlan === 'free') {
+      console.log('Current plan is free, going straight to checkout');
+      await handleSubscribe(newPlanType);
+      return;
+    }
+
     setChangingPlan(newPlanType);
     try {
       const response = await supabase.functions.invoke('manage-subscription', {
