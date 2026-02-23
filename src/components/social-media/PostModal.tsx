@@ -9,14 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { PostPreview } from './PostPreview';
 import { PlatformIcon } from './PlatformIcon';
-import { ContentTypeIcon } from './ContentTypeIcon';
 import { AICaptionModal } from './AICaptionModal';
 import { type SocialPlatform, type ContentType, PLATFORM_CONFIG, CONTENT_TYPE_CONFIG } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2 } from 'lucide-react';
+import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Which content types each platform supports
@@ -35,6 +34,15 @@ interface ScheduleSlot {
   date: string;
   time: string;
   platforms: SocialPlatform[];
+  contentType: ContentType;
+}
+
+interface IndividualPostConfig {
+  content: string;
+  hashtags: string;
+  platforms: SocialPlatform[];
+  scheduleSlots: ScheduleSlot[];
+  contentType: ContentType;
 }
 
 interface PostModalProps {
@@ -59,17 +67,25 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
   const [showAICaptionModal, setShowAICaptionModal] = useState(false);
   const [suggestingTimes, setSuggestingTimes] = useState(false);
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[]>([
-    { date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: ['instagram'] },
+    { date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: ['instagram'], contentType: 'feed' },
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const connectedPlatforms = accounts.filter(a => a.is_connected).map(a => a.platform as SocialPlatform);
+  // Individual post pagination
+  const [currentPostIndex, setCurrentPostIndex] = useState(0);
+  const [individualConfigs, setIndividualConfigs] = useState<IndividualPostConfig[]>([]);
+
+  const connectedAccounts = accounts.filter(a => a.is_connected);
+  const connectedPlatforms = connectedAccounts.map(a => a.platform as SocialPlatform);
   const hasLateAccounts = accounts.some(a => a.is_connected && a.late_account_id);
 
-  // Available content types based on selected platforms
-  const availableContentTypes = platforms.length > 0
-    ? Array.from(new Set(platforms.flatMap(p => PLATFORM_CONTENT_TYPES[p] || ['feed'])))
-    : Object.keys(CONTENT_TYPE_CONFIG) as ContentType[];
+  const isIndividualMode = multiImageMode === 'individual' && mediaUrls.length > 1;
+  const totalIndividualPosts = isIndividualMode ? mediaUrls.length : 1;
+
+  // Get account info for preview
+  const getAccountForPlatform = (platform: SocialPlatform) => {
+    return connectedAccounts.find(a => a.platform === platform);
+  };
 
   useEffect(() => {
     if (post) {
@@ -77,43 +93,66 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
       setMediaUrls(post.media_urls || []);
       setPlatforms(post.platforms || ['instagram']);
       const postPlatforms = post.platforms || ['instagram'];
+      const ct = (post.content_type as ContentType) || 'feed';
+      setContentType(ct);
       if (post.scheduled_at) {
         const dt = new Date(post.scheduled_at);
-        setScheduleSlots([{ date: format(dt, 'yyyy-MM-dd'), time: format(dt, 'HH:mm'), platforms: postPlatforms }]);
+        setScheduleSlots([{ date: format(dt, 'yyyy-MM-dd'), time: format(dt, 'HH:mm'), platforms: postPlatforms, contentType: ct }]);
       } else {
-        setScheduleSlots([{ date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: postPlatforms }]);
+        setScheduleSlots([{ date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: postPlatforms, contentType: ct }]);
       }
-      setContentType(post.content_type as ContentType);
       setHashtags(post.hashtags?.join(', ') || '');
       setPreviewPlatform(post.platforms?.[0] || 'instagram');
     } else {
+      const defaultPlatforms: SocialPlatform[] = connectedPlatforms.length > 0 ? [connectedPlatforms[0]] : ['instagram'];
       setContent('');
       setMediaUrls([]);
-      setPlatforms(['instagram']);
-      setScheduleSlots([{ date: defaultDate || format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: ['instagram'] }]);
+      setPlatforms(defaultPlatforms);
+      setScheduleSlots([{ date: defaultDate || format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: defaultPlatforms, contentType: 'feed' }]);
       setContentType('feed');
       setHashtags('');
-      setPreviewPlatform('instagram');
+      setPreviewPlatform(defaultPlatforms[0]);
       setMultiImageMode('carousel');
+      setCurrentPostIndex(0);
+      setIndividualConfigs([]);
     }
   }, [post, open, defaultDate]);
 
-  // Auto-switch content type if not available for selected platforms
+  // Initialize individual configs when switching to individual mode
   useEffect(() => {
-    if (!availableContentTypes.includes(contentType) && availableContentTypes.length > 0) {
-      setContentType(availableContentTypes[0] as ContentType);
+    if (isIndividualMode && individualConfigs.length !== mediaUrls.length) {
+      setIndividualConfigs(mediaUrls.map((_, i) => 
+        individualConfigs[i] || {
+          content: i === 0 ? content : '',
+          hashtags: i === 0 ? hashtags : '',
+          platforms: [...platforms],
+          contentType: 'feed',
+          scheduleSlots: [{ date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: [...platforms], contentType: 'feed' }],
+        }
+      ));
     }
-  }, [platforms]);
+  }, [isIndividualMode, mediaUrls.length]);
 
-  // Sync slot platforms when global platforms change
+  // Sync current individual config to/from main state
   useEffect(() => {
-    setScheduleSlots(prev => prev.map(slot => ({
-      ...slot,
-      platforms: slot.platforms.filter(p => platforms.includes(p)).length > 0
-        ? slot.platforms.filter(p => platforms.includes(p))
-        : [...platforms],
-    })));
-  }, [platforms]);
+    if (isIndividualMode && individualConfigs[currentPostIndex]) {
+      const cfg = individualConfigs[currentPostIndex];
+      setContent(cfg.content);
+      setHashtags(cfg.hashtags);
+      setPlatforms(cfg.platforms);
+      setScheduleSlots(cfg.scheduleSlots);
+      setContentType(cfg.contentType);
+      if (cfg.platforms.length > 0) setPreviewPlatform(cfg.platforms[0]);
+    }
+  }, [currentPostIndex, isIndividualMode]);
+
+  // Save current config when editing in individual mode
+  const saveCurrentIndividualConfig = () => {
+    if (!isIndividualMode) return;
+    setIndividualConfigs(prev => prev.map((cfg, i) => 
+      i === currentPostIndex ? { content, hashtags, platforms, scheduleSlots, contentType } : cfg
+    ));
+  };
 
   const togglePlatform = (p: SocialPlatform) => {
     setPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
@@ -129,7 +168,11 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
     }));
   };
 
-  const addSlot = () => setScheduleSlots(prev => [...prev, { date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: [...platforms] }]);
+  const updateSlotContentType = (slotIdx: number, ct: ContentType) => {
+    setScheduleSlots(prev => prev.map((s, i) => i === slotIdx ? { ...s, contentType: ct } : s));
+  };
+
+  const addSlot = () => setScheduleSlots(prev => [...prev, { date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: [...platforms], contentType: 'feed' }]);
   const removeSlot = (idx: number) => setScheduleSlots(prev => prev.filter((_, i) => i !== idx));
   const updateSlot = (idx: number, key: 'date' | 'time', value: string) =>
     setScheduleSlots(prev => prev.map((s, i) => i === idx ? { ...s, [key]: value } : s));
@@ -142,11 +185,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
     setSuggestingTimes(true);
     try {
       const { data, error } = await supabase.functions.invoke('suggest-best-times', {
-        body: {
-          platforms,
-          content_type: contentType,
-          slots_count: 3,
-        },
+        body: { platforms, content_type: contentType, slots_count: 3 },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -157,10 +196,9 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
           date: s.date,
           time: s.time,
           platforms: [...platforms],
+          contentType: contentType,
         })));
         toast.success(`${slots.length} melhores horários sugeridos pela IA!`);
-      } else {
-        toast.error('Não foi possível sugerir horários. Tente novamente.');
       }
     } catch (err: any) {
       console.error('Error suggesting times:', err);
@@ -184,9 +222,6 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
         newUrls.push(urlData.publicUrl);
       }
       setMediaUrls(prev => [...prev, ...newUrls]);
-      if (mediaUrls.length + newUrls.length > 1) {
-        setMultiImageMode('carousel');
-      }
     } catch (err: any) {
       console.error('Upload error:', err);
     } finally {
@@ -199,7 +234,23 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
   };
 
   const buildPostData = (status: string) => {
-    const effectiveContentType = mediaUrls.length > 1 && multiImageMode === 'carousel' ? 'carousel' : contentType;
+    if (isIndividualMode) {
+      // Save current before building
+      const configs = individualConfigs.map((cfg, i) =>
+        i === currentPostIndex ? { content, hashtags, platforms, scheduleSlots, contentType } : cfg
+      );
+      return configs.map((cfg, i) => ({
+        content: cfg.content,
+        media_urls: [mediaUrls[i]],
+        platforms: cfg.platforms,
+        scheduled_at: `${cfg.scheduleSlots[0].date}T${cfg.scheduleSlots[0].time}:00`,
+        status,
+        content_type: cfg.contentType,
+        hashtags: cfg.hashtags ? cfg.hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        schedule_slots: cfg.scheduleSlots.length > 1 ? cfg.scheduleSlots : undefined,
+      }));
+    }
+
     const firstSlot = scheduleSlots[0];
     return {
       content,
@@ -207,27 +258,45 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
       platforms,
       scheduled_at: `${firstSlot.date}T${firstSlot.time}:00`,
       status,
-      content_type: effectiveContentType,
+      content_type: mediaUrls.length > 1 && multiImageMode === 'carousel' ? 'carousel' : contentType,
       hashtags: hashtags ? hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
       schedule_slots: scheduleSlots.length > 1 ? scheduleSlots : undefined,
     };
   };
 
   const handleSaveDraft = () => {
-    if (!content.trim() || platforms.length === 0) return;
-    onSave(buildPostData('draft'));
+    if (platforms.length === 0) return;
+    const data = buildPostData('draft');
+    if (Array.isArray(data)) {
+      data.forEach(d => { if (d.content.trim()) onSave(d); });
+    } else {
+      if (!content.trim()) return;
+      onSave(data);
+    }
     onOpenChange(false);
   };
 
   const handleSchedule = () => {
-    if (!content.trim() || platforms.length === 0) return;
-    onSave(buildPostData('scheduled'));
+    if (platforms.length === 0) return;
+    const data = buildPostData('scheduled');
+    if (Array.isArray(data)) {
+      data.forEach(d => { if (d.content.trim()) onSave(d); });
+    } else {
+      if (!content.trim()) return;
+      onSave(data);
+    }
     onOpenChange(false);
   };
 
   const handlePublishNow = () => {
-    if (!content.trim() || platforms.length === 0) return;
-    onSave(buildPostData('published'));
+    if (platforms.length === 0) return;
+    const data = buildPostData('published');
+    if (Array.isArray(data)) {
+      data.forEach(d => { if (d.content.trim()) onSave(d); });
+    } else {
+      if (!content.trim()) return;
+      onSave(data);
+    }
     onOpenChange(false);
   };
 
@@ -235,13 +304,28 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
     setContent(caption);
     const hashtagMatches = caption.match(/#\w+/g);
     if (hashtagMatches) {
-      const tags = hashtagMatches.map(t => t.replace('#', ''));
-      setHashtags(tags.join(', '));
+      setHashtags(hashtagMatches.map(t => t.replace('#', '')).join(', '));
     }
+  };
+
+  // Navigate individual posts
+  const goToPost = (idx: number) => {
+    saveCurrentIndividualConfig();
+    setCurrentPostIndex(idx);
   };
 
   const minCharLimit = Math.min(...platforms.map(p => PLATFORM_CONFIG[p]?.charLimit || 2200));
   const isOverLimit = content.length > minCharLimit;
+
+  // Get available content types for slot platforms
+  const getSlotContentTypes = (slotPlatforms: SocialPlatform[]): ContentType[] => {
+    if (slotPlatforms.length === 0) return ['feed'];
+    return Array.from(new Set(slotPlatforms.flatMap(p => PLATFORM_CONTENT_TYPES[p] || ['feed'])));
+  };
+
+  // Current media for preview
+  const currentMediaUrl = isIndividualMode ? mediaUrls[currentPostIndex] : mediaUrls[0];
+  const previewAccount = getAccountForPlatform(previewPlatform);
 
   return (
     <>
@@ -261,14 +345,15 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                   Selecione os canais
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {connectedPlatforms.length === 0 ? (
+                  {connectedAccounts.length === 0 ? (
                     <p className="text-xs text-muted-foreground">Nenhum canal conectado. Conecte uma conta primeiro.</p>
                   ) : (
-                    connectedPlatforms.map(p => {
+                    connectedAccounts.map(account => {
+                      const p = account.platform as SocialPlatform;
                       const isSelected = platforms.includes(p);
                       return (
                         <button
-                          key={p}
+                          key={account.id}
                           type="button"
                           onClick={() => togglePlatform(p)}
                           className={cn(
@@ -278,8 +363,12 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                               : "border-border hover:border-primary/50"
                           )}
                         >
-                          <PlatformIcon platform={p} size="sm" />
-                          {PLATFORM_CONFIG[p].label}
+                          {account.avatar_url ? (
+                            <img src={account.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <PlatformIcon platform={p} size="sm" />
+                          )}
+                          <span className="truncate max-w-[120px]">{account.account_name || PLATFORM_CONFIG[p].label}</span>
                         </button>
                       );
                     })
@@ -289,42 +378,11 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
               <Separator />
 
-              {/* Step 2: Content type with real icons */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
-                  Formato do conteúdo
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {availableContentTypes.map(t => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setContentType(t as ContentType)}
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all",
-                        contentType === t
-                          ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                          : "border-border hover:border-primary/50"
-                      )}
-                    >
-                      <ContentTypeIcon type={t as ContentType} />
-                      {CONTENT_TYPE_CONFIG[t]?.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Formatos disponíveis baseados nos canais selecionados
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Step 3: Content text + AI */}
+              {/* Step 2: Content text + AI */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
                     Texto do post
                   </Label>
                   <Button
@@ -351,10 +409,10 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
               <Separator />
 
-              {/* Step 4: Media */}
+              {/* Step 3: Media */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold flex items-center gap-2">
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
                   Mídias
                 </Label>
                 <Button variant="outline" className="h-9 gap-2 w-full" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
@@ -388,7 +446,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                         <span className="text-xs font-medium text-muted-foreground mr-2">Modo de publicação:</span>
                         <button
                           type="button"
-                          onClick={() => setMultiImageMode('carousel')}
+                          onClick={() => { setMultiImageMode('carousel'); setCurrentPostIndex(0); }}
                           className={cn(
                             "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
                             multiImageMode === 'carousel'
@@ -415,27 +473,73 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                       </div>
                     )}
 
-                    {multiImageMode === 'individual' && mediaUrls.length > 1 && (
-                      <p className="text-[11px] text-muted-foreground bg-muted/50 rounded-lg p-2">
-                        💡 Cada imagem será publicada como um post separado com o mesmo texto e configurações.
-                      </p>
+                    {/* Individual mode pagination */}
+                    {isIndividualMode && (
+                      <div className="flex items-center justify-center gap-3 p-2 rounded-lg border border-primary/20 bg-primary/5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          disabled={currentPostIndex === 0}
+                          onClick={() => goToPost(currentPostIndex - 1)}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-medium">
+                          {currentPostIndex + 1} / {totalIndividualPosts}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          disabled={currentPostIndex >= totalIndividualPosts - 1}
+                          onClick={() => goToPost(currentPostIndex + 1)}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          Configure cada post individualmente
+                        </span>
+                      </div>
                     )}
 
                     <div className="flex flex-wrap gap-2">
-                      {mediaUrls.map((url, i) => (
-                        <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden group">
-                          <img src={url} alt="" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors" />
-                          {multiImageMode === 'carousel' && mediaUrls.length > 1 && (
-                            <span className="absolute bottom-1 left-1 text-[10px] font-bold bg-foreground/70 text-background px-1.5 py-0.5 rounded">
-                              {i + 1}/{mediaUrls.length}
+                      {isIndividualMode ? (
+                        // Show only current post's image highlighted
+                        mediaUrls.map((url, i) => (
+                          <div
+                            key={i}
+                            className={cn(
+                              "relative w-20 h-20 rounded-lg overflow-hidden group cursor-pointer border-2 transition-all",
+                              i === currentPostIndex ? "border-primary ring-2 ring-primary/30" : "border-transparent opacity-60 hover:opacity-80"
+                            )}
+                            onClick={() => goToPost(i)}
+                          >
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                            <span className="absolute bottom-0.5 left-0.5 text-[9px] font-bold bg-foreground/70 text-background px-1 py-0.5 rounded">
+                              {i + 1}
                             </span>
-                          )}
-                          <button onClick={() => removeMedia(i)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
+                            <button onClick={(e) => { e.stopPropagation(); removeMedia(i); }} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity">
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        mediaUrls.map((url, i) => (
+                          <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden group">
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors" />
+                            {multiImageMode === 'carousel' && mediaUrls.length > 1 && (
+                              <span className="absolute bottom-1 left-1 text-[10px] font-bold bg-foreground/70 text-background px-1.5 py-0.5 rounded">
+                                {i + 1}/{mediaUrls.length}
+                              </span>
+                            )}
+                            <button onClick={() => removeMedia(i)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
@@ -443,11 +547,11 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
               <Separator />
 
-              {/* Step 5: Schedule - per-slot platform selection */}
+              {/* Step 4: Schedule - mLabs style with per-slot format */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">5</span>
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
                     Data e horário das publicações
                   </Label>
                   <Button
@@ -460,51 +564,72 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                     {suggestingTimes ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                     <span>Melhores horários</span>
                     <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/50 text-primary">
-                      NOVO
+                      IA
                     </Badge>
                   </Button>
                 </div>
 
                 <div className="space-y-2">
-                  {scheduleSlots.map((slot, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
-                      {/* Per-slot platform toggles */}
-                      <div className="flex gap-1 shrink-0">
-                        {platforms.map(p => (
-                          <button
-                            key={p}
-                            type="button"
-                            onClick={() => toggleSlotPlatform(idx, p)}
-                            className={cn(
-                              "rounded-full transition-all",
-                              slot.platforms.includes(p)
-                                ? "opacity-100 ring-2 ring-primary/40"
-                                : "opacity-30 hover:opacity-60"
-                            )}
+                  {scheduleSlots.map((slot, idx) => {
+                    const slotContentTypes = getSlotContentTypes(slot.platforms);
+                    return (
+                      <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
+                        {/* Per-slot platform + format icons */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {platforms.map(p => {
+                            const platformTypes = PLATFORM_CONTENT_TYPES[p] || ['feed'];
+                            const isActive = slot.platforms.includes(p);
+                            return (
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => toggleSlotPlatform(idx, p)}
+                                className={cn(
+                                  "rounded-full transition-all",
+                                  isActive
+                                    ? "opacity-100 ring-2 ring-primary/40"
+                                    : "opacity-30 hover:opacity-60"
+                                )}
+                              >
+                                <PlatformIcon platform={p} size="sm" variant="circle" />
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Format selector for this slot */}
+                        {slotContentTypes.length > 1 && (
+                          <select
+                            value={slot.contentType}
+                            onChange={e => updateSlotContentType(idx, e.target.value as ContentType)}
+                            className="h-8 text-xs rounded-md border border-border bg-background px-2 shrink-0"
                           >
-                            <PlatformIcon platform={p} size="sm" variant="circle" />
-                          </button>
-                        ))}
+                            {slotContentTypes.map(ct => (
+                              <option key={ct} value={ct}>{CONTENT_TYPE_CONFIG[ct]?.label || ct}</option>
+                            ))}
+                          </select>
+                        )}
+
+                        <div className="flex items-center gap-1.5 flex-1">
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} className="h-8 text-xs" />
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-1">
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-8 text-xs" />
+                        </div>
+                        {scheduleSlots.length > 1 && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeSlot(idx)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1.5 flex-1">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} className="h-8 text-xs" />
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-1">
-                        <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-8 text-xs" />
-                      </div>
-                      {scheduleSlots.length > 1 && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeSlot(idx)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-7 text-primary" onClick={addSlot}>
-                  <span className="text-sm">⊕</span> Incluir mais dias e horários
+                  <Plus className="h-3.5 w-3.5" /> Incluir mais dias e horários
                 </Button>
               </div>
             </div>
@@ -521,8 +646,15 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                       </button>
                     ))}
                   </div>
-                  <PostPreview content={content} mediaUrl={mediaUrls[0]} platform={previewPlatform} />
-                  {mediaUrls.length > 1 && multiImageMode === 'carousel' && (
+                  <PostPreview
+                    content={content}
+                    mediaUrl={currentMediaUrl}
+                    platform={previewPlatform}
+                    accountName={previewAccount?.account_name || undefined}
+                    accountUsername={previewAccount?.username || undefined}
+                    accountAvatarUrl={previewAccount?.avatar_url || undefined}
+                  />
+                  {!isIndividualMode && mediaUrls.length > 1 && multiImageMode === 'carousel' && (
                     <div className="flex gap-1 overflow-x-auto py-1">
                       {mediaUrls.map((url, i) => (
                         <img key={i} src={url} alt="" className="w-12 h-12 rounded object-cover shrink-0 border border-border" />
@@ -544,15 +676,15 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
           <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={handleSaveDraft} disabled={!content.trim() || platforms.length === 0}>
+              <Button variant="secondary" onClick={handleSaveDraft} disabled={platforms.length === 0}>
                 Rascunho
               </Button>
-              <Button variant="outline" onClick={handleSchedule} disabled={!content.trim() || platforms.length === 0} className="gap-2">
+              <Button variant="outline" onClick={handleSchedule} disabled={platforms.length === 0} className="gap-2">
                 <Calendar className="h-4 w-4" />
                 Agendar
               </Button>
               {hasLateAccounts && (
-                <Button onClick={handlePublishNow} disabled={!content.trim() || platforms.length === 0} className="gap-2">
+                <Button onClick={handlePublishNow} disabled={platforms.length === 0} className="gap-2">
                   <Zap className="h-4 w-4" />
                   Publicar Agora
                 </Button>
@@ -567,7 +699,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
         onOpenChange={setShowAICaptionModal}
         platforms={platforms}
         contentType={contentType}
-        mediaUrls={mediaUrls}
+        mediaUrls={isIndividualMode ? [mediaUrls[currentPostIndex]] : mediaUrls}
         onCaptionGenerated={handleAICaptionGenerated}
       />
     </>

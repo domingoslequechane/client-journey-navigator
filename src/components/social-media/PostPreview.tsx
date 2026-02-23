@@ -7,33 +7,73 @@ interface PostPreviewProps {
   content: string;
   mediaUrl?: string;
   platform: SocialPlatform;
+  accountName?: string;
+  accountUsername?: string;
+  accountAvatarUrl?: string;
 }
 
-export function PostPreview({ content, mediaUrl, platform }: PostPreviewProps) {
+export function PostPreview({ content, mediaUrl, platform, accountName, accountUsername, accountAvatarUrl }: PostPreviewProps) {
   const config = PLATFORM_CONFIG[platform];
   const charLimit = config.charLimit;
   const isOverLimit = content.length > charLimit;
 
-  if (platform === 'instagram') return <InstagramPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit} />;
-  if (platform === 'facebook') return <FacebookPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit} />;
-  if (platform === 'linkedin') return <LinkedInPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit} />;
-  if (platform === 'twitter') return <TwitterPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit} />;
-  return <GenericPreview content={content} mediaUrl={mediaUrl} platform={platform} isOverLimit={isOverLimit} charLimit={charLimit} />;
+  const displayName = accountName || 'Minha Página';
+  const username = accountUsername || 'minhapagina';
+  const initials = displayName.substring(0, 2).toUpperCase();
+
+  const Avatar = ({ size = 'w-8 h-8', className }: { size?: string; className?: string }) => (
+    accountAvatarUrl ? (
+      <img src={accountAvatarUrl} alt="" className={cn(size, "rounded-full object-cover", className)} />
+    ) : (
+      <div className={cn(size, "rounded-full flex items-center justify-center text-primary-foreground text-[10px] font-bold", className)}>
+        {initials}
+      </div>
+    )
+  );
+
+  if (platform === 'instagram') return (
+    <InstagramPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit}
+      displayName={displayName} username={username} avatar={<Avatar size="w-8 h-8" className="bg-gradient-to-br from-[hsl(280,70%,50%)] via-[hsl(330,80%,55%)] to-[hsl(30,90%,55%)]" />} />
+  );
+  if (platform === 'facebook') return (
+    <FacebookPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit}
+      displayName={displayName} avatar={<Avatar size="w-10 h-10" className="bg-[hsl(220,70%,50%)]" />} />
+  );
+  if (platform === 'linkedin') return (
+    <LinkedInPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit}
+      displayName={displayName} avatar={<Avatar size="w-10 h-10" className="bg-[hsl(210,80%,40%)]" />} />
+  );
+  if (platform === 'twitter') return (
+    <TwitterPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit}
+      displayName={displayName} username={username} avatar={<Avatar size="w-10 h-10" className="bg-foreground" />} />
+  );
+  return (
+    <GenericPreview content={content} mediaUrl={mediaUrl} platform={platform} isOverLimit={isOverLimit} charLimit={charLimit}
+      displayName={displayName} username={username} avatarUrl={accountAvatarUrl} />
+  );
 }
 
-function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit }: { content: string; mediaUrl?: string; isOverLimit: boolean; charLimit: number }) {
+interface PreviewCommonProps {
+  content: string;
+  mediaUrl?: string;
+  isOverLimit: boolean;
+  charLimit: number;
+  displayName: string;
+  avatar: React.ReactNode;
+}
+
+function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, username }: PreviewCommonProps & { username: string }) {
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
       <div className="flex items-center justify-between p-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[hsl(280,70%,50%)] via-[hsl(330,80%,55%)] to-[hsl(30,90%,55%)] p-[2px]">
-            <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
-              <span className="text-[10px] font-bold">DH</span>
+            <div className="w-full h-full rounded-full bg-card overflow-hidden">
+              {avatar}
             </div>
           </div>
           <div>
-            <p className="text-xs font-semibold">dreamhouse</p>
-            <p className="text-[9px] text-muted-foreground">Patrocinado</p>
+            <p className="text-xs font-semibold">{username}</p>
           </div>
         </div>
         <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
@@ -59,7 +99,7 @@ function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit }: { conte
           <Bookmark className="h-5 w-5" />
         </div>
         <p className="text-xs">
-          <span className="font-semibold">dreamhouse </span>
+          <span className="font-semibold">{username} </span>
           <span className="whitespace-pre-wrap line-clamp-3">
             {content || <span className="text-muted-foreground italic">Escreva o conteúdo...</span>}
           </span>
@@ -75,13 +115,13 @@ function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit }: { conte
   );
 }
 
-function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit }: { content: string; mediaUrl?: string; isOverLimit: boolean; charLimit: number }) {
+function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar }: PreviewCommonProps) {
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
       <div className="flex items-center gap-2 p-3">
-        <div className="w-10 h-10 rounded-full bg-[hsl(220,70%,50%)] flex items-center justify-center text-primary-foreground text-sm font-bold">DH</div>
+        {avatar}
         <div>
-          <p className="text-xs font-semibold">Dream House</p>
+          <p className="text-xs font-semibold">{displayName}</p>
           <p className="text-[10px] text-muted-foreground">Agora mesmo · 🌐</p>
         </div>
       </div>
@@ -113,13 +153,13 @@ function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit }: { conten
   );
 }
 
-function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit }: { content: string; mediaUrl?: string; isOverLimit: boolean; charLimit: number }) {
+function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar }: PreviewCommonProps) {
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
       <div className="flex items-center gap-2 p-3">
-        <div className="w-10 h-10 rounded-full bg-[hsl(210,80%,40%)] flex items-center justify-center text-primary-foreground text-sm font-bold">DH</div>
+        {avatar}
         <div>
-          <p className="text-xs font-semibold">Dream House</p>
+          <p className="text-xs font-semibold">{displayName}</p>
           <p className="text-[10px] text-muted-foreground">Marketing Agency · 1h</p>
         </div>
       </div>
@@ -152,15 +192,15 @@ function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit }: { conten
   );
 }
 
-function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit }: { content: string; mediaUrl?: string; isOverLimit: boolean; charLimit: number }) {
+function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, username, avatar }: PreviewCommonProps & { username: string }) {
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
       <div className="flex items-start gap-2 p-3">
-        <div className="w-10 h-10 rounded-full bg-foreground flex items-center justify-center text-background text-sm font-bold shrink-0">DH</div>
+        {avatar}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
-            <p className="text-xs font-semibold">Dream House</p>
-            <p className="text-[10px] text-muted-foreground">@dreamhouse · 1h</p>
+            <p className="text-xs font-semibold">{displayName}</p>
+            <p className="text-[10px] text-muted-foreground">@{username} · 1h</p>
           </div>
           <p className="text-xs whitespace-pre-wrap mt-1 line-clamp-4">
             {content || <span className="text-muted-foreground italic">Escreva o conteúdo...</span>}
@@ -187,14 +227,21 @@ function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit }: { content
   );
 }
 
-function GenericPreview({ content, mediaUrl, platform, isOverLimit, charLimit }: { content: string; mediaUrl?: string; platform: SocialPlatform; isOverLimit: boolean; charLimit: number }) {
+function GenericPreview({ content, mediaUrl, platform, isOverLimit, charLimit, displayName, username, avatarUrl }: {
+  content: string; mediaUrl?: string; platform: SocialPlatform; isOverLimit: boolean; charLimit: number;
+  displayName: string; username: string; avatarUrl?: string;
+}) {
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
       <div className="flex items-center gap-2 p-3">
-        <PlatformIcon platform={platform} size="md" variant="circle" />
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+        ) : (
+          <PlatformIcon platform={platform} size="md" variant="circle" />
+        )}
         <div>
-          <p className="text-xs font-semibold">Dream House</p>
-          <p className="text-[10px] text-muted-foreground">@dreamhouse</p>
+          <p className="text-xs font-semibold">{displayName}</p>
+          <p className="text-[10px] text-muted-foreground">@{username}</p>
         </div>
       </div>
       {mediaUrl && (
