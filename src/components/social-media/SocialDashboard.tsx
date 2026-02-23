@@ -66,7 +66,7 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
               <Loader2 className="h-5 w-5 animate-spin" /> Carregando...
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {connectedAccounts.map(account => (
                 <ConnectedAccountCard
                   key={account.id}
