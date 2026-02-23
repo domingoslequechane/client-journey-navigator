@@ -343,12 +343,12 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden w-[calc(100vw-2rem)] sm:w-auto">
           <DialogHeader>
             <DialogTitle className="text-lg">{post ? 'Editar Post' : 'Novo Post'}</DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             {/* Left column - Form */}
             <div className="space-y-5">
               {/* Step 1: Select channels */}
@@ -409,12 +409,12 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                   </Button>
                 </div>
                 <Textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Digite o seu texto..." className="min-h-[140px]" />
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                    <Input value={hashtags} onChange={e => setHashtags(e.target.value)} placeholder="hashtags separadas por vírgula" className="h-7 text-xs w-[200px]" />
+                    <Input value={hashtags} onChange={e => setHashtags(e.target.value)} placeholder="hashtags separadas por vírgula" className="h-7 text-xs w-full sm:w-[200px]" />
                   </div>
-                  <p className={cn("text-xs", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
+                  <p className={cn("text-xs shrink-0", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
                     {content.length}/{minCharLimit}
                   </p>
                 </div>
@@ -562,7 +562,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
               {/* Step 4: Schedule - mLabs style with per-slot format */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <Label className="text-sm font-semibold flex items-center gap-2">
                     <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
                     Data e horário das publicações
@@ -575,7 +575,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                     disabled={suggestingTimes || platforms.length === 0}
                   >
                     {suggestingTimes ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                    <span>Melhores horários</span>
+                    <span className="hidden sm:inline">Melhores horários</span>
                     <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/50 text-primary">
                       IA
                     </Badge>
@@ -586,11 +586,10 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                   {scheduleSlots.map((slot, idx) => {
                     const slotContentTypes = getSlotContentTypes(slot.platforms);
                     return (
-                      <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
+                      <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
                         {/* Per-slot platform + format icons */}
                         <div className="flex items-center gap-1 shrink-0">
                           {platforms.map(p => {
-                            const platformTypes = PLATFORM_CONTENT_TYPES[p] || ['feed'];
                             const isActive = slot.platforms.includes(p);
                             return (
                               <button
@@ -608,34 +607,36 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                               </button>
                             );
                           })}
+
+                          {/* Format selector for this slot */}
+                          {slotContentTypes.length > 1 && (
+                            <select
+                              value={slot.contentType}
+                              onChange={e => updateSlotContentType(idx, e.target.value as ContentType)}
+                              className="h-8 text-xs rounded-md border border-border bg-background px-2 shrink-0"
+                            >
+                              {slotContentTypes.map(ct => (
+                                <option key={ct} value={ct}>{CONTENT_TYPE_CONFIG[ct]?.label || ct}</option>
+                              ))}
+                            </select>
+                          )}
                         </div>
 
-                        {/* Format selector for this slot */}
-                        {slotContentTypes.length > 1 && (
-                          <select
-                            value={slot.contentType}
-                            onChange={e => updateSlotContentType(idx, e.target.value as ContentType)}
-                            className="h-8 text-xs rounded-md border border-border bg-background px-2 shrink-0"
-                          >
-                            {slotContentTypes.map(ct => (
-                              <option key={ct} value={ct}>{CONTENT_TYPE_CONFIG[ct]?.label || ct}</option>
-                            ))}
-                          </select>
-                        )}
-
-                        <div className="flex items-center gap-1.5 flex-1">
-                          <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} min={format(new Date(), 'yyyy-MM-dd')} className="h-8 text-xs" />
+                        <div className="flex items-center gap-2 w-full sm:flex-1">
+                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} min={format(new Date(), 'yyyy-MM-dd')} className="h-8 text-xs" />
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-8 text-xs" />
+                          </div>
+                          {scheduleSlots.length > 1 && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeSlot(idx)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
-                        <div className="flex items-center gap-1.5 flex-1">
-                          <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-8 text-xs" />
-                        </div>
-                        {scheduleSlots.length > 1 && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeSlot(idx)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
                       </div>
                     );
                   })}
@@ -686,18 +687,18 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
           <Separator />
 
-          <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={handleSaveDraft} disabled={platforms.length === 0}>
+          <DialogFooter className="flex flex-col sm:flex-row justify-between sm:justify-between gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">Cancelar</Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="secondary" onClick={handleSaveDraft} disabled={platforms.length === 0} className="w-full sm:w-auto">
                 Rascunho
               </Button>
-              <Button variant="outline" onClick={handleSchedule} disabled={platforms.length === 0} className="gap-2">
+              <Button variant="outline" onClick={handleSchedule} disabled={platforms.length === 0} className="gap-2 w-full sm:w-auto">
                 <Calendar className="h-4 w-4" />
                 Agendar
               </Button>
               {hasLateAccounts && (
-                <Button onClick={handlePublishNow} disabled={platforms.length === 0} className="gap-2">
+                <Button onClick={handlePublishNow} disabled={platforms.length === 0} className="gap-2 w-full sm:w-auto">
                   <Zap className="h-4 w-4" />
                   Publicar Agora
                 </Button>
