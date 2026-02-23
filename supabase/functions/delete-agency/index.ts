@@ -54,6 +54,15 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const { organizationId, otpCode } = validationResult.data;
+    const normalizedUserEmail = user.email?.trim().toLowerCase();
+    const normalizedOtpCode = otpCode.trim();
+
+    if (!normalizedUserEmail) {
+      return new Response(
+        JSON.stringify({ error: "Email de usuário inválido" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     // Verify user is admin and owner of the organization
     const { data: profile } = await supabase
@@ -91,17 +100,22 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Verify OTP
-    const { data: otpRecord, error: otpError } = await supabase
+    // Verify OTP (with normalized email matching)
+    const { data: otpCandidates, error: otpError } = await supabase
       .from("email_otps")
-      .select("*")
-      .eq("email", user.email)
-      .eq("otp_code", otpCode)
-      .single();
+      .select("id, email, otp_code, expires_at, created_at")
+      .eq("otp_code", normalizedOtpCode)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    const otpRecord =
+      otpCandidates?.find(
+        (record) => record.email?.trim().toLowerCase() === normalizedUserEmail,
+      ) ?? null;
 
     if (otpError || !otpRecord) {
       return new Response(
-        JSON.stringify({ error: "Código inválido" }),
+        JSON.stringify({ error: "Código inválido ou desatualizado. Use o código mais recente enviado por e-mail." }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }

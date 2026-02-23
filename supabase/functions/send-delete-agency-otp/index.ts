@@ -12,7 +12,6 @@ const corsHeaders = {
 };
 
 const RequestSchema = z.object({
-  email: z.string().email("Email inválido"),
   organizationName: z.string().min(1, "Nome da organização é obrigatório"),
 });
 
@@ -61,8 +60,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const { organizationName } = validationResult.data;
-    // Always use the authenticated user's email for consistency
-    const email = user.email!;
+    const email = user.email?.trim().toLowerCase();
+
+    if (!email) {
+      return new Response(
+        JSON.stringify({ error: "Email de usuário inválido" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     // Verify user is admin of the organization
     const { data: profile } = await supabase
@@ -95,8 +100,8 @@ const handler = async (req: Request): Promise<Response> => {
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Delete any existing OTP for this email
-    await supabase.from("email_otps").delete().eq("email", email);
+    // Delete any existing OTP for this email (case-insensitive)
+    await supabase.from("email_otps").delete().ilike("email", email);
 
     // Store new OTP
     const { error: insertError } = await supabase.from("email_otps").insert({
