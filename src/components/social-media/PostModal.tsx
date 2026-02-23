@@ -10,29 +10,29 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { PostPreview } from './PostPreview';
 import { PlatformIcon } from './PlatformIcon';
-import { type SocialPlatform, type PostStatus, type ContentType, PLATFORM_CONFIG, CONTENT_TYPE_CONFIG, ALL_PLATFORMS } from '@/lib/social-media-mock';
+import { type SocialPlatform, type ContentType, PLATFORM_CONFIG, CONTENT_TYPE_CONFIG, ALL_PLATFORMS } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Upload, Calendar, Clock, Hash, Send, Loader2, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, Calendar, Clock, Hash, Send, Loader2, X, Image as ImageIcon, Zap } from 'lucide-react';
 
 interface PostModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   post?: SocialPostRow | null;
   onSave: (data: any) => void;
+  onPublish?: (postId: string, publishNow: boolean) => void;
   defaultDate?: string;
 }
 
-export function PostModal({ open, onOpenChange, post, onSave, defaultDate }: PostModalProps) {
+export function PostModal({ open, onOpenChange, post, onSave, onPublish, defaultDate }: PostModalProps) {
   const { accounts } = useSocialAccounts();
   const [content, setContent] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(['instagram']);
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [time, setTime] = useState('10:00');
-  const [status, setStatus] = useState<PostStatus>('draft');
   const [contentType, setContentType] = useState<ContentType>('feed');
   const [hashtags, setHashtags] = useState('');
   const [previewPlatform, setPreviewPlatform] = useState<SocialPlatform>('instagram');
@@ -40,6 +40,7 @@ export function PostModal({ open, onOpenChange, post, onSave, defaultDate }: Pos
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const connectedPlatforms = accounts.filter(a => a.is_connected).map(a => a.platform as SocialPlatform);
+  const hasLateAccounts = accounts.some(a => a.is_connected && a.late_account_id);
 
   useEffect(() => {
     if (post) {
@@ -51,7 +52,6 @@ export function PostModal({ open, onOpenChange, post, onSave, defaultDate }: Pos
         setDate(format(dt, 'yyyy-MM-dd'));
         setTime(format(dt, 'HH:mm'));
       }
-      setStatus(post.status as PostStatus);
       setContentType(post.content_type as ContentType);
       setHashtags(post.hashtags?.join(', ') || '');
       setPreviewPlatform(post.platforms?.[0] || 'instagram');
@@ -61,7 +61,6 @@ export function PostModal({ open, onOpenChange, post, onSave, defaultDate }: Pos
       setPlatforms(['instagram']);
       setDate(defaultDate || format(new Date(), 'yyyy-MM-dd'));
       setTime('10:00');
-      setStatus('draft');
       setContentType('feed');
       setHashtags('');
       setPreviewPlatform('instagram');
@@ -99,17 +98,31 @@ export function PostModal({ open, onOpenChange, post, onSave, defaultDate }: Pos
     setMediaUrls(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
+  const buildPostData = (status: string) => ({
+    content,
+    media_urls: mediaUrls,
+    platforms,
+    scheduled_at: `${date}T${time}:00`,
+    status,
+    content_type: contentType,
+    hashtags: hashtags ? hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
+  });
+
+  const handleSaveDraft = () => {
     if (!content.trim() || platforms.length === 0) return;
-    onSave({
-      content,
-      media_urls: mediaUrls,
-      platforms,
-      scheduled_at: `${date}T${time}:00`,
-      status,
-      content_type: contentType,
-      hashtags: hashtags ? hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
-    });
+    onSave(buildPostData('draft'));
+    onOpenChange(false);
+  };
+
+  const handleSchedule = () => {
+    if (!content.trim() || platforms.length === 0) return;
+    onSave(buildPostData('scheduled'));
+    onOpenChange(false);
+  };
+
+  const handlePublishNow = () => {
+    if (!content.trim() || platforms.length === 0) return;
+    onSave(buildPostData('published'));
     onOpenChange(false);
   };
 
@@ -120,7 +133,7 @@ export function PostModal({ open, onOpenChange, post, onSave, defaultDate }: Pos
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg">{post ? 'Editar Post' : 'Agendar Post'}</DialogTitle>
+          <DialogTitle className="text-lg">{post ? 'Editar Post' : 'Novo Post'}</DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
@@ -244,7 +257,7 @@ export function PostModal({ open, onOpenChange, post, onSave, defaultDate }: Pos
                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
                 Data e horário
               </Label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
                   <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-9" />
@@ -253,16 +266,6 @@ export function PostModal({ open, onOpenChange, post, onSave, defaultDate }: Pos
                   <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
                   <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="h-9" />
                 </div>
-                <Select value={status} onValueChange={v => setStatus(v as PostStatus)}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Rascunho</SelectItem>
-                    <SelectItem value="scheduled">Agendado</SelectItem>
-                    <SelectItem value="published">Publicado</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           </div>
@@ -294,10 +297,21 @@ export function PostModal({ open, onOpenChange, post, onSave, defaultDate }: Pos
 
         <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!content.trim() || platforms.length === 0} className="gap-2">
-            <Send className="h-4 w-4" />
-            {post ? 'Salvar' : 'Agendar'}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleSaveDraft} disabled={!content.trim() || platforms.length === 0}>
+              Rascunho
+            </Button>
+            <Button variant="outline" onClick={handleSchedule} disabled={!content.trim() || platforms.length === 0} className="gap-2">
+              <Calendar className="h-4 w-4" />
+              Agendar
+            </Button>
+            {hasLateAccounts && (
+              <Button onClick={handlePublishNow} disabled={!content.trim() || platforms.length === 0} className="gap-2">
+                <Zap className="h-4 w-4" />
+                Publicar Agora
+              </Button>
+            )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

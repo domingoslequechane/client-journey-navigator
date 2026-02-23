@@ -1290,6 +1290,7 @@ export type Database = {
           knowledge_base_name: string | null
           knowledge_base_text: string | null
           knowledge_base_url: string | null
+          late_profile_id: string | null
           name: string
           nuit: string | null
           onboarding_completed: boolean | null
@@ -1316,6 +1317,7 @@ export type Database = {
           knowledge_base_name?: string | null
           knowledge_base_text?: string | null
           knowledge_base_url?: string | null
+          late_profile_id?: string | null
           name: string
           nuit?: string | null
           onboarding_completed?: boolean | null
@@ -1342,6 +1344,7 @@ export type Database = {
           knowledge_base_name?: string | null
           knowledge_base_text?: string | null
           knowledge_base_url?: string | null
+          late_profile_id?: string | null
           name?: string
           nuit?: string | null
           onboarding_completed?: boolean | null
@@ -1631,6 +1634,7 @@ export type Database = {
           followers_count: number | null
           id: string
           is_connected: boolean
+          late_account_id: string | null
           organization_id: string
           platform: string
           updated_at: string
@@ -1645,6 +1649,7 @@ export type Database = {
           followers_count?: number | null
           id?: string
           is_connected?: boolean
+          late_account_id?: string | null
           organization_id: string
           platform: string
           updated_at?: string
@@ -1659,6 +1664,7 @@ export type Database = {
           followers_count?: number | null
           id?: string
           is_connected?: boolean
+          late_account_id?: string | null
           organization_id?: string
           platform?: string
           updated_at?: string
@@ -1693,6 +1699,7 @@ export type Database = {
           created_by: string | null
           hashtags: string[] | null
           id: string
+          late_post_id: string | null
           media_urls: Json | null
           metrics: Json | null
           notes: string | null
@@ -1715,6 +1722,7 @@ export type Database = {
           created_by?: string | null
           hashtags?: string[] | null
           id?: string
+          late_post_id?: string | null
           media_urls?: Json | null
           metrics?: Json | null
           notes?: string | null
@@ -1737,6 +1745,7 @@ export type Database = {
           created_by?: string | null
           hashtags?: string[] | null
           id?: string
+          late_post_id?: string | null
           media_urls?: Json | null
           metrics?: Json | null
           notes?: string | null

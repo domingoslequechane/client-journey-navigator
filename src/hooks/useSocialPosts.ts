@@ -25,6 +25,7 @@ export interface SocialPostRow {
   published_at: string | null;
   metrics: Record<string, number> | null;
   notes: string | null;
+  late_post_id: string | null;
   created_at: string;
   updated_at: string;
   // joined
@@ -131,7 +132,6 @@ export function useSocialPosts(filters?: PostFilters) {
 
   const updatePost = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<SocialPostRow> & { id: string }) => {
-      // Remove joined fields
       const { client_name, ...cleanUpdates } = updates as any;
       const { data, error } = await supabase
         .from('social_posts' as any)
@@ -198,6 +198,29 @@ export function useSocialPosts(filters?: PostFilters) {
     },
   });
 
+  // Publish a post via Late.dev
+  const publishPost = useMutation({
+    mutationFn: async ({ postId, publishNow }: { postId: string; publishNow: boolean }) => {
+      const { data, error } = await supabase.functions.invoke('social-publish', {
+        body: { post_id: postId, publish_now: publishNow },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      const msg = data.status === 'published' ? 'Post publicado com sucesso!' : 'Post agendado com sucesso!';
+      toast({ title: msg });
+    },
+    onError: (err: any) => {
+      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      toast({ title: 'Erro ao publicar post', description: err.message, variant: 'destructive' });
+    },
+  });
+
   return {
     posts: postsQuery.data || [],
     isLoading: postsQuery.isLoading,
@@ -205,6 +228,7 @@ export function useSocialPosts(filters?: PostFilters) {
     updatePost,
     deletePost,
     sendForApproval,
+    publishPost,
     refetch: postsQuery.refetch,
   };
 }

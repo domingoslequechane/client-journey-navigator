@@ -34,7 +34,7 @@ export default function SocialMedia() {
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval } = useSocialPosts();
+  const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval, publishPost } = useSocialPosts();
 
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
@@ -60,7 +60,7 @@ export default function SocialMedia() {
     setModalOpen(true);
   };
 
-  const handleSave = (data: {
+  const handleSave = async (data: {
     content: string;
     media_urls: string[];
     platforms: SocialPlatform[];
@@ -72,9 +72,23 @@ export default function SocialMedia() {
     notes?: string;
   }) => {
     if (editingPost) {
-      updatePost.mutate({ id: editingPost.id, ...data } as any);
+      updatePost.mutate({ id: editingPost.id, ...data } as any, {
+        onSuccess: () => {
+          // If status is scheduled or published, trigger Late.dev publish
+          if (data.status === 'scheduled' || data.status === 'published') {
+            publishPost.mutate({ postId: editingPost.id, publishNow: data.status === 'published' });
+          }
+        }
+      });
     } else {
-      createPost.mutate(data as any);
+      createPost.mutate(data as any, {
+        onSuccess: (newPost: any) => {
+          // If status is scheduled or published, trigger Late.dev publish
+          if (data.status === 'scheduled' || data.status === 'published') {
+            publishPost.mutate({ postId: newPost.id, publishNow: data.status === 'published' });
+          }
+        }
+      });
     }
   };
 
@@ -84,6 +98,14 @@ export default function SocialMedia() {
 
   const handleSendForApproval = (id: string) => {
     sendForApproval.mutate(id);
+  };
+
+  const handlePublishPost = (postId: string, publishNow: boolean) => {
+    publishPost.mutate({ postId, publishNow });
+  };
+
+  const handleRetryPost = (postId: string) => {
+    publishPost.mutate({ postId, publishNow: true });
   };
 
   // Stats
@@ -233,6 +255,8 @@ export default function SocialMedia() {
                   onEdit={handleEditPost}
                   onDelete={handleDelete}
                   onSendForApproval={handleSendForApproval}
+                  onRetry={handleRetryPost}
+                  onPublish={handlePublishPost}
                 />
               ))
             )}
