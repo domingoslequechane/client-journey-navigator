@@ -1991,6 +1991,7 @@ export type Database = {
           created_by: string
           description: string | null
           font_family: string | null
+          footer_text: string | null
           id: string
           logo_images: string[] | null
           name: string
@@ -2010,6 +2011,7 @@ export type Database = {
           created_by: string
           description?: string | null
           font_family?: string | null
+          footer_text?: string | null
           id?: string
           logo_images?: string[] | null
           name: string
@@ -2029,6 +2031,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           font_family?: string | null
+          footer_text?: string | null
           id?: string
           logo_images?: string[] | null
           name?: string
