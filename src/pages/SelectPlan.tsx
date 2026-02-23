@@ -11,28 +11,11 @@ import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { getPlanColors } from '@/lib/plan-colors';
 
-import planBussola from '@/assets/plans/plan-bussola.png';
 import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
 import planCatapulta from '@/assets/plans/plan-catapulta.png';
 
 const plans = [
-  {
-    key: 'free' as const,
-    name: 'Bússola',
-    price: 0,
-    period: '',
-    isFree: true,
-    description: 'Para quem está começando',
-    features: [
-      '3 clientes ativos',
-      'Funil de vendas ilimitado',
-      '1 membro de equipe',
-      '90 mensagens de IA/mês',
-      'CRM + Pipeline + Academia',
-    ],
-    image: planBussola,
-  },
   {
     key: 'starter' as const,
     name: 'Lança',
@@ -98,7 +81,6 @@ export default function SelectPlan() {
       if (!user) return;
 
       try {
-        // Check if user has profile with organization
         const { data: profile } = await supabase
           .from('profiles')
           .select('organization_id')
@@ -106,7 +88,6 @@ export default function SelectPlan() {
           .single();
 
         if (profile?.organization_id) {
-          // Check if organization has an active subscription
           const { data: subscription } = await supabase
             .from('subscriptions')
             .select('status')
@@ -114,14 +95,12 @@ export default function SelectPlan() {
             .maybeSingle();
 
           if (subscription?.status === 'active') {
-            // User already has active subscription, go to app
             navigate('/app');
             return;
           }
 
           setOrganizationId(profile.organization_id);
         } else {
-          // Create a placeholder organization for checkout
           const { data: slugData } = await supabase.rpc('generate_slug', { 
             name: `temp-${user.id.substring(0, 8)}` 
           });
@@ -129,7 +108,7 @@ export default function SelectPlan() {
           const { data: newOrg, error: orgError } = await supabase
             .from('organizations')
             .insert({
-              name: 'Agency', // Placeholder name, will be set in onboarding
+              name: 'Agency',
               slug: slugData || `temp-${Date.now()}`,
               owner_id: user.id,
               plan_type: 'free',
@@ -139,7 +118,6 @@ export default function SelectPlan() {
 
           if (orgError) throw orgError;
 
-          // Update profile with organization_id
           await supabase
             .from('profiles')
             .update({ organization_id: newOrg.id })
@@ -169,35 +147,6 @@ export default function SelectPlan() {
     setLoadingPlan(planKey);
 
     try {
-      // Free plan: activate directly without LemonSqueezy checkout
-      if (planKey === 'free') {
-        const { error: orgError } = await supabase
-          .from('organizations')
-          .update({ plan_type: 'free' })
-          .eq('id', organizationId);
-
-        if (orgError) throw orgError;
-
-        // Create a subscription record for consistency
-        const { error: subError } = await supabase
-          .from('subscriptions')
-          .upsert({
-            organization_id: organizationId,
-            status: 'active',
-            plan_type: 'free',
-            current_period_start: new Date().toISOString(),
-            current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          }, { onConflict: 'organization_id' });
-
-        if (subError) {
-          console.warn('Could not create subscription record:', subError);
-        }
-
-        toast.success('Plano Bússola ativado com sucesso!');
-        navigate('/app/onboarding');
-        return;
-      }
-
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -274,11 +223,11 @@ export default function SelectPlan() {
             Escolha seu plano
           </h1>
           <p className="text-muted-foreground text-lg">
-            Selecione o plano ideal para sua agência e comece a transformar sua gestão de clientes
+            Todos os planos incluem <strong>14 dias grátis</strong> para você testar à vontade
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl w-full">
           {plans.map((plan) => {
             const colors = getPlanColors(plan.key);
             const isLoading = loadingPlan === plan.key;
@@ -313,21 +262,15 @@ export default function SelectPlan() {
 
                 <CardContent className="flex-1 flex flex-col">
                   <div className="text-center mb-4">
-                    {plan.isFree ? (
-                      <div className="flex flex-col items-center">
-                        <span className="text-4xl font-bold" style={{ color: colors.primary }}>
-                          Grátis
-                        </span>
-                        <span className="text-sm text-muted-foreground">para sempre</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-4xl font-bold" style={{ color: colors.primary }}>
-                          ${plan.price}
-                        </span>
-                        <span className="text-muted-foreground">{plan.period}</span>
-                      </div>
-                    )}
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-bold" style={{ color: colors.primary }}>
+                        ${plan.price}
+                      </span>
+                      <span className="text-muted-foreground">{plan.period}</span>
+                    </div>
+                    <p className="text-sm text-primary font-medium mt-1">
+                      14 dias grátis
+                    </p>
                   </div>
 
                   <ul className="space-y-2 mb-6 flex-1">
@@ -358,7 +301,7 @@ export default function SelectPlan() {
                       </>
                     ) : (
                       <>
-                        Escolher {plan.name}
+                        Começar Grátis
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </>
                     )}
@@ -370,7 +313,7 @@ export default function SelectPlan() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-8 max-w-lg">
-          Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
+          14 dias grátis em qualquer plano. Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
         </p>
       </div>
     </PublicBackground>

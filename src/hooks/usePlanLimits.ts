@@ -108,7 +108,7 @@ const DEFAULT_USAGE: Usage = {
 export function usePlanLimits(): UsePlanLimitsReturn {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [planType, setPlanType] = useState<PlanType>('free');
+  const [planType, setPlanType] = useState<PlanType>('starter');
   const [limits, setLimits] = useState<PlanLimits>(DEFAULT_LIMITS);
   const [usage, setUsage] = useState<Usage>(DEFAULT_USAGE);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
@@ -143,7 +143,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         .eq('id', orgId)
         .single();
 
-      const currentPlanType = (organization?.plan_type as PlanType) || 'free';
+      const currentPlanType = (organization?.plan_type as PlanType) || 'starter';
       setPlanType(currentPlanType);
 
       const { data: planLimitsData } = await supabase

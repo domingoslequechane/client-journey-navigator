@@ -301,13 +301,8 @@ serve(async (req) => {
           throw error;
         }
         
-        // Downgrade to free plan
-        await supabase
-          .from('organizations')
-          .update({ plan_type: 'free' })
-          .eq('id', organizationId);
-        
-        console.log("Subscription cancelled, downgraded to free plan");
+        // Keep current plan_type but access is blocked via subscription status
+        console.log("Subscription cancelled, access will end at period end");
         break;
       }
 
@@ -357,13 +352,8 @@ serve(async (req) => {
           throw error;
         }
         
-        // Downgrade to free plan
-        await supabase
-          .from('organizations')
-          .update({ plan_type: 'free' })
-          .eq('id', organizationId);
-        
-        console.log("Subscription expired, downgraded to free plan");
+        // Keep current plan_type but access is blocked via subscription status
+        console.log("Subscription expired, access blocked via status");
         break;
       }
 
