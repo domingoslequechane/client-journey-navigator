@@ -5,19 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { PostPreview } from './PostPreview';
 import { PlatformIcon } from './PlatformIcon';
+import { ContentTypeIcon } from './ContentTypeIcon';
 import { AICaptionModal } from './AICaptionModal';
-import { ConfirmActionModal } from './ConfirmActionModal';
-import { type SocialPlatform, type ContentType, PLATFORM_CONFIG, CONTENT_TYPE_CONFIG, ALL_PLATFORMS } from '@/lib/social-media-mock';
+import { type SocialPlatform, type ContentType, PLATFORM_CONFIG, CONTENT_TYPE_CONFIG } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Upload, Calendar, Clock, Hash, Send, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers } from 'lucide-react';
+import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Which content types each platform supports
 const PLATFORM_CONTENT_TYPES: Record<SocialPlatform, ContentType[]> = {
@@ -30,6 +30,12 @@ const PLATFORM_CONTENT_TYPES: Record<SocialPlatform, ContentType[]> = {
   pinterest: ['feed', 'carousel', 'video'],
   threads: ['feed', 'text', 'carousel'],
 };
+
+interface ScheduleSlot {
+  date: string;
+  time: string;
+  platforms: SocialPlatform[];
+}
 
 interface PostModalProps {
   open: boolean;
@@ -51,15 +57,11 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
   const [uploading, setUploading] = useState(false);
   const [multiImageMode, setMultiImageMode] = useState<'carousel' | 'individual'>('carousel');
   const [showAICaptionModal, setShowAICaptionModal] = useState(false);
-  const [scheduleSlots, setScheduleSlots] = useState<{ date: string; time: string }[]>([
-    { date: format(new Date(), 'yyyy-MM-dd'), time: '10:00' },
+  const [suggestingTimes, setSuggestingTimes] = useState(false);
+  const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[]>([
+    { date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: ['instagram'] },
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const addSlot = () => setScheduleSlots(prev => [...prev, { date: format(new Date(), 'yyyy-MM-dd'), time: '10:00' }]);
-  const removeSlot = (idx: number) => setScheduleSlots(prev => prev.filter((_, i) => i !== idx));
-  const updateSlot = (idx: number, key: 'date' | 'time', value: string) =>
-    setScheduleSlots(prev => prev.map((s, i) => i === idx ? { ...s, [key]: value } : s));
 
   const connectedPlatforms = accounts.filter(a => a.is_connected).map(a => a.platform as SocialPlatform);
   const hasLateAccounts = accounts.some(a => a.is_connected && a.late_account_id);
@@ -74,9 +76,12 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
       setContent(post.content);
       setMediaUrls(post.media_urls || []);
       setPlatforms(post.platforms || ['instagram']);
+      const postPlatforms = post.platforms || ['instagram'];
       if (post.scheduled_at) {
         const dt = new Date(post.scheduled_at);
-        setScheduleSlots([{ date: format(dt, 'yyyy-MM-dd'), time: format(dt, 'HH:mm') }]);
+        setScheduleSlots([{ date: format(dt, 'yyyy-MM-dd'), time: format(dt, 'HH:mm'), platforms: postPlatforms }]);
+      } else {
+        setScheduleSlots([{ date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: postPlatforms }]);
       }
       setContentType(post.content_type as ContentType);
       setHashtags(post.hashtags?.join(', ') || '');
@@ -85,7 +90,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
       setContent('');
       setMediaUrls([]);
       setPlatforms(['instagram']);
-      setScheduleSlots([{ date: defaultDate || format(new Date(), 'yyyy-MM-dd'), time: '10:00' }]);
+      setScheduleSlots([{ date: defaultDate || format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: ['instagram'] }]);
       setContentType('feed');
       setHashtags('');
       setPreviewPlatform('instagram');
@@ -100,8 +105,69 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
     }
   }, [platforms]);
 
+  // Sync slot platforms when global platforms change
+  useEffect(() => {
+    setScheduleSlots(prev => prev.map(slot => ({
+      ...slot,
+      platforms: slot.platforms.filter(p => platforms.includes(p)).length > 0
+        ? slot.platforms.filter(p => platforms.includes(p))
+        : [...platforms],
+    })));
+  }, [platforms]);
+
   const togglePlatform = (p: SocialPlatform) => {
     setPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  };
+
+  const toggleSlotPlatform = (slotIdx: number, p: SocialPlatform) => {
+    setScheduleSlots(prev => prev.map((slot, i) => {
+      if (i !== slotIdx) return slot;
+      const newPlatforms = slot.platforms.includes(p)
+        ? slot.platforms.filter(x => x !== p)
+        : [...slot.platforms, p];
+      return { ...slot, platforms: newPlatforms.length > 0 ? newPlatforms : [p] };
+    }));
+  };
+
+  const addSlot = () => setScheduleSlots(prev => [...prev, { date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', platforms: [...platforms] }]);
+  const removeSlot = (idx: number) => setScheduleSlots(prev => prev.filter((_, i) => i !== idx));
+  const updateSlot = (idx: number, key: 'date' | 'time', value: string) =>
+    setScheduleSlots(prev => prev.map((s, i) => i === idx ? { ...s, [key]: value } : s));
+
+  const handleSuggestBestTimes = async () => {
+    if (platforms.length === 0) {
+      toast.error('Selecione ao menos um canal primeiro.');
+      return;
+    }
+    setSuggestingTimes(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('suggest-best-times', {
+        body: {
+          platforms,
+          content_type: contentType,
+          slots_count: 3,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const slots = data.slots || [];
+      if (slots.length > 0) {
+        setScheduleSlots(slots.map((s: any) => ({
+          date: s.date,
+          time: s.time,
+          platforms: [...platforms],
+        })));
+        toast.success(`${slots.length} melhores horários sugeridos pela IA!`);
+      } else {
+        toast.error('Não foi possível sugerir horários. Tente novamente.');
+      }
+    } catch (err: any) {
+      console.error('Error suggesting times:', err);
+      toast.error('Erro ao sugerir horários.');
+    } finally {
+      setSuggestingTimes(false);
+    }
   };
 
   const handleFileUpload = async (files: FileList | null) => {
@@ -112,15 +178,12 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
       for (const file of Array.from(files)) {
         const ext = file.name.split('.').pop();
         const path = `${crypto.randomUUID()}.${ext}`;
-        const { error } = await supabase.storage
-          .from('social-media')
-          .upload(path, file);
+        const { error } = await supabase.storage.from('social-media').upload(path, file);
         if (error) throw error;
         const { data: urlData } = supabase.storage.from('social-media').getPublicUrl(path);
         newUrls.push(urlData.publicUrl);
       }
       setMediaUrls(prev => [...prev, ...newUrls]);
-      // Auto-set carousel if multiple images
       if (mediaUrls.length + newUrls.length > 1) {
         setMultiImageMode('carousel');
       }
@@ -170,7 +233,6 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
   const handleAICaptionGenerated = (caption: string) => {
     setContent(caption);
-    // Extract hashtags from caption
     const hashtagMatches = caption.match(/#\w+/g);
     if (hashtagMatches) {
       const tags = hashtagMatches.map(t => t.replace('#', ''));
@@ -227,7 +289,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
               <Separator />
 
-              {/* Step 2: Content type */}
+              {/* Step 2: Content type with real icons */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold flex items-center gap-2">
                   <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
@@ -246,7 +308,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                           : "border-border hover:border-primary/50"
                       )}
                     >
-                      <span>{CONTENT_TYPE_CONFIG[t]?.icon}</span>
+                      <ContentTypeIcon type={t as ContentType} />
                       {CONTENT_TYPE_CONFIG[t]?.label}
                     </button>
                   ))}
@@ -321,7 +383,6 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
                 {mediaUrls.length > 0 && (
                   <div className="space-y-3">
-                    {/* Multi-image mode selector */}
                     {mediaUrls.length > 1 && (
                       <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/50">
                         <span className="text-xs font-medium text-muted-foreground mr-2">Modo de publicação:</span>
@@ -356,7 +417,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
                     {multiImageMode === 'individual' && mediaUrls.length > 1 && (
                       <p className="text-[11px] text-muted-foreground bg-muted/50 rounded-lg p-2">
-                        💡 Cada imagem será publicada como um post separado com o mesmo texto e configurações. Tudo será salvo de uma só vez.
+                        💡 Cada imagem será publicada como um post separado com o mesmo texto e configurações.
                       </p>
                     )}
 
@@ -382,35 +443,65 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
               <Separator />
 
-              {/* Step 5: Schedule - multiple slots */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">5</span>
-                  Data e horário das publicações
-                </Label>
+              {/* Step 5: Schedule - per-slot platform selection */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">5</span>
+                    Data e horário das publicações
+                  </Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-xs h-7 border-primary/50 text-primary hover:bg-primary/10"
+                    onClick={handleSuggestBestTimes}
+                    disabled={suggestingTimes || platforms.length === 0}
+                  >
+                    {suggestingTimes ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    <span>Melhores horários</span>
+                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/50 text-primary">
+                      NOVO
+                    </Badge>
+                  </Button>
+                </div>
 
-                {scheduleSlots.map((slot, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <div className="flex gap-1 shrink-0">
-                      {platforms.map(p => (
-                        <PlatformIcon key={p} platform={p} size="sm" />
-                      ))}
+                <div className="space-y-2">
+                  {scheduleSlots.map((slot, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
+                      {/* Per-slot platform toggles */}
+                      <div className="flex gap-1 shrink-0">
+                        {platforms.map(p => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => toggleSlotPlatform(idx, p)}
+                            className={cn(
+                              "rounded-full transition-all",
+                              slot.platforms.includes(p)
+                                ? "opacity-100 ring-2 ring-primary/40"
+                                : "opacity-30 hover:opacity-60"
+                            )}
+                          >
+                            <PlatformIcon platform={p} size="sm" variant="circle" />
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} className="h-8 text-xs" />
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-8 text-xs" />
+                      </div>
+                      {scheduleSlots.length > 1 && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeSlot(idx)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5 flex-1">
-                      <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} className="h-8 text-xs" />
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-1">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-8 text-xs" />
-                    </div>
-                    {scheduleSlots.length > 1 && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeSlot(idx)}>
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
 
                 <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-7 text-primary" onClick={addSlot}>
                   <span className="text-sm">⊕</span> Incluir mais dias e horários

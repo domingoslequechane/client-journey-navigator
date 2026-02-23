@@ -75,13 +75,13 @@ export const STATUS_CONFIG: Record<PostStatus, { label: string; variant: 'defaul
   rejected: { label: 'Rejeitado', variant: 'destructive', color: 'text-destructive' },
 };
 
-export const CONTENT_TYPE_CONFIG: Record<ContentType, { label: string; icon: string }> = {
-  feed: { label: 'Feed', icon: '🖼️' },
-  stories: { label: 'Stories', icon: '📱' },
-  reels: { label: 'Reels', icon: '🎬' },
-  carousel: { label: 'Carrossel', icon: '🔄' },
-  video: { label: 'Vídeo', icon: '📹' },
-  text: { label: 'Texto', icon: '📝' },
+export const CONTENT_TYPE_CONFIG: Record<ContentType, { label: string; icon: string; platforms: SocialPlatform[] }> = {
+  feed: { label: 'Feed', icon: 'feed', platforms: ['instagram', 'facebook', 'linkedin', 'twitter', 'pinterest', 'threads'] },
+  stories: { label: 'Stories', icon: 'stories', platforms: ['instagram', 'facebook'] },
+  reels: { label: 'Reels', icon: 'reels', platforms: ['instagram', 'facebook', 'tiktok', 'youtube'] },
+  carousel: { label: 'Carrossel', icon: 'carousel', platforms: ['instagram', 'facebook', 'linkedin', 'twitter', 'pinterest', 'threads'] },
+  video: { label: 'Vídeo', icon: 'video', platforms: ['facebook', 'linkedin', 'tiktok', 'youtube', 'pinterest'] },
+  text: { label: 'Texto', icon: 'text', platforms: ['linkedin', 'twitter', 'threads'] },
 };
 
 export const ALL_PLATFORMS: SocialPlatform[] = ['instagram', 'facebook', 'linkedin', 'tiktok', 'twitter', 'youtube', 'pinterest', 'threads'];
