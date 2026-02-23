@@ -278,6 +278,19 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
   const handleSchedule = () => {
     if (platforms.length === 0) return;
+    // Validate no past dates
+    const now = new Date();
+    const slotsToValidate = isIndividualMode
+      ? individualConfigs.flatMap(cfg => cfg.scheduleSlots)
+      : scheduleSlots;
+    const hasPastDate = slotsToValidate.some(slot => {
+      const slotDate = new Date(`${slot.date}T${slot.time}:00`);
+      return slotDate < now;
+    });
+    if (hasPastDate) {
+      toast.error('Não é possível agendar posts em datas/horários que já passaram.');
+      return;
+    }
     const data = buildPostData('scheduled');
     if (Array.isArray(data)) {
       data.forEach(d => { if (d.content.trim()) onSave(d); });
@@ -612,7 +625,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
                         <div className="flex items-center gap-1.5 flex-1">
                           <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} className="h-8 text-xs" />
+                          <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} min={format(new Date(), 'yyyy-MM-dd')} className="h-8 text-xs" />
                         </div>
                         <div className="flex items-center gap-1.5 flex-1">
                           <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />

@@ -8,10 +8,11 @@ import { PlatformIcon } from './PlatformIcon';
 
 interface MetricsDashboardProps {
   posts: SocialPostRow[];
+  selectedClient?: string;
 }
 
-export function MetricsDashboard({ posts }: MetricsDashboardProps) {
-  const { accounts } = useSocialAccounts();
+export function MetricsDashboard({ posts, selectedClient }: MetricsDashboardProps) {
+  const { accounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
 
   const totalFollowers = accounts.reduce((sum, a) => sum + (a.followers_count || 0), 0);
   const totalPosts = posts.length;
