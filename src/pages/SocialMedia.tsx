@@ -8,6 +8,7 @@ import { SocialDashboard } from '@/components/social-media/SocialDashboard';
 import { PostCard } from '@/components/social-media/PostCard';
 import { PostModal } from '@/components/social-media/PostModal';
 import { MetricsDashboard } from '@/components/social-media/MetricsDashboard';
+import { ClientFilterSelect } from '@/components/social-media/ClientFilterSelect';
 import { type SocialPlatform, type PostStatus, PLATFORM_CONFIG, STATUS_CONFIG } from '@/lib/social-media-mock';
 import { useSocialPosts, type SocialPostRow } from '@/hooks/useSocialPosts';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,7 @@ export default function SocialMedia() {
   const [searchQuery, setSearchQuery] = useState('');
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [clientFilter, setClientFilter] = useState<string>('all');
 
   const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval, publishPost } = useSocialPosts();
 
@@ -41,6 +43,7 @@ export default function SocialMedia() {
       if (searchQuery && !post.content.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (platformFilter !== 'all' && !post.platforms.includes(platformFilter as SocialPlatform)) return false;
       if (statusFilter !== 'all' && post.status !== statusFilter) return false;
+      if (clientFilter !== 'all' && post.client_id !== clientFilter) return false;
       return true;
     }).sort((a, b) => {
       const dateA = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
@@ -215,6 +218,7 @@ export default function SocialMedia() {
                 className="pl-9"
               />
             </div>
+            <ClientFilterSelect value={clientFilter} onChange={setClientFilter} className="w-[200px]" />
             <Select value={platformFilter} onValueChange={setPlatformFilter}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Canal" />
