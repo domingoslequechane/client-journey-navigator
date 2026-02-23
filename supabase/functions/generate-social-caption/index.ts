@@ -19,10 +19,8 @@ serve(async (req) => {
       });
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
-    }
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const { platforms, content_type, media_urls, tone, length, topic } = await req.json();
 
@@ -83,7 +81,6 @@ REGRAS OBRIGATÓRIAS:
     // Build messages with media if available
     const userContent: any[] = [{ type: "text", text: prompt }];
     
-    // Add image URLs for visual analysis
     if (media_urls && media_urls.length > 0) {
       for (const url of media_urls.slice(0, 4)) {
         userContent.push({
@@ -93,16 +90,16 @@ REGRAS OBRIGATÓRIAS:
       }
     }
 
-    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${GEMINI_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gemini-2.5-flash",
+        model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "Você é um especialista em social media e copywriting para o mercado brasileiro. Gere legendas criativas, envolventes e com hashtags relevantes. SEMPRE inclua hashtags no final da legenda." },
+          { role: "system", content: "Você é um especialista em social media e copywriting para o mercado brasileiro. Gere legendas criativas, envolventes e com hashtags relevantes. SEMPRE inclua hashtags no final da legenda. SEMPRE complete a resposta inteira sem cortar." },
           { role: "user", content: userContent },
         ],
         temperature: 0.8,
@@ -112,8 +109,20 @@ REGRAS OBRIGATÓRIAS:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      console.error("AI gateway error:", response.status, errorText);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Payment required." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw new Error(`AI gateway error: ${response.status}`);
     }
 
     const data = await response.json();
