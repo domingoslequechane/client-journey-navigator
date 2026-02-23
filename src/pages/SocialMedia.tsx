@@ -9,6 +9,8 @@ import { PostCard } from '@/components/social-media/PostCard';
 import { PostModal } from '@/components/social-media/PostModal';
 import { MetricsDashboard } from '@/components/social-media/MetricsDashboard';
 import { ClientFilterSelect } from '@/components/social-media/ClientFilterSelect';
+import { ConnectAccountsGuardModal } from '@/components/social-media/ConnectAccountsGuardModal';
+import { ConnectPlatformModal } from '@/components/social-media/ConnectPlatformModal';
 import { type SocialPlatform, type PostStatus, PLATFORM_CONFIG, STATUS_CONFIG } from '@/lib/social-media-mock';
 import { useSocialPosts, type SocialPostRow } from '@/hooks/useSocialPosts';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
@@ -41,7 +43,12 @@ export default function SocialMedia() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval, publishPost } = useSocialPosts();
-  const { syncAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
+  const { accounts, syncAccounts, connectPlatform } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
+
+  const [connectGuardOpen, setConnectGuardOpen] = useState(false);
+  const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);
+
+  const connectedAccounts = accounts.filter(a => a.is_connected);
 
   const hasClientSelected = selectedClient !== 'all';
 
@@ -65,6 +72,10 @@ export default function SocialMedia() {
   }, [clientPosts, searchQuery, platformFilter, statusFilter]);
 
   const handleCreatePost = (date?: string) => {
+    if (connectedAccounts.length === 0) {
+      setConnectGuardOpen(true);
+      return;
+    }
     setEditingPost(null);
     setDefaultDate(date);
     setModalOpen(true);
@@ -344,6 +355,26 @@ export default function SocialMedia() {
         post={editingPost}
         onSave={handleSave}
         defaultDate={defaultDate}
+      />
+
+      <ConnectAccountsGuardModal
+        open={connectGuardOpen}
+        onOpenChange={setConnectGuardOpen}
+        onConnectPlatform={(platform) => {
+          setConnectingPlatform(platform);
+        }}
+        onGoToDashboard={() => setActiveTab('dashboard')}
+      />
+
+      <ConnectPlatformModal
+        open={!!connectingPlatform}
+        onOpenChange={(v) => !v && setConnectingPlatform(null)}
+        platform={connectingPlatform}
+        onConnect={(platform) => {
+          setConnectingPlatform(null);
+          connectPlatform.mutate(platform);
+        }}
+        isConnecting={connectPlatform.isPending}
       />
     </div>
   );
