@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useSubscription } from '@/hooks/useSubscription';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { supabase } from '@/integrations/supabase/client';
 import {
   LayoutDashboard,
@@ -30,7 +31,8 @@ import {
   Link2,
   CalendarDays,
   Wallet,
-  Share2
+  Share2,
+  Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +41,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { LanguageSelector } from '@/components/ui/language-selector';
+import { ModuleLockedModal } from '@/components/subscription/ModuleLockedModal';
 
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
 const TABLET_MIN = 768;
@@ -67,6 +70,14 @@ export function Sidebar() {
     canSeeFinance 
   } = useUserRole();
 
+  const {
+    canAccessFinance,
+    canAccessStudio,
+    canAccessLinkTree,
+    canAccessEditorial,
+    canAccessSocialMedia,
+  } = usePlanLimits();
+
   const currentPlan = PLAN_CONFIG[planType] || PLAN_CONFIG.free;
   const PlanIcon = currentPlan.icon;
 
@@ -77,6 +88,7 @@ export function Sidebar() {
 
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [lockedModule, setLockedModule] = useState<{ name: string; plan: string } | null>(null);
 
   // Detect tablet viewport
   useEffect(() => {
@@ -114,23 +126,23 @@ export function Sidebar() {
 
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
-  // Filter navigation items based on role
+  // Filter navigation items based on role + module access
   const navigation = useMemo(() => {
     const allItems = [
-      { name: t('navigation.dashboard'), href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true },
-       { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canSeeSalesFunnel || canSeeOperationalFlow },
-      { name: 'Finanças', href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canSeeFinance },
-      { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true },
-      { name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: true },
-      { name: 'Social Media', href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: true },
-      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true },
-      { name: 'Studio AI', href: '/app/studio', icon: Workflow, tutorialId: 'sidebar-studio', show: true },
-      { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true },
-      { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients },
-      { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam },
+      { name: t('navigation.dashboard'), href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true, locked: false, requiredPlan: '' },
+      { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canSeeSalesFunnel || canSeeOperationalFlow, locked: false, requiredPlan: '' },
+      { name: 'Finanças', href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canSeeFinance, locked: !canAccessFinance, requiredPlan: 'Lança' },
+      { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true, locked: !canAccessLinkTree, requiredPlan: 'Lança' },
+      { name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: true, locked: !canAccessEditorial, requiredPlan: 'Lança' },
+      { name: 'Social Media', href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: true, locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
+      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true, locked: false, requiredPlan: '' },
+      { name: 'Studio AI', href: '/app/studio', icon: Workflow, tutorialId: 'sidebar-studio', show: true, locked: !canAccessStudio, requiredPlan: 'Lança' },
+      { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true, locked: false, requiredPlan: '' },
+      { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients, locked: false, requiredPlan: '' },
+      { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam, locked: false, requiredPlan: '' },
     ];
     return allItems.filter(item => item.show);
-  }, [canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, canSeeFinance, t]);
+  }, [canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, canSeeFinance, canAccessFinance, canAccessStudio, canAccessLinkTree, canAccessEditorial, canAccessSocialMedia, t]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -144,6 +156,40 @@ export function Sidebar() {
   };
 
   const NavItem = ({ item, isActive }: { item: typeof navigation[0]; isActive: boolean }) => {
+    if (item.locked) {
+      const lockedContent = (
+        <button
+          onClick={() => setLockedModule({ name: item.name, plan: item.requiredPlan })}
+          data-tutorial={item.tutorialId}
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left',
+            'text-muted-foreground/50 hover:bg-accent/50 cursor-pointer',
+            collapsed && 'justify-center px-2'
+          )}
+        >
+          <item.icon className="h-5 w-5 shrink-0 opacity-50" />
+          {!collapsed && (
+            <>
+              <span className="flex-1 opacity-60">{item.name}</span>
+              <Lock className="h-3.5 w-3.5 opacity-50" />
+            </>
+          )}
+        </button>
+      );
+
+      if (collapsed) {
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>{lockedContent}</TooltipTrigger>
+            <TooltipContent side="right">
+              🔒 {item.name} (Plano {item.requiredPlan})
+            </TooltipContent>
+          </Tooltip>
+        );
+      }
+      return lockedContent;
+    }
+
     const content = (
       <Link
         to={item.href}
@@ -476,6 +522,14 @@ export function Sidebar() {
           </Button>
         </div>
       </div>
+
+      {/* Module Locked Modal */}
+      <ModuleLockedModal
+        open={!!lockedModule}
+        onOpenChange={(open) => !open && setLockedModule(null)}
+        moduleName={lockedModule?.name || ''}
+        requiredPlan={lockedModule?.plan}
+      />
     </TooltipProvider>
   );
 }
