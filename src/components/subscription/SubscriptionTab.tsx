@@ -28,7 +28,6 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { PlanUsageCard } from './PlanUsageCard';
 
-import planBussola from '@/assets/plans/plan-bussola.png';
 import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
 import planCatapulta from '@/assets/plans/plan-catapulta.png';
@@ -49,8 +48,8 @@ const PLAN_CONFIG = {
     color: 'text-green-500', 
     bgColor: 'bg-green-500/10',
     borderColor: 'border-green-500/20',
-    image: planBussola,
-    price: 'Grátis',
+    image: planLanca,
+    price: 'Legado',
     features: ['3 clientes ativos', 'Funil ilimitado', '3 contratos/mês', '90 msgs IA/mês']
   },
   starter: { 
@@ -60,7 +59,7 @@ const PLAN_CONFIG = {
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
     image: planLanca,
-    price: '$10/mês',
+    price: '$19/mês',
     features: ['15 clientes ativos', 'Funil ilimitado', '15 contratos/mês', '500 msgs IA/mês']
   },
   pro: { 
@@ -70,7 +69,7 @@ const PLAN_CONFIG = {
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/20',
     image: planArco,
-    price: '$24/mês',
+    price: '$39/mês',
     features: ['50 clientes ativos', 'Funil ilimitado', '50 contratos/mês', '1200 msgs IA/mês']
   },
   agency: { 
@@ -80,7 +79,7 @@ const PLAN_CONFIG = {
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/20',
     image: planCatapulta,
-    price: '$60/mês',
+    price: '$79/mês',
     features: ['Clientes ilimitados', 'Funil ilimitado', 'Contratos ilimitados', 'IA ilimitada']
   },
 };

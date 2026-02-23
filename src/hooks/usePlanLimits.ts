@@ -73,7 +73,7 @@ interface UsePlanLimitsReturn {
   refetch: () => Promise<void>;
 }
 
-// Default limits for the Bússola plan (Free forever)
+// Default limits (fallback)
 const DEFAULT_LIMITS: PlanLimits = {
   maxClients: 3,
   maxContractsPerMonth: 3,

@@ -101,7 +101,7 @@ export const PLAN_COLORS: Record<PlanType, PlanColorConfig> = {
 
 // Helper function to get plan colors as CSS-ready values
 export function getPlanColors(planType: PlanType): { primary: string; accent: string } {
-  const colors = PLAN_COLORS[planType] || PLAN_COLORS.free;
+  const colors = PLAN_COLORS[planType] || PLAN_COLORS.starter;
   return {
     primary: `hsl(${colors.primary})`,
     accent: `hsl(${colors.accent})`,

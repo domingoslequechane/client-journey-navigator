@@ -45,29 +45,16 @@ import { LanguageSelector } from '@/components/ui/language-selector';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 // Plan images
-import planBussola from '@/assets/plans/plan-bussola.png';
 import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
 import planCatapulta from '@/assets/plans/plan-catapulta.png';
 
 // Plan colors and config
 const planConfig = {
-  free: {
-    name: 'Bússola',
-    subtitle: 'Essencial',
-    price: 0,
-    originalPrice: null,
-    isFree: true,
-    tagline: 'Encontre o caminho certo para começar!',
-    image: planBussola,
-    color: 'hsl(142, 71%, 45%)',
-    bgColor: 'hsl(142, 71%, 45%, 0.1)',
-    features: ['3 clientes ativos', 'Funil ilimitado', '90 msgs IA', '1 usuário'],
-  },
   starter: {
     name: 'Lança',
     subtitle: 'Crescimento',
-    price: 10,
+    price: 19,
     originalPrice: null,
     tagline: 'Lance sua marca no mundo digital!',
     image: planLanca,
@@ -78,7 +65,7 @@ const planConfig = {
   pro: {
     name: 'Arco',
     subtitle: 'Profissional',
-    price: 24,
+    price: 39,
     originalPrice: null,
     tagline: 'Alcance resultados com precisão!',
     image: planArco,
@@ -90,7 +77,7 @@ const planConfig = {
   agency: {
     name: 'Catapulta',
     subtitle: 'Agência',
-    price: 60,
+    price: 79,
     originalPrice: null,
     tagline: 'Imponha sua agência no mercado!',
     image: planCatapulta,
@@ -755,9 +742,9 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {(Object.entries(planConfig) as [string, typeof planConfig.pro][]).map(([key, plan]) => {
-              const planKey = key as 'free' | 'starter' | 'pro' | 'agency';
+              const planKey = key as 'starter' | 'pro' | 'agency';
               return (
               <Card 
                 key={key}
@@ -795,21 +782,11 @@ export default function LandingPage() {
                   </CardTitle>
                   <CardDescription>{t(`plans.${planKey}.subtitle`)}</CardDescription>
                   <div className="pt-2">
-                    {'isFree' in plan && plan.isFree ? (
-                      <>
-                        <span className="text-3xl font-bold" style={{ color: plan.color }}>
-                          {t('pricing.free')}
-                        </span>
-                        <p className="text-xs text-muted-foreground">{t('pricing.forever')}</p>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-3xl font-bold" style={{ color: plan.color }}>
-                          ${plan.price}
-                        </span>
-                        <span className="text-muted-foreground">{t('pricing.perMonth')}</span>
-                      </>
-                    )}
+                    <span className="text-3xl font-bold" style={{ color: plan.color }}>
+                      ${plan.price}
+                    </span>
+                    <span className="text-muted-foreground">{t('pricing.perMonth')}</span>
+                    <p className="text-sm text-primary font-medium mt-1">14 dias grátis</p>
                   </div>
                   <p className="text-xs italic text-muted-foreground mt-1">
                     {t(`plans.${planKey}.tagline`)}
@@ -835,7 +812,7 @@ export default function LandingPage() {
                       style={{ backgroundColor: plan.color }}
                     >
                       <CreditCard className="h-4 w-4" />
-                      {'isFree' in plan && plan.isFree ? t('pricing.startFree') : t('pricing.subscribe')}
+                      {t('pricing.subscribe')}
                     </Button>
                   </Link>
                 </CardContent>
