@@ -169,26 +169,26 @@ export default function SocialMedia() {
         </div>
 
         {/* Global controls bar */}
-        <div className="flex flex-wrap items-center gap-3">
-          <ClientFilterSelect value={selectedClient} onChange={setSelectedClient} className="w-[240px]" />
+        <div className="flex items-center gap-3">
+          <ClientFilterSelect value={selectedClient} onChange={setSelectedClient} className="min-w-0 flex-1 sm:flex-none sm:w-[240px]" />
           <Button
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="gap-2 shrink-0"
             onClick={handleSync}
             disabled={syncAccounts.isPending || !hasClientSelected}
           >
             <RefreshCw className={cn("h-4 w-4", syncAccounts.isPending && "animate-spin")} />
-            Sincronizar
+            <span className="hidden sm:inline">Sincronizar</span>
           </Button>
-          <div className="flex-1" />
           <Button
             onClick={() => { setActiveTab('schedule'); handleCreatePost(); }}
-            className="gap-2"
+            className="gap-2 shrink-0"
             disabled={!hasClientSelected}
+            size="sm"
           >
             <Plus className="h-4 w-4" />
-            Novo Post
+            <span className="hidden sm:inline">Novo Post</span>
           </Button>
         </div>
       </div>
