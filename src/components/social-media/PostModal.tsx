@@ -45,15 +45,21 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
   const [content, setContent] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(['instagram']);
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [time, setTime] = useState('10:00');
   const [contentType, setContentType] = useState<ContentType>('feed');
   const [hashtags, setHashtags] = useState('');
   const [previewPlatform, setPreviewPlatform] = useState<SocialPlatform>('instagram');
   const [uploading, setUploading] = useState(false);
   const [multiImageMode, setMultiImageMode] = useState<'carousel' | 'individual'>('carousel');
   const [showAICaptionModal, setShowAICaptionModal] = useState(false);
+  const [scheduleSlots, setScheduleSlots] = useState<{ date: string; time: string }[]>([
+    { date: format(new Date(), 'yyyy-MM-dd'), time: '10:00' },
+  ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addSlot = () => setScheduleSlots(prev => [...prev, { date: format(new Date(), 'yyyy-MM-dd'), time: '10:00' }]);
+  const removeSlot = (idx: number) => setScheduleSlots(prev => prev.filter((_, i) => i !== idx));
+  const updateSlot = (idx: number, key: 'date' | 'time', value: string) =>
+    setScheduleSlots(prev => prev.map((s, i) => i === idx ? { ...s, [key]: value } : s));
 
   const connectedPlatforms = accounts.filter(a => a.is_connected).map(a => a.platform as SocialPlatform);
   const hasLateAccounts = accounts.some(a => a.is_connected && a.late_account_id);
@@ -70,8 +76,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
       setPlatforms(post.platforms || ['instagram']);
       if (post.scheduled_at) {
         const dt = new Date(post.scheduled_at);
-        setDate(format(dt, 'yyyy-MM-dd'));
-        setTime(format(dt, 'HH:mm'));
+        setScheduleSlots([{ date: format(dt, 'yyyy-MM-dd'), time: format(dt, 'HH:mm') }]);
       }
       setContentType(post.content_type as ContentType);
       setHashtags(post.hashtags?.join(', ') || '');
@@ -80,8 +85,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
       setContent('');
       setMediaUrls([]);
       setPlatforms(['instagram']);
-      setDate(defaultDate || format(new Date(), 'yyyy-MM-dd'));
-      setTime('10:00');
+      setScheduleSlots([{ date: defaultDate || format(new Date(), 'yyyy-MM-dd'), time: '10:00' }]);
       setContentType('feed');
       setHashtags('');
       setPreviewPlatform('instagram');
@@ -133,14 +137,16 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
   const buildPostData = (status: string) => {
     const effectiveContentType = mediaUrls.length > 1 && multiImageMode === 'carousel' ? 'carousel' : contentType;
+    const firstSlot = scheduleSlots[0];
     return {
       content,
       media_urls: mediaUrls,
       platforms,
-      scheduled_at: `${date}T${time}:00`,
+      scheduled_at: `${firstSlot.date}T${firstSlot.time}:00`,
       status,
       content_type: effectiveContentType,
       hashtags: hashtags ? hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
+      schedule_slots: scheduleSlots.length > 1 ? scheduleSlots : undefined,
     };
   };
 
@@ -193,30 +199,29 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
                   Selecione os canais
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {ALL_PLATFORMS.map(p => {
-                    const isConnected = connectedPlatforms.includes(p);
-                    const isSelected = platforms.includes(p);
-                    return (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => isConnected && togglePlatform(p)}
-                        disabled={!isConnected}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all",
-                          isSelected
-                            ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                            : isConnected
-                            ? "border-border hover:border-primary/50"
-                            : "border-border opacity-40 cursor-not-allowed"
-                        )}
-                      >
-                        <PlatformIcon platform={p} size="sm" />
-                        {PLATFORM_CONFIG[p].label}
-                        {!isConnected && <Badge variant="outline" className="text-[8px] px-1 py-0">Não conectado</Badge>}
-                      </button>
-                    );
-                  })}
+                  {connectedPlatforms.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhum canal conectado. Conecte uma conta primeiro.</p>
+                  ) : (
+                    connectedPlatforms.map(p => {
+                      const isSelected = platforms.includes(p);
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => togglePlatform(p)}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all",
+                            isSelected
+                              ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                              : "border-border hover:border-primary/50"
+                          )}
+                        >
+                          <PlatformIcon platform={p} size="sm" />
+                          {PLATFORM_CONFIG[p].label}
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
@@ -377,22 +382,39 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, default
 
               <Separator />
 
-              {/* Step 5: Schedule */}
+              {/* Step 5: Schedule - multiple slots */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold flex items-center gap-2">
                   <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">5</span>
-                  Data e horário
+                  Data e horário das publicações
                 </Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-9" />
+
+                {scheduleSlots.map((slot, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <div className="flex gap-1 shrink-0">
+                      {platforms.map(p => (
+                        <PlatformIcon key={p} platform={p} size="sm" />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    {scheduleSlots.length > 1 && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeSlot(idx)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="h-9" />
-                  </div>
-                </div>
+                ))}
+
+                <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-7 text-primary" onClick={addSlot}>
+                  <span className="text-sm">⊕</span> Incluir mais dias e horários
+                </Button>
               </div>
             </div>
 

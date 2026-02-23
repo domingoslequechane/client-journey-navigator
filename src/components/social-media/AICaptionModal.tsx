@@ -27,9 +27,9 @@ const TONES = [
 ];
 
 const LENGTHS = [
-  { value: 'curta', label: 'Curta' },
-  { value: 'media', label: 'Média' },
-  { value: 'longa', label: 'Longa' },
+  { value: 'curta', label: 'Curta', description: '1-2 frases' },
+  { value: 'media', label: 'Média', description: '3-5 frases' },
+  { value: 'longa', label: 'Longa', description: '1-2 parágrafos' },
 ];
 
 export function AICaptionModal({
@@ -137,32 +137,36 @@ export function AICaptionModal({
                   type="button"
                   onClick={() => setLength(l.value)}
                   className={cn(
-                    "px-3 py-2 rounded-lg text-xs font-medium border transition-all",
+                    "px-3 py-2 rounded-lg text-xs font-medium border transition-all flex flex-col items-center gap-0.5",
                     length === l.value
                       ? "border-primary bg-primary/10 ring-1 ring-primary/30"
                       : "border-border hover:border-primary/50"
                   )}
                 >
-                  {l.label}
+                  <span>{l.label}</span>
+                  <span className="text-[10px] text-muted-foreground">{l.description}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Topic */}
+          {/* Topic - optional */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold flex items-center gap-2">
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
               Assunto / tema do post
+              <span className="text-[10px] text-muted-foreground font-normal">(opcional)</span>
             </Label>
             <Textarea
               value={topic}
               onChange={e => setTopic(e.target.value)}
-              placeholder="Ex.: Um post sobre marketing digital, abordando a importância da análise de relatórios..."
-              className="min-h-[80px]"
+              placeholder="Ex.: Um post sobre marketing digital... (deixe vazio para a IA analisar o conteúdo automaticamente)"
+              className="min-h-[70px]"
             />
             <p className="text-[11px] text-muted-foreground">
-              Descreva o tema com pelo menos 20 caracteres para melhores resultados
+              {mediaUrls.length > 0
+                ? `A IA irá analisar ${mediaUrls.length > 1 ? 'as ' + mediaUrls.length + ' mídias' : 'a mídia'} para gerar a legenda${topic.trim() ? ' com o tema informado' : ' automaticamente'}.`
+                : 'Descreva o tema ou deixe vazio para gerar com base no contexto do post.'}
             </p>
           </div>
 
@@ -178,7 +182,7 @@ export function AICaptionModal({
                     {copied ? 'Copiado' : 'Copiar'}
                   </Button>
                 </div>
-                <div className="rounded-lg border border-border p-3 bg-muted/50 text-sm whitespace-pre-wrap">
+                <div className="rounded-lg border border-border p-3 bg-muted/50 text-sm whitespace-pre-wrap max-h-[200px] overflow-y-auto">
                   {generatedCaption}
                 </div>
               </div>

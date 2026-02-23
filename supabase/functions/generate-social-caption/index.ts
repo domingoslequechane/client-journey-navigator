@@ -27,46 +27,71 @@ serve(async (req) => {
     const { platforms, content_type, media_urls, tone, length, topic } = await req.json();
 
     const toneMap: Record<string, string> = {
-      direto: "Direto e objetivo",
-      casual: "Casual e descontraído",
-      persuasivo: "Persuasivo e convincente",
-      alegre: "Alegre e animado",
-      amigavel: "Amigável e acolhedor",
+      direto: "Direto e objetivo, sem rodeios",
+      casual: "Casual e descontraído, linguagem informal",
+      persuasivo: "Persuasivo e convincente, com call-to-action",
+      alegre: "Alegre e animado, com energia positiva",
+      amigavel: "Amigável e acolhedor, próximo do público",
     };
 
     const lengthMap: Record<string, string> = {
-      curta: "Curta (1-2 frases)",
-      media: "Média (3-5 frases)",
-      longa: "Longa (1-2 parágrafos)",
+      curta: "CURTA: Máximo 1-2 frases. Seja extremamente conciso e direto. Não ultrapasse 150 caracteres no texto principal (sem contar hashtags).",
+      media: "MÉDIA: Entre 3-5 frases. Desenvolva a ideia de forma moderada, entre 150-400 caracteres no texto principal (sem contar hashtags).",
+      longa: "LONGA: 1-2 parágrafos completos. Desenvolva bem o assunto com detalhes, entre 400-800 caracteres no texto principal (sem contar hashtags).",
     };
 
     const platformNames = (platforms || []).join(", ") || "redes sociais";
     const toneLabel = toneMap[tone] || "Profissional";
-    const lengthLabel = lengthMap[length] || "Média (3-5 frases)";
+    const lengthLabel = lengthMap[length] || lengthMap["media"];
     const contentTypeLabel = content_type || "feed";
 
     let mediaContext = "";
     if (media_urls && media_urls.length > 0) {
-      mediaContext = `\nO post contém ${media_urls.length} mídia(s) anexada(s). Considere isso na legenda.`;
+      mediaContext = `\nO post contém ${media_urls.length} mídia(s) anexada(s). Analise o contexto visual para criar uma legenda relevante.`;
       if (media_urls.length > 1) {
         mediaContext += ` É um carrossel com ${media_urls.length} imagens/vídeos.`;
       }
     }
 
+    let topicContext = "";
+    if (topic && topic.trim()) {
+      topicContext = `\nTema/assunto fornecido pelo usuário: ${topic}`;
+    } else if (media_urls && media_urls.length > 0) {
+      topicContext = `\nNenhum tema foi especificado. Analise o conteúdo visual das mídias e crie uma legenda criativa e relevante baseada no que você interpreta do contexto.`;
+    } else {
+      topicContext = `\nNenhum tema foi especificado e não há mídias. Crie uma legenda genérica e envolvente para redes sociais.`;
+    }
+
     const prompt = `Gere uma legenda profissional para um post de ${contentTypeLabel} nas plataformas: ${platformNames}.
 
 Tom de voz: ${toneLabel}
-Tamanho: ${lengthLabel}
-${topic ? `Tema/assunto: ${topic}` : ""}
+
+TAMANHO OBRIGATÓRIO: ${lengthLabel}
+${topicContext}
 ${mediaContext}
 
-REGRAS:
-- Escreva em português
-- Inclua emojis relevantes
-- Sugira 3-5 hashtags relevantes no final
+REGRAS OBRIGATÓRIAS:
+- Escreva APENAS em português brasileiro
+- Inclua emojis relevantes ao longo do texto
+- OBRIGATÓRIO: Adicione entre 5-10 hashtags relevantes no final, separadas por espaço (ex: #marketing #vendas)
 - Adapte o estilo ao tipo de conteúdo (${contentTypeLabel})
-- NÃO inclua instruções ou explicações, apenas a legenda pronta
-- Considere os limites de caracteres de cada plataforma`;
+- NÃO inclua instruções, explicações ou comentários - apenas a legenda pronta para publicar
+- Considere os limites de caracteres de cada plataforma
+- RESPEITE RIGOROSAMENTE o tamanho solicitado: ${length === 'curta' ? 'seja MUITO curto' : length === 'longa' ? 'desenvolva BASTANTE' : 'tamanho moderado'}
+- As hashtags devem ser específicas e relevantes ao conteúdo, não genéricas`;
+
+    // Build messages with media if available
+    const userContent: any[] = [{ type: "text", text: prompt }];
+    
+    // Add image URLs for visual analysis
+    if (media_urls && media_urls.length > 0) {
+      for (const url of media_urls.slice(0, 4)) {
+        userContent.push({
+          type: "image_url",
+          image_url: { url },
+        });
+      }
+    }
 
     const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
@@ -77,11 +102,11 @@ REGRAS:
       body: JSON.stringify({
         model: "gemini-2.5-flash",
         messages: [
-          { role: "system", content: "Você é um especialista em social media e copywriting. Gere legendas criativas e envolventes." },
-          { role: "user", content: prompt },
+          { role: "system", content: "Você é um especialista em social media e copywriting para o mercado brasileiro. Gere legendas criativas, envolventes e com hashtags relevantes. SEMPRE inclua hashtags no final da legenda." },
+          { role: "user", content: userContent },
         ],
         temperature: 0.8,
-        max_tokens: 500,
+        max_tokens: 800,
       }),
     });
 
