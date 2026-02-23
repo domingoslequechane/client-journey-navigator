@@ -1,75 +1,67 @@
 
-# Remover Plano Gratuito e Adicionar 14 Dias Gratis
 
-## Resumo
-Remover o plano Bussola (gratuito) de todas as paginas e fluxos, mantendo apenas os 3 planos pagos (Lanca $19, Arco $39, Catapulta $79) com um periodo de teste gratuito de 14 dias para todos.
+## Plan: Remove Free Plan Completely and Enforce Mandatory Payment
 
-## Mudancas Necessarias
+### Overview
+Every new account will start with **no plan** (plan_type remains 'free' in the database but is treated as "no plan"). Users must select a paid plan (Lanca, Arco, or Catapulta) and provide card information before accessing the app. The 14-day free trial is configured on LemonSqueezy's side, not in our code.
 
-### 1. Pagina de Selecao de Plano (`src/pages/SelectPlan.tsx`)
-- Remover o plano "free/Bussola" do array `plans`
-- Remover toda a logica de ativacao direta do plano gratuito (linhas 172-199)
-- Alterar o grid para 3 colunas (`lg:grid-cols-3`)
-- Adicionar texto "14 dias gratis" abaixo do preco de cada plano
-- Atualizar texto informativo para mencionar o trial
+### Changes Required
 
-### 2. Pagina de Upgrade (`src/pages/Upgrade.tsx`)
-- Remover o plano `free` do objeto `plans` e dos arrays `allPlans` e `PLAN_ORDER`
-- Remover a logica especial para `planKey === 'free'` nos botoes e no preco ("Gratis para sempre")
-- Remover `planColors.free`, `planImages.free`, `planNames.free`
-- Remover a coluna Bussola da tabela de comparacao
-- Remover logica de "Mudar para Gratis" no botao
-- Alterar grid para 3 colunas
-- Adicionar badge "14 dias gratis" em cada card
+#### 1. SelectPlan page -- Remove "free" references
+- **`src/pages/SelectPlan.tsx`** (line 114): Change `plan_type: 'free'` to `plan_type: 'free'` (keep as-is since it's the default DB value, but the user won't stay on free)
+- Update button text from "Comecar Gratis" to "Assinar Agora" since card info is mandatory
+- Remove "14 dias gratis" messaging if trials are not configured on LemonSqueezy, or keep if they are
 
-### 3. Pagina de Precos Publica (`src/pages/Pricing.tsx`)
-- Remover o plano Bussola do array `plans`
-- Remover a coluna "free" de todos os items em `comparisonFeatures`
-- Alterar grid para 3 colunas (`lg:grid-cols-3`)
-- Adicionar informacao de "14 dias gratis" nos cards
-- Atualizar a tabela de comparacao para 3 colunas
+#### 2. ProtectedRoute -- Redirect users without subscription to SelectPlan
+- **`src/components/auth/ProtectedRoute.tsx`**: When a user has no active subscription (no subscription record or status is not active/trialing), redirect to `/select-plan` instead of `/app/upgrade`
+- Remove the trial_ends_at grace period check that allows access without a subscription
 
-### 4. Hook de Limites (`src/hooks/usePlanLimits.ts`)
-- Alterar o default `planType` de `'free'` para `'starter'` (fallback para quando nao ha plano definido)
-- Manter o tipo `PlanType` com `'free'` por compatibilidade com dados existentes no banco, mas o default passa a ser `'starter'`
+#### 3. useSubscription -- Remove trial-based access
+- **`src/hooks/useSubscription.ts`**: Update `hasAccess` to only be `true` when there's an active or trialing subscription (from LemonSqueezy webhook). Remove the local `trialDaysLeft` logic that grants access based on `organization.trial_ends_at` without an actual subscription record
 
-### 5. Hook de Assinatura (`src/hooks/useSubscription.ts`)
-- Manter o tipo `PlanType` com `'free'` (dados legados podem existir)
-- Ajustar `isPaidPlan` para considerar que todos os planos ativos sao pagos
+#### 4. Upgrade page -- Remove free/Bussola references
+- **`src/pages/Upgrade.tsx`** (line 69): Remove `free: { name: 'Essencial', codename: 'Bussola', ... }` entry
+- Update `currentPlan` fallback from `'starter'` to handle the case where user has no plan
+- Change messaging to indicate card information is required
 
-### 6. Banner do Plano Gratuito (`src/components/subscription/FreePlanBanner.tsx`)
-- Atualizar texto para "Seu periodo de teste esta ativo" ou "Assine para continuar"
+#### 5. Webhook -- Remove free fallback
+- **`supabase/functions/lemonsqueezy-webhook/index.ts`** (line 70): Change default return from `'free'` to `'starter'` in `getPlanTypeFromVariant`
+- Remove `free: 200` from `PLAN_PRICES`
 
-### 7. Edge Function `create-checkout` (`supabase/functions/create-checkout/index.ts`)
-- Remover `"free"` do schema de validacao (aceitar apenas `starter`, `pro`, `agency`)
-- Remover o mapeamento de variante para `free`
-- Adicionar `trial_period_days: 14` nos atributos do checkout do LemonSqueezy
+#### 6. Onboarding flow adjustment
+- **`src/pages/Onboarding.tsx`**: After onboarding completes, check if user has an active subscription. If not, redirect to `/select-plan` instead of `/app`
 
-### 8. Webhook LemonSqueezy (`supabase/functions/lemonsqueezy-webhook/index.ts`)
-- Quando uma assinatura e cancelada ou expira, em vez de fazer downgrade para `'free'`, marcar como `'expired'` ou manter o `plan_type` mas desativar o acesso via status da subscription
+#### 7. Minor cleanup
+- **`src/components/subscription/FreePlanBanner.tsx`**: Remove 'free' from planNames or rename to 'Sem Plano'
+- **`src/hooks/usePlanLimits.ts`**: Ensure `free` plan type returns zero/no access for all modules
+- **`src/components/subscription/PlanUsageCard.tsx`**: Update 'free' label from 'Legado' to 'Sem Plano'
+- **`src/components/subscription/PlanBadge.tsx`**: Update free label
 
-### 9. Cores e Temas (`src/lib/plan-colors.ts`)
-- Manter `free` para compatibilidade com dados legados, mas nao sera mais exibido ativamente
+### Technical Details
 
-### 10. Componentes de Assinatura
-- `PlanBadge.tsx`: Manter referencia a `free` para dados legados
-- `LimitReachedCard.tsx`: Manter referencia a `free` para dados legados
+**Flow for new users:**
+1. Sign up and verify email
+2. Redirected to `/select-plan`
+3. Choose a plan (Lanca/Arco/Catapulta) -- card info is mandatory on LemonSqueezy
+4. LemonSqueezy webhook creates subscription record
+5. Redirected to `/app/onboarding` to configure agency name
+6. Access granted to `/app`
 
-## Detalhes Tecnicos
+**Flow for existing users without subscription:**
+1. Login
+2. ProtectedRoute detects no active subscription
+3. Redirect to `/select-plan` or `/app/upgrade`
 
-### Checkout com Trial (LemonSqueezy)
-Na edge function `create-checkout`, adicionar o campo `trial_period_days` ao payload:
-```text
-attributes: {
-  test_mode: testMode,
-  trial_period_days: 14,    // <-- novo
-  checkout_data: checkoutDataPayload,
-  ...
-}
-```
+**Key principle:** Access is gated by `subscription.status` being `active` or `trialing` (set by LemonSqueezy webhook). No more local trial logic based on `organization.trial_ends_at`.
 
-### Organizacao Placeholder
-Em `SelectPlan.tsx`, ao criar organizacao placeholder, mudar `plan_type` de `'free'` para `'starter'` (ou deixar sem plano ate o checkout ser concluido).
+### Files to modify:
+- `src/components/auth/ProtectedRoute.tsx`
+- `src/hooks/useSubscription.ts`
+- `src/pages/SelectPlan.tsx`
+- `src/pages/Upgrade.tsx`
+- `src/pages/Onboarding.tsx`
+- `supabase/functions/lemonsqueezy-webhook/index.ts`
+- `src/components/subscription/FreePlanBanner.tsx`
+- `src/components/subscription/PlanUsageCard.tsx`
+- `src/components/subscription/PlanBadge.tsx`
 
-### Dados Legados
-Usuarios existentes no plano `free` continuarao funcionando. O tipo `'free'` nao sera removido do banco de dados nem do enum `plan_type`, apenas nao sera mais oferecido como opcao em nenhuma interface.
