@@ -1,133 +1,121 @@
 
 
-# Plano: Inbox de Mensagens Sociais + Seguidores em Tempo Real nos Relatorios
+# Reestruturação de Preços da Qualify - Social Media + Novos Valores
 
-## Resumo
+## Contexto e Analise de Custos
 
-Adicionar uma nova aba **Inbox** ao modulo Social Media para receber e responder mensagens diretas (DMs) e comentarios das contas conectadas. Alem disso, adicionar o total de seguidores em tempo real na aba de Relatorios.
+### Custos Operacionais Atuais (Late.dev)
+- **Plano Free Late.dev**: 10 Conjuntos Sociais (Social Sets), posts limitados
+- **Custo atual para voce**: $0/mes (Free)
+- **Proximo nivel Late.dev**: ~$19/mes para mais Social Sets
 
----
+### Referencia MLabs
+- Beginner: $19.90/mes por marca (10 conjuntos sociais, 300 posts/mes)
+- Intermediate: $24.90/mes (2000 posts/mes)
+- Full: $29.90/mes (ilimitado)
 
-## 1. Nova Tabela: `social_messages`
-
-Criar tabela no Supabase para armazenar mensagens recebidas (DMs e comentarios):
-
-```text
-social_messages
-- id (uuid, PK)
-- organization_id (uuid, NOT NULL)
-- social_account_id (uuid, NOT NULL, FK -> social_accounts.id)
-- client_id (uuid, nullable)
-- platform (text, NOT NULL) -- instagram, facebook, etc.
-- message_type (text, NOT NULL) -- 'dm' ou 'comment'
-- post_id (text, nullable) -- ID do post se for comentario
-- sender_name (text, NOT NULL)
-- sender_username (text, nullable)
-- sender_avatar_url (text, nullable)
-- content (text, NOT NULL)
-- reply_content (text, nullable) -- resposta enviada
-- replied_at (timestamptz, nullable)
-- is_read (boolean, default false)
-- external_id (text, nullable) -- ID da mensagem na plataforma
-- received_at (timestamptz, default now())
-- created_at (timestamptz, default now())
-```
-
-Politicas RLS: membros da organizacao podem SELECT, UPDATE (para marcar como lido e responder), e INSERT (para sincronizacao).
-
-## 2. Nova Aba: Inbox
-
-Adicionar `'inbox'` ao tipo `TabValue` em `SocialMedia.tsx` com icone `MessageCircle`.
-
-### Componente: `SocialInbox.tsx`
-
-Layout dividido em 2 paineis (estilo email/chat):
-
-**Painel esquerdo - Lista de conversas:**
-- Filtros: Todas | DMs | Comentarios
-- Filtro por plataforma (icones)
-- Busca por nome/conteudo
-- Lista de mensagens com: avatar do remetente, nome, preview da mensagem, plataforma (icone), timestamp, badge de "nao lido"
-- Contador de nao lidas no topo
-
-**Painel direito - Detalhe da conversa:**
-- Header: avatar + nome + username + plataforma
-- Se for comentario: mostra o post original (imagem + legenda)
-- Historico de mensagens (bolhas de chat)
-- Campo de resposta + botao enviar
-- Botao "Marcar como lida"
-
-**Mobile:** lista ocupa tela inteira; ao clicar numa mensagem, abre o detalhe com botao de voltar.
-
-## 3. Hook: `useSocialMessages.ts`
-
-- Query para buscar mensagens filtradas por `organization_id` e opcionalmente `client_id`
-- Mutation para marcar como lida (`is_read = true`)
-- Mutation para responder (atualiza `reply_content` e `replied_at`)
-- Query para contar nao lidas (usada no badge da aba)
-
-## 4. Edge Function: `social-fetch-messages`
-
-- Chamada via Late.dev API para buscar DMs e comentarios das contas conectadas
-- Armazena na tabela `social_messages`
-- Evita duplicatas via `external_id`
-- Chamada pelo botao "Sincronizar" e tambem manualmente no Inbox
-
-## 5. Edge Function: `social-reply-message`
-
-- Recebe `message_id` e `reply_content`
-- Envia a resposta via Late.dev API para a plataforma correspondente
-- Atualiza a tabela `social_messages` com `reply_content` e `replied_at`
-
-## 6. Seguidores em Tempo Real nos Relatorios
-
-Na `MetricsDashboard.tsx`, a contagem de seguidores ja existe mas vem do banco local. Para "tempo real":
-- Adicionar botao "Atualizar metricas" que chama `syncAccounts` para buscar dados frescos da API
-- Na tabela por plataforma, ja mostra seguidores - manter e destacar visualmente
-- O card de "Seguidores" ja existe na primeira linha de stats - sera mantido
-
-## 7. Badge de Nao Lidas na Aba Inbox
-
-Mostrar badge com contagem de mensagens nao lidas no botao da aba Inbox, similar a notificacoes.
+### Sua Estrategia
+Cobrar por conexao social inclusa no plano, de forma que os usuarios cubram o custo do Late.dev proporcionalmente. Quando a demanda crescer, voce migra para o plano pago do Late.dev ja com receita cobrindo o custo.
 
 ---
 
-## Secao Tecnica
+## Proposta de Novos Precos
 
-### Arquivos a Criar
+| Plano | Preco Atual | Novo Preco | Social Sets | Posts/mes | Inbox (DMs) |
+|-------|-------------|------------|-------------|----------|-------------|
+| Bussola (Free) | $0 | $0 | 0 (sem acesso) | 0 | Nao |
+| Lanca (Starter) | $10 | $19 | 3 conexoes | 100 | Nao |
+| Arco (Pro) | $24 | $39 | 7 conexoes | 500 | Sim |
+| Catapulta (Agency) | $60 | $79 | 15 conexoes | Ilimitado | Sim |
 
-| Arquivo | Descricao |
-|---|---|
-| `src/components/social-media/SocialInbox.tsx` | Componente principal do Inbox com lista + detalhe |
-| `src/components/social-media/InboxMessageItem.tsx` | Item individual na lista de mensagens |
-| `src/components/social-media/InboxConversation.tsx` | Painel de detalhe/resposta da conversa |
-| `src/hooks/useSocialMessages.ts` | Hook para CRUD de mensagens sociais |
-| `supabase/functions/social-fetch-messages/index.ts` | Edge function para buscar mensagens via Late.dev |
-| `supabase/functions/social-reply-message/index.ts` | Edge function para responder mensagens via Late.dev |
+### Justificativa dos Precos
 
-### Arquivos a Editar
+**Bussola (Free)**: Sem Social Media. O modulo fica visivel mas bloqueado com prompt de upgrade. Isso evita gastar Social Sets do Late.dev com usuarios que nao pagam.
 
-| Arquivo | Alteracoes |
-|---|---|
-| `src/pages/SocialMedia.tsx` | Adicionar tab 'inbox' com icone MessageCircle, renderizar SocialInbox, badge de nao lidas |
-| `src/components/social-media/MetricsDashboard.tsx` | Adicionar botao "Atualizar metricas" que chama syncAccounts para dados frescos de seguidores |
-| `supabase/config.toml` | Registrar novas edge functions `social-fetch-messages` e `social-reply-message` |
+**Lanca ($19/mes)**: Aumento de $10 para $19.
+- 3 conexoes sociais cobrem o custo proporcional (~$5.70 do Late.dev por 3 sets do pool de 10)
+- Valor competitivo vs MLabs ($19.90 por 1 marca)
+- Diferencial: inclui CRM + IA + Contratos (MLabs so tem social)
 
-### Migracao SQL
+**Arco ($39/mes)**: Aumento de $24 para $39.
+- 7 conexoes sociais + Inbox de DMs
+- Custo proporcional Late.dev: ~$13.30 por 7 sets
+- Margem saudavel + todos os outros modulos inclusos
+- Plano mais popular (best value)
 
-- Criar tabela `social_messages` com as colunas descritas
-- Adicionar RLS policies para membros da organizacao
-- Criar indice em `(organization_id, is_read)` para queries de contagem eficientes
+**Catapulta ($79/mes)**: Aumento de $60 para $79.
+- 15 conexoes (requer Late.dev Starter a $19/mes quando ultrapassar 10)
+- Posts ilimitados + Inbox + Suporte VIP
+- Para agencias que gerenciam muitas marcas
 
-### Fluxo de Dados
+---
+
+## Distribuicao dos 10 Social Sets (Late.dev Free)
+
+Com o pool de 10 Social Sets gratuitos:
+- Bussola: 0 sets (nao consome)
+- Lanca: 3 sets por organizacao
+- Arco: 7 sets por organizacao
+- Catapulta: ate 10 (precisa upgrade Late.dev quando tiver muitos clientes Catapulta)
+
+O sistema vai controlar o total de Social Sets consumidos globalmente e alertar voce (admin/proprietor) quando estiver proximo do limite do Late.dev.
+
+---
+
+## Implementacao Tecnica
+
+### 1. Migrar tabela `plan_limits` (SQL)
+Adicionar colunas:
+- `max_social_accounts` (integer, nullable) -- conexoes sociais por organizacao
+- `max_social_posts_per_month` (integer, nullable) -- posts agendados/mes
+- `has_social_inbox` (boolean, default false) -- acesso ao Inbox DMs
+
+### 2. Atualizar registros da tabela `plan_limits`
 
 ```text
-Sincronizar -> social-fetch-messages -> Late.dev API -> social_messages (DB)
-                                                              |
-                                                    SocialInbox (leitura)
-                                                              |
-                                            Responder -> social-reply-message -> Late.dev API
-                                                              |
-                                                    Atualiza reply_content no DB
+free:    max_social_accounts=0, max_social_posts=0, has_social_inbox=false
+starter: max_social_accounts=3, max_social_posts=100, has_social_inbox=false
+pro:     max_social_accounts=7, max_social_posts=500, has_social_inbox=true
+agency:  max_social_accounts=15, max_social_posts=NULL, has_social_inbox=true
 ```
+
+### 3. Atualizar `usePlanLimits.ts`
+- Adicionar campos `maxSocialAccounts`, `maxSocialPostsPerMonth`, `hasSocialInbox`
+- Adicionar contadores `socialAccountsCount`, `socialPostsThisMonth`
+- Adicionar permissoes `canConnectSocialAccount`, `canPublishSocialPost`, `canAccessSocialInbox`
+
+### 4. Atualizar precos em todas as paginas
+Arquivos afetados:
+- `src/pages/Pricing.tsx` -- tabela de comparacao publica
+- `src/pages/Upgrade.tsx` -- pagina de upgrade interna
+- `src/pages/SelectPlan.tsx` -- selecao de plano pos-registro
+- Adicionar linha "Social Media" na tabela de comparacao com conexoes e posts
+
+### 5. Adicionar controle no modulo Social Media
+- Bloquear conexao de novas contas quando `canConnectSocialAccount === false`
+- Bloquear criacao de posts quando `canPublishSocialPost === false`
+- Esconder/bloquear aba Inbox quando `canAccessSocialInbox === false`
+- Mostrar badge de uso (ex: "3/7 conexoes") no header do modulo
+
+### 6. Tracking de uso social
+Usar a tabela `usage_tracking` existente com novos `feature_type`:
+- `social_posts` -- contabilizar posts publicados/agendados por mes
+- Contar `social_accounts` diretamente da tabela existente (nao precisa de tracking mensal)
+
+### 7. Atualizar LemonSqueezy
+- Ajustar os produtos/precos no dashboard do LemonSqueezy para refletir os novos valores ($19, $39, $79)
+
+---
+
+## Resumo das Alteracoes
+
+| Item | Arquivos/Tabelas |
+|------|-----------------|
+| Migracao SQL | Nova migracao para `plan_limits` |
+| Hook de limites | `src/hooks/usePlanLimits.ts` |
+| Pagina de precos | `src/pages/Pricing.tsx` |
+| Pagina de upgrade | `src/pages/Upgrade.tsx` |
+| Selecao de plano | `src/pages/SelectPlan.tsx` |
+| Modulo Social | Componentes em `src/components/social-media/` |
+| Types | `src/integrations/supabase/types.ts` |
 
