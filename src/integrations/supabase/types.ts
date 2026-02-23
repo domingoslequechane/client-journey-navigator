@@ -1454,11 +1454,20 @@ export type Database = {
         Row: {
           can_export_data: boolean | null
           created_at: string | null
+          has_editorial_module: boolean | null
+          has_finance_module: boolean | null
+          has_linktree_module: boolean | null
+          has_social_inbox: boolean | null
+          has_social_module: boolean | null
+          has_studio_module: boolean | null
           id: string
           max_ai_messages_per_month: number | null
           max_clients: number | null
           max_contract_templates: number | null
           max_contracts_per_month: number | null
+          max_link_pages: number | null
+          max_social_accounts: number | null
+          max_social_posts_per_month: number | null
           max_studio_generations: number | null
           max_team_members: number | null
           plan_type: Database["public"]["Enums"]["plan_type"]
@@ -1466,11 +1475,20 @@ export type Database = {
         Insert: {
           can_export_data?: boolean | null
           created_at?: string | null
+          has_editorial_module?: boolean | null
+          has_finance_module?: boolean | null
+          has_linktree_module?: boolean | null
+          has_social_inbox?: boolean | null
+          has_social_module?: boolean | null
+          has_studio_module?: boolean | null
           id?: string
           max_ai_messages_per_month?: number | null
           max_clients?: number | null
           max_contract_templates?: number | null
           max_contracts_per_month?: number | null
+          max_link_pages?: number | null
+          max_social_accounts?: number | null
+          max_social_posts_per_month?: number | null
           max_studio_generations?: number | null
           max_team_members?: number | null
           plan_type: Database["public"]["Enums"]["plan_type"]
@@ -1478,11 +1496,20 @@ export type Database = {
         Update: {
           can_export_data?: boolean | null
           created_at?: string | null
+          has_editorial_module?: boolean | null
+          has_finance_module?: boolean | null
+          has_linktree_module?: boolean | null
+          has_social_inbox?: boolean | null
+          has_social_module?: boolean | null
+          has_studio_module?: boolean | null
           id?: string
           max_ai_messages_per_month?: number | null
           max_clients?: number | null
           max_contract_templates?: number | null
           max_contracts_per_month?: number | null
+          max_link_pages?: number | null
+          max_social_accounts?: number | null
+          max_social_posts_per_month?: number | null
           max_studio_generations?: number | null
           max_team_members?: number | null
           plan_type?: Database["public"]["Enums"]["plan_type"]
