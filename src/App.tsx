@@ -55,6 +55,7 @@ import LinkTreePublic from "./pages/LinkTreePublic";
 import { FinanceTransactions, FinanceProjects, FinanceGoals, FinanceReports } from "./pages/finance";
 import Editorial from "./pages/Editorial";
 import SocialMedia from "./pages/SocialMedia";
+import SocialApproval from "./pages/SocialApproval";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -96,6 +97,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/select-plan" element={<SelectPlan />} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
+              <Route path="/approve/:token" element={<SocialApproval />} />
               {/* Public Link23 page (handle includes the leading @) */}
               <Route path="/:orgSlug/:handle" element={<LinkTreePublic />} />
               <Route path="/app/onboarding" element={<Onboarding />} />
