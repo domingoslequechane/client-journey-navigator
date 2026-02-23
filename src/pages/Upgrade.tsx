@@ -271,22 +271,9 @@ export default function Upgrade() {
         },
       });
 
-      if (response.error) {
-        // If subscription not found in LemonSqueezy, fall back to checkout
-        const errorMsg = response.error.message || '';
-        const errorData = response.data?.error || '';
-        if (errorMsg.includes('404') || errorMsg.includes('Not Found') || errorData.includes('Failed to change')) {
-          console.log('Subscription not found in LemonSqueezy, falling back to checkout');
-          setChangingPlan(null);
-          await handleSubscribe(newPlanType);
-          return;
-        }
-        throw new Error(errorMsg || 'Failed to change plan');
-      }
-
-      // Also check if response.data contains an error
-      if (response.data?.error) {
-        console.log('Change plan returned error, falling back to checkout');
+      // When edge function returns non-2xx, error is set and data may be null
+      if (response.error || response.data?.error) {
+        console.log('Change plan failed, falling back to checkout:', response.error?.message || response.data?.error);
         setChangingPlan(null);
         await handleSubscribe(newPlanType);
         return;
@@ -299,12 +286,11 @@ export default function Upgrade() {
 
       await refetch();
     } catch (error: any) {
-      console.error('Error changing plan:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível alterar o plano. Tente novamente.',
-        variant: 'destructive',
-      });
+      // Any unexpected error also falls back to checkout
+      console.log('Change plan exception, falling back to checkout:', error);
+      setChangingPlan(null);
+      await handleSubscribe(newPlanType);
+      return;
     } finally {
       setChangingPlan(null);
     }
