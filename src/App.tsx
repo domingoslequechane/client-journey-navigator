@@ -54,6 +54,7 @@ import PartnerProgram from "./pages/PartnerProgram";
 import LinkTreePublic from "./pages/LinkTreePublic";
 import { FinanceTransactions, FinanceProjects, FinanceGoals, FinanceReports } from "./pages/finance";
 import Editorial from "./pages/Editorial";
+import SocialMedia from "./pages/SocialMedia";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -179,6 +180,7 @@ const App = () => (
                   </RoleProtectedRoute>
                 } />
                 <Route path="editorial" element={<Editorial />} />
+                <Route path="social-media" element={<SocialMedia />} />
               </Route>
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminLayout />}>
