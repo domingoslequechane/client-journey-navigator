@@ -272,7 +272,24 @@ export default function Upgrade() {
       });
 
       if (response.error) {
-        throw new Error(response.error.message || 'Failed to change plan');
+        // If subscription not found in LemonSqueezy, fall back to checkout
+        const errorMsg = response.error.message || '';
+        const errorData = response.data?.error || '';
+        if (errorMsg.includes('404') || errorMsg.includes('Not Found') || errorData.includes('Failed to change')) {
+          console.log('Subscription not found in LemonSqueezy, falling back to checkout');
+          setChangingPlan(null);
+          await handleSubscribe(newPlanType);
+          return;
+        }
+        throw new Error(errorMsg || 'Failed to change plan');
+      }
+
+      // Also check if response.data contains an error
+      if (response.data?.error) {
+        console.log('Change plan returned error, falling back to checkout');
+        setChangingPlan(null);
+        await handleSubscribe(newPlanType);
+        return;
       }
 
       toast({
