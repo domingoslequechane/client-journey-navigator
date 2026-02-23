@@ -1,6 +1,6 @@
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, Pencil, Trash2, Eye, Heart, MessageCircle, Share2, MousePointer, Bookmark, Send } from 'lucide-react';
+import { Clock, Pencil, Trash2, Eye, Heart, MessageCircle, Share2, MousePointer, Bookmark, Send, RefreshCw, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,11 @@ interface PostCardProps {
   onEdit: (post: SocialPostRow) => void;
   onDelete: (id: string) => void;
   onSendForApproval?: (id: string) => void;
+  onRetry?: (postId: string) => void;
+  onPublish?: (postId: string, publishNow: boolean) => void;
 }
 
-export function PostCard({ post, onEdit, onDelete, onSendForApproval }: PostCardProps) {
+export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, onPublish }: PostCardProps) {
   const statusCfg = STATUS_CONFIG[post.status as PostStatus] || STATUS_CONFIG.draft;
   const contentTypeCfg = CONTENT_TYPE_CONFIG[post.content_type as ContentType] || CONTENT_TYPE_CONFIG.feed;
   const mediaUrl = post.media_urls?.[0] || null;
@@ -38,6 +40,9 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval }: PostCard
               )}
               <Badge variant="outline" className="text-[10px]">{contentTypeCfg.label}</Badge>
               <Badge variant={statusCfg.variant} className="text-[10px]">{statusCfg.label}</Badge>
+              {post.late_post_id && (
+                <Badge variant="outline" className="text-[10px] border-[hsl(var(--success))] text-[hsl(var(--success))]">Late.dev</Badge>
+              )}
             </div>
 
             <p className="text-sm line-clamp-2">{post.content}</p>
@@ -86,6 +91,16 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval }: PostCard
             {post.status === 'draft' && onSendForApproval && (
               <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--warning))]" onClick={() => onSendForApproval(post.id)}>
                 <Send className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {post.status === 'draft' && onPublish && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--success))]" onClick={() => onPublish(post.id, true)} title="Publicar agora">
+                <Zap className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {post.status === 'failed' && onRetry && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--warning))]" onClick={() => onRetry(post.id)} title="Tentar novamente">
+                <RefreshCw className="h-3.5 w-3.5" />
               </Button>
             )}
             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDelete(post.id)}>

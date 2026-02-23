@@ -2,11 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Loader2 } from 'lucide-react';
+import { Settings, Loader2, RefreshCw } from 'lucide-react';
 import { PLATFORM_CONFIG, ALL_PLATFORMS, type SocialPlatform } from '@/lib/social-media-mock';
 import { useSocialAccounts, type SocialAccount } from '@/hooks/useSocialAccounts';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
@@ -14,13 +10,8 @@ import { PlatformIcon } from './PlatformIcon';
 import { cn } from '@/lib/utils';
 
 export function SocialDashboard() {
-  const { accounts, isLoading: loadingAccounts, createAccount, deleteAccount } = useSocialAccounts();
+  const { accounts, isLoading: loadingAccounts, deleteAccount, connectPlatform, syncAccounts } = useSocialAccounts();
   const { posts, isLoading: loadingPosts } = useSocialPosts();
-  const [connectModal, setConnectModal] = useState(false);
-  const [connectPlatform, setConnectPlatform] = useState<SocialPlatform>('instagram');
-  const [formName, setFormName] = useState('');
-  const [formUsername, setFormUsername] = useState('');
-  const [formFollowers, setFormFollowers] = useState('');
 
   // Build account map by platform
   const accountsByPlatform = new Map<SocialPlatform, SocialAccount>();
@@ -36,36 +27,34 @@ export function SocialDashboard() {
   const pendingCount = posts.filter(p => p.status === 'pending_approval').length;
 
   const handleConnect = (platform: SocialPlatform) => {
-    setConnectPlatform(platform);
-    setFormName('');
-    setFormUsername('');
-    setFormFollowers('');
-    setConnectModal(true);
-  };
-
-  const handleSaveAccount = () => {
-    if (!formName.trim()) return;
-    createAccount.mutate({
-      platform: connectPlatform,
-      account_name: formName,
-      username: formUsername,
-      is_connected: true,
-      followers_count: parseInt(formFollowers) || 0,
-      client_id: null,
-      avatar_url: null,
-    });
-    setConnectModal(false);
+    connectPlatform.mutate(platform);
   };
 
   const handleDisconnect = (id: string) => {
     deleteAccount.mutate(id);
   };
 
+  const handleSync = () => {
+    syncAccounts.mutate();
+  };
+
   return (
     <div className="space-y-6">
       {/* Connected accounts */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Contas sociais do perfil</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Contas sociais do perfil</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={handleSync}
+            disabled={syncAccounts.isPending}
+          >
+            <RefreshCw className={cn("h-4 w-4", syncAccounts.isPending && "animate-spin")} />
+            Sincronizar
+          </Button>
+        </div>
         {loadingAccounts ? (
           <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
             <Loader2 className="h-5 w-5 animate-spin" /> Carregando...
@@ -76,7 +65,12 @@ export function SocialDashboard() {
               <ConnectedAccountCard key={account.id} account={account} onDisconnect={() => handleDisconnect(account.id)} />
             ))}
             {disconnectedPlatforms.map(platform => (
-              <DisconnectedAccountCard key={platform} platform={platform} onConnect={() => handleConnect(platform)} />
+              <DisconnectedAccountCard
+                key={platform}
+                platform={platform}
+                onConnect={() => handleConnect(platform)}
+                isConnecting={connectPlatform.isPending}
+              />
             ))}
           </div>
         )}
@@ -112,39 +106,6 @@ export function SocialDashboard() {
           </Card>
         </div>
       </div>
-
-      {/* Connect account modal */}
-      <Dialog open={connectModal} onOpenChange={setConnectModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <PlatformIcon platform={connectPlatform} size="sm" />
-              Conectar {PLATFORM_CONFIG[connectPlatform].label}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Nome da conta / página</Label>
-              <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Ex: Minha Empresa" className="mt-1" />
-            </div>
-            <div>
-              <Label>Username / URL</Label>
-              <Input value={formUsername} onChange={e => setFormUsername(e.target.value)} placeholder="Ex: @minhaempresa" className="mt-1" />
-            </div>
-            <div>
-              <Label>Seguidores (opcional)</Label>
-              <Input type="number" value={formFollowers} onChange={e => setFormFollowers(e.target.value)} placeholder="0" className="mt-1" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConnectModal(false)}>Cancelar</Button>
-            <Button onClick={handleSaveAccount} disabled={!formName.trim() || createAccount.isPending}>
-              {createAccount.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Conectar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -190,12 +151,13 @@ function ConnectedAccountCard({ account, onDisconnect }: { account: SocialAccoun
   );
 }
 
-function DisconnectedAccountCard({ platform, onConnect }: { platform: SocialPlatform; onConnect: () => void }) {
+function DisconnectedAccountCard({ platform, onConnect, isConnecting }: { platform: SocialPlatform; onConnect: () => void; isConnecting: boolean }) {
   return (
     <Card className="flex flex-col items-center justify-center p-6 text-center">
       <PlatformIcon platform={platform} size="lg" />
       <p className="text-sm font-medium mt-2">{PLATFORM_CONFIG[platform].label}</p>
-      <Button variant="default" size="sm" className="mt-3 text-xs" onClick={onConnect}>
+      <Button variant="default" size="sm" className="mt-3 text-xs" onClick={onConnect} disabled={isConnecting}>
+        {isConnecting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
         Conectar
       </Button>
     </Card>

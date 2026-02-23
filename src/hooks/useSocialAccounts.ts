@@ -14,6 +14,7 @@ export interface SocialAccount {
   avatar_url: string | null;
   is_connected: boolean;
   followers_count: number;
+  late_account_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -115,12 +116,71 @@ export function useSocialAccounts(clientId?: string | null) {
     },
   });
 
+  // Connect platform via Late.dev OAuth
+  const connectPlatform = useMutation({
+    mutationFn: async (platform: SocialPlatform) => {
+      const redirectUrl = `${window.location.origin}/app/social-media`;
+      
+      const { data, error } = await supabase.functions.invoke('social-connect', {
+        body: { platform, redirect_url: redirectUrl },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      return data as { authUrl: string; profileId: string };
+    },
+    onSuccess: (data) => {
+      // Open OAuth URL in a popup
+      const popup = window.open(data.authUrl, 'social-connect', 'width=600,height=700');
+      
+      // Poll for popup close and sync accounts
+      const checkPopup = setInterval(async () => {
+        if (!popup || popup.closed) {
+          clearInterval(checkPopup);
+          // Sync accounts after popup closes
+          try {
+            await syncAccounts.mutateAsync();
+          } catch {
+            // Silently handle sync errors
+          }
+        }
+      }, 1000);
+    },
+    onError: (err: any) => {
+      toast({ title: 'Erro ao conectar plataforma', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  // Sync accounts from Late.dev
+  const syncAccounts = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('social-sync-accounts');
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+      if (data?.synced > 0) {
+        toast({ title: `${data.synced} conta(s) sincronizada(s)!` });
+      }
+    },
+    onError: (err: any) => {
+      console.error('Sync error:', err);
+    },
+  });
+
   return {
     accounts: accountsQuery.data || [],
     isLoading: accountsQuery.isLoading,
     createAccount,
     updateAccount,
     deleteAccount,
+    connectPlatform,
+    syncAccounts,
     refetch: accountsQuery.refetch,
   };
 }
