@@ -1,121 +1,209 @@
 
+# Analise Completa de Custos e Nova Estrutura de Precos da Qualify
 
-# Reestruturação de Preços da Qualify - Social Media + Novos Valores
+## 1. Mapeamento de Todos os Modulos e Seus Custos
 
-## Contexto e Analise de Custos
+### Modulos SEM custo variavel por uso (custo zero de API)
+Estes modulos nao consomem nenhuma API externa. O custo e apenas o Supabase (armazenamento + queries).
 
-### Custos Operacionais Atuais (Late.dev)
-- **Plano Free Late.dev**: 10 Conjuntos Sociais (Social Sets), posts limitados
-- **Custo atual para voce**: $0/mes (Free)
-- **Proximo nivel Late.dev**: ~$19/mes para mais Social Sets
+| Modulo | O que faz | Custo por uso |
+|--------|-----------|---------------|
+| **Pipeline (Kanban)** | Gestao de funil de vendas + operacional | $0 |
+| **Clientes (CRM)** | Cadastro, historico, BANT, qualificacao | $0 |
+| **Financas** | Transacoes, metas, projetos, relatorios | $0 |
+| **Link23** | Paginas de links tipo Linktree | $0 |
+| **Equipe** | Gestao de membros, convites, papeis | $0 |
+| **Academia** | Conteudo educativo | $0 |
+| **Contratos** | Upload/visualizacao de contratos | $0 |
 
-### Referencia MLabs
-- Beginner: $19.90/mes por marca (10 conjuntos sociais, 300 posts/mes)
-- Intermediate: $24.90/mes (2000 posts/mes)
-- Full: $29.90/mes (ilimitado)
+### Modulos COM custo variavel (consomem APIs pagas)
 
-### Sua Estrategia
-Cobrar por conexao social inclusa no plano, de forma que os usuarios cubram o custo do Late.dev proporcionalmente. Quando a demanda crescer, voce migra para o plano pago do Late.dev ja com receita cobrindo o custo.
+| Modulo | API Usada | Modelo | Custo estimado por chamada |
+|--------|-----------|--------|---------------------------|
+| **QIA Chat** | Gemini direto (sua chave) | gemini-2.5-flash | ~$0.0003-0.001 por mensagem |
+| **Sugestao IA (Dashboard)** | Gemini direto (sua chave) | gemini-2.5-flash | ~$0.0005 por sugestao |
+| **Studio AI (Flyers)** | Gemini direto (sua chave) | gemini-2.5-flash-image / gemini-3-pro-image | ~$0.01-0.04 por imagem |
+| **Linha Editorial** | Lovable Gateway | gemini-3-flash | ~$0.001-0.003 por geracao |
+| **Social Caption** | Lovable Gateway | gemini-2.5-flash | ~$0.0005 por legenda |
+| **Social Best Times** | Lovable Gateway | gemini-2.5-flash | ~$0.0003 por consulta |
+| **Social Media (publicar/conectar)** | Late.dev | Late API | Ver tabela abaixo |
 
----
+### Custos Late.dev (Social Media)
 
-## Proposta de Novos Precos
+| Plano Late.dev | Preco | Social Sets | Posts/mes |
+|----------------|-------|-------------|----------|
+| Free | $0 | 10 | 120 |
+| Aceleracao | $16 | 10 | 120 |
+| Scale | $41 | 50 | Ilimitado |
+| Ilimitado | $833 | Ilimitado | Ilimitado |
 
-| Plano | Preco Atual | Novo Preco | Social Sets | Posts/mes | Inbox (DMs) |
-|-------|-------------|------------|-------------|----------|-------------|
-| Bussola (Free) | $0 | $0 | 0 (sem acesso) | 0 | Nao |
-| Lanca (Starter) | $10 | $19 | 3 conexoes | 100 | Nao |
-| Arco (Pro) | $24 | $39 | 7 conexoes | 500 | Sim |
-| Catapulta (Agency) | $60 | $79 | 15 conexoes | Ilimitado | Sim |
-
-### Justificativa dos Precos
-
-**Bussola (Free)**: Sem Social Media. O modulo fica visivel mas bloqueado com prompt de upgrade. Isso evita gastar Social Sets do Late.dev com usuarios que nao pagam.
-
-**Lanca ($19/mes)**: Aumento de $10 para $19.
-- 3 conexoes sociais cobrem o custo proporcional (~$5.70 do Late.dev por 3 sets do pool de 10)
-- Valor competitivo vs MLabs ($19.90 por 1 marca)
-- Diferencial: inclui CRM + IA + Contratos (MLabs so tem social)
-
-**Arco ($39/mes)**: Aumento de $24 para $39.
-- 7 conexoes sociais + Inbox de DMs
-- Custo proporcional Late.dev: ~$13.30 por 7 sets
-- Margem saudavel + todos os outros modulos inclusos
-- Plano mais popular (best value)
-
-**Catapulta ($79/mes)**: Aumento de $60 para $79.
-- 15 conexoes (requer Late.dev Starter a $19/mes quando ultrapassar 10)
-- Posts ilimitados + Inbox + Suporte VIP
-- Para agencias que gerenciam muitas marcas
+**1 Social Set = 1 conta de rede social conectada** (ex: 1 Instagram + 1 Facebook = 2 Social Sets)
 
 ---
 
-## Distribuicao dos 10 Social Sets (Late.dev Free)
+## 2. Custos Fixos Mensais Atuais
 
-Com o pool de 10 Social Sets gratuitos:
-- Bussola: 0 sets (nao consome)
-- Lanca: 3 sets por organizacao
-- Arco: 7 sets por organizacao
-- Catapulta: ate 10 (precisa upgrade Late.dev quando tiver muitos clientes Catapulta)
-
-O sistema vai controlar o total de Social Sets consumidos globalmente e alertar voce (admin/proprietor) quando estiver proximo do limite do Late.dev.
+| Item | Custo estimado |
+|------|---------------|
+| Supabase (Pro) | ~$25/mes |
+| Dominio | ~$1-2/mes |
+| Gemini API (uso leve, 1-5 clientes) | ~$5-15/mes |
+| Lovable Gateway | Incluido no plano Lovable |
+| Late.dev (Free) | $0 (por agora) |
+| LemonSqueezy (comissao 5%) | Variavel |
+| **Total fixo** | **~$30-42/mes** |
 
 ---
 
-## Implementacao Tecnica
+## 3. Custo Variavel por Organizacao (cliente da Qualify)
 
-### 1. Migrar tabela `plan_limits` (SQL)
-Adicionar colunas:
-- `max_social_accounts` (integer, nullable) -- conexoes sociais por organizacao
-- `max_social_posts_per_month` (integer, nullable) -- posts agendados/mes
-- `has_social_inbox` (boolean, default false) -- acesso ao Inbox DMs
+Supondo uso medio mensal por organizacao:
 
-### 2. Atualizar registros da tabela `plan_limits`
+| Recurso | Uso medio | Custo |
+|---------|-----------|-------|
+| QIA Chat (100 msgs) | 100 x $0.0005 | $0.05 |
+| Studio AI (10 flyers) | 10 x $0.03 | $0.30 |
+| Sugestao IA (30x) | 30 x $0.0005 | $0.015 |
+| Editorial (2 geracoes) | 2 x $0.002 | $0.004 |
+| Social Captions (20x) | 20 x $0.0005 | $0.01 |
+| **Subtotal IA** | | **~$0.38/mes** |
+| Social Sets (3 contas) | 3 sets do pool | **~$4.80/mes** (proporcional ao Late.dev Scale) |
+| **Total por org** | | **~$5.18/mes** |
+
+O custo variavel por organizacao e baixo para IA (~$0.38) mas significativo para Social Media (~$4.80 por 3 contas no Late.dev Scale).
+
+---
+
+## 4. Proposta: Modelo de Precos por Modulos
+
+### Filosofia: Cada plano desbloqueia mais modulos + mais limites
 
 ```text
-free:    max_social_accounts=0, max_social_posts=0, has_social_inbox=false
-starter: max_social_accounts=3, max_social_posts=100, has_social_inbox=false
-pro:     max_social_accounts=7, max_social_posts=500, has_social_inbox=true
-agency:  max_social_accounts=15, max_social_posts=NULL, has_social_inbox=true
++------------------+----------+----------+----------+------------+
+|                  | Bussola  |  Lanca   |   Arco   | Catapulta  |
+|                  |  (Free)  |  ($19)   |  ($39)   |   ($79)    |
++------------------+----------+----------+----------+------------+
+| CRM + Pipeline   |    Sim   |   Sim    |   Sim    |    Sim     |
+| Clientes ativos  |    3     |   15     |   50     | Ilimitado  |
+| Contratos/mes    |    3     |   15     |   50     | Ilimitado  |
+| Templates contr. |    1     |    3     |   10     | Ilimitado  |
++------------------+----------+----------+----------+------------+
+| QIA Chat         |  90 msgs | 500 msgs | 1200 msgs| Ilimitado  |
+| Sugestao IA      |    Sim   |   Sim    |   Sim    |    Sim     |
++------------------+----------+----------+----------+------------+
+| Financas         |   NAO    |   Sim    |   Sim    |    Sim     |
++------------------+----------+----------+----------+------------+
+| Studio AI        |   NAO    | 30 flyers| 100 flyer| Ilimitado  |
++------------------+----------+----------+----------+------------+
+| Link23           |   NAO    |  1 pagina| 5 paginas| Ilimitado  |
++------------------+----------+----------+----------+------------+
+| Linha Editorial  |   NAO    |   Sim    |   Sim    |    Sim     |
++------------------+----------+----------+----------+------------+
+| Social Media     |   NAO    | 3 contas | 7 contas | 15 contas  |
+| Posts/mes        |   NAO    |   50     |  200     | Ilimitado  |
+| Inbox (DMs)      |   NAO    |   NAO    |   Sim    |    Sim     |
++------------------+----------+----------+----------+------------+
+| Academia         |    Sim   |   Sim    |   Sim    |    Sim     |
++------------------+----------+----------+----------+------------+
+| Equipe           |  1 user  | 5 users  | 10 users | 20 users   |
+| Exportacao dados |   NAO    |   Sim    |   Sim    |    Sim     |
+| Suporte priorit. |   NAO    |   NAO    |   Sim    |    Sim     |
+| Suporte VIP      |   NAO    |   NAO    |   NAO    |    Sim     |
++------------------+----------+----------+----------+------------+
 ```
 
-### 3. Atualizar `usePlanLimits.ts`
-- Adicionar campos `maxSocialAccounts`, `maxSocialPostsPerMonth`, `hasSocialInbox`
-- Adicionar contadores `socialAccountsCount`, `socialPostsThisMonth`
-- Adicionar permissoes `canConnectSocialAccount`, `canPublishSocialPost`, `canAccessSocialInbox`
+### Justificativa dos precos
 
-### 4. Atualizar precos em todas as paginas
-Arquivos afetados:
-- `src/pages/Pricing.tsx` -- tabela de comparacao publica
-- `src/pages/Upgrade.tsx` -- pagina de upgrade interna
-- `src/pages/SelectPlan.tsx` -- selecao de plano pos-registro
-- Adicionar linha "Social Media" na tabela de comparacao com conexoes e posts
+**Bussola ($0)** - Modulos inclusos: CRM + Pipeline + QIA (limitado) + Academia
+- Custo real para voce: ~$0/mes (sem Social, sem Studio, sem Financas)
+- Objetivo: atrair usuarios, converter para pagante
 
-### 5. Adicionar controle no modulo Social Media
-- Bloquear conexao de novas contas quando `canConnectSocialAccount === false`
-- Bloquear criacao de posts quando `canPublishSocialPost === false`
-- Esconder/bloquear aba Inbox quando `canAccessSocialInbox === false`
-- Mostrar badge de uso (ex: "3/7 conexoes") no header do modulo
+**Lanca ($19/mes)** - Tudo do Bussola + Financas + Studio AI + Link23 + Editorial + Social Media (3 contas)
+- Custo real por org: ~$5.50/mes (IA + 3 Social Sets)
+- Margem bruta: ~71% ($13.50 de lucro por org)
+- vs MLabs: MLabs cobra $12 APENAS para social de 1 marca. Qualify oferece CRM + IA + Financas + Studio + Social por $19
 
-### 6. Tracking de uso social
-Usar a tabela `usage_tracking` existente com novos `feature_type`:
-- `social_posts` -- contabilizar posts publicados/agendados por mes
-- Contar `social_accounts` diretamente da tabela existente (nao precisa de tracking mensal)
+**Arco ($39/mes)** - Tudo do Lanca com limites maiores + Inbox + 7 contas social
+- Custo real por org: ~$11/mes (IA + 7 Social Sets)
+- Margem bruta: ~72% ($28 de lucro por org)
+- Plano mais popular (best value)
 
-### 7. Atualizar LemonSqueezy
-- Ajustar os produtos/precos no dashboard do LemonSqueezy para refletir os novos valores ($19, $39, $79)
+**Catapulta ($79/mes)** - Tudo ilimitado + 15 contas social + Suporte VIP
+- Custo real por org: ~$20/mes (IA pesada + 15 Social Sets)
+- Margem bruta: ~75% ($59 de lucro por org)
 
 ---
 
-## Resumo das Alteracoes
+## 5. Cenario de Break-Even
 
-| Item | Arquivos/Tabelas |
-|------|-----------------|
-| Migracao SQL | Nova migracao para `plan_limits` |
-| Hook de limites | `src/hooks/usePlanLimits.ts` |
-| Pagina de precos | `src/pages/Pricing.tsx` |
-| Pagina de upgrade | `src/pages/Upgrade.tsx` |
-| Selecao de plano | `src/pages/SelectPlan.tsx` |
-| Modulo Social | Componentes em `src/components/social-media/` |
-| Types | `src/integrations/supabase/types.ts` |
+| Cenario | Receita | Custos fixos | Custos variaveis | Lucro |
+|---------|---------|-------------|------------------|-------|
+| 2 clientes Lanca | $38 | $35 | $11 | -$8 |
+| 3 clientes Lanca | $57 | $35 | $16.50 | +$5.50 |
+| 2 Lanca + 1 Arco | $77 | $35 | $22 | +$20 |
+| 1 Lanca + 2 Arco | $97 | $35 | $27.50 | +$34.50 |
+| 5 clientes mistos | ~$155 | $35 | $40 | +$80 |
 
+**Break-even: 3 clientes pagantes** (mix de Lanca + Arco).
+
+Quando ultrapassar 10 Social Sets totais, voce migra para Late.dev Scale ($41/mes) — isso acontece com ~3-4 clientes ativos no Social Media. A receita ja cobre esse custo nesse ponto.
+
+---
+
+## 6. Implementacao Tecnica
+
+### Etapa 1: Migracao do banco de dados
+Adicionar novas colunas na tabela `plan_limits`:
+- `max_social_accounts` (integer, nullable) - conexoes sociais por org
+- `max_social_posts_per_month` (integer, nullable) - posts sociais/mes
+- `has_social_inbox` (boolean, default false) - acesso ao Inbox DMs
+- `has_finance_module` (boolean, default false) - acesso ao modulo Financas
+- `has_studio_module` (boolean, default false) - acesso ao Studio AI
+- `has_linktree_module` (boolean, default false) - acesso ao Link23
+- `has_editorial_module` (boolean, default false) - acesso a Linha Editorial
+- `has_social_module` (boolean, default false) - acesso ao Social Media
+- `max_link_pages` (integer, nullable) - paginas Link23 por org
+
+Atualizar registros:
+- free: todos `has_*` = false (exceto CRM/Pipeline/QIA/Academia que sao base)
+- starter: todos `has_*` = true, social_accounts=3, social_posts=50, social_inbox=false, link_pages=1
+- pro: todos `has_*` = true, social_accounts=7, social_posts=200, social_inbox=true, link_pages=5
+- agency: todos `has_*` = true, social_accounts=15, social_posts=NULL, social_inbox=true, link_pages=NULL
+
+### Etapa 2: Atualizar `usePlanLimits.ts`
+- Adicionar todos os novos campos booleanos e numericos
+- Adicionar permissoes: `canAccessFinance`, `canAccessStudio`, `canAccessLinkTree`, `canAccessEditorial`, `canAccessSocialMedia`, `canAccessSocialInbox`
+- Adicionar contadores: `socialAccountsCount`, `socialPostsThisMonth`, `linkPagesCount`
+- Adicionar remaining: `remainingSocialAccounts`, `remainingSocialPosts`, `remainingLinkPages`
+
+### Etapa 3: Atualizar precos em todas as paginas
+- `src/pages/Pricing.tsx` - Novos precos ($0, $19, $39, $79) + tabela de comparacao por modulo
+- `src/pages/Upgrade.tsx` - Novos precos + features por modulo
+- `src/pages/SelectPlan.tsx` - Novos precos + features por modulo
+
+### Etapa 4: Implementar guards de modulo
+- No Sidebar: mostrar todos os modulos mas com icone de cadeado nos bloqueados
+- Ao clicar num modulo bloqueado: mostrar modal de upgrade (tipo `SubscriptionRequired`)
+- No Social Media: limitar conexoes e posts
+- No Studio: limitar geracoes de flyers
+- No Link23: limitar paginas
+- No Financas: bloquear acesso completo no free
+
+### Etapa 5: Atualizar LemonSqueezy
+- Ajustar produtos/precos manualmente no dashboard ($19, $39, $79)
+
+### Arquivos afetados
+
+| Arquivo | Alteracao |
+|---------|----------|
+| Nova migracao SQL | Adicionar colunas + atualizar dados |
+| `src/hooks/usePlanLimits.ts` | Novos campos, contadores, permissoes de modulo |
+| `src/pages/Pricing.tsx` | Novos precos + comparacao por modulo |
+| `src/pages/Upgrade.tsx` | Novos precos + features por modulo |
+| `src/pages/SelectPlan.tsx` | Novos precos + features por modulo |
+| `src/components/layout/Sidebar.tsx` | Icones de cadeado em modulos bloqueados |
+| `src/components/subscription/SubscriptionRequired.tsx` | Guard para modulos bloqueados |
+| Componentes Social Media | Guards de limite de contas e posts |
+| Componentes Studio | Guard de limite de geracoes |
+| Componentes Link23 | Guard de limite de paginas |
+| Componentes Financas | Guard de acesso |
