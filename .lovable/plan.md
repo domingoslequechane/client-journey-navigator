@@ -1,67 +1,74 @@
 
 
-## Plan: Remove Free Plan Completely and Enforce Mandatory Payment
+## Plan: Fix Social Media Connection Architecture (Per-Client Late.dev Profiles)
 
-### Overview
-Every new account will start with **no plan** (plan_type remains 'free' in the database but is treated as "no plan"). Users must select a paid plan (Lanca, Arco, or Catapulta) and provide card information before accessing the app. The 14-day free trial is configured on LemonSqueezy's side, not in our code.
+### Problem
+There are two issues:
 
-### Changes Required
+1. **Accounts don't appear as connected**: When you connect Instagram/Facebook via Late.dev, the synced accounts are saved with `client_id: null` because the sync function doesn't know which client the accounts belong to. When the dashboard filters by `client_id`, they don't show up.
 
-#### 1. SelectPlan page -- Remove "free" references
-- **`src/pages/SelectPlan.tsx`** (line 114): Change `plan_type: 'free'` to `plan_type: 'free'` (keep as-is since it's the default DB value, but the user won't stay on free)
-- Update button text from "Comecar Gratis" to "Assinar Agora" since card info is mandatory
-- Remove "14 dias gratis" messaging if trials are not configured on LemonSqueezy, or keep if they are
+2. **Late.dev profile uses the agency name**: The current code creates one Late.dev profile per organization using the agency name (e.g., "Onix Agence"). Instead, each **client** (e.g., FERRANOVA, Dream House) should have its own Late.dev profile.
 
-#### 2. ProtectedRoute -- Redirect users without subscription to SelectPlan
-- **`src/components/auth/ProtectedRoute.tsx`**: When a user has no active subscription (no subscription record or status is not active/trialing), redirect to `/select-plan` instead of `/app/upgrade`
-- Remove the trial_ends_at grace period check that allows access without a subscription
+### Solution
 
-#### 3. useSubscription -- Remove trial-based access
-- **`src/hooks/useSubscription.ts`**: Update `hasAccess` to only be `true` when there's an active or trialing subscription (from LemonSqueezy webhook). Remove the local `trialDaysLeft` logic that grants access based on `organization.trial_ends_at` without an actual subscription record
+Change the architecture so that each **client** gets its own Late.dev profile. When connecting a platform for a specific client, the system creates/uses a Late.dev profile named after that client.
 
-#### 4. Upgrade page -- Remove free/Bussola references
-- **`src/pages/Upgrade.tsx`** (line 69): Remove `free: { name: 'Essencial', codename: 'Bussola', ... }` entry
-- Update `currentPlan` fallback from `'starter'` to handle the case where user has no plan
-- Change messaging to indicate card information is required
+### Database Changes
 
-#### 5. Webhook -- Remove free fallback
-- **`supabase/functions/lemonsqueezy-webhook/index.ts`** (line 70): Change default return from `'free'` to `'starter'` in `getPlanTypeFromVariant`
-- Remove `free: 200` from `PLAN_PRICES`
+1. **Add `late_profile_id` column to `clients` table**
+   - New nullable text column on the `clients` table to store each client's Late.dev profile ID
+   - The existing `late_profile_id` on `organizations` will remain for backwards compatibility but won't be the primary source
 
-#### 6. Onboarding flow adjustment
-- **`src/pages/Onboarding.tsx`**: After onboarding completes, check if user has an active subscription. If not, redirect to `/select-plan` instead of `/app`
+### Backend Changes
 
-#### 7. Minor cleanup
-- **`src/components/subscription/FreePlanBanner.tsx`**: Remove 'free' from planNames or rename to 'Sem Plano'
-- **`src/hooks/usePlanLimits.ts`**: Ensure `free` plan type returns zero/no access for all modules
-- **`src/components/subscription/PlanUsageCard.tsx`**: Update 'free' label from 'Legado' to 'Sem Plano'
-- **`src/components/subscription/PlanBadge.tsx`**: Update free label
+2. **Update `social-connect` Edge Function**
+   - Accept `client_id` parameter from the frontend
+   - Look up the client's name and their `late_profile_id`
+   - If the client doesn't have a Late.dev profile yet, create one using the **client's name** (e.g., "FERRANOVA")
+   - Save the `late_profile_id` on the **clients** table, not the organizations table
+   - Use the client's profile ID when generating the OAuth connect URL
 
-### Technical Details
+3. **Update `social-sync-accounts` Edge Function**
+   - Accept optional `client_id` parameter
+   - If `client_id` is provided, sync only that client's Late.dev profile and set `client_id` on all synced accounts
+   - If no `client_id`, iterate over all clients with a `late_profile_id` and sync each one, setting the correct `client_id` on their accounts
 
-**Flow for new users:**
-1. Sign up and verify email
-2. Redirected to `/select-plan`
-3. Choose a plan (Lanca/Arco/Catapulta) -- card info is mandatory on LemonSqueezy
-4. LemonSqueezy webhook creates subscription record
-5. Redirected to `/app/onboarding` to configure agency name
-6. Access granted to `/app`
+4. **Update `social-fetch-messages` and `social-reply-message` Edge Functions**
+   - Instead of reading `late_profile_id` from the organization, read it from the client's record (based on a `client_id` parameter)
 
-**Flow for existing users without subscription:**
-1. Login
-2. ProtectedRoute detects no active subscription
-3. Redirect to `/select-plan` or `/app/upgrade`
+### Frontend Changes
 
-**Key principle:** Access is gated by `subscription.status` being `active` or `trialing` (set by LemonSqueezy webhook). No more local trial logic based on `organization.trial_ends_at`.
+5. **Update `useSocialAccounts.ts`**
+   - Pass `clientId` to the `social-connect` function so the backend knows which client is being connected
+   - Pass `clientId` to the `social-sync-accounts` function so it syncs the correct client's profiles
 
-### Files to modify:
-- `src/components/auth/ProtectedRoute.tsx`
-- `src/hooks/useSubscription.ts`
-- `src/pages/SelectPlan.tsx`
-- `src/pages/Upgrade.tsx`
-- `src/pages/Onboarding.tsx`
-- `supabase/functions/lemonsqueezy-webhook/index.ts`
-- `src/components/subscription/FreePlanBanner.tsx`
-- `src/components/subscription/PlanUsageCard.tsx`
-- `src/components/subscription/PlanBadge.tsx`
+6. **Update `SocialDashboard.tsx` and `SocialMedia.tsx`**
+   - Pass the selected `clientId` when calling `connectPlatform` and `syncAccounts`
+   - The "Sincronizar" button will sync accounts for the selected client only
 
+### Flow After Changes
+
+```text
+Agency "Onix" selects client "FERRANOVA" in the Social Media module
+  --> Clicks "Conectar" on Instagram
+  --> Backend checks if FERRANOVA has a late_profile_id
+      --> If not, creates Late.dev profile named "FERRANOVA"
+      --> Saves late_profile_id on clients table
+  --> Opens OAuth popup for that profile
+  --> On popup close, syncs accounts for FERRANOVA's profile
+  --> Synced accounts are saved with client_id = FERRANOVA's ID
+  --> Dashboard shows Instagram as connected for FERRANOVA
+```
+
+### Files to Modify
+
+| File | Change |
+|------|--------|
+| **Database migration** | Add `late_profile_id TEXT` column to `clients` table |
+| `supabase/functions/social-connect/index.ts` | Accept `client_id`, create/use per-client Late.dev profiles |
+| `supabase/functions/social-sync-accounts/index.ts` | Accept `client_id`, set `client_id` on synced accounts |
+| `supabase/functions/social-fetch-messages/index.ts` | Read `late_profile_id` from client instead of organization |
+| `supabase/functions/social-reply-message/index.ts` | Read `late_profile_id` from client instead of organization |
+| `src/hooks/useSocialAccounts.ts` | Pass `clientId` to connect and sync functions |
+| `src/components/social-media/SocialDashboard.tsx` | Pass `clientId` when connecting platforms |
+| `src/pages/SocialMedia.tsx` | Pass `clientId` to sync and connect calls |
