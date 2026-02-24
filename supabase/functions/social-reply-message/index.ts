@@ -84,19 +84,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get organization's late_profile_id
-    const { data: org } = await serviceClient
-      .from("organizations")
-      .select("late_profile_id")
-      .eq("id", orgId)
-      .single();
+    // Get late_profile_id from the client associated with this message
+    let lateProfileId: string | null = null;
+    if (message.client_id) {
+      const { data: client } = await serviceClient
+        .from("clients")
+        .select("late_profile_id")
+        .eq("id", message.client_id)
+        .single();
+      lateProfileId = client?.late_profile_id || null;
+    }
 
     // Try to send via Late.dev if configured
-    if (org?.late_profile_id && lateApiKey && message.external_id) {
+    if (lateProfileId && lateApiKey && message.external_id) {
       try {
         const endpoint = message.message_type === "comment"
-          ? `https://api.getlate.dev/v1/profiles/${org.late_profile_id}/comments/${message.external_id}/reply`
-          : `https://api.getlate.dev/v1/profiles/${org.late_profile_id}/messages/${message.external_id}/reply`;
+          ? `https://api.getlate.dev/v1/profiles/${lateProfileId}/comments/${message.external_id}/reply`
+          : `https://api.getlate.dev/v1/profiles/${lateProfileId}/messages/${message.external_id}/reply`;
 
         const lateResponse = await fetch(endpoint, {
           method: "POST",

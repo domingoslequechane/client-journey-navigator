@@ -68,7 +68,7 @@ export function MetricsDashboard({ posts, selectedClient }: MetricsDashboardProp
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={() => syncAccounts.mutate()}
+          onClick={() => syncAccounts.mutate(selectedClient !== 'all' ? selectedClient : undefined)}
           disabled={syncAccounts.isPending}
         >
           <RefreshCw className={cn("h-4 w-4", syncAccounts.isPending && "animate-spin")} />

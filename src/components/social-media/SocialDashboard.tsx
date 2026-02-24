@@ -36,7 +36,9 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
 
   const handleConnect = (platform: SocialPlatform) => {
     setConnectingPlatform(null);
-    connectPlatform.mutate(platform);
+    if (clientId) {
+      connectPlatform.mutate({ platform, clientId });
+    }
   };
 
   const handleDisconnect = (id: string) => {
@@ -44,7 +46,7 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
   };
 
   const handleSync = () => {
-    syncAccounts.mutate();
+    syncAccounts.mutate(clientId);
   };
 
   return (

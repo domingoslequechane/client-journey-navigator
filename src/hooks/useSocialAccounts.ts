@@ -116,31 +116,30 @@ export function useSocialAccounts(clientId?: string | null) {
     },
   });
 
-  // Connect platform via Late.dev OAuth
+  // Connect platform via Late.dev OAuth — now requires clientId
   const connectPlatform = useMutation({
-    mutationFn: async (platform: SocialPlatform) => {
+    mutationFn: async ({ platform, clientId: cId }: { platform: SocialPlatform; clientId: string }) => {
       const redirectUrl = `${window.location.origin}/app/social-media`;
       
       const { data, error } = await supabase.functions.invoke('social-connect', {
-        body: { platform, redirect_url: redirectUrl },
+        body: { platform, redirect_url: redirectUrl, client_id: cId },
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      return data as { authUrl: string; profileId: string };
+      return { ...data, clientId: cId } as { authUrl: string; profileId: string; clientId: string };
     },
     onSuccess: (data) => {
       // Open OAuth URL in a popup
       const popup = window.open(data.authUrl, 'social-connect', 'width=600,height=700');
       
-      // Poll for popup close and sync accounts
+      // Poll for popup close and sync accounts for this client
       const checkPopup = setInterval(async () => {
         if (!popup || popup.closed) {
           clearInterval(checkPopup);
-          // Sync accounts after popup closes
           try {
-            await syncAccounts.mutateAsync();
+            await syncAccounts.mutateAsync(data.clientId);
           } catch {
             // Silently handle sync errors
           }
@@ -152,10 +151,12 @@ export function useSocialAccounts(clientId?: string | null) {
     },
   });
 
-  // Sync accounts from Late.dev
+  // Sync accounts from Late.dev — now accepts optional clientId
   const syncAccounts = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('social-sync-accounts');
+    mutationFn: async (syncClientId?: string) => {
+      const { data, error } = await supabase.functions.invoke('social-sync-accounts', {
+        body: syncClientId ? { client_id: syncClientId } : {},
+      });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS late_profile_id TEXT DEFAULT NULL;

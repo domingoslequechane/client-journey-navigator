@@ -348,6 +348,7 @@ export type Database = {
           current_stage: Database["public"]["Enums"]["journey_stage"]
           email: string | null
           id: string
+          late_profile_id: string | null
           monthly_budget: number | null
           notes: string | null
           organization_id: string | null
@@ -377,6 +378,7 @@ export type Database = {
           current_stage?: Database["public"]["Enums"]["journey_stage"]
           email?: string | null
           id?: string
+          late_profile_id?: string | null
           monthly_budget?: number | null
           notes?: string | null
           organization_id?: string | null
@@ -406,6 +408,7 @@ export type Database = {
           current_stage?: Database["public"]["Enums"]["journey_stage"]
           email?: string | null
           id?: string
+          late_profile_id?: string | null
           monthly_budget?: number | null
           notes?: string | null
           organization_id?: string | null
