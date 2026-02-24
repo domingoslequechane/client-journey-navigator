@@ -38,10 +38,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { platform, redirect_url } = await req.json();
+    const { platform, redirect_url, client_id } = await req.json();
     if (!platform) {
       return new Response(
         JSON.stringify({ error: "Platform is required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!client_id) {
+      return new Response(
+        JSON.stringify({ error: "client_id is required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -69,16 +79,27 @@ Deno.serve(async (req) => {
     const orgId = profile.current_organization_id;
     const LATE_API_KEY = Deno.env.get("LATE_API_KEY")!;
 
-    // Check if org already has a Late profile
-    const { data: org } = await supabase
-      .from("organizations")
-      .select("late_profile_id, name")
-      .eq("id", orgId)
+    // Get client info (name + late_profile_id)
+    const { data: client, error: clientError } = await supabase
+      .from("clients")
+      .select("id, company_name, late_profile_id, organization_id")
+      .eq("id", client_id)
+      .eq("organization_id", orgId)
       .single();
 
-    let profileId = org?.late_profile_id;
+    if (clientError || !client) {
+      return new Response(
+        JSON.stringify({ error: "Client not found" }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
-    // Create Late.dev profile if not exists
+    let profileId = client.late_profile_id;
+
+    // Create Late.dev profile for this client if not exists
     if (!profileId) {
       const createRes = await fetch(`${LATE_API_BASE}/profiles`, {
         method: "POST",
@@ -87,7 +108,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: org?.name || "My Brand",
+          name: client.company_name,
         }),
       });
 
@@ -105,11 +126,11 @@ Deno.serve(async (req) => {
 
       profileId = createData.profile?._id || createData._id;
 
-      // Save profile ID to organization
+      // Save profile ID to the client record
       await supabase
-        .from("organizations")
+        .from("clients")
         .update({ late_profile_id: profileId })
-        .eq("id", orgId);
+        .eq("id", client_id);
     }
 
     // Generate OAuth connect URL

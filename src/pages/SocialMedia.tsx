@@ -158,7 +158,8 @@ export default function SocialMedia() {
   };
 
   const handleSync = () => {
-    syncAccounts.mutate();
+    const cId = selectedClient !== 'all' ? selectedClient : undefined;
+    syncAccounts.mutate(cId);
   };
 
   // Stats from client-filtered posts
@@ -383,7 +384,9 @@ export default function SocialMedia() {
         platform={connectingPlatform}
         onConnect={(platform) => {
           setConnectingPlatform(null);
-          connectPlatform.mutate(platform);
+          if (selectedClient !== 'all') {
+            connectPlatform.mutate({ platform, clientId: selectedClient });
+          }
         }}
         isConnecting={connectPlatform.isPending}
       />

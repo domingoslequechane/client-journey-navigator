@@ -40,6 +40,15 @@ Deno.serve(async (req) => {
 
     const userId = claims.claims.sub as string;
 
+    // Parse optional client_id from body
+    let clientId: string | null = null;
+    try {
+      const body = await req.json();
+      clientId = body.client_id || null;
+    } catch {
+      // No body
+    }
+
     // Get user's organization
     const { data: profile } = await supabase
       .from("profiles")
@@ -56,90 +65,112 @@ Deno.serve(async (req) => {
 
     const orgId = profile.current_organization_id;
 
-    // Get organization's late_profile_id
-    const { data: org } = await supabase
-      .from("organizations")
-      .select("late_profile_id")
-      .eq("id", orgId)
-      .single();
-
-    if (!org?.late_profile_id || !lateApiKey) {
-      // No Late.dev integration — return empty
+    if (!lateApiKey) {
       return new Response(
-        JSON.stringify({ fetched: 0, message: "Late.dev integration not configured" }),
+        JSON.stringify({ fetched: 0, message: "Late.dev API key not configured" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Fetch messages from Late.dev API
-    const lateResponse = await fetch(
-      `https://api.getlate.dev/v1/profiles/${org.late_profile_id}/messages`,
-      {
-        headers: {
-          Authorization: `Bearer ${lateApiKey}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!lateResponse.ok) {
-      console.error("Late.dev API error:", await lateResponse.text());
-      return new Response(
-        JSON.stringify({ fetched: 0, error: "Failed to fetch from Late.dev" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const lateData = await lateResponse.json();
-    const lateMessages = lateData.data || lateData.messages || [];
-
-    // Get social accounts for mapping
     const serviceClient = createClient(
       supabaseUrl,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: accounts } = await serviceClient
-      .from("social_accounts")
-      .select("id, late_account_id, platform, client_id")
-      .eq("organization_id", orgId);
+    // Build list of clients to fetch messages for
+    let clientsToFetch: { id: string; late_profile_id: string }[] = [];
 
-    const accountMap = new Map(
-      (accounts || []).map((a: any) => [a.late_account_id, a])
-    );
+    if (clientId) {
+      const { data: client } = await serviceClient
+        .from("clients")
+        .select("id, late_profile_id")
+        .eq("id", clientId)
+        .eq("organization_id", orgId)
+        .single();
 
-    let fetched = 0;
+      if (client?.late_profile_id) {
+        clientsToFetch = [{ id: client.id, late_profile_id: client.late_profile_id }];
+      }
+    } else {
+      const { data: clients } = await serviceClient
+        .from("clients")
+        .select("id, late_profile_id")
+        .eq("organization_id", orgId)
+        .not("late_profile_id", "is", null);
 
-    for (const msg of lateMessages) {
-      const account = accountMap.get(msg.account_id);
-      if (!account) continue;
+      clientsToFetch = (clients || []).filter((c: any) => c.late_profile_id);
+    }
 
-      const { error: insertError } = await serviceClient
-        .from("social_messages")
-        .upsert(
-          {
-            organization_id: orgId,
-            social_account_id: account.id,
-            client_id: account.client_id,
-            platform: account.platform,
-            message_type: msg.type === "comment" ? "comment" : "dm",
-            post_id: msg.post_id || null,
-            sender_name: msg.sender?.name || "Unknown",
-            sender_username: msg.sender?.username || null,
-            sender_avatar_url: msg.sender?.avatar_url || null,
-            content: msg.content || msg.text || "",
-            is_read: false,
-            external_id: msg.id,
-            received_at: msg.created_at || new Date().toISOString(),
+    if (clientsToFetch.length === 0) {
+      return new Response(
+        JSON.stringify({ fetched: 0, message: "No clients with Late.dev profiles" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let totalFetched = 0;
+
+    for (const client of clientsToFetch) {
+      const lateResponse = await fetch(
+        `https://api.getlate.dev/v1/profiles/${client.late_profile_id}/messages`,
+        {
+          headers: {
+            Authorization: `Bearer ${lateApiKey}`,
+            "Content-Type": "application/json",
           },
-          { onConflict: "organization_id,external_id", ignoreDuplicates: true }
-        );
+        }
+      );
 
-      if (!insertError) fetched++;
+      if (!lateResponse.ok) {
+        console.error(`Late.dev API error for client ${client.id}:`, await lateResponse.text());
+        continue;
+      }
+
+      const lateData = await lateResponse.json();
+      const lateMessages = lateData.data || lateData.messages || [];
+
+      // Get social accounts for this client
+      const { data: accounts } = await serviceClient
+        .from("social_accounts")
+        .select("id, late_account_id, platform, client_id")
+        .eq("organization_id", orgId)
+        .eq("client_id", client.id);
+
+      const accountMap = new Map(
+        (accounts || []).map((a: any) => [a.late_account_id, a])
+      );
+
+      for (const msg of lateMessages) {
+        const account = accountMap.get(msg.account_id);
+        if (!account) continue;
+
+        const { error: insertError } = await serviceClient
+          .from("social_messages")
+          .upsert(
+            {
+              organization_id: orgId,
+              social_account_id: account.id,
+              client_id: client.id,
+              platform: account.platform,
+              message_type: msg.type === "comment" ? "comment" : "dm",
+              post_id: msg.post_id || null,
+              sender_name: msg.sender?.name || "Unknown",
+              sender_username: msg.sender?.username || null,
+              sender_avatar_url: msg.sender?.avatar_url || null,
+              content: msg.content || msg.text || "",
+              is_read: false,
+              external_id: msg.id,
+              received_at: msg.created_at || new Date().toISOString(),
+            },
+            { onConflict: "organization_id,external_id", ignoreDuplicates: true }
+          );
+
+        if (!insertError) totalFetched++;
+      }
     }
 
     return new Response(
-      JSON.stringify({ fetched }),
+      JSON.stringify({ fetched: totalFetched }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

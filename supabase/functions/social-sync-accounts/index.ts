@@ -58,59 +58,16 @@ Deno.serve(async (req) => {
     const orgId = profile.current_organization_id;
     const LATE_API_KEY = Deno.env.get("LATE_API_KEY")!;
 
-    // Get org's Late profile ID
-    const { data: org } = await supabase
-      .from("organizations")
-      .select("late_profile_id")
-      .eq("id", orgId)
-      .single();
-
-    if (!org?.late_profile_id) {
-      return new Response(
-        JSON.stringify({ error: "No Late profile configured" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    // Parse optional client_id from body
+    let clientId: string | null = null;
+    try {
+      const body = await req.json();
+      clientId = body.client_id || null;
+    } catch {
+      // No body or invalid JSON — sync all clients
     }
 
-    // Fetch connected accounts from Late.dev
-    const accountsRes = await fetch(
-      `${LATE_API_BASE}/accounts?profileId=${org.late_profile_id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${LATE_API_KEY}`,
-        },
-      }
-    );
-
-    const accountsData = await accountsRes.json();
-    if (!accountsRes.ok) {
-      console.error("Failed to fetch Late accounts:", accountsData);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch accounts", details: accountsData }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const lateAccounts = accountsData.accounts || [];
-
-    // Get existing accounts from Supabase
-    const { data: existingAccounts } = await supabase
-      .from("social_accounts")
-      .select("*")
-      .eq("organization_id", orgId);
-
-    const existing = existingAccounts || [];
-    const existingByLateId = new Map(
-      existing.filter((a: any) => a.late_account_id).map((a: any) => [a.late_account_id, a])
-    );
-
-    // Platform name mapping from Late.dev to our format
+    // Platform name mapping
     const platformMap: Record<string, string> = {
       twitter: "twitter",
       instagram: "instagram",
@@ -122,73 +79,127 @@ Deno.serve(async (req) => {
       threads: "threads",
     };
 
-    const syncedIds = new Set<string>();
+    // Build list of clients to sync
+    let clientsToSync: { id: string; late_profile_id: string }[] = [];
 
-    for (const account of lateAccounts) {
-      const platform = platformMap[account.platform] || account.platform;
-      const lateId = account._id;
-      syncedIds.add(lateId);
+    if (clientId) {
+      const { data: client } = await supabase
+        .from("clients")
+        .select("id, late_profile_id")
+        .eq("id", clientId)
+        .eq("organization_id", orgId)
+        .single();
 
-      const accountData = {
-        organization_id: orgId,
-        platform,
-        account_name: account.displayName || account.username || platform,
-        username: account.username || "",
-        avatar_url: account.avatarUrl || null,
-        is_connected: account.isActive !== false,
-        followers_count: account.followers || 0,
-        late_account_id: lateId,
-        client_id: null,
-      };
+      if (client?.late_profile_id) {
+        clientsToSync = [{ id: client.id, late_profile_id: client.late_profile_id }];
+      }
+    } else {
+      // Sync all clients with a late_profile_id
+      const { data: clients } = await supabase
+        .from("clients")
+        .select("id, late_profile_id")
+        .eq("organization_id", orgId)
+        .not("late_profile_id", "is", null);
 
-      if (existingByLateId.has(lateId)) {
-        // Update existing
-        const existingAccount = existingByLateId.get(lateId);
-        await supabase
-          .from("social_accounts")
-          .update(accountData)
-          .eq("id", existingAccount.id);
-      } else {
-        // Check if there's an existing account for this platform without late_account_id
-        const existingPlatformAccount = existing.find(
-          (a: any) => a.platform === platform && !a.late_account_id
-        );
+      clientsToSync = (clients || []).filter((c: any) => c.late_profile_id);
+    }
 
-        if (existingPlatformAccount) {
+    if (clientsToSync.length === 0) {
+      return new Response(
+        JSON.stringify({ synced: 0, message: "No clients with Late.dev profiles found" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let totalSynced = 0;
+
+    for (const client of clientsToSync) {
+      // Fetch connected accounts from Late.dev for this client's profile
+      const accountsRes = await fetch(
+        `${LATE_API_BASE}/accounts?profileId=${client.late_profile_id}`,
+        {
+          headers: { Authorization: `Bearer ${LATE_API_KEY}` },
+        }
+      );
+
+      const accountsData = await accountsRes.json();
+      if (!accountsRes.ok) {
+        console.error(`Failed to fetch Late accounts for client ${client.id}:`, accountsData);
+        continue;
+      }
+
+      const lateAccounts = accountsData.accounts || [];
+
+      // Get existing accounts for this client
+      const { data: existingAccounts } = await supabase
+        .from("social_accounts")
+        .select("*")
+        .eq("organization_id", orgId)
+        .eq("client_id", client.id);
+
+      const existing = existingAccounts || [];
+      const existingByLateId = new Map(
+        existing.filter((a: any) => a.late_account_id).map((a: any) => [a.late_account_id, a])
+      );
+
+      const syncedIds = new Set<string>();
+
+      for (const account of lateAccounts) {
+        const platform = platformMap[account.platform] || account.platform;
+        const lateId = account._id;
+        syncedIds.add(lateId);
+
+        const accountData = {
+          organization_id: orgId,
+          client_id: client.id,
+          platform,
+          account_name: account.displayName || account.username || platform,
+          username: account.username || "",
+          avatar_url: account.avatarUrl || null,
+          is_connected: account.isActive !== false,
+          followers_count: account.followers || 0,
+          late_account_id: lateId,
+        };
+
+        if (existingByLateId.has(lateId)) {
+          const existingAccount = existingByLateId.get(lateId);
           await supabase
             .from("social_accounts")
             .update(accountData)
-            .eq("id", existingPlatformAccount.id);
+            .eq("id", existingAccount.id);
         } else {
-          // Insert new
-          await supabase.from("social_accounts").insert(accountData);
+          // Check for existing platform account without late_account_id for this client
+          const existingPlatformAccount = existing.find(
+            (a: any) => a.platform === platform && !a.late_account_id
+          );
+
+          if (existingPlatformAccount) {
+            await supabase
+              .from("social_accounts")
+              .update(accountData)
+              .eq("id", existingPlatformAccount.id);
+          } else {
+            await supabase.from("social_accounts").insert(accountData);
+          }
+        }
+
+        totalSynced++;
+      }
+
+      // Mark disconnected accounts
+      for (const acc of existing) {
+        if (acc.late_account_id && !syncedIds.has(acc.late_account_id)) {
+          await supabase
+            .from("social_accounts")
+            .update({ is_connected: false })
+            .eq("id", acc.id);
         }
       }
     }
 
-    // Mark disconnected accounts (those in DB with late_account_id but not in Late anymore)
-    for (const acc of existing) {
-      if (acc.late_account_id && !syncedIds.has(acc.late_account_id)) {
-        await supabase
-          .from("social_accounts")
-          .update({ is_connected: false })
-          .eq("id", acc.id);
-      }
-    }
-
     return new Response(
-      JSON.stringify({
-        synced: lateAccounts.length,
-        accounts: lateAccounts.map((a: any) => ({
-          platform: a.platform,
-          username: a.username,
-          displayName: a.displayName,
-          isActive: a.isActive,
-        })),
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ synced: totalSynced }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("social-sync-accounts error:", err);
