@@ -56,6 +56,9 @@ export default function SocialMedia() {
 
   const hasClientSelected = selectedClient !== 'all';
 
+  // Determine if editing post is published (read-only)
+  const isEditingPublished = editingPost?.status === 'published';
+
   // Filter posts by selected client globally
   const clientPosts = useMemo(() => {
     if (!hasClientSelected) return posts;
@@ -102,7 +105,6 @@ export default function SocialMedia() {
     notes?: string;
     schedule_slots?: { date: string; time: string; platforms: SocialPlatform[]; contentType: string }[];
   }) => {
-    // Inject selected client_id
     const clientId = selectedClient !== 'all' ? selectedClient : null;
 
     if (editingPost) {
@@ -114,7 +116,6 @@ export default function SocialMedia() {
         }
       });
     } else {
-      // If multiple schedule slots, create one post per slot
       const slots = data.schedule_slots;
       if (slots && slots.length > 1) {
         slots.forEach((slot) => {
@@ -323,7 +324,7 @@ export default function SocialMedia() {
             </div>
           </div>
 
-          {/* Filters - removed ClientFilterSelect */}
+          {/* Filters */}
           <div className="flex flex-wrap gap-3">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -395,6 +396,8 @@ export default function SocialMedia() {
         post={editingPost}
         onSave={handleSave}
         defaultDate={defaultDate}
+        isPublished={isEditingPublished}
+        onDuplicate={handleClonePost}
       />
 
       <ConnectAccountsGuardModal

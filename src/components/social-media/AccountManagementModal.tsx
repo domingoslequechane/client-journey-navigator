@@ -88,11 +88,7 @@ export function AccountManagementModal({
                 <span>Conectado em {format(parseISO(account.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
               </div>
 
-              {account.late_account_id && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px]">Late.dev ID: {account.late_account_id.slice(0, 8)}...</Badge>
-                </div>
-              )}
+              
             </div>
 
             <Separator />

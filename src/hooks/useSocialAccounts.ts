@@ -100,6 +100,41 @@ export function useSocialAccounts(clientId?: string | null) {
 
   const deleteAccount = useMutation({
     mutationFn: async (id: string) => {
+      // Get account info first to clean up related posts
+      const { data: account } = await supabase
+        .from('social_accounts' as any)
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (account) {
+        const acc = account as unknown as SocialAccount;
+        // Delete social_posts that only target this platform for this client
+        if (acc.client_id) {
+          const { data: relatedPosts } = await supabase
+            .from('social_posts' as any)
+            .select('id, platforms')
+            .eq('client_id', acc.client_id);
+
+          if (relatedPosts) {
+            for (const post of relatedPosts as any[]) {
+              const postPlatforms = post.platforms as string[];
+              if (postPlatforms.length === 1 && postPlatforms[0] === acc.platform) {
+                // Only platform — delete entire post
+                await supabase.from('social_posts' as any).delete().eq('id', post.id);
+              } else if (postPlatforms.includes(acc.platform)) {
+                // Remove platform from array
+                await supabase
+                  .from('social_posts' as any)
+                  .update({ platforms: postPlatforms.filter(p => p !== acc.platform) } as any)
+                  .eq('id', post.id);
+              }
+            }
+          }
+        }
+      }
+
+      // Delete the account record
       const { error } = await supabase
         .from('social_accounts' as any)
         .delete()
@@ -109,14 +144,15 @@ export function useSocialAccounts(clientId?: string | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
-      toast({ title: 'Conta removida!' });
+      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      toast({ title: 'Conta removida e registros apagados!' });
     },
     onError: (err: any) => {
       toast({ title: 'Erro ao remover conta', description: err.message, variant: 'destructive' });
     },
   });
 
-  // Connect platform via Late.dev OAuth — now requires clientId
+  // Connect platform via OAuth — requires clientId
   const connectPlatform = useMutation({
     mutationFn: async ({ platform, clientId: cId }: { platform: SocialPlatform; clientId: string }) => {
       const redirectUrl = `${window.location.origin}/app/social-media`;
@@ -131,10 +167,8 @@ export function useSocialAccounts(clientId?: string | null) {
       return { ...data, clientId: cId } as { authUrl: string; profileId: string; clientId: string };
     },
     onSuccess: (data) => {
-      // Open OAuth URL in a popup
       const popup = window.open(data.authUrl, 'social-connect', 'width=600,height=700');
       
-      // Poll for popup close and sync accounts for this client
       const checkPopup = setInterval(async () => {
         if (!popup || popup.closed) {
           clearInterval(checkPopup);
@@ -151,7 +185,7 @@ export function useSocialAccounts(clientId?: string | null) {
     },
   });
 
-  // Sync accounts from Late.dev — now accepts optional clientId
+  // Sync accounts — accepts optional clientId
   const syncAccounts = useMutation({
     mutationFn: async (syncClientId?: string) => {
       const { data, error } = await supabase.functions.invoke('social-sync-accounts', {
