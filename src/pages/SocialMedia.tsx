@@ -100,9 +100,13 @@ export default function SocialMedia() {
     status: string;
     client_id?: string | null;
     notes?: string;
+    schedule_slots?: { date: string; time: string; platforms: SocialPlatform[]; contentType: string }[];
   }) => {
+    // Inject selected client_id
+    const clientId = selectedClient !== 'all' ? selectedClient : null;
+
     if (editingPost) {
-      updatePost.mutate({ id: editingPost.id, ...data } as any, {
+      updatePost.mutate({ id: editingPost.id, ...data, client_id: clientId } as any, {
         onSuccess: () => {
           if (data.status === 'scheduled' || data.status === 'published') {
             publishPost.mutate({ postId: editingPost.id, publishNow: data.status === 'published' });
@@ -110,13 +114,37 @@ export default function SocialMedia() {
         }
       });
     } else {
-      createPost.mutate(data as any, {
-        onSuccess: (newPost: any) => {
-          if (data.status === 'scheduled' || data.status === 'published') {
-            publishPost.mutate({ postId: newPost.id, publishNow: data.status === 'published' });
+      // If multiple schedule slots, create one post per slot
+      const slots = data.schedule_slots;
+      if (slots && slots.length > 1) {
+        slots.forEach((slot) => {
+          const postData = {
+            content: data.content,
+            media_urls: data.media_urls,
+            platforms: slot.platforms,
+            content_type: slot.contentType || data.content_type,
+            hashtags: data.hashtags,
+            scheduled_at: `${slot.date}T${slot.time}:00`,
+            status: data.status,
+            client_id: clientId,
+          };
+          createPost.mutate(postData as any, {
+            onSuccess: (newPost: any) => {
+              if (data.status === 'scheduled' || data.status === 'published') {
+                publishPost.mutate({ postId: newPost.id, publishNow: data.status === 'published' });
+              }
+            }
+          });
+        });
+      } else {
+        createPost.mutate({ ...data, client_id: clientId } as any, {
+          onSuccess: (newPost: any) => {
+            if (data.status === 'scheduled' || data.status === 'published') {
+              publishPost.mutate({ postId: newPost.id, publishNow: data.status === 'published' });
+            }
           }
-        }
-      });
+        });
+      }
     }
   };
 
