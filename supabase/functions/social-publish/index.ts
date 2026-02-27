@@ -87,13 +87,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get connected accounts for the selected platforms
-    const { data: accounts } = await supabase
+    // Get connected accounts for the selected platforms, filtered by client
+    const accountQuery = supabase
       .from("social_accounts")
       .select("*")
       .eq("organization_id", orgId)
       .eq("is_connected", true)
       .in("platform", post.platforms || []);
+
+    // Filter by client_id if the post has one
+    if (post.client_id) {
+      accountQuery.eq("client_id", post.client_id);
+    }
+
+    const { data: accounts } = await accountQuery;
 
     if (!accounts || accounts.length === 0) {
       return new Response(
