@@ -44,9 +44,7 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
               )}
               <Badge variant="outline" className="text-[10px]">{contentTypeCfg.label}</Badge>
               <Badge variant={statusCfg.variant} className="text-[10px]">{statusCfg.label}</Badge>
-              {post.late_post_id && (
-                <Badge variant="outline" className="text-[10px] border-[hsl(var(--success))] text-[hsl(var(--success))]">Late.dev</Badge>
-              )}
+              
             </div>
 
             <p className="text-sm line-clamp-2">{post.content}</p>
