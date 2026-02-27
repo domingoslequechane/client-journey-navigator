@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, ArrowRight } from 'lucide-react';
+import { Check, Loader2, ArrowRight, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -65,7 +65,7 @@ const plans = [
 ];
 
 export default function SelectPlan() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
@@ -213,7 +213,16 @@ export default function SelectPlan() {
 
   return (
     <PublicBackground>
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-2 text-muted-foreground hover:text-foreground"
+          onClick={() => signOut()}
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="hidden sm:inline">Sair</span>
+        </Button>
         <ThemeToggle />
       </div>
       
