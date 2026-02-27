@@ -38,7 +38,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { post_id, publish_now } = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid or empty request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { post_id, publish_now } = body;
     if (!post_id) {
       return new Response(
         JSON.stringify({ error: "post_id is required" }),
@@ -165,7 +174,13 @@ Deno.serve(async (req) => {
       body: JSON.stringify(latePayload),
     });
 
-    const lateData = await lateRes.json();
+    let lateData: any = {};
+    try {
+      const lateText = await lateRes.text();
+      lateData = lateText ? JSON.parse(lateText) : {};
+    } catch {
+      lateData = { error: `Late.dev returned status ${lateRes.status} with unparseable body` };
+    }
 
     if (!lateRes.ok) {
       console.error("Late.dev publish error:", lateData);
