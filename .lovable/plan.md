@@ -1,34 +1,45 @@
 
 
-## Analysis
-
-I identified two distinct problems:
-
-### Problem 1: Posts cannot be scheduled (missing `client_id`)
-When creating a post, `SocialMedia.tsx` `handleSave` never passes the `selectedClient` as `client_id` to `createPost`. The post is saved without a `client_id`, which means:
-- It won't appear when filtering by client
-- The `social-publish` edge function may fail because connected accounts are per-client
-
-**Root cause**: `handleSave` in `SocialMedia.tsx` (line 93-121) doesn't inject `client_id: selectedClient` into the data before calling `createPost.mutate()`.
-
-### Problem 2: Reels and Stories scheduling
-Reels and Stories are **already supported** in the UI. The `PLATFORM_CONTENT_TYPES` map (PostModal lines 22-31) includes `reels` and `stories` for Instagram and Facebook. Each schedule slot has a format selector dropdown. However, the `buildPostData` function only uses the first slot's content type and ignores per-slot content types when creating individual posts for multiple slots. So if you add multiple slots with different formats, only one post is created with the first slot's data.
-
 ## Plan
 
-### 1. Fix `client_id` injection in `handleSave` (`src/pages/SocialMedia.tsx`)
-- In `handleSave`, add `client_id: selectedClient !== 'all' ? selectedClient : null` to the data object before passing it to `createPost.mutate()` or `updatePost.mutate()`
+This plan addresses 7 distinct issues the user raised.
 
-### 2. Support multiple schedule slots creating multiple posts (`src/pages/SocialMedia.tsx`)
-- When `schedule_slots` is present in the saved data (multiple slots), create one post per slot with its own `scheduled_at`, `platforms`, and `content_type`
-- Each slot post gets the same content, media, and hashtags but its own schedule and format
+### 1. Block editing/re-publishing of published posts (`PostModal.tsx`, `SocialMedia.tsx`)
+- In `PostModal`, accept a `isPublished` prop. When true, disable all form fields (content, hashtags, media, platforms) and hide the Save/Schedule/Publish buttons. Show only a "Duplicar para edição" button.
+- In `SocialMedia.tsx`, pass `isPublished` based on `editingPost?.status === 'published'` to PostModal.
+- In `PostCard.tsx`, the edit button already hides for published posts — keep that. Ensure clicking a published post card opens it in read-only mode.
 
-### 3. Ensure `PostModal` propagates per-slot `content_type` correctly (`src/components/social-media/PostModal.tsx`)
-- Update `buildPostData` to include `schedule_slots` data with per-slot `contentType` so the parent can create separate posts per slot
+### 2. Fix channel selection: select by account ID, not platform (`PostModal.tsx`)
+- The current `togglePlatform` toggles by platform string, so two Instagram accounts both toggle together.
+- Refactor channel selection to use `account.id` instead of `platform` name. Store `selectedAccountIds: string[]` instead of `platforms: SocialPlatform[]`.
+- Derive `platforms` from the selected account IDs for downstream use (scheduling, preview, content types).
+- Each account button toggles independently by its unique `id`.
+
+### 3. Replace format dropdown with icons in schedule slots (`PostModal.tsx`)
+- Replace the `<select>` dropdown for content type in each schedule slot with icon buttons using `ContentTypeIcon`.
+- Each content type shows its icon, and clicking it selects that format for the slot.
+
+### 4. Default schedule time = now + 15 minutes (`PostModal.tsx`)
+- Replace hardcoded `'10:00'` default time with a computed value of current time + 15 minutes using `format(addMinutes(new Date(), 15), 'HH:mm')`.
+
+### 5. Delete all records when disconnecting an account (`useSocialAccounts.ts`)
+- In `deleteAccount` mutation, before deleting the `social_accounts` row, also delete related `social_posts` rows that reference this account's platform + client_id (or handle via cascade). Since posts reference platforms as an array, we'll delete posts where the account's platform is the *only* platform. For posts with multiple platforms, remove the platform from the array.
+- Actually, simpler: just delete the `social_accounts` record. The user wants all records of that account removed. We should also clean up any posts that only target that specific account.
+
+### 6. Import full account info on connect/sync (`social-sync-accounts` edge function)
+- Already imports `displayName`, `username`, `avatarUrl`, `followers`. Verify the Late.dev API response fields and ensure `bio`, `profileUrl` etc. are also captured if available. The current schema covers the key fields — ensure `account_name`, `username`, `avatar_url`, `followers_count` are always populated from the API response.
+
+### 7. Hide "Late.dev" references from frontend
+- Remove `Late.dev` badge from `PostCard.tsx` (line 48).
+- Remove `Late.dev ID` badge from `AccountManagementModal.tsx` (lines 91-94).
+- Remove `hasLateAccounts` variable usage in `PostModal.tsx` — always show Publish button if connected accounts exist.
 
 ### Files to modify
-| File | Change |
-|------|--------|
-| `src/pages/SocialMedia.tsx` | Inject `client_id` into post data; handle multi-slot creation |
-| `src/components/social-media/PostModal.tsx` | Ensure per-slot content_type is included in output data |
+| File | Changes |
+|------|---------|
+| `src/components/social-media/PostModal.tsx` | Account-based selection, icon format selector, default time +15min, hide Late.dev refs, read-only for published |
+| `src/components/social-media/PostCard.tsx` | Remove Late.dev badge |
+| `src/components/social-media/AccountManagementModal.tsx` | Remove Late.dev ID badge |
+| `src/pages/SocialMedia.tsx` | Pass published state to PostModal |
+| `src/hooks/useSocialAccounts.ts` | Clean up related posts on disconnect |
 
