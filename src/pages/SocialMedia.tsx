@@ -394,6 +394,7 @@ export default function SocialMedia() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         post={editingPost}
+        clientId={selectedClient !== 'all' ? selectedClient : null}
         onSave={handleSave}
         defaultDate={defaultDate}
         isPublished={isEditingPublished}

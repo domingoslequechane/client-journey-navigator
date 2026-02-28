@@ -53,6 +53,7 @@ interface PostModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   post?: SocialPostRow | null;
+  clientId?: string | null;
   onSave: (data: any) => void;
   onPublish?: (postId: string, publishNow: boolean) => void;
   onDuplicate?: (post: SocialPostRow) => void;
@@ -60,8 +61,9 @@ interface PostModalProps {
   isPublished?: boolean;
 }
 
-export function PostModal({ open, onOpenChange, post, onSave, onPublish, onDuplicate, defaultDate, isPublished }: PostModalProps) {
-  const { accounts } = useSocialAccounts();
+export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublish, onDuplicate, defaultDate, isPublished }: PostModalProps) {
+  // Use the passed clientId to filter accounts
+  const { accounts } = useSocialAccounts(post?.client_id || clientId);
   const [content, setContent] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
@@ -136,7 +138,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, onDupli
       setCurrentPostIndex(0);
       setIndividualConfigs([]);
     }
-  }, [post, open, defaultDate]);
+  }, [post, open, defaultDate, connectedAccounts.length]);
 
   // Initialize individual configs when switching to individual mode
   useEffect(() => {
@@ -392,7 +394,7 @@ export function PostModal({ open, onOpenChange, post, onSave, onPublish, onDupli
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {connectedAccounts.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Nenhum canal conectado. Conecte uma conta primeiro.</p>
+                    <p className="text-xs text-muted-foreground">Nenhum canal conectado para este cliente. Conecte uma conta primeiro.</p>
                   ) : (
                     connectedAccounts.map(account => {
                       const p = account.platform as SocialPlatform;
