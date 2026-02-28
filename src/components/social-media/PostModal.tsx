@@ -239,11 +239,22 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     // Usually, we keep the content as is because the user typed it that way.
     // But we need to send the hashtags array to the backend.
 
-    let isFirst = true;
     schedules.forEach(schedule => {
       schedule.placements.forEach(placement => {
         const account = connectedAccounts.find(a => a.id === placement.accountId);
         if (!account) return;
+
+        // Ensure scheduled_at respects user's local timezone
+        // If status is 'published', we use current time
+        let scheduledAt: string;
+        if (status === 'published') {
+          scheduledAt = new Date().toISOString();
+        } else {
+          const [year, month, day] = schedule.date.split('-').map(Number);
+          const [hours, minutes] = schedule.time.split(':').map(Number);
+          const localDate = new Date(year, month - 1, day, hours, minutes);
+          scheduledAt = localDate.toISOString();
+        }
 
         const postData = {
           content,
@@ -251,7 +262,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           platforms: [account.platform as SocialPlatform],
           content_type: placement.format,
           hashtags: extractedHashtags,
-          scheduled_at: `${schedule.date}T${schedule.time}:00`,
+          scheduled_at: scheduledAt,
           status,
           client_id: post?.client_id || clientId,
           _isNew: post ? !isFirst : true,
