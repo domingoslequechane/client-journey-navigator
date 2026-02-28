@@ -100,7 +100,7 @@ export function useSocialAccounts(clientId?: string | null) {
 
   const deleteAccount = useMutation({
     mutationFn: async (id: string) => {
-      // Get account info first to clean up related posts
+      // Get account info first to clean up related posts and disconnect from API
       const { data: account } = await supabase
         .from('social_accounts' as any)
         .select('*')
@@ -109,7 +109,20 @@ export function useSocialAccounts(clientId?: string | null) {
 
       if (account) {
         const acc = account as unknown as SocialAccount;
-        // Delete social_posts that only target this platform for this client
+        
+        // 1. Disconnect from Late.dev API if it has a late_account_id
+        if (acc.late_account_id) {
+          try {
+            await supabase.functions.invoke('social-disconnect', {
+              body: { late_account_id: acc.late_account_id },
+            });
+          } catch (err) {
+            console.error('Failed to disconnect from Late.dev API:', err);
+            // We continue to delete locally even if API call fails
+          }
+        }
+
+        // 2. Delete social_posts that only target this platform for this client
         if (acc.client_id) {
           const { data: relatedPosts } = await supabase
             .from('social_posts' as any)
@@ -134,7 +147,7 @@ export function useSocialAccounts(clientId?: string | null) {
         }
       }
 
-      // Delete the account record
+      // 3. Delete the local account record
       const { error } = await supabase
         .from('social_accounts' as any)
         .delete()
