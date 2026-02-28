@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +25,6 @@ type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'inbox' | 'rep
 
 const TABS: { value: TabValue; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { value: 'schedule', label: 'Agendar Post', icon: CalendarPlus },
   { value: 'calendar', label: 'Calendário', icon: CalendarDays },
   { value: 'posts', label: 'Posts', icon: ListFilter },
   { value: 'inbox', label: 'Inbox', icon: MessageCircle },
@@ -106,21 +107,30 @@ export default function SocialMedia() {
     _isNew?: boolean;
   }) => {
     const clientId = selectedClient !== 'all' ? selectedClient : null;
+    const { _isNew, ...postData } = data;
 
-    if (editingPost && !data._isNew) {
-      updatePost.mutate({ id: editingPost.id, ...data, client_id: clientId } as any, {
+    if (editingPost && !_isNew) {
+      updatePost.mutate({ id: editingPost.id, ...postData, client_id: clientId } as any, {
         onSuccess: () => {
           if (data.status === 'scheduled' || data.status === 'published') {
             publishPost.mutate({ postId: editingPost.id, publishNow: data.status === 'published' });
           }
+        },
+        onError: (error: any) => {
+          console.error('Erro ao atualizar post:', error);
+          toast.error('Não foi possível atualizar o post. Por favor, tente novamente.');
         }
       });
     } else {
-      createPost.mutate({ ...data, client_id: clientId } as any, {
+      createPost.mutate({ ...postData, client_id: clientId } as any, {
         onSuccess: (newPost: any) => {
           if (data.status === 'scheduled' || data.status === 'published') {
             publishPost.mutate({ postId: newPost.id, publishNow: data.status === 'published' });
           }
+        },
+        onError: (error: any) => {
+          console.error('Erro ao criar post:', error);
+          toast.error('Ocorreu um erro ao criar o post. Verifique os dados e tente novamente.');
         }
       });
     }
@@ -254,20 +264,6 @@ export default function SocialMedia() {
       {/* Tab content */}
       {activeTab === 'dashboard' && <SocialDashboard selectedClient={selectedClient} />}
 
-      {activeTab === 'schedule' && hasClientSelected && (
-        <div className="text-center py-8">
-          <CalendarPlus className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
-          <h2 className="text-lg font-semibold mb-2">Agendar novo post</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Clique no botão abaixo para criar e agendar um novo post
-          </p>
-          <Button onClick={() => handleCreatePost()} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Post
-          </Button>
-        </div>
-      )}
-
       {activeTab === 'calendar' && hasClientSelected && (
         <SocialCalendar
           posts={clientPosts}
@@ -337,7 +333,7 @@ export default function SocialMedia() {
           </div>
 
           {/* Posts list */}
-          <div className="space-y-3">
+          <div className="space-y-6 relative before:absolute before:left-[47px] before:top-2 before:bottom-2 before:w-0.5 before:bg-border/50">
             {isLoading ? (
               <div className="text-center py-12 text-muted-foreground">Carregando...</div>
             ) : filteredPosts.length === 0 ? (
@@ -345,18 +341,28 @@ export default function SocialMedia() {
                 <p>Nenhum post encontrado</p>
               </div>
             ) : (
-              filteredPosts.map(post => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  onEdit={handleEditPost}
-                  onDelete={handleDelete}
-                  onSendForApproval={handleSendForApproval}
-                  onRetry={handleRetryPost}
-                  onPublish={handlePublishPost}
-                  onClone={handleClonePost}
-                  onBoost={handleBoostPost}
-                />
+              filteredPosts.map((post, index) => (
+                <div key={post.id} className="relative pl-16">
+                  <div className="absolute left-0 top-4 w-12 text-right">
+                    <div className="text-[10px] font-bold uppercase text-muted-foreground">
+                      {post.scheduled_at ? format(parseISO(post.scheduled_at), "MMM", { locale: ptBR }) : '---'}
+                    </div>
+                    <div className="text-lg font-bold leading-none">
+                      {post.scheduled_at ? format(parseISO(post.scheduled_at), "dd") : '--'}
+                    </div>
+                  </div>
+                  <div className="absolute left-[43px] top-5 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background z-10" />
+                  <PostCard
+                    post={post}
+                    onEdit={handleEditPost}
+                    onDelete={handleDelete}
+                    onSendForApproval={handleSendForApproval}
+                    onRetry={handleRetryPost}
+                    onPublish={handlePublishPost}
+                    onClone={handleClonePost}
+                    onBoost={handleBoostPost}
+                  />
+                </div>
               ))
             )}
           </div>

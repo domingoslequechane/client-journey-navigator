@@ -126,7 +126,14 @@ export function useSocialPosts(filters?: PostFilters) {
       toast({ title: 'Post criado com sucesso!' });
     },
     onError: (err: any) => {
-      toast({ title: 'Erro ao criar post', description: err.message, variant: 'destructive' });
+      console.error('Erro ao criar post:', err);
+      let message = 'Ocorreu um erro inesperado ao criar o post.';
+      if (err.message?.includes('schema cache')) {
+        message = 'Erro de sincronização com o banco de dados. Por favor, recarregue a página.';
+      } else if (err.message) {
+        message = err.message;
+      }
+      toast({ title: 'Erro ao criar post', description: message, variant: 'destructive' });
     },
   });
 
@@ -145,9 +152,17 @@ export function useSocialPosts(filters?: PostFilters) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      toast({ title: 'Post atualizado com sucesso!' });
     },
     onError: (err: any) => {
-      toast({ title: 'Erro ao atualizar post', description: err.message, variant: 'destructive' });
+      console.error('Erro ao atualizar post:', err);
+      let message = 'Não foi possível salvar as alterações do post.';
+      if (err.message?.includes('schema cache')) {
+        message = 'Erro de sincronização. Por favor, recarregue a página.';
+      } else if (err.message) {
+        message = err.message;
+      }
+      toast({ title: 'Erro ao atualizar post', description: message, variant: 'destructive' });
     },
   });
 
@@ -217,7 +232,12 @@ export function useSocialPosts(filters?: PostFilters) {
     },
     onError: (err: any) => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      toast({ title: 'Erro ao publicar post', description: err.message, variant: 'destructive' });
+      console.error('Erro ao publicar/agendar post:', err);
+      toast({
+        title: 'Erro no agendamento',
+        description: 'Não conseguimos processar o agendamento agora. Verifique sua conexão e tente novamente.',
+        variant: 'destructive'
+      });
     },
   });
 
