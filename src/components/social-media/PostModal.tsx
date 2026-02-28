@@ -46,6 +46,14 @@ interface ScheduleEntry {
   placements: Placement[];
 }
 
+interface PostData {
+  id: string;
+  content: string;
+  mediaUrls: string[];
+  schedules: ScheduleEntry[];
+  isGeneratingCaption?: boolean;
+}
+
 interface PostModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -60,28 +68,33 @@ interface PostModalProps {
 
 export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublish, onDuplicate, defaultDate, isPublished }: PostModalProps) {
   const { accounts } = useSocialAccounts(post?.client_id || clientId);
-  const [content, setContent] = useState('');
-  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
+  const [posts, setPosts] = useState<PostData[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [previewPlatform, setPreviewPlatform] = useState<SocialPlatform>('instagram');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showAICaptionModal, setShowAICaptionModal] = useState(false);
+  const [showUploadChoice, setShowUploadChoice] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<string[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
 
+  const currentPost = useMemo(() => {
+    return posts[activeIndex] || { id: 'temp', content: '', mediaUrls: [], schedules: [] };
+  }, [posts, activeIndex]);
+
   // Media compatibility logic
   const mediaStats = useMemo(() => {
     const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url);
-    const hasVideo = mediaUrls.some(isVideo);
-    const hasImage = mediaUrls.some(url => !isVideo(url));
-    const count = mediaUrls.length;
+    const hasVideo = currentPost.mediaUrls.some(isVideo);
+    const hasImage = currentPost.mediaUrls.some(url => !isVideo(url));
+    const count = currentPost.mediaUrls.length;
     return { hasVideo, hasImage, count, isOnlyVideo: hasVideo && !hasImage, isOnlyImage: hasImage && !hasVideo };
-  }, [mediaUrls]);
+  }, [currentPost.mediaUrls]);
 
   const checkCompatibility = (platform: SocialPlatform, format: ContentType) => {
-    if (mediaUrls.length === 0) return true;
+    if (currentPost.mediaUrls.length === 0) return true;
 
     switch (format) {
       case 'feed':
@@ -100,86 +113,170 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   };
 
   useEffect(() => {
-    if (post) {
-      // Combine content and hashtags for the single field
-      const postHashtags = post.hashtags?.map(h => `#${h}`).join(' ') || '';
-      setContent(post.content + (postHashtags ? `\n\n${postHashtags}` : ''));
-      setMediaUrls(post.media_urls || []);
-      
-      const postPlatforms = post.platforms || [];
-      const ct = (post.content_type as ContentType) || 'feed';
-      const initialPlacements: Placement[] = [];
-      
-      postPlatforms.forEach(p => {
-        const acc = connectedAccounts.find(a => a.platform === p);
-        if (acc) {
-          initialPlacements.push({ accountId: acc.id, format: ct });
+    if (open) {
+      if (post) {
+        const postHashtags = post.hashtags?.map(h => `#${h}`).join(' ') || '';
+        const content = post.content + (postHashtags ? `\n\n${postHashtags}` : '');
+        const mediaUrls = post.media_urls || [];
+        
+        const postPlatforms = post.platforms || [];
+        const ct = (post.content_type as ContentType) || 'feed';
+        const initialPlacements: Placement[] = [];
+        
+        postPlatforms.forEach(p => {
+          const acc = connectedAccounts.find(a => a.platform === p);
+          if (acc) {
+            initialPlacements.push({ accountId: acc.id, format: ct });
+          }
+        });
+
+        let date = defaultDate || format(new Date(), 'yyyy-MM-dd');
+        let time = getDefaultTime();
+
+        if (post.scheduled_at) {
+          const dt = new Date(post.scheduled_at);
+          date = format(dt, 'yyyy-MM-dd');
+          time = format(dt, 'HH:mm');
         }
-      });
 
-      let date = defaultDate || format(new Date(), 'yyyy-MM-dd');
-      let time = getDefaultTime();
-
-      if (post.scheduled_at) {
-        const dt = new Date(post.scheduled_at);
-        date = format(dt, 'yyyy-MM-dd');
-        time = format(dt, 'HH:mm');
+        setPosts([{
+          id: post.id,
+          content,
+          mediaUrls,
+          schedules: [{
+            id: crypto.randomUUID(),
+            date,
+            time,
+            placements: initialPlacements
+          }]
+        }]);
+        setActiveIndex(0);
+        setPreviewPlatform(postPlatforms[0] as SocialPlatform || 'instagram');
+      } else {
+        setPosts([{
+          id: crypto.randomUUID(),
+          content: '',
+          mediaUrls: [],
+          schedules: [{
+            id: crypto.randomUUID(),
+            date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+            time: getDefaultTime(),
+            placements: []
+          }]
+        }]);
+        setActiveIndex(0);
       }
-
-      setSchedules([{
-        id: crypto.randomUUID(),
-        date,
-        time,
-        placements: initialPlacements
-      }]);
-      
-      setPreviewPlatform(postPlatforms[0] as SocialPlatform || 'instagram');
-    } else {
-      setContent('');
-      setMediaUrls([]);
-      setSchedules([{
-        id: crypto.randomUUID(),
-        date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
-        time: getDefaultTime(),
-        placements: []
-      }]);
     }
   }, [post, open, defaultDate, connectedAccounts.length]);
 
-  const addSchedule = () => {
-    setSchedules(prev => [
-      ...prev,
-      {
+  const addPost = () => {
+    const newPost: PostData = {
+      id: crypto.randomUUID(),
+      content: '',
+      mediaUrls: [],
+      schedules: [{
         id: crypto.randomUUID(),
         date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
         time: getDefaultTime(),
         placements: []
-      }
-    ]);
+      }]
+    };
+    setPosts(prev => [...prev, newPost]);
+    setActiveIndex(posts.length);
+  };
+
+  const removePost = (index: number) => {
+    if (posts.length <= 1) return;
+    setPosts(prev => prev.filter((_, i) => i !== index));
+    if (activeIndex >= index && activeIndex > 0) {
+      setActiveIndex(activeIndex - 1);
+    }
+  };
+
+  const duplicatePost = (index: number) => {
+    const postToDuplicate = posts[index];
+    const newPost: PostData = {
+      ...JSON.parse(JSON.stringify(postToDuplicate)),
+      id: crypto.randomUUID(),
+      schedules: postToDuplicate.schedules.map(s => ({
+        ...s,
+        id: crypto.randomUUID()
+      }))
+    };
+    setPosts(prev => {
+      const updated = [...prev];
+      updated.splice(index + 1, 0, newPost);
+      return updated;
+    });
+    setActiveIndex(index + 1);
+  };
+
+  const updateCurrentPost = (updates: Partial<PostData>) => {
+    setPosts(prev => prev.map((p, i) => i === activeIndex ? { ...p, ...updates } : p));
+  };
+
+  const addSchedule = () => {
+    const newSchedule = {
+      id: crypto.randomUUID(),
+      date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+      time: getDefaultTime(),
+      placements: []
+    };
+    updateCurrentPost({ schedules: [...currentPost.schedules, newSchedule] });
   };
 
   const removeSchedule = (id: string) => {
-    if (schedules.length <= 1) return;
-    setSchedules(prev => prev.filter(s => s.id !== id));
+    if (currentPost.schedules.length <= 1) return;
+    updateCurrentPost({ schedules: currentPost.schedules.filter(s => s.id !== id) });
   };
 
   const updateSchedule = (id: string, updates: Partial<ScheduleEntry>) => {
-    setSchedules(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    updateCurrentPost({
+      schedules: currentPost.schedules.map(s => s.id === id ? { ...s, ...updates } : s)
+    });
   };
 
   const togglePlacementInSchedule = (scheduleId: string, accountId: string, format: ContentType) => {
     if (isPublished) return;
     
-    setSchedules(prev => prev.map(s => {
-      if (s.id !== scheduleId) return s;
-      
-      const isSelected = s.placements.some(p => p.accountId === accountId && p.format === format);
-      const newPlacements = isSelected
-        ? s.placements.filter(p => !(p.accountId === accountId && p.format === format))
-        : [...s.placements, { accountId, format }];
+    updateCurrentPost({
+      schedules: currentPost.schedules.map(s => {
+        if (s.id !== scheduleId) return s;
         
-      return { ...s, placements: newPlacements };
-    }));
+        const isSelected = s.placements.some(p => p.accountId === accountId && p.format === format);
+        const newPlacements = isSelected
+          ? s.placements.filter(p => !(p.accountId === accountId && p.format === format))
+          : [...s.placements, { accountId, format }];
+          
+        return { ...s, placements: newPlacements };
+      })
+    });
+  };
+
+  const generateAICaptionForPost = async (postId: string, urls: string[]) => {
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, isGeneratingCaption: true } : p));
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-social-caption', {
+        body: {
+          platforms: ['instagram', 'facebook'], // Default platforms for analysis
+          content_type: 'feed',
+          media_urls: urls,
+          tone: 'casual',
+          length: 'media',
+        },
+      });
+
+      if (error) throw error;
+      
+      setPosts(prev => prev.map(p => p.id === postId ? {
+        ...p,
+        content: data?.caption || '',
+        isGeneratingCaption: false
+      } : p));
+    } catch (err) {
+      console.error('Error generating AI caption:', err);
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, isGeneratingCaption: false } : p));
+    }
   };
 
   const handleFileUpload = async (files: FileList | null) => {
@@ -195,7 +292,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         const ext = file.name.split('.').pop();
         const path = `${crypto.randomUUID()}.${ext}`;
         
-        // Simulate progress for each file
         const { error } = await supabase.storage.from('social-media').upload(path, file);
         if (error) throw error;
         
@@ -204,7 +300,13 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
       }
-      setMediaUrls(prev => [...prev, ...newUrls]);
+
+      if (newUrls.length > 1) {
+        setPendingFiles(newUrls);
+        setShowUploadChoice(true);
+      } else {
+        updateCurrentPost({ mediaUrls: [...currentPost.mediaUrls, ...newUrls] });
+      }
     } catch (err: any) {
       console.error('Upload error:', err);
       toast.error('Erro ao carregar arquivos.');
@@ -216,88 +318,176 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     }
   };
 
+  const handleUploadChoice = async (choice: 'carousel' | 'separate') => {
+    setShowUploadChoice(false);
+    
+    if (choice === 'carousel') {
+      updateCurrentPost({ mediaUrls: [...currentPost.mediaUrls, ...pendingFiles] });
+    } else {
+      // Create new posts for each file
+      const newPosts: PostData[] = pendingFiles.map(url => ({
+        id: crypto.randomUUID(),
+        content: '',
+        mediaUrls: [url],
+        schedules: JSON.parse(JSON.stringify(currentPost.schedules)).map((s: ScheduleEntry) => ({
+          ...s,
+          id: crypto.randomUUID()
+        })),
+        isGeneratingCaption: true
+      }));
+
+      // If current post is empty, replace it or just add to it?
+      if (currentPost.mediaUrls.length === 0 && currentPost.content === '') {
+        setPosts(prev => {
+          const updated = [...prev];
+          updated[activeIndex] = newPosts[0];
+          return [...updated, ...newPosts.slice(1)];
+        });
+        
+        // Generate captions for all new posts
+        newPosts.forEach((p) => {
+          generateAICaptionForPost(p.id, p.mediaUrls);
+        });
+      } else {
+        setPosts(prev => [...prev, ...newPosts]);
+        
+        // Generate captions for all new posts
+        newPosts.forEach((p) => {
+          generateAICaptionForPost(p.id, p.mediaUrls);
+        });
+      }
+    }
+    setPendingFiles([]);
+  };
+
   const removeMedia = (index: number) => {
-    setMediaUrls(prev => prev.filter((_, i) => i !== index));
+    updateCurrentPost({ mediaUrls: currentPost.mediaUrls.filter((_, i) => i !== index) });
   };
 
   const handleSaveAction = (status: string) => {
-    const allPlacements = schedules.flatMap(s => s.placements);
-    if (allPlacements.length === 0) {
-      toast.error('Selecione ao menos um canal e formato em algum agendamento.');
-      return;
-    }
+    let hasError = false;
+    let isFirst = true;
 
-    // Extract hashtags from content
-    const hashtagRegex = /#(\w+)/g;
-    const extractedHashtags: string[] = [];
-    let match;
-    while ((match = hashtagRegex.exec(content)) !== null) {
-      extractedHashtags.push(match[1]);
-    }
+    posts.forEach((postData, pIdx) => {
+      const allPlacements = postData.schedules.flatMap(s => s.placements);
+      if (allPlacements.length === 0) {
+        toast.error(`Post ${pIdx + 1}: Selecione ao menos um canal.`);
+        hasError = true;
+        return;
+      }
 
-    // Clean content by removing hashtags if they are at the end or just keep it as is?
-    // Usually, we keep the content as is because the user typed it that way.
-    // But we need to send the hashtags array to the backend.
+      // Extract hashtags
+      const hashtagRegex = /#(\w+)/g;
+      const extractedHashtags: string[] = [];
+      let match;
+      while ((match = hashtagRegex.exec(postData.content)) !== null) {
+        extractedHashtags.push(match[1]);
+      }
 
-    schedules.forEach(schedule => {
-      schedule.placements.forEach(placement => {
-        const account = connectedAccounts.find(a => a.id === placement.accountId);
-        if (!account) return;
+      postData.schedules.forEach(schedule => {
+        schedule.placements.forEach(placement => {
+          const account = connectedAccounts.find(a => a.id === placement.accountId);
+          if (!account) return;
 
-        // Ensure scheduled_at respects user's local timezone
-        // If status is 'published', we use current time
-        let scheduledAt: string;
-        if (status === 'published') {
-          scheduledAt = new Date().toISOString();
-        } else {
-          const [year, month, day] = schedule.date.split('-').map(Number);
-          const [hours, minutes] = schedule.time.split(':').map(Number);
-          const localDate = new Date(year, month - 1, day, hours, minutes);
-          scheduledAt = localDate.toISOString();
-        }
+          let scheduledAt: string;
+          if (status === 'published') {
+            scheduledAt = new Date().toISOString();
+          } else {
+            const [year, month, day] = schedule.date.split('-').map(Number);
+            const [hours, minutes] = schedule.time.split(':').map(Number);
+            const localDate = new Date(year, month - 1, day, hours, minutes);
+            scheduledAt = localDate.toISOString();
+          }
 
-        const postData = {
-          content,
-          media_urls: mediaUrls,
-          platforms: [account.platform as SocialPlatform],
-          content_type: placement.format,
-          hashtags: extractedHashtags,
-          scheduled_at: scheduledAt,
-          status,
-          client_id: post?.client_id || clientId,
-          _isNew: post ? !isFirst : true,
-        };
-        
-        onSave(postData);
-        isFirst = false;
+          const data = {
+            content: postData.content,
+            media_urls: postData.mediaUrls,
+            platforms: [account.platform as SocialPlatform],
+            content_type: placement.format,
+            hashtags: extractedHashtags,
+            scheduled_at: scheduledAt,
+            status,
+            client_id: post?.client_id || clientId,
+            _isNew: post ? !isFirst : true,
+          };
+          
+          onSave(data);
+          isFirst = false;
+        });
       });
     });
 
-    onOpenChange(false);
+    if (!hasError) {
+      onOpenChange(false);
+    }
   };
 
   const handleAICaptionGenerated = (caption: string) => {
-    setContent(caption);
+    updateCurrentPost({ content: caption });
   };
 
   const previewAccount = useMemo(() => {
-    const firstSelected = schedules[0]?.placements[0];
+    const firstSelected = currentPost.schedules[0]?.placements[0];
     if (firstSelected) {
       return connectedAccounts.find(a => a.id === firstSelected.accountId);
     }
     return connectedAccounts.find(a => a.platform === previewPlatform);
-  }, [schedules, previewPlatform, connectedAccounts]);
+  }, [currentPost.schedules, previewPlatform, connectedAccounts]);
 
-  const hasAnyPlacement = useMemo(() => schedules.some(s => s.placements.length > 0), [schedules]);
+  const hasAnyPlacement = useMemo(() => posts.some(p => p.schedules.some(s => s.placements.length > 0)), [posts]);
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col p-0 w-[calc(100vw-1rem)] sm:w-auto">
-          <DialogHeader className="px-6 py-4 border-b shrink-0">
+          <DialogHeader className="px-6 py-4 border-b shrink-0 flex flex-row items-center justify-between space-y-0">
             <DialogTitle className="text-lg">
               {isPublished ? 'Visualizar Post (Publicado)' : post ? 'Editar Post' : 'Novo Post'}
             </DialogTitle>
+            
+            {/* Pagination UI */}
+            {!isPublished && (
+              <div className="flex items-center gap-2 mr-8">
+                <div className="flex items-center bg-muted rounded-lg p-1 gap-1 max-w-[300px] overflow-x-auto no-scrollbar">
+                {posts.map((_, i) => (
+                  <div key={i} className="relative group">
+                    <Button
+                      variant={activeIndex === i ? "default" : "ghost"}
+                      size="sm"
+                      className={cn(
+                        "h-7 w-7 p-0 text-xs font-bold transition-all",
+                        activeIndex === i ? "shadow-sm" : "text-muted-foreground hover:bg-background/50"
+                      )}
+                      onClick={() => setActiveIndex(i)}
+                    >
+                      {i + 1}
+                    </Button>
+                    {posts.length > 1 && activeIndex === i && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removePost(i); }}
+                        className="absolute -top-1 -right-1 z-10 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/90 shadow-sm"
+                      >
+                        <X className="h-2 w-2" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-primary hover:bg-background/50"
+                      onClick={addPost}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Adicionar novo post</TooltipContent>
+                </Tooltip>
+              </div>
+              </div>
+            )}
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto">
@@ -305,6 +495,36 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               {/* Left column - Form */}
               <div className="p-6 space-y-6 border-r border-border bg-muted/5">
                 
+                {/* Post Actions */}
+                {!isPublished && (
+                  <div className="flex items-center justify-between bg-background border rounded-lg p-2 mb-2">
+                    <div className="flex items-center gap-2 px-2">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Post {activeIndex + 1} de {posts.length}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => duplicatePost(activeIndex)}>
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Duplicar este post</TooltipContent>
+                      </Tooltip>
+                      
+                      {posts.length > 1 && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => removePost(activeIndex)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Remover este post</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Step 1: Media */}
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold flex items-center gap-2">
@@ -330,9 +550,9 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   )}
                   <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={e => handleFileUpload(e.target.files)} />
 
-                  {mediaUrls.length > 0 && (
+                  {currentPost.mediaUrls.length > 0 && (
                     <div className="grid grid-cols-4 gap-1.5">
-                      {mediaUrls.map((url, i) => (
+                      {currentPost.mediaUrls.map((url, i) => (
                         <div key={i} className="relative aspect-square rounded-md overflow-hidden group border border-border">
                           <img src={url} alt="" className="w-full h-full object-cover" />
                           {!isPublished && (
@@ -348,7 +568,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                 <Separator />
 
-                {/* Step 2: Content (Moved up) */}
+                {/* Step 2: Content */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold flex items-center gap-2">
@@ -356,23 +576,43 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                       Legenda
                     </Label>
                     {!isPublished && (
-                      <Button variant="outline" size="sm" className="gap-2 text-[10px] h-6 px-2" onClick={() => setShowAICaptionModal(true)}>
-                        <Sparkles className="h-3 w-3" /> IA
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-2 text-[10px] h-6 px-2" 
+                        onClick={() => setShowAICaptionModal(true)}
+                        disabled={currentPost.isGeneratingCaption}
+                      >
+                        {currentPost.isGeneratingCaption ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        IA
                       </Button>
                     )}
                   </div>
-                  <Textarea 
-                    value={content} 
-                    onChange={e => setContent(e.target.value)} 
-                    placeholder="Escreva sua legenda aqui... Use #hashtags diretamente no texto." 
-                    className="min-h-[120px] text-sm resize-none" 
-                    disabled={isPublished} 
-                  />
+                  <div className="relative">
+                    <Textarea 
+                      value={currentPost.content} 
+                      onChange={e => updateCurrentPost({ content: e.target.value })} 
+                      placeholder={currentPost.isGeneratingCaption ? "IA gerando legenda..." : "Escreva sua legenda aqui... Use #hashtags diretamente no texto."} 
+                      className={cn(
+                        "min-h-[120px] text-sm resize-none",
+                        currentPost.isGeneratingCaption && "opacity-50"
+                      )} 
+                      disabled={isPublished || currentPost.isGeneratingCaption} 
+                    />
+                    {currentPost.isGeneratingCaption && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-[1px] rounded-md">
+                        <div className="flex items-center gap-2 text-xs font-medium text-primary animate-pulse">
+                          <Sparkles className="h-3 w-3" />
+                          Gerando legenda...
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <Separator />
 
-                {/* Step 3: Schedules (Moved down) */}
+                {/* Step 3: Schedules */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold flex items-center gap-2">
@@ -387,9 +627,9 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   </div>
 
                   <div className="space-y-6">
-                    {schedules.map((schedule, sIdx) => (
+                    {currentPost.schedules.map((schedule, sIdx) => (
                       <div key={schedule.id} className="relative p-4 rounded-lg border bg-background/50 space-y-4">
-                        {schedules.length > 1 && !isPublished && (
+                        {currentPost.schedules.length > 1 && !isPublished && (
                           <button
                             onClick={() => removeSchedule(schedule.id)}
                             className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-white flex items-center justify-center shadow-sm hover:bg-destructive/90 transition-colors"
@@ -429,7 +669,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                               const p = account.platform as SocialPlatform;
                               const availableFormats: ContentType[] = PLATFORM_CONTENT_TYPES[p] || ['feed'];
                               
-                              // Filter formats based on compatibility
                               const compatibleFormats = availableFormats.filter(fmt => checkCompatibility(p, fmt));
                               
                               if (compatibleFormats.length === 0) return null;
@@ -493,7 +732,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Visualização</Label>
                     <div className="flex gap-1.5">
-                      {Array.from(new Set(schedules.flatMap(s => s.placements).map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform))).map(p => (
+                      {Array.from(new Set(currentPost.schedules.flatMap(s => s.placements).map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform))).map(p => (
                         <button key={p} onClick={() => setPreviewPlatform(p as SocialPlatform)} className={cn("p-1.5 rounded-lg transition-all", previewPlatform === p ? "bg-primary/10 ring-1 ring-primary/30" : "opacity-40")}>
                           <PlatformIcon platform={p as SocialPlatform} size="sm" />
                         </button>
@@ -501,12 +740,12 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                     </div>
                   </div>
 
-                  {mediaUrls.length > 0 ? (
+                  {currentPost.mediaUrls.length > 0 ? (
                     <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
                       <div className="w-full shadow-2xl rounded-2xl overflow-hidden border border-border/50">
                         <PostPreview
-                          content={content}
-                          mediaUrl={mediaUrls[0]}
+                          content={currentPost.content}
+                          mediaUrl={currentPost.mediaUrls[0]}
                           platform={previewPlatform}
                           accountName={previewAccount?.account_name || undefined}
                           accountUsername={previewAccount?.username || undefined}
@@ -551,12 +790,45 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         </DialogContent>
       </Dialog>
 
+      {/* Upload Choice Dialog */}
+      <Dialog open={showUploadChoice} onOpenChange={setShowUploadChoice}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Como deseja carregar as mídias?</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center gap-3 h-auto py-6"
+              onClick={() => handleUploadChoice('carousel')}
+            >
+              <Layers className="h-8 w-8 text-primary" />
+              <div className="text-center">
+                <div className="font-bold">Carrossel</div>
+                <div className="text-[10px] text-muted-foreground">Post único com várias mídias</div>
+              </div>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex flex-col items-center gap-3 h-auto py-6"
+              onClick={() => handleUploadChoice('separate')}
+            >
+              <LayoutGrid className="h-8 w-8 text-primary" />
+              <div className="text-center">
+                <div className="font-bold">Posts Separados</div>
+                <div className="text-[10px] text-muted-foreground">Um post para cada mídia</div>
+              </div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <AICaptionModal
         open={showAICaptionModal}
         onOpenChange={setShowAICaptionModal}
-        platforms={Array.from(new Set(schedules.flatMap(s => s.placements).map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform as SocialPlatform)))}
-        contentType={schedules[0]?.placements[0]?.format || 'feed'}
-        mediaUrls={mediaUrls}
+        platforms={Array.from(new Set(currentPost.schedules.flatMap(s => s.placements).map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform as SocialPlatform)))}
+        contentType={currentPost.schedules[0]?.placements[0]?.format || 'feed'}
+        mediaUrls={currentPost.mediaUrls}
         onCaptionGenerated={handleAICaptionGenerated}
       />
     </>
