@@ -33,11 +33,9 @@ const PLATFORM_CONTENT_TYPES: Record<SocialPlatform, ContentType[]> = {
 
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
-interface ScheduleSlot {
-  date: string;
-  time: string;
-  platforms: SocialPlatform[];
-  contentType: ContentType;
+interface Placement {
+  accountId: string;
+  format: ContentType;
 }
 
 interface PostModalProps {
@@ -56,21 +54,14 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const { accounts } = useSocialAccounts(post?.client_id || clientId);
   const [content, setContent] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [selectedPlacements, setSelectedPlacements] = useState<Placement[]>([]);
   const [hashtags, setHashtags] = useState('');
   const [previewPlatform, setPreviewPlatform] = useState<SocialPlatform>('instagram');
   const [uploading, setUploading] = useState(false);
   const [showAICaptionModal, setShowAICaptionModal] = useState(false);
   const [suggestingTimes, setSuggestingTimes] = useState(false);
-  
-  // Each slot contains its own platforms and format
-  const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[]>([
-    { 
-      date: defaultDate || format(new Date(), 'yyyy-MM-dd'), 
-      time: getDefaultTime(), 
-      platforms: [], 
-      contentType: 'feed' 
-    },
-  ]);
+  const [scheduleDate, setScheduleDate] = useState(defaultDate || format(new Date(), 'yyyy-MM-dd'));
+  const [scheduleTime, setScheduleTime] = useState(getDefaultTime());
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
@@ -111,29 +102,42 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       
       const postPlatforms = post.platforms || [];
       const ct = (post.content_type as ContentType) || 'feed';
+      const initialPlacements: Placement[] = [];
+      
+      postPlatforms.forEach(p => {
+        const acc = connectedAccounts.find(a => a.platform === p);
+        if (acc) {
+          initialPlacements.push({ accountId: acc.id, format: ct });
+        }
+      });
+      setSelectedPlacements(initialPlacements);
       
       if (post.scheduled_at) {
         const dt = new Date(post.scheduled_at);
-        setScheduleSlots([{ 
-          date: format(dt, 'yyyy-MM-dd'), 
-          time: format(dt, 'HH:mm'), 
-          platforms: postPlatforms, 
-          contentType: ct 
-        }]);
+        setScheduleDate(format(dt, 'yyyy-MM-dd'));
+        setScheduleTime(format(dt, 'HH:mm'));
       }
       setPreviewPlatform(postPlatforms[0] as SocialPlatform || 'instagram');
     } else {
       setContent('');
       setMediaUrls([]);
       setHashtags('');
-      setScheduleSlots([{ 
-        date: defaultDate || format(new Date(), 'yyyy-MM-dd'), 
-        time: getDefaultTime(), 
-        platforms: connectedAccounts.length > 0 ? [connectedAccounts[0].platform as SocialPlatform] : [], 
-        contentType: 'feed' 
-      }]);
+      setSelectedPlacements([]);
+      setScheduleDate(defaultDate || format(new Date(), 'yyyy-MM-dd'));
+      setScheduleTime(getDefaultTime());
     }
   }, [post, open, defaultDate, connectedAccounts.length]);
+
+  const togglePlacement = (accountId: string, format: ContentType) => {
+    if (isPublished) return;
+    
+    const isSelected = selectedPlacements.some(p => p.accountId === accountId && p.format === format);
+    if (isSelected) {
+      setSelectedPlacements(prev => prev.filter(p => !(p.accountId === accountId && p.format === format)));
+    } else {
+      setSelectedPlacements(prev => [...prev, { accountId, format }]);
+    }
+  };
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -160,52 +164,23 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     setMediaUrls(prev => prev.filter((_, i) => i !== index));
   };
 
-  const addSlot = () => {
-    setScheduleSlots(prev => [...prev, { 
-      date: format(new Date(), 'yyyy-MM-dd'), 
-      time: getDefaultTime(), 
-      platforms: [], 
-      contentType: 'feed' 
-    }]);
-  };
-
-  const removeSlot = (index: number) => {
-    if (scheduleSlots.length > 1) {
-      setScheduleSlots(prev => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateSlot = (index: number, updates: Partial<ScheduleSlot>) => {
-    setScheduleSlots(prev => prev.map((slot, i) => i === index ? { ...slot, ...updates } : slot));
-  };
-
-  const toggleSlotPlatform = (slotIndex: number, platform: SocialPlatform) => {
-    const slot = scheduleSlots[slotIndex];
-    const isSelected = slot.platforms.includes(platform);
-    const newPlatforms = isSelected 
-      ? slot.platforms.filter(p => p !== platform)
-      : [...slot.platforms, platform];
-    
-    updateSlot(slotIndex, { platforms: newPlatforms });
-  };
-
   const handleSaveAction = (status: string) => {
-    const validSlots = scheduleSlots.filter(s => s.platforms.length > 0);
-    
-    if (validSlots.length === 0) {
-      toast.error('Selecione ao menos um canal e formato em algum dos agendamentos.');
+    if (selectedPlacements.length === 0) {
+      toast.error('Selecione ao menos um canal e formato.');
       return;
     }
 
-    // Create a post for each slot
-    validSlots.forEach(slot => {
+    selectedPlacements.forEach(placement => {
+      const account = connectedAccounts.find(a => a.id === placement.accountId);
+      if (!account) return;
+
       const postData = {
         content,
         media_urls: mediaUrls,
-        platforms: slot.platforms,
-        content_type: slot.contentType,
+        platforms: [account.platform as SocialPlatform],
+        content_type: placement.format,
         hashtags: hashtags ? hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
-        scheduled_at: `${slot.date}T${slot.time}:00`,
+        scheduled_at: `${scheduleDate}T${scheduleTime}:00`,
         status,
         client_id: post?.client_id || clientId,
       };
@@ -223,44 +198,13 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     }
   };
 
-  const handleSuggestBestTimes = async () => {
-    const allPlatforms = Array.from(new Set(scheduleSlots.flatMap(s => s.platforms)));
-    if (allPlatforms.length === 0) {
-      toast.error('Selecione ao menos um canal primeiro.');
-      return;
-    }
-    setSuggestingTimes(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('suggest-best-times', {
-        body: { platforms: allPlatforms, content_type: 'feed', slots_count: 3 },
-      });
-      if (error) throw error;
-      
-      const suggested = data.slots || [];
-      if (suggested.length > 0) {
-        setScheduleSlots(suggested.map((s: any) => ({
-          date: s.date,
-          time: s.time,
-          platforms: allPlatforms,
-          contentType: 'feed'
-        })));
-        toast.success('Melhores horários sugeridos pela IA!');
-      }
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Erro ao sugerir horários.');
-    } finally {
-      setSuggestingTimes(false);
-    }
-  };
-
   const previewAccount = useMemo(() => {
-    const firstSlot = scheduleSlots.find(s => s.platforms.length > 0);
-    if (firstSlot) {
-      return connectedAccounts.find(a => a.platform === firstSlot.platforms[0]);
+    const firstSelected = selectedPlacements[0];
+    if (firstSelected) {
+      return connectedAccounts.find(a => a.id === firstSelected.accountId);
     }
     return connectedAccounts.find(a => a.platform === previewPlatform);
-  }, [scheduleSlots, previewPlatform, connectedAccounts]);
+  }, [selectedPlacements, previewPlatform, connectedAccounts]);
 
   return (
     <>
@@ -309,11 +253,80 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                 <Separator />
 
-                {/* Step 2: Content */}
+                {/* Step 2: Select channels and formats */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
+                    Canais e Formatos
+                  </Label>
+                  
+                  <div className="space-y-4">
+                    {connectedAccounts.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Nenhum canal conectado.</p>
+                    ) : (
+                      connectedAccounts.map(account => {
+                        const p = account.platform as SocialPlatform;
+                        const availableFormats: ContentType[] = PLATFORM_CONTENT_TYPES[p] || ['feed'];
+                        
+                        return (
+                          <div key={account.id} className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{account.account_name}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {availableFormats.map(fmt => {
+                                const isCompatible = checkCompatibility(p, fmt);
+                                const isSelected = selectedPlacements.some(sp => sp.accountId === account.id && sp.format === fmt);
+                                
+                                return (
+                                  <Tooltip key={fmt}>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        type="button"
+                                        disabled={!isCompatible || isPublished}
+                                        onClick={() => togglePlacement(account.id, fmt)}
+                                        className={cn(
+                                          "relative p-2 rounded-full border-2 transition-all",
+                                          isSelected 
+                                            ? "border-primary bg-primary/10 scale-110" 
+                                            : "border-transparent bg-muted/50 opacity-40",
+                                          !isCompatible && "opacity-10 cursor-not-allowed grayscale",
+                                          isCompatible && !isSelected && "hover:opacity-100 hover:border-border"
+                                        )}
+                                      >
+                                        <div className="relative">
+                                          <PlatformIcon platform={p} size="sm" />
+                                          <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 border border-border">
+                                            {fmt === 'feed' && <Image className="h-2 w-2 text-primary" />}
+                                            {fmt === 'stories' && <CircleDashed className="h-2 w-2 text-primary" />}
+                                            {fmt === 'reels' && <Film className="h-2 w-2 text-primary" />}
+                                            {fmt === 'carousel' && <Layers className="h-2 w-2 text-primary" />}
+                                            {fmt === 'video' && <Film className="h-2 w-2 text-primary" />}
+                                          </div>
+                                        </div>
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-[10px]">
+                                      {CONTENT_TYPE_CONFIG[fmt]?.label} {!isCompatible && '(Incompatível com a mídia)'}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Step 3: Content */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold flex items-center gap-2">
-                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
                       Legenda
                     </Label>
                     {!isPublished && (
@@ -331,104 +344,21 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                 <Separator />
 
-                {/* Step 3: Schedule with Channels and Formats */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold flex items-center gap-2">
-                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
-                      Agendamento e Canais
-                    </Label>
-                    {!isPublished && (
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-primary" onClick={handleSuggestBestTimes} disabled={suggestingTimes}>
-                        {suggestingTimes ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
-                        Sugerir horários
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    {scheduleSlots.map((slot, idx) => (
-                      <div key={idx} className="p-4 rounded-xl border border-border bg-background space-y-4 relative group/slot">
-                        {scheduleSlots.length > 1 && !isPublished && (
-                          <button 
-                            onClick={() => removeSlot(idx)}
-                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-white flex items-center justify-center shadow-lg opacity-0 group-hover/slot:opacity-100 transition-opacity z-20"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        )}
-
-                        {/* Date and Time */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="relative">
-                            <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                            <Input type="date" value={slot.date} onChange={e => updateSlot(idx, { date: e.target.value })} className="h-8 pl-7 text-[11px]" disabled={isPublished} />
-                          </div>
-                          <div className="relative">
-                            <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                            <Input type="time" value={slot.time} onChange={e => updateSlot(idx, { time: e.target.value })} className="h-8 pl-7 text-[11px]" disabled={isPublished} />
-                          </div>
-                        </div>
-
-                        {/* Channels for this slot */}
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Canais</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {connectedAccounts.map(acc => {
-                              const p = acc.platform as SocialPlatform;
-                              const isSelected = slot.platforms.includes(p);
-                              return (
-                                <button
-                                  key={acc.id}
-                                  type="button"
-                                  onClick={() => !isPublished && toggleSlotPlatform(idx, p)}
-                                  className={cn(
-                                    "p-1.5 rounded-lg border transition-all",
-                                    isSelected ? "border-primary bg-primary/10" : "border-border opacity-40 hover:opacity-100"
-                                  )}
-                                >
-                                  <PlatformIcon platform={p} size="xs" />
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Format for this slot */}
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Formato</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {['feed', 'stories', 'reels', 'carousel', 'video'].map(fmt => {
-                              const isCompatible = checkCompatibility('instagram', fmt as ContentType);
-                              const isSelected = slot.contentType === fmt;
-                              
-                              return (
-                                <button
-                                  key={fmt}
-                                  type="button"
-                                  disabled={!isCompatible || isPublished}
-                                  onClick={() => updateSlot(idx, { contentType: fmt as ContentType })}
-                                  className={cn(
-                                    "flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-medium transition-all",
-                                    isSelected ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground",
-                                    !isCompatible && "opacity-20 cursor-not-allowed grayscale"
-                                  )}
-                                >
-                                  <ContentTypeIcon type={fmt as ContentType} className="!h-3 !w-3" />
-                                  <span className="capitalize">{CONTENT_TYPE_CONFIG[fmt as ContentType]?.label || fmt}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    {!isPublished && (
-                      <Button variant="outline" size="sm" className="w-full h-8 border-dashed text-[10px] gap-2" onClick={addSlot}>
-                        <Plus className="h-3 w-3" /> Adicionar outro agendamento
-                      </Button>
-                    )}
+                {/* Step 4: Schedule */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
+                    Agendamento
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="relative">
+                      <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="h-8 pl-7 text-[11px]" disabled={isPublished} />
+                    </div>
+                    <div className="relative">
+                      <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="h-8 pl-7 text-[11px]" disabled={isPublished} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -439,7 +369,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Visualização</Label>
                     <div className="flex gap-1.5">
-                      {Array.from(new Set(scheduleSlots.flatMap(s => s.platforms))).map(p => (
+                      {Array.from(new Set(selectedPlacements.map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform))).map(p => (
                         <button key={p} onClick={() => setPreviewPlatform(p as SocialPlatform)} className={cn("p-1.5 rounded-lg transition-all", previewPlatform === p ? "bg-primary/10 ring-1 ring-primary/30" : "opacity-40")}>
                           <PlatformIcon platform={p as SocialPlatform} size="sm" />
                         </button>
@@ -482,13 +412,13 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               </Button>
             ) : (
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button variant="outline" onClick={() => handleSaveAction('draft')} className="w-full sm:w-auto">
+                <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={selectedPlacements.length === 0} className="w-full sm:w-auto">
                   Salvar Rascunho
                 </Button>
-                <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} className="gap-2 w-full sm:w-auto">
+                <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={selectedPlacements.length === 0} className="gap-2 w-full sm:w-auto">
                   <Calendar className="h-4 w-4" /> Agendar
                 </Button>
-                <Button onClick={() => handleSaveAction('published')} className="gap-2 w-full sm:w-auto shadow-lg shadow-primary/20">
+                <Button onClick={() => handleSaveAction('published')} disabled={selectedPlacements.length === 0} className="gap-2 w-full sm:w-auto shadow-lg shadow-primary/20">
                   <Zap className="h-4 w-4" /> Publicar Agora
                 </Button>
               </div>
@@ -500,8 +430,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       <AICaptionModal
         open={showAICaptionModal}
         onOpenChange={setShowAICaptionModal}
-        platforms={Array.from(new Set(scheduleSlots.flatMap(s => s.platforms)))}
-        contentType={scheduleSlots[0]?.contentType || 'feed'}
+        platforms={Array.from(new Set(selectedPlacements.map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform as SocialPlatform)))}
+        contentType={selectedPlacements[0]?.format || 'feed'}
         mediaUrls={mediaUrls}
         onCaptionGenerated={handleAICaptionGenerated}
       />
