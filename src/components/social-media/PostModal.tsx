@@ -16,7 +16,7 @@ import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2, ChevronLeft, ChevronRight, Plus, Copy } from 'lucide-react';
+import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -252,6 +252,40 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     setMediaUrls(prev => prev.filter((_, i) => i !== index));
   };
 
+  const validatePost = () => {
+    if (platforms.length === 0) {
+      toast.error('Selecione ao menos um canal.');
+      return false;
+    }
+
+    // Reels validation
+    if (contentType === 'reels' && mediaUrls.length > 0) {
+      const hasVideo = mediaUrls.some(url => /\.(mp4|mov|avi|webm)$/i.test(url));
+      if (!hasVideo) {
+        toast.error('Reels exige pelo menos um vídeo.');
+        return false;
+      }
+      if (mediaUrls.length > 1) {
+        toast.error('Reels suporta apenas um vídeo por post.');
+        return false;
+      }
+    }
+
+    // Stories validation
+    if (contentType === 'stories' && mediaUrls.length > 1) {
+      toast.error('Stories suporta apenas uma mídia por post. Use o modo Individual para postar várias.');
+      return false;
+    }
+
+    // Carousel validation
+    if (contentType === 'carousel' && mediaUrls.length < 2) {
+      toast.error('Carrossel exige pelo menos duas mídias.');
+      return false;
+    }
+
+    return true;
+  };
+
   const buildPostData = (status: string) => {
     if (isIndividualMode) {
       const configs = individualConfigs.map((cfg, i) =>
@@ -290,7 +324,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   };
 
   const handleSaveDraft = () => {
-    if (platforms.length === 0) return;
+    if (!validatePost()) return;
     const data = buildPostData('draft');
     if (Array.isArray(data)) {
       data.forEach(d => { if (d.content.trim()) onSave(d); });
@@ -302,7 +336,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   };
 
   const handleSchedule = () => {
-    if (platforms.length === 0) return;
+    if (!validatePost()) return;
     const now = new Date();
     const slotsToValidate = isIndividualMode
       ? individualConfigs.flatMap(cfg => cfg.scheduleSlots)
@@ -326,7 +360,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   };
 
   const handlePublishNow = () => {
-    if (platforms.length === 0) return;
+    if (!validatePost()) return;
     const data = buildPostData('published');
     if (Array.isArray(data)) {
       data.forEach(d => { if (d.content.trim()) onSave(d); });

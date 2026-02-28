@@ -142,6 +142,8 @@ Deno.serve(async (req) => {
     const latePayload: any = {
       content: post.content,
       platforms,
+      // CRITICAL: Pass the content type to Late.dev
+      type: post.content_type || 'feed',
     };
 
     // Add media if present
@@ -163,6 +165,8 @@ Deno.serve(async (req) => {
     } else {
       latePayload.publishNow = true;
     }
+
+    console.log(`[social-publish] Sending post ${post_id} to Late.dev as ${latePayload.type}`);
 
     // Send to Late.dev
     const lateRes = await fetch(`${LATE_API_BASE}/posts`, {
