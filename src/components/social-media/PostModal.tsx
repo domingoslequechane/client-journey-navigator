@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { PostPreview } from './PostPreview';
 import { PlatformIcon } from './PlatformIcon';
 import { AICaptionModal } from './AICaptionModal';
@@ -62,9 +63,9 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const [content, setContent] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
-  const [hashtags, setHashtags] = useState('');
   const [previewPlatform, setPreviewPlatform] = useState<SocialPlatform>('instagram');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [showAICaptionModal, setShowAICaptionModal] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,9 +101,10 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
   useEffect(() => {
     if (post) {
-      setContent(post.content);
+      // Combine content and hashtags for the single field
+      const postHashtags = post.hashtags?.map(h => `#${h}`).join(' ') || '';
+      setContent(post.content + (postHashtags ? `\n\n${postHashtags}` : ''));
       setMediaUrls(post.media_urls || []);
-      setHashtags(post.hashtags?.join(', ') || '');
       
       const postPlatforms = post.platforms || [];
       const ct = (post.content_type as ContentType) || 'feed';
@@ -135,7 +137,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     } else {
       setContent('');
       setMediaUrls([]);
-      setHashtags('');
       setSchedules([{
         id: crypto.randomUUID(),
         date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
@@ -184,21 +185,34 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
+    setUploadProgress(0);
     try {
       const newUrls: string[] = [];
-      for (const file of Array.from(files)) {
+      const totalFiles = files.length;
+      
+      for (let i = 0; i < totalFiles; i++) {
+        const file = files[i];
         const ext = file.name.split('.').pop();
         const path = `${crypto.randomUUID()}.${ext}`;
+        
+        // Simulate progress for each file
         const { error } = await supabase.storage.from('social-media').upload(path, file);
         if (error) throw error;
+        
         const { data: urlData } = supabase.storage.from('social-media').getPublicUrl(path);
         newUrls.push(urlData.publicUrl);
+        
+        setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
       }
       setMediaUrls(prev => [...prev, ...newUrls]);
     } catch (err: any) {
       console.error('Upload error:', err);
+      toast.error('Erro ao carregar arquivos.');
     } finally {
-      setUploading(false);
+      setTimeout(() => {
+        setUploading(false);
+        setUploadProgress(0);
+      }, 500);
     }
   };
 
@@ -213,6 +227,18 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       return;
     }
 
+    // Extract hashtags from content
+    const hashtagRegex = /#(\w+)/g;
+    const extractedHashtags: string[] = [];
+    let match;
+    while ((match = hashtagRegex.exec(content)) !== null) {
+      extractedHashtags.push(match[1]);
+    }
+
+    // Clean content by removing hashtags if they are at the end or just keep it as is?
+    // Usually, we keep the content as is because the user typed it that way.
+    // But we need to send the hashtags array to the backend.
+
     let isFirst = true;
     schedules.forEach(schedule => {
       schedule.placements.forEach(placement => {
@@ -224,7 +250,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           media_urls: mediaUrls,
           platforms: [account.platform as SocialPlatform],
           content_type: placement.format,
-          hashtags: hashtags ? hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
+          hashtags: extractedHashtags,
           scheduled_at: `${schedule.date}T${schedule.time}:00`,
           status,
           client_id: post?.client_id || clientId,
@@ -241,10 +267,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
   const handleAICaptionGenerated = (caption: string) => {
     setContent(caption);
-    const hashtagMatches = caption.match(/#\w+/g);
-    if (hashtagMatches) {
-      setHashtags(hashtagMatches.map(t => t.replace('#', '')).join(', '));
-    }
   };
 
   const previewAccount = useMemo(() => {
@@ -260,7 +282,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col p-0 w-[calc(100vw-1rem)] sm:w-auto">
+        <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col p-0 w-[calc(100vw-1rem)] sm:w-auto">
           <DialogHeader className="px-6 py-4 border-b shrink-0">
             <DialogTitle className="text-lg">
               {isPublished ? 'Visualizar Post (Publicado)' : post ? 'Editar Post' : 'Novo Post'}
@@ -268,7 +290,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-0">
+            <div className="grid grid-cols-1 md:grid-cols-[450px_1fr] gap-0">
               {/* Left column - Form */}
               <div className="p-6 space-y-6 border-r border-border bg-muted/5">
                 
@@ -279,10 +301,21 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                     Mídias
                   </Label>
                   {!isPublished && (
-                    <Button variant="outline" size="sm" className="h-8 gap-2 w-full border-dashed text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                      {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                      Carregar fotos ou vídeos
-                    </Button>
+                    <div className="space-y-2">
+                      <Button variant="outline" size="sm" className="h-8 gap-2 w-full border-dashed text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                        {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                        Carregar fotos ou vídeos
+                      </Button>
+                      {uploading && (
+                        <div className="space-y-1.5">
+                          <Progress value={uploadProgress} className="h-1" />
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>Enviando arquivos...</span>
+                            <span>{uploadProgress}%</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                   <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={e => handleFileUpload(e.target.files)} />
 
@@ -304,11 +337,35 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                 <Separator />
 
-                {/* Step 2: Schedules */}
-                <div className="space-y-4">
+                {/* Step 2: Content (Moved up) */}
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold flex items-center gap-2">
                       <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
+                      Legenda
+                    </Label>
+                    {!isPublished && (
+                      <Button variant="outline" size="sm" className="gap-2 text-[10px] h-6 px-2" onClick={() => setShowAICaptionModal(true)}>
+                        <Sparkles className="h-3 w-3" /> IA
+                      </Button>
+                    )}
+                  </div>
+                  <Textarea 
+                    value={content} 
+                    onChange={e => setContent(e.target.value)} 
+                    placeholder="Escreva sua legenda aqui... Use #hashtags diretamente no texto." 
+                    className="min-h-[120px] text-sm resize-none" 
+                    disabled={isPublished} 
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Step 3: Schedules (Moved down) */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold flex items-center gap-2">
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
                       Agendamentos
                     </Label>
                     {!isPublished && (
@@ -415,28 +472,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                         </div>
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Step 3: Content */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold flex items-center gap-2">
-                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
-                      Legenda
-                    </Label>
-                    {!isPublished && (
-                      <Button variant="outline" size="sm" className="gap-2 text-[10px] h-6 px-2" onClick={() => setShowAICaptionModal(true)}>
-                        <Sparkles className="h-3 w-3" /> IA
-                      </Button>
-                    )}
-                  </div>
-                  <Textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Escreva aqui..." className="min-h-[100px] text-sm resize-none" disabled={isPublished} />
-                  <div className="flex items-center gap-2">
-                    <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <Input value={hashtags} onChange={e => setHashtags(e.target.value)} placeholder="hashtags..." className="h-7 text-[11px]" disabled={isPublished} />
                   </div>
                 </div>
               </div>

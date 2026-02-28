@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { CheckCircle2, Circle, Loader2, Sparkles, Wand2, ShieldCheck, PenTool, Search } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { CheckCircle2, Circle, Loader2, Sparkles, Wand2, ShieldCheck, PenTool, Search, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 interface GenerationStepsProps {
   isGenerating: boolean;
@@ -49,17 +50,23 @@ const STEPS: Step[] = [
 export function GenerationSteps({ isGenerating, mode }: GenerationStepsProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  const totalDuration = useMemo(() => STEPS.reduce((acc, step) => acc + step.duration, 0), []);
 
   useEffect(() => {
     if (!isGenerating) {
       setCurrentStep(0);
       setCompletedSteps([]);
+      setElapsedTime(0);
       return;
     }
 
     let timeoutId: number;
+    let intervalId: number;
     
     const runSteps = async () => {
+      let accumulatedTime = 0;
       for (let i = 0; i < STEPS.length; i++) {
         if (!isGenerating) break;
         
@@ -67,26 +74,53 @@ export function GenerationSteps({ isGenerating, mode }: GenerationStepsProps) {
         await new Promise(resolve => {
           timeoutId = window.setTimeout(resolve, STEPS[i].duration);
         });
+        accumulatedTime += STEPS[i].duration;
         setCompletedSteps(prev => [...prev, i]);
       }
     };
 
     runSteps();
 
+    // Update elapsed time every 100ms for smooth progress bar
+    intervalId = window.setInterval(() => {
+      setElapsedTime(prev => {
+        if (prev >= totalDuration) return totalDuration;
+        return prev + 100;
+      });
+    }, 100);
+
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
     };
-  }, [isGenerating]);
+  }, [isGenerating, totalDuration]);
 
   if (!isGenerating) return null;
 
+  const progress = Math.min((elapsedTime / totalDuration) * 100, 99);
+  const remainingSeconds = Math.max(Math.ceil((totalDuration - elapsedTime) / 1000), 0);
+
   return (
-    <div className="space-y-4 py-4 animate-in fade-in slide-in-from-top-4 duration-500">
-      <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
-          Creative Team em Ação
-        </h3>
+    <div className="space-y-6 py-4 animate-in fade-in slide-in-from-top-4 duration-500">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
+            Creative Team em Ação
+          </h3>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
+          <Clock className="h-3 w-3" />
+          <span>Tempo estimado: {remainingSeconds}s</span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Progress value={progress} className="h-2" />
+        <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
+          <span>Progresso da Geração</span>
+          <span>{Math.round(progress)}%</span>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -142,7 +176,7 @@ export function GenerationSteps({ isGenerating, mode }: GenerationStepsProps) {
       </div>
 
       <p className="text-[10px] text-center text-muted-foreground italic">
-        O processo de alta fidelidade leva cerca de 60-90 segundos para garantir um resultado profissional impecável.
+        O processo de alta fidelidade leva cerca de 65 segundos para garantir um resultado profissional impecável.
       </p>
     </div>
   );
