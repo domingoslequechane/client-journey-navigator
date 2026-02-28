@@ -398,7 +398,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col p-0 w-[calc(100vw-1rem)] sm:w-auto">
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col p-0 w-[calc(100vw-1rem)] sm:w-auto">
           <DialogHeader className="px-6 py-4 border-b shrink-0">
             <DialogTitle className="text-lg">
               {isPublished ? 'Visualizar Post (Publicado)' : post ? 'Editar Post' : 'Novo Post'}
@@ -406,18 +406,18 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_340px] gap-0">
-              {/* Left column - Form */}
-              <div className="p-6 space-y-6 border-r border-border">
+            <div className="grid grid-cols-1 md:grid-cols-[420px_1fr] gap-0">
+              {/* Left column - Form (Narrower) */}
+              <div className="p-6 space-y-6 border-r border-border bg-muted/5">
                 {/* Step 1: Select channels */}
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold flex items-center gap-2">
                     <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">1</span>
-                    Selecione os canais
+                    Canais
                   </Label>
                   <div className="flex flex-wrap gap-2">
                     {connectedAccounts.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">Nenhum canal conectado para este cliente. Conecte uma conta primeiro.</p>
+                      <p className="text-xs text-muted-foreground">Nenhum canal conectado.</p>
                     ) : (
                       connectedAccounts.map(account => {
                         const p = account.platform as SocialPlatform;
@@ -429,7 +429,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                             onClick={() => toggleAccount(account.id)}
                             disabled={isPublished}
                             className={cn(
-                              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all",
+                              "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all",
                               isSelected
                                 ? "border-primary bg-primary/10 ring-1 ring-primary/30"
                                 : "border-border hover:border-primary/50",
@@ -437,11 +437,11 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                             )}
                           >
                             {account.avatar_url ? (
-                              <img src={account.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                              <img src={account.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
                             ) : (
-                              <PlatformIcon platform={p} size="sm" />
+                              <PlatformIcon platform={p} size="xs" />
                             )}
-                            <span className="truncate max-w-[120px]">{account.account_name || PLATFORM_CONFIG[p].label}</span>
+                            <span className="truncate max-w-[80px]">{account.account_name || PLATFORM_CONFIG[p].label}</span>
                           </button>
                         );
                       })
@@ -456,39 +456,39 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold flex items-center gap-2">
                       <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
-                      Texto do post
+                      Conteúdo
                     </Label>
                     {!isPublished && (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-2 text-xs h-7"
+                        className="gap-2 text-[10px] h-6 px-2"
                         onClick={() => setShowAICaptionModal(true)}
                       >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        Legenda com IA
+                        <Sparkles className="h-3 w-3" />
+                        IA
                       </Button>
                     )}
                   </div>
                   <Textarea 
                     value={content} 
                     onChange={e => setContent(e.target.value)} 
-                    placeholder="Digite o seu texto..." 
-                    className="min-h-[160px] resize-none" 
+                    placeholder="Legenda do post..." 
+                    className="min-h-[120px] text-sm resize-none" 
                     disabled={isPublished} 
                   />
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
                       <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <Input 
                         value={hashtags} 
                         onChange={e => setHashtags(e.target.value)} 
-                        placeholder="hashtags separadas por vírgula" 
-                        className="h-8 text-xs flex-1 sm:w-[240px]" 
+                        placeholder="hashtags..." 
+                        className="h-7 text-[11px]" 
                         disabled={isPublished} 
                       />
                     </div>
-                    <p className={cn("text-xs shrink-0", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
+                    <p className={cn("text-[10px] text-right", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
                       {content.length}/{minCharLimit}
                     </p>
                   </div>
@@ -503,9 +503,9 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                     Mídias
                   </Label>
                   {!isPublished && (
-                    <Button variant="outline" className="h-10 gap-2 w-full border-dashed" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                      Enviar imagens ou vídeos
+                    <Button variant="outline" size="sm" className="h-8 gap-2 w-full border-dashed text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                      {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                      Upload
                     </Button>
                   )}
                   <input
@@ -518,18 +518,15 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   />
 
                   {mediaUrls.length > 0 && (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {mediaUrls.length > 1 && !isPublished && (
-                        <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
-                          <span className="text-[11px] font-medium text-muted-foreground mr-2">Modo:</span>
+                        <div className="flex items-center gap-1 p-1.5 rounded-lg border border-border bg-background">
                           <button
                             type="button"
                             onClick={() => { setMultiImageMode('carousel'); setCurrentPostIndex(0); }}
                             className={cn(
-                              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
-                              multiImageMode === 'carousel'
-                                ? "bg-primary text-primary-foreground shadow-sm"
-                                : "bg-background border border-border hover:border-primary/50"
+                              "flex-1 flex items-center justify-center gap-1.5 py-1 rounded-md text-[10px] font-medium transition-all",
+                              multiImageMode === 'carousel' ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                             )}
                           >
                             <Layers className="h-3 w-3" />
@@ -539,66 +536,33 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                             type="button"
                             onClick={() => setMultiImageMode('individual')}
                             className={cn(
-                              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
-                              multiImageMode === 'individual'
-                                ? "bg-primary text-primary-foreground shadow-sm"
-                                : "bg-background border border-border hover:border-primary/50"
+                              "flex-1 flex items-center justify-center gap-1.5 py-1 rounded-md text-[10px] font-medium transition-all",
+                              multiImageMode === 'individual' ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                             )}
                           >
                             <LayoutGrid className="h-3 w-3" />
-                            Individual ({mediaUrls.length})
+                            Individual
                           </button>
                         </div>
                       )}
 
-                      {isIndividualMode && !isPublished && (
-                        <div className="flex items-center justify-center gap-3 p-2 rounded-lg border border-primary/20 bg-primary/5">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            disabled={currentPostIndex === 0}
-                            onClick={() => goToPost(currentPostIndex - 1)}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <span className="text-xs font-bold">
-                            POST {currentPostIndex + 1} DE {totalIndividualPosts}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            disabled={currentPostIndex >= totalIndividualPosts - 1}
-                            onClick={() => goToPost(currentPostIndex + 1)}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                      <div className="grid grid-cols-4 gap-1.5">
                         {mediaUrls.map((url, i) => (
                           <div
                             key={i}
                             className={cn(
-                              "relative aspect-square rounded-lg overflow-hidden group cursor-pointer border-2 transition-all",
-                              isIndividualMode && i === currentPostIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent opacity-80 hover:opacity-100"
+                              "relative aspect-square rounded-md overflow-hidden group cursor-pointer border-2 transition-all",
+                              isIndividualMode && i === currentPostIndex ? "border-primary" : "border-transparent opacity-70"
                             )}
                             onClick={() => isIndividualMode && goToPost(i)}
                           >
                             <img src={url} alt="" className="w-full h-full object-cover" />
-                            {multiImageMode === 'carousel' && (
-                              <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-black/60 text-white px-1 py-0.5 rounded">
-                                {i + 1}
-                              </span>
-                            )}
                             {!isPublished && (
                               <button 
                                 onClick={(e) => { e.stopPropagation(); removeMedia(i); }} 
-                                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100"
                               >
-                                <X className="h-3 w-3" />
+                                <X className="h-2.5 w-2.5" />
                               </button>
                             )}
                           </div>
@@ -612,92 +576,72 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                 {/* Step 4: Schedule */}
                 <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold flex items-center gap-2">
                       <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
-                      Data e horário das publicações
+                      Agendamento
                     </Label>
                     {!isPublished && (
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="gap-2 text-[11px] h-7 border-primary/30 text-primary hover:bg-primary/5"
+                        className="h-6 px-2 text-[10px] text-primary"
                         onClick={handleSuggestBestTimes}
                         disabled={suggestingTimes || platforms.length === 0}
                       >
-                        {suggestingTimes ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                        Melhores horários
-                        <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-primary/40 text-primary">IA</Badge>
+                        {suggestingTimes ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                        Sugerir horários
                       </Button>
                     )}
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {scheduleSlots.map((slot, idx) => {
                       const slotContentTypes = getSlotContentTypes(slot.platforms);
                       return (
-                        <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-xl border border-border bg-muted/20">
-                          <div className="flex items-center gap-2 shrink-0">
-                            <div className="flex -space-x-2">
-                              {platforms.map(p => {
-                                const isActive = slot.platforms.includes(p);
-                                return (
-                                  <button
-                                    key={p}
-                                    type="button"
-                                    onClick={() => !isPublished && toggleSlotPlatform(idx, p)}
-                                    disabled={isPublished}
-                                    className={cn(
-                                      "rounded-full border-2 border-background transition-all z-10",
-                                      isActive ? "opacity-100 scale-110" : "opacity-30 grayscale hover:grayscale-0"
-                                    )}
-                                  >
-                                    <PlatformIcon platform={p} size="sm" variant="circle" />
-                                  </button>
-                                );
-                              })}
+                        <div key={idx} className="space-y-2 p-3 rounded-xl border border-border bg-background">
+                          <div className="flex items-center justify-between">
+                            <div className="flex -space-x-1.5">
+                              {platforms.map(p => (
+                                <button
+                                  key={p}
+                                  type="button"
+                                  onClick={() => !isPublished && toggleSlotPlatform(idx, p)}
+                                  className={cn(
+                                    "rounded-full border-2 border-background transition-all z-10",
+                                    slot.platforms.includes(p) ? "opacity-100 scale-105" : "opacity-20 grayscale"
+                                  )}
+                                >
+                                  <PlatformIcon platform={p} size="xs" variant="circle" />
+                                </button>
+                              ))}
                             </div>
-
-                            {slotContentTypes.length > 1 && (
-                              <div className="flex items-center gap-1 ml-2 border-l border-border pl-2">
-                                {slotContentTypes.map(ct => (
-                                  <Tooltip key={ct}>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        type="button"
-                                        onClick={() => !isPublished && updateSlotContentType(idx, ct)}
-                                        disabled={isPublished}
-                                        className={cn(
-                                          "p-1.5 rounded-md transition-all",
-                                          slot.contentType === ct
-                                            ? "bg-primary/10 text-primary ring-1 ring-primary/30"
-                                            : "opacity-40 hover:opacity-80 hover:bg-muted"
-                                        )}
-                                      >
-                                        <ContentTypeIcon type={ct} className="!h-3.5 !w-3.5" />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-[10px]">
-                                      {CONTENT_TYPE_CONFIG[ct]?.label || ct}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ))}
-                              </div>
-                            )}
+                            
+                            {/* Format selector per slot */}
+                            <div className="flex items-center gap-1">
+                              {slotContentTypes.map(ct => (
+                                <button
+                                  key={ct}
+                                  type="button"
+                                  onClick={() => !isPublished && updateSlotContentType(idx, ct)}
+                                  className={cn(
+                                    "p-1.5 rounded-md transition-all flex items-center gap-1 border",
+                                    slot.contentType === ct ? "bg-primary/10 border-primary/30 text-primary" : "border-transparent opacity-40"
+                                  )}
+                                >
+                                  <ContentTypeIcon type={ct} className="!h-3 !w-3" />
+                                  <span className="text-[9px] font-bold uppercase">{CONTENT_TYPE_CONFIG[ct]?.label}</span>
+                                </button>
+                              ))}
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-2 w-full sm:flex-1">
-                            <div className="relative flex-1">
-                              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                              <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} min={format(new Date(), 'yyyy-MM-dd')} className="h-9 pl-8 text-xs" disabled={isPublished} />
-                            </div>
-                            <div className="relative flex-1">
-                              <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                              <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-9 pl-8 text-xs" disabled={isPublished} />
-                            </div>
+                          <div className="flex items-center gap-2">
+                            <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} className="h-8 text-[11px] px-2" disabled={isPublished} />
+                            <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-8 text-[11px] px-2" disabled={isPublished} />
                             {scheduleSlots.length > 1 && !isPublished && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeSlot(idx)}>
-                                <Trash2 className="h-4 w-4" />
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground" onClick={() => removeSlot(idx)}>
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </div>
@@ -707,26 +651,26 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   </div>
 
                   {!isPublished && (
-                    <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8 text-primary hover:bg-primary/5" onClick={addSlot}>
-                      <Plus className="h-3.5 w-3.5" /> Incluir mais dias e horários
+                    <Button variant="ghost" size="sm" className="w-full text-[10px] h-7 text-primary" onClick={addSlot}>
+                      <Plus className="h-3 w-3 mr-1" /> Adicionar outro horário
                     </Button>
                   )}
                 </div>
               </div>
 
-              {/* Right column - Preview (Sticky on desktop) */}
-              <div className="bg-muted/10 p-6">
-                <div className="md:sticky md:top-0 space-y-4">
+              {/* Right column - Preview (Dominant) */}
+              <div className="bg-muted/10 p-8 flex flex-col items-center">
+                <div className="md:sticky md:top-8 w-full max-w-[400px] space-y-6">
                   <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold">Preview</Label>
-                    <div className="flex gap-1">
+                    <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Visualização Real</Label>
+                    <div className="flex gap-1.5">
                       {platforms.map(p => (
                         <button 
                           key={p} 
                           onClick={() => setPreviewPlatform(p)} 
                           className={cn(
-                            "p-1.5 rounded-lg transition-all", 
-                            previewPlatform === p ? "bg-primary/10 ring-1 ring-primary/30 scale-110" : "opacity-50 hover:opacity-100"
+                            "p-2 rounded-full transition-all border-2", 
+                            previewPlatform === p ? "border-primary bg-primary/10 scale-110" : "border-transparent opacity-40 hover:opacity-100"
                           )}
                         >
                           <PlatformIcon platform={p} size="sm" />
@@ -736,27 +680,31 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   </div>
 
                   {platforms.length > 0 ? (
-                    <div className="flex flex-col items-center">
-                      <PostPreview
-                        content={content}
-                        mediaUrl={currentMediaUrl}
-                        platform={previewPlatform}
-                        accountName={previewAccount?.account_name || undefined}
-                        accountUsername={previewAccount?.username || undefined}
-                        accountAvatarUrl={previewAccount?.avatar_url || undefined}
-                      />
+                    <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
+                      <div className="w-full shadow-2xl rounded-2xl overflow-hidden border border-border/50">
+                        <PostPreview
+                          content={content}
+                          mediaUrl={currentMediaUrl}
+                          platform={previewPlatform}
+                          accountName={previewAccount?.account_name || undefined}
+                          accountUsername={previewAccount?.username || undefined}
+                          accountAvatarUrl={previewAccount?.avatar_url || undefined}
+                        />
+                      </div>
                       {!isIndividualMode && mediaUrls.length > 1 && multiImageMode === 'carousel' && (
-                        <div className="flex gap-1.5 overflow-x-auto py-3 w-full max-w-[320px] scrollbar-hide">
+                        <div className="flex gap-2 overflow-x-auto py-4 w-full scrollbar-hide">
                           {mediaUrls.map((url, i) => (
-                            <img key={i} src={url} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0 border border-border shadow-sm" />
+                            <img key={i} src={url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0 border-2 border-background shadow-md" />
                           ))}
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="border-2 border-dashed border-border rounded-2xl p-12 text-center bg-background/50">
-                      <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground/20 mb-4" />
-                      <p className="text-sm text-muted-foreground">Selecione um canal para ver o preview</p>
+                    <div className="aspect-[4/5] w-full border-2 border-dashed border-border rounded-3xl flex flex-col items-center justify-center bg-background/50 p-12 text-center">
+                      <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mb-4">
+                        <ImageIcon className="h-10 w-10 text-muted-foreground/20" />
+                      </div>
+                      <p className="text-sm text-muted-foreground font-medium">Selecione um canal para ver como seu post ficará na rede social</p>
                     </div>
                   )}
                 </div>
