@@ -38,6 +38,13 @@ interface Placement {
   format: ContentType;
 }
 
+interface ScheduleEntry {
+  id: string;
+  date: string;
+  time: string;
+  placements: Placement[];
+}
+
 interface PostModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -54,14 +61,11 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const { accounts } = useSocialAccounts(post?.client_id || clientId);
   const [content, setContent] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  const [selectedPlacements, setSelectedPlacements] = useState<Placement[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [hashtags, setHashtags] = useState('');
   const [previewPlatform, setPreviewPlatform] = useState<SocialPlatform>('instagram');
   const [uploading, setUploading] = useState(false);
   const [showAICaptionModal, setShowAICaptionModal] = useState(false);
-  const [suggestingTimes, setSuggestingTimes] = useState(false);
-  const [scheduleDate, setScheduleDate] = useState(defaultDate || format(new Date(), 'yyyy-MM-dd'));
-  const [scheduleTime, setScheduleTime] = useState(getDefaultTime());
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
@@ -76,7 +80,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   }, [mediaUrls]);
 
   const checkCompatibility = (platform: SocialPlatform, format: ContentType) => {
-    if (mediaUrls.length === 0) return false;
+    if (mediaUrls.length === 0) return true;
 
     switch (format) {
       case 'feed':
@@ -110,33 +114,71 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           initialPlacements.push({ accountId: acc.id, format: ct });
         }
       });
-      setSelectedPlacements(initialPlacements);
-      
+
+      let date = defaultDate || format(new Date(), 'yyyy-MM-dd');
+      let time = getDefaultTime();
+
       if (post.scheduled_at) {
         const dt = new Date(post.scheduled_at);
-        setScheduleDate(format(dt, 'yyyy-MM-dd'));
-        setScheduleTime(format(dt, 'HH:mm'));
+        date = format(dt, 'yyyy-MM-dd');
+        time = format(dt, 'HH:mm');
       }
+
+      setSchedules([{
+        id: crypto.randomUUID(),
+        date,
+        time,
+        placements: initialPlacements
+      }]);
+      
       setPreviewPlatform(postPlatforms[0] as SocialPlatform || 'instagram');
     } else {
       setContent('');
       setMediaUrls([]);
       setHashtags('');
-      setSelectedPlacements([]);
-      setScheduleDate(defaultDate || format(new Date(), 'yyyy-MM-dd'));
-      setScheduleTime(getDefaultTime());
+      setSchedules([{
+        id: crypto.randomUUID(),
+        date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+        time: getDefaultTime(),
+        placements: []
+      }]);
     }
   }, [post, open, defaultDate, connectedAccounts.length]);
 
-  const togglePlacement = (accountId: string, format: ContentType) => {
+  const addSchedule = () => {
+    setSchedules(prev => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+        time: getDefaultTime(),
+        placements: []
+      }
+    ]);
+  };
+
+  const removeSchedule = (id: string) => {
+    if (schedules.length <= 1) return;
+    setSchedules(prev => prev.filter(s => s.id !== id));
+  };
+
+  const updateSchedule = (id: string, updates: Partial<ScheduleEntry>) => {
+    setSchedules(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
+
+  const togglePlacementInSchedule = (scheduleId: string, accountId: string, format: ContentType) => {
     if (isPublished) return;
     
-    const isSelected = selectedPlacements.some(p => p.accountId === accountId && p.format === format);
-    if (isSelected) {
-      setSelectedPlacements(prev => prev.filter(p => !(p.accountId === accountId && p.format === format)));
-    } else {
-      setSelectedPlacements(prev => [...prev, { accountId, format }]);
-    }
+    setSchedules(prev => prev.map(s => {
+      if (s.id !== scheduleId) return s;
+      
+      const isSelected = s.placements.some(p => p.accountId === accountId && p.format === format);
+      const newPlacements = isSelected
+        ? s.placements.filter(p => !(p.accountId === accountId && p.format === format))
+        : [...s.placements, { accountId, format }];
+        
+      return { ...s, placements: newPlacements };
+    }));
   };
 
   const handleFileUpload = async (files: FileList | null) => {
@@ -165,26 +207,33 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   };
 
   const handleSaveAction = (status: string) => {
-    if (selectedPlacements.length === 0) {
-      toast.error('Selecione ao menos um canal e formato.');
+    const allPlacements = schedules.flatMap(s => s.placements);
+    if (allPlacements.length === 0) {
+      toast.error('Selecione ao menos um canal e formato em algum agendamento.');
       return;
     }
 
-    selectedPlacements.forEach(placement => {
-      const account = connectedAccounts.find(a => a.id === placement.accountId);
-      if (!account) return;
+    let isFirst = true;
+    schedules.forEach(schedule => {
+      schedule.placements.forEach(placement => {
+        const account = connectedAccounts.find(a => a.id === placement.accountId);
+        if (!account) return;
 
-      const postData = {
-        content,
-        media_urls: mediaUrls,
-        platforms: [account.platform as SocialPlatform],
-        content_type: placement.format,
-        hashtags: hashtags ? hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
-        scheduled_at: `${scheduleDate}T${scheduleTime}:00`,
-        status,
-        client_id: post?.client_id || clientId,
-      };
-      onSave(postData);
+        const postData = {
+          content,
+          media_urls: mediaUrls,
+          platforms: [account.platform as SocialPlatform],
+          content_type: placement.format,
+          hashtags: hashtags ? hashtags.split(',').map(t => t.trim()).filter(Boolean) : [],
+          scheduled_at: `${schedule.date}T${schedule.time}:00`,
+          status,
+          client_id: post?.client_id || clientId,
+          _isNew: post ? !isFirst : true,
+        };
+        
+        onSave(postData);
+        isFirst = false;
+      });
     });
 
     onOpenChange(false);
@@ -199,12 +248,14 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   };
 
   const previewAccount = useMemo(() => {
-    const firstSelected = selectedPlacements[0];
+    const firstSelected = schedules[0]?.placements[0];
     if (firstSelected) {
       return connectedAccounts.find(a => a.id === firstSelected.accountId);
     }
     return connectedAccounts.find(a => a.platform === previewPlatform);
-  }, [selectedPlacements, previewPlatform, connectedAccounts]);
+  }, [schedules, previewPlatform, connectedAccounts]);
+
+  const hasAnyPlacement = useMemo(() => schedules.some(s => s.placements.length > 0), [schedules]);
 
   return (
     <>
@@ -217,8 +268,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="grid grid-cols-1 md:grid-cols-[360px_1fr] gap-0">
-              {/* Left column - Form (Narrower) */}
+            <div className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-0">
+              {/* Left column - Form */}
               <div className="p-6 space-y-6 border-r border-border bg-muted/5">
                 
                 {/* Step 1: Media */}
@@ -253,70 +304,117 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                 <Separator />
 
-                {/* Step 2: Select channels and formats */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
-                    Canais e Formatos
-                  </Label>
-                  
-                  <div className="space-y-4">
-                    {connectedAccounts.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">Nenhum canal conectado.</p>
-                    ) : (
-                      connectedAccounts.map(account => {
-                        const p = account.platform as SocialPlatform;
-                        const availableFormats: ContentType[] = PLATFORM_CONTENT_TYPES[p] || ['feed'];
-                        
-                        return (
-                          <div key={account.id} className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{account.account_name}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {availableFormats.map(fmt => {
-                                const isCompatible = checkCompatibility(p, fmt);
-                                const isSelected = selectedPlacements.some(sp => sp.accountId === account.id && sp.format === fmt);
-                                
-                                return (
-                                  <Tooltip key={fmt}>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        type="button"
-                                        disabled={!isCompatible || isPublished}
-                                        onClick={() => togglePlacement(account.id, fmt)}
-                                        className={cn(
-                                          "relative p-2 rounded-full border-2 transition-all",
-                                          isSelected 
-                                            ? "border-primary bg-primary/10 scale-110" 
-                                            : "border-transparent bg-muted/50 opacity-40",
-                                          !isCompatible && "opacity-10 cursor-not-allowed grayscale",
-                                          isCompatible && !isSelected && "hover:opacity-100 hover:border-border"
-                                        )}
-                                      >
-                                        <div className="relative">
-                                          <PlatformIcon platform={p} size="sm" />
-                                          <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 border border-border">
-                                            {fmt === 'feed' && <Image className="h-2 w-2 text-primary" />}
-                                            {fmt === 'stories' && <CircleDashed className="h-2 w-2 text-primary" />}
-                                            {fmt === 'reels' && <Film className="h-2 w-2 text-primary" />}
-                                            {fmt === 'carousel' && <Layers className="h-2 w-2 text-primary" />}
-                                            {fmt === 'video' && <Film className="h-2 w-2 text-primary" />}
-                                          </div>
-                                        </div>
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-[10px]">
-                                      {CONTENT_TYPE_CONFIG[fmt]?.label} {!isCompatible && '(Incompatível com a mídia)'}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })
+                {/* Step 2: Schedules */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold flex items-center gap-2">
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
+                      Agendamentos
+                    </Label>
+                    {!isPublished && (
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] gap-1" onClick={addSchedule}>
+                        <Plus className="h-3 w-3" /> Adicionar
+                      </Button>
                     )}
+                  </div>
+
+                  <div className="space-y-6">
+                    {schedules.map((schedule, sIdx) => (
+                      <div key={schedule.id} className="relative p-4 rounded-lg border bg-background/50 space-y-4">
+                        {schedules.length > 1 && !isPublished && (
+                          <button
+                            onClick={() => removeSchedule(schedule.id)}
+                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-white flex items-center justify-center shadow-sm hover:bg-destructive/90 transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="relative">
+                            <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                            <Input 
+                              type="date" 
+                              value={schedule.date} 
+                              onChange={e => updateSchedule(schedule.id, { date: e.target.value })} 
+                              className="h-8 pl-7 text-[11px]" 
+                              disabled={isPublished} 
+                            />
+                          </div>
+                          <div className="relative">
+                            <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                            <Input 
+                              type="time" 
+                              value={schedule.time} 
+                              onChange={e => updateSchedule(schedule.id, { time: e.target.value })} 
+                              className="h-8 pl-7 text-[11px]" 
+                              disabled={isPublished} 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          {connectedAccounts.length === 0 ? (
+                            <p className="text-[10px] text-muted-foreground">Nenhum canal conectado.</p>
+                          ) : (
+                            connectedAccounts.map(account => {
+                              const p = account.platform as SocialPlatform;
+                              const availableFormats: ContentType[] = PLATFORM_CONTENT_TYPES[p] || ['feed'];
+                              
+                              // Filter formats based on compatibility
+                              const compatibleFormats = availableFormats.filter(fmt => checkCompatibility(p, fmt));
+                              
+                              if (compatibleFormats.length === 0) return null;
+
+                              return (
+                                <div key={account.id} className="space-y-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{account.account_name}</span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {compatibleFormats.map(fmt => {
+                                      const isSelected = schedule.placements.some(sp => sp.accountId === account.id && sp.format === fmt);
+                                      
+                                      return (
+                                        <Tooltip key={fmt}>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              type="button"
+                                              disabled={isPublished}
+                                              onClick={() => togglePlacementInSchedule(schedule.id, account.id, fmt)}
+                                              className={cn(
+                                                "relative p-1.5 rounded-full border-2 transition-all",
+                                                isSelected 
+                                                  ? "border-primary bg-primary/10 scale-105" 
+                                                  : "border-transparent bg-muted/50 opacity-40 hover:opacity-100 hover:border-border"
+                                              )}
+                                            >
+                                              <div className="relative">
+                                                <PlatformIcon platform={p} size="xs" />
+                                                <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 border border-border">
+                                                  {fmt === 'feed' && <Image className="h-2 w-2 text-primary" />}
+                                                  {fmt === 'stories' && <CircleDashed className="h-2 w-2 text-primary" />}
+                                                  {fmt === 'reels' && <Film className="h-2 w-2 text-primary" />}
+                                                  {fmt === 'carousel' && <Layers className="h-2 w-2 text-primary" />}
+                                                  {fmt === 'video' && <Film className="h-2 w-2 text-primary" />}
+                                                </div>
+                                              </div>
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="bottom" className="text-[10px]">
+                                            {CONTENT_TYPE_CONFIG[fmt]?.label}
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -341,35 +439,15 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                     <Input value={hashtags} onChange={e => setHashtags(e.target.value)} placeholder="hashtags..." className="h-7 text-[11px]" disabled={isPublished} />
                   </div>
                 </div>
-
-                <Separator />
-
-                {/* Step 4: Schedule */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
-                    Agendamento
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="relative">
-                      <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                      <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="h-8 pl-7 text-[11px]" disabled={isPublished} />
-                    </div>
-                    <div className="relative">
-                      <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                      <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="h-8 pl-7 text-[11px]" disabled={isPublished} />
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              {/* Right column - Preview (Dominant) */}
+              {/* Right column - Preview */}
               <div className="bg-muted/10 p-8 flex flex-col items-center overflow-y-auto">
                 <div className="w-full max-w-[400px] space-y-6">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Visualização</Label>
                     <div className="flex gap-1.5">
-                      {Array.from(new Set(selectedPlacements.map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform))).map(p => (
+                      {Array.from(new Set(schedules.flatMap(s => s.placements).map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform))).map(p => (
                         <button key={p} onClick={() => setPreviewPlatform(p as SocialPlatform)} className={cn("p-1.5 rounded-lg transition-all", previewPlatform === p ? "bg-primary/10 ring-1 ring-primary/30" : "opacity-40")}>
                           <PlatformIcon platform={p as SocialPlatform} size="sm" />
                         </button>
@@ -412,13 +490,13 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               </Button>
             ) : (
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={selectedPlacements.length === 0} className="w-full sm:w-auto">
+                <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={!hasAnyPlacement} className="w-full sm:w-auto">
                   Salvar Rascunho
                 </Button>
-                <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={selectedPlacements.length === 0} className="gap-2 w-full sm:w-auto">
+                <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={!hasAnyPlacement} className="gap-2 w-full sm:w-auto">
                   <Calendar className="h-4 w-4" /> Agendar
                 </Button>
-                <Button onClick={() => handleSaveAction('published')} disabled={selectedPlacements.length === 0} className="gap-2 w-full sm:w-auto shadow-lg shadow-primary/20">
+                <Button onClick={() => handleSaveAction('published')} disabled={!hasAnyPlacement} className="gap-2 w-full sm:w-auto shadow-lg shadow-primary/20">
                   <Zap className="h-4 w-4" /> Publicar Agora
                 </Button>
               </div>
@@ -430,8 +508,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       <AICaptionModal
         open={showAICaptionModal}
         onOpenChange={setShowAICaptionModal}
-        platforms={Array.from(new Set(selectedPlacements.map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform as SocialPlatform)))}
-        contentType={selectedPlacements[0]?.format || 'feed'}
+        platforms={Array.from(new Set(schedules.flatMap(s => s.placements).map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform as SocialPlatform)))}
+        contentType={schedules[0]?.placements[0]?.format || 'feed'}
         mediaUrls={mediaUrls}
         onCaptionGenerated={handleAICaptionGenerated}
       />
