@@ -20,6 +20,17 @@ import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Spa
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
+const PLATFORM_CONTENT_TYPES: Record<SocialPlatform, ContentType[]> = {
+  instagram: ['feed', 'stories', 'reels', 'carousel'],
+  facebook: ['feed', 'stories', 'reels', 'carousel', 'video'],
+  linkedin: ['feed', 'carousel', 'video', 'text'],
+  tiktok: ['video', 'reels'],
+  twitter: ['feed', 'text', 'carousel'],
+  youtube: ['video', 'reels'],
+  pinterest: ['feed', 'carousel', 'video'],
+  threads: ['feed', 'text', 'carousel'],
+};
+
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
 interface Placement {
@@ -69,9 +80,9 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
     switch (format) {
       case 'feed':
-        return true; // Feed aceita quase tudo
+        return true;
       case 'stories':
-        return mediaStats.count === 1; // Stories via API geralmente 1 por vez
+        return mediaStats.count === 1;
       case 'reels':
         return mediaStats.hasVideo && mediaStats.count === 1;
       case 'carousel':
@@ -89,7 +100,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       setMediaUrls(post.media_urls || []);
       setHashtags(post.hashtags?.join(', ') || '');
       
-      // Map existing post to placements
       const postPlatforms = post.platforms || [];
       const ct = (post.content_type as ContentType) || 'feed';
       const initialPlacements: Placement[] = [];
@@ -160,7 +170,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       return;
     }
 
-    // Se houver múltiplos formatos, criamos posts separados
     selectedPlacements.forEach(placement => {
       const account = connectedAccounts.find(a => a.id === placement.accountId);
       if (!account) return;
@@ -208,11 +217,11 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-0">
-              {/* Left column - Form */}
+            <div className="grid grid-cols-1 md:grid-cols-[360px_1fr] gap-0">
+              {/* Left column - Form (Narrower) */}
               <div className="p-6 space-y-6 border-r border-border bg-muted/5">
                 
-                {/* Step 1: Media First (to enable formats) */}
+                {/* Step 1: Media */}
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold flex items-center gap-2">
                     <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">1</span>
@@ -354,9 +363,9 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                 </div>
               </div>
 
-              {/* Right column - Preview */}
+              {/* Right column - Preview (Dominant) */}
               <div className="bg-muted/10 p-8 flex flex-col items-center overflow-y-auto">
-                <div className="w-full max-w-[360px] space-y-6">
+                <div className="w-full max-w-[400px] space-y-6">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Visualização</Label>
                     <div className="flex gap-1.5">
