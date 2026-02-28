@@ -20,7 +20,6 @@ import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Spa
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-// Which content types each platform supports
 const PLATFORM_CONTENT_TYPES: Record<SocialPlatform, ContentType[]> = {
   instagram: ['feed', 'stories', 'reels', 'carousel'],
   facebook: ['feed', 'stories', 'reels', 'carousel', 'video'],
@@ -62,7 +61,6 @@ interface PostModalProps {
 }
 
 export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublish, onDuplicate, defaultDate, isPublished }: PostModalProps) {
-  // Use the passed clientId to filter accounts
   const { accounts } = useSocialAccounts(post?.client_id || clientId);
   const [content, setContent] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
@@ -79,13 +77,11 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Individual post pagination
   const [currentPostIndex, setCurrentPostIndex] = useState(0);
   const [individualConfigs, setIndividualConfigs] = useState<IndividualPostConfig[]>([]);
 
   const connectedAccounts = accounts.filter(a => a.is_connected);
 
-  // Derive platforms from selected account IDs
   const platforms: SocialPlatform[] = Array.from(
     new Set(
       selectedAccountIds
@@ -97,7 +93,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const isIndividualMode = multiImageMode === 'individual' && mediaUrls.length > 1;
   const totalIndividualPosts = isIndividualMode ? mediaUrls.length : 1;
 
-  // Get account info for preview
   const getAccountForPlatform = (platform: SocialPlatform) => {
     return connectedAccounts.find(a => a.platform === platform);
   };
@@ -106,7 +101,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     if (post) {
       setContent(post.content);
       setMediaUrls(post.media_urls || []);
-      // Match accounts by platform from the post
       const postPlatforms = post.platforms || ['instagram'];
       const matchedIds = connectedAccounts
         .filter(a => postPlatforms.includes(a.platform as SocialPlatform))
@@ -140,7 +134,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     }
   }, [post, open, defaultDate, connectedAccounts.length]);
 
-  // Initialize individual configs when switching to individual mode
   useEffect(() => {
     if (isIndividualMode && individualConfigs.length !== mediaUrls.length) {
       setIndividualConfigs(mediaUrls.map((_, i) =>
@@ -155,7 +148,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     }
   }, [isIndividualMode, mediaUrls.length]);
 
-  // Sync current individual config to/from main state
   useEffect(() => {
     if (isIndividualMode && individualConfigs[currentPostIndex]) {
       const cfg = individualConfigs[currentPostIndex];
@@ -171,7 +163,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     }
   }, [currentPostIndex, isIndividualMode]);
 
-  // Save current config when editing in individual mode
   const saveCurrentIndividualConfig = () => {
     if (!isIndividualMode) return;
     setIndividualConfigs(prev => prev.map((cfg, i) =>
@@ -354,7 +345,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     }
   };
 
-  // Navigate individual posts
   const goToPost = (idx: number) => {
     saveCurrentIndividualConfig();
     setCurrentPostIndex(idx);
@@ -363,402 +353,392 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const minCharLimit = Math.min(...platforms.map(p => PLATFORM_CONFIG[p]?.charLimit || 2200));
   const isOverLimit = content.length > minCharLimit;
 
-  // Get available content types for slot platforms
   const getSlotContentTypes = (slotPlatforms: SocialPlatform[]): ContentType[] => {
     if (slotPlatforms.length === 0) return ['feed'];
     return Array.from(new Set(slotPlatforms.flatMap(p => PLATFORM_CONTENT_TYPES[p] || ['feed'])));
   };
 
-  // Current media for preview
   const currentMediaUrl = isIndividualMode ? mediaUrls[currentPostIndex] : mediaUrls[0];
   const previewAccount = getAccountForPlatform(previewPlatform);
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden w-[calc(100vw-2rem)] sm:w-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col p-0 w-[calc(100vw-1rem)] sm:w-auto">
+          <DialogHeader className="px-6 py-4 border-b shrink-0">
             <DialogTitle className="text-lg">
               {isPublished ? 'Visualizar Post (Publicado)' : post ? 'Editar Post' : 'Novo Post'}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
-            {/* Left column - Form */}
-            <div className="space-y-5">
-              {/* Step 1: Select channels by account ID */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">1</span>
-                  Selecione os canais
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {connectedAccounts.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Nenhum canal conectado para este cliente. Conecte uma conta primeiro.</p>
-                  ) : (
-                    connectedAccounts.map(account => {
-                      const p = account.platform as SocialPlatform;
-                      const isSelected = selectedAccountIds.includes(account.id);
-                      return (
-                        <button
-                          key={account.id}
-                          type="button"
-                          onClick={() => toggleAccount(account.id)}
-                          disabled={isPublished}
-                          className={cn(
-                            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all",
-                            isSelected
-                              ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                              : "border-border hover:border-primary/50",
-                            isPublished && "opacity-60 cursor-not-allowed"
-                          )}
-                        >
-                          {account.avatar_url ? (
-                            <img src={account.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
-                          ) : (
-                            <PlatformIcon platform={p} size="sm" />
-                          )}
-                          <span className="truncate max-w-[120px]">{account.account_name || PLATFORM_CONFIG[p].label}</span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Step 2: Content text + AI */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_340px] gap-0">
+              {/* Left column - Form */}
+              <div className="p-6 space-y-6 border-r border-border">
+                {/* Step 1: Select channels */}
+                <div className="space-y-3">
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
-                    Texto do post
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">1</span>
+                    Selecione os canais
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {connectedAccounts.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Nenhum canal conectado para este cliente. Conecte uma conta primeiro.</p>
+                    ) : (
+                      connectedAccounts.map(account => {
+                        const p = account.platform as SocialPlatform;
+                        const isSelected = selectedAccountIds.includes(account.id);
+                        return (
+                          <button
+                            key={account.id}
+                            type="button"
+                            onClick={() => toggleAccount(account.id)}
+                            disabled={isPublished}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all",
+                              isSelected
+                                ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                                : "border-border hover:border-primary/50",
+                              isPublished && "opacity-60 cursor-not-allowed"
+                            )}
+                          >
+                            {account.avatar_url ? (
+                              <img src={account.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                            ) : (
+                              <PlatformIcon platform={p} size="sm" />
+                            )}
+                            <span className="truncate max-w-[120px]">{account.account_name || PLATFORM_CONFIG[p].label}</span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Step 2: Content text + AI */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold flex items-center gap-2">
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">2</span>
+                      Texto do post
+                    </Label>
+                    {!isPublished && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 text-xs h-7"
+                        onClick={() => setShowAICaptionModal(true)}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Legenda com IA
+                      </Button>
+                    )}
+                  </div>
+                  <Textarea 
+                    value={content} 
+                    onChange={e => setContent(e.target.value)} 
+                    placeholder="Digite o seu texto..." 
+                    className="min-h-[160px] resize-none" 
+                    disabled={isPublished} 
+                  />
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <Input 
+                        value={hashtags} 
+                        onChange={e => setHashtags(e.target.value)} 
+                        placeholder="hashtags separadas por vírgula" 
+                        className="h-8 text-xs flex-1 sm:w-[240px]" 
+                        disabled={isPublished} 
+                      />
+                    </div>
+                    <p className={cn("text-xs shrink-0", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
+                      {content.length}/{minCharLimit}
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Step 3: Media */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
+                    Mídias
                   </Label>
                   {!isPublished && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 text-xs h-7"
-                      onClick={() => setShowAICaptionModal(true)}
-                    >
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Legenda com IA
+                    <Button variant="outline" className="h-10 gap-2 w-full border-dashed" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      Enviar imagens ou vídeos
                     </Button>
                   )}
-                </div>
-                <Textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Digite o seu texto..." className="min-h-[140px]" disabled={isPublished} />
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                    <Input value={hashtags} onChange={e => setHashtags(e.target.value)} placeholder="hashtags separadas por vírgula" className="h-7 text-xs w-full sm:w-[200px]" disabled={isPublished} />
-                  </div>
-                  <p className={cn("text-xs shrink-0", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
-                    {content.length}/{minCharLimit}
-                  </p>
-                </div>
-              </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={e => handleFileUpload(e.target.files)}
+                  />
 
-              <Separator />
+                  {mediaUrls.length > 0 && (
+                    <div className="space-y-4">
+                      {mediaUrls.length > 1 && !isPublished && (
+                        <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
+                          <span className="text-[11px] font-medium text-muted-foreground mr-2">Modo:</span>
+                          <button
+                            type="button"
+                            onClick={() => { setMultiImageMode('carousel'); setCurrentPostIndex(0); }}
+                            className={cn(
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
+                              multiImageMode === 'carousel'
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "bg-background border border-border hover:border-primary/50"
+                            )}
+                          >
+                            <Layers className="h-3 w-3" />
+                            Carrossel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setMultiImageMode('individual')}
+                            className={cn(
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
+                              multiImageMode === 'individual'
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "bg-background border border-border hover:border-primary/50"
+                            )}
+                          >
+                            <LayoutGrid className="h-3 w-3" />
+                            Individual ({mediaUrls.length})
+                          </button>
+                        </div>
+                      )}
 
-              {/* Step 3: Media */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
-                  Mídias
-                </Label>
-                {!isPublished && (
-                  <Button variant="outline" className="h-9 gap-2 w-full" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    Enviar imagens ou vídeos
-                  </Button>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  multiple
-                  className="hidden"
-                  onChange={e => handleFileUpload(e.target.files)}
-                />
+                      {isIndividualMode && !isPublished && (
+                        <div className="flex items-center justify-center gap-3 p-2 rounded-lg border border-primary/20 bg-primary/5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            disabled={currentPostIndex === 0}
+                            onClick={() => goToPost(currentPostIndex - 1)}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span className="text-xs font-bold">
+                            POST {currentPostIndex + 1} DE {totalIndividualPosts}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            disabled={currentPostIndex >= totalIndividualPosts - 1}
+                            onClick={() => goToPost(currentPostIndex + 1)}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
 
-                {mediaUrls.length === 0 && !isPublished && (
-                  <div
-                    className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-                    <p className="text-sm text-muted-foreground font-medium">Imagens, vídeos ou documentos</p>
-                    <p className="text-xs text-muted-foreground mt-1">Envie arquivos clicando aqui ou arrastando</p>
-                  </div>
-                )}
-
-                {mediaUrls.length > 0 && (
-                  <div className="space-y-3">
-                    {mediaUrls.length > 1 && !isPublished && (
-                      <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/50">
-                        <span className="text-xs font-medium text-muted-foreground mr-2">Modo de publicação:</span>
-                        <button
-                          type="button"
-                          onClick={() => { setMultiImageMode('carousel'); setCurrentPostIndex(0); }}
-                          className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
-                            multiImageMode === 'carousel'
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-background border border-border hover:border-primary/50"
-                          )}
-                        >
-                          <Layers className="h-3.5 w-3.5" />
-                          Carrossel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setMultiImageMode('individual')}
-                          className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
-                            multiImageMode === 'individual'
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-background border border-border hover:border-primary/50"
-                          )}
-                        >
-                          <LayoutGrid className="h-3.5 w-3.5" />
-                          Individual ({mediaUrls.length} posts)
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Individual mode pagination */}
-                    {isIndividualMode && !isPublished && (
-                      <div className="flex items-center justify-center gap-3 p-2 rounded-lg border border-primary/20 bg-primary/5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          disabled={currentPostIndex === 0}
-                          onClick={() => goToPost(currentPostIndex - 1)}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium">
-                          {currentPostIndex + 1} / {totalIndividualPosts}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          disabled={currentPostIndex >= totalIndividualPosts - 1}
-                          onClick={() => goToPost(currentPostIndex + 1)}
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                        <span className="text-xs text-muted-foreground ml-2">
-                          Configure cada post individualmente
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-2">
-                      {isIndividualMode ? (
-                        mediaUrls.map((url, i) => (
+                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                        {mediaUrls.map((url, i) => (
                           <div
                             key={i}
                             className={cn(
-                              "relative w-20 h-20 rounded-lg overflow-hidden group cursor-pointer border-2 transition-all",
-                              i === currentPostIndex ? "border-primary ring-2 ring-primary/30" : "border-transparent opacity-60 hover:opacity-80"
+                              "relative aspect-square rounded-lg overflow-hidden group cursor-pointer border-2 transition-all",
+                              isIndividualMode && i === currentPostIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent opacity-80 hover:opacity-100"
                             )}
-                            onClick={() => goToPost(i)}
+                            onClick={() => isIndividualMode && goToPost(i)}
                           >
                             <img src={url} alt="" className="w-full h-full object-cover" />
-                            <span className="absolute bottom-0.5 left-0.5 text-[9px] font-bold bg-foreground/70 text-background px-1 py-0.5 rounded">
-                              {i + 1}
-                            </span>
-                            {!isPublished && (
-                              <button onClick={(e) => { e.stopPropagation(); removeMedia(i); }} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity">
-                                <X className="h-2.5 w-2.5" />
-                              </button>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        mediaUrls.map((url, i) => (
-                          <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden group">
-                            <img src={url} alt="" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors" />
-                            {multiImageMode === 'carousel' && mediaUrls.length > 1 && (
-                              <span className="absolute bottom-1 left-1 text-[10px] font-bold bg-foreground/70 text-background px-1.5 py-0.5 rounded">
-                                {i + 1}/{mediaUrls.length}
+                            {multiImageMode === 'carousel' && (
+                              <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-black/60 text-white px-1 py-0.5 rounded">
+                                {i + 1}
                               </span>
                             )}
                             {!isPublished && (
-                              <button onClick={() => removeMedia(i)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); removeMedia(i); }} 
+                                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
                                 <X className="h-3 w-3" />
                               </button>
                             )}
                           </div>
-                        ))
-                      )}
+                        ))}
+                      </div>
                     </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Step 4: Schedule */}
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <Label className="text-sm font-semibold flex items-center gap-2">
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
+                      Data e horário das publicações
+                    </Label>
+                    {!isPublished && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 text-[11px] h-7 border-primary/30 text-primary hover:bg-primary/5"
+                        onClick={handleSuggestBestTimes}
+                        disabled={suggestingTimes || platforms.length === 0}
+                      >
+                        {suggestingTimes ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        Melhores horários
+                        <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-primary/40 text-primary">IA</Badge>
+                      </Button>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <Separator />
+                  <div className="space-y-3">
+                    {scheduleSlots.map((slot, idx) => {
+                      const slotContentTypes = getSlotContentTypes(slot.platforms);
+                      return (
+                        <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-xl border border-border bg-muted/20">
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex -space-x-2">
+                              {platforms.map(p => {
+                                const isActive = slot.platforms.includes(p);
+                                return (
+                                  <button
+                                    key={p}
+                                    type="button"
+                                    onClick={() => !isPublished && toggleSlotPlatform(idx, p)}
+                                    disabled={isPublished}
+                                    className={cn(
+                                      "rounded-full border-2 border-background transition-all z-10",
+                                      isActive ? "opacity-100 scale-110" : "opacity-30 grayscale hover:grayscale-0"
+                                    )}
+                                  >
+                                    <PlatformIcon platform={p} size="sm" variant="circle" />
+                                  </button>
+                                );
+                              })}
+                            </div>
 
-              {/* Step 4: Schedule - with icon-based content type selector */}
-              <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                  <Label className="text-sm font-semibold flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">4</span>
-                    Data e horário das publicações
-                  </Label>
+                            {slotContentTypes.length > 1 && (
+                              <div className="flex items-center gap-1 ml-2 border-l border-border pl-2">
+                                {slotContentTypes.map(ct => (
+                                  <Tooltip key={ct}>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        type="button"
+                                        onClick={() => !isPublished && updateSlotContentType(idx, ct)}
+                                        disabled={isPublished}
+                                        className={cn(
+                                          "p-1.5 rounded-md transition-all",
+                                          slot.contentType === ct
+                                            ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                                            : "opacity-40 hover:opacity-80 hover:bg-muted"
+                                        )}
+                                      >
+                                        <ContentTypeIcon type={ct} className="!h-3.5 !w-3.5" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-[10px]">
+                                      {CONTENT_TYPE_CONFIG[ct]?.label || ct}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 w-full sm:flex-1">
+                            <div className="relative flex-1">
+                              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                              <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} min={format(new Date(), 'yyyy-MM-dd')} className="h-9 pl-8 text-xs" disabled={isPublished} />
+                            </div>
+                            <div className="relative flex-1">
+                              <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                              <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-9 pl-8 text-xs" disabled={isPublished} />
+                            </div>
+                            {scheduleSlots.length > 1 && !isPublished && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeSlot(idx)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
                   {!isPublished && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 text-xs h-7 border-primary/50 text-primary hover:bg-primary/10"
-                      onClick={handleSuggestBestTimes}
-                      disabled={suggestingTimes || platforms.length === 0}
-                    >
-                      {suggestingTimes ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                      <span className="hidden sm:inline">Melhores horários</span>
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/50 text-primary">
-                        IA
-                      </Badge>
+                    <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8 text-primary hover:bg-primary/5" onClick={addSlot}>
+                      <Plus className="h-3.5 w-3.5" /> Incluir mais dias e horários
                     </Button>
                   )}
                 </div>
-
-                <div className="space-y-2">
-                  {scheduleSlots.map((slot, idx) => {
-                    const slotContentTypes = getSlotContentTypes(slot.platforms);
-                    return (
-                      <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
-                        {/* Per-slot platform + format icons */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          {platforms.map(p => {
-                            const isActive = slot.platforms.includes(p);
-                            return (
-                              <button
-                                key={p}
-                                type="button"
-                                onClick={() => !isPublished && toggleSlotPlatform(idx, p)}
-                                disabled={isPublished}
-                                className={cn(
-                                  "rounded-full transition-all",
-                                  isActive
-                                    ? "opacity-100 ring-2 ring-primary/40"
-                                    : "opacity-30 hover:opacity-60"
-                                )}
-                              >
-                                <PlatformIcon platform={p} size="sm" variant="circle" />
-                              </button>
-                            );
-                          })}
-
-                          {/* Icon-based format selector */}
-                          {slotContentTypes.length > 1 && (
-                            <div className="flex items-center gap-0.5 ml-1 border-l border-border pl-1.5">
-                              {slotContentTypes.map(ct => (
-                                <Tooltip key={ct}>
-                                  <TooltipTrigger asChild>
-                                    <button
-                                      type="button"
-                                      onClick={() => !isPublished && updateSlotContentType(idx, ct)}
-                                      disabled={isPublished}
-                                      className={cn(
-                                        "p-1.5 rounded-md transition-all",
-                                        slot.contentType === ct
-                                          ? "bg-primary/15 ring-1 ring-primary/40"
-                                          : "opacity-40 hover:opacity-70 hover:bg-muted"
-                                      )}
-                                    >
-                                      <ContentTypeIcon type={ct} className="!h-3.5 !w-3.5" />
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-xs">
-                                    {CONTENT_TYPE_CONFIG[ct]?.label || ct}
-                                  </TooltipContent>
-                                </Tooltip>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 w-full sm:flex-1">
-                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                            <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <Input type="date" value={slot.date} onChange={e => updateSlot(idx, 'date', e.target.value)} min={format(new Date(), 'yyyy-MM-dd')} className="h-8 text-xs" disabled={isPublished} />
-                          </div>
-                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                            <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <Input type="time" value={slot.time} onChange={e => updateSlot(idx, 'time', e.target.value)} className="h-8 text-xs" disabled={isPublished} />
-                          </div>
-                          {scheduleSlots.length > 1 && !isPublished && (
-                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeSlot(idx)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {!isPublished && (
-                  <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-7 text-primary" onClick={addSlot}>
-                    <Plus className="h-3.5 w-3.5" /> Incluir mais dias e horários
-                  </Button>
-                )}
               </div>
-            </div>
 
-            {/* Right column - Preview */}
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold">Preview</Label>
-              {platforms.length > 0 ? (
-                <>
-                  <div className="flex gap-1 flex-wrap">
-                    {platforms.map(p => (
-                      <button key={p} onClick={() => setPreviewPlatform(p)} className={cn("p-1.5 rounded-lg transition-colors", previewPlatform === p ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-muted")}>
-                        <PlatformIcon platform={p} size="sm" />
-                      </button>
-                    ))}
-                  </div>
-                  <PostPreview
-                    content={content}
-                    mediaUrl={currentMediaUrl}
-                    platform={previewPlatform}
-                    accountName={previewAccount?.account_name || undefined}
-                    accountUsername={previewAccount?.username || undefined}
-                    accountAvatarUrl={previewAccount?.avatar_url || undefined}
-                  />
-                  {!isIndividualMode && mediaUrls.length > 1 && multiImageMode === 'carousel' && (
-                    <div className="flex gap-1 overflow-x-auto py-1">
-                      {mediaUrls.map((url, i) => (
-                        <img key={i} src={url} alt="" className="w-12 h-12 rounded object-cover shrink-0 border border-border" />
+              {/* Right column - Preview (Sticky on desktop) */}
+              <div className="bg-muted/10 p-6">
+                <div className="md:sticky md:top-0 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">Preview</Label>
+                    <div className="flex gap-1">
+                      {platforms.map(p => (
+                        <button 
+                          key={p} 
+                          onClick={() => setPreviewPlatform(p)} 
+                          className={cn(
+                            "p-1.5 rounded-lg transition-all", 
+                            previewPlatform === p ? "bg-primary/10 ring-1 ring-primary/30 scale-110" : "opacity-50 hover:opacity-100"
+                          )}
+                        >
+                          <PlatformIcon platform={p} size="sm" />
+                        </button>
                       ))}
                     </div>
+                  </div>
+
+                  {platforms.length > 0 ? (
+                    <div className="flex flex-col items-center">
+                      <PostPreview
+                        content={content}
+                        mediaUrl={currentMediaUrl}
+                        platform={previewPlatform}
+                        accountName={previewAccount?.account_name || undefined}
+                        accountUsername={previewAccount?.username || undefined}
+                        accountAvatarUrl={previewAccount?.avatar_url || undefined}
+                      />
+                      {!isIndividualMode && mediaUrls.length > 1 && multiImageMode === 'carousel' && (
+                        <div className="flex gap-1.5 overflow-x-auto py-3 w-full max-w-[320px] scrollbar-hide">
+                          {mediaUrls.map((url, i) => (
+                            <img key={i} src={url} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0 border border-border shadow-sm" />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-border rounded-2xl p-12 text-center bg-background/50">
+                      <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground/20 mb-4" />
+                      <p className="text-sm text-muted-foreground">Selecione um canal para ver o preview</p>
+                    </div>
                   )}
-                </>
-              ) : (
-                <div className="border border-border rounded-xl p-8 text-center">
-                  <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                  <p className="text-sm text-muted-foreground">Aguardando conteúdo.</p>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
-          <Separator />
-
-          <DialogFooter className="flex flex-col sm:flex-row justify-between sm:justify-between gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+          <DialogFooter className="p-4 border-t bg-background shrink-0 flex flex-col sm:flex-row justify-between gap-3">
+            <Button variant="ghost" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
               {isPublished ? 'Fechar' : 'Cancelar'}
             </Button>
+            
             {isPublished ? (
               <Button
                 variant="secondary"
-                className="gap-2 w-full sm:w-auto"
+                className="gap-2 w-full sm:w-auto shadow-sm"
                 onClick={() => {
                   if (post && onDuplicate) {
                     onDuplicate(post);
@@ -770,16 +750,16 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                 Duplicar para edição
               </Button>
             ) : (
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button variant="secondary" onClick={handleSaveDraft} disabled={platforms.length === 0} className="w-full sm:w-auto">
-                  Rascunho
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button variant="outline" onClick={handleSaveDraft} disabled={platforms.length === 0} className="w-full sm:w-auto">
+                  Salvar Rascunho
                 </Button>
-                <Button variant="outline" onClick={handleSchedule} disabled={platforms.length === 0} className="gap-2 w-full sm:w-auto">
+                <Button variant="secondary" onClick={handleSchedule} disabled={platforms.length === 0} className="gap-2 w-full sm:w-auto">
                   <Calendar className="h-4 w-4" />
                   Agendar
                 </Button>
                 {connectedAccounts.length > 0 && (
-                  <Button onClick={handlePublishNow} disabled={platforms.length === 0} className="gap-2 w-full sm:w-auto">
+                  <Button onClick={handlePublishNow} disabled={platforms.length === 0} className="gap-2 w-full sm:w-auto shadow-lg shadow-primary/20">
                     <Zap className="h-4 w-4" />
                     Publicar Agora
                   </Button>
