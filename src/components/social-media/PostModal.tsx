@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { PostPreview } from './PostPreview';
 import { PlatformIcon } from './PlatformIcon';
 import { AICaptionModal } from './AICaptionModal';
