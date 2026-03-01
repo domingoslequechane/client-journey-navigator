@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle } from 'lucide-react';
@@ -46,9 +46,9 @@ export default function SocialMedia() {
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval, publishPost } = useSocialPosts();
-  const { accounts, syncAccounts, connectPlatform } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
-  const { unreadCount } = useSocialMessages(selectedClient !== 'all' ? selectedClient : undefined);
+  const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval, publishPost, syncPosts, refetch: refetchPosts } = useSocialPosts();
+  const { accounts, syncAccounts, connectPlatform, refetch: refetchAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
+  const { unreadCount, refetch: refetchMessages } = useSocialMessages(selectedClient !== 'all' ? selectedClient : undefined);
 
   const [connectGuardOpen, setConnectGuardOpen] = useState(false);
   const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);
@@ -59,6 +59,22 @@ export default function SocialMedia() {
 
   // Determine if editing post is published (read-only)
   const isEditingPublished = editingPost?.status === 'published';
+
+  // Sync posts on mount
+  useEffect(() => {
+    if (hasClientSelected) {
+      syncPosts.mutate();
+    }
+  }, [selectedClient]);
+
+  // Refresh data when tab changes
+  useEffect(() => {
+    if (hasClientSelected) {
+      refetchPosts();
+      refetchAccounts();
+      refetchMessages();
+    }
+  }, [activeTab, selectedClient]);
 
   // Filter posts by selected client globally
   const clientPosts = useMemo(() => {
@@ -169,6 +185,7 @@ export default function SocialMedia() {
   const handleSync = () => {
     const cId = selectedClient !== 'all' ? selectedClient : undefined;
     syncAccounts.mutate(cId);
+    syncPosts.mutate();
   };
 
   // Stats from client-filtered posts
@@ -201,9 +218,9 @@ export default function SocialMedia() {
             size="sm"
             className="gap-2 shrink-0"
             onClick={handleSync}
-            disabled={syncAccounts.isPending || !hasClientSelected}
+            disabled={syncAccounts.isPending || syncPosts.isPending || !hasClientSelected}
           >
-            <RefreshCw className={cn("h-4 w-4", syncAccounts.isPending && "animate-spin")} />
+            <RefreshCw className={cn("h-4 w-4", (syncAccounts.isPending || syncPosts.isPending) && "animate-spin")} />
             <span className="hidden sm:inline">Sincronizar</span>
           </Button>
           <Button

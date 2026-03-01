@@ -259,6 +259,24 @@ export function useSocialPosts(filters?: PostFilters) {
     },
   });
 
+  const syncPosts = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('social-sync-posts');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      if (data?.synced > 0) {
+        toast({ title: `${data.synced} post(s) atualizado(s)!` });
+      }
+    },
+    onError: (err: any) => {
+      console.error('Sync posts error:', err);
+    },
+  });
+
   return {
     posts: postsQuery.data || [],
     isLoading: postsQuery.isLoading,
@@ -267,6 +285,7 @@ export function useSocialPosts(filters?: PostFilters) {
     deletePost,
     sendForApproval,
     publishPost,
+    syncPosts,
     refetch: postsQuery.refetch,
   };
 }
