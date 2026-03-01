@@ -98,7 +98,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
     switch (format) {
       case 'feed':
-        return true;
+        // Se houver mais de uma mídia, o feed não é compatível (deve usar carrossel)
+        return currentPost.mediaUrls.length <= 1;
       case 'stories':
         // Permite múltiplas mídias para stories, pois vamos quebrar em posts individuais no salvamento
         return true;
