@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { format, addMinutes } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +17,7 @@ import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, CircleDashed, Film, Image } from 'lucide-react';
+import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, CircleDashed, Film, Image, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -78,6 +78,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const [pendingFiles, setPendingFiles] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [savingProgress, setSavingProgress] = useState({ current: 0, total: 0 });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
@@ -368,6 +369,18 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     updateCurrentPost({ mediaUrls: currentPost.mediaUrls.filter((_, i) => i !== index) });
   };
 
+  const saveWithRetry = async (data: any, maxAttempts = 3) => {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await onSave(data);
+      } catch (err: any) {
+        if (attempt === maxAttempts) throw err;
+        // Wait before retry (1s, 2s)
+        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+      }
+    }
+  };
+
   const handleSaveAction = async (status: string) => {
     let totalItems = 0;
     posts.forEach(p => {
@@ -445,7 +458,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                 };
 
                 try {
-                  await onSave(itemData);
+                  await saveWithRetry(itemData);
                 } catch (err: any) {
                   throw new Error(`Falha no Post ${pIdx + 1} (Story ${urlIdx + 1}): ${err.message || 'Erro desconhecido'}`);
                 }
@@ -465,7 +478,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               };
 
               try {
-                await onSave(itemData);
+                await saveWithRetry(itemData);
               } catch (err: any) {
                 throw new Error(`Falha no Post ${pIdx + 1} (${PLATFORM_CONFIG[account.platform as SocialPlatform].label}): ${err.message || 'Erro desconhecido'}`);
               }
@@ -474,12 +487,13 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           }
         }
       }
-      onOpenChange(false);
+      
+      setIsSaving(false);
+      setShowSuccessModal(true);
     } catch (err: any) {
       console.error('Error saving posts:', err);
-      toast.error(err.message || 'Ocorreu um erro ao salvar os posts.');
-    } finally {
       setIsSaving(false);
+      toast.error(err.message || 'Ocorreu um erro ao salvar os posts.');
     }
   };
 
@@ -874,6 +888,26 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               </div>
             )}
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-[400px]">
+          <div className="flex flex-col items-center justify-center py-6 text-center space-y-4">
+            <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="h-10 w-10 text-green-600" />
+            </div>
+            <div className="space-y-2">
+              <DialogTitle className="text-xl font-bold">Sucesso!</DialogTitle>
+              <DialogDescription className="text-base">
+                Todos os seus posts foram enviados e processados com sucesso pelo Late.dev.
+              </DialogDescription>
+            </div>
+            <Button onClick={() => { setShowSuccessModal(false); onOpenChange(false); }} className="w-full">
+              Entendido
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
