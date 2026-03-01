@@ -59,7 +59,7 @@ interface PostModalProps {
   onOpenChange: (open: boolean) => void;
   post?: SocialPostRow | null;
   clientId?: string | null;
-  onSave: (data: any) => void;
+  onSave: (data: any) => Promise<any>;
   onPublish?: (postId: string, publishNow: boolean) => void;
   onDuplicate?: (post: SocialPostRow) => void;
   defaultDate?: string;
@@ -76,6 +76,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const [showAICaptionModal, setShowAICaptionModal] = useState(false);
   const [showUploadChoice, setShowUploadChoice] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
@@ -366,84 +367,107 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     updateCurrentPost({ mediaUrls: currentPost.mediaUrls.filter((_, i) => i !== index) });
   };
 
-  const handleSaveAction = (status: string) => {
+  const handleSaveAction = async (status: string) => {
     let hasError = false;
     let isFirst = true;
 
-    posts.forEach((postData, pIdx) => {
-      const allPlacements = postData.schedules.flatMap(s => s.placements);
-      if (allPlacements.length === 0) {
-        toast.error(`Post ${pIdx + 1}: Selecione ao menos um canal.`);
-        hasError = true;
-        return;
-      }
+    setIsSaving(true);
 
-      // Extract hashtags
-      const hashtagRegex = /#(\w+)/g;
-      const extractedHashtags: string[] = [];
-      let match;
-      while ((match = hashtagRegex.exec(postData.content)) !== null) {
-        extractedHashtags.push(match[1]);
-      }
+    try {
+      for (let pIdx = 0; pIdx < posts.length; pIdx++) {
+        const postData = posts[pIdx];
+        const allPlacements = postData.schedules.flatMap(s => s.placements);
+        
+        if (allPlacements.length === 0) {
+          toast.error(`Post ${pIdx + 1}: Selecione ao menos um canal.`);
+          hasError = true;
+          continue;
+        }
 
-      postData.schedules.forEach(schedule => {
-        schedule.placements.forEach(placement => {
-          const account = connectedAccounts.find(a => a.id === placement.accountId);
-          if (!account) return;
+        // Extract hashtags
+        const hashtagRegex = /#(\w+)/g;
+        const extractedHashtags: string[] = [];
+        let match;
+        while ((match = hashtagRegex.exec(postData.content)) !== null) {
+          extractedHashtags.push(match[1]);
+        }
 
-          let scheduledAt: string;
-          if (status === 'published') {
-            scheduledAt = new Date().toISOString();
-          } else {
-            const [year, month, day] = schedule.date.split('-').map(Number);
-            const [hours, minutes] = schedule.time.split(':').map(Number);
-            const localDate = new Date(year, month - 1, day, hours, minutes);
-            scheduledAt = localDate.toISOString();
-          }
+        for (const schedule of postData.schedules) {
+          for (const placement of schedule.placements) {
+            const account = connectedAccounts.find(a => a.id === placement.accountId);
+            if (!account) continue;
 
-          // Lógica especial para Stories: Se houver mais de uma mídia, quebra em posts individuais
-          if (placement.format === 'stories' && postData.mediaUrls.length > 1) {
-            postData.mediaUrls.forEach((url, urlIdx) => {
-              // Adiciona um offset de 1 segundo para cada story para manter a ordem na fila
-              const offsetDate = new Date(new Date(scheduledAt).getTime() + (urlIdx * 1000));
-              
+            let scheduledAt: string;
+            if (status === 'published') {
+              scheduledAt = new Date().toISOString();
+            } else {
+              const [year, month, day] = schedule.date.split('-').map(Number);
+              const [hours, minutes] = schedule.time.split(':').map(Number);
+              const localDate = new Date(year, month - 1, day, hours, minutes);
+              scheduledAt = localDate.toISOString();
+            }
+
+            // Lógica especial para Stories: Se houver mais de uma mídia, quebra em posts individuais
+            if (placement.format === 'stories' && postData.mediaUrls.length > 1) {
+              for (let urlIdx = 0; urlIdx < postData.mediaUrls.length; urlIdx++) {
+                const url = postData.mediaUrls[urlIdx];
+                
+                // Atraso de 3 segundos entre requisições (exceto a primeira)
+                if (!isFirst) {
+                  await new Promise(resolve => setTimeout(resolve, 3000));
+                }
+
+                // Adiciona um offset de 1 segundo para cada story para manter a ordem na fila
+                const offsetDate = new Date(new Date(scheduledAt).getTime() + (urlIdx * 1000));
+                
+                const data = {
+                  content: postData.content,
+                  media_urls: [url],
+                  platforms: [account.platform as SocialPlatform],
+                  content_type: 'stories',
+                  hashtags: extractedHashtags,
+                  scheduled_at: offsetDate.toISOString(),
+                  status,
+                  client_id: post?.client_id || clientId,
+                  _isNew: post ? !isFirst : true,
+                };
+                
+                await onSave(data);
+                isFirst = false;
+              }
+            } else {
+              // Atraso de 3 segundos entre requisições (exceto a primeira)
+              if (!isFirst) {
+                await new Promise(resolve => setTimeout(resolve, 3000));
+              }
+
               const data = {
                 content: postData.content,
-                media_urls: [url], // Apenas uma mídia por post
+                media_urls: postData.mediaUrls,
                 platforms: [account.platform as SocialPlatform],
-                content_type: 'stories',
+                content_type: placement.format,
                 hashtags: extractedHashtags,
-                scheduled_at: offsetDate.toISOString(),
+                scheduled_at: scheduledAt,
                 status,
                 client_id: post?.client_id || clientId,
                 _isNew: post ? !isFirst : true,
               };
-              onSave(data);
+              
+              await onSave(data);
               isFirst = false;
-            });
-          } else {
-            // Lógica normal para outros formatos ou story com mídia única
-            const data = {
-              content: postData.content,
-              media_urls: postData.mediaUrls,
-              platforms: [account.platform as SocialPlatform],
-              content_type: placement.format,
-              hashtags: extractedHashtags,
-              scheduled_at: scheduledAt,
-              status,
-              client_id: post?.client_id || clientId,
-              _isNew: post ? !isFirst : true,
-            };
-            
-            onSave(data);
-            isFirst = false;
+            }
           }
-        });
-      });
-    });
+        }
+      }
 
-    if (!hasError) {
-      onOpenChange(false);
+      if (!hasError) {
+        onOpenChange(false);
+      }
+    } catch (err) {
+      console.error('Error saving posts:', err);
+      toast.error('Ocorreu um erro ao salvar um ou mais posts.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -484,6 +508,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                         activeIndex === i ? "shadow-sm" : "text-muted-foreground hover:bg-background/50"
                       )}
                       onClick={() => setActiveIndex(i)}
+                      disabled={isSaving}
                     >
                       {i + 1}
                     </Button>
@@ -491,6 +516,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                       <button
                         onClick={(e) => { e.stopPropagation(); removePost(i); }}
                         className="absolute -top-1 -right-1 z-10 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/90 shadow-sm"
+                        disabled={isSaving}
                       >
                         <X className="h-2 w-2" />
                       </button>
@@ -504,6 +530,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                       size="sm"
                       className="h-7 w-7 p-0 text-muted-foreground hover:text-primary hover:bg-background/50"
                       onClick={addPost}
+                      disabled={isSaving}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -529,7 +556,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                     <div className="flex items-center gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => duplicatePost(activeIndex)}>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => duplicatePost(activeIndex)} disabled={isSaving}>
                             <Copy className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
@@ -539,7 +566,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                       {posts.length > 1 && (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => removePost(activeIndex)}>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => removePost(activeIndex)} disabled={isSaving}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </TooltipTrigger>
@@ -558,7 +585,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   </Label>
                   {!isPublished && (
                     <div className="space-y-2">
-                      <Button variant="outline" size="sm" className="h-8 gap-2 w-full border-dashed text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                      <Button variant="outline" size="sm" className="h-8 gap-2 w-full border-dashed text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploading || isSaving}>
                         {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
                         Carregar fotos ou vídeos
                       </Button>
@@ -581,7 +608,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                         <div key={i} className="relative aspect-square rounded-md overflow-hidden group border border-border">
                           <img src={url} alt="" className="w-full h-full object-cover" />
                           {!isPublished && (
-                            <button onClick={() => removeMedia(i)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <button onClick={() => removeMedia(i)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100" disabled={isSaving}>
                               <X className="h-2.5 w-2.5" />
                             </button>
                           )}
@@ -606,7 +633,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                         size="sm" 
                         className="gap-2 text-[10px] h-6 px-2" 
                         onClick={() => setShowAICaptionModal(true)}
-                        disabled={currentPost.isGeneratingCaption}
+                        disabled={currentPost.isGeneratingCaption || isSaving}
                       >
                         {currentPost.isGeneratingCaption ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                         IA
@@ -620,9 +647,9 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                       placeholder={currentPost.isGeneratingCaption ? "IA gerando legenda..." : "Escreva sua legenda aqui... Use #hashtags diretamente no texto."} 
                       className={cn(
                         "min-h-[120px] text-sm resize-none",
-                        currentPost.isGeneratingCaption && "opacity-50"
+                        (currentPost.isGeneratingCaption || isSaving) && "opacity-50"
                       )} 
-                      disabled={isPublished || currentPost.isGeneratingCaption} 
+                      disabled={isPublished || currentPost.isGeneratingCaption || isSaving} 
                     />
                     {currentPost.isGeneratingCaption && (
                       <div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-[1px] rounded-md">
@@ -645,7 +672,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                       Agendamentos
                     </Label>
                     {!isPublished && (
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] gap-1" onClick={addSchedule}>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] gap-1" onClick={addSchedule} disabled={isSaving}>
                         <Plus className="h-3 w-3" /> Adicionar
                       </Button>
                     )}
@@ -658,6 +685,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                           <button
                             onClick={() => removeSchedule(schedule.id)}
                             className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-white flex items-center justify-center shadow-sm hover:bg-destructive/90 transition-colors"
+                            disabled={isSaving}
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -671,7 +699,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                               value={schedule.date} 
                               onChange={e => updateSchedule(schedule.id, { date: e.target.value })} 
                               className="h-8 pl-7 text-[11px]" 
-                              disabled={isPublished} 
+                              disabled={isPublished || isSaving} 
                             />
                           </div>
                           <div className="relative">
@@ -681,7 +709,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                               value={schedule.time} 
                               onChange={e => updateSchedule(schedule.id, { time: e.target.value })} 
                               className="h-8 pl-7 text-[11px]" 
-                              disabled={isPublished} 
+                              disabled={isPublished || isSaving} 
                             />
                           </div>
                         </div>
@@ -712,7 +740,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                                           <TooltipTrigger asChild>
                                             <button
                                               type="button"
-                                              disabled={isPublished}
+                                              disabled={isPublished || isSaving}
                                               onClick={() => togglePlacementInSchedule(schedule.id, account.id, fmt)}
                                               className={cn(
                                                 "relative p-1.5 rounded-full border-2 transition-all",
@@ -758,7 +786,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Visualização</Label>
                     <div className="flex gap-1.5">
                       {Array.from(new Set(currentPost.schedules.flatMap(s => s.placements).map(p => connectedAccounts.find(a => a.id === p.accountId)?.platform))).map(p => (
-                        <button key={p} onClick={() => setPreviewPlatform(p as SocialPlatform)} className={cn("p-1.5 rounded-lg transition-all", previewPlatform === p ? "bg-primary/10 ring-1 ring-primary/30" : "opacity-40")}>
+                        <button key={p} onClick={() => setPreviewPlatform(p as SocialPlatform)} className={cn("p-1.5 rounded-lg transition-all", previewPlatform === p ? "bg-primary/10 ring-1 ring-primary/30" : "opacity-40")} disabled={isSaving}>
                           <PlatformIcon platform={p as SocialPlatform} size="sm" />
                         </button>
                       ))}
@@ -790,7 +818,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           </div>
 
           <DialogFooter className="p-4 border-t bg-background shrink-0 flex flex-col sm:flex-row justify-between gap-3">
-            <Button variant="ghost" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+            <Button variant="ghost" onClick={() => onOpenChange(false)} className="w-full sm:w-auto" disabled={isSaving}>
               {isPublished ? 'Fechar' : 'Cancelar'}
             </Button>
             
@@ -800,14 +828,17 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               </Button>
             ) : (
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={!hasAnyPlacement} className="w-full sm:w-auto">
+                <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={!hasAnyPlacement || isSaving} className="w-full sm:w-auto">
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Salvar Rascunho
                 </Button>
-                <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={!hasAnyPlacement} className="gap-2 w-full sm:w-auto">
-                  <Calendar className="h-4 w-4" /> Agendar
+                <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={!hasAnyPlacement || isSaving} className="gap-2 w-full sm:w-auto">
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
+                  Agendar
                 </Button>
-                <Button onClick={() => handleSaveAction('published')} disabled={!hasAnyPlacement} className="gap-2 w-full sm:w-auto shadow-lg shadow-primary/20">
-                  <Zap className="h-4 w-4" /> Publicar Agora
+                <Button onClick={() => handleSaveAction('published')} disabled={!hasAnyPlacement || isSaving} className="gap-2 w-full sm:w-auto shadow-lg shadow-primary/20">
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                  Publicar Agora
                 </Button>
               </div>
             )}

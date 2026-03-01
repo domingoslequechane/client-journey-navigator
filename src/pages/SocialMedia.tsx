@@ -109,30 +109,23 @@ export default function SocialMedia() {
     const clientId = selectedClient !== 'all' ? selectedClient : null;
     const { _isNew, ...postData } = data;
 
-    if (editingPost && !_isNew) {
-      updatePost.mutate({ id: editingPost.id, ...postData, client_id: clientId } as any, {
-        onSuccess: () => {
-          if (data.status === 'scheduled' || data.status === 'published') {
-            publishPost.mutate({ postId: editingPost.id, publishNow: data.status === 'published' });
-          }
-        },
-        onError: (error: any) => {
-          console.error('Erro ao atualizar post:', error);
-          toast.error('Não foi possível atualizar o post. Por favor, tente novamente.');
+    try {
+      if (editingPost && !_isNew) {
+        const updated = await updatePost.mutateAsync({ id: editingPost.id, ...postData, client_id: clientId } as any);
+        if (data.status === 'scheduled' || data.status === 'published') {
+          await publishPost.mutateAsync({ postId: editingPost.id, publishNow: data.status === 'published' });
         }
-      });
-    } else {
-      createPost.mutate({ ...postData, client_id: clientId } as any, {
-        onSuccess: (newPost: any) => {
-          if (data.status === 'scheduled' || data.status === 'published') {
-            publishPost.mutate({ postId: newPost.id, publishNow: data.status === 'published' });
-          }
-        },
-        onError: (error: any) => {
-          console.error('Erro ao criar post:', error);
-          toast.error('Ocorreu um erro ao criar o post. Verifique os dados e tente novamente.');
+        return updated;
+      } else {
+        const created = await createPost.mutateAsync({ ...postData, client_id: clientId } as any);
+        if (data.status === 'scheduled' || data.status === 'published') {
+          await publishPost.mutateAsync({ postId: created.id, publishNow: data.status === 'published' });
         }
-      });
+        return created;
+      }
+    } catch (error: any) {
+      console.error('Erro ao salvar post:', error);
+      throw error;
     }
   };
 
