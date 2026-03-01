@@ -54,13 +54,22 @@ interface PostData {
   isGeneratingCaption?: boolean;
 }
 
+interface ProcessingResult {
+  id: string;
+  title: string;
+  platform: SocialPlatform;
+  format: ContentType;
+  status: 'success' | 'error';
+  error?: string;
+}
+
 interface PostModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   post?: SocialPostRow | null;
   clientId?: string | null;
-  onSave: (data: any) => Promise<any>;
-  onPublish?: (postId: string, publishNow: boolean) => void;
+  onSave: (data: any, silent?: boolean) => Promise<any>;
+  onPublish?: (postId: string, publishNow: boolean, silent?: boolean) => void;
   onDuplicate?: (post: SocialPostRow) => void;
   defaultDate?: string;
   isPublished?: boolean;
@@ -78,7 +87,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const [pendingFiles, setPendingFiles] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [savingProgress, setSavingProgress] = useState({ current: 0, total: 0 });
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [results, setResults] = useState<ProcessingResult[]>([]);
+  const [showReportModal, setShowReportModal] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
@@ -372,7 +382,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const saveWithRetry = async (data: any, maxAttempts = 3) => {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        return await onSave(data);
+        // Pass silent: true to suppress toasts during batch processing
+        return await onSave(data, true);
       } catch (err: any) {
         if (attempt === maxAttempts) throw err;
         // Wait before retry (1s, 2s)
@@ -402,6 +413,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
     setIsSaving(true);
     setSavingProgress({ current: 0, total: totalItems });
+    setResults([]);
 
     let currentCount = 0;
     let isFirst = true;
@@ -459,8 +471,23 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                 try {
                   await saveWithRetry(itemData);
+                  setResults(prev => [...prev, {
+                    id: crypto.randomUUID(),
+                    title: `Post ${pIdx + 1} (Story ${urlIdx + 1})`,
+                    platform: account.platform as SocialPlatform,
+                    format: 'stories',
+                    status: 'success'
+                  }]);
                 } catch (err: any) {
-                  throw new Error(`Falha no Post ${pIdx + 1} (Story ${urlIdx + 1}): ${err.message || 'Erro desconhecido'}`);
+                  setResults(prev => [...prev, {
+                    id: crypto.randomUUID(),
+                    title: `Post ${pIdx + 1} (Story ${urlIdx + 1})`,
+                    platform: account.platform as SocialPlatform,
+                    format: 'stories',
+                    status: 'error',
+                    error: err.message || 'Erro desconhecido'
+                  }]);
+                  throw err; // Stop processing on fatal error after retries
                 }
                 isFirst = false;
               }
@@ -479,8 +506,23 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
               try {
                 await saveWithRetry(itemData);
+                setResults(prev => [...prev, {
+                  id: crypto.randomUUID(),
+                  title: `Post ${pIdx + 1}`,
+                  platform: account.platform as SocialPlatform,
+                  format: placement.format,
+                  status: 'success'
+                }]);
               } catch (err: any) {
-                throw new Error(`Falha no Post ${pIdx + 1} (${PLATFORM_CONFIG[account.platform as SocialPlatform].label}): ${err.message || 'Erro desconhecido'}`);
+                setResults(prev => [...prev, {
+                  id: crypto.randomUUID(),
+                  title: `Post ${pIdx + 1}`,
+                  platform: account.platform as SocialPlatform,
+                  format: placement.format,
+                  status: 'error',
+                  error: err.message || 'Erro desconhecido'
+                }]);
+                throw err;
               }
               isFirst = false;
             }
@@ -489,11 +531,11 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       }
       
       setIsSaving(false);
-      setShowSuccessModal(true);
+      setShowReportModal(true);
     } catch (err: any) {
       console.error('Error saving posts:', err);
       setIsSaving(false);
-      toast.error(err.message || 'Ocorreu um erro ao salvar os posts.');
+      setShowReportModal(true); // Show report even on error to see what failed
     }
   };
 
@@ -891,23 +933,56 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         </DialogContent>
       </Dialog>
 
-      {/* Success Modal */}
-      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="sm:max-w-[400px]">
-          <div className="flex flex-col items-center justify-center py-6 text-center space-y-4">
-            <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="h-10 w-10 text-green-600" />
+      {/* Processing Report Modal */}
+      <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {results.every(r => r.status === 'success') ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+              )}
+              Relatório de Processamento
+            </DialogTitle>
+            <DialogDescription>
+              Resumo do envio das publicações para as redes sociais.
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[300px] pr-4">
+            <div className="space-y-3 py-2">
+              {results.map((result) => (
+                <div key={result.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30">
+                  <div className="mt-0.5">
+                    <PlatformIcon platform={result.platform} size="sm" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium truncate">{result.title}</p>
+                      <Badge variant={result.status === 'success' ? 'default' : 'destructive'} className="text-[10px] h-5">
+                        {result.status === 'success' ? 'Sucesso' : 'Falha'}
+                      </Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
+                      {CONTENT_TYPE_CONFIG[result.format]?.label}
+                    </p>
+                    {result.error && (
+                      <p className="text-xs text-destructive mt-1 bg-destructive/5 p-2 rounded border border-destructive/10">
+                        {result.error}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="space-y-2">
-              <DialogTitle className="text-xl font-bold">Sucesso!</DialogTitle>
-              <DialogDescription className="text-base">
-                Todos os seus posts foram enviados e processados com sucesso.
-              </DialogDescription>
-            </div>
-            <Button onClick={() => { setShowSuccessModal(false); onOpenChange(false); }} className="w-full">
-              Entendido
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button onClick={() => { setShowReportModal(false); onOpenChange(false); }} className="w-full">
+              Concluir
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

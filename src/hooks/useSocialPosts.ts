@@ -91,16 +91,19 @@ export function useSocialPosts(filters?: PostFilters) {
   });
 
   const createPost = useMutation({
-    mutationFn: async (post: {
-      content: string;
-      media_urls?: string[];
-      platforms: SocialPlatform[];
-      content_type: ContentType;
-      hashtags?: string[];
-      scheduled_at?: string;
-      status?: SocialPostStatus;
-      client_id?: string | null;
-      notes?: string;
+    mutationFn: async (params: {
+      post: {
+        content: string;
+        media_urls?: string[];
+        platforms: SocialPlatform[];
+        content_type: ContentType;
+        hashtags?: string[];
+        scheduled_at?: string;
+        status?: SocialPostStatus;
+        client_id?: string | null;
+        notes?: string;
+      };
+      silent?: boolean;
     }) => {
       const orgId = await getOrgId();
       if (!orgId || !user) throw new Error('Organização não encontrada');
@@ -108,22 +111,24 @@ export function useSocialPosts(filters?: PostFilters) {
       const { data, error } = await supabase
         .from('social_posts' as any)
         .insert({
-          ...post,
+          ...params.post,
           organization_id: orgId,
           created_by: user.id,
-          media_urls: post.media_urls || [],
-          hashtags: post.hashtags || [],
-          status: post.status || 'draft',
+          media_urls: params.post.media_urls || [],
+          hashtags: params.post.hashtags || [],
+          status: params.post.status || 'draft',
         } as any)
         .select()
         .single();
 
       if (error) throw error;
-      return data as unknown as SocialPostRow;
+      return { data: data as unknown as SocialPostRow, silent: params.silent };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      toast({ title: 'Post criado com sucesso!' });
+      if (!result.silent) {
+        toast({ title: 'Post criado com sucesso!' });
+      }
     },
     onError: (err: any) => {
       console.error('Erro ao criar post:', err);
@@ -138,21 +143,26 @@ export function useSocialPosts(filters?: PostFilters) {
   });
 
   const updatePost = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<SocialPostRow> & { id: string }) => {
-      const { client_name, ...cleanUpdates } = updates as any;
+    mutationFn: async (params: {
+      post: Partial<SocialPostRow> & { id: string };
+      silent?: boolean;
+    }) => {
+      const { client_name, ...cleanUpdates } = params.post as any;
       const { data, error } = await supabase
         .from('social_posts' as any)
         .update(cleanUpdates as any)
-        .eq('id', id)
+        .eq('id', params.post.id)
         .select()
         .single();
 
       if (error) throw error;
-      return data as unknown as SocialPostRow;
+      return { data: data as unknown as SocialPostRow, silent: params.silent };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      toast({ title: 'Post atualizado com sucesso!' });
+      if (!result.silent) {
+        toast({ title: 'Post atualizado com sucesso!' });
+      }
     },
     onError: (err: any) => {
       console.error('Erro ao atualizar post:', err);
@@ -215,20 +225,22 @@ export function useSocialPosts(filters?: PostFilters) {
 
   // Publish a post via Late.dev
   const publishPost = useMutation({
-    mutationFn: async ({ postId, publishNow }: { postId: string; publishNow: boolean }) => {
+    mutationFn: async (params: { postId: string; publishNow: boolean; silent?: boolean }) => {
       const { data, error } = await supabase.functions.invoke('social-publish', {
-        body: { post_id: postId, publish_now: publishNow },
+        body: { post_id: params.postId, publish_now: params.publishNow },
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      return data;
+      return { data, silent: params.silent };
     },
-    onSuccess: (data) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      const msg = data.status === 'published' ? 'Post publicado com sucesso!' : 'Post agendado com sucesso!';
-      toast({ title: msg });
+      if (!result.silent) {
+        const msg = result.data.status === 'published' ? 'Post publicado com sucesso!' : 'Post agendado com sucesso!';
+        toast({ title: msg });
+      }
     },
     onError: (err: any) => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
