@@ -270,3 +270,79 @@ export function useSocialPosts(filters?: PostFilters) {
     refetch: postsQuery.refetch,
   };
 }
+
+export function useApprovalPost(token?: string) {
+  const queryClient = useQueryClient();
+
+  const postQuery = useQuery({
+    queryKey: ['approval-post', token],
+    queryFn: async () => {
+      if (!token) return null;
+      const { data, error } = await supabase
+        .from('social_posts' as any)
+        .select('*, clients!social_posts_client_id_fkey(company_name)')
+        .eq('approval_token', token)
+        .single();
+
+      if (error) throw error;
+      
+      const row = data as any;
+      return {
+        ...row,
+        media_urls: Array.isArray(row.media_urls) ? row.media_urls : [],
+        platforms: Array.isArray(row.platforms) ? row.platforms : [],
+        hashtags: Array.isArray(row.hashtags) ? row.hashtags : [],
+        client_name: row.clients?.company_name || null,
+      };
+    },
+    enabled: !!token,
+  });
+
+  const approvePost = useMutation({
+    mutationFn: async (approverName: string) => {
+      if (!token) throw new Error('Token missing');
+      const { error } = await supabase
+        .from('social_posts' as any)
+        .update({
+          status: 'approved',
+          approved_by: approverName,
+          approved_at: new Date().toISOString(),
+        } as any)
+        .eq('approval_token', token);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['approval-post', token] });
+    },
+  });
+
+  const rejectPost = useMutation({
+    mutationFn: async (reason: string, approverName: string) => {
+      if (!token) throw new Error('Token missing');
+      const { error } = await supabase
+        .from('social_posts' as any)
+        .update({
+          status: 'rejected',
+          rejection_reason: reason,
+          approved_by: approverName,
+          approved_at: new Date().toISOString(),
+        } as any)
+        .eq('approval_token', token);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['approval-post', token] });
+    },
+  });
+
+  return {
+    post: postQuery.data,
+    isLoading: postQuery.isLoading,
+    error: postQuery.error,
+    approvePost: approvePost.mutateAsync,
+    rejectPost: rejectPost.mutateAsync,
+    refetch: postQuery.refetch,
+  };
+}
