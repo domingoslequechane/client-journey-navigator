@@ -525,7 +525,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                 </div>
               </div>
               <div className="mt-6 text-center space-y-2">
-                <p className="text-lg font-bold">Enviando para o Late.dev...</p>
+                <p className="text-lg font-bold">Enviando para as redes sociais...</p>
                 <p className="text-sm text-muted-foreground">
                   Processando item <span className="text-primary font-bold">{savingProgress.current}</span> de <span className="font-bold">{savingProgress.total}</span>
                 </p>
@@ -901,7 +901,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
             <div className="space-y-2">
               <DialogTitle className="text-xl font-bold">Sucesso!</DialogTitle>
               <DialogDescription className="text-base">
-                Todos os seus posts foram enviados e processados com sucesso pelo Late.dev.
+                Todos os seus posts foram enviados e processados com sucesso.
               </DialogDescription>
             </div>
             <Button onClick={() => { setShowSuccessModal(false); onOpenChange(false); }} className="w-full">
