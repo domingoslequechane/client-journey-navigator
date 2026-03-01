@@ -130,8 +130,10 @@ export function useSocialPosts(filters?: PostFilters) {
         toast({ title: 'Post criado com sucesso!' });
       }
     },
-    onError: (err: any) => {
+    onError: (err: any, variables) => {
       console.error('Erro ao criar post:', err);
+      if (variables.silent) return;
+
       let message = 'Ocorreu um erro inesperado ao criar o post.';
       if (err.message?.includes('schema cache')) {
         message = 'Erro de sincronização com o banco de dados. Por favor, recarregue a página.';
@@ -164,8 +166,10 @@ export function useSocialPosts(filters?: PostFilters) {
         toast({ title: 'Post atualizado com sucesso!' });
       }
     },
-    onError: (err: any) => {
+    onError: (err: any, variables) => {
       console.error('Erro ao atualizar post:', err);
+      if (variables.silent) return;
+
       let message = 'Não foi possível salvar as alterações do post.';
       if (err.message?.includes('schema cache')) {
         message = 'Erro de sincronização. Por favor, recarregue a página.';
@@ -223,7 +227,6 @@ export function useSocialPosts(filters?: PostFilters) {
     },
   });
 
-  // Publish a post via Late.dev
   const publishPost = useMutation({
     mutationFn: async (params: { postId: string; publishNow: boolean; silent?: boolean }) => {
       const { data, error } = await supabase.functions.invoke('social-publish', {
@@ -242,9 +245,12 @@ export function useSocialPosts(filters?: PostFilters) {
         toast({ title: msg });
       }
     },
-    onError: (err: any) => {
+    onError: (err: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
       console.error('Erro ao publicar/agendar post:', err);
+      
+      if (variables.silent) return;
+
       toast({
         title: 'Erro no agendamento',
         description: 'Não conseguimos processar o agendamento agora. Verifique sua conexão e tente novamente.',
@@ -262,72 +268,5 @@ export function useSocialPosts(filters?: PostFilters) {
     sendForApproval,
     publishPost,
     refetch: postsQuery.refetch,
-  };
-}
-
-// Separate hook for public approval page (no auth needed)
-export function useApprovalPost(token: string | undefined) {
-  const postQuery = useQuery({
-    queryKey: ['approval-post', token],
-    queryFn: async () => {
-      if (!token) return null;
-
-      const { data, error } = await supabase
-        .from('social_posts' as any)
-        .select('*, clients!social_posts_client_id_fkey(company_name)')
-        .eq('approval_token', token)
-        .single();
-
-      if (error) throw error;
-      if (!data) return null;
-
-      const row = data as any;
-      return {
-        ...row,
-        media_urls: Array.isArray(row.media_urls) ? row.media_urls : [],
-        platforms: Array.isArray(row.platforms) ? row.platforms : [],
-        hashtags: Array.isArray(row.hashtags) ? row.hashtags : [],
-        client_name: row.clients?.company_name || null,
-      } as SocialPostRow;
-    },
-    enabled: !!token,
-  });
-
-  const approvePost = async (approvedBy: string) => {
-    if (!token) return;
-    const { error } = await supabase
-      .from('social_posts' as any)
-      .update({
-        status: 'approved',
-        approved_by: approvedBy,
-        approved_at: new Date().toISOString(),
-      } as any)
-      .eq('approval_token', token);
-
-    if (error) throw error;
-  };
-
-  const rejectPost = async (reason: string, rejectedBy: string) => {
-    if (!token) return;
-    const { error } = await supabase
-      .from('social_posts' as any)
-      .update({
-        status: 'rejected',
-        rejection_reason: reason,
-        approved_by: rejectedBy,
-        approved_at: new Date().toISOString(),
-      } as any)
-      .eq('approval_token', token);
-
-    if (error) throw error;
-  };
-
-  return {
-    post: postQuery.data,
-    isLoading: postQuery.isLoading,
-    error: postQuery.error,
-    approvePost,
-    rejectPost,
-    refetch: postQuery.refetch,
   };
 }

@@ -18,7 +18,7 @@ import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, CircleDashed, Film, Image, CheckCircle2 } from 'lucide-react';
+import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, CircleDashed, Film, Image, CheckCircle2, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -112,10 +112,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
     switch (format) {
       case 'feed':
-        // Se houver mais de uma mídia, o feed não é compatível (deve usar carrossel)
         return currentPost.mediaUrls.length <= 1;
       case 'stories':
-        // Permite múltiplas mídias para stories, pois vamos quebrar em posts individuais no salvamento
         return true;
       case 'reels':
         return mediaStats.hasVideo && mediaStats.count === 1;
@@ -269,32 +267,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     });
   };
 
-  const generateAICaptionForPost = async (postId: string, urls: string[]) => {
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, isGeneratingCaption: true } : p));
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-social-caption', {
-        body: {
-          platforms: ['instagram', 'facebook'], // Default platforms for analysis
-          content_type: 'feed',
-          media_urls: urls,
-          tone: 'casual',
-          length: 'media',
-        },
-      });
-
-      if (error) throw error;
-      
-      setPosts(prev => prev.map(p => p.id === postId ? {
-        ...p,
-        content: data?.caption || '',
-        isGeneratingCaption: false
-      } : p));
-    } catch (err) {
-      console.error('Error generating AI caption:', err);
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, isGeneratingCaption: false } : p));
-    }
-  };
-
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
@@ -340,7 +312,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     if (choice === 'carousel') {
       updateCurrentPost({ mediaUrls: [...currentPost.mediaUrls, ...pendingFiles] });
     } else {
-      // Create new posts for each file
       const newPosts: PostData[] = pendingFiles.map(url => ({
         id: crypto.randomUUID(),
         content: '',
@@ -349,28 +320,16 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           ...s,
           id: crypto.randomUUID()
         })),
-        isGeneratingCaption: true
       }));
 
-      // If current post is empty, replace it or just add to it?
       if (currentPost.mediaUrls.length === 0 && currentPost.content === '') {
         setPosts(prev => {
           const updated = [...prev];
           updated[activeIndex] = newPosts[0];
           return [...updated, ...newPosts.slice(1)];
         });
-        
-        // Generate captions for all new posts
-        newPosts.forEach((p) => {
-          generateAICaptionForPost(p.id, p.mediaUrls);
-        });
       } else {
         setPosts(prev => [...prev, ...newPosts]);
-        
-        // Generate captions for all new posts
-        newPosts.forEach((p) => {
-          generateAICaptionForPost(p.id, p.mediaUrls);
-        });
       }
     }
     setPendingFiles([]);
@@ -378,19 +337,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
   const removeMedia = (index: number) => {
     updateCurrentPost({ mediaUrls: currentPost.mediaUrls.filter((_, i) => i !== index) });
-  };
-
-  const saveWithRetry = async (data: any, maxAttempts = 3) => {
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        // Pass silent: true to suppress toasts during batch processing
-        return await onSave(data, true);
-      } catch (err: any) {
-        if (attempt === maxAttempts) throw err;
-        // Wait before retry (1s, 2s)
-        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
-      }
-    }
   };
 
   const handleSaveAction = async (status: string) => {
@@ -423,7 +369,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       for (let pIdx = 0; pIdx < posts.length; pIdx++) {
         const postData = posts[pIdx];
         
-        // Extract hashtags
         const hashtagRegex = /#(\w+)/g;
         const extractedHashtags: string[] = [];
         let match;
@@ -471,7 +416,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                 };
 
                 try {
-                  await saveWithRetry(itemData);
+                  // Pass silent: true to suppress background toasts
+                  await onSave({ post: itemData, silent: true });
                   setResults(prev => [...prev, {
                     id: crypto.randomUUID(),
                     title: `Post ${pIdx + 1} (Story ${urlIdx + 1})`,
@@ -486,9 +432,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                     platform: account.platform as SocialPlatform,
                     format: 'stories',
                     status: 'error',
-                    error: err.message || 'Erro desconhecido'
+                    error: 'Não foi possível processar este item. Verifique sua conexão.'
                   }]);
-                  throw err; // Stop processing on fatal error after retries
                 }
                 isFirst = false;
               }
@@ -506,7 +451,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               };
 
               try {
-                await saveWithRetry(itemData);
+                // Pass silent: true to suppress background toasts
+                await onSave({ post: itemData, silent: true });
                 setResults(prev => [...prev, {
                   id: crypto.randomUUID(),
                   title: `Post ${pIdx + 1}`,
@@ -521,9 +467,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   platform: account.platform as SocialPlatform,
                   format: placement.format,
                   status: 'error',
-                  error: err.message || 'Erro desconhecido'
+                  error: 'Ocorreu uma falha ao enviar para esta rede social.'
                 }]);
-                throw err;
               }
               isFirst = false;
             }
@@ -536,8 +481,15 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     } catch (err: any) {
       console.error('Error saving posts:', err);
       setIsSaving(false);
-      setShowReportModal(true); // Show report even on error to see what failed
+      setShowReportModal(true);
     }
+  };
+
+  const handleContactSupport = (error: string) => {
+    const phone = "258868499221";
+    const message = `Oi, estou tentando enviar uma postagem para as minhas redes sociais mas estou recebendo o seguinte erro: "${error}". Podem me ajudar?`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
   };
 
   const handleAICaptionGenerated = (caption: string) => {
@@ -558,7 +510,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col p-0 w-[calc(100vw-1rem)] sm:w-auto">
-          {/* Saving Overlay */}
           {isSaving && (
             <div className="absolute inset-0 z-[100] bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
               <div className="relative flex items-center justify-center">
@@ -582,7 +533,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               {isPublished ? 'Visualizar Post (Publicado)' : post ? 'Editar Post' : 'Novo Post'}
             </DialogTitle>
             
-            {/* Pagination UI */}
             {!isPublished && (
               <div className="flex items-center gap-2 mr-8">
                 <div className="flex items-center bg-muted rounded-lg p-1 gap-1 max-w-[300px] overflow-x-auto no-scrollbar">
@@ -632,10 +582,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
           <div className="flex-1 overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-[450px_1fr] gap-0">
-              {/* Left column - Form */}
               <div className="p-6 space-y-6 border-r border-border bg-muted/5">
-                
-                {/* Post Actions */}
                 {!isPublished && (
                   <div className="flex items-center justify-between bg-background border rounded-lg p-2 mb-2">
                     <div className="flex items-center gap-2 px-2">
@@ -665,7 +612,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   </div>
                 )}
 
-                {/* Step 1: Media */}
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold flex items-center gap-2">
                     <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">1</span>
@@ -708,7 +654,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                 <Separator />
 
-                {/* Step 2: Content */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold flex items-center gap-2">
@@ -752,7 +697,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                 <Separator />
 
-                {/* Step 3: Schedules */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold flex items-center gap-2">
@@ -809,9 +753,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                             connectedAccounts.map(account => {
                               const p = account.platform as SocialPlatform;
                               const availableFormats: ContentType[] = PLATFORM_CONTENT_TYPES[p] || ['feed'];
-                              
                               const compatibleFormats = availableFormats.filter(fmt => checkCompatibility(p, fmt));
-                              
                               if (compatibleFormats.length === 0) return null;
 
                               return (
@@ -822,7 +764,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                                   <div className="flex flex-wrap gap-2">
                                     {compatibleFormats.map(fmt => {
                                       const isSelected = schedule.placements.some(sp => sp.accountId === account.id && sp.format === fmt);
-                                      
                                       return (
                                         <Tooltip key={fmt}>
                                           <TooltipTrigger asChild>
@@ -867,7 +808,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                 </div>
               </div>
 
-              {/* Right column - Preview */}
               <div className="bg-muted/10 p-8 flex flex-col items-center overflow-y-auto">
                 <div className="w-full max-w-[400px] space-y-6">
                   <div className="flex items-center justify-between">
@@ -934,7 +874,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         </DialogContent>
       </Dialog>
 
-      {/* Processing Report Modal */}
       <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -969,9 +908,20 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                       {CONTENT_TYPE_CONFIG[result.format]?.label}
                     </p>
                     {result.error && (
-                      <p className="text-xs text-destructive mt-1 bg-destructive/5 p-2 rounded border border-destructive/10">
-                        {result.error}
-                      </p>
+                      <div className="mt-2 space-y-2">
+                        <p className="text-xs text-destructive bg-destructive/5 p-2 rounded border border-destructive/10">
+                          {result.error}
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 text-[10px] gap-1.5 w-full"
+                          onClick={() => handleContactSupport(result.error || 'Erro desconhecido')}
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                          Contactar Suporte
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -987,7 +937,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         </DialogContent>
       </Dialog>
 
-      {/* Upload Choice Dialog */}
       <Dialog open={showUploadChoice} onOpenChange={setShowUploadChoice}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
