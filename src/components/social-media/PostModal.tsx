@@ -18,7 +18,7 @@ import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, CircleDashed, Film, Image, CheckCircle2, MessageCircle, ChevronDown, ChevronUp, WifiOff, AlertTriangle } from 'lucide-react';
+import { Upload, Calendar, Clock, Hash, Loader2, X, Image as ImageIcon, Zap, Sparkles, LayoutGrid, Layers, Trash2, ChevronLeft, ChevronRight, Plus, Copy, AlertCircle, CircleDashed, Film, Image, CheckCircle2, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -62,7 +62,6 @@ interface ProcessingResult {
   format: ContentType;
   status: 'success' | 'error';
   error?: string;
-  content?: string;
 }
 
 interface PostModalProps {
@@ -91,7 +90,6 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const [savingProgress, setSavingProgress] = useState({ current: 0, total: 0 });
   const [results, setResults] = useState<ProcessingResult[]>([]);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [expandedResultId, setExpandedResultId] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
@@ -100,6 +98,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     return posts[activeIndex] || { id: 'temp', content: '', mediaUrls: [], schedules: [] };
   }, [posts, activeIndex]);
 
+  // Media compatibility logic
   const mediaStats = useMemo(() => {
     const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url);
     const hasVideo = currentPost.mediaUrls.some(isVideo);
@@ -110,13 +109,20 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
   const checkCompatibility = (platform: SocialPlatform, format: ContentType) => {
     if (currentPost.mediaUrls.length === 0) return true;
+
     switch (format) {
-      case 'feed': return currentPost.mediaUrls.length <= 1;
-      case 'stories': return true;
-      case 'reels': return mediaStats.hasVideo && mediaStats.count === 1;
-      case 'carousel': return mediaStats.count > 1 && !mediaStats.hasVideo;
-      case 'video': return mediaStats.hasVideo;
-      default: return true;
+      case 'feed':
+        return currentPost.mediaUrls.length <= 1;
+      case 'stories':
+        return true;
+      case 'reels':
+        return mediaStats.hasVideo && mediaStats.count === 1;
+      case 'carousel':
+        return mediaStats.count > 1 && !mediaStats.hasVideo;
+      case 'video':
+        return mediaStats.hasVideo;
+      default:
+        return true;
     }
   };
 
@@ -126,25 +132,37 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         const postHashtags = post.hashtags?.map(h => `#${h}`).join(' ') || '';
         const content = post.content + (postHashtags ? `\n\n${postHashtags}` : '');
         const mediaUrls = post.media_urls || [];
+        
         const postPlatforms = post.platforms || [];
         const ct = (post.content_type as ContentType) || 'feed';
         const initialPlacements: Placement[] = [];
+        
         postPlatforms.forEach(p => {
           const acc = connectedAccounts.find(a => a.platform === p);
-          if (acc) initialPlacements.push({ accountId: acc.id, format: ct });
+          if (acc) {
+            initialPlacements.push({ accountId: acc.id, format: ct });
+          }
         });
+
         let date = defaultDate || format(new Date(), 'yyyy-MM-dd');
         let time = getDefaultTime();
+
         if (post.scheduled_at) {
           const dt = new Date(post.scheduled_at);
           date = format(dt, 'yyyy-MM-dd');
           time = format(dt, 'HH:mm');
         }
+
         setPosts([{
           id: post.id,
           content,
           mediaUrls,
-          schedules: [{ id: crypto.randomUUID(), date, time, placements: initialPlacements }]
+          schedules: [{
+            id: crypto.randomUUID(),
+            date,
+            time,
+            placements: initialPlacements
+          }]
         }]);
         setActiveIndex(0);
         setPreviewPlatform(postPlatforms[0] as SocialPlatform || 'instagram');
@@ -153,7 +171,12 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           id: crypto.randomUUID(),
           content: '',
           mediaUrls: [],
-          schedules: [{ id: crypto.randomUUID(), date: defaultDate || format(new Date(), 'yyyy-MM-dd'), time: getDefaultTime(), placements: [] }]
+          schedules: [{
+            id: crypto.randomUUID(),
+            date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+            time: getDefaultTime(),
+            placements: []
+          }]
         }]);
         setActiveIndex(0);
       }
@@ -165,7 +188,12 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       id: crypto.randomUUID(),
       content: '',
       mediaUrls: [],
-      schedules: [{ id: crypto.randomUUID(), date: defaultDate || format(new Date(), 'yyyy-MM-dd'), time: getDefaultTime(), placements: [] }]
+      schedules: [{
+        id: crypto.randomUUID(),
+        date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+        time: getDefaultTime(),
+        placements: []
+      }]
     };
     setPosts(prev => [...prev, newPost]);
     setActiveIndex(posts.length);
@@ -174,7 +202,9 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const removePost = (index: number) => {
     if (posts.length <= 1) return;
     setPosts(prev => prev.filter((_, i) => i !== index));
-    if (activeIndex >= index && activeIndex > 0) setActiveIndex(activeIndex - 1);
+    if (activeIndex >= index && activeIndex > 0) {
+      setActiveIndex(activeIndex - 1);
+    }
   };
 
   const duplicatePost = (index: number) => {
@@ -182,7 +212,10 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     const newPost: PostData = {
       ...JSON.parse(JSON.stringify(postToDuplicate)),
       id: crypto.randomUUID(),
-      schedules: postToDuplicate.schedules.map(s => ({ ...s, id: crypto.randomUUID() }))
+      schedules: postToDuplicate.schedules.map(s => ({
+        ...s,
+        id: crypto.randomUUID()
+      }))
     };
     setPosts(prev => {
       const updated = [...prev];
@@ -197,7 +230,12 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   };
 
   const addSchedule = () => {
-    const newSchedule = { id: crypto.randomUUID(), date: defaultDate || format(new Date(), 'yyyy-MM-dd'), time: getDefaultTime(), placements: [] };
+    const newSchedule = {
+      id: crypto.randomUUID(),
+      date: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+      time: getDefaultTime(),
+      placements: []
+    };
     updateCurrentPost({ schedules: [...currentPost.schedules, newSchedule] });
   };
 
@@ -207,18 +245,23 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   };
 
   const updateSchedule = (id: string, updates: Partial<ScheduleEntry>) => {
-    updateCurrentPost({ schedules: currentPost.schedules.map(s => s.id === id ? { ...s, ...updates } : s) });
+    updateCurrentPost({
+      schedules: currentPost.schedules.map(s => s.id === id ? { ...s, ...updates } : s)
+    });
   };
 
   const togglePlacementInSchedule = (scheduleId: string, accountId: string, format: ContentType) => {
     if (isPublished) return;
+    
     updateCurrentPost({
       schedules: currentPost.schedules.map(s => {
         if (s.id !== scheduleId) return s;
+        
         const isSelected = s.placements.some(p => p.accountId === accountId && p.format === format);
         const newPlacements = isSelected
           ? s.placements.filter(p => !(p.accountId === accountId && p.format === format))
           : [...s.placements, { accountId, format }];
+          
         return { ...s, placements: newPlacements };
       })
     });
@@ -231,16 +274,21 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     try {
       const newUrls: string[] = [];
       const totalFiles = files.length;
+      
       for (let i = 0; i < totalFiles; i++) {
         const file = files[i];
         const ext = file.name.split('.').pop();
         const path = `${crypto.randomUUID()}.${ext}`;
+        
         const { error } = await supabase.storage.from('social-media').upload(path, file);
         if (error) throw error;
+        
         const { data: urlData } = supabase.storage.from('social-media').getPublicUrl(path);
         newUrls.push(urlData.publicUrl);
+        
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
       }
+
       if (newUrls.length > 1) {
         setPendingFiles(newUrls);
         setShowUploadChoice(true);
@@ -260,6 +308,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
   const handleUploadChoice = async (choice: 'carousel' | 'separate') => {
     setShowUploadChoice(false);
+    
     if (choice === 'carousel') {
       updateCurrentPost({ mediaUrls: [...currentPost.mediaUrls, ...pendingFiles] });
     } else {
@@ -267,8 +316,12 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         id: crypto.randomUUID(),
         content: '',
         mediaUrls: [url],
-        schedules: JSON.parse(JSON.stringify(currentPost.schedules)).map((s: ScheduleEntry) => ({ ...s, id: crypto.randomUUID() })),
+        schedules: JSON.parse(JSON.stringify(currentPost.schedules)).map((s: ScheduleEntry) => ({
+          ...s,
+          id: crypto.randomUUID()
+        })),
       }));
+
       if (currentPost.mediaUrls.length === 0 && currentPost.content === '') {
         setPosts(prev => {
           const updated = [...prev];
@@ -286,34 +339,16 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     updateCurrentPost({ mediaUrls: currentPost.mediaUrls.filter((_, i) => i !== index) });
   };
 
-  const getFriendlyError = (err: any) => {
-    const msg = err.message?.toLowerCase() || '';
-    if (msg.includes('duplicate')) return 'Conteúdo duplicado detectado. Tente alterar levemente o texto ou as hashtags para que a rede social não bloqueie a postagem.';
-    if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) return 'Falha na conexão. Verifique se a sua internet está estável e tente novamente.';
-    if (msg.includes('unauthorized') || msg.includes('token') || msg.includes('reconnect')) return 'A conta parece estar desconectada. Por favor, vá ao Dashboard e reconecte a conta desta rede social.';
-    if (msg.includes('size') || msg.includes('large')) return 'O arquivo de mídia é muito grande para esta rede social. Tente reduzir o tamanho ou usar outro formato.';
-    return 'Ocorreu uma falha técnica ao processar este item. Verifique os dados e tente novamente.';
-  };
-
-  const withRetry = async (fn: () => Promise<any>, attempts = 3) => {
-    for (let i = 0; i < attempts; i++) {
-      try {
-        return await fn();
-      } catch (err) {
-        if (i === attempts - 1) throw err;
-        // Wait before retry: 1s, 2s
-        await new Promise(r => setTimeout(r, (i + 1) * 1000));
-      }
-    }
-  };
-
   const handleSaveAction = async (status: string) => {
     let totalItems = 0;
     posts.forEach(p => {
       p.schedules.forEach(s => {
         s.placements.forEach(pl => {
-          if (pl.format === 'stories' && p.mediaUrls.length > 1) totalItems += p.mediaUrls.length;
-          else totalItems += 1;
+          if (pl.format === 'stories' && p.mediaUrls.length > 1) {
+            totalItems += p.mediaUrls.length;
+          } else {
+            totalItems += 1;
+          }
         });
       });
     });
@@ -333,10 +368,13 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     try {
       for (let pIdx = 0; pIdx < posts.length; pIdx++) {
         const postData = posts[pIdx];
+        
         const hashtagRegex = /#(\w+)/g;
         const extractedHashtags: string[] = [];
         let match;
-        while ((match = hashtagRegex.exec(postData.content)) !== null) extractedHashtags.push(match[1]);
+        while ((match = hashtagRegex.exec(postData.content)) !== null) {
+          extractedHashtags.push(match[1]);
+        }
 
         for (const schedule of postData.schedules) {
           for (const placement of schedule.placements) {
@@ -366,6 +404,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               for (let urlIdx = 0; urlIdx < postData.mediaUrls.length; urlIdx++) {
                 currentCount++;
                 setSavingProgress(prev => ({ ...prev, current: currentCount }));
+                
                 if (!isFirst) await new Promise(r => setTimeout(r, 3000));
 
                 const offsetDate = new Date(new Date(scheduledAt).getTime() + (urlIdx * 1000));
@@ -377,7 +416,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                 };
 
                 try {
-                  await withRetry(() => onSave({ post: itemData, silent: true }));
+                  // Pass silent: true to suppress background toasts
+                  await onSave({ post: itemData, silent: true });
                   setResults(prev => [...prev, {
                     id: crypto.randomUUID(),
                     title: `Post ${pIdx + 1} (Story ${urlIdx + 1})`,
@@ -392,8 +432,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                     platform: account.platform as SocialPlatform,
                     format: 'stories',
                     status: 'error',
-                    error: getFriendlyError(err),
-                    content: postData.content
+                    error: 'Não foi possível processar este item. Verifique sua conexão.'
                   }]);
                 }
                 isFirst = false;
@@ -401,6 +440,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
             } else {
               currentCount++;
               setSavingProgress(prev => ({ ...prev, current: currentCount }));
+              
               if (!isFirst) await new Promise(r => setTimeout(r, 3000));
 
               const itemData = {
@@ -411,7 +451,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               };
 
               try {
-                await withRetry(() => onSave({ post: itemData, silent: true }));
+                // Pass silent: true to suppress background toasts
+                await onSave({ post: itemData, silent: true });
                 setResults(prev => [...prev, {
                   id: crypto.randomUUID(),
                   title: `Post ${pIdx + 1}`,
@@ -426,8 +467,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                   platform: account.platform as SocialPlatform,
                   format: placement.format,
                   status: 'error',
-                  error: getFriendlyError(err),
-                  content: postData.content
+                  error: 'Ocorreu uma falha ao enviar para esta rede social.'
                 }]);
               }
               isFirst = false;
@@ -435,6 +475,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           }
         }
       }
+      
       setIsSaving(false);
       setShowReportModal(true);
     } catch (err: any) {
@@ -457,7 +498,9 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
   const previewAccount = useMemo(() => {
     const firstSelected = currentPost.schedules[0]?.placements[0];
-    if (firstSelected) return connectedAccounts.find(a => a.id === firstSelected.accountId);
+    if (firstSelected) {
+      return connectedAccounts.find(a => a.id === firstSelected.accountId);
+    }
     return connectedAccounts.find(a => a.platform === previewPlatform);
   }, [currentPost.schedules, previewPlatform, connectedAccounts]);
 
@@ -832,111 +875,63 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       </Dialog>
 
       <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
-        <DialogContent className="sm:max-w-[550px] max-h-[90vh] flex flex-col p-0">
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle className="flex items-center gap-2 text-xl">
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
               {results.every(r => r.status === 'success') ? (
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
               ) : (
-                <AlertTriangle className="h-6 w-6 text-amber-600" />
+                <AlertCircle className="h-5 w-5 text-amber-600" />
               )}
               Relatório de Processamento
             </DialogTitle>
             <DialogDescription>
-              {results.every(r => r.status === 'success') 
-                ? 'Todas as postagens foram processadas com sucesso!' 
-                : 'Algumas postagens encontraram dificuldades. Veja os detalhes abaixo.'}
+              Resumo do envio das publicações para as redes sociais.
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 px-6 py-4">
-            <div className="space-y-4">
+          <ScrollArea className="max-h-[300px] pr-4">
+            <div className="space-y-3 py-2">
               {results.map((result) => (
-                <div key={result.id} className={cn(
-                  "rounded-xl border transition-all overflow-hidden",
-                  result.status === 'success' ? "bg-green-50/30 border-green-100" : "bg-red-50/30 border-red-100"
-                )}>
-                  <div 
-                    className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/20"
-                    onClick={() => result.status === 'error' && setExpandedResultId(expandedResultId === result.id ? null : result.id)}
-                  >
-                    <div className="mt-0.5">
-                      <PlatformIcon platform={result.platform} size="sm" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-bold truncate">{result.title}</p>
-                        <Badge variant={result.status === 'success' ? 'default' : 'destructive'} className="text-[10px] h-5">
-                          {result.status === 'success' ? 'Sucesso' : 'Falha'}
-                        </Badge>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
-                        {CONTENT_TYPE_CONFIG[result.format]?.label}
-                      </p>
-                    </div>
-                    {result.status === 'error' && (
-                      expandedResultId === result.id ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    )}
+                <div key={result.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30">
+                  <div className="mt-0.5">
+                    <PlatformIcon platform={result.platform} size="sm" />
                   </div>
-
-                  {result.status === 'error' && expandedResultId === result.id && (
-                    <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
-                      <Separator className="mb-4 opacity-50" />
-                      
-                      <div className="space-y-4">
-                        <div className="flex items-start gap-2 text-destructive">
-                          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                          <p className="text-xs font-medium leading-relaxed">{result.error}</p>
-                        </div>
-
-                        <div className="bg-background/50 rounded-lg p-3 border border-border/50">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">Sugestões de Solução:</p>
-                          <ul className="space-y-1.5">
-                            {result.error?.includes('conexão') && (
-                              <li className="text-[11px] flex items-center gap-2">
-                                <WifiOff className="h-3 w-3 text-muted-foreground" />
-                                Verifique seu Wi-Fi ou dados móveis.
-                              </li>
-                            )}
-                            {result.error?.includes('duplicado') && (
-                              <li className="text-[11px] flex items-center gap-2">
-                                <Copy className="h-3 w-3 text-muted-foreground" />
-                                Altere algumas palavras ou emojis no texto.
-                              </li>
-                            )}
-                            {result.error?.includes('desconectada') && (
-                              <li className="text-[11px] flex items-center gap-2">
-                                <RefreshCw className="h-3 w-3 text-muted-foreground" />
-                                Reconecte a conta nas configurações.
-                              </li>
-                            )}
-                            <li className="text-[11px] flex items-center gap-2">
-                              <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
-                              Tente reenviar este item individualmente.
-                            </li>
-                          </ul>
-                        </div>
-
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium truncate">{result.title}</p>
+                      <Badge variant={result.status === 'success' ? 'default' : 'destructive'} className="text-[10px] h-5">
+                        {result.status === 'success' ? 'Sucesso' : 'Falha'}
+                      </Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
+                      {CONTENT_TYPE_CONFIG[result.format]?.label}
+                    </p>
+                    {result.error && (
+                      <div className="mt-2 space-y-2">
+                        <p className="text-xs text-destructive bg-destructive/5 p-2 rounded border border-destructive/10">
+                          {result.error}
+                        </p>
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="h-8 text-[11px] gap-2 w-full border-primary/20 hover:bg-primary/5 text-primary"
+                          className="h-7 text-[10px] gap-1.5 w-full"
                           onClick={() => handleContactSupport(result.error || 'Erro desconhecido')}
                         >
-                          <MessageCircle className="h-3.5 w-3.5" />
-                          Contactar Suporte (Última Instância)
+                          <MessageCircle className="h-3 w-3" />
+                          Contactar Suporte
                         </Button>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-6 border-t bg-muted/10">
+          <DialogFooter>
             <Button onClick={() => { setShowReportModal(false); onOpenChange(false); }} className="w-full">
-              Entendido, Concluir
+              Concluir
             </Button>
           </DialogFooter>
         </DialogContent>
