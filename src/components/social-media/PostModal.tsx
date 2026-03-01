@@ -100,7 +100,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       case 'feed':
         return true;
       case 'stories':
-        return mediaStats.count === 1;
+        // Permite múltiplas mídias para stories, pois vamos quebrar em posts individuais no salvamento
+        return true;
       case 'reels':
         return mediaStats.hasVideo && mediaStats.count === 1;
       case 'carousel':
@@ -399,20 +400,43 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
             scheduledAt = localDate.toISOString();
           }
 
-          const data = {
-            content: postData.content,
-            media_urls: postData.mediaUrls,
-            platforms: [account.platform as SocialPlatform],
-            content_type: placement.format,
-            hashtags: extractedHashtags,
-            scheduled_at: scheduledAt,
-            status,
-            client_id: post?.client_id || clientId,
-            _isNew: post ? !isFirst : true,
-          };
-          
-          onSave(data);
-          isFirst = false;
+          // Lógica especial para Stories: Se houver mais de uma mídia, quebra em posts individuais
+          if (placement.format === 'stories' && postData.mediaUrls.length > 1) {
+            postData.mediaUrls.forEach((url, urlIdx) => {
+              // Adiciona um offset de 1 segundo para cada story para manter a ordem na fila
+              const offsetDate = new Date(new Date(scheduledAt).getTime() + (urlIdx * 1000));
+              
+              const data = {
+                content: postData.content,
+                media_urls: [url], // Apenas uma mídia por post
+                platforms: [account.platform as SocialPlatform],
+                content_type: 'stories',
+                hashtags: extractedHashtags,
+                scheduled_at: offsetDate.toISOString(),
+                status,
+                client_id: post?.client_id || clientId,
+                _isNew: post ? !isFirst : true,
+              };
+              onSave(data);
+              isFirst = false;
+            });
+          } else {
+            // Lógica normal para outros formatos ou story com mídia única
+            const data = {
+              content: postData.content,
+              media_urls: postData.mediaUrls,
+              platforms: [account.platform as SocialPlatform],
+              content_type: placement.format,
+              hashtags: extractedHashtags,
+              scheduled_at: scheduledAt,
+              status,
+              client_id: post?.client_id || clientId,
+              _isNew: post ? !isFirst : true,
+            };
+            
+            onSave(data);
+            isFirst = false;
+          }
         });
       });
     });

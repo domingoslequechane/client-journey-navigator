@@ -8,6 +8,17 @@ const corsHeaders = {
 
 const LATE_API_BASE = "https://getlate.dev/api/v1";
 
+// Helper to map internal content types to platform-specific strings
+const getPlatformContentType = (platform: string, internalContentType: string): string => {
+  if (internalContentType === 'stories') return 'story';
+  if (internalContentType === 'reels') {
+    if (platform === 'facebook') return 'reel';
+    if (platform === 'instagram') return 'reels';
+  }
+  // Default to the internal type (feed, carousel, video, text)
+  return internalContentType || 'feed';
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -121,13 +132,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Build Late.dev post payload
+    // Build Late.dev post payload with platformSpecificData
     const platforms = accounts
       .filter((a: any) => a.late_account_id)
-      .map((a: any) => ({
-        platform: a.platform,
-        accountId: a.late_account_id,
-      }));
+      .map((a: any) => {
+        const platformType = getPlatformContentType(a.platform, post.content_type);
+        return {
+          platform: a.platform,
+          accountId: a.late_account_id,
+          platformSpecificData: {
+            contentType: platformType
+          }
+        };
+      });
 
     if (platforms.length === 0) {
       return new Response(
@@ -142,8 +159,6 @@ Deno.serve(async (req) => {
     const latePayload: any = {
       content: post.content,
       platforms,
-      // CRITICAL: Pass the content type to Late.dev
-      type: post.content_type || 'feed',
     };
 
     // Add media if present
@@ -166,7 +181,7 @@ Deno.serve(async (req) => {
       latePayload.publishNow = true;
     }
 
-    console.log(`[social-publish] Sending post ${post_id} to Late.dev as ${latePayload.type}`);
+    console.log(`[social-publish] Sending post ${post_id} to Late.dev with platforms:`, JSON.stringify(platforms));
 
     // Send to Late.dev
     const lateRes = await fetch(`${LATE_API_BASE}/posts`, {
