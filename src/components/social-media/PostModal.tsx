@@ -77,6 +77,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   const [showUploadChoice, setShowUploadChoice] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [savingProgress, setSavingProgress] = useState({ current: 0, total: 0 });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
@@ -368,22 +369,34 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
   };
 
   const handleSaveAction = async (status: string) => {
-    let hasError = false;
-    let isFirst = true;
+    let totalItems = 0;
+    posts.forEach(p => {
+      p.schedules.forEach(s => {
+        s.placements.forEach(pl => {
+          if (pl.format === 'stories' && p.mediaUrls.length > 1) {
+            totalItems += p.mediaUrls.length;
+          } else {
+            totalItems += 1;
+          }
+        });
+      });
+    });
+
+    if (totalItems === 0) {
+      toast.error("Selecione ao menos um canal para agendar.");
+      return;
+    }
 
     setIsSaving(true);
+    setSavingProgress({ current: 0, total: totalItems });
+
+    let currentCount = 0;
+    let isFirst = true;
 
     try {
       for (let pIdx = 0; pIdx < posts.length; pIdx++) {
         const postData = posts[pIdx];
-        const allPlacements = postData.schedules.flatMap(s => s.placements);
         
-        if (allPlacements.length === 0) {
-          toast.error(`Post ${pIdx + 1}: Selecione ao menos um canal.`);
-          hasError = true;
-          continue;
-        }
-
         // Extract hashtags
         const hashtagRegex = /#(\w+)/g;
         const extractedHashtags: string[] = [];
@@ -407,65 +420,64 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
               scheduledAt = localDate.toISOString();
             }
 
-            // Lógica especial para Stories: Se houver mais de uma mídia, quebra em posts individuais
+            const baseData = {
+              content: postData.content,
+              platforms: [account.platform as SocialPlatform],
+              content_type: placement.format,
+              hashtags: extractedHashtags,
+              status,
+              client_id: post?.client_id || clientId,
+            };
+
             if (placement.format === 'stories' && postData.mediaUrls.length > 1) {
               for (let urlIdx = 0; urlIdx < postData.mediaUrls.length; urlIdx++) {
-                const url = postData.mediaUrls[urlIdx];
+                currentCount++;
+                setSavingProgress(prev => ({ ...prev, current: currentCount }));
                 
-                // Atraso de 3 segundos entre requisições (exceto a primeira)
-                if (!isFirst) {
-                  await new Promise(resolve => setTimeout(resolve, 3000));
-                }
+                if (!isFirst) await new Promise(r => setTimeout(r, 3000));
 
-                // Adiciona um offset de 1 segundo para cada story para manter a ordem na fila
                 const offsetDate = new Date(new Date(scheduledAt).getTime() + (urlIdx * 1000));
-                
-                const data = {
-                  content: postData.content,
-                  media_urls: [url],
-                  platforms: [account.platform as SocialPlatform],
-                  content_type: 'stories',
-                  hashtags: extractedHashtags,
+                const itemData = {
+                  ...baseData,
+                  media_urls: [postData.mediaUrls[urlIdx]],
                   scheduled_at: offsetDate.toISOString(),
-                  status,
-                  client_id: post?.client_id || clientId,
                   _isNew: post ? !isFirst : true,
                 };
-                
-                await onSave(data);
+
+                try {
+                  await onSave(itemData);
+                } catch (err: any) {
+                  throw new Error(`Falha no Post ${pIdx + 1} (Story ${urlIdx + 1}): ${err.message || 'Erro desconhecido'}`);
+                }
                 isFirst = false;
               }
             } else {
-              // Atraso de 3 segundos entre requisições (exceto a primeira)
-              if (!isFirst) {
-                await new Promise(resolve => setTimeout(resolve, 3000));
-              }
+              currentCount++;
+              setSavingProgress(prev => ({ ...prev, current: currentCount }));
+              
+              if (!isFirst) await new Promise(r => setTimeout(r, 3000));
 
-              const data = {
-                content: postData.content,
+              const itemData = {
+                ...baseData,
                 media_urls: postData.mediaUrls,
-                platforms: [account.platform as SocialPlatform],
-                content_type: placement.format,
-                hashtags: extractedHashtags,
                 scheduled_at: scheduledAt,
-                status,
-                client_id: post?.client_id || clientId,
                 _isNew: post ? !isFirst : true,
               };
-              
-              await onSave(data);
+
+              try {
+                await onSave(itemData);
+              } catch (err: any) {
+                throw new Error(`Falha no Post ${pIdx + 1} (${PLATFORM_CONFIG[account.platform as SocialPlatform].label}): ${err.message || 'Erro desconhecido'}`);
+              }
               isFirst = false;
             }
           }
         }
       }
-
-      if (!hasError) {
-        onOpenChange(false);
-      }
-    } catch (err) {
+      onOpenChange(false);
+    } catch (err: any) {
       console.error('Error saving posts:', err);
-      toast.error('Ocorreu um erro ao salvar um ou mais posts.');
+      toast.error(err.message || 'Ocorreu um erro ao salvar os posts.');
     } finally {
       setIsSaving(false);
     }
@@ -489,6 +501,25 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col p-0 w-[calc(100vw-1rem)] sm:w-auto">
+          {/* Saving Overlay */}
+          {isSaving && (
+            <div className="absolute inset-0 z-[100] bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
+              <div className="relative flex items-center justify-center">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold">
+                  {Math.round((savingProgress.current / savingProgress.total) * 100)}%
+                </div>
+              </div>
+              <div className="mt-6 text-center space-y-2">
+                <p className="text-lg font-bold">Enviando para o Late.dev...</p>
+                <p className="text-sm text-muted-foreground">
+                  Processando item <span className="text-primary font-bold">{savingProgress.current}</span> de <span className="font-bold">{savingProgress.total}</span>
+                </p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest animate-pulse">Aguarde, não feche esta janela</p>
+              </div>
+            </div>
+          )}
+
           <DialogHeader className="px-6 py-4 border-b shrink-0 flex flex-row items-center justify-between space-y-0">
             <DialogTitle className="text-lg">
               {isPublished ? 'Visualizar Post (Publicado)' : post ? 'Editar Post' : 'Novo Post'}
