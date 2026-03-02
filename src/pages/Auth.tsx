@@ -48,6 +48,7 @@ export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [suspendedDialogOpen, setSuspendedDialogOpen] = useState(false);
+  const [persistSession, setPersistSession] = useState(true);
   
   const authSchema = createAuthSchema(t);
 
@@ -127,6 +128,13 @@ export default function Auth() {
     
     setLoading(true);
     try {
+      // Set storage based on checkbox
+      if (persistSession) {
+        supabase.auth.storage = localStorage;
+      } else {
+        supabase.auth.storage = sessionStorage;
+      }
+
       // Normalize email
       const cleanEmail = email.trim().toLowerCase();
       
@@ -339,6 +347,8 @@ export default function Auth() {
                     loading={loading}
                     errors={errors}
                     onForgotPassword={() => setShowForgotPassword(true)}
+                    persistSession={persistSession}
+                    setPersistSession={setPersistSession}
                   />
                   <SocialAuth onGoogleLogin={handleGoogleLogin} loading={loading} />
                 </TabsContent>

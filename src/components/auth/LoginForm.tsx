@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface LoginFormProps {
   onSubmit: (e: React.FormEvent) => Promise<void>;
@@ -14,6 +15,8 @@ interface LoginFormProps {
   loading: boolean;
   errors: { email?: string; password?: string };
   onForgotPassword: () => void;
+  persistSession: boolean;
+  setPersistSession: (value: boolean) => void;
 }
 
 export function LoginForm({
@@ -25,6 +28,8 @@ export function LoginForm({
   loading,
   errors,
   onForgotPassword,
+  persistSession,
+  setPersistSession,
 }: LoginFormProps) {
   const { t } = useTranslation('auth');
   const [showPassword, setShowPassword] = useState(false);
@@ -46,13 +51,6 @@ export function LoginForm({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="signin-password">{t('labels.password')}</Label>
-          <button
-            type="button"
-            onClick={onForgotPassword}
-            className="text-xs text-primary hover:underline"
-          >
-            {t('forgotPassword.link')}
-          </button>
         </div>
         <div className="relative">
           <Input
@@ -75,6 +73,30 @@ export function LoginForm({
         </div>
         {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
       </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="persist-session"
+            checked={persistSession}
+            onCheckedChange={(checked) => setPersistSession(checked === true)}
+          />
+          <label
+            htmlFor="persist-session"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            {t('login.keepLoggedIn')}
+          </label>
+        </div>
+        <button
+          type="button"
+          onClick={onForgotPassword}
+          className="text-xs text-primary hover:underline"
+        >
+          {t('forgotPassword.link')}
+        </button>
+      </div>
+
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? t('login.loading') : t('login.submit')}
       </Button>
