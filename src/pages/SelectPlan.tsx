@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, ArrowRight, LogOut, TrendingUp } from 'lucide-react';
+import { Check, Loader2, ArrowRight, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -22,7 +22,6 @@ const plans = [
     price: 19,
     period: '/mês',
     description: 'Freelancers / Pequenas Agências',
-    profitMargin: 'Alta (~$11/user)',
     features: [
       '5 Marcas (Clientes)',
       'Redes Sociais Ilimitadas',
@@ -37,7 +36,6 @@ const plans = [
     price: 39,
     period: '/mês',
     description: 'Agências em Crescimento',
-    profitMargin: 'Média (~$14/user)',
     features: [
       '15 Marcas (Clientes)',
       '15 Créditos Studio AI / dia',
@@ -53,7 +51,6 @@ const plans = [
     price: 79,
     period: '/mês',
     description: 'Grandes Agências / White Label',
-    profitMargin: 'Estável (~$26/user)',
     features: [
       '50 Marcas (Clientes)',
       '30 Créditos Studio AI / dia',
@@ -263,7 +260,7 @@ export default function SelectPlan() {
                 </CardHeader>
 
                 <CardContent className="flex-1 flex flex-col">
-                  <div className="text-center mb-4">
+                  <div className="text-center mb-6">
                     <div className="flex items-baseline justify-center gap-1">
                       <span className="text-4xl font-bold" style={{ color: colors.primary }}>
                         ${plan.price}
@@ -272,15 +269,7 @@ export default function SelectPlan() {
                     </div>
                   </div>
 
-                  <div className="mb-6 p-3 bg-muted/50 rounded-lg border border-border/50">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                      <TrendingUp className="h-3 w-3 text-green-500" />
-                      Margem de Lucro
-                    </div>
-                    <div className="text-sm font-bold text-foreground">{plan.profitMargin}</div>
-                  </div>
-
-                  <ul className="space-y-2 mb-6 flex-1">
+                  <ul className="space-y-2 mb-8 flex-1">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
                         <Check 

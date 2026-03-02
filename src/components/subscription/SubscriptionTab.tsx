@@ -50,7 +50,6 @@ const PLAN_CONFIG = {
     borderColor: 'border-green-500/20',
     image: planLanca,
     price: 'Legado',
-    profitMargin: 'N/A',
     features: ['3 clientes ativos', 'Funil ilimitado', '3 contratos/mês', '90 msgs IA/mês']
   },
   starter: {
@@ -61,7 +60,6 @@ const PLAN_CONFIG = {
     borderColor: 'border-blue-500/20',
     image: planLanca,
     price: '$19/mês',
-    profitMargin: 'Alta (~$11/user)',
     features: ['5 Marcas (Clientes)', 'Redes Sociais Ilimitadas', '5 Créditos Studio AI / dia', 'Módulos: Finanças, Editorial, Link23']
   },
   pro: {
@@ -72,7 +70,6 @@ const PLAN_CONFIG = {
     borderColor: 'border-purple-500/20',
     image: planArco,
     price: '$39/mês',
-    profitMargin: 'Média (~$14/user)',
     features: ['15 Marcas (Clientes)', '15 Créditos Studio AI / dia', 'Tudo do Lança + Inbox/Analytics', 'Suporte Prioritário']
   },
   agency: {
@@ -83,7 +80,6 @@ const PLAN_CONFIG = {
     borderColor: 'border-orange-500/20',
     image: planCatapulta,
     price: '$79/mês',
-    profitMargin: 'Estável (~$26/user)',
     features: ['50 Marcas (Clientes)', '30 Créditos Studio AI / dia', 'Tudo do Arco + Suporte VIP', 'Acesso Antecipado a Recursos']
   },
 };
@@ -338,16 +334,6 @@ export function SubscriptionTab() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {isPaidPlan && (
-            <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
-              <div className="flex items-center gap-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                <TrendingUp className="h-3 w-3 text-green-500" />
-                Margem de Lucro
-              </div>
-              <div className="text-sm font-bold text-foreground">{currentPlan.profitMargin}</div>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {currentPlan.features.map((feature, index) => (
               <div key={index} className="flex items-center gap-2 text-xs sm:text-sm">

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   CreditCard, CheckCircle2, Loader2, ArrowLeft, X, 
-  Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert, TrendingUp 
+  Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -78,7 +78,6 @@ interface PlanConfig {
   priceLabel: string;
   description: string;
   popular?: boolean;
-  profitMargin: string;
   features: { text: string; included: boolean }[];
   limits: {
     clients: string;
@@ -95,7 +94,6 @@ const plans: Record<string, PlanConfig> = {
     price: 19,
     priceLabel: '$19/mês',
     description: 'Freelancers / Pequenas Agências',
-    profitMargin: 'Alta (~$11/user)',
     features: [
       { text: '5 Marcas (Clientes)', included: true },
       { text: 'Redes Sociais Ilimitadas', included: true },
@@ -118,7 +116,6 @@ const plans: Record<string, PlanConfig> = {
     priceLabel: '$39/mês',
     description: 'Agências em Crescimento',
     popular: true,
-    profitMargin: 'Média (~$14/user)',
     features: [
       { text: '15 Marcas (Clientes)', included: true },
       { text: '15 Créditos Studio AI / dia', included: true },
@@ -139,7 +136,6 @@ const plans: Record<string, PlanConfig> = {
     price: 79,
     priceLabel: '$79/mês',
     description: 'Grandes Agências / White Label',
-    profitMargin: 'Estável (~$26/user)',
     features: [
       { text: '50 Marcas (Clientes)', included: true },
       { text: '30 Créditos Studio AI / dia', included: true },
@@ -390,14 +386,6 @@ export default function Upgrade() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                      <TrendingUp className="h-3 w-3 text-green-500" />
-                      Margem de Lucro
-                    </div>
-                    <div className="text-sm font-bold text-foreground">{plan.profitMargin}</div>
-                  </div>
-
                   <ul className="space-y-2 mb-6 flex-1">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-center gap-2 text-sm">
@@ -495,12 +483,6 @@ export default function Upgrade() {
                     <td className="text-center py-3 px-4">5</td>
                     <td className="text-center py-3 px-4">15</td>
                     <td className="text-center py-3 px-4">30</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-3 px-4">Margem de Lucro</td>
-                    <td className="text-center py-3 px-4">{plans.starter.profitMargin}</td>
-                    <td className="text-center py-3 px-4">{plans.pro.profitMargin}</td>
-                    <td className="text-center py-3 px-4">{plans.agency.profitMargin}</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Módulos Extras</td>

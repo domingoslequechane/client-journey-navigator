@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, ArrowLeft, Star, Sparkles, TrendingUp } from 'lucide-react';
+import { Check, X, ArrowLeft, Star, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 
@@ -22,7 +22,6 @@ const plans = [
     bgColor: 'hsl(217, 91%, 60%, 0.1)',
     borderColor: 'border-blue-500/30',
     textColor: 'text-blue-500',
-    profitMargin: 'Alta (~$11/user)',
     features: [
       '5 Marcas (Clientes)',
       'Redes Sociais Ilimitadas',
@@ -43,7 +42,6 @@ const plans = [
     textColor: 'text-purple-500',
     popular: true,
     recommended: 'Mais Popular',
-    profitMargin: 'Média (~$14/user)',
     features: [
       '15 Marcas (Clientes)',
       '15 Créditos Studio AI / dia',
@@ -62,7 +60,6 @@ const plans = [
     bgColor: 'hsl(25, 95%, 53%, 0.1)',
     borderColor: 'border-orange-500/30',
     textColor: 'text-orange-500',
-    profitMargin: 'Estável (~$26/user)',
     features: [
       '50 Marcas (Clientes)',
       '30 Créditos Studio AI / dia',
@@ -87,7 +84,6 @@ const comparisonFeatures = [
     features: [
       { name: 'Marcas (Clientes)', starter: '5', pro: '15', agency: '50' },
       { name: 'Studio AI (Créditos / dia)', starter: '5', pro: '15', agency: '30' },
-      { name: 'Margem de Lucro', starter: 'Alta (~$11/user)', pro: 'Média (~$14/user)', agency: 'Estável (~$26/user)' },
     ],
   },
   {
@@ -169,20 +165,12 @@ const Pricing = () => {
                   <CardDescription className="italic text-xs">{plan.tagline}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="mb-4">
+                  <div className="mb-6">
                     <span className="text-4xl font-bold">{plan.price}</span>
                     <p className="text-sm text-muted-foreground mt-1">por mês</p>
                   </div>
 
-                  <div className="mb-6 p-3 bg-background/50 rounded-lg border border-border/50">
-                    <div className="flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                      <TrendingUp className="h-3 w-3 text-green-500" />
-                      Margem de Lucro
-                    </div>
-                    <div className="text-sm font-bold text-foreground">{plan.profitMargin}</div>
-                  </div>
-
-                  <ul className="space-y-2 mb-6 text-left">
+                  <ul className="space-y-2 mb-8 text-left">
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="flex items-center gap-2 text-sm">
                         <Check className={`h-4 w-4 shrink-0 ${plan.textColor}`} />
