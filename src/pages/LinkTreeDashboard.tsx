@@ -36,6 +36,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 
 export default function LinkTreeDashboard() {
   const { t } = useTranslation('clients');
@@ -43,6 +44,7 @@ export default function LinkTreeDashboard() {
   const { organizationId } = useOrganizationCurrency();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectClientOpen, setSelectClientOpen] = useState(false);
+  const { limits, usage } = usePlanLimits();
   // Fetch organization slug
   const { data: organization } = useQuery({
     queryKey: ['organization-slug', organizationId],
@@ -233,7 +235,16 @@ export default function LinkTreeDashboard() {
           <Link2 className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Link23</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              Link23
+            </div>
+            {limits.maxLinkPages !== null && (
+              <Badge variant="outline" className="font-mono">
+                Páginas: {usage.linkPagesCount}/{limits.maxLinkPages}
+              </Badge>
+            )}
+          </h1>
           <p className="text-muted-foreground text-sm">
             Crie e gerencie páginas de links para seus clientes
           </p>

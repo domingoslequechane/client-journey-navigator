@@ -1,4 +1,4 @@
- import { useMemo } from 'react';
+import { useMemo } from 'react';
  import { useQuery } from '@tanstack/react-query';
  import { useTranslation } from 'react-i18next';
  import { useSearchParams, Link, useNavigate } from 'react-router-dom';
@@ -19,7 +19,7 @@
  import { useSubscription } from '@/hooks/useSubscription';
  import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
  import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
- import { useUserRole } from '@/hooks/useUserRole';
+ import { usePlanLimits } from '@/hooks/usePlanLimits';
  
  const salesStageIcons: Record<string, typeof Search> = { prospecting: Search, qualification: Target, closing: FileCheck };
  const operationalStageIcons: Record<string, typeof Cog> = { production: Cog, campaigns: Megaphone, retention: Target, loyalty: Heart };
@@ -34,6 +34,7 @@
    const { user } = useAuth();
    const { hasActiveSubscription, loading: subLoading } = useSubscription();
    const { canSeeSalesFunnel, canSeeOperationalFlow } = useUserRole();
+   const { limits, usage } = usePlanLimits();
  
    // Determine available tabs based on role
    const availableTabs = useMemo(() => {
@@ -109,7 +110,14 @@
      <div className="p-4 md:p-8 h-full flex flex-col">
        <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
          <div>
-           <h1 className="text-2xl md:text-3xl font-bold">{tCommon('navigation.pipeline')}</h1>
+           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 flex-wrap">
+             {tCommon('navigation.pipeline')}
+             {limits.maxClients !== null && (
+               <Badge variant="outline" className="font-mono">
+                 Clientes Ativos: {usage.clientsCount}/{limits.maxClients}
+               </Badge>
+             )}
+           </h1>
            <p className="text-sm md:text-base text-muted-foreground mt-1">
              {currentTab === 'sales' ? t('subtitle') : t('operationalFlow.subtitle')}
            </p>
@@ -191,8 +199,7 @@
                                <p className="font-medium truncate">{client.companyName}</p>
                                <p className="text-sm text-muted-foreground">{client.contactName}</p>
                                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground font-mono">
-                                 <Phone className="h-3 w-3" />
-                                 {formatPhoneNumber(client.phone)}
+                                 <Phone className="h-3 w-3" />{formatPhoneNumber(client.phone)}
                                </div>
                              </div>
                            </div>
