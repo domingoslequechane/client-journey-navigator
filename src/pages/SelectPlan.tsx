@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, ArrowRight, LogOut } from 'lucide-react';
+import { Check, Loader2, ArrowRight, LogOut, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -21,13 +21,13 @@ const plans = [
     name: 'Lança',
     price: 19,
     period: '/mês',
-    description: 'Para agências em crescimento',
+    description: 'Freelancers / Pequenas Agências',
+    profitMargin: 'Alta (~$11/user)',
     features: [
-      '15 clientes ativos',
-      '5 membros de equipe',
-      'Finanças + Editorial + Studio AI',
-      'Social Media (3 contas, 50 posts)',
-      'Link23 (1 página)',
+      '5 Marcas (Clientes)',
+      'Redes Sociais Ilimitadas',
+      '5 Créditos Studio AI / dia',
+      'Módulos: Finanças, Editorial, Link23',
     ],
     image: planLanca,
   },
@@ -36,13 +36,13 @@ const plans = [
     name: 'Arco',
     price: 39,
     period: '/mês',
-    description: 'Para agências estabelecidas',
+    description: 'Agências em Crescimento',
+    profitMargin: 'Média (~$14/user)',
     features: [
-      '50 clientes ativos',
-      '10 membros de equipe',
-      'Todos os módulos + Inbox',
-      'Social Media (7 contas, 200 posts)',
-      'Link23 (5 páginas)',
+      '15 Marcas (Clientes)',
+      '15 Créditos Studio AI / dia',
+      'Tudo do Lança + Inbox/Analytics',
+      'Suporte Prioritário',
     ],
     image: planArco,
     popular: true,
@@ -52,13 +52,13 @@ const plans = [
     name: 'Catapulta',
     price: 79,
     period: '/mês',
-    description: 'Para grandes agências',
+    description: 'Grandes Agências / White Label',
+    profitMargin: 'Estável (~$26/user)',
     features: [
-      'Clientes ilimitados',
-      '20 membros de equipe',
-      'Tudo ilimitado',
-      'Social Media (15 contas)',
-      'Suporte VIP dedicado',
+      '50 Marcas (Clientes)',
+      '30 Créditos Studio AI / dia',
+      'Tudo do Arco + Suporte VIP',
+      'Acesso Antecipado a Recursos',
     ],
     image: planCatapulta,
   },
@@ -172,13 +172,6 @@ export default function SelectPlan() {
         }
       );
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
-        const textResponse = await response.text();
-        console.error('Non-JSON response from checkout:', textResponse.substring(0, 200));
-        throw new Error('Erro inesperado ao criar checkout. Tente novamente.');
-      }
-
       const data = await response.json();
 
       if (!response.ok) {
@@ -229,10 +222,10 @@ export default function SelectPlan() {
       <div className="min-h-screen flex flex-col items-center justify-center p-4 py-12">
         <div className="text-center mb-8 max-w-2xl">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Escolha seu plano
+            Tabela de Planos e Limitações
           </h1>
           <p className="text-muted-foreground text-lg">
-            Selecione um plano para começar a usar o Qualify. Informações de cartão são obrigatórias.
+            Selecione o plano ideal para a escala da sua operação. 14 dias grátis.
           </p>
         </div>
 
@@ -266,7 +259,7 @@ export default function SelectPlan() {
                   <CardTitle className="text-xl" style={{ color: colors.primary }}>
                     {plan.name}
                   </CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
+                  <CardDescription className="text-xs">{plan.description}</CardDescription>
                 </CardHeader>
 
                 <CardContent className="flex-1 flex flex-col">
@@ -277,9 +270,14 @@ export default function SelectPlan() {
                       </span>
                       <span className="text-muted-foreground">{plan.period}</span>
                     </div>
-                    <p className="text-sm text-primary font-medium mt-1">
-                      Cartão obrigatório
-                    </p>
+                  </div>
+
+                  <div className="mb-6 p-3 bg-muted/50 rounded-lg border border-border/50">
+                    <div className="flex items-center gap-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                      <TrendingUp className="h-3 w-3 text-green-500" />
+                      Margem de Lucro
+                    </div>
+                    <div className="text-sm font-bold text-foreground">{plan.profitMargin}</div>
                   </div>
 
                   <ul className="space-y-2 mb-6 flex-1">
@@ -304,10 +302,7 @@ export default function SelectPlan() {
                     disabled={!!loadingPlan}
                   >
                     {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processando...
-                      </>
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <>
                         Assinar Agora

@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from '@/components/ui/dialog';
 import { 
   Loader2, CheckCircle2, Clock, Receipt, XCircle, Compass, Target, 
   TrendingUp, Rocket, Sparkles, AlertTriangle, ExternalLink, RotateCcw, CreditCard 
@@ -50,6 +50,7 @@ const PLAN_CONFIG = {
     borderColor: 'border-green-500/20',
     image: planLanca,
     price: 'Legado',
+    profitMargin: 'N/A',
     features: ['3 clientes ativos', 'Funil ilimitado', '3 contratos/mês', '90 msgs IA/mês']
   },
   starter: {
@@ -60,7 +61,8 @@ const PLAN_CONFIG = {
     borderColor: 'border-blue-500/20',
     image: planLanca,
     price: '$19/mês',
-    features: ['15 clientes ativos', 'Contratos e faturas', '500 msgs IA', 'Academia completa']
+    profitMargin: 'Alta (~$11/user)',
+    features: ['5 Marcas (Clientes)', 'Redes Sociais Ilimitadas', '5 Créditos Studio AI / dia', 'Módulos: Finanças, Editorial, Link23']
   },
   pro: {
     name: 'Arco',
@@ -70,7 +72,8 @@ const PLAN_CONFIG = {
     borderColor: 'border-purple-500/20',
     image: planArco,
     price: '$39/mês',
-    features: ['50 clientes ativos', 'Todos os documentos', '1200 msgs IA', 'Academia + IA']
+    profitMargin: 'Média (~$14/user)',
+    features: ['15 Marcas (Clientes)', '15 Créditos Studio AI / dia', 'Tudo do Lança + Inbox/Analytics', 'Suporte Prioritário']
   },
   agency: {
     name: 'Catapulta',
@@ -80,7 +83,8 @@ const PLAN_CONFIG = {
     borderColor: 'border-orange-500/20',
     image: planCatapulta,
     price: '$79/mês',
-    features: ['Clientes ilimitados', 'Docs ilimitados', 'IA ilimitada', 'Suporte prioritário']
+    profitMargin: 'Estável (~$26/user)',
+    features: ['50 Marcas (Clientes)', '30 Créditos Studio AI / dia', 'Tudo do Arco + Suporte VIP', 'Acesso Antecipado a Recursos']
   },
 };
 
@@ -334,6 +338,16 @@ export function SubscriptionTab() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {isPaidPlan && (
+            <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+              <div className="flex items-center gap-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                <TrendingUp className="h-3 w-3 text-green-500" />
+                Margem de Lucro
+              </div>
+              <div className="text-sm font-bold text-foreground">{currentPlan.profitMargin}</div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {currentPlan.features.map((feature, index) => (
               <div key={index} className="flex items-center gap-2 text-xs sm:text-sm">
@@ -345,7 +359,6 @@ export function SubscriptionTab() {
 
           {/* Management buttons */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-4 border-t">
-            {/* Payment management - only for paid plans */}
             {isPaidPlan && isActive && (
               <>
                 <Button 
@@ -384,7 +397,6 @@ export function SubscriptionTab() {
                           Sua assinatura será cancelada no final do período atual 
                           ({subscription?.currentPeriodEnd ? format(new Date(subscription.currentPeriodEnd), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'data não disponível'}).
                           Você continuará tendo acesso aos recursos do plano {currentPlan.name} até essa data.
-                          Após o cancelamento, você perderá o acesso às funcionalidades do sistema.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -423,7 +435,7 @@ export function SubscriptionTab() {
               <div className="flex-1">
                 <h3 className="font-semibold text-primary">Desbloqueie mais recursos</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Faça upgrade para ter mais clientes, membros na equipe, contratos e mensagens de IA.
+                  Faça upgrade para ter mais marcas, créditos de design e módulos avançados.
                 </p>
                 <Link to="/app/upgrade">
                   <Button className="mt-4 gap-2">
@@ -431,33 +443,6 @@ export function SubscriptionTab() {
                     Ver Planos
                   </Button>
                 </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Active Subscription Info */}
-      {isActive && !cancelAtPeriodEnd && !isPastDue && isPaidPlan && (
-        <Card className={cn(currentPlan.borderColor, currentPlan.bgColor)}>
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className={cn("p-3 rounded-full", currentPlan.bgColor)}>
-                <CheckCircle2 className={cn("h-6 w-6", currentPlan.color)} />
-              </div>
-              <div className="flex-1">
-                <h3 className={cn("font-semibold", currentPlan.color)}>Assinatura Ativa</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Sua assinatura está ativa. Você tem acesso a todas as funcionalidades do plano {currentPlan.name}.
-                </p>
-                {planType !== 'agency' && (
-                  <Link to="/app/upgrade">
-                    <Button variant="outline" className="mt-4 gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      Fazer Upgrade
-                    </Button>
-                  </Link>
-                )}
               </div>
             </div>
           </CardContent>
@@ -522,4 +507,3 @@ export function SubscriptionTab() {
     </div>
   );
 }
-

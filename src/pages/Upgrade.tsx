@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   CreditCard, CheckCircle2, Loader2, ArrowLeft, X, 
-  Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert 
+  Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert, TrendingUp 
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -67,8 +67,8 @@ export const planImages: Record<string, string> = {
 
 export const planNames: Record<PlanType, { name: string; codename: string; tagline: string }> = {
   free: { name: 'Sem Plano', codename: 'Sem Plano', tagline: 'Selecione um plano para começar.' },
-  starter: { name: 'Pequena Agência', codename: 'Lança', tagline: 'Profissionalize sua prospecção e fechamento.' },
-  pro: { name: 'Agência em Crescimento', codename: 'Arco', tagline: 'Automação total para quem não quer parar.' },
+  starter: { name: 'Pequena Agência', codename: 'Lança', tagline: 'O essencial para começar a crescer.' },
+  pro: { name: 'Agência em Crescimento', codename: 'Arco', tagline: 'Ferramentas para escalar seus resultados.' },
   agency: { name: 'Agência Consolidada', codename: 'Catapulta', tagline: 'Poder total para dominar o mercado.' },
 };
 
@@ -78,6 +78,7 @@ interface PlanConfig {
   priceLabel: string;
   description: string;
   popular?: boolean;
+  profitMargin: string;
   features: { text: string; included: boolean }[];
   limits: {
     clients: string;
@@ -93,21 +94,18 @@ const plans: Record<string, PlanConfig> = {
     name: 'Lança',
     price: 19,
     priceLabel: '$19/mês',
-    description: 'Para a Pequena Agência',
+    description: 'Freelancers / Pequenas Agências',
+    profitMargin: 'Alta (~$11/user)',
     features: [
-      { text: '15 clientes ativos', included: true },
-      { text: 'Contratos e faturas', included: true },
-      { text: '500 msgs IA', included: true },
-      { text: 'Academia completa', included: true },
-      { text: 'Studio AI (15 créditos diários)', included: true },
-      { text: 'Social Media (5 marcas, 50 posts)', included: true },
-      { text: 'Link23 (1 página)', included: true },
-      { text: 'Exportação de dados', included: true },
-      { text: 'Inbox (DMs)', included: false },
-      { text: 'Suporte prioritário', included: false },
+      { text: '5 Marcas (Clientes)', included: true },
+      { text: 'Redes Sociais Ilimitadas', included: true },
+      { text: '5 Créditos Studio AI / dia', included: true },
+      { text: 'Módulos: Finanças, Editorial, Link23', included: true },
+      { text: 'Inbox/Analytics', included: false },
+      { text: 'Suporte VIP', included: false },
     ],
     limits: {
-      clients: '15 ativos',
+      clients: '5 ativos',
       contracts: '15/mês',
       ai: '500 msgs/mês',
       team: '5 usuários',
@@ -118,22 +116,18 @@ const plans: Record<string, PlanConfig> = {
     name: 'Arco',
     price: 39,
     priceLabel: '$39/mês',
-    description: 'Para a Agência em Crescimento',
+    description: 'Agências em Crescimento',
     popular: true,
+    profitMargin: 'Média (~$14/user)',
     features: [
-      { text: '50 clientes ativos', included: true },
-      { text: 'Todos os documentos', included: true },
-      { text: '1200 msgs IA', included: true },
-      { text: 'Academia + IA', included: true },
-      { text: 'Studio AI (30 créditos diários)', included: true },
-      { text: 'Social Media (15 marcas, 200 posts)', included: true },
-      { text: 'Link23 (5 páginas)', included: true },
-      { text: 'Inbox (DMs)', included: true },
-      { text: 'Suporte prioritário', included: true },
+      { text: '15 Marcas (Clientes)', included: true },
+      { text: '15 Créditos Studio AI / dia', included: true },
+      { text: 'Tudo do Lança + Inbox/Analytics', included: true },
+      { text: 'Suporte Prioritário', included: true },
       { text: 'Suporte VIP', included: false },
     ],
     limits: {
-      clients: '50 ativos',
+      clients: '15 ativos',
       contracts: '50/mês',
       ai: '1200 msgs/mês',
       team: '10 usuários',
@@ -144,23 +138,17 @@ const plans: Record<string, PlanConfig> = {
     name: 'Catapulta',
     price: 79,
     priceLabel: '$79/mês',
-    description: 'Para a Agência Consolidada',
+    description: 'Grandes Agências / White Label',
+    profitMargin: 'Estável (~$26/user)',
     features: [
-      { text: 'Clientes ilimitados', included: true },
-      { text: 'Docs ilimitados', included: true },
-      { text: 'IA ilimitada', included: true },
-      { text: 'Suporte prioritário', included: true },
-      { text: '20 usuários', included: true },
-      { text: 'Todos os módulos', included: true },
-      { text: 'Studio AI (60 créditos diários)', included: true },
-      { text: 'Social Media (50 marcas, ilimitado)', included: true },
-      { text: 'Link23 ilimitado', included: true },
-      { text: 'Inbox (DMs)', included: true },
-      { text: 'Suporte VIP dedicado', included: true },
-      { text: 'Templates ilimitados', included: true },
+      { text: '50 Marcas (Clientes)', included: true },
+      { text: '30 Créditos Studio AI / dia', included: true },
+      { text: 'Tudo do Arco + Suporte VIP', included: true },
+      { text: 'Acesso Antecipado a Recursos', included: true },
+      { text: 'Templates Ilimitados', included: true },
     ],
     limits: {
-      clients: 'Ilimitado',
+      clients: '50 ativos',
       contracts: 'Ilimitado',
       ai: 'Ilimitado',
       team: '20 usuários',
@@ -231,7 +219,6 @@ export default function Upgrade() {
       return;
     }
 
-    // If no active subscription, go straight to checkout
     if (currentPlan === 'free' || !subscription?.lemonsqueezySubscriptionId) {
       await handleSubscribe(newPlanType);
       return;
@@ -248,7 +235,6 @@ export default function Upgrade() {
       });
 
       if (response.error || response.data?.error) {
-        console.log('Change plan failed, falling back to checkout:', response.error?.message || response.data?.error);
         setChangingPlan(null);
         await handleSubscribe(newPlanType);
         return;
@@ -261,7 +247,6 @@ export default function Upgrade() {
 
       await refetch();
     } catch (error: any) {
-      console.log('Change plan exception, falling back to checkout:', error);
       setChangingPlan(null);
       await handleSubscribe(newPlanType);
       return;
@@ -294,25 +279,8 @@ export default function Upgrade() {
               <p>
                 Apenas o <strong>administrador da agência</strong> pode visualizar e alterar o plano de assinatura.
               </p>
-              <p className="text-muted-foreground">
-                Se você precisa de um upgrade ou alteração no plano, entre em contato com o administrador da sua organização.
-              </p>
             </AlertDescription>
           </Alert>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Por que essa restrição?
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>• Decisões de assinatura envolvem custos financeiros</p>
-              <p>• Apenas administradores têm autoridade para aprovar mudanças de plano</p>
-              <p>• Isso garante controle adequado sobre os recursos da organização</p>
-            </CardContent>
-          </Card>
         </div>
       </div>
     );
@@ -335,9 +303,9 @@ export default function Upgrade() {
             Voltar ao Dashboard
           </Link>
           
-          <h1 className="text-3xl font-bold">Escolha o plano ideal para sua agência</h1>
+          <h1 className="text-3xl font-bold">Tabela de Planos e Limitações</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Escale suas operações com o plano que melhor se adapta à sua agência. Informações de cartão são obrigatórias.
+            Escale suas operações com o plano que melhor se adapta à sua agência.
           </p>
         </div>
 
@@ -352,7 +320,7 @@ export default function Upgrade() {
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-5 w-5" style={{ color: planColors[currentPlan]?.primary || planColors.starter.primary }} />
               <span>
-                Você está no plano <strong>{planNames[currentPlan]?.codename || 'Lança'}</strong> ({planNames[currentPlan]?.name || 'Crescimento'})
+                Você está no plano <strong>{planNames[currentPlan]?.codename || 'Lança'}</strong>
               </span>
             </div>
             <Badge 
@@ -388,9 +356,6 @@ export default function Upgrade() {
                 className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg ${
                   plan.popular && !isCurrentPlan ? 'ring-2' : ''
                 } ${isCurrentPlan ? `neon-pulse ${neonColorClass}` : ''}`}
-                style={{
-                  borderColor: plan.popular && !isCurrentPlan ? colors.border : undefined,
-                }}
               >
                 {isCurrentPlan && (
                   <Badge 
@@ -410,36 +375,31 @@ export default function Upgrade() {
                     alt={`Plano ${planInfo.codename}`}
                     className="w-full h-full object-cover"
                   />
-                  {plan.popular && !isCurrentPlan && (
-                    <Badge 
-                      className="absolute top-3 right-3 shadow-lg"
-                      style={{ backgroundColor: colors.primary }}
-                    >
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Mais Popular
-                    </Badge>
-                  )}
                 </div>
 
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2">
                     <span style={{ color: colors.text }}>{planInfo.codename}</span>
                   </CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
+                  <CardDescription className="text-xs">{plan.description}</CardDescription>
                   <div className="pt-2">
                     <span className="text-3xl font-bold" style={{ color: colors.text }}>
                       ${plan.price}
                     </span>
                     <span className="text-muted-foreground">/mês</span>
-                    <p className="text-sm text-primary font-medium mt-1">Cartão obrigatório</p>
                   </div>
-                  <p className="text-xs italic text-muted-foreground mt-1">
-                    {planInfo.tagline}
-                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <ul className="space-y-2">
-                    {plan.features.slice(0, 6).map((feature, index) => (
+                  <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                    <div className="flex items-center gap-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                      <TrendingUp className="h-3 w-3 text-green-500" />
+                      Margem de Lucro
+                    </div>
+                    <div className="text-sm font-bold text-foreground">{plan.profitMargin}</div>
+                  </div>
+
+                  <ul className="space-y-2 mb-6 flex-1">
+                    {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-center gap-2 text-sm">
                         {feature.included ? (
                           <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: colors.primary }} />
@@ -474,17 +434,10 @@ export default function Upgrade() {
                       style={{ backgroundColor: colors.primary }}
                     >
                       {isLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          {isUpgrade ? 'Fazendo Upgrade...' : 'Fazendo Downgrade...'}
-                        </>
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
-                          {isUpgrade ? (
-                            <Crown className="h-4 w-4" />
-                          ) : (
-                            <CreditCard className="h-4 w-4" />
-                          )}
+                          {isUpgrade ? <Crown className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
                           {getButtonLabel(planKey, currentPlan)}
                         </>
                       )}
@@ -497,14 +450,11 @@ export default function Upgrade() {
                       style={{ backgroundColor: colors.primary }}
                     >
                       {isLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Processando...
-                        </>
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
                           <Sparkles className="h-4 w-4" />
-                          Iniciar Minha Transformação
+                          Assinar Agora
                         </>
                       )}
                     </Button>
@@ -519,7 +469,7 @@ export default function Upgrade() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Comparação de Planos
+              Comparação Detalhada
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -529,53 +479,40 @@ export default function Upgrade() {
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">Recurso</th>
                     <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.starter.text }}>Lança</th>
-                    <th className="text-center py-3 px-4 font-medium" style={{ backgroundColor: planColors.pro.bg, color: planColors.pro.text }}>Arco</th>
+                    <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.pro.text }}>Arco</th>
                     <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.agency.text }}>Catapulta</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Clientes</td>
+                    <td className="py-3 px-4">Marcas (Clientes)</td>
                     <td className="text-center py-3 px-4">{plans.starter.limits.clients}</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.clients}</td>
+                    <td className="text-center py-3 px-4">{plans.pro.limits.clients}</td>
                     <td className="text-center py-3 px-4">{plans.agency.limits.clients}</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Contratos</td>
-                    <td className="text-center py-3 px-4">{plans.starter.limits.contracts}</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.contracts}</td>
-                    <td className="text-center py-3 px-4">{plans.agency.limits.contracts}</td>
+                    <td className="py-3 px-4">Studio AI (Créditos/dia)</td>
+                    <td className="text-center py-3 px-4">5</td>
+                    <td className="text-center py-3 px-4">15</td>
+                    <td className="text-center py-3 px-4">30</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Assistente IA</td>
-                    <td className="text-center py-3 px-4">{plans.starter.limits.ai}</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.ai}</td>
-                    <td className="text-center py-3 px-4">{plans.agency.limits.ai}</td>
+                    <td className="py-3 px-4">Margem de Lucro</td>
+                    <td className="text-center py-3 px-4">{plans.starter.profitMargin}</td>
+                    <td className="text-center py-3 px-4">{plans.pro.profitMargin}</td>
+                    <td className="text-center py-3 px-4">{plans.agency.profitMargin}</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Equipe</td>
-                    <td className="text-center py-3 px-4">{plans.starter.limits.team}</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.team}</td>
-                    <td className="text-center py-3 px-4">{plans.agency.limits.team}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-3 px-4">Templates</td>
-                    <td className="text-center py-3 px-4">{plans.starter.limits.templates}</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.templates}</td>
-                    <td className="text-center py-3 px-4">{plans.agency.limits.templates}</td>
+                    <td className="py-3 px-4">Módulos Extras</td>
+                    <td className="text-center py-3 px-4 text-xs">Finanças, Editorial, Link23</td>
+                    <td className="text-center py-3 px-4 text-xs">Tudo + Inbox/Analytics</td>
+                    <td className="text-center py-3 px-4 text-xs">Tudo + Suporte VIP</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </CardContent>
         </Card>
-
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            14 dias grátis em qualquer plano. Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
-          </p>
-        </div>
-
       </div>
     </div>
   );

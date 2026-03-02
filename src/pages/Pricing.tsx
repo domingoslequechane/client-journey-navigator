@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, ArrowLeft, Star, Sparkles } from 'lucide-react';
+import { Check, X, ArrowLeft, Star, Sparkles, TrendingUp } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 
@@ -15,25 +15,26 @@ const plans = [
     key: 'starter',
     name: 'Lança',
     subtitle: 'Freelancers / Pequenas Agências',
-    price: '$19 / 1.216 MT',
+    price: '$19',
     tagline: 'O essencial para começar a crescer.',
     image: planLanca,
     color: 'hsl(217, 91%, 60%)',
     bgColor: 'hsl(217, 91%, 60%, 0.1)',
     borderColor: 'border-blue-500/30',
     textColor: 'text-blue-500',
+    profitMargin: 'Alta (~$11/user)',
     features: [
       '5 Marcas (Clientes)',
       'Redes Sociais Ilimitadas',
       '5 Créditos Studio AI / dia',
-      'Módulo de Finanças'
+      'Módulos: Finanças, Editorial, Link23'
     ]
   },
   {
     key: 'pro',
     name: 'Arco',
     subtitle: 'Agências em Crescimento',
-    price: '$39 / 2.496 MT',
+    price: '$39',
     tagline: 'Ferramentas para escalar seus resultados.',
     image: planArco,
     color: 'hsl(270, 91%, 65%)',
@@ -42,10 +43,11 @@ const plans = [
     textColor: 'text-purple-500',
     popular: true,
     recommended: 'Mais Popular',
+    profitMargin: 'Média (~$14/user)',
     features: [
       '15 Marcas (Clientes)',
       '15 Créditos Studio AI / dia',
-      'Módulos Inbox/Analytics',
+      'Tudo do Lança + Inbox/Analytics',
       'Suporte Prioritário'
     ]
   },
@@ -53,18 +55,19 @@ const plans = [
     key: 'agency',
     name: 'Catapulta',
     subtitle: 'Grandes Agências / White Label',
-    price: '$79 / 5.056 MT',
+    price: '$79',
     tagline: 'Poder total para dominar o mercado.',
     image: planCatapulta,
     color: 'hsl(25, 95%, 53%)',
     bgColor: 'hsl(25, 95%, 53%, 0.1)',
     borderColor: 'border-orange-500/30',
     textColor: 'text-orange-500',
+    profitMargin: 'Estável (~$26/user)',
     features: [
       '50 Marcas (Clientes)',
       '30 Créditos Studio AI / dia',
-      'Suporte VIP',
-      'Todos os Módulos'
+      'Tudo do Arco + Suporte VIP',
+      'Acesso Antecipado a Recursos'
     ]
   },
 ];
@@ -80,18 +83,17 @@ const comparisonFeatures = [
     ],
   },
   {
-    category: 'Limites',
+    category: 'Limites e Performance',
     features: [
       { name: 'Marcas (Clientes)', starter: '5', pro: '15', agency: '50' },
       { name: 'Studio AI (Créditos / dia)', starter: '5', pro: '15', agency: '30' },
+      { name: 'Margem de Lucro', starter: 'Alta (~$11/user)', pro: 'Média (~$14/user)', agency: 'Estável (~$26/user)' },
     ],
   },
   {
     category: 'Módulos e Suporte',
     features: [
-      { name: 'Finanças', starter: true, pro: true, agency: true },
-      { name: 'Editorial', starter: true, pro: true, agency: true },
-      { name: 'Link23', starter: true, pro: true, agency: true },
+      { name: 'Finanças, Editorial, Link23', starter: true, pro: true, agency: true },
       { name: 'Inbox/Analytics', starter: false, pro: true, agency: true },
       { name: 'Suporte VIP', starter: false, pro: false, agency: true },
     ],
@@ -107,7 +109,7 @@ const Pricing = () => {
         <X className="h-5 w-5 text-muted-foreground/50" />
       );
     }
-    return <span className="font-medium">{value}</span>;
+    return <span className="font-medium text-sm">{value}</span>;
   };
 
   return (
@@ -134,10 +136,10 @@ const Pricing = () => {
           <div className="text-center mb-8">
             <Badge variant="outline" className="mb-4">Planos & Preços</Badge>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Comparação Completa de Planos
+              Tabela de Planos e Limitações
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Todos os planos incluem <strong>14 dias grátis</strong> para testar
+              Escolha o plano ideal para a escala da sua operação.
             </p>
           </div>
 
@@ -164,13 +166,20 @@ const Pricing = () => {
                   />
                   <CardTitle className={plan.textColor}>{plan.name}</CardTitle>
                   <CardDescription className="font-medium text-foreground/80">{plan.subtitle}</CardDescription>
-                  <CardDescription className="italic">{plan.tagline}</CardDescription>
+                  <CardDescription className="italic text-xs">{plan.tagline}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
                   <div className="mb-4">
-                    <span className="text-3xl font-bold">{plan.price}</span>
+                    <span className="text-4xl font-bold">{plan.price}</span>
                     <p className="text-sm text-muted-foreground mt-1">por mês</p>
-                    <p className="text-xs font-bold text-orange-500 uppercase mt-1">14 dias grátis</p>
+                  </div>
+
+                  <div className="mb-6 p-3 bg-background/50 rounded-lg border border-border/50">
+                    <div className="flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                      <TrendingUp className="h-3 w-3 text-green-500" />
+                      Margem de Lucro
+                    </div>
+                    <div className="text-sm font-bold text-foreground">{plan.profitMargin}</div>
                   </div>
 
                   <ul className="space-y-2 mb-6 text-left">
@@ -184,14 +193,13 @@ const Pricing = () => {
 
                   <Link to="/auth">
                     <Button
-                      className="w-full gap-2"
+                      className="w-full gap-2 text-white shadow-lg"
                       style={{
                         backgroundColor: plan.color,
-                        color: 'white'
                       }}
                     >
                       <Sparkles className="h-4 w-4" />
-                      Iniciar Minha Transformação
+                      Assinar Plano {plan.name}
                     </Button>
                   </Link>
                 </CardContent>
@@ -246,9 +254,9 @@ const Pricing = () => {
           </div>
 
           <div className="text-center mt-16">
-            <h2 className="text-2xl font-bold mb-4">Pronto para começar?</h2>
+            <h2 className="text-2xl font-bold mb-4">Pronto para escalar sua agência?</h2>
             <p className="text-muted-foreground mb-6">
-              Teste grátis por 14 dias. Sem compromisso, cancele quando quiser.
+              Teste grátis por 14 dias em qualquer plano. Sem compromisso, cancele quando quiser.
             </p>
             <Link to="/auth">
               <Button size="lg" className="gap-2">
