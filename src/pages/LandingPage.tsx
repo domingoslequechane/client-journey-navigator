@@ -36,7 +36,13 @@ import {
   GraduationCap,
   Link2,
   Palette,
-  BarChart3
+  BarChart3,
+  Share2,
+  FileCheck,
+  Calendar,
+  MessageSquare,
+  LayoutDashboard,
+  Zap
 } from 'lucide-react';
 import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration';
 import { useEffect, useState, useRef } from 'react';
@@ -492,74 +498,128 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
-            
-            {/* 7 benefícios em grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-              <div className="text-center">
-                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <LayoutGrid className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-1">{t('solution.benefit1Title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('solution.benefit1Desc')}</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Star className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-1">{t('solution.benefit2Title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('solution.benefit2Desc')}</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Bot className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-1">{t('solution.benefit3Title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('solution.benefit3Desc')}</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <TrendingUp className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-1">{t('solution.benefit4Title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('solution.benefit4Desc')}</p>
-              </div>
+          </div>
+        </div>
+      </section>
+
+      {/* RECURSOS - Grade de Recursos Expandida */}
+      <section className="py-20 md:py-32">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+                {t('features.title')}
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                {t('features.subtitle')}
+              </p>
             </div>
-            
-            {/* Segunda linha com 3 benefícios centralizados */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-              <div className="text-center">
-                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <FileText className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-1">{t('solution.benefit5Title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('solution.benefit5Desc')}</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Receipt className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-1">{t('solution.benefit6Title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('solution.benefit6Desc')}</p>
-              </div>
-              
-              <div className="text-center col-span-2 md:col-span-1">
-                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <GraduationCap className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-1">{t('solution.benefit7Title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('solution.benefit7Desc')}</p>
-              </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Gestão de Clientes */}
+              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
+                <CardHeader>
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <LayoutDashboard className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t('features.clients.title')}</CardTitle>
+                  <CardDescription>{t('features.clients.description')}</CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Finanças */}
+              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
+                <CardHeader>
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Wallet className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t('features.finance.title')}</CardTitle>
+                  <CardDescription>{t('features.finance.description')}</CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Link 23 */}
+              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
+                <CardHeader>
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Share2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t('features.link23.title')}</CardTitle>
+                  <CardDescription>{t('features.link23.description')}</CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Social Media */}
+              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
+                <CardHeader>
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Calendar className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t('features.social.title')}</CardTitle>
+                  <CardDescription>{t('features.social.description')}</CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* QIA - Destaque */}
+              <Card className="border-primary/30 bg-primary/5 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group lg:col-span-2">
+                <CardHeader className="flex-row gap-6 items-start">
+                  <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Bot className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CardTitle className="text-xl">{t('features.qia.title')}</CardTitle>
+                      <Badge variant="secondary" className="bg-primary/20 text-primary border-none">IA Estratégica</Badge>
+                    </div>
+                    <CardDescription className="text-base">{t('features.qia.description')}</CardDescription>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              {/* Studio AI - Destaque */}
+              <Card className="border-primary/30 bg-primary/5 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group lg:col-span-2">
+                <CardHeader className="flex-row gap-6 items-start">
+                  <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Sparkles className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CardTitle className="text-xl">{t('features.studio.title')}</CardTitle>
+                      <Badge variant="secondary" className="bg-primary/20 text-primary border-none">Design com IA</Badge>
+                    </div>
+                    <CardDescription className="text-base">{t('features.studio.description')}</CardDescription>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              {/* Documentos */}
+              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
+                <CardHeader>
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <FileCheck className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t('features.docs.title')}</CardTitle>
+                  <CardDescription>{t('features.docs.description')}</CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Academia */}
+              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
+                <CardHeader>
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <GraduationCap className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t('features.academy.title')}</CardTitle>
+                  <CardDescription>{t('features.academy.description')}</CardDescription>
+                </CardHeader>
+              </Card>
             </div>
           </div>
         </div>
       </section>
 
-      {/* LINK23 - Nova Funcionalidade */}
-      <section className="py-20 md:py-32">
+      {/* LINK23 - Nova Funcionalidade (Mantida como destaque) */}
+      <section className="py-20 md:py-32 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -581,7 +641,7 @@ export default function LandingPage() {
                 
                 {/* 3 benefícios */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="text-center p-4 rounded-xl bg-muted/50">
+                  <div className="text-center p-4 rounded-xl bg-card border border-border">
                     <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                       <Palette className="h-5 w-5 text-primary" />
                     </div>
@@ -589,7 +649,7 @@ export default function LandingPage() {
                     <p className="text-xs text-muted-foreground">{t('link23.benefit1Desc')}</p>
                   </div>
                   
-                  <div className="text-center p-4 rounded-xl bg-muted/50">
+                  <div className="text-center p-4 rounded-xl bg-card border border-border">
                     <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                       <BarChart3 className="h-5 w-5 text-primary" />
                     </div>
@@ -597,7 +657,7 @@ export default function LandingPage() {
                     <p className="text-xs text-muted-foreground">{t('link23.benefit2Desc')}</p>
                   </div>
                   
-                  <div className="text-center p-4 rounded-xl bg-muted/50">
+                  <div className="text-center p-4 rounded-xl bg-card border border-border">
                     <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                       <Link2 className="h-5 w-5 text-primary" />
                     </div>
@@ -786,9 +846,13 @@ export default function LandingPage() {
                       ${plan.price}
                     </span>
                     <span className="text-muted-foreground">{t('pricing.perMonth')}</span>
-                    <p className="text-sm text-primary font-medium mt-1">14 dias grátis</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] px-2 py-0">
+                        14 DIAS GRÁTIS
+                      </Badge>
+                    </div>
                   </div>
-                  <p className="text-xs italic text-muted-foreground mt-1">
+                  <p className="text-xs italic text-muted-foreground mt-2">
                     {t(`plans.${planKey}.tagline`)}
                   </p>
                 </CardHeader>
@@ -808,11 +872,11 @@ export default function LandingPage() {
                   
                   <Link to="/auth" className="block">
                     <Button 
-                      className="w-full gap-2 text-white"
+                      className="w-full gap-2 text-white shadow-lg"
                       style={{ backgroundColor: plan.color }}
                     >
-                      <CreditCard className="h-4 w-4" />
-                      {t('pricing.subscribe')}
+                      <Zap className="h-4 w-4" />
+                      {t('pricing.startFree')}
                     </Button>
                   </Link>
                 </CardContent>

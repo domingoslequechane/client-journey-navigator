@@ -17,7 +17,7 @@
     "cta": "Quero crescer 47%",
     "ctaMobile": "Começar agora",
     "installApp": "Instalar App",
-    "trustNoCard": "Sem cartão",
+    "trustNoCard": "14 dias de teste grátis",
     "trustSetup": "Setup em 2 min",
     "trustCancel": "Cancele quando quiser"
   },
@@ -94,14 +94,14 @@
     "stat3Label": "Clientes gerenciados"
   },
   "pricing": {
-    "title": "Comece grátis.",
+    "title": "Comece seu teste.",
     "titleHighlight": "Cresça no seu ritmo.",
-    "subtitle": "Sem cartão para começar. Sem compromisso.",
+    "subtitle": "14 dias de teste grátis em qualquer plano.",
     "free": "Grátis",
     "forever": "para sempre",
     "perMonth": "/mês",
     "mostPopular": "Mais Popular",
-    "startFree": "Começar Grátis",
+    "startFree": "Começar Teste Grátis",
     "subscribe": "Assinar Agora",
     "cancelAnytime": "Cancele a qualquer momento. Sem taxas de cancelamento.",
     "comparePlans": "Comparar Planos em Detalhe"
@@ -135,8 +135,8 @@
   "faq": {
     "title": "Dúvidas?",
     "badge": "Perguntas Frequentes",
-    "q1": "Preciso de cartão de crédito para começar?",
-    "a1": "Não! O plano Bússola é 100% gratuito para sempre, sem necessidade de cartão.",
+    "q1": "Como funciona o período de teste?",
+    "a1": "Você tem 14 dias para explorar todas as funcionalidades do Qualify gratuitamente. É necessário inserir os dados de pagamento para iniciar o teste, mas você não será cobrado se cancelar antes do fim dos 14 dias.",
     "q2": "Posso cancelar minha assinatura a qualquer momento?",
     "a2": "Sim! Cancele quando quiser nas configurações. Você mantém acesso até o fim do período pago.",
     "q3": "O que são clientes ativos?",
@@ -147,9 +147,9 @@
   "cta": {
     "title": "Quantos clientes você vai perder",
     "titleSecond": "enquanto decide?",
-    "subtitle": "Configure em 2 minutos. Comece grátis. Sem cartão.",
-    "button": "Começar agora — é grátis",
-    "buttonMobile": "Começar grátis",
+    "subtitle": "Configure em 2 minutos. 14 dias de teste grátis.",
+    "button": "Começar teste grátis",
+    "buttonMobile": "Testar grátis",
     "footer": "Junte-se a 100+ agências que pararam de perder vendas."
   },
   "footer": {
@@ -162,29 +162,37 @@
   "features": {
     "title": "Tudo que você precisa para crescer",
     "subtitle": "Ferramentas poderosas para gerenciar todo o ciclo de vida do cliente",
-    "funnel": {
-      "title": "Funil de Vendas Visual",
-      "description": "Visualize e gerencie seus leads em cada etapa do funil de vendas"
+    "clients": {
+      "title": "Gestão de Clientes",
+      "description": "Funil visual estilo Kanban para acompanhar cada etapa da jornada do cliente."
     },
-    "ai": {
-      "title": "Assistente de IA",
-      "description": "Receba sugestões inteligentes e automatize tarefas repetitivas"
+    "finance": {
+      "title": "Finanças",
+      "description": "Controle de gastos, metas de faturamento e fluxo de caixa integrado."
     },
-    "contracts": {
-      "title": "Contratos Automatizados",
-      "description": "Gere contratos profissionais com um clique"
+    "link23": {
+      "title": "Link 23",
+      "description": "Crie páginas de links profissionais para seus clientes em segundos."
     },
-    "analytics": {
-      "title": "Relatórios e Analytics",
-      "description": "Acompanhe métricas importantes e tome decisões baseadas em dados"
+    "social": {
+      "title": "Social Media",
+      "description": "Calendário editorial, aprovação de posts e inbox centralizado."
     },
-    "team": {
-      "title": "Gestão de Equipe",
-      "description": "Colabore com sua equipe e defina permissões por cargo"
+    "qia": {
+      "title": "QIA (IA Estratégica)",
+      "description": "Qualificação automática de leads e sugestões de ações baseadas em dados."
     },
-    "mobile": {
-      "title": "Acesso Mobile",
-      "description": "Acesse de qualquer lugar, a qualquer momento"
+    "studio": {
+      "title": "Studio AI",
+      "description": "Gere flyers e artes profissionais para redes sociais usando inteligência artificial."
+    },
+    "docs": {
+      "title": "Documentos em 1 Clique",
+      "description": "Gere orçamentos, contratos e faturas profissionais instantaneamente."
+    },
+    "academy": {
+      "title": "Academia Qualify",
+      "description": "Aprenda a escalar sua agência com conteúdos exclusivos e práticos."
     }
   },
   "testimonials": {
@@ -226,16 +234,5 @@
       "meeting": "Reunião",
       "production": "Produção"
     }
-  },
-  "link23": {
-    "title": "Crie páginas de links",
-    "titleHighlight": "profissionais",
-    "subtitle": "Centralize todos os links dos seus clientes em uma página personalizada. Alternativa ao Linktree, integrada ao seu CRM.",
-    "benefit1Title": "Design Personalizado",
-    "benefit1Desc": "Cores e temas que combinam com a marca",
-    "benefit2Title": "Analytics Integrado",
-    "benefit2Desc": "Visualizações e cliques em tempo real",
-    "benefit3Title": "URL Amigável",
-    "benefit3Desc": "qualify.app/agencia/@cliente"
   }
 }

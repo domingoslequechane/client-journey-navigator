@@ -17,7 +17,7 @@
     "cta": "Grow 47% now",
     "ctaMobile": "Start now",
     "installApp": "Install App",
-    "trustNoCard": "No card required",
+    "trustNoCard": "14-day free trial",
     "trustSetup": "2 min setup",
     "trustCancel": "Cancel anytime"
   },
@@ -94,14 +94,14 @@
     "stat3Label": "Clients managed"
   },
   "pricing": {
-    "title": "Start free.",
+    "title": "Start your trial.",
     "titleHighlight": "Grow at your pace.",
-    "subtitle": "No card to start. No commitment.",
+    "subtitle": "14-day free trial on any plan.",
     "free": "Free",
     "forever": "forever",
     "perMonth": "/month",
     "mostPopular": "Most Popular",
-    "startFree": "Start Free",
+    "startFree": "Start Free Trial",
     "subscribe": "Subscribe Now",
     "cancelAnytime": "Cancel anytime. No cancellation fees.",
     "comparePlans": "Compare Plans in Detail"
@@ -135,8 +135,8 @@
   "faq": {
     "title": "Questions?",
     "badge": "Frequently Asked Questions",
-    "q1": "Do I need a credit card to start?",
-    "a1": "No! The Compass plan is 100% free forever, no card required.",
+    "q1": "How does the trial period work?",
+    "a1": "You have 14 days to explore all Qualify features for free. Payment details are required to start the trial, but you won't be charged if you cancel before the end of the 14 days.",
     "q2": "Can I cancel my subscription at any time?",
     "a2": "Yes! Cancel whenever you want in settings. You keep access until the end of the paid period.",
     "q3": "What are active clients?",
@@ -147,9 +147,9 @@
   "cta": {
     "title": "How many clients will you lose",
     "titleSecond": "while you decide?",
-    "subtitle": "Set up in 2 minutes. Start free. No card.",
-    "button": "Start now — it's free",
-    "buttonMobile": "Start free",
+    "subtitle": "Set up in 2 minutes. 14-day free trial.",
+    "button": "Start free trial",
+    "buttonMobile": "Try for free",
     "footer": "Join 100+ agencies that stopped losing sales."
   },
   "footer": {
@@ -162,29 +162,37 @@
   "features": {
     "title": "Everything you need to grow",
     "subtitle": "Powerful tools to manage the entire client lifecycle",
-    "funnel": {
-      "title": "Visual Sales Funnel",
-      "description": "Visualize and manage your leads at every stage of the sales funnel"
+    "clients": {
+      "title": "Client Management",
+      "description": "Kanban-style visual funnel to track every stage of the client journey."
     },
-    "ai": {
-      "title": "AI Assistant",
-      "description": "Get intelligent suggestions and automate repetitive tasks"
+    "finance": {
+      "title": "Finance",
+      "description": "Expense control, revenue goals, and integrated cash flow."
     },
-    "contracts": {
-      "title": "Automated Contracts",
-      "description": "Generate professional contracts with one click"
+    "link23": {
+      "title": "Link 23",
+      "description": "Create professional link pages for your clients in seconds."
     },
-    "analytics": {
-      "title": "Reports & Analytics",
-      "description": "Track important metrics and make data-driven decisions"
+    "social": {
+      "title": "Social Media",
+      "description": "Editorial calendar, post approval, and centralized inbox."
     },
-    "team": {
-      "title": "Team Management",
-      "description": "Collaborate with your team and set role-based permissions"
+    "qia": {
+      "title": "QIA (Strategic AI)",
+      "description": "Automatic lead qualification and data-driven action suggestions."
     },
-    "mobile": {
-      "title": "Mobile Access",
-      "description": "Access from anywhere, anytime"
+    "studio": {
+      "title": "Studio AI",
+      "description": "Generate professional flyers and social media art using AI."
+    },
+    "docs": {
+      "title": "1-Click Documents",
+      "description": "Generate professional quotes, contracts, and invoices instantly."
+    },
+    "academy": {
+      "title": "Qualify Academy",
+      "description": "Learn how to scale your agency with exclusive and practical content."
     }
   },
   "testimonials": {
@@ -201,7 +209,7 @@
   "illustrations": {
     "chaos": {
       "header": "Chaos — Messages",
-      "urgent": "URGENT",
+      "urgent": "URGENTE",
       "whereClient": "Where is the client?",
       "lostLead": "Lost Lead"
     },
@@ -210,7 +218,7 @@
     },
     "dashboard": {
       "header": "Qualify — Dashboard",
-      "predictedRevenue": "Predicted Revenue",
+      "predicted Revenue": "Predicted Revenue",
       "revenueValue": "$47,500",
       "revenueChange": "↑ 23% vs last month",
       "hotLeads": "Hot Leads",
@@ -226,16 +234,5 @@
       "meeting": "Meeting",
       "production": "Production"
     }
-  },
-  "link23": {
-    "title": "Create professional",
-    "titleHighlight": "link pages",
-    "subtitle": "Centralize all your clients' links on a personalized page. Linktree alternative, integrated with your CRM.",
-    "benefit1Title": "Custom Design",
-    "benefit1Desc": "Colors and themes that match the brand",
-    "benefit2Title": "Integrated Analytics",
-    "benefit2Desc": "Views and clicks in real time",
-    "benefit3Title": "Friendly URL",
-    "benefit3Desc": "qualify.app/agency/@client"
   }
 }
