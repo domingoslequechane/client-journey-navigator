@@ -14,46 +14,46 @@ const plans = [
   {
     key: 'starter',
     name: 'Lança',
-    subtitle: 'Para a Pequena Agência',
-    price: 19,
-    tagline: 'Profissionalize sua prospecção e fechamento.',
+    subtitle: 'Freelancers / Pequenas Agências',
+    price: '$19 / 1.216 MT',
+    tagline: 'O essencial para começar a crescer.',
     image: planLanca,
     color: 'hsl(217, 91%, 60%)',
     bgColor: 'hsl(217, 91%, 60%, 0.1)',
     borderColor: 'border-blue-500/30',
     textColor: 'text-blue-500',
     features: [
-      '15 clientes ativos',
-      'Contratos e faturas',
-      '500 msgs IA',
-      'Academia completa'
+      '5 Marcas (Clientes)',
+      'Redes Sociais Ilimitadas',
+      '5 Créditos Studio AI / dia',
+      'Módulo de Finanças'
     ]
   },
   {
     key: 'pro',
     name: 'Arco',
-    subtitle: 'Para a Agência em Crescimento',
-    price: 39,
-    tagline: 'Automação total para quem não quer parar.',
+    subtitle: 'Agências em Crescimento',
+    price: '$39 / 2.496 MT',
+    tagline: 'Ferramentas para escalar seus resultados.',
     image: planArco,
     color: 'hsl(270, 91%, 65%)',
     bgColor: 'hsl(270, 91%, 65%, 0.1)',
     borderColor: 'border-purple-500/30',
     textColor: 'text-purple-500',
     popular: true,
-    recommended: 'Recomendado para Escala',
+    recommended: 'Mais Popular',
     features: [
-      '50 clientes ativos',
-      'Todos os documentos',
-      '1200 msgs IA',
-      'Academia + IA'
+      '15 Marcas (Clientes)',
+      '15 Créditos Studio AI / dia',
+      'Módulos Inbox/Analytics',
+      'Suporte Prioritário'
     ]
   },
   {
     key: 'agency',
     name: 'Catapulta',
-    subtitle: 'Para a Agência Consolidada',
-    price: 79,
+    subtitle: 'Grandes Agências / White Label',
+    price: '$79 / 5.056 MT',
     tagline: 'Poder total para dominar o mercado.',
     image: planCatapulta,
     color: 'hsl(25, 95%, 53%)',
@@ -61,58 +61,39 @@ const plans = [
     borderColor: 'border-orange-500/30',
     textColor: 'text-orange-500',
     features: [
-      'Clientes ilimitados',
-      'Docs ilimitados',
-      'IA ilimitada',
-      'Suporte prioritário'
+      '50 Marcas (Clientes)',
+      '30 Créditos Studio AI / dia',
+      'Suporte VIP',
+      'Todos os Módulos'
     ]
   },
 ];
 
 const comparisonFeatures = [
   {
-    category: 'Gestão de Clientes',
+    category: 'Geral',
     features: [
-      { name: 'Clientes ativos (operacionais)', starter: '15', pro: '50', agency: 'Ilimitado' },
-      { name: 'Funil de vendas (prospectos)', starter: 'Ilimitado', pro: 'Ilimitado', agency: 'Ilimitado' },
-      { name: 'Pipeline Kanban', starter: true, pro: true, agency: true },
-      { name: 'Qualificação BANT', starter: true, pro: true, agency: true },
-      { name: 'Exportação de dados', starter: true, pro: true, agency: true },
+      { name: 'Público-Alvo', starter: 'Freelancers / Pequenas Agências', pro: 'Agências em Crescimento', agency: 'Grandes Agências / White Label' },
+      { name: 'Redes Sociais (por marca)', starter: 'Ilimitadas', pro: 'Ilimitadas', agency: 'Ilimitadas' },
+      { name: 'Postagens', starter: 'Ilimitadas', pro: 'Ilimitadas', agency: 'Ilimitadas' },
+      { name: 'Variações de IA por Flyer', starter: '2', pro: '2', agency: '2' },
     ],
   },
   {
-    category: 'Contratos & Documentos',
+    category: 'Limites',
     features: [
-      { name: 'Contratos por mês', starter: '15', pro: '50', agency: 'Ilimitado' },
-      { name: 'Templates de contrato', starter: '3', pro: '10', agency: 'Ilimitado' },
+      { name: 'Marcas (Clientes)', starter: '5', pro: '15', agency: '50' },
+      { name: 'Studio AI (Créditos / dia)', starter: '5', pro: '15', agency: '30' },
     ],
   },
   {
-    category: 'Inteligência Artificial',
-    features: [
-      { name: 'QIA - Mensagens/mês', starter: '500', pro: '1200', agency: 'Ilimitado' },
-      { name: 'Studio AI - Créditos Diários', starter: '15', pro: '30', agency: '60' },
-      { name: 'Sugestões personalizadas', starter: true, pro: true, agency: true },
-    ],
-  },
-  {
-    category: 'Módulos',
+    category: 'Módulos e Suporte',
     features: [
       { name: 'Finanças', starter: true, pro: true, agency: true },
-      { name: 'Link23 (páginas)', starter: '1', pro: '5', agency: 'Ilimitado' },
-      { name: 'Linha Editorial', starter: true, pro: true, agency: true },
-      { name: 'Social Media (Marcas)', starter: '5', pro: '15', agency: '50' },
-      { name: 'Posts sociais/mês', starter: '50', pro: '200', agency: 'Ilimitado' },
-      { name: 'Inbox (DMs)', starter: false, pro: true, agency: true },
-    ],
-  },
-  {
-    category: 'Equipe & Suporte',
-    features: [
-      { name: 'Usuários inclusos', starter: '5', pro: '10', agency: '20' },
-      { name: 'Academia', starter: true, pro: true, agency: true },
-      { name: 'Suporte prioritário', starter: false, pro: true, agency: true },
-      { name: 'Suporte VIP dedicado', starter: false, pro: false, agency: true },
+      { name: 'Editorial', starter: true, pro: true, agency: true },
+      { name: 'Link23', starter: true, pro: true, agency: true },
+      { name: 'Inbox/Analytics', starter: false, pro: true, agency: true },
+      { name: 'Suporte VIP', starter: false, pro: false, agency: true },
     ],
   },
 ];
@@ -187,8 +168,8 @@ const Pricing = () => {
                 </CardHeader>
                 <CardContent className="text-center">
                   <div className="mb-4">
-                    <span className="text-4xl font-bold">${plan.price}</span>
-                    <span className="text-muted-foreground">/mês</span>
+                    <span className="text-3xl font-bold">{plan.price}</span>
+                    <p className="text-sm text-muted-foreground mt-1">por mês</p>
                     <p className="text-xs font-bold text-orange-500 uppercase mt-1">14 dias grátis</p>
                   </div>
 
