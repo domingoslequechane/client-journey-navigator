@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Send, Sparkles, User, Loader2, Paperclip, FileText, Image as ImageIcon, X, Building2, Search, Filter, PanelRightClose, PanelRightOpen, ArrowLeft, Copy, Check, Star } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import QIAAvatar from '@/components/ai/QIAAvatar';
 import { ChatMessagesSkeleton } from '@/components/ai/ChatMessagesSkeleton';
 import { ScrollToBottomButton } from '@/components/ai/ScrollToBottomButton';
@@ -987,14 +988,21 @@ const scrollToBottom = useCallback((smooth = true) => {
           // Mobile Client List View
           <div className="flex flex-col h-full">
             <div className="h-14 px-4 border-b border-border flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-sm">Qualify IA</h2>
-                <p className="text-xs text-muted-foreground">Selecione um cliente</p>
-              </div>
-            </div>
+                  <div className="h-9 w-9 rounded-xl bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
+                    <Sparkles className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-sm flex items-center gap-2">
+                      Qualify IA
+                      {limits.maxAIMessagesPerMonth !== null && (
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {usage.aiMessagesThisMonth}/{limits.maxAIMessagesPerMonth}
+                        </Badge>
+                      )}
+                    </h2>
+                    <p className="text-xs text-muted-foreground">Selecione um cliente</p>
+                  </div>
+                </div>
             {renderClientList()}
           </div>
         ) : (
@@ -1048,6 +1056,21 @@ const scrollToBottom = useCallback((smooth = true) => {
           </Button>
         </div>
         
+        {!sidebarCollapsed && limits.maxAIMessagesPerMonth !== null && (
+          <div className="p-4 border-b border-border">
+            <div className="text-xs text-muted-foreground mb-2">Uso de IA este mês</div>
+            <div className="flex items-center gap-3">
+              <Progress
+                value={(usage.aiMessagesThisMonth / (limits.maxAIMessagesPerMonth || 1)) * 100}
+                className="w-full"
+              />
+              <span className="text-xs font-mono text-muted-foreground shrink-0">
+                {usage.aiMessagesThisMonth}/{limits.maxAIMessagesPerMonth}
+              </span>
+            </div>
+          </div>
+        )}
+
         {!sidebarCollapsed ? (
           renderClientList()
         ) : (

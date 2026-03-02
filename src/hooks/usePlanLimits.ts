@@ -15,6 +15,7 @@ interface PlanLimits {
   maxTeamMembers: number | null;
   maxContractTemplates: number | null;
   maxStudioGenerations: number | null;
+  dailyStudioLimit: number;
   maxSocialAccounts: number | null;
   maxSocialPostsPerMonth: number | null;
   maxLinkPages: number | null;
@@ -34,6 +35,7 @@ interface Usage {
   teamMembersCount: number;
   contractTemplatesCount: number;
   studioGenerationsThisMonth: number;
+  studioGenerationsToday: number;
   socialAccountsCount: number;
   socialPostsThisMonth: number;
   linkPagesCount: number;
@@ -81,6 +83,7 @@ const DEFAULT_LIMITS: PlanLimits = {
   maxTeamMembers: 1,
   maxContractTemplates: 1,
   maxStudioGenerations: 10,
+  dailyStudioLimit: 5,
   maxSocialAccounts: 0,
   maxSocialPostsPerMonth: 0,
   maxLinkPages: 0,
@@ -100,6 +103,7 @@ const DEFAULT_USAGE: Usage = {
   teamMembersCount: 0,
   contractTemplatesCount: 0,
   studioGenerationsThisMonth: 0,
+  studioGenerationsToday: 0,
   socialAccountsCount: 0,
   socialPostsThisMonth: 0,
   linkPagesCount: 0,
@@ -146,6 +150,15 @@ export function usePlanLimits(): UsePlanLimitsReturn {
       const currentPlanType = (organization?.plan_type as PlanType) || 'starter';
       setPlanType(currentPlanType);
 
+      // Define daily limits based on plan (from edge function)
+      const dailyLimits: Record<string, number> = {
+        'free': 5,
+        'starter': 15,
+        'pro': 30,
+        'agency': 60
+      };
+      const dailyStudioLimit = dailyLimits[currentPlanType] || 5;
+
       const { data: planLimitsData } = await supabase
         .from('plan_limits')
         .select('*')
@@ -161,6 +174,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           maxTeamMembers: d.max_team_members,
           maxContractTemplates: d.max_contract_templates ?? 1,
           maxStudioGenerations: d.max_studio_generations ?? 10,
+          dailyStudioLimit,
           maxSocialAccounts: d.max_social_accounts ?? 0,
           maxSocialPostsPerMonth: d.max_social_posts_per_month ?? 0,
           maxLinkPages: d.max_link_pages ?? 0,
@@ -176,11 +190,12 @@ export function usePlanLimits(): UsePlanLimitsReturn {
 
       // Get current usage counts
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+      const todayStart = new Date().toISOString().split('T')[0];
 
       const [
         clientsResult, teamResult, contractsUsage, aiUsage,
         templatesResult, studioUsage, socialAccountsResult,
-        socialPostsUsage, linkPagesResult,
+        socialPostsUsage, linkPagesResult, studioDailyUsageResult,
       ] = await Promise.all([
         supabase
           .from('clients')
@@ -232,6 +247,11 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           .from('link_pages')
           .select('id', { count: 'exact', head: true })
           .eq('organization_id', orgId),
+        supabase
+          .from('studio_flyers')
+          .select('id', { count: 'exact', head: true })
+          .eq('created_by', user.id)
+          .gte('created_at', todayStart),
       ]);
 
       setUsage({
@@ -241,6 +261,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         aiMessagesThisMonth: aiUsage.data?.usage_count || 0,
         contractTemplatesCount: templatesResult.count || 0,
         studioGenerationsThisMonth: studioUsage.data?.usage_count || 0,
+        studioGenerationsToday: studioDailyUsageResult.count || 0,
         socialAccountsCount: socialAccountsResult.count || 0,
         socialPostsThisMonth: socialPostsUsage.data?.usage_count || 0,
         linkPagesCount: linkPagesResult.count || 0,

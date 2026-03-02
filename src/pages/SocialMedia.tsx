@@ -203,9 +203,21 @@ export default function SocialMedia() {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Share2 className="h-6 w-6 text-primary" />
-              Social Media
+            <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Share2 className="h-6 w-6 text-primary" />
+                Social Media
+              </div>
+              {limits.maxSocialAccounts !== null && (
+                <Badge variant="outline" className="font-mono">
+                  Contas: {usage.socialAccountsCount}/{limits.maxSocialAccounts}
+                </Badge>
+              )}
+              {limits.maxSocialPostsPerMonth !== null && (
+                <Badge variant="outline" className="font-mono">
+                  Posts no mês: {usage.socialPostsThisMonth}/{limits.maxSocialPostsPerMonth}
+                </Badge>
+              )}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               Gerencie e agende posts para suas redes sociais

@@ -3,13 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Search, Loader2, Sparkles, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { ProjectCard } from '@/components/studio/ProjectCard';
 import { useStudioProjects } from '@/hooks/useStudioProjects';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { cn } from '@/lib/utils';
 
 export default function StudioDashboard() {
   const navigate = useNavigate();
   const { projects, projectsLoading, deleteProject } = useStudioProjects();
+  const { limits, usage } = usePlanLimits();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredProjects = projects.filter((project) =>
@@ -27,9 +30,16 @@ export default function StudioDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Sparkles className="h-8 w-8 text-primary" />
-            Studio AI
+          <h1 className="text-3xl font-bold flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-8 w-8 text-primary" />
+              Studio AI
+            </div>
+            {limits.dailyStudioLimit !== null && (
+              <Badge variant="outline" className="font-mono">
+                Créditos hoje: {usage.studioGenerationsToday}/{limits.dailyStudioLimit}
+              </Badge>
+            )}
           </h1>
           <p className="text-muted-foreground mt-1">
             Gere flyers profissionais com inteligência artificial

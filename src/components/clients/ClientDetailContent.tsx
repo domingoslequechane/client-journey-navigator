@@ -43,6 +43,7 @@ import { DeleteClientModal } from './DeleteClientModal';
 import { ClientHistoryTab } from './ClientHistoryTab';
 import { formatPhoneNumber } from '@/lib/phone-utils';
 import { useNavigate } from 'react-router-dom';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 
 
 interface ClientDetailContentProps {
@@ -61,6 +62,7 @@ interface ChecklistReport {
 
 export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRole = 'sales', userId }: ClientDetailContentProps) {
   const navigate = useNavigate();
+  const { limits, usage } = usePlanLimits();
   // Permission checks
   const canEditClient = userRole === 'admin' || userRole === 'sales' || isAdmin;
   const canSeeContracts = userRole === 'admin' || userRole === 'sales' || isAdmin;
@@ -656,76 +658,83 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
 
       {/* Action Buttons - Contract, Documents, and Invoices */}
       {canSeeContract && (
-        <div className="flex flex-wrap gap-2">
-          {/* Invoice Button - Outside dropdown */}
-          <Button 
-            variant="outline" 
-            className="gap-2" 
-            disabled={isPaused}
-            onClick={() => setInvoiceModalOpen(true)}
-          >
-            {isPaused ? <Lock className="h-4 w-4" /> : <Receipt className="h-4 w-4" />}
-            Facturas
-            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
-              Dev
-            </Badge>
-          </Button>
-          
-          <Button
-            variant="outline" 
-            className="gap-2" 
-            disabled={isPaused}
-            onClick={() => setContractDialogOpen(true)}
-          >
-            {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-            {contractUrl ? 'Ver Contrato' : 'Adicionar Contrato'}
-          </Button>
-          {/* Show Generate Contract button only in contratacao stage and when no contract exists */}
-          {client.stage === 'closing' && !contractUrl && (
-            <Button 
-              variant="outline" 
-              className="gap-2" 
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {/* Invoice Button - Outside dropdown */}
+            <Button
+              variant="outline"
+              className="gap-2"
               disabled={isPaused}
-              onClick={() => setGenerateContractOpen(true)}
+              onClick={() => setInvoiceModalOpen(true)}
+            >
+              {isPaused ? <Lock className="h-4 w-4" /> : <Receipt className="h-4 w-4" />}
+              Facturas
+              <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
+                Dev
+              </Badge>
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={isPaused}
+              onClick={() => setContractDialogOpen(true)}
             >
               {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-              Gerar Contrato
+              {contractUrl ? 'Ver Contrato' : 'Adicionar Contrato'}
             </Button>
-          )}
-          
-          {/* Documents Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2" disabled={isPaused}>
+            {/* Show Generate Contract button only in contratacao stage and when no contract exists */}
+            {client.stage === 'closing' && !contractUrl && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                disabled={isPaused}
+                onClick={() => setGenerateContractOpen(true)}
+              >
                 {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                Documentos
-                <ChevronDown className="h-4 w-4" />
+                Gerar Contrato
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => {
-                setSelectedDocumentType('proforma_invoice');
-                setDocumentModalOpen(true);
-              }}>
-                <Receipt className="h-4 w-4 mr-2" />
-                Factura Proforma
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setSelectedDocumentType('budget');
-                setDocumentModalOpen(true);
-              }}>
-                <Calculator className="h-4 w-4 mr-2" />
-                Orçamento
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setSelectedDocumentType('commercial_proposal');
-                setDocumentModalOpen(true);
-              }}>
-                <FileCheck className="h-4 w-4 mr-2" />
-                Proposta Comercial
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            )}
+            
+            {/* Documents Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2" disabled={isPaused}>
+                  {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                  Documentos
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => {
+                  setSelectedDocumentType('proforma_invoice');
+                  setDocumentModalOpen(true);
+                }}>
+                  <Receipt className="h-4 w-4 mr-2" />
+                  Factura Proforma
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  setSelectedDocumentType('budget');
+                  setDocumentModalOpen(true);
+                }}>
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Orçamento
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  setSelectedDocumentType('commercial_proposal');
+                  setDocumentModalOpen(true);
+                }}>
+                  <FileCheck className="h-4 w-4 mr-2" />
+                  Proposta Comercial
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          {limits.maxContractsPerMonth !== null && (
+            <div className="text-xs text-muted-foreground pt-1">
+              Uso de contratos este mês: <strong>{usage.contractsThisMonth} de {limits.maxContractsPerMonth}</strong>
+            </div>
+          )}
           
           <ContractModal
             open={contractDialogOpen}
