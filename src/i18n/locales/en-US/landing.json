@@ -1,156 +1,156 @@
 {
   "header": {
-    "problem": "Problem",
-    "solution": "Solution",
+    "problem": "The Problem",
+    "solution": "The Solution",
     "plans": "Plans",
     "faq": "FAQ",
     "login": "Login",
-    "cta": "Grow 47% now",
+    "cta": "Get Started",
     "ctaMobile": "Start",
     "installApp": "Install app"
   },
   "hero": {
-    "title": "Grow",
-    "titleHighlight": "+47%",
-    "titleEnd": "in conversions",
-    "subtitle": "Or keep losing clients on WhatsApp...",
-    "cta": "Grow 47% now",
-    "ctaMobile": "Start now",
+    "title": "Stop losing sales on",
+    "titleHighlight": "WhatsApp",
+    "titleEnd": "and scale your agency",
+    "subtitle": "The AI-powered CRM that organizes your chaos, qualifies your leads, and generates documents in seconds. Regain control of your time and profit.",
+    "cta": "Start Free Trial",
+    "ctaMobile": "Try for Free",
     "installApp": "Install App",
     "trustNoCard": "14-day free trial",
     "trustSetup": "2 min setup",
     "trustCancel": "Cancel anytime"
   },
   "problem": {
-    "title": "You know this",
-    "titleHighlight": "routine well",
-    "description1": "Lost leads on WhatsApp. Spreadsheets no one understands. Team not knowing what to do.",
-    "description2": "And you, in the middle of chaos,",
-    "description2Highlight": "losing sales every day"
+    "title": "Do you feel like you're",
+    "titleHighlight": "running in circles?",
+    "description1": "Forgotten leads on WhatsApp, confusing spreadsheets, and a lost team. Operational chaos is the biggest enemy of your growth.",
+    "description2": "While you're trying to get organized,",
+    "description2Highlight": "your competitors are closing your clients."
   },
   "cost": {
-    "title": "The cost of",
-    "titleHighlight": "staying like this",
-    "revenueLoss": "Revenue Loss",
-    "revenueLossDesc": "leads that never closed",
-    "revenueLossText": "Forgotten leads = lost contracts.",
+    "title": "The hidden cost of",
+    "titleHighlight": "disorganization",
+    "revenueLoss": "Lost Profit",
+    "revenueLossDesc": "leads that never became contracts",
+    "revenueLossText": "Every unanswered lead is money left on the table.",
     "hoursWasted": "120h",
     "hoursWastedDesc": "wasted per month",
-    "hoursWastedText": "Time on spreadsheets, not on sales.",
+    "hoursWastedText": "Time spent on manual tasks that AI should be doing.",
     "clientsLost": "40%",
-    "clientsLostDesc": "of leads go to competitors",
-    "clientsLostText": "First to respond wins.",
+    "clientsLostDesc": "go to competitors",
+    "clientsLostText": "Response speed is what defines who wins the game.",
     "conclusion": "It's not a lack of effort.",
-    "conclusionHighlight": "It's a lack of system."
+    "conclusionHighlight": "It's a lack of a smart system."
   },
   "hope": {
-    "title": "Imagine opening your computer and",
-    "titleHighlight": "seeing everything in place",
-    "description": "See every client. Know the next step. Predict your revenue.",
-    "tagline": "No spreadsheets. No WhatsApp. No chaos."
+    "title": "Imagine having a",
+    "titleHighlight": "clear view of your business",
+    "description": "Knowing exactly who every client is, what the next step is, and how much you'll earn at the end of the month.",
+    "tagline": "No spreadsheets. No forgetting. Just results."
   },
   "solution": {
-    "title": "This is",
+    "title": "Meet",
     "titleHighlight": "Qualify",
-    "description": "The AI-powered CRM that organizes clients, qualifies leads, generates contracts, invoices, proposals and quotes in one click, and suggests what to study to grow — all in one place.",
-    "mockupTitle": "Qualify — Pipeline",
+    "description": "Much more than a CRM. An intelligence hub for agencies that want professionalism, agility, and scale.",
+    "mockupTitle": "Qualify — Visual Management",
     "stages": {
       "prospecting": "Prospecting",
       "meeting": "Meeting",
-      "contracting": "Contracting",
-      "production": "Production",
+      "contracting": "Closing",
+      "production": "Operation",
       "traffic": "Traffic",
       "retention": "Retention",
-      "loyalty": "Loyalty"
+      "loyalty": "Scale"
     },
-    "benefit1Title": "Complete visual funnel",
-    "benefit1Desc": "From lead to loyal client",
-    "benefit2Title": "Auto qualification",
-    "benefit2Desc": "AI identifies best leads",
+    "benefit1Title": "Visual Pipeline",
+    "benefit1Desc": "Total journey control",
+    "benefit2Title": "AI Qualification",
+    "benefit2Desc": "Focus on hot leads",
     "benefit3Title": "Strategic AI",
-    "benefit3Desc": "Personalized suggestions",
-    "benefit4Title": "Real-time dashboard",
-    "benefit4Desc": "Predict your revenue",
-    "benefit5Title": "Docs in 1 click",
-    "benefit5Desc": "Contracts, invoices and proposals",
-    "benefit6Title": "Auto quotes",
-    "benefit6Desc": "Generate professional quotes",
-    "benefit7Title": "Smart Academy",
-    "benefit7Desc": "Study what you need to improve"
+    "benefit3Desc": "Closing suggestions",
+    "benefit4Title": "Predictability",
+    "benefit4Desc": "Know your future revenue",
+    "benefit5Title": "1-Click Docs",
+    "benefit5Desc": "Contracts & Proposals",
+    "benefit6Title": "Fast Quotes",
+    "benefit6Desc": "Agility in sending",
+    "benefit7Title": "Qualify Academy",
+    "benefit7Desc": "Training for scale"
   },
   "social": {
     "statValue": "+47%",
-    "statLabel": "conversions in 3 months",
-    "testimonial": "In 3 months, our conversion rate went up 47%. Qualify transformed our agency from",
+    "statLabel": "increase in conversions",
+    "testimonial": "In just 3 months, our conversion rate went up 47%. Qualify took the agency out of amateurism and allowed us to scale from",
     "testimonialHighlight": " 3 to 15 active clients",
-    "testimonialEnd": ". Finally, I can see everything in one place.",
+    "testimonialEnd": " with the same team.",
     "author": "Mariana Costa",
     "authorRole": "CEO, Costa Digital Marketing",
     "stat1Value": "100+",
-    "stat1Label": "Agencies using",
+    "stat1Label": "Agencies scaling",
     "stat2Value": "-4h",
-    "stat2Label": "Saved per day",
+    "stat2Label": "Manual work/day",
     "stat3Value": "1k+",
-    "stat3Label": "Clients managed"
+    "stat3Label": "Qualified leads"
   },
   "pricing": {
-    "title": "Start your trial.",
-    "titleHighlight": "Grow at your pace.",
-    "subtitle": "14-day free trial on any plan.",
+    "title": "Choose the plan for your",
+    "titleHighlight": "next level",
+    "subtitle": "Test any plan free for 14 days. No risks.",
     "free": "Free",
     "forever": "forever",
     "perMonth": "/month",
-    "mostPopular": "Most Popular",
+    "mostPopular": "Most Chosen",
     "startFree": "Start Free Trial",
     "subscribe": "Subscribe Now",
-    "cancelAnytime": "Cancel anytime. No cancellation fees.",
-    "comparePlans": "Compare Plans in Detail"
+    "cancelAnytime": "Cancel anytime. No fine print.",
+    "comparePlans": "See Full Comparison"
   },
   "plans": {
     "free": {
       "name": "Compass",
-      "subtitle": "Essential",
-      "tagline": "Find the right path to start!",
+      "subtitle": "For those starting out",
+      "tagline": "Organize your first steps in digital.",
       "features": ["3 active clients", "Unlimited funnel", "90 AI messages", "Basic Academy"]
     },
     "starter": {
       "name": "Lance",
-      "subtitle": "Growth",
-      "tagline": "Launch your brand to the digital world!",
+      "subtitle": "For those who want to grow",
+      "tagline": "Accelerate your prospecting and closings.",
       "features": ["15 active clients", "Contracts & invoices", "500 AI messages", "Full Academy"]
     },
     "pro": {
       "name": "Bow",
-      "subtitle": "Professional",
-      "tagline": "Achieve results with precision!",
+      "subtitle": "For professionals",
+      "tagline": "Precision and automation for high performance.",
       "features": ["50 active clients", "All documents", "1200 AI messages", "Academy + AI"]
     },
     "agency": {
       "name": "Catapult",
-      "subtitle": "Agency",
-      "tagline": "Impose your agency in the market!",
+      "subtitle": "For agencies at scale",
+      "tagline": "Dominate the market with total power.",
       "features": ["Unlimited clients", "Unlimited docs", "Unlimited AI", "Priority support"]
     }
   },
   "faq": {
-    "title": "Questions?",
-    "badge": "Frequently Asked Questions",
-    "q1": "How does the trial period work?",
-    "a1": "You have 14 days to explore all Qualify features for free. Payment details are required to start the trial, but you won't be charged if you cancel before the end of the 14 days.",
-    "q2": "Can I cancel my subscription at any time?",
-    "a2": "Yes! Cancel whenever you want in settings. You keep access until the end of the paid period.",
-    "q3": "What are active clients?",
-    "a3": "Clients in operational stages (Production, Traffic, Retention, Loyalty). Prospects in the sales funnel are <strong>unlimited</strong> in all plans!",
-    "q4": "Is my data secure?",
-    "a4": "Yes! End-to-end encryption, secure servers, we never share data with third parties."
+    "title": "Still have questions?",
+    "badge": "FAQ",
+    "q1": "Why do I need to enter my card for the free trial?",
+    "a1": "We request the card to ensure that only real users committed to growth access our AI technology. You won't be charged anything today and can cancel with one click before the end of the 14 days.",
+    "q2": "Does Qualify replace my WhatsApp?",
+    "a2": "No, it works together. Qualify organizes the information that comes through WhatsApp, allowing you to manage the sales funnel and operation professionally.",
+    "q3": "What happens if I exceed the client limit?",
+    "a3": "You can continue managing your leads in the funnel, but to move new clients to operational stages, you'll need to upgrade to the next plan.",
+    "q4": "Is my data and my clients' data secure?",
+    "a4": "Totally. We use bank-level encryption and secure servers to ensure your database is private and protected."
   },
   "cta": {
-    "title": "How many clients will you lose",
-    "titleSecond": "while you decide?",
-    "subtitle": "Set up in 2 minutes. 14-day free trial.",
-    "button": "Start free trial",
-    "buttonMobile": "Try for free",
-    "footer": "Join 100+ agencies that stopped losing sales."
+    "title": "How long will you accept",
+    "titleSecond": "losing money due to disorganization?",
+    "subtitle": "Join hundreds of agencies that professionalized their operation. 14-day free trial.",
+    "button": "I Want to Professionalize My Agency",
+    "buttonMobile": "Start Now",
+    "footer": "Fast setup. Immediate results."
   },
   "footer": {
     "copyright": "© {{year}} Qualify. All rights reserved.",
@@ -160,44 +160,44 @@
     "login": "Login"
   },
   "features": {
-    "title": "Everything you need to grow",
-    "subtitle": "Powerful tools to manage the entire client lifecycle",
+    "title": "Everything your agency needs",
+    "subtitle": "A complete platform to manage from lead to billing",
     "clients": {
-      "title": "Client Management",
-      "description": "Kanban-style visual funnel to track every stage of the client journey."
+      "title": "Sales Pipeline",
+      "description": "Visualize your sales journey and never forget to follow up again."
     },
     "finance": {
-      "title": "Finance",
-      "description": "Expense control, revenue goals, and integrated cash flow."
+      "title": "Financial Management",
+      "description": "Cash flow control and revenue goals integrated into the CRM."
     },
     "link23": {
-      "title": "Link 23",
-      "description": "Create professional link pages for your clients in seconds."
+      "title": "Link 23 (Bio)",
+      "description": "Professional link pages for your clients, with real-time analytics."
     },
     "social": {
-      "title": "Social Media",
-      "description": "Editorial calendar, post approval, and centralized inbox."
+      "title": "Social Media Hub",
+      "description": "Editorial calendar and post approval in an intuitive interface."
     },
     "qia": {
-      "title": "QIA (Strategic AI)",
-      "description": "Automatic lead qualification and data-driven action suggestions."
+      "title": "QIA: Strategic AI",
+      "description": "Automatic lead qualification so you can focus on who is actually going to buy."
     },
     "studio": {
       "title": "Studio AI",
-      "description": "Generate professional flyers and social media art using AI."
+      "description": "Creation of professional art and flyers with AI in a few seconds."
     },
     "docs": {
-      "title": "1-Click Documents",
-      "description": "Generate professional quotes, contracts, and invoices instantly."
+      "title": "Express Documents",
+      "description": "Generate professional contracts, quotes, and invoices with just one click."
     },
     "academy": {
-      "title": "Qualify Academy",
-      "description": "Learn how to scale your agency with exclusive and practical content."
+      "title": "Scale Academy",
+      "description": "Practical content on how to sell more and better manage your agency."
     }
   },
   "testimonials": {
-    "title": "What our clients say",
-    "subtitle": "See how Qualify is transforming agencies"
+    "title": "Who uses it, approves it",
+    "subtitle": "See how we are transforming the routine of digital agencies"
   },
   "nav": {
     "features": "Features",
@@ -209,7 +209,7 @@
   "illustrations": {
     "chaos": {
       "header": "Chaos — Messages",
-      "urgent": "URGENTE",
+      "urgent": "URGENT",
       "whereClient": "Where is the client?",
       "lostLead": "Lost Lead"
     },

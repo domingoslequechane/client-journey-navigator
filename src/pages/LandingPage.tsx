@@ -244,7 +244,7 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Main headline - Provocador */}
             <h1 
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-tight mb-6 animate-fade-in"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 animate-fade-in"
               style={{ animationDelay: '0.2s' }}
             >
               {t('hero.title')}{' '}
@@ -257,7 +257,7 @@ export default function LandingPage() {
             
             {/* Subheadline - Alternativa */}
             <p 
-              className="text-xl sm:text-2xl md:text-3xl text-muted-foreground mb-10 animate-fade-in"
+              className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-10 animate-fade-in max-w-3xl mx-auto"
               style={{ animationDelay: '0.4s' }}
             >
               {t('hero.subtitle')}
@@ -268,34 +268,21 @@ export default function LandingPage() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in"
               style={{ animationDelay: '0.6s' }}
             >
-              <Link to="/demo">
-                <Button size="lg" variant="outline" className="text-lg sm:text-xl px-6 sm:px-10 py-6 sm:py-7 gap-2 sm:gap-3 hover:scale-105 transition-all">
-                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
-                  Testar agora (sem cadastro)
-                  <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
+              <Link to="/auth">
+                <Button size="lg" className="text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-8 gap-2 sm:gap-3 shadow-2xl shadow-primary/40 hover:shadow-primary/50 transition-all hover:scale-105 group">
+                  <Zap className="h-5 w-5 sm:h-6 sm:w-6 fill-current" />
+                  <span className="hidden sm:inline">{t('hero.cta')}</span>
+                  <span className="sm:hidden">{t('hero.ctaMobile')}</span>
+                  <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
 
-              <Link to="/auth">
-                <Button size="lg" className="text-lg sm:text-xl px-6 sm:px-10 py-6 sm:py-7 gap-2 sm:gap-3 shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105">
-                  <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
-                  <span className="hidden sm:inline">{t('hero.cta')}</span>
-                  <span className="sm:hidden">{t('hero.ctaMobile')}</span>
-                  <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
+              <Link to="/demo">
+                <Button size="lg" variant="outline" className="text-lg sm:text-xl px-6 sm:px-10 py-6 sm:py-8 gap-2 sm:gap-3 hover:bg-primary/5 transition-all">
+                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
+                  Testar Demo (Sem Cadastro)
                 </Button>
               </Link>
-              
-              {canInstall && !isInstalled && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={install}
-                  className="text-lg px-6 py-6 gap-2 hover:scale-105 transition-all"
-                >
-                  <Download className="h-5 w-5" />
-                  {t('hero.installApp')}
-                </Button>
-              )}
             </div>
             
             {/* Trust badges simples */}
@@ -335,7 +322,7 @@ export default function LandingPage() {
               <div className="text-center md:text-left">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
                   {t('problem.title')}{' '}
-                  <span className="text-destructive">{t('problem.titleHighlight')}</span>.
+                  <span className="text-destructive">{t('problem.titleHighlight')}</span>
                 </h2>
                 
                 <div className="space-y-6 text-lg md:text-xl text-muted-foreground leading-relaxed">
@@ -344,7 +331,7 @@ export default function LandingPage() {
                   </p>
                   
                   <p className="text-foreground font-medium">
-                    {t('problem.description2')} <span className="text-destructive">{t('problem.description2Highlight')}</span>.
+                    {t('problem.description2')} <span className="text-destructive">{t('problem.description2Highlight')}</span>
                   </p>
                 </div>
               </div>
@@ -373,7 +360,7 @@ export default function LandingPage() {
               <div className="order-1 md:order-2 text-center md:text-left">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
                   {t('cost.title')}{' '}
-                  <span className="text-destructive">{t('cost.titleHighlight')}</span>.
+                  <span className="text-destructive">{t('cost.titleHighlight')}</span>
                 </h2>
               </div>
             </div>
@@ -431,7 +418,7 @@ export default function LandingPage() {
               <div className="text-center md:text-left">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
                   {t('hope.title')}{' '}
-                  <span className="text-primary">{t('hope.titleHighlight')}</span>.
+                  <span className="text-primary">{t('hope.titleHighlight')}</span>
                 </h2>
                 
                 <p className="text-lg md:text-xl text-muted-foreground mb-6">
@@ -459,7 +446,7 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-                {t('solution.title')} <span className="text-primary">{t('solution.titleHighlight')}</span>.
+                {t('solution.title')} <span className="text-primary">{t('solution.titleHighlight')}</span>
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 {t('solution.description')}
@@ -613,119 +600,6 @@ export default function LandingPage() {
                   <CardDescription>{t('features.academy.description')}</CardDescription>
                 </CardHeader>
               </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* LINK23 - Nova Funcionalidade (Mantida como destaque) */}
-      <section className="py-20 md:py-32 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              {/* Texto */}
-              <div className="text-center md:text-left">
-                <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-2 mb-6">
-                  <Link2 className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-primary">Link23</span>
-                </div>
-                
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-                  {t('link23.title')}{' '}
-                  <span className="text-primary">{t('link23.titleHighlight')}</span>
-                </h2>
-                
-                <p className="text-lg md:text-xl text-muted-foreground mb-8">
-                  {t('link23.subtitle')}
-                </p>
-                
-                {/* 3 benefícios */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="text-center p-4 rounded-xl bg-card border border-border">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                      <Palette className="h-5 w-5 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-sm mb-1">{t('link23.benefit1Title')}</h3>
-                    <p className="text-xs text-muted-foreground">{t('link23.benefit1Desc')}</p>
-                  </div>
-                  
-                  <div className="text-center p-4 rounded-xl bg-card border border-border">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                      <BarChart3 className="h-5 w-5 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-sm mb-1">{t('link23.benefit2Title')}</h3>
-                    <p className="text-xs text-muted-foreground">{t('link23.benefit2Desc')}</p>
-                  </div>
-                  
-                  <div className="text-center p-4 rounded-xl bg-card border border-border">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                      <Link2 className="h-5 w-5 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-sm mb-1">{t('link23.benefit3Title')}</h3>
-                    <p className="text-xs text-muted-foreground">{t('link23.benefit3Desc')}</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Mockup visual animado */}
-              <div className="relative">
-                <div className="bg-card border border-border rounded-3xl p-6 shadow-2xl overflow-hidden">
-                  {/* Phone frame */}
-                  <div className="relative mx-auto" style={{ maxWidth: '280px' }}>
-                    {/* Phone header */}
-                    <div className="flex items-center justify-center gap-2 mb-4 pb-2 border-b border-border">
-                      <div className="h-2 w-2 rounded-full bg-primary/50" />
-                      <div className="h-3 w-16 bg-muted rounded-full" />
-                      <div className="h-2 w-2 rounded-full bg-primary/50" />
-                    </div>
-                    
-                    {/* Link page preview */}
-                    <div className="space-y-4">
-                      {/* Profile */}
-                      <div className="text-center">
-                        <div className="h-16 w-16 rounded-full bg-primary/20 mx-auto mb-3 flex items-center justify-center">
-                          <span className="text-2xl font-bold text-primary">A</span>
-                        </div>
-                        <h3 className="font-semibold">Agência Digital</h3>
-                        <p className="text-xs text-muted-foreground">@agencia</p>
-                      </div>
-                      
-                      {/* Links animados */}
-                      <div className="space-y-3">
-                        {['Instagram', 'WhatsApp', 'Portfolio', 'Contato'].map((link, i) => (
-                          <div 
-                            key={link}
-                            className="h-10 bg-primary/10 rounded-xl flex items-center justify-center text-sm font-medium animate-pulse"
-                            style={{ animationDelay: `${i * 0.2}s` }}
-                          >
-                            {link}
-                          </div>
-                        ))}
-                      </div>
-                      
-                      {/* Stats */}
-                      <div className="flex justify-around pt-4 border-t border-border text-center">
-                        <div>
-                          <div className="text-lg font-bold text-primary">247</div>
-                          <div className="text-xs text-muted-foreground">views</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-primary">89</div>
-                          <div className="text-xs text-muted-foreground">clicks</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-primary">36%</div>
-                          <div className="text-xs text-muted-foreground">CTR</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Decorative elements */}
-                <div className="absolute -top-4 -right-4 h-20 w-20 bg-primary/10 rounded-full blur-xl" />
-                <div className="absolute -bottom-4 -left-4 h-16 w-16 bg-primary/10 rounded-full blur-xl" />
-              </div>
             </div>
           </div>
         </div>
@@ -966,8 +840,8 @@ export default function LandingPage() {
             {t('cta.subtitle')}
           </p>
           <Link to="/auth">
-            <Button size="lg" variant="secondary" className="text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-7 gap-2 sm:gap-3 shadow-xl hover:scale-105 transition-all">
-              <Rocket className="h-5 w-5 sm:h-6 sm:w-6" />
+            <Button size="lg" variant="secondary" className="text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-8 gap-2 sm:gap-3 shadow-2xl hover:scale-105 transition-all group">
+              <Rocket className="h-5 w-5 sm:h-6 sm:w-6 group-hover:animate-bounce" />
               <span className="hidden sm:inline">{t('cta.button')}</span>
               <span className="sm:hidden">{t('cta.buttonMobile')}</span>
               <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
