@@ -337,7 +337,7 @@ export function useApprovalPost(token?: string) {
   });
 
   const rejectPost = useMutation({
-    mutationFn: async (reason: string, approverName: string) => {
+    mutationFn: async ({ reason, approverName }: { reason: string; approverName: string }) => {
       if (!token) throw new Error('Token missing');
       const { error } = await supabase
         .from('social_posts' as any)
