@@ -68,7 +68,7 @@ export const planImages: Record<string, string> = {
 export const planNames: Record<PlanType, { name: string; codename: string; tagline: string }> = {
   free: { name: 'Sem Plano', codename: 'Sem Plano', tagline: 'Selecione um plano para começar.' },
   starter: { name: 'Pequena Agência', codename: 'Lança', tagline: 'Profissionalize sua prospecção e fechamento.' },
-  pro: { name: 'Agência em Crescimento', codename: 'Arco', tagline: 'Automação total para quem não quer parar.' },
+  pro: { name: 'Agência em Crescimento', codename: 'Arco', tagline: 'Ferramentas para escalar seus resultados.' },
   agency: { name: 'Agência Consolidada', codename: 'Catapulta', tagline: 'Poder total para dominar o mercado.' },
 };
 
@@ -95,13 +95,11 @@ const plans: Record<string, PlanConfig> = {
     priceLabel: '$19/mês',
     description: 'Para a Pequena Agência',
     features: [
-      { text: '15 clientes ativos', included: true },
-      { text: 'Contratos e faturas', included: true },
-      { text: '500 msgs IA', included: true },
-      { text: 'Academia completa', included: true },
-      { text: 'Studio AI (15 créditos diários)', included: true },
-      { text: 'Social Media (5 marcas, 50 posts)', included: true },
-      { text: 'Link23 (1 página)', included: true },
+      { text: '15 Marcas (Clientes)', included: true },
+      { text: 'Redes Sociais Ilimitadas', included: true },
+      { text: '5 Créditos Studio AI / dia', included: true },
+      { text: 'Finanças, Editorial, Link23', included: true },
+      { text: '5 membros de equipe', included: true },
       { text: 'Exportação de dados', included: true },
       { text: 'Inbox (DMs)', included: false },
       { text: 'Suporte prioritário', included: false },
@@ -121,19 +119,16 @@ const plans: Record<string, PlanConfig> = {
     description: 'Para a Agência em Crescimento',
     popular: true,
     features: [
-      { text: '50 clientes ativos', included: true },
-      { text: 'Todos os documentos', included: true },
-      { text: '1200 msgs IA', included: true },
-      { text: 'Academia + IA', included: true },
-      { text: 'Studio AI (30 créditos diários)', included: true },
-      { text: 'Social Media (15 marcas, 200 posts)', included: true },
-      { text: 'Link23 (5 páginas)', included: true },
-      { text: 'Inbox (DMs)', included: true },
+      { text: '25 Marcas (Clientes)', included: true },
+      { text: 'Redes Sociais Ilimitadas', included: true },
+      { text: '15 Créditos Studio AI / dia', included: true },
+      { text: 'Tudo + Inbox/Analytics', included: true },
+      { text: '10 membros de equipe', included: true },
       { text: 'Suporte prioritário', included: true },
       { text: 'Suporte VIP', included: false },
     ],
     limits: {
-      clients: '50 ativos',
+      clients: '25 ativos',
       contracts: '50/mês',
       ai: '1200 msgs/mês',
       team: '10 usuários',
@@ -146,16 +141,12 @@ const plans: Record<string, PlanConfig> = {
     priceLabel: '$79/mês',
     description: 'Para a Agência Consolidada',
     features: [
-      { text: 'Clientes ilimitados', included: true },
-      { text: 'Docs ilimitados', included: true },
-      { text: 'IA ilimitada', included: true },
-      { text: 'Suporte prioritário', included: true },
+      { text: 'Marcas Ilimitadas', included: true },
+      { text: 'Redes Sociais Ilimitadas', included: true },
+      { text: '30 Créditos Studio AI / dia', included: true },
+      { text: 'Tudo + Suporte VIP', included: true },
       { text: '20 usuários', included: true },
       { text: 'Todos os módulos', included: true },
-      { text: 'Studio AI (60 créditos diários)', included: true },
-      { text: 'Social Media (50 marcas, ilimitado)', included: true },
-      { text: 'Link23 ilimitado', included: true },
-      { text: 'Inbox (DMs)', included: true },
       { text: 'Suporte VIP dedicado', included: true },
       { text: 'Templates ilimitados', included: true },
     ],
@@ -231,7 +222,6 @@ export default function Upgrade() {
       return;
     }
 
-    // If no active subscription, go straight to checkout
     if (currentPlan === 'free' || !subscription?.lemonsqueezySubscriptionId) {
       await handleSubscribe(newPlanType);
       return;
@@ -535,34 +525,34 @@ export default function Upgrade() {
                 </thead>
                 <tbody>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Clientes</td>
-                    <td className="text-center py-3 px-4">{plans.starter.limits.clients}</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.clients}</td>
-                    <td className="text-center py-3 px-4">{plans.agency.limits.clients}</td>
+                    <td className="py-3 px-4">Marcas (Clientes)</td>
+                    <td className="text-center py-3 px-4">15 ativos</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>25 ativos</td>
+                    <td className="text-center py-3 px-4">Ilimitado</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Contratos</td>
-                    <td className="text-center py-3 px-4">{plans.starter.limits.contracts}</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.contracts}</td>
-                    <td className="text-center py-3 px-4">{plans.agency.limits.contracts}</td>
+                    <td className="py-3 px-4">Studio AI (Créditos / dia)</td>
+                    <td className="text-center py-3 px-4">5</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>15</td>
+                    <td className="text-center py-3 px-4">30</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Assistente IA</td>
-                    <td className="text-center py-3 px-4">{plans.starter.limits.ai}</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.ai}</td>
-                    <td className="text-center py-3 px-4">{plans.agency.limits.ai}</td>
+                    <td className="py-3 px-4">Redes Sociais</td>
+                    <td className="text-center py-3 px-4">Ilimitado</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>Ilimitado</td>
+                    <td className="text-center py-3 px-4">Ilimitado</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Equipe</td>
-                    <td className="text-center py-3 px-4">{plans.starter.limits.team}</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.team}</td>
-                    <td className="text-center py-3 px-4">{plans.agency.limits.team}</td>
+                    <td className="py-3 px-4">Postagens</td>
+                    <td className="text-center py-3 px-4">Ilimitado</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>Ilimitado</td>
+                    <td className="text-center py-3 px-4">Ilimitado</td>
                   </tr>
                   <tr>
-                    <td className="py-3 px-4">Templates</td>
-                    <td className="text-center py-3 px-4">{plans.starter.limits.templates}</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>{plans.pro.limits.templates}</td>
-                    <td className="text-center py-3 px-4">{plans.agency.limits.templates}</td>
+                    <td className="py-3 px-4">Módulos Extras</td>
+                    <td className="text-center py-3 px-4">Básico</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>Inbox/Analytics</td>
+                    <td className="text-center py-3 px-4">Suporte VIP</td>
                   </tr>
                 </tbody>
               </table>

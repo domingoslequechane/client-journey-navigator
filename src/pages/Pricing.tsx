@@ -23,10 +23,10 @@ const plans = [
     borderColor: 'border-blue-500/30',
     textColor: 'text-blue-500',
     features: [
-      '5 Marcas (Clientes)',
+      '15 Marcas (Clientes)',
       'Redes Sociais Ilimitadas',
       '5 Créditos Studio AI / dia',
-      'Módulo de Finanças'
+      'Módulos: Finanças, Editorial, Link23'
     ]
   },
   {
@@ -43,9 +43,9 @@ const plans = [
     popular: true,
     recommended: 'Mais Popular',
     features: [
-      '15 Marcas (Clientes)',
+      '25 Marcas (Clientes)',
       '15 Créditos Studio AI / dia',
-      'Módulos Inbox/Analytics',
+      'Tudo + Inbox/Analytics',
       'Suporte Prioritário'
     ]
   },
@@ -61,9 +61,9 @@ const plans = [
     borderColor: 'border-orange-500/30',
     textColor: 'text-orange-500',
     features: [
-      '50 Marcas (Clientes)',
+      'Marcas Ilimitadas',
       '30 Créditos Studio AI / dia',
-      'Suporte VIP',
+      'Tudo + Suporte VIP',
       'Todos os Módulos'
     ]
   },
@@ -73,27 +73,24 @@ const comparisonFeatures = [
   {
     category: 'Geral',
     features: [
-      { name: 'Público-Alvo', starter: 'Freelancers / Pequenas Agências', pro: 'Agências em Crescimento', agency: 'Grandes Agências / White Label' },
-      { name: 'Redes Sociais (por marca)', starter: 'Ilimitadas', pro: 'Ilimitadas', agency: 'Ilimitadas' },
-      { name: 'Postagens', starter: 'Ilimitadas', pro: 'Ilimitadas', agency: 'Ilimitadas' },
-      { name: 'Variações de IA por Flyer', starter: '2', pro: '2', agency: '2' },
+      { name: 'Marcas (Clientes)', starter: '15', pro: '25', agency: 'Ilimitado' },
+      { name: 'Redes Sociais (por marca)', starter: 'Ilimitado', pro: 'Ilimitado', agency: 'Ilimitado' },
+      { name: 'Postagens Mensais', starter: 'Ilimitado', pro: 'Ilimitado', agency: 'Ilimitado' },
     ],
   },
   {
-    category: 'Limites',
+    category: 'Inteligência Artificial',
     features: [
-      { name: 'Marcas (Clientes)', starter: '5', pro: '15', agency: '50' },
       { name: 'Studio AI (Créditos / dia)', starter: '5', pro: '15', agency: '30' },
+      { name: 'QIA - Mensagens/mês', starter: '500', pro: '1200', agency: 'Ilimitado' },
     ],
   },
   {
     category: 'Módulos e Suporte',
     features: [
-      { name: 'Finanças', starter: true, pro: true, agency: true },
-      { name: 'Editorial', starter: true, pro: true, agency: true },
-      { name: 'Link23', starter: true, pro: true, agency: true },
-      { name: 'Inbox/Analytics', starter: false, pro: true, agency: true },
-      { name: 'Suporte VIP', starter: false, pro: false, agency: true },
+      { name: 'Finanças, Editorial, Link23', starter: true, pro: true, agency: true },
+      { name: 'Inbox & Analytics', starter: false, pro: true, agency: true },
+      { name: 'Suporte VIP Dedicado', starter: false, pro: false, agency: true },
     ],
   },
 ];
@@ -134,7 +131,7 @@ const Pricing = () => {
           <div className="text-center mb-8">
             <Badge variant="outline" className="mb-4">Planos & Preços</Badge>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Comparação Completa de Planos
+              Escolha o plano ideal para sua agência
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Todos os planos incluem <strong>14 dias grátis</strong> para testar
@@ -227,13 +224,13 @@ const Pricing = () => {
                           <tr key={feature.name} className={idx % 2 === 0 ? 'bg-muted/20' : ''}>
                             <td className="p-4 text-sm">{feature.name}</td>
                             <td className="p-4 text-center">
-                              {renderValue(feature.starter, plans[0])}
+                              {renderValue((feature as any).starter, plans[0])}
                             </td>
                             <td className="p-4 text-center">
-                              {renderValue(feature.pro, plans[1])}
+                              {renderValue((feature as any).pro, plans[1])}
                             </td>
                             <td className="p-4 text-center">
-                              {renderValue(feature.agency, plans[2])}
+                              {renderValue((feature as any).agency, plans[2])}
                             </td>
                           </tr>
                         ))}

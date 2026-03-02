@@ -60,9 +60,6 @@ export default function SocialMedia() {
 
   const hasClientSelected = selectedClient !== 'all';
 
-  // Determine if editing post is published (read-only)
-  const isEditingPublished = editingPost?.status === 'published';
-
   // Sync posts on mount
   useEffect(() => {
     if (hasClientSelected) {
@@ -405,8 +402,6 @@ export default function SocialMedia() {
         clientId={selectedClient !== 'all' ? selectedClient : null}
         onSave={handleSave}
         defaultDate={defaultDate}
-        isPublished={isEditingPublished}
-        onDuplicate={handleClonePost}
       />
 
       <ConnectAccountsGuardModal
