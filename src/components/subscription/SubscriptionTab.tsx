@@ -60,7 +60,7 @@ const PLAN_CONFIG = {
     borderColor: 'border-blue-500/20',
     image: planLanca,
     price: '$19/mês',
-    features: ['15 clientes ativos', '5 marcas sociais', '15 contratos/mês', '15 créditos Studio AI/dia']
+    features: ['15 clientes ativos', 'Contratos e faturas', '500 msgs IA', 'Academia completa']
   },
   pro: {
     name: 'Arco',
@@ -70,7 +70,7 @@ const PLAN_CONFIG = {
     borderColor: 'border-purple-500/20',
     image: planArco,
     price: '$39/mês',
-    features: ['50 clientes ativos', '15 marcas sociais', '50 contratos/mês', '30 créditos Studio AI/dia']
+    features: ['50 clientes ativos', 'Todos os documentos', '1200 msgs IA', 'Academia + IA']
   },
   agency: {
     name: 'Catapulta',
@@ -78,9 +78,9 @@ const PLAN_CONFIG = {
     color: 'text-orange-500',
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/20',
-    image: planArco,
+    image: planCatapulta,
     price: '$79/mês',
-    features: ['Clientes ilimitados', '50 marcas sociais', 'Contratos ilimitados', '60 créditos Studio AI/dia']
+    features: ['Clientes ilimitados', 'Docs ilimitados', 'IA ilimitada', 'Suporte prioritário']
   },
 };
 

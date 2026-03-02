@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, ArrowLeft, Star } from 'lucide-react';
+import { Check, X, ArrowLeft, Star, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 
@@ -14,39 +14,58 @@ const plans = [
   {
     key: 'starter',
     name: 'Lança',
-    subtitle: 'Crescimento',
+    subtitle: 'Para a Pequena Agência',
     price: 19,
-    tagline: 'Lance sua marca no mundo digital!',
+    tagline: 'Profissionalize sua prospecção e fechamento.',
     image: planLanca,
     color: 'hsl(217, 91%, 60%)',
     bgColor: 'hsl(217, 91%, 60%, 0.1)',
     borderColor: 'border-blue-500/30',
     textColor: 'text-blue-500',
+    features: [
+      '15 clientes ativos',
+      'Contratos e faturas',
+      '500 msgs IA',
+      'Academia completa'
+    ]
   },
   {
     key: 'pro',
     name: 'Arco',
-    subtitle: 'Profissional',
+    subtitle: 'Para a Agência em Crescimento',
     price: 39,
-    tagline: 'Alcance resultados com precisão!',
+    tagline: 'Automação total para quem não quer parar.',
     image: planArco,
     color: 'hsl(270, 91%, 65%)',
     bgColor: 'hsl(270, 91%, 65%, 0.1)',
     borderColor: 'border-purple-500/30',
     textColor: 'text-purple-500',
     popular: true,
+    recommended: 'Recomendado para Escala',
+    features: [
+      '50 clientes ativos',
+      'Todos os documentos',
+      '1200 msgs IA',
+      'Academia + IA'
+    ]
   },
   {
     key: 'agency',
     name: 'Catapulta',
-    subtitle: 'Agência',
+    subtitle: 'Para a Agência Consolidada',
     price: 79,
-    tagline: 'Imponha sua agência no mercado!',
+    tagline: 'Poder total para dominar o mercado.',
     image: planCatapulta,
     color: 'hsl(25, 95%, 53%)',
     bgColor: 'hsl(25, 95%, 53%, 0.1)',
     borderColor: 'border-orange-500/30',
     textColor: 'text-orange-500',
+    features: [
+      'Clientes ilimitados',
+      'Docs ilimitados',
+      'IA ilimitada',
+      'Suporte prioritário'
+    ]
   },
 ];
 
@@ -152,34 +171,46 @@ const Pricing = () => {
                   <div className="absolute top-0 right-0">
                     <Badge className="rounded-none rounded-bl-lg bg-purple-500 text-white">
                       <Star className="h-3 w-3 mr-1" />
-                      Popular
+                      {plan.recommended || 'Popular'}
                     </Badge>
                   </div>
                 )}
                 <CardHeader className="text-center pb-2">
-                  <img 
-                    src={plan.image} 
+                  <img
+                    src={plan.image}
                     alt={plan.name}
                     className="w-24 h-24 mx-auto mb-2 object-contain"
                   />
                   <CardTitle className={plan.textColor}>{plan.name}</CardTitle>
-                  <CardDescription>{plan.tagline}</CardDescription>
+                  <CardDescription className="font-medium text-foreground/80">{plan.subtitle}</CardDescription>
+                  <CardDescription className="italic">{plan.tagline}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
                   <div className="mb-4">
                     <span className="text-4xl font-bold">${plan.price}</span>
                     <span className="text-muted-foreground">/mês</span>
-                    <p className="text-sm text-primary font-medium mt-1">14 dias grátis</p>
+                    <p className="text-xs font-bold text-orange-500 uppercase mt-1">14 dias grátis</p>
                   </div>
+
+                  <ul className="space-y-2 mb-6 text-left">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-center gap-2 text-sm">
+                        <Check className={`h-4 w-4 shrink-0 ${plan.textColor}`} />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
                   <Link to="/auth">
-                    <Button 
-                      className="w-full"
-                      style={{ 
+                    <Button
+                      className="w-full gap-2"
+                      style={{
                         backgroundColor: plan.color,
                         color: 'white'
                       }}
                     >
-                      Começar Grátis
+                      <Sparkles className="h-4 w-4" />
+                      Iniciar Minha Transformação
                     </Button>
                   </Link>
                 </CardContent>

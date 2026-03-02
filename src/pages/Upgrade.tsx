@@ -67,9 +67,9 @@ export const planImages: Record<string, string> = {
 
 export const planNames: Record<PlanType, { name: string; codename: string; tagline: string }> = {
   free: { name: 'Sem Plano', codename: 'Sem Plano', tagline: 'Selecione um plano para começar.' },
-  starter: { name: 'Crescimento', codename: 'Lança', tagline: 'Lance sua marca no mundo digital!' },
-  pro: { name: 'Profissional', codename: 'Arco', tagline: 'Alcance resultados com precisão!' },
-  agency: { name: 'Agência', codename: 'Catapulta', tagline: 'Imponha sua agência no mercado!' },
+  starter: { name: 'Pequena Agência', codename: 'Lança', tagline: 'Profissionalize sua prospecção e fechamento.' },
+  pro: { name: 'Agência em Crescimento', codename: 'Arco', tagline: 'Automação total para quem não quer parar.' },
+  agency: { name: 'Agência Consolidada', codename: 'Catapulta', tagline: 'Poder total para dominar o mercado.' },
 };
 
 interface PlanConfig {
@@ -93,12 +93,12 @@ const plans: Record<string, PlanConfig> = {
     name: 'Lança',
     price: 19,
     priceLabel: '$19/mês',
-    description: 'Para agências em crescimento',
+    description: 'Para a Pequena Agência',
     features: [
       { text: '15 clientes ativos', included: true },
-      { text: '500 mensagens IA/mês', included: true },
-      { text: '5 usuários', included: true },
-      { text: 'Finanças + Editorial', included: true },
+      { text: 'Contratos e faturas', included: true },
+      { text: '500 msgs IA', included: true },
+      { text: 'Academia completa', included: true },
       { text: 'Studio AI (15 créditos diários)', included: true },
       { text: 'Social Media (5 marcas, 50 posts)', included: true },
       { text: 'Link23 (1 página)', included: true },
@@ -118,13 +118,13 @@ const plans: Record<string, PlanConfig> = {
     name: 'Arco',
     price: 39,
     priceLabel: '$39/mês',
-    description: 'Para agências estabelecidas',
+    description: 'Para a Agência em Crescimento',
     popular: true,
     features: [
       { text: '50 clientes ativos', included: true },
-      { text: '1200 mensagens IA/mês', included: true },
-      { text: '10 usuários', included: true },
-      { text: 'Todos os módulos', included: true },
+      { text: 'Todos os documentos', included: true },
+      { text: '1200 msgs IA', included: true },
+      { text: 'Academia + IA', included: true },
       { text: 'Studio AI (30 créditos diários)', included: true },
       { text: 'Social Media (15 marcas, 200 posts)', included: true },
       { text: 'Link23 (5 páginas)', included: true },
@@ -144,10 +144,12 @@ const plans: Record<string, PlanConfig> = {
     name: 'Catapulta',
     price: 79,
     priceLabel: '$79/mês',
-    description: 'Para grandes agências',
+    description: 'Para a Agência Consolidada',
     features: [
       { text: 'Clientes ilimitados', included: true },
+      { text: 'Docs ilimitados', included: true },
       { text: 'IA ilimitada', included: true },
+      { text: 'Suporte prioritário', included: true },
       { text: '20 usuários', included: true },
       { text: 'Todos os módulos', included: true },
       { text: 'Studio AI (60 créditos diários)', included: true },
@@ -501,8 +503,8 @@ export default function Upgrade() {
                         </>
                       ) : (
                         <>
-                          <CreditCard className="h-4 w-4" />
-                          Começar Grátis
+                          <Sparkles className="h-4 w-4" />
+                          Iniciar Minha Transformação
                         </>
                       )}
                     </Button>
