@@ -1341,7 +1341,7 @@ serve(async (req) => {
 
       const planType = orgData?.plan_type || 'free';
       
-      // Define daily limits based on plan
+      // Define daily limits based on plan (from pricing page)
       const dailyLimits: Record<string, number> = {
         'free': 5,
         'starter': 15,
@@ -1349,7 +1349,7 @@ serve(async (req) => {
         'agency': 60
       };
 
-      const dailyLimit = dailyLimits[planType] || 5;
+      const userDailyLimit = dailyLimits[planType] || 5;
 
       // Check daily limit
       const today = new Date().toISOString().split('T')[0];
@@ -1361,9 +1361,9 @@ serve(async (req) => {
 
       if (countError) {
         console.error("Error checking daily limit:", countError);
-      } else if (dailyCount !== null && dailyCount >= dailyLimit) {
+      } else if (dailyCount !== null && dailyCount >= userDailyLimit) {
         return new Response(JSON.stringify({ 
-          error: `Limite diário atingido para o seu plano (${dailyLimit} flyers). O limite será resetado à meia-noite.` 
+          error: `Limite diário atingido para o plano ${planType}. Você pode gerar até ${userDailyLimit} flyers por dia.` 
         }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
