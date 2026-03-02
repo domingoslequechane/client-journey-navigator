@@ -96,9 +96,9 @@ Use datas a partir de amanhã. Não inclua nenhum texto fora do JSON.`;
     return new Response(JSON.stringify({ slots }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Suggest best times error:", error);
-    return new Response(JSON.stringify({ error: error.message || "Erro ao sugerir horários" }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Erro ao sugerir horários" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

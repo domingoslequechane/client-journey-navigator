@@ -102,7 +102,7 @@ export default function SocialApproval() {
     if (!approverName.trim() || !rejectionReason.trim()) return;
     setSubmitting(true);
     try {
-      await rejectPost(rejectionReason, approverName);
+      await rejectPost({ reason: rejectionReason, approverName });
       setResult('rejected');
       refetch();
     } catch {

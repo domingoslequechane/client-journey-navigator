@@ -131,9 +131,9 @@ REGRAS OBRIGATÓRIAS:
     return new Response(JSON.stringify({ caption }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Generate caption error:", error);
-    return new Response(JSON.stringify({ error: error.message || "Erro ao gerar legenda" }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Erro ao gerar legenda" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

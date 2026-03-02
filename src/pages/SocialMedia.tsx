@@ -135,7 +135,7 @@ export default function SocialMedia() {
       } else {
         const created = await createPost.mutateAsync({ ...postData, client_id: clientId } as any);
         if (data.status === 'scheduled' || data.status === 'published') {
-          await publishPost.mutateAsync({ postId: created.id, publishNow: data.status === 'published' });
+          await publishPost.mutateAsync({ postId: (created as any).id, publishNow: data.status === 'published' });
         }
         return created;
       }
