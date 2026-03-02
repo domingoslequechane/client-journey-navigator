@@ -72,7 +72,7 @@ const comparisonFeatures = [
     category: 'Inteligência Artificial',
     features: [
       { name: 'QIA - Mensagens/mês', starter: '500', pro: '1200', agency: 'Ilimitado' },
-      { name: 'Studio AI - Flyers/mês', starter: '30', pro: '100', agency: 'Ilimitado' },
+      { name: 'Studio AI - Créditos Diários', starter: '15', pro: '30', agency: '60' },
       { name: 'Sugestões personalizadas', starter: true, pro: true, agency: true },
     ],
   },
@@ -82,7 +82,7 @@ const comparisonFeatures = [
       { name: 'Finanças', starter: true, pro: true, agency: true },
       { name: 'Link23 (páginas)', starter: '1', pro: '5', agency: 'Ilimitado' },
       { name: 'Linha Editorial', starter: true, pro: true, agency: true },
-      { name: 'Social Media (contas)', starter: '3', pro: '7', agency: '15' },
+      { name: 'Social Media (Marcas)', starter: '5', pro: '15', agency: '50' },
       { name: 'Posts sociais/mês', starter: '50', pro: '200', agency: 'Ilimitado' },
       { name: 'Inbox (DMs)', starter: false, pro: true, agency: true },
     ],

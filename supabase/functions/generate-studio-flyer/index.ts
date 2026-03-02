@@ -1293,31 +1293,6 @@ serve(async (req) => {
     const userId = claimsData.user.id;
     const userEmail = claimsData.user.email;
 
-    // Check if user is exempt from limits (development accounts)
-    const EXEMPT_EMAILS = ["domingosf.lequechane@gmail.com", "onixagence.geral@gmail.com"];
-    const isExempt = userEmail && EXEMPT_EMAILS.some(e => userEmail.toLowerCase().includes(e.split('@')[0].toLowerCase()));
-
-    if (!isExempt) {
-      // Check daily limit (5 generations per user)
-      const today = new Date().toISOString().split('T')[0];
-      const { count: dailyCount, error: countError } = await supabase
-        .from("studio_flyers")
-        .select("*", { count: 'exact', head: true })
-        .eq("created_by", userId)
-        .gte("created_at", today);
-
-      if (countError) {
-        console.error("Error checking daily limit:", countError);
-      } else if (dailyCount !== null && dailyCount >= 5) {
-        return new Response(JSON.stringify({ 
-          error: "Limite diário atingido. Você pode gerar até 5 flyers por dia durante a fase Beta. O limite será resetado à meia-noite." 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
     const {
       projectId, prompt = '', size = '1080x1080', style = 'vivid',
       mode = 'original', model = 'gemini-flash', niche, mood,
@@ -1335,14 +1310,6 @@ serve(async (req) => {
       });
     }
 
-    // If no prompt and not autoCopy mode, require a prompt
-    if (!prompt && !autoCopy) {
-      return new Response(JSON.stringify({ error: "prompt is required (or enable autoCopy)" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { data: project, error: projectError } = await supabase
       .from("studio_projects")
       .select("*")
@@ -1352,6 +1319,62 @@ serve(async (req) => {
     if (projectError || !project) {
       return new Response(JSON.stringify({ error: "Project not found" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if user is exempt from limits (development accounts)
+    const EXEMPT_EMAILS = ["domingosf.lequechane@gmail.com", "onixagence.geral@gmail.com"];
+    const isExempt = userEmail && EXEMPT_EMAILS.some(e => userEmail.toLowerCase().includes(e.split('@')[0].toLowerCase()));
+
+    if (!isExempt) {
+      // Fetch organization plan type
+      const { data: orgData, error: orgError } = await supabase
+        .from("organizations")
+        .select("plan_type")
+        .eq("id", project.organization_id)
+        .single();
+
+      if (orgError) {
+        console.error("Error fetching organization plan:", orgError);
+      }
+
+      const planType = orgData?.plan_type || 'free';
+      
+      // Define daily limits based on plan
+      const dailyLimits: Record<string, number> = {
+        'free': 5,
+        'starter': 15,
+        'pro': 30,
+        'agency': 60
+      };
+
+      const dailyLimit = dailyLimits[planType] || 5;
+
+      // Check daily limit
+      const today = new Date().toISOString().split('T')[0];
+      const { count: dailyCount, error: countError } = await supabase
+        .from("studio_flyers")
+        .select("*", { count: 'exact', head: true })
+        .eq("created_by", userId)
+        .gte("created_at", today);
+
+      if (countError) {
+        console.error("Error checking daily limit:", countError);
+      } else if (dailyCount !== null && dailyCount >= dailyLimit) {
+        return new Response(JSON.stringify({ 
+          error: `Limite diário atingido para o seu plano (${dailyLimit} flyers). O limite será resetado à meia-noite.` 
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // If no prompt and not autoCopy mode, require a prompt
+    if (!prompt && !autoCopy) {
+      return new Response(JSON.stringify({ error: "prompt is required (or enable autoCopy)" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

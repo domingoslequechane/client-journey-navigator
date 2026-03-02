@@ -42,45 +42,45 @@ interface PaymentHistory {
 }
 
 const PLAN_CONFIG = {
-  free: { 
-    name: 'Bússola', 
-    icon: Compass, 
-    color: 'text-green-500', 
+  free: {
+    name: 'Bússola',
+    icon: Compass,
+    color: 'text-green-500',
     bgColor: 'bg-green-500/10',
     borderColor: 'border-green-500/20',
     image: planLanca,
     price: 'Legado',
     features: ['3 clientes ativos', 'Funil ilimitado', '3 contratos/mês', '90 msgs IA/mês']
   },
-  starter: { 
-    name: 'Lança', 
-    icon: Target, 
-    color: 'text-blue-500', 
+  starter: {
+    name: 'Lança',
+    icon: Target,
+    color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
     image: planLanca,
     price: '$19/mês',
-    features: ['15 clientes ativos', 'Funil ilimitado', '15 contratos/mês', '500 msgs IA/mês']
+    features: ['15 clientes ativos', '5 marcas sociais', '15 contratos/mês', '15 créditos Studio AI/dia']
   },
-  pro: { 
-    name: 'Arco', 
-    icon: TrendingUp, 
-    color: 'text-purple-500', 
+  pro: {
+    name: 'Arco',
+    icon: TrendingUp,
+    color: 'text-purple-500',
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/20',
     image: planArco,
     price: '$39/mês',
-    features: ['50 clientes ativos', 'Funil ilimitado', '50 contratos/mês', '1200 msgs IA/mês']
+    features: ['50 clientes ativos', '15 marcas sociais', '50 contratos/mês', '30 créditos Studio AI/dia']
   },
-  agency: { 
-    name: 'Catapulta', 
-    icon: Rocket, 
-    color: 'text-orange-500', 
+  agency: {
+    name: 'Catapulta',
+    icon: Rocket,
+    color: 'text-orange-500',
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/20',
-    image: planCatapulta,
+    image: planArco,
     price: '$79/mês',
-    features: ['Clientes ilimitados', 'Funil ilimitado', 'Contratos ilimitados', 'IA ilimitada']
+    features: ['Clientes ilimitados', '50 marcas sociais', 'Contratos ilimitados', '60 créditos Studio AI/dia']
   },
 };
 
