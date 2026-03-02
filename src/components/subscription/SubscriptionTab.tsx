@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/components/ui/alert-dialog';
 import { 
   Loader2, CheckCircle2, Clock, Receipt, XCircle, Compass, Target, 
   TrendingUp, Rocket, Sparkles, AlertTriangle, ExternalLink, RotateCcw, CreditCard 
@@ -463,7 +463,7 @@ export function SubscriptionTab() {
         <CardContent>
           {loadingPayments ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : payments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
