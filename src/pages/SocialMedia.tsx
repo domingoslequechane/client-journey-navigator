@@ -18,8 +18,10 @@ import { type SocialPlatform, type PostStatus, PLATFORM_CONFIG, STATUS_CONFIG } 
 import { useSocialPosts, type SocialPostRow } from '@/hooks/useSocialPosts';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useSocialMessages } from '@/hooks/useSocialMessages';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 
 type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'inbox' | 'reports';
 
@@ -49,6 +51,7 @@ export default function SocialMedia() {
   const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval, publishPost, syncPosts, refetch: refetchPosts } = useSocialPosts();
   const { accounts, syncAccounts, connectPlatform, refetch: refetchAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
   const { unreadCount, refetch: refetchMessages } = useSocialMessages(selectedClient !== 'all' ? selectedClient : undefined);
+  const { limits, usage } = usePlanLimits();
 
   const [connectGuardOpen, setConnectGuardOpen] = useState(false);
   const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);

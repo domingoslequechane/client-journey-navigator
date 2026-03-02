@@ -512,7 +512,14 @@ export default function Team() {
       )}
       <AnimatedContainer animation="fade-up" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Equipe</h1>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            Equipe
+            {limits.maxTeamMembers !== null && (
+              <Badge variant="outline" className="font-mono">
+                {usage.teamMembersCount}/{limits.maxTeamMembers}
+              </Badge>
+            )}
+          </h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">Gerencie os membros da sua equipe</p>
         </div>
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>

@@ -107,7 +107,14 @@ export default function Clients() {
     <div className="p-4 md:p-8">
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">{t('title')}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            {t('title')}
+            {limits.maxClients !== null && (
+              <Badge variant="outline" className="font-mono">
+                {usage.clientsCount}/{limits.maxClients}
+              </Badge>
+            )}
+          </h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">
             {t('subtitle', { count: filteredClients.length, total: clients.length })}
           </p>
