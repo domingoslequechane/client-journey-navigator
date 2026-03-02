@@ -20,6 +20,7 @@ import { useMemo } from 'react';
  import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
  import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
  import { usePlanLimits } from '@/hooks/usePlanLimits';
+ import { useUserRole } from '@/hooks/useUserRole';
  
  const salesStageIcons: Record<string, typeof Search> = { prospecting: Search, qualification: Target, closing: FileCheck };
  const operationalStageIcons: Record<string, typeof Cog> = { production: Cog, campaigns: Megaphone, retention: Target, loyalty: Heart };
