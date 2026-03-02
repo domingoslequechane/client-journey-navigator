@@ -609,65 +609,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* PROVA SOCIAL - Depoimento Único e Forte */}
-      <section className="py-20 md:py-32">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            {/* Stat gigante */}
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-4 bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6">
-                <TrendingUp className="h-12 w-12 text-primary" />
-                <div className="text-left">
-                  <div className="text-5xl md:text-6xl font-bold text-primary">{t('social.statValue')}</div>
-                  <div className="text-muted-foreground">{t('social.statLabel')}</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Depoimento principal */}
-            <div className="bg-card border border-border rounded-2xl p-8 md:p-12 relative">
-              <div className="absolute -top-4 left-8 flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-6 w-6 fill-warning text-warning" />
-                ))}
-              </div>
-              
-              <blockquote className="text-xl md:text-2xl text-foreground mb-8 leading-relaxed">
-                "{t('social.testimonial')}
-                <strong className="text-primary">{t('social.testimonialHighlight')}</strong>
-                {t('social.testimonialEnd')}"
-              </blockquote>
-              
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">MC</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-lg">{t('social.author')}</p>
-                  <p className="text-muted-foreground">{t('social.authorRole')}</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Stats secundários */}
-            <div className="grid grid-cols-3 gap-6 mt-12">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">{t('social.stat1Value')}</div>
-                <div className="text-sm text-muted-foreground">{t('social.stat1Label')}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">{t('social.stat2Value')}</div>
-                <div className="text-sm text-muted-foreground">{t('social.stat2Label')}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">{t('social.stat3Value')}</div>
-                <div className="text-sm text-muted-foreground">{t('social.stat3Label')}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* OFERTA - Planos */}
       <section id="planos" className="py-20 md:py-32 bg-muted/30">
         <div className="container mx-auto px-4">
