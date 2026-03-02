@@ -21,12 +21,13 @@ const plans = [
     name: 'Lança',
     price: 19,
     period: '/mês',
-    description: 'Freelancers / Pequenas Agências',
+    description: 'Para agências em crescimento',
     features: [
-      '5 Marcas (Clientes)',
-      'Redes Sociais Ilimitadas',
-      '5 Créditos Studio AI / dia',
-      'Módulos: Finanças, Editorial, Link23',
+      '15 clientes ativos',
+      '5 membros de equipe',
+      'Finanças + Editorial + Studio AI',
+      'Social Media (3 contas, 50 posts)',
+      'Link23 (1 página)',
     ],
     image: planLanca,
   },
@@ -35,12 +36,13 @@ const plans = [
     name: 'Arco',
     price: 39,
     period: '/mês',
-    description: 'Agências em Crescimento',
+    description: 'Para agências estabelecidas',
     features: [
-      '15 Marcas (Clientes)',
-      '15 Créditos Studio AI / dia',
-      'Tudo do Lança + Inbox/Analytics',
-      'Suporte Prioritário',
+      '50 clientes ativos',
+      '10 membros de equipe',
+      'Todos os módulos + Inbox',
+      'Social Media (7 contas, 200 posts)',
+      'Link23 (5 páginas)',
     ],
     image: planArco,
     popular: true,
@@ -50,12 +52,13 @@ const plans = [
     name: 'Catapulta',
     price: 79,
     period: '/mês',
-    description: 'Grandes Agências / White Label',
+    description: 'Para grandes agências',
     features: [
-      '50 Marcas (Clientes)',
-      '30 Créditos Studio AI / dia',
-      'Tudo do Arco + Suporte VIP',
-      'Acesso Antecipado a Recursos',
+      'Clientes ilimitados',
+      '20 membros de equipe',
+      'Tudo ilimitado',
+      'Social Media (15 contas)',
+      'Suporte VIP dedicado',
     ],
     image: planCatapulta,
   },
@@ -169,6 +172,13 @@ export default function SelectPlan() {
         }
       );
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        const textResponse = await response.text();
+        console.error('Non-JSON response from checkout:', textResponse.substring(0, 200));
+        throw new Error('Erro inesperado ao criar checkout. Tente novamente.');
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
@@ -219,10 +229,10 @@ export default function SelectPlan() {
       <div className="min-h-screen flex flex-col items-center justify-center p-4 py-12">
         <div className="text-center mb-8 max-w-2xl">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Tabela de Planos e Limitações
+            Escolha seu plano
           </h1>
           <p className="text-muted-foreground text-lg">
-            Selecione o plano ideal para a escala da sua operação. 14 dias grátis.
+            Selecione um plano para começar a usar o Qualify. Informações de cartão são obrigatórias.
           </p>
         </div>
 
@@ -256,20 +266,23 @@ export default function SelectPlan() {
                   <CardTitle className="text-xl" style={{ color: colors.primary }}>
                     {plan.name}
                   </CardTitle>
-                  <CardDescription className="text-xs">{plan.description}</CardDescription>
+                  <CardDescription>{plan.description}</CardDescription>
                 </CardHeader>
 
                 <CardContent className="flex-1 flex flex-col">
-                  <div className="text-center mb-6">
+                  <div className="text-center mb-4">
                     <div className="flex items-baseline justify-center gap-1">
                       <span className="text-4xl font-bold" style={{ color: colors.primary }}>
                         ${plan.price}
                       </span>
                       <span className="text-muted-foreground">{plan.period}</span>
                     </div>
+                    <p className="text-sm text-primary font-medium mt-1">
+                      Cartão obrigatório
+                    </p>
                   </div>
 
-                  <ul className="space-y-2 mb-8 flex-1">
+                  <ul className="space-y-2 mb-6 flex-1">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
                         <Check 
@@ -291,7 +304,10 @@ export default function SelectPlan() {
                     disabled={!!loadingPlan}
                   >
                     {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
                     ) : (
                       <>
                         Assinar Agora

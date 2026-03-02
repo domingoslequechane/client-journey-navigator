@@ -15,7 +15,7 @@ const plans = [
     key: 'starter',
     name: 'Lança',
     subtitle: 'Freelancers / Pequenas Agências',
-    price: '$19',
+    price: '$19 / 1.216 MT',
     tagline: 'O essencial para começar a crescer.',
     image: planLanca,
     color: 'hsl(217, 91%, 60%)',
@@ -26,14 +26,14 @@ const plans = [
       '5 Marcas (Clientes)',
       'Redes Sociais Ilimitadas',
       '5 Créditos Studio AI / dia',
-      'Módulos: Finanças, Editorial, Link23'
+      'Módulo de Finanças'
     ]
   },
   {
     key: 'pro',
     name: 'Arco',
     subtitle: 'Agências em Crescimento',
-    price: '$39',
+    price: '$39 / 2.496 MT',
     tagline: 'Ferramentas para escalar seus resultados.',
     image: planArco,
     color: 'hsl(270, 91%, 65%)',
@@ -45,7 +45,7 @@ const plans = [
     features: [
       '15 Marcas (Clientes)',
       '15 Créditos Studio AI / dia',
-      'Tudo do Lança + Inbox/Analytics',
+      'Módulos Inbox/Analytics',
       'Suporte Prioritário'
     ]
   },
@@ -53,7 +53,7 @@ const plans = [
     key: 'agency',
     name: 'Catapulta',
     subtitle: 'Grandes Agências / White Label',
-    price: '$79',
+    price: '$79 / 5.056 MT',
     tagline: 'Poder total para dominar o mercado.',
     image: planCatapulta,
     color: 'hsl(25, 95%, 53%)',
@@ -63,8 +63,8 @@ const plans = [
     features: [
       '50 Marcas (Clientes)',
       '30 Créditos Studio AI / dia',
-      'Tudo do Arco + Suporte VIP',
-      'Acesso Antecipado a Recursos'
+      'Suporte VIP',
+      'Todos os Módulos'
     ]
   },
 ];
@@ -80,7 +80,7 @@ const comparisonFeatures = [
     ],
   },
   {
-    category: 'Limites e Performance',
+    category: 'Limites',
     features: [
       { name: 'Marcas (Clientes)', starter: '5', pro: '15', agency: '50' },
       { name: 'Studio AI (Créditos / dia)', starter: '5', pro: '15', agency: '30' },
@@ -89,7 +89,9 @@ const comparisonFeatures = [
   {
     category: 'Módulos e Suporte',
     features: [
-      { name: 'Finanças, Editorial, Link23', starter: true, pro: true, agency: true },
+      { name: 'Finanças', starter: true, pro: true, agency: true },
+      { name: 'Editorial', starter: true, pro: true, agency: true },
+      { name: 'Link23', starter: true, pro: true, agency: true },
       { name: 'Inbox/Analytics', starter: false, pro: true, agency: true },
       { name: 'Suporte VIP', starter: false, pro: false, agency: true },
     ],
@@ -105,7 +107,7 @@ const Pricing = () => {
         <X className="h-5 w-5 text-muted-foreground/50" />
       );
     }
-    return <span className="font-medium text-sm">{value}</span>;
+    return <span className="font-medium">{value}</span>;
   };
 
   return (
@@ -132,10 +134,10 @@ const Pricing = () => {
           <div className="text-center mb-8">
             <Badge variant="outline" className="mb-4">Planos & Preços</Badge>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Tabela de Planos e Limitações
+              Comparação Completa de Planos
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Escolha o plano ideal para a escala da sua operação.
+              Todos os planos incluem <strong>14 dias grátis</strong> para testar
             </p>
           </div>
 
@@ -162,15 +164,16 @@ const Pricing = () => {
                   />
                   <CardTitle className={plan.textColor}>{plan.name}</CardTitle>
                   <CardDescription className="font-medium text-foreground/80">{plan.subtitle}</CardDescription>
-                  <CardDescription className="italic text-xs">{plan.tagline}</CardDescription>
+                  <CardDescription className="italic">{plan.tagline}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold">{plan.price}</span>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold">{plan.price}</span>
                     <p className="text-sm text-muted-foreground mt-1">por mês</p>
+                    <p className="text-xs font-bold text-orange-500 uppercase mt-1">14 dias grátis</p>
                   </div>
 
-                  <ul className="space-y-2 mb-8 text-left">
+                  <ul className="space-y-2 mb-6 text-left">
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="flex items-center gap-2 text-sm">
                         <Check className={`h-4 w-4 shrink-0 ${plan.textColor}`} />
@@ -181,13 +184,14 @@ const Pricing = () => {
 
                   <Link to="/auth">
                     <Button
-                      className="w-full gap-2 text-white shadow-lg"
+                      className="w-full gap-2"
                       style={{
                         backgroundColor: plan.color,
+                        color: 'white'
                       }}
                     >
                       <Sparkles className="h-4 w-4" />
-                      Assinar Plano {plan.name}
+                      Iniciar Minha Transformação
                     </Button>
                   </Link>
                 </CardContent>
@@ -242,9 +246,9 @@ const Pricing = () => {
           </div>
 
           <div className="text-center mt-16">
-            <h2 className="text-2xl font-bold mb-4">Pronto para escalar sua agência?</h2>
+            <h2 className="text-2xl font-bold mb-4">Pronto para começar?</h2>
             <p className="text-muted-foreground mb-6">
-              Teste grátis por 14 dias em qualquer plano. Sem compromisso, cancele quando quiser.
+              Teste grátis por 14 dias. Sem compromisso, cancele quando quiser.
             </p>
             <Link to="/auth">
               <Button size="lg" className="gap-2">

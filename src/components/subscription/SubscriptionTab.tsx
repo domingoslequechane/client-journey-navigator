@@ -60,7 +60,7 @@ const PLAN_CONFIG = {
     borderColor: 'border-blue-500/20',
     image: planLanca,
     price: '$19/mês',
-    features: ['5 Marcas (Clientes)', 'Redes Sociais Ilimitadas', '5 Créditos Studio AI / dia', 'Módulos: Finanças, Editorial, Link23']
+    features: ['15 clientes ativos', 'Contratos e faturas', '500 msgs IA', 'Academia completa']
   },
   pro: {
     name: 'Arco',
@@ -70,7 +70,7 @@ const PLAN_CONFIG = {
     borderColor: 'border-purple-500/20',
     image: planArco,
     price: '$39/mês',
-    features: ['15 Marcas (Clientes)', '15 Créditos Studio AI / dia', 'Tudo do Lança + Inbox/Analytics', 'Suporte Prioritário']
+    features: ['50 clientes ativos', 'Todos os documentos', '1200 msgs IA', 'Academia + IA']
   },
   agency: {
     name: 'Catapulta',
@@ -80,7 +80,7 @@ const PLAN_CONFIG = {
     borderColor: 'border-orange-500/20',
     image: planCatapulta,
     price: '$79/mês',
-    features: ['50 Marcas (Clientes)', '30 Créditos Studio AI / dia', 'Tudo do Arco + Suporte VIP', 'Acesso Antecipado a Recursos']
+    features: ['Clientes ilimitados', 'Docs ilimitados', 'IA ilimitada', 'Suporte prioritário']
   },
 };
 
@@ -345,6 +345,7 @@ export function SubscriptionTab() {
 
           {/* Management buttons */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-4 border-t">
+            {/* Payment management - only for paid plans */}
             {isPaidPlan && isActive && (
               <>
                 <Button 
@@ -383,6 +384,7 @@ export function SubscriptionTab() {
                           Sua assinatura será cancelada no final do período atual 
                           ({subscription?.currentPeriodEnd ? format(new Date(subscription.currentPeriodEnd), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'data não disponível'}).
                           Você continuará tendo acesso aos recursos do plano {currentPlan.name} até essa data.
+                          Após o cancelamento, você perderá o acesso às funcionalidades do sistema.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -421,7 +423,7 @@ export function SubscriptionTab() {
               <div className="flex-1">
                 <h3 className="font-semibold text-primary">Desbloqueie mais recursos</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Faça upgrade para ter mais marcas, créditos de design e módulos avançados.
+                  Faça upgrade para ter mais clientes, membros na equipe, contratos e mensagens de IA.
                 </p>
                 <Link to="/app/upgrade">
                   <Button className="mt-4 gap-2">
@@ -429,6 +431,33 @@ export function SubscriptionTab() {
                     Ver Planos
                   </Button>
                 </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active Subscription Info */}
+      {isActive && !cancelAtPeriodEnd && !isPastDue && isPaidPlan && (
+        <Card className={cn(currentPlan.borderColor, currentPlan.bgColor)}>
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className={cn("p-3 rounded-full", currentPlan.bgColor)}>
+                <CheckCircle2 className={cn("h-6 w-6", currentPlan.color)} />
+              </div>
+              <div className="flex-1">
+                <h3 className={cn("font-semibold", currentPlan.color)}>Assinatura Ativa</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Sua assinatura está ativa. Você tem acesso a todas as funcionalidades do plano {currentPlan.name}.
+                </p>
+                {planType !== 'agency' && (
+                  <Link to="/app/upgrade">
+                    <Button variant="outline" className="mt-4 gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      Fazer Upgrade
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </CardContent>
@@ -449,7 +478,7 @@ export function SubscriptionTab() {
         <CardContent>
           {loadingPayments ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : payments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -493,3 +522,4 @@ export function SubscriptionTab() {
     </div>
   );
 }
+
