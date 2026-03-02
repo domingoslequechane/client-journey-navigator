@@ -42,7 +42,11 @@ import {
   Calendar,
   MessageSquare,
   LayoutDashboard,
-  Zap
+  Zap,
+  Target,
+  Users,
+  LineChart,
+  Briefcase
 } from 'lucide-react';
 import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration';
 import { useEffect, useState, useRef } from 'react';
@@ -257,7 +261,7 @@ export default function LandingPage() {
             
             {/* Subheadline - Alternativa */}
             <p 
-              className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-10 animate-fade-in max-w-3xl mx-auto"
+              className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-10 animate-fade-in max-w-3xl mx-auto leading-relaxed"
               style={{ animationDelay: '0.4s' }}
             >
               {t('hero.subtitle')}
@@ -270,7 +274,7 @@ export default function LandingPage() {
             >
               <Link to="/auth">
                 <Button size="lg" className="text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-8 gap-2 sm:gap-3 shadow-2xl shadow-primary/40 hover:shadow-primary/50 transition-all hover:scale-105 group">
-                  <Zap className="h-5 w-5 sm:h-6 sm:w-6 fill-current" />
+                  <Target className="h-5 w-5 sm:h-6 sm:w-6" />
                   <span className="hidden sm:inline">{t('hero.cta')}</span>
                   <span className="sm:hidden">{t('hero.ctaMobile')}</span>
                   <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-1 transition-transform" />
@@ -279,8 +283,8 @@ export default function LandingPage() {
 
               <Link to="/demo">
                 <Button size="lg" variant="outline" className="text-lg sm:text-xl px-6 sm:px-10 py-6 sm:py-8 gap-2 sm:gap-3 hover:bg-primary/5 transition-all">
-                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
-                  Testar Demo (Sem Cadastro)
+                  <Eye className="h-5 w-5 sm:h-6 sm:w-6" />
+                  Ver Demonstração
                 </Button>
               </Link>
             </div>
@@ -369,9 +373,9 @@ export default function LandingPage() {
               {/* Custo 1 */}
               <div className="bg-card border border-border rounded-2xl p-8 text-center hover:border-destructive/50 transition-all duration-300 hover:shadow-lg group">
                 <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <TrendingDown className="h-8 w-8 text-destructive" />
+                  <AlertTriangle className="h-8 w-8 text-destructive" />
                 </div>
-                <div className="text-3xl font-bold text-destructive mb-2">{t('cost.revenueLoss')}</div>
+                <div className="text-2xl font-bold text-destructive mb-2">{t('cost.revenueLoss')}</div>
                 <div className="text-sm text-muted-foreground mb-4">{t('cost.revenueLossDesc')}</div>
                 <p className="text-muted-foreground text-sm">
                   {t('cost.revenueLossText')}
@@ -381,9 +385,9 @@ export default function LandingPage() {
               {/* Custo 2 */}
               <div className="bg-card border border-border rounded-2xl p-8 text-center hover:border-destructive/50 transition-all duration-300 hover:shadow-lg group">
                 <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <Timer className="h-8 w-8 text-destructive" />
+                  <Briefcase className="h-8 w-8 text-destructive" />
                 </div>
-                <div className="text-4xl font-bold text-destructive mb-2">{t('cost.hoursWasted')}</div>
+                <div className="text-2xl font-bold text-destructive mb-2">{t('cost.hoursWasted')}</div>
                 <div className="text-sm text-muted-foreground mb-4">{t('cost.hoursWastedDesc')}</div>
                 <p className="text-muted-foreground text-sm">
                   {t('cost.hoursWastedText')}
@@ -393,9 +397,9 @@ export default function LandingPage() {
               {/* Custo 3 */}
               <div className="bg-card border border-border rounded-2xl p-8 text-center hover:border-destructive/50 transition-all duration-300 hover:shadow-lg group">
                 <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <UserX className="h-8 w-8 text-destructive" />
+                  <LineChart className="h-8 w-8 text-destructive" />
                 </div>
-                <div className="text-4xl font-bold text-destructive mb-2">{t('cost.clientsLost')}</div>
+                <div className="text-2xl font-bold text-destructive mb-2">{t('cost.clientsLost')}</div>
                 <div className="text-sm text-muted-foreground mb-4">{t('cost.clientsLostDesc')}</div>
                 <p className="text-muted-foreground text-sm">
                   {t('cost.clientsLostText')}
@@ -440,7 +444,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* SOLUÇÃO - O Medicamento */}
+      {/* SOLUÇÃO - O Método */}
       <section id="solucao" className="py-20 md:py-32 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">

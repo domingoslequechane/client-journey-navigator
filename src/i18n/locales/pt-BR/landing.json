@@ -1,206 +1,206 @@
 {
   "header": {
-    "problem": "O Problema",
-    "solution": "A Solução",
+    "problem": "O Caos",
+    "solution": "O Método",
     "plans": "Planos",
     "faq": "Dúvidas",
     "login": "Entrar",
-    "cta": "Começar Agora",
+    "cta": "Escalar Minha Agência",
     "ctaMobile": "Começar",
     "installApp": "Instalar app"
   },
   "hero": {
-    "title": "Pare de perder vendas no",
-    "titleHighlight": "WhatsApp",
-    "titleEnd": "e escale sua agência",
-    "subtitle": "O CRM com IA que organiza seu caos, qualifica seus leads e gera documentos em segundos. Recupere o controle do seu tempo e do seu lucro.",
-    "cta": "Começar Teste Grátis",
+    "title": "O segredo para escalar sua agência sem",
+    "titleHighlight": "dobrar seu trabalho",
+    "titleEnd": "",
+    "subtitle": "Você não precisa de mais leads, você precisa de gestão. O Qualify é o sistema estratégico que transforma o caos do seu WhatsApp em uma operação previsível, lucrativa e profissional.",
+    "cta": "Quero o Método Qualify (14 dias grátis)",
     "ctaMobile": "Testar Grátis",
     "installApp": "Instalar App",
-    "trustNoCard": "14 dias de teste grátis",
-    "trustSetup": "Setup em 2 min",
+    "trustNoCard": "Teste grátis por 14 dias",
+    "trustSetup": "Pronto em 2 minutos",
     "trustCancel": "Cancele quando quiser"
   },
   "problem": {
-    "title": "Você sente que está",
-    "titleHighlight": "enxugando gelo?",
-    "description1": "Leads esquecidos no WhatsApp, planilhas confusas e uma equipe perdida. O caos operacional é o maior inimigo do seu crescimento.",
-    "description2": "Enquanto você tenta se organizar,",
-    "description2Highlight": "seus concorrentes estão fechando os seus clientes."
+    "title": "Você é dono de agência ou",
+    "titleHighlight": "escravo do WhatsApp?",
+    "description1": "Se você passa o dia respondendo leads, cobrando equipe e tentando entender planilhas que nunca batem, você não tem uma empresa, você tem um emprego exaustivo.",
+    "description2": "O problema não é sua equipe ou seus leads.",
+    "description2Highlight": "É a falta de um processo que trabalhe por você."
   },
   "cost": {
-    "title": "O custo invisível da",
-    "titleHighlight": "desorganização",
-    "revenueLoss": "Lucro Perdido",
-    "revenueLossDesc": "leads que nunca viraram contrato",
-    "revenueLossText": "Cada lead não respondido é dinheiro deixado na mesa.",
-    "hoursWasted": "120h",
-    "hoursWastedDesc": "desperdiçadas por mês",
-    "hoursWastedText": "Tempo gasto em tarefas manuais que a IA deveria estar fazendo.",
-    "clientsLost": "40%",
-    "clientsLostDesc": "vão para a concorrência",
-    "clientsLostText": "A velocidade de resposta é o que define quem ganha o jogo.",
-    "conclusion": "Não falta esforço.",
-    "conclusionHighlight": "Falta um sistema inteligente."
+    "title": "O que está impedindo você de",
+    "titleHighlight": "faturar o dobro?",
+    "revenueLoss": "O 'Vazamento' de Leads",
+    "revenueLossDesc": "dinheiro que morre no esquecimento",
+    "revenueLossText": "80% das vendas são perdidas por falta de follow-up. Sem gestão, você está jogando dinheiro no lixo todos os dias.",
+    "hoursWasted": "O Gargalo Operacional",
+    "hoursWastedDesc": "você preso no operacional",
+    "hoursWastedText": "Enquanto você gera contratos e orçamentos manualmente, sua agência para de crescer. O dono deve ser o estrategista, não o digitador.",
+    "clientsLost": "A Falta de Previsibilidade",
+    "clientsLostDesc": "viver no 'esperamos que dê certo'",
+    "clientsLostText": "Sem saber quanto vai faturar no próximo mês, você não consegue investir, contratar ou descansar. Isso é amadorismo.",
+    "conclusion": "Escalar exige sistema.",
+    "conclusionHighlight": "O Qualify é esse sistema."
   },
   "hope": {
-    "title": "Imagine ter uma visão",
-    "titleHighlight": "clara do seu negócio",
-    "description": "Saber exatamente quem é cada cliente, qual o próximo passo e quanto você vai faturar no final do mês.",
-    "tagline": "Sem planilhas. Sem esquecimentos. Apenas resultados."
+    "title": "A liberdade de ter uma agência",
+    "titleHighlight": "que roda sozinha",
+    "description": "Imagine acordar, abrir o dashboard e ver exatamente onde cada centavo está, quem sua equipe está atendendo e qual o próximo contrato a ser assinado.",
+    "tagline": "Gestão estratégica não é luxo, é sobrevivência."
   },
   "solution": {
-    "title": "Conheça o",
+    "title": "O Método",
     "titleHighlight": "Qualify",
-    "description": "Muito mais que um CRM. Uma central de inteligência para agências que querem profissionalismo, agilidade e escala.",
-    "mockupTitle": "Qualify — Gestão Visual",
+    "description": "Não somos apenas um CRM. Somos a metodologia de gestão que agências de alta performance usam para organizar, qualificar e escalar.",
+    "mockupTitle": "Qualify — Gestão Estratégica",
     "stages": {
-      "prospecting": "Prospecção",
-      "meeting": "Reunião",
+      "prospecting": "Atração",
+      "meeting": "Diagnóstico",
       "contracting": "Fechamento",
-      "production": "Operação",
-      "traffic": "Tráfego",
-      "retention": "Retenção",
-      "loyalty": "Escala"
+      "production": "Entrega",
+      "traffic": "Performance",
+      "retention": "LTV (Retenção)",
+      "loyalty": "Indicação"
     },
-    "benefit1Title": "Pipeline Visual",
-    "benefit1Desc": "Controle total da jornada",
+    "benefit1Title": "Processo de Vendas",
+    "benefit1Desc": "Nunca mais perca um lead",
     "benefit2Title": "Qualificação com IA",
-    "benefit2Desc": "Foque nos leads quentes",
-    "benefit3Title": "IA Estratégica",
-    "benefit3Desc": "Sugestões de fechamento",
-    "benefit4Title": "Previsibilidade",
-    "benefit4Desc": "Saiba quanto vai faturar",
-    "benefit5Title": "Docs em 1 Clique",
-    "benefit5Desc": "Contratos e Propostas",
-    "benefit6Title": "Orçamentos Rápidos",
-    "benefit6Desc": "Agilidade no envio",
-    "benefit7Title": "Academia Qualify",
-    "benefit7Desc": "Treinamento para escala"
+    "benefit2Desc": "Fale apenas com quem paga",
+    "benefit3Title": "Inteligência de Negócio",
+    "benefit3Desc": "Sugestões para fechar mais",
+    "benefit4Title": "Visão de Futuro",
+    "benefit4Desc": "Previsão real de caixa",
+    "benefit5Title": "Automação de Docs",
+    "benefit5Desc": "Contratos em segundos",
+    "benefit6Title": "Agilidade Comercial",
+    "benefit6Desc": "Orçamentos profissionais",
+    "benefit7Title": "Escola de Gestão",
+    "benefit7Desc": "Aprenda a ser um CEO"
   },
   "social": {
     "statValue": "+47%",
-    "statLabel": "de aumento em conversões",
-    "testimonial": "Em apenas 3 meses, nossa taxa de conversão subiu 47%. O Qualify tirou a agência do amadorismo e nos permitiu escalar de",
+    "statLabel": "de lucro líquido em 90 dias",
+    "testimonial": "Eu achava que precisava de mais vendedores, mas o Qualify me mostrou que eu só precisava de gestão. Organizamos a casa e o resultado foi imediato: saímos de",
     "testimonialHighlight": " 3 para 15 clientes ativos",
-    "testimonialEnd": " com a mesma equipe.",
+    "testimonialEnd": " sem contratar ninguém novo.",
     "author": "Mariana Costa",
     "authorRole": "CEO, Costa Digital Marketing",
     "stat1Value": "100+",
-    "stat1Label": "Agências escalando",
-    "stat2Value": "-4h",
-    "stat2Label": "Trabalho manual/dia",
-    "stat3Value": "1k+",
-    "stat3Label": "Leads qualificados"
+    "stat1Label": "Agências Profissionalizadas",
+    "stat2Value": "70%",
+    "stat2Label": "Menos tempo no operacional",
+    "stat3Value": "R$ 2M+",
+    "stat3Label": "Em contratos gerados"
   },
   "pricing": {
-    "title": "Escolha o plano para o seu",
-    "titleHighlight": "próximo nível",
-    "subtitle": "Teste qualquer plano grátis por 14 dias. Sem riscos.",
+    "title": "O investimento para a sua",
+    "titleHighlight": "liberdade",
+    "subtitle": "Escolha o plano que se adapta ao momento atual da sua agência. Teste grátis por 14 dias.",
     "free": "Grátis",
     "forever": "para sempre",
     "perMonth": "/mês",
-    "mostPopular": "Mais Escolhido",
-    "startFree": "Começar Teste Grátis",
+    "mostPopular": "Recomendado para Escala",
+    "startFree": "Iniciar Minha Transformação",
     "subscribe": "Assinar Agora",
-    "cancelAnytime": "Cancele quando quiser. Sem letras miúdas.",
-    "comparePlans": "Ver Comparativo Completo"
+    "cancelAnytime": "Sem fidelidade. Cancele quando quiser.",
+    "comparePlans": "Ver Detalhes Técnicos"
   },
   "plans": {
     "free": {
       "name": "Bússola",
-      "subtitle": "Para quem está começando",
-      "tagline": "Organize seus primeiros passos no digital.",
+      "subtitle": "Para o Autônomo",
+      "tagline": "Saia do papel e comece a se organizar.",
       "features": ["3 clientes ativos", "Funil ilimitado", "90 msgs IA", "Academia básica"]
     },
     "starter": {
       "name": "Lança",
-      "subtitle": "Para quem quer crescer",
-      "tagline": "Acelere sua prospecção e fechamentos.",
+      "subtitle": "Para a Pequena Agência",
+      "tagline": "Profissionalize sua prospecção e fechamento.",
       "features": ["15 clientes ativos", "Contratos e faturas", "500 msgs IA", "Academia completa"]
     },
     "pro": {
       "name": "Arco",
-      "subtitle": "Para profissionais",
-      "tagline": "Precisão e automação para alta performance.",
+      "subtitle": "Para a Agência em Crescimento",
+      "tagline": "Automação total para quem não quer parar.",
       "features": ["50 clientes ativos", "Todos os documentos", "1200 msgs IA", "Academia + IA"]
     },
     "agency": {
       "name": "Catapulta",
-      "subtitle": "Para agências em escala",
-      "tagline": "Domine o mercado com poder total.",
+      "subtitle": "Para a Agência Consolidada",
+      "tagline": "Poder total para dominar o mercado.",
       "features": ["Clientes ilimitados", "Docs ilimitados", "IA ilimitada", "Suporte prioritário"]
     }
   },
   "faq": {
-    "title": "Ainda tem dúvidas?",
-    "badge": "FAQ",
-    "q1": "Por que preciso inserir o cartão para o teste grátis?",
-    "a1": "Solicitamos o cartão para garantir que apenas usuários reais e comprometidos com o crescimento acessem nossa tecnologia de IA. Você não será cobrado nada hoje e pode cancelar com um clique antes do fim dos 14 dias.",
-    "q2": "O Qualify substitui o meu WhatsApp?",
-    "a2": "Não, ele trabalha em conjunto. O Qualify organiza as informações que chegam pelo WhatsApp, permitindo que você gerencie o funil de vendas e a operação de forma profissional.",
-    "q3": "O que acontece se eu exceder o limite de clientes?",
-    "a3": "Você poderá continuar gerenciando seus leads no funil, mas para mover novos clientes para as etapas operacionais, precisará fazer o upgrade para o plano seguinte.",
-    "q4": "Meus dados e dos meus clientes estão seguros?",
-    "a4": "Totalmente. Utilizamos criptografia de nível bancário e servidores seguros para garantir que sua base de dados seja privada e protegida."
+    "title": "Perguntas de quem quer crescer",
+    "badge": "Dúvidas Comuns",
+    "q1": "Por que o cartão é necessário no teste?",
+    "a1": "O Qualify não é um 'brinquedo', é uma ferramenta de gestão séria. O cartão garante que estamos lidando com donos de agência reais que buscam resultados profissionais. Você tem 14 dias para cancelar sem custo algum.",
+    "q2": "Eu já uso planilhas, por que mudar?",
+    "a2": "Planilhas são passivas. O Qualify é ativo. Ele te avisa quando um lead esfria, gera seus contratos e te dá insights de IA. Planilhas guardam dados, o Qualify gera lucro.",
+    "q3": "Quanto tempo leva para ver resultados?",
+    "a3": "A organização é imediata. Em 48h você já terá uma visão clara de todos os seus leads. O aumento em conversão costuma aparecer nos primeiros 30 dias de uso do método.",
+    "q4": "A IA realmente ajuda no dia a dia?",
+    "a4": "Sim. Ela analisa o comportamento dos seus leads e sugere a melhor abordagem, economizando horas de 'pensar no que escrever' e aumentando suas chances de fechamento."
   },
   "cta": {
-    "title": "Até quando você vai aceitar",
-    "titleSecond": "perder dinheiro por desorganização?",
-    "subtitle": "Junte-se a centenas de agências que profissionalizaram sua operação. 14 dias de teste grátis.",
-    "button": "Quero Profissionalizar Minha Agência",
+    "title": "Você vai continuar sendo o gargalo",
+    "titleSecond": "da sua própria agência?",
+    "subtitle": "Pare de tentar resolver problemas de gestão com mais trabalho manual. Use o método que escala agências de verdade.",
+    "button": "Quero Profissionalizar Minha Agência Agora",
     "buttonMobile": "Começar Agora",
-    "footer": "Setup rápido. Resultados imediatos."
+    "footer": "14 dias de teste grátis. Setup em 2 minutos."
   },
   "footer": {
     "copyright": "© {{year}} Qualify. Todos os direitos reservados.",
-    "solution": "Solução",
+    "solution": "O Método",
     "plans": "Planos",
     "faq": "FAQ",
     "login": "Login"
   },
   "features": {
-    "title": "Tudo o que sua agência precisa",
-    "subtitle": "Uma plataforma completa para gerenciar do lead ao faturamento",
+    "title": "A estrutura para sua escala",
+    "subtitle": "Tudo o que você precisa para deixar de ser um 'faz-tudo' e se tornar um CEO",
     "clients": {
-      "title": "Pipeline de Vendas",
-      "description": "Visualize sua jornada de vendas e nunca mais esqueça de dar um follow-up."
+      "title": "Gestão de Pipeline",
+      "description": "Visualize o fluxo de dinheiro da sua agência e nunca mais perca um follow-up."
     },
     "finance": {
-      "title": "Gestão Financeira",
-      "description": "Controle de fluxo de caixa e metas de faturamento integradas ao CRM."
+      "title": "Saúde Financeira",
+      "description": "Saiba exatamente sua margem de lucro e previsibilidade de caixa."
     },
     "link23": {
-      "title": "Link 23 (Bio)",
-      "description": "Páginas de links profissionais para seus clientes, com analytics em tempo real."
+      "title": "Link 23 (Autoridade)",
+      "description": "Páginas de links profissionais que passam credibilidade imediata para seus clientes."
     },
     "social": {
-      "title": "Social Media Hub",
-      "description": "Calendário editorial e aprovação de posts em uma interface intuitiva."
+      "title": "Fluxo Editorial",
+      "description": "Aprovação de posts e calendário sem a bagunça dos grupos de WhatsApp."
     },
     "qia": {
-      "title": "QIA: IA Estratégica",
-      "description": "Qualificação automática de leads para você focar em quem realmente vai comprar."
+      "title": "QIA: Cérebro Estratégico",
+      "description": "Nossa IA qualifica seus leads e te diz onde focar sua energia para fechar mais."
     },
     "studio": {
-      "title": "Studio AI",
-      "description": "Criação de artes e flyers profissionais com IA em poucos segundos."
+      "title": "Studio AI (Design)",
+      "description": "Crie artes profissionais em segundos e libere sua equipe para o que importa."
     },
     "docs": {
-      "title": "Documentos Express",
-      "description": "Gere contratos, orçamentos e faturas profissionais com apenas um clique."
+      "title": "Fábrica de Contratos",
+      "description": "Gere contratos, orçamentos e faturas com um clique. Profissionalismo instantâneo."
     },
     "academy": {
-      "title": "Academia de Escala",
-      "description": "Conteúdos práticos sobre como vender mais e gerenciar melhor sua agência."
+      "title": "Mentoria de Gestão",
+      "description": "Aprenda as estratégias de gestão que as maiores agências do país utilizam."
     }
   },
   "testimonials": {
-    "title": "Quem usa, aprova",
-    "subtitle": "Veja como estamos transformando a rotina de agências digitais"
+    "title": "Resultados Reais",
+    "subtitle": "Donos de agência que recuperaram o controle do seu tempo"
   },
   "nav": {
-    "features": "Funcionalidades",
+    "features": "O Método",
     "pricing": "Preços",
     "about": "Sobre",
     "login": "Entrar",
