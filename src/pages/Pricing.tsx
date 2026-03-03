@@ -23,7 +23,7 @@ const plans = [
     borderColor: 'border-blue-500/30',
     textColor: 'text-blue-500',
     features: [
-      '15 Marcas (Clientes)',
+      '5 Marcas (Clientes)',
       'Redes Sociais Ilimitadas',
       '5 Créditos Studio AI / dia',
       'Módulos: Finanças, Editorial, Link23'
@@ -33,7 +33,7 @@ const plans = [
     key: 'pro',
     name: 'Arco',
     subtitle: 'Agências em Crescimento',
-    price: '$39 / 2.496 MT',
+    price: '$54 / 3.456 MT',
     tagline: 'Ferramentas para escalar seus resultados.',
     image: planArco,
     color: 'hsl(270, 91%, 65%)',
@@ -43,7 +43,7 @@ const plans = [
     popular: true,
     recommended: 'Mais Popular',
     features: [
-      '25 Marcas (Clientes)',
+      '15 Marcas (Clientes)',
       '15 Créditos Studio AI / dia',
       'Tudo + Inbox/Analytics',
       'Suporte Prioritário'
@@ -53,7 +53,7 @@ const plans = [
     key: 'agency',
     name: 'Catapulta',
     subtitle: 'Grandes Agências / White Label',
-    price: '$79 / 5.056 MT',
+    price: '$99 / 6.336 MT',
     tagline: 'Poder total para dominar o mercado.',
     image: planCatapulta,
     color: 'hsl(25, 95%, 53%)',
@@ -61,7 +61,7 @@ const plans = [
     borderColor: 'border-orange-500/30',
     textColor: 'text-orange-500',
     features: [
-      'Marcas Ilimitadas',
+      '30 Marcas (Clientes)',
       '30 Créditos Studio AI / dia',
       'Tudo + Suporte VIP',
       'Todos os Módulos'
@@ -73,7 +73,7 @@ const comparisonFeatures = [
   {
     category: 'Geral',
     features: [
-      { name: 'Marcas (Clientes)', starter: '15', pro: '25', agency: 'Ilimitado' },
+      { name: 'Marcas (Clientes)', starter: '5', pro: '15', agency: '30' },
       { name: 'Redes Sociais (por marca)', starter: 'Ilimitado', pro: 'Ilimitado', agency: 'Ilimitado' },
       { name: 'Postagens Mensais', starter: 'Ilimitado', pro: 'Ilimitado', agency: 'Ilimitado' },
     ],

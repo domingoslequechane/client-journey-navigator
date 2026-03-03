@@ -95,7 +95,7 @@ const plans: Record<string, PlanConfig> = {
     priceLabel: '$19/mês',
     description: 'Para a Pequena Agência',
     features: [
-      { text: '15 Marcas (Clientes)', included: true },
+      { text: '5 Marcas (Clientes)', included: true },
       { text: 'Redes Sociais Ilimitadas', included: true },
       { text: '5 Créditos Studio AI / dia', included: true },
       { text: 'Finanças, Editorial, Link23', included: true },
@@ -105,7 +105,7 @@ const plans: Record<string, PlanConfig> = {
       { text: 'Suporte prioritário', included: false },
     ],
     limits: {
-      clients: '15 ativos',
+      clients: '5 ativos',
       contracts: '15/mês',
       ai: '500 msgs/mês',
       team: '5 usuários',
@@ -114,12 +114,12 @@ const plans: Record<string, PlanConfig> = {
   },
   pro: {
     name: 'Arco',
-    price: 39,
-    priceLabel: '$39/mês',
+    price: 54,
+    priceLabel: '$54/mês',
     description: 'Para a Agência em Crescimento',
     popular: true,
     features: [
-      { text: '25 Marcas (Clientes)', included: true },
+      { text: '15 Marcas (Clientes)', included: true },
       { text: 'Redes Sociais Ilimitadas', included: true },
       { text: '15 Créditos Studio AI / dia', included: true },
       { text: 'Tudo + Inbox/Analytics', included: true },
@@ -128,7 +128,7 @@ const plans: Record<string, PlanConfig> = {
       { text: 'Suporte VIP', included: false },
     ],
     limits: {
-      clients: '25 ativos',
+      clients: '15 ativos',
       contracts: '50/mês',
       ai: '1200 msgs/mês',
       team: '10 usuários',
@@ -137,11 +137,11 @@ const plans: Record<string, PlanConfig> = {
   },
   agency: {
     name: 'Catapulta',
-    price: 79,
-    priceLabel: '$79/mês',
+    price: 99,
+    priceLabel: '$99/mês',
     description: 'Para a Agência Consolidada',
     features: [
-      { text: 'Marcas Ilimitadas', included: true },
+      { text: '30 Marcas (Clientes)', included: true },
       { text: 'Redes Sociais Ilimitadas', included: true },
       { text: '30 Créditos Studio AI / dia', included: true },
       { text: 'Tudo + Suporte VIP', included: true },
@@ -151,7 +151,7 @@ const plans: Record<string, PlanConfig> = {
       { text: 'Templates ilimitados', included: true },
     ],
     limits: {
-      clients: 'Ilimitado',
+      clients: '30 ativos',
       contracts: 'Ilimitado',
       ai: 'Ilimitado',
       team: '20 usuários',
@@ -526,9 +526,9 @@ export default function Upgrade() {
                 <tbody>
                   <tr className="border-b">
                     <td className="py-3 px-4">Marcas (Clientes)</td>
-                    <td className="text-center py-3 px-4">15 ativos</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>25 ativos</td>
-                    <td className="text-center py-3 px-4">Ilimitado</td>
+                    <td className="text-center py-3 px-4">5 ativos</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>15 ativos</td>
+                    <td className="text-center py-3 px-4">30 ativos</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Studio AI (Créditos / dia)</td>
