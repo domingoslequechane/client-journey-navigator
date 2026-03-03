@@ -1,4 +1,3 @@
-button]:hidden">
 import { useState, useCallback, useEffect } from 'react';
 import { X, Download, ZoomIn, ZoomOut, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
