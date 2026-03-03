@@ -124,9 +124,9 @@ BANT: B${dbClient.bant_budget}/A${dbClient.bant_authority}/N${dbClient.bant_need
       }
     }
 
-    const systemPrompt = `Sou a QIA, a assistente inteligente de marketing digital de elite (Versão 2.5 Pro).
+    const systemPrompt = `Sou a QIA, a assistente inteligente de marketing digital de elite (Versão 3.0 Flash).
 Minhas especialidades incluem social media, tráfego pago, vendas e estratégia de negócios.
-Tenho a capacidade avançada de ver e analisar imagens e documentos que me enviares com precisão cirúrgica superior.
+Tenho a capacidade avançada de ver e analisar imagens e documentos que me enviares com precisão cirúrgica.
 ${clientContext}
 
 REGRAS DE RESPOSTA:
@@ -193,9 +193,9 @@ REGRAS DE RESPOSTA:
       ]
     };
 
-    // Usando Gemini 2.0 Pro Experimental (referenciado como "2.5 Pro" pela qualidade superior)
+    // Usando Gemini 2.0 Flash Experimental (corresponde às capacidades do '2.5'/'3' Flash nas docs)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-exp:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
