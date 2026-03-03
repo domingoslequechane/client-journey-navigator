@@ -41,7 +41,7 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
 
       // Fetch unique client IDs that have ACTIVE social accounts
       const { data: accounts, error: accountsError } = await supabase
-        .from('social_accounts' as any)
+        .from('social_accounts')
         .select('client_id')
         .eq('organization_id', orgId)
         .eq('is_connected', true)
@@ -49,7 +49,13 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
 
       if (accountsError) throw accountsError;
 
-      const configuredClientIds = new Set((accounts || []).map((a: any) => a.client_id));
+      // Create a set of client IDs that have at least one connected account
+      const configuredClientIds = new Set<string>();
+      if (accounts && accounts.length > 0) {
+        accounts.forEach((a: any) => {
+          if (a.client_id) configuredClientIds.add(a.client_id);
+        });
+      }
 
       return {
         clients: clients || [],
@@ -57,6 +63,7 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
       };
     },
     enabled: !!user,
+    staleTime: 0, // Ensure we always get fresh data when this component mounts
   });
 
   const { clients, configuredClientIds } = clientsData;

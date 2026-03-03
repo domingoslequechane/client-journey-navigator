@@ -88,6 +88,7 @@ export function useSocialAccounts(clientId?: string | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-with-social-status'] });
       queryClient.invalidateQueries({ queryKey: ['usage-tracking'] });
       toast({ title: 'Conta conectada com sucesso!' });
     },
@@ -110,12 +111,12 @@ export function useSocialAccounts(clientId?: string | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-with-social-status'] });
     },
   });
 
   const deleteAccount = useMutation({
     mutationFn: async (id: string) => {
-      // Get account info first to check lock status and clean up related posts
       const { data: accountData, error: fetchError } = await supabase
         .from('social_accounts')
         .select(`
@@ -131,12 +132,10 @@ export function useSocialAccounts(clientId?: string | null) {
       
       const acc = accountData as any;
       
-      // Check if client is locked for disconnections
       if (acc.clients?.is_social_locked) {
         throw new Error('Este cliente atingiu o limite de 3 desconexões e está bloqueado.');
       }
 
-      // 1. Disconnect from Late.dev API if it has a late_account_id
       if (acc.late_account_id) {
         try {
           await supabase.functions.invoke('social-disconnect', {
@@ -147,7 +146,6 @@ export function useSocialAccounts(clientId?: string | null) {
         }
       }
 
-      // 2. Delete social_posts that only target this platform for this client
       if (acc.client_id) {
         const { data: relatedPosts } = await supabase
           .from('social_posts')
@@ -169,7 +167,6 @@ export function useSocialAccounts(clientId?: string | null) {
         }
       }
 
-      // 3. Delete the local account record
       const { error: deleteError } = await supabase
         .from('social_accounts')
         .delete()
@@ -177,7 +174,6 @@ export function useSocialAccounts(clientId?: string | null) {
 
       if (deleteError) throw deleteError;
 
-      // 4. Increment disconnection count and handle locking via RPC
       if (acc.client_id) {
         const { error: rpcError } = await supabase.rpc('handle_social_disconnection', {
           p_client_id: acc.client_id
@@ -187,6 +183,7 @@ export function useSocialAccounts(clientId?: string | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-with-social-status'] });
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
       queryClient.invalidateQueries({ queryKey: ['usage-tracking'] });
       toast({ title: 'Conta removida e registros apagados!' });
@@ -196,7 +193,6 @@ export function useSocialAccounts(clientId?: string | null) {
     },
   });
 
-  // Connect platform via OAuth — requires clientId
   const connectPlatform = useMutation({
     mutationFn: async ({ platform, clientId: cId }: { platform: SocialPlatform; clientId: string }) => {
       const redirectUrl = `${window.location.origin}/app/social-media`;
@@ -229,7 +225,6 @@ export function useSocialAccounts(clientId?: string | null) {
     },
   });
 
-  // Sync accounts — accepts optional clientId
   const syncAccounts = useMutation({
     mutationFn: async (syncClientId?: string) => {
       const { data, error } = await supabase.functions.invoke('social-sync-accounts', {
@@ -243,6 +238,7 @@ export function useSocialAccounts(clientId?: string | null) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-with-social-status'] });
       if (data?.synced > 0) {
         toast({ title: `${data.synced} conta(s) sincronizada(s)!` });
       }
