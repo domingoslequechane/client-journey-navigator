@@ -29,7 +29,8 @@ import {
   CalendarDays,
   Wallet,
   Building2,
-  Share2
+  Share2,
+  Workflow
 } from 'lucide-react';
 import {
   Drawer,
