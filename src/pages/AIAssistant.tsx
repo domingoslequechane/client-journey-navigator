@@ -109,9 +109,13 @@ export default function AIAssistant() {
   const [showClientList, setShowClientList] = useState(true);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  
+  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const sendingRef = useRef(false);
+  
   const { checkRateLimit, isRateLimited } = useRateLimit({ maxRequests: 15, windowMs: 60000 });
 
   useEffect(() => {
