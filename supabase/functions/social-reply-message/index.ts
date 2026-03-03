@@ -1,101 +1,54 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const lateApiKey = Deno.env.get("LATE_API_KEY");
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
 
-    const { data: claims, error: claimsError } = await supabase.auth.getClaims(
-      authHeader.replace("Bearer ", "")
-    );
+    const { data: claims, error: claimsError } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
     if (claimsError || !claims?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const userId = claims.claims.sub as string;
     const { message_id, reply_content } = await req.json();
 
     if (!message_id || !reply_content) {
-      return new Response(
-        JSON.stringify({ error: "message_id and reply_content are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "message_id and reply_content are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Get user's organization
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("current_organization_id")
-      .eq("id", userId)
-      .single();
-
+    const { data: profile } = await supabase.from("profiles").select("current_organization_id").eq("id", userId).single();
     if (!profile?.current_organization_id) {
-      return new Response(
-        JSON.stringify({ error: "No organization found" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "No organization found" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const orgId = profile.current_organization_id;
+    const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const serviceClient = createClient(
-      supabaseUrl,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Get the message
-    const { data: message, error: msgError } = await serviceClient
-      .from("social_messages")
-      .select("*")
-      .eq("id", message_id)
-      .eq("organization_id", orgId)
-      .single();
-
+    const { data: message, error: msgError } = await serviceClient.from("social_messages").select("*").eq("id", message_id).eq("organization_id", orgId).single();
     if (msgError || !message) {
-      return new Response(
-        JSON.stringify({ error: "Message not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Message not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Get late_profile_id from the client associated with this message
     let lateProfileId: string | null = null;
     if (message.client_id) {
-      const { data: client } = await serviceClient
-        .from("clients")
-        .select("late_profile_id")
-        .eq("id", message.client_id)
-        .single();
+      const { data: client } = await serviceClient.from("clients").select("late_profile_id").eq("id", message.client_id).single();
       lateProfileId = client?.late_profile_id || null;
     }
 
-    // Try to send via Late.dev if configured
     if (lateProfileId && lateApiKey && message.external_id) {
       try {
         const endpoint = message.message_type === "comment"
@@ -104,42 +57,25 @@ Deno.serve(async (req) => {
 
         const lateResponse = await fetch(endpoint, {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${lateApiKey}`,
-            "Content-Type": "application/json",
-          },
+          headers: { Authorization: `Bearer ${lateApiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({ content: reply_content }),
         });
 
-        if (!lateResponse.ok) {
-          console.error("Late.dev reply error:", await lateResponse.text());
-        }
+        if (!lateResponse.ok) console.error("Late.dev reply error:", await lateResponse.text());
       } catch (err) {
         console.error("Late.dev reply failed:", err);
       }
     }
 
-    // Update the message in DB
-    const { error: updateError } = await serviceClient
-      .from("social_messages")
-      .update({
-        reply_content,
-        replied_at: new Date().toISOString(),
-        is_read: true,
-      })
-      .eq("id", message_id);
+    const { error: updateError } = await serviceClient.from("social_messages").update({
+      reply_content, replied_at: new Date().toISOString(), is_read: true,
+    }).eq("id", message_id);
 
     if (updateError) throw updateError;
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error: unknown) {
     console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

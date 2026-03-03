@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -755,7 +756,7 @@ export default function LandingPage() {
                   {t('faq.q3')}
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  <span dangerouslySetInnerHTML={{ __html: t('faq.a3') }} />
+                  <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t('faq.a3')) }} />
                 </AccordionContent>
               </AccordionItem>
 
