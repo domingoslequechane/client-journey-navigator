@@ -366,6 +366,23 @@ export default function AIAssistant() {
     setTimeout(() => { sendingRef.current = false; }, 500);
   };
 
+  const handleBackToClientList = () => {
+    setSelectedClientId(null);
+    if (isMobile) setShowClientList(true);
+  };
+
+  const copyToClipboard = async (messageId: string, content: string) => {
+    try {
+      const plainText = content.replace(/<[^>]*>/g, '');
+      await navigator.clipboard.writeText(plainText);
+      setCopiedMessageId(messageId);
+      toast({ title: 'Copiado!' });
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch {
+      toast({ title: 'Erro ao copiar', variant: 'destructive' });
+    }
+  };
+
   const getStageLabel = (stage: string) => {
     const labels: Record<string, string> = {
       prospeccao: 'Prospecção', reuniao: 'Reunião', contratacao: 'Fechamento',
