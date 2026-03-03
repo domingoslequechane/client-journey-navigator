@@ -205,11 +205,9 @@ export default function SocialMedia() {
                 <Share2 className="h-6 w-6 text-primary" />
                 Social Media
               </div>
-              {limits.maxSocialAccounts !== null && (
-                <Badge variant="outline" className="font-mono">
-                  Contas: {usage.socialAccountsCount}/{limits.maxSocialAccounts}
-                </Badge>
-              )}
+              <Badge variant="outline" className="font-mono">
+                Contas: {usage.socialAccountsCount}/{limits.maxSocialAccounts ?? 'Ilimitado'}
+              </Badge>
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               Gerencie e agende posts para suas redes sociais
