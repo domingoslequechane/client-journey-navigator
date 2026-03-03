@@ -210,11 +210,6 @@ export default function SocialMedia() {
                   Contas: {usage.socialAccountsCount}/{limits.maxSocialAccounts}
                 </Badge>
               )}
-              {limits.maxSocialPostsPerMonth !== null && (
-                <Badge variant="outline" className="font-mono">
-                  Posts no mês: {usage.socialPostsThisMonth}/{limits.maxSocialPostsPerMonth}
-                </Badge>
-              )}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               Gerencie e agende posts para suas redes sociais
