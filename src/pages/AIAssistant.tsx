@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import DOMPurify from 'dompurify';
@@ -33,6 +35,7 @@ const SANITIZE_CONFIG = {
   ALLOWED_ATTR: ['href', 'class', 'target', 'rel'],
   ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
 };
+
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -110,11 +113,10 @@ export default function AIAssistant() {
     const saved = localStorage.getItem(AI_SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';
   });
-  // On mobile, when no client selected, show client list
   const [showClientList, setShowClientList] = useState(true);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
-const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -125,7 +127,6 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
     localStorage.setItem(AI_SIDEBAR_COLLAPSED_KEY, String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  // Fetch clients with their conversations
   const { data: clients = [], isLoading: loadingClients } = useQuery({
     queryKey: ['clients-with-conversations'],
     queryFn: async () => {
@@ -136,7 +137,6 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
 
       if (clientsError) throw clientsError;
 
-      // Get conversations for each client
       const { data: conversations, error: convError } = await supabase
         .from('ai_conversations')
         .select('id, client_id, updated_at')
@@ -144,7 +144,6 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
 
       if (convError) throw convError;
 
-      // Map clients with their conversations (without last message)
       return (clientsData || []).map(client => {
         const conv = conversations?.find(c => c.client_id === client.id);
         return {
@@ -155,7 +154,6 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
     }
   });
 
-  // Filter clients based on search and stage
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          client.contact_name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -163,10 +161,8 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
     return matchesSearch && matchesStage;
   });
 
-  // Get selected client
   const selectedClient = clients.find(c => c.id === selectedClientId);
 
-  // Fetch messages for selected conversation
   const { data: conversationMessages = [], refetch: refetchMessages } = useQuery({
     queryKey: ['conversation-messages', selectedClient?.conversation_id],
     queryFn: async () => {
@@ -184,15 +180,12 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
     enabled: !!selectedClient?.conversation_id
   });
 
-  // Update local messages when conversation changes
   useEffect(() => {
-    // Don't overwrite local state while sending a message
     if (sendingRef.current) return;
     
     if (selectedClient?.conversation_id && conversationMessages.length > 0) {
       setMessages(conversationMessages);
     } else if (selectedClientId && selectedClient) {
-      // New conversation - show welcome message with full client context
       setMessages([{
         id: 'welcome',
         role: 'assistant',
@@ -204,7 +197,7 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
     }
   }, [selectedClient?.conversation_id, conversationMessages, selectedClientId, selectedClient?.company_name, currencySymbol]);
 
-const scrollToBottom = useCallback((smooth = true) => {
+  const scrollToBottom = useCallback((smooth = true) => {
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
     setShowScrollButton(false);
   }, []);
@@ -215,7 +208,6 @@ const scrollToBottom = useCallback((smooth = true) => {
     }, 100);
   }, []);
 
-  // Handle scroll to detect when user scrolls up
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
@@ -226,28 +218,23 @@ const scrollToBottom = useCallback((smooth = true) => {
     scrollToBottom(false);
   }, [messages, scrollToBottom]);
 
-  // Scroll to bottom when selecting a new client or messages load
   useEffect(() => {
     if (selectedClientId && messages.length > 0 && !isLoadingMessages) {
-      // Use requestAnimationFrame to ensure DOM is fully rendered
       requestAnimationFrame(() => {
         setTimeout(() => scrollToBottom(false), 100);
       });
     }
   }, [selectedClientId, messages.length, isLoadingMessages, scrollToBottom]);
 
-  // Handle mobile keyboard resize - scroll to bottom when keyboard appears
   useEffect(() => {
     if (!isMobile || !selectedClientId) return;
     
     const handleResize = () => {
-      // When viewport changes (keyboard opens/closes), scroll to bottom
       if (messages.length > 0) {
         scrollToBottom(false);
       }
     };
     
-    // Visual Viewport API - more reliable for detecting keyboard
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', handleResize);
       return () => window.visualViewport?.removeEventListener('resize', handleResize);
@@ -256,7 +243,6 @@ const scrollToBottom = useCallback((smooth = true) => {
     return undefined;
   }, [isMobile, selectedClientId, messages.length, scrollToBottom]);
 
-  // Create or get conversation
   const getOrCreateConversation = async (clientId: string): Promise<string> => {
     const { data: existing } = await supabase
       .from('ai_conversations')
@@ -276,7 +262,6 @@ const scrollToBottom = useCallback((smooth = true) => {
     return newConv.id;
   };
 
-  // Save message to database
   const saveMessage = async (conversationId: string, message: Omit<Message, 'id' | 'created_at'>) => {
     const { data, error } = await supabase
       .from('ai_messages')
@@ -300,7 +285,6 @@ const scrollToBottom = useCallback((smooth = true) => {
 
     const conversationId = await getOrCreateConversation(selectedClientId);
 
-    // Save user message
     const userMsgContent = fileInfo 
       ? `${userMessage}\n\n[Arquivo anexado: ${fileInfo.name}]`
       : userMessage;
@@ -313,22 +297,42 @@ const scrollToBottom = useCallback((smooth = true) => {
       file_name: fileInfo?.name
     });
 
-    // Build messages for API
     const apiMessages = messages
       .filter(m => m.id !== 'welcome')
-      .map(m => ({ role: m.role, content: m.content }));
+      .map(m => {
+        if (m.file_url && m.role === 'user') {
+          const isImage = m.file_type?.startsWith('image/');
+          if (isImage) {
+            return {
+              role: m.role,
+              content: [
+                { type: 'text', text: m.content },
+                { type: 'image_url', image_url: { url: m.file_url } }
+              ]
+            };
+          }
+        }
+        return { role: m.role, content: m.content };
+      });
     
-    apiMessages.push({ role: 'user', content: userMsgContent });
+    if (fileInfo && fileInfo.type.startsWith('image/')) {
+      apiMessages.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: userMessage },
+          { type: 'image_url', image_url: { url: fileInfo.url } }
+        ]
+      });
+    } else {
+      apiMessages.push({ role: 'user', content: userMsgContent });
+    }
 
-    // Show typing animation
     setIsTyping(true);
 
-    // Prepare streaming message ID
     const assistantId = `msg-${Date.now()}`;
     let hasReceivedFirstToken = false;
 
     try {
-      // Get the authenticated user's session token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast({ title: 'Não autenticado', description: 'Faça login novamente', variant: 'destructive' });
@@ -408,7 +412,6 @@ const scrollToBottom = useCallback((smooth = true) => {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
-              // First token received - hide typing, show streaming message
               if (!hasReceivedFirstToken) {
                 hasReceivedFirstToken = true;
                 setIsTyping(false);
@@ -421,7 +424,6 @@ const scrollToBottom = useCallback((smooth = true) => {
                 }]);
               }
               
-              // Update message content with each token
               assistantContent += content;
               setMessages(prev => {
                 const updated = [...prev];
@@ -442,7 +444,6 @@ const scrollToBottom = useCallback((smooth = true) => {
         }
       }
 
-      // Final flush
       if (textBuffer.trim()) {
         for (let raw of textBuffer.split("\n")) {
           if (!raw) continue;
@@ -456,7 +457,6 @@ const scrollToBottom = useCallback((smooth = true) => {
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantContent += content;
-              // Update the streaming message
               setMessages(prev => {
                 const updated = [...prev];
                 const lastIndex = updated.length - 1;
@@ -473,17 +473,14 @@ const scrollToBottom = useCallback((smooth = true) => {
         }
       }
 
-      // Streaming complete - clear streaming state
       setIsTyping(false);
       setStreamingMessageId(null);
 
-      // Save assistant message to database
       await saveMessage(conversationId, {
         role: 'assistant',
         content: assistantContent
       });
 
-      // Refresh clients list (not messages, as we're managing local state)
       queryClient.invalidateQueries({ queryKey: ['clients-with-conversations'] });
 
     } catch (error) {
@@ -514,10 +511,9 @@ const scrollToBottom = useCallback((smooth = true) => {
 
       if (error) throw error;
 
-      // Use signed URL instead of public URL for private bucket
       const { data: signedData, error: signError } = await supabase.storage
         .from('chat-files')
-        .createSignedUrl(fileName, 3600); // 1 hour expiry
+        .createSignedUrl(fileName, 3600);
 
       if (signError) throw signError;
 
@@ -540,7 +536,6 @@ const scrollToBottom = useCallback((smooth = true) => {
   const handleSend = async () => {
     if ((!input.trim() && !pendingFile) || isLoading || !selectedClientId || isRateLimited) return;
     
-    // Check plan limit
     if (!canAccessAI) {
       toast({ 
         title: 'Limite atingido', 
@@ -550,10 +545,8 @@ const scrollToBottom = useCallback((smooth = true) => {
       return;
     }
     
-    // Check rate limit before sending
     if (!checkRateLimit()) return;
 
-    // Mark as sending to prevent useEffect from overwriting local state
     sendingRef.current = true;
 
     const userMessage: Message = {
@@ -575,13 +568,11 @@ const scrollToBottom = useCallback((smooth = true) => {
 
     await streamChat(messageText, fileToSend || undefined);
     
-    // Increment AI usage after successful message
     await incrementUsage('ai_messages');
     
     setIsLoading(false);
     focusInput();
     
-    // Allow useEffect to sync again after a delay
     setTimeout(() => {
       sendingRef.current = false;
     }, 500);
@@ -606,7 +597,6 @@ const scrollToBottom = useCallback((smooth = true) => {
 
   const copyToClipboard = async (messageId: string, content: string) => {
     try {
-      // Strip HTML tags to get plain text
       const plainText = content.replace(/<[^>]*>/g, '');
       await navigator.clipboard.writeText(plainText);
       setCopiedMessageId(messageId);
@@ -617,7 +607,6 @@ const scrollToBottom = useCallback((smooth = true) => {
     }
   };
 
-  // Handle client selection - on mobile, hide client list after selection
   const handleSelectClient = (clientId: string) => {
     if (clientId !== selectedClientId) {
       setIsLoadingMessages(true);
@@ -627,7 +616,6 @@ const scrollToBottom = useCallback((smooth = true) => {
     if (isMobile) {
       setShowClientList(false);
     }
-    // Smooth transition delay, then scroll and focus
     setTimeout(() => {
       setIsLoadingMessages(false);
       requestAnimationFrame(() => {
@@ -637,17 +625,14 @@ const scrollToBottom = useCallback((smooth = true) => {
     }, 400);
   };
 
-  // Handle back to client list on mobile
   const handleBackToClientList = () => {
     setShowClientList(true);
     setSelectedClientId(null);
   };
 
-  // Render client list
   const renderClientList = () => (
     <>
       <div className="p-4 border-b border-border space-y-3">
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -658,7 +643,6 @@ const scrollToBottom = useCallback((smooth = true) => {
           />
         </div>
         
-        {/* Filter */}
         <Select value={filterStage} onValueChange={setFilterStage}>
           <SelectTrigger className="h-9">
             <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -719,12 +703,10 @@ const scrollToBottom = useCallback((smooth = true) => {
     </>
   );
 
-  // Render chat content (as function, not component to prevent remount)
   const renderChatContent = () => (
     <div className={cn(
       "flex flex-col bg-background h-full",
     )}>
-      {/* Header - sticky on mobile */}
       <div className="h-14 md:h-16 px-3 md:px-4 border-b border-border bg-background flex items-center gap-2 transition-all duration-300 shrink-0 sticky top-0 z-10">
         {isMobile && (
           <Button
@@ -749,14 +731,12 @@ const scrollToBottom = useCallback((smooth = true) => {
         </div>
       </div>
 
-      {/* Messages with scroll area */}
       <div className="flex-1 relative overflow-hidden min-h-0">
         <ScrollArea 
           className="h-full p-3 md:p-4"
           onScrollCapture={handleScroll}
         >
           <div className="space-y-4 max-w-3xl mx-auto">
-            {/* Show skeleton while loading messages */}
             {isLoadingMessages ? (
               <ChatMessagesSkeleton />
             ) : (
@@ -774,7 +754,6 @@ const scrollToBottom = useCallback((smooth = true) => {
                       <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
                     )}
                     <div className="flex flex-col max-w-[85%] md:max-w-[80%]">
-                      {/* Message container */}
                       <div
                         className={cn(
                           'rounded-xl px-3 py-2.5 md:px-4 md:py-3 transition-all duration-200',
@@ -786,7 +765,6 @@ const scrollToBottom = useCallback((smooth = true) => {
                         {message.role === 'assistant' ? (
                           <div className="text-sm max-w-none [&>p]:leading-relaxed [&>ul]:space-y-0.5 [&>ol]:space-y-0.5">
                             <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markdownToHtml(message.content), SANITIZE_CONFIG) }} />
-                            {/* Blinking cursor while streaming */}
                             {streamingMessageId === message.id && (
                               <span className="inline-block w-[2px] h-4 bg-primary animate-pulse ml-0.5 align-middle" />
                             )}
@@ -795,18 +773,26 @@ const scrollToBottom = useCallback((smooth = true) => {
                           <p className="text-sm whitespace-pre-line">{message.content}</p>
                         )}
                         {message.file_url && (
-                          <a 
-                            href={message.file_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className={cn(
-                              "flex items-center gap-2 mt-2 text-xs underline",
-                              message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                          <div className="mt-2">
+                            {message.file_type?.startsWith('image/') ? (
+                              <div className="relative rounded-lg overflow-hidden border border-border/50 max-w-xs">
+                                <img src={message.file_url} alt={message.file_name || 'Imagem'} className="w-full h-auto object-cover max-h-60" />
+                              </div>
+                            ) : (
+                              <a 
+                                href={message.file_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className={cn(
+                                  "flex items-center gap-2 text-xs underline",
+                                  message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                                )}
+                              >
+                                {getFileIcon(message.file_type)}
+                                {message.file_name}
+                              </a>
                             )}
-                          >
-                            {getFileIcon(message.file_type)}
-                            {message.file_name}
-                          </a>
+                          </div>
                         )}
                         <p className={cn(
                           'text-xs mt-2 opacity-70',
@@ -816,14 +802,11 @@ const scrollToBottom = useCallback((smooth = true) => {
                         </p>
                       </div>
                       
-                      {/* Action buttons BELOW message (ChatGPT style) */}
-                      {/* Action buttons BELOW message (ChatGPT style) */}
                       {message.role === 'assistant' && message.id !== 'welcome' && !message.id.startsWith('temp-') && streamingMessageId !== message.id && (
                         <div className={cn(
                           "flex gap-1 mt-1 ml-1 transition-opacity",
                           isFavorited(message.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"
                         )}>
-                          {/* Copy button */}
                           <button
                             onClick={() => copyToClipboard(message.id, message.content)}
                             className="p-1.5 rounded-md hover:bg-muted/80 transition-colors"
@@ -836,7 +819,6 @@ const scrollToBottom = useCallback((smooth = true) => {
                               <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                             )}
                           </button>
-                          {/* Favorite button - always visible when favorited */}
                           <button
                             onClick={() => user && toggleFavorite(message.id, user.id)}
                             disabled={isToggling}
@@ -862,13 +844,14 @@ const scrollToBottom = useCallback((smooth = true) => {
                   </div>
                 ))}
 
-                {/* Typing Animation */}
                 {isTyping && (
                   <div className="flex gap-2 md:gap-3 animate-fade-in">
                     <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
                     <div className="bg-muted rounded-xl px-3 py-2.5 md:px-4 md:py-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">digitando</span>
+                        <span className="text-sm text-muted-foreground">
+                          {pendingFile ? 'analisando arquivo' : 'digitando'}
+                        </span>
                         <div className="flex items-center gap-1">
                           <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                           <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -885,7 +868,6 @@ const scrollToBottom = useCallback((smooth = true) => {
           </div>
         </ScrollArea>
 
-        {/* Scroll to bottom button */}
         <ScrollToBottomButton 
           visible={showScrollButton} 
           onClick={() => {
@@ -896,11 +878,16 @@ const scrollToBottom = useCallback((smooth = true) => {
         />
       </div>
 
-      {/* Pending File */}
       {pendingFile && (
         <div className="px-3 md:px-4 py-2 border-t border-border bg-muted/50">
           <div className="flex items-center gap-2 text-sm">
-            {getFileIcon(pendingFile.type)}
+            {pendingFile.type.startsWith('image/') ? (
+              <div className="h-10 w-10 rounded border border-border overflow-hidden shrink-0">
+                <img src={pendingFile.url} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              getFileIcon(pendingFile.type)
+            )}
             <span className="truncate flex-1">{pendingFile.name}</span>
             <Button 
               variant="ghost" 
@@ -914,7 +901,6 @@ const scrollToBottom = useCallback((smooth = true) => {
         </div>
       )}
 
-      {/* Input */}
       <div className="p-3 md:p-4 border-t border-border bg-background shrink-0">
         <div className="flex gap-2 max-w-3xl mx-auto">
           <input
@@ -967,7 +953,6 @@ const scrollToBottom = useCallback((smooth = true) => {
     </div>
   );
 
-  // Check subscription access
   if (subLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -980,12 +965,10 @@ const scrollToBottom = useCallback((smooth = true) => {
     return <SubscriptionRequired feature="o Qualify IA" />;
   }
 
-  // Mobile Layout
   if (isMobile) {
     return (
       <AnimatedContainer animation="fade-in" className="flex flex-col h-full">
         {showClientList || !selectedClientId ? (
-          // Mobile Client List View
           <div className="flex flex-col h-full">
             <div className="h-14 px-4 border-b border-border flex items-center gap-3">
                   <div className="h-9 w-9 rounded-xl bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center">
@@ -1006,17 +989,14 @@ const scrollToBottom = useCallback((smooth = true) => {
             {renderClientList()}
           </div>
         ) : (
-          // Mobile Chat View
           renderChatContent()
         )}
       </AnimatedContainer>
     );
   }
 
-  // Desktop Layout
   return (
     <AnimatedContainer animation="fade-in" className="flex h-full">
-      {/* Chat Area - Center */}
       <div className="flex-1 flex flex-col">
         {!selectedClientId ? (
           <>
@@ -1034,7 +1014,6 @@ const scrollToBottom = useCallback((smooth = true) => {
         )}
       </div>
 
-      {/* Clients Sidebar - Right (Desktop only) */}
       <div className={cn(
         "border-l border-border bg-muted/30 flex flex-col transition-all duration-300",
         sidebarCollapsed ? "w-16" : "w-80"
