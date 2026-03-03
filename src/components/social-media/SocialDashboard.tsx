@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { PLATFORM_CONFIG, ALL_PLATFORMS, type SocialPlatform } from '@/lib/social-media-mock';
 import { useSocialAccounts, type SocialAccount } from '@/hooks/useSocialAccounts';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
 import { PlatformIcon } from './PlatformIcon';
 import { AccountManagementModal } from './AccountManagementModal';
 import { ConnectPlatformModal } from './ConnectPlatformModal';
-import { ConfirmActionModal } from './ConfirmActionModal';
 import { cn } from '@/lib/utils';
 
 interface SocialDashboardProps {
@@ -20,11 +19,10 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
   const clientId = selectedClient !== 'all' ? selectedClient : undefined;
   
   const { accounts, isLoading: loadingAccounts, deleteAccount, connectPlatform, syncAccounts } = useSocialAccounts(clientId);
-  const { posts, isLoading: loadingPosts, deleteAllPosts } = useSocialPosts({ clientId });
+  const { posts, isLoading: loadingPosts } = useSocialPosts({ clientId });
 
   const [managingAccount, setManagingAccount] = useState<SocialAccount | null>(null);
   const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   const accountsByPlatform = new Map<SocialPlatform, SocialAccount>();
   accounts.forEach(a => accountsByPlatform.set(a.platform as SocialPlatform, a));
@@ -52,11 +50,6 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
     syncAccounts.mutate(clientId);
   };
 
-  const handleResetData = () => {
-    deleteAllPosts.mutate(clientId);
-    setResetConfirmOpen(false);
-  };
-
   return (
     <div className="space-y-6">
       {selectedClient === 'all' && (
@@ -71,15 +64,6 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Canais Conectados</h2>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
-              onClick={() => setResetConfirmOpen(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-              Resetar Dados
-            </Button>
           </div>
           {loadingAccounts ? (
             <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
@@ -152,17 +136,6 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
         platform={connectingPlatform}
         onConnect={handleConnect}
         isConnecting={connectPlatform.isPending}
-      />
-
-      <ConfirmActionModal
-        open={resetConfirmOpen}
-        onOpenChange={setResetConfirmOpen}
-        title="Resetar dados de Social Media"
-        description="Esta ação irá apagar TODO o histórico de postagens e zerar a contagem de uso do plano para este mês. Esta ação não pode ser desfeita."
-        confirmLabel="Resetar Tudo"
-        variant="destructive"
-        onConfirm={handleResetData}
-        loading={deleteAllPosts.isPending}
       />
     </div>
   );
