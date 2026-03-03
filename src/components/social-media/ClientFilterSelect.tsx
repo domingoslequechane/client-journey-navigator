@@ -63,32 +63,15 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
       };
     },
     enabled: !!user,
-    staleTime: 0, // Ensure we always get fresh data when this component mounts
+    staleTime: 0,
   });
 
   const { clients, configuredClientIds } = clientsData;
-  
-  // Determine if the currently selected client is configured
-  const isSelectedConfigured = value !== 'all' && configuredClientIds.has(value);
 
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={className}>
-        <div className="flex items-center gap-2 overflow-hidden">
-          {value === 'all' ? (
-            <Users className="h-4 w-4 text-muted-foreground shrink-0" />
-          ) : (
-            <span 
-              className={cn(
-                "h-2 w-2 rounded-full shrink-0 transition-all duration-300",
-                isSelectedConfigured 
-                  ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" 
-                  : "bg-muted-foreground/30"
-              )} 
-            />
-          )}
-          <SelectValue placeholder="Todos os clientes" />
-        </div>
+        <SelectValue placeholder="Todos os clientes" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">
