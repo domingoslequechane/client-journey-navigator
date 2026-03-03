@@ -1,11 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
@@ -48,9 +44,9 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -92,10 +88,8 @@ REGRAS DE RESPOSTA:
 - Analiso arquivos (imagens/PDFs) com profundidade técnica, identificando oportunidades de marketing.
 - Sugiro ações práticas e imediatas baseadas na fase atual do cliente no funil.`;
 
-    // Convert messages to Gemini native format
     const contents = messages.map((m: any) => {
       const parts: any[] = [];
-
       if (Array.isArray(m.content)) {
         for (const part of m.content) {
           if (part.type === "text") {
@@ -117,7 +111,6 @@ REGRAS DE RESPOSTA:
       } else {
         parts.push({ text: m.content });
       }
-
       return {
         role: m.role === "assistant" ? "model" : "user",
         parts: parts
@@ -126,15 +119,8 @@ REGRAS DE RESPOSTA:
 
     const payload = {
       contents: contents,
-      system_instruction: {
-        parts: [{ text: systemPrompt }]
-      },
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 4096,
-        topP: 0.95,
-        topK: 40
-      }
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: { temperature: 0.7, maxOutputTokens: 4096, topP: 0.95, topK: 40 }
     };
 
     console.log("Calling Gemini 2.5 Flash API...");
@@ -154,7 +140,6 @@ REGRAS DE RESPOSTA:
       return new Response(JSON.stringify({ error: "O modelo Gemini não respondeu corretamente. Verifique a cota da API." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Transform Gemini SSE stream to OpenAI-compatible format
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const reader = response.body?.getReader();
@@ -166,19 +151,15 @@ REGRAS DE RESPOSTA:
         while (true) {
           const { done, value } = await reader!.read();
           if (done) break;
-
           const chunk = decoder.decode(value);
           const lines = chunk.split("\n");
-
           for (const line of lines) {
             if (line.startsWith("data: ")) {
               try {
                 const data = JSON.parse(line.slice(6));
                 const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (text) {
-                  const openAiFormat = {
-                    choices: [{ delta: { content: text } }]
-                  };
+                  const openAiFormat = { choices: [{ delta: { content: text } }] };
                   await writer.write(encoder.encode(`data: ${JSON.stringify(openAiFormat)}\n\n`));
                 }
               } catch { /* ignore partials */ }
