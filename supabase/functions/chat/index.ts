@@ -138,6 +138,11 @@ REGRAS DE RESPOSTA:
     // Convert messages to Gemini native format
     const contents = messages.map((m: any) => {
       const parts: any[] = [];
+      
+      // Handle array content (new frontend sends file_attachment via this structure sometimes, or mixed content)
+      // But standard frontend sends string content + optional file metadata in body
+      // Let's handle both robustly.
+      
       if (Array.isArray(m.content)) {
         for (const part of m.content) {
           if (part.type === "text") {
@@ -153,8 +158,21 @@ REGRAS DE RESPOSTA:
                 }
               });
             } else {
-              parts.push({ text: `[Imagem para análise: ${part.image_url.url}]` });
+               // URLs not supported in inline_data, must be base64. 
+               // Assuming frontend sends base64 for images in array content.
+               // If it's a remote URL, we should note it in text.
+               parts.push({ text: `[Imagem: ${part.image_url.url}]` });
             }
+          } else if (part.type === "file_attachment") {
+             // Handle the specific structure we added in frontend
+             if (part.file && part.file.data && part.file.mimeType) {
+                parts.push({
+                  inline_data: {
+                    mime_type: part.file.mimeType,
+                    data: part.file.data
+                  }
+                });
+             }
           }
         }
       } else {
@@ -175,7 +193,6 @@ REGRAS DE RESPOSTA:
         topP: 0.95, 
         topK: 40 
       },
-      // Adicionado configurações de segurança para evitar bloqueios falsos positivos
       safetySettings: [
         { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
         { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
@@ -184,9 +201,9 @@ REGRAS DE RESPOSTA:
       ]
     };
 
-    // Usando gemini-1.5-flash que é o modelo estável atual com suporte a multimodal
+    // Usando gemini-1.5-pro para maior qualidade e raciocínio
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -202,7 +219,6 @@ REGRAS DE RESPOSTA:
       try {
         const errObj = JSON.parse(errorText);
         if (errObj.error) {
-            // Retorna a mensagem real da API para facilitar o debug do usuário
             friendlyError = `Erro IA (${errObj.error.code || response.status}): ${errObj.error.message}`;
         }
       } catch {
