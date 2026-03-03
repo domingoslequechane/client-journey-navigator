@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import { PLATFORM_CONFIG, ALL_PLATFORMS, type SocialPlatform } from '@/lib/social-media-mock';
 import { useSocialAccounts, type SocialAccount } from '@/hooks/useSocialAccounts';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
 import { PlatformIcon } from './PlatformIcon';
 import { AccountManagementModal } from './AccountManagementModal';
 import { ConnectPlatformModal } from './ConnectPlatformModal';
+import { ConfirmActionModal } from './ConfirmActionModal';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface SocialDashboardProps {
   selectedClient: string;
@@ -19,10 +21,12 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
   const clientId = selectedClient !== 'all' ? selectedClient : undefined;
   
   const { accounts, isLoading: loadingAccounts, deleteAccount, connectPlatform, syncAccounts } = useSocialAccounts(clientId);
-  const { posts, isLoading: loadingPosts } = useSocialPosts({ clientId });
+  const { posts, isLoading: loadingPosts, deleteAllPosts } = useSocialPosts({ clientId });
 
   const [managingAccount, setManagingAccount] = useState<SocialAccount | null>(null);
   const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const accountsByPlatform = new Map<SocialPlatform, SocialAccount>();
   accounts.forEach(a => accountsByPlatform.set(a.platform as SocialPlatform, a));
@@ -50,6 +54,36 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
     syncAccounts.mutate(clientId);
   };
 
+  const handleResetData = async () => {
+    if (!clientId) {
+      toast.error('Selecione um cliente para resetar');
+      return;
+    }
+    
+    setIsResetting(true);
+    try {
+      // 1. Apagar todos os posts do cliente
+      await deleteAllPosts.mutateAsync(clientId);
+      
+      // 2. Desconectar todas as contas (iterar sobre as contas e deletar)
+      for (const account of accounts) {
+        try {
+          await deleteAccount.mutateAsync(account.id);
+        } catch (err) {
+          console.error(`Erro ao remover conta ${account.id}:`, err);
+        }
+      }
+      
+      toast.success('Todos os dados e conexões foram resetados com sucesso!');
+      setResetModalOpen(false);
+    } catch (error) {
+      console.error('Erro no reset:', error);
+      toast.error('Erro ao resetar dados. Tente novamente.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {selectedClient === 'all' && (
@@ -64,6 +98,16 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Canais Conectados</h2>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
+              onClick={() => setResetModalOpen(true)}
+              disabled={isResetting || (accounts.length === 0 && posts.length === 0)}
+            >
+              {isResetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Resetar Dados
+            </Button>
           </div>
           {loadingAccounts ? (
             <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
@@ -136,6 +180,17 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
         platform={connectingPlatform}
         onConnect={handleConnect}
         isConnecting={connectPlatform.isPending}
+      />
+
+      <ConfirmActionModal
+        open={resetModalOpen}
+        onOpenChange={setResetModalOpen}
+        title="Resetar todos os dados?"
+        description="Esta ação irá remover TODAS as conexões de redes sociais e TODOS os posts (publicados, agendados e rascunhos) deste cliente. Esta ação não pode ser desfeita."
+        confirmLabel="Resetar Tudo"
+        variant="destructive"
+        onConfirm={handleResetData}
+        loading={isResetting}
       />
     </div>
   );

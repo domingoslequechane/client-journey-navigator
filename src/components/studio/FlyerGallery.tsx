@@ -134,7 +134,10 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
             
             return (
               <Card key={flyer.id} className="group overflow-hidden">
-                <div className="relative aspect-square">
+                <div 
+                  className="relative aspect-square cursor-pointer"
+                  onClick={() => openPreview(flyer)}
+                >
                   <img
                     src={flyer.image_url}
                     alt={flyer.prompt}
@@ -143,7 +146,7 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
                   
                   {/* Hover overlay */}
                   <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="icon"
                         variant="secondary"
@@ -178,17 +181,19 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
 
                     {/* Quick star rating */}
                     {onRate && (
-                      <StarRating
-                        rating={flyerRating?.rating || 0}
-                        onRatingChange={(rating) => onRate(flyer.id, rating)}
-                        size="sm"
-                      />
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <StarRating
+                          rating={flyerRating?.rating || 0}
+                          onRatingChange={(rating) => onRate(flyer.id, rating)}
+                          size="sm"
+                        />
+                      </div>
                     )}
                   </div>
 
                   {/* Rating badge */}
                   {flyerRating && (
-                    <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-background/90 rounded-full px-1.5 py-0.5">
+                    <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-background/90 rounded-full px-1.5 py-0.5 pointer-events-none">
                       <Star className="h-3 w-3 fill-primary text-primary" />
                       <span className="text-[10px] font-medium">{flyerRating.rating}</span>
                     </div>

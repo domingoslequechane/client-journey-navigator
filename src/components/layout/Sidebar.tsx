@@ -207,7 +207,12 @@ export function Sidebar() {
           <div className="flex flex-1 items-center justify-between">
             <span>{item.name}</span>
             {item.beta && (
-              <span className="ml-2 rounded-full bg-indigo-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-500 border border-indigo-500/20">
+              <span className={cn(
+                "ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-semibold border transition-colors animate-pulse",
+                isActive 
+                  ? "bg-white/20 text-white border-white/30" 
+                  : "bg-indigo-500/10 text-indigo-500 border-indigo-500/20"
+              )}>
                 Beta
               </span>
             )}

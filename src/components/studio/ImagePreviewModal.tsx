@@ -1,3 +1,4 @@
+button]:hidden">
 import { useState, useCallback, useEffect } from 'react';
 import { X, Download, ZoomIn, ZoomOut, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -131,7 +132,7 @@ export function ImagePreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl w-[95vw] h-[90vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-4xl w-[95vw] h-[90vh] p-0 overflow-hidden [&>button]:hidden">
         <div className="relative w-full h-full flex flex-col">
           {/* Header */}
           <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-background/80 to-transparent">
