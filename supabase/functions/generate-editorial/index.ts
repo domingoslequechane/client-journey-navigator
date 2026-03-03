@@ -26,6 +26,32 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // SECURITY: Get user's organization_id
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id, current_organization_id')
+      .eq('id', user.id)
+      .single();
+
+    const userOrgId = profile?.current_organization_id || profile?.organization_id;
+
+    if (!userOrgId) {
+      return new Response(JSON.stringify({ error: "User organization not found" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
@@ -36,6 +62,14 @@ serve(async (req) => {
 
     const { clientId, organizationId, weeks = 1, startDate, userId } = await req.json();
 
+    // SECURITY: Verify organizationId matches user's organization
+    if (organizationId !== userOrgId) {
+      return new Response(JSON.stringify({ error: "Access denied to this organization" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (!clientId || !organizationId) {
       return new Response(JSON.stringify({ error: "clientId and organizationId are required" }), {
         status: 400,
@@ -43,15 +77,16 @@ serve(async (req) => {
       });
     }
 
-    // Fetch client info
+    // SECURITY: Fetch client info and verify ownership
     const { data: client } = await supabase
       .from("clients")
       .select("company_name, services, notes")
       .eq("id", clientId)
+      .eq("organization_id", userOrgId)
       .single();
 
     if (!client) {
-      return new Response(JSON.stringify({ error: "Client not found" }), {
+      return new Response(JSON.stringify({ error: "Client not found or access denied" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
@@ -57,6 +58,37 @@ serve(async (req) => {
       });
     }
 
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // SECURITY: Get user's organization_id
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id, current_organization_id')
+      .eq('id', user.id)
+      .single();
+
+    const userOrgId = profile?.current_organization_id || profile?.organization_id;
+
+    if (!userOrgId) {
+      return new Response(JSON.stringify({ error: "User organization not found" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       return new Response(JSON.stringify({ error: "Configuração de IA ausente (GEMINI_API_KEY)" }), { 
@@ -69,18 +101,27 @@ serve(async (req) => {
     const { messages, clientData } = ChatRequestSchema.parse(body);
 
     let clientContext = "";
-    if (clientData) {
-      clientContext = `
+    if (clientData?.id) {
+      // SECURITY: Fetch client data from DB to verify ownership and get fresh data
+      const { data: dbClient } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', clientData.id)
+        .eq('organization_id', userOrgId)
+        .single();
+
+      if (dbClient) {
+        clientContext = `
 DADOS DO CLIENTE ATUAL:
-Empresa: ${clientData.company_name || 'N/A'}
-Fase: ${STAGE_LABELS[clientData.current_stage || ''] || 'N/A'}
-Qualificação: ${clientData.qualification || 'N/A'}
-Orçamento: ${clientData.monthly_budget || '0'} MT
-Serviços: ${clientData.services?.join(', ') || 'N/A'}
-Notas: ${clientData.notes || 'N/A'}
-BANT: B${clientData.bant_budget}/A${clientData.bant_authority}/N${clientData.bant_need}/T${clientData.bant_timeline}
-Contrato: ${clientData.has_contract ? clientData.contract_name : 'Não possui'}
+Empresa: ${dbClient.company_name || 'N/A'}
+Fase: ${STAGE_LABELS[dbClient.current_stage || ''] || 'N/A'}
+Qualificação: ${dbClient.qualification || 'N/A'}
+Orçamento: ${dbClient.monthly_budget || '0'} MT
+Serviços: ${dbClient.services?.join(', ') || 'N/A'}
+Notas: ${dbClient.notes || 'N/A'}
+BANT: B${dbClient.bant_budget}/A${dbClient.bant_authority}/N${dbClient.bant_need}/T${dbClient.bant_timeline}
 `;
+      }
     }
 
     const systemPrompt = `Sou a QIA, a assistente inteligente de marketing digital de elite.

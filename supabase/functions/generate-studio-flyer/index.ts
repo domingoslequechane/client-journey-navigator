@@ -1293,6 +1293,22 @@ serve(async (req) => {
     const userId = claimsData.user.id;
     const userEmail = claimsData.user.email;
 
+    // SECURITY: Get user's organization_id to verify ownership
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id, current_organization_id')
+      .eq('id', userId)
+      .single();
+
+    const userOrgId = profile?.current_organization_id || profile?.organization_id;
+
+    if (!userOrgId) {
+      return new Response(JSON.stringify({ error: "User organization not found" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const {
       projectId, prompt = '', size = '1080x1080', style = 'vivid',
       mode = 'original', model = 'gemini-flash', niche, mood,
@@ -1310,14 +1326,16 @@ serve(async (req) => {
       });
     }
 
+    // SECURITY: Verify project belongs to user's organization
     const { data: project, error: projectError } = await supabase
       .from("studio_projects")
       .select("*")
       .eq("id", projectId)
+      .eq("organization_id", userOrgId)
       .single();
 
     if (projectError || !project) {
-      return new Response(JSON.stringify({ error: "Project not found" }), {
+      return new Response(JSON.stringify({ error: "Project not found or access denied" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -1382,10 +1400,12 @@ serve(async (req) => {
     let clientContext = "";
     if (project.client_id) {
       try {
+        // SECURITY: Verify client belongs to user's organization
         const { data: clientData } = await supabase
           .from('clients')
           .select('company_name, contact_name, services, website, source, notes')
           .eq('id', project.client_id)
+          .eq('organization_id', userOrgId)
           .single();
         if (clientData) {
           clientContext = buildClientContext(clientData as Record<string, unknown>);
