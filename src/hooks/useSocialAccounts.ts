@@ -174,12 +174,7 @@ export function useSocialAccounts(clientId?: string | null) {
 
       if (deleteError) throw deleteError;
 
-      if (acc.client_id) {
-        const { error: rpcError } = await supabase.rpc('handle_social_disconnection', {
-          p_client_id: acc.client_id
-        });
-        if (rpcError) console.error('Error handling disconnection count:', rpcError);
-      }
+      // Disconnection handled by deleting the account above
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-accounts'] });

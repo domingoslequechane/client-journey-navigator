@@ -199,7 +199,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         supabase.from('usage_tracking').select('usage_count').eq('organization_id', orgId).eq('feature_type', 'ai_messages').gte('period_start', monthStart).maybeSingle(),
         supabase.from('contract_templates').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
         supabase.from('usage_tracking').select('usage_count').eq('organization_id', orgId).eq('feature_type', 'studio_generations').gte('period_start', monthStart).maybeSingle(),
-        supabase.rpc('get_social_clients_count', { p_organization_id: orgId }),
+        supabase.from('social_accounts').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
         supabase.from('usage_tracking').select('usage_count').eq('organization_id', orgId).eq('feature_type', 'social_posts').gte('period_start', monthStart).maybeSingle(),
         supabase.from('link_pages').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
         supabase.from('studio_flyers').select('id', { count: 'exact', head: true }).eq('created_by', user.id).gte('created_at', todayStart),
@@ -213,7 +213,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         contractTemplatesCount: templatesResult.count || 0,
         studioGenerationsThisMonth: studioUsage.data?.usage_count || 0,
         studioGenerationsToday: studioDailyUsageResult.count || 0,
-        socialAccountsCount: socialClientsCountResult.data || 0,
+        socialAccountsCount: socialClientsCountResult.count || 0,
         socialPostsThisMonth: socialPostsUsage.data?.usage_count || 0,
         linkPagesCount: linkPagesResult.count || 0,
       });

@@ -1,4 +1,3 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
@@ -8,7 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Esquema de validação para mensagens
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
   content: z.any(),
@@ -57,18 +55,18 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "Configuração de IA ausente (API Key)" }), { status: 500, headers: corsHeaders });
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "Configuração de IA ausente (LOVABLE_API_KEY)" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const body = await req.json();
     const { messages, clientData } = ChatRequestSchema.parse(body);
 
-    // Construção do contexto do cliente para o System Prompt
+    // Build client context for the system prompt
     let clientContext = "";
     if (clientData) {
       clientContext = `
@@ -95,116 +93,63 @@ REGRAS DE RESPOSTA:
 - Analiso arquivos (imagens/PDFs) com profundidade técnica, identificando oportunidades de marketing.
 - Sugiro ações práticas e imediatas baseadas na fase atual do cliente no funil.`;
 
-    // Converter mensagens para o formato nativo do Gemini
-    const contents = messages.map((m: any) => {
-      const parts = [];
-      
+    // Convert messages to OpenAI-compatible format (Lovable AI Gateway)
+    const apiMessages = messages.map((m: any) => {
+      // If content is already an array (multimodal), pass it through
       if (Array.isArray(m.content)) {
-        for (const part of m.content) {
-          if (part.type === "text") {
-            parts.push({ text: part.text });
-          } else if (part.type === "image_url") {
-            if (part.image_url.url.startsWith('data:')) {
-              const [mime, data] = part.image_url.url.split(',');
-              parts.push({
-                inline_data: {
-                  mime_type: mime.split(':')[1].split(';')[0],
-                  data: data
-                }
-              });
-            } else {
-              parts.push({ text: `[Imagem para análise: ${part.image_url.url}]` });
-            }
-          }
-        }
-      } else {
-        parts.push({ text: m.content });
+        return { role: m.role, content: m.content };
       }
-
-      return {
-        role: m.role === "assistant" ? "model" : "user",
-        parts: parts
-      };
+      return { role: m.role, content: m.content };
     });
 
-    const payload = {
-      contents: contents,
-      system_instruction: {
-        parts: [{ text: systemPrompt }]
+    console.log("Calling Lovable AI Gateway with google/gemini-2.5-flash...");
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      generationConfig: {
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...apiMessages,
+        ],
+        stream: true,
+        max_tokens: 4096,
         temperature: 0.7,
-        maxOutputTokens: 4096,
-        topP: 0.95,
-        topK: 40
-      }
-    };
-
-    console.log("Chamando Gemini 1.5 Pro API...");
-
-    // Usando o modelo 1.5 Pro conforme solicitado
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
+      }),
+    });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns instantes." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Contacte o suporte." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const errorText = await response.text();
-      console.error("Erro Gemini API:", errorText);
-      return new Response(JSON.stringify({ error: "O modelo Gemini 1.5 Pro não respondeu corretamente. Verifique a cota da API." }), { status: 500, headers: corsHeaders });
+      console.error("AI Gateway error:", response.status, errorText);
+      return new Response(JSON.stringify({ error: "O modelo de IA não respondeu corretamente." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    const encoder = new TextEncoder();
-
-    (async () => {
-      try {
-        while (true) {
-          const { done, value } = await reader!.read();
-          if (done) break;
-          
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
-          
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (text) {
-                  const openAiFormat = {
-                    choices: [{ delta: { content: text } }]
-                  };
-                  await writer.write(encoder.encode(`data: ${JSON.stringify(openAiFormat)}\n\n`));
-                }
-              } catch (e) { /* ignore partials */ }
-            }
-          }
-        }
-        await writer.write(encoder.encode("data: [DONE]\n\n"));
-      } catch (err) {
-        console.error("Stream error:", err);
-      } finally {
-        writer.close();
-      }
-    })();
-
-    return new Response(readable, {
+    // Stream the response directly
+    return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Chat error:", error);
-    return new Response(JSON.stringify({ error: error.message || "Erro interno no servidor" }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Erro interno no servidor" }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

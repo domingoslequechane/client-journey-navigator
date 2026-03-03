@@ -128,12 +128,7 @@ export default function Auth() {
     
     setLoading(true);
     try {
-      // Set storage based on checkbox
-      if (persistSession) {
-        supabase.auth.storage = localStorage;
-      } else {
-        supabase.auth.storage = sessionStorage;
-      }
+      // Storage is configured at client initialization
 
       // Normalize email
       const cleanEmail = email.trim().toLowerCase();
