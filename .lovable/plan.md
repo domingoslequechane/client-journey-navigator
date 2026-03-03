@@ -1,45 +1,85 @@
 
 
-## Plan
+# Auditoria de Produção - Relatório Completo
 
-This plan addresses 7 distinct issues the user raised.
+Após análise detalhada do código, segurança, Edge Functions e configurações, identifiquei os seguintes problemas organizados por criticidade.
 
-### 1. Block editing/re-publishing of published posts (`PostModal.tsx`, `SocialMedia.tsx`)
-- In `PostModal`, accept a `isPublished` prop. When true, disable all form fields (content, hashtags, media, platforms) and hide the Save/Schedule/Publish buttons. Show only a "Duplicar para edição" button.
-- In `SocialMedia.tsx`, pass `isPublished` based on `editingPost?.status === 'published'` to PostModal.
-- In `PostCard.tsx`, the edit button already hides for published posts — keep that. Ensure clicking a published post card opens it in read-only mode.
+---
 
-### 2. Fix channel selection: select by account ID, not platform (`PostModal.tsx`)
-- The current `togglePlatform` toggles by platform string, so two Instagram accounts both toggle together.
-- Refactor channel selection to use `account.id` instead of `platform` name. Store `selectedAccountIds: string[]` instead of `platforms: SocialPlatform[]`.
-- Derive `platforms` from the selected account IDs for downstream use (scheduling, preview, content types).
-- Each account button toggles independently by its unique `id`.
+## CRÍTICO - Segurança
 
-### 3. Replace format dropdown with icons in schedule slots (`PostModal.tsx`)
-- Replace the `<select>` dropdown for content type in each schedule slot with icon buttons using `ContentTypeIcon`.
-- Each content type shows its icon, and clicking it selects that format for the slot.
+### 1. `delete-user` com `verify_jwt = false`
+A Edge Function que elimina utilizadores do sistema está **sem verificação JWT**. Qualquer pessoa pode chamar esta função sem autenticação. Embora a função faça verificação manual do token, desativar o JWT no gateway remove a primeira camada de proteção.
 
-### 4. Default schedule time = now + 15 minutes (`PostModal.tsx`)
-- Replace hardcoded `'10:00'` default time with a computed value of current time + 15 minutes using `format(addMinutes(new Date(), 15), 'HH:mm')`.
+**Correção:** Alterar `verify_jwt = true` no `config.toml`.
 
-### 5. Delete all records when disconnecting an account (`useSocialAccounts.ts`)
-- In `deleteAccount` mutation, before deleting the `social_accounts` row, also delete related `social_posts` rows that reference this account's platform + client_id (or handle via cascade). Since posts reference platforms as an array, we'll delete posts where the account's platform is the *only* platform. For posts with multiple platforms, remove the platform from the array.
-- Actually, simpler: just delete the `social_accounts` record. The user wants all records of that account removed. We should also clean up any posts that only target that specific account.
+### 2. Edge Functions de Social Media sem JWT
+As seguintes funções estão com `verify_jwt = false` e manipulam dados sensíveis:
+- `social-connect`, `social-sync-accounts`, `social-publish`, `social-fetch-messages`, `social-reply-message`
+- `generate-social-caption`, `suggest-best-times`
+- `generate-studio-flyer`
 
-### 6. Import full account info on connect/sync (`social-sync-accounts` edge function)
-- Already imports `displayName`, `username`, `avatarUrl`, `followers`. Verify the Late.dev API response fields and ensure `bio`, `profileUrl` etc. are also captured if available. The current schema covers the key fields — ensure `account_name`, `username`, `avatar_url`, `followers_count` are always populated from the API response.
+**Correção:** Ativar JWT para todas as funções que requerem autenticação. Manter `verify_jwt = false` apenas para: `send-otp`, `verify-otp`, `lemonsqueezy-webhook`, `check-trial-expiry`, `send-partner-inquiry`, `send-contact-form`, `generate-landing-image`.
 
-### 7. Hide "Late.dev" references from frontend
-- Remove `Late.dev` badge from `PostCard.tsx` (line 48).
-- Remove `Late.dev ID` badge from `AccountManagementModal.tsx` (lines 91-94).
-- Remove `hasLateAccounts` variable usage in `PostModal.tsx` — always show Publish button if connected accounts exist.
+### 3. CORS permissivo (`Access-Control-Allow-Origin: *`)
+Todas as 30 Edge Functions usam `*` como origin. Em produção, deve ser restrito ao domínio `https://qualify.onixagence.com`.
 
-### Files to modify
-| File | Changes |
-|------|---------|
-| `src/components/social-media/PostModal.tsx` | Account-based selection, icon format selector, default time +15min, hide Late.dev refs, read-only for published |
-| `src/components/social-media/PostCard.tsx` | Remove Late.dev badge |
-| `src/components/social-media/AccountManagementModal.tsx` | Remove Late.dev ID badge |
-| `src/pages/SocialMedia.tsx` | Pass published state to PostModal |
-| `src/hooks/useSocialAccounts.ts` | Clean up related posts on disconnect |
+**Correção:** Criar uma constante com os domínios permitidos e validar o `Origin` header.
+
+### 4. `dangerouslySetInnerHTML` sem sanitização na LandingPage
+O ficheiro `LandingPage.tsx` usa `dangerouslySetInnerHTML` com conteúdo i18n sem sanitizar (linha 758). O `MessageItem.tsx` já usa DOMPurify corretamente, mas a LandingPage não.
+
+**Correção:** Aplicar `DOMPurify.sanitize()` ao conteúdo da FAQ.
+
+### 5. Dados de negócio expostos publicamente (scan de segurança)
+- **`link_pages`**: Páginas publicadas expõem `client_id` e `organization_id` — informação interna desnecessária para visualização pública.
+- **`social_posts`**: A política "Anyone can view posts by approval token" expõe conteúdo de posts, estratégias e notas internas.
+- **`link_blocks`**: Blocos de páginas publicadas expõem configurações internas completas.
+
+**Correção:** Restringir campos visíveis publicamente via funções `SECURITY DEFINER` que retornam apenas dados necessários para renderização.
+
+---
+
+## ALTO - Funcionalidade e Robustez
+
+### 6. `delete-user` verifica cargo na tabela `profiles` em vez de `user_roles`
+A função verifica `profile.role === "admin"` mas o sistema RBAC usa a tabela `user_roles` com `has_role()`. Além disso, apenas o `proprietor` deveria ter esta capacidade, não qualquer `admin`.
+
+**Correção:** Verificar `has_role(userId, 'proprietor')` via query à tabela `user_roles`.
+
+### 7. `generate-studio-flyer` usa `@ts-nocheck`
+Um ficheiro com 1698 linhas suprime todos os erros TypeScript. Isto pode esconder bugs graves.
+
+**Correção:** Remover `@ts-nocheck` e resolver os erros de tipo.
+
+### 8. Leaked Password Protection desativada
+O Supabase Auth não está a verificar passwords em listas de passwords comprometidas.
+
+**Correção:** Ativar em Supabase Dashboard > Authentication > Settings > Password Protection.
+
+---
+
+## MÉDIO - Melhorias para Produção
+
+### 9. `plan_limits` acessível sem autenticação
+Embora a memória diga que foi corrigido para `authenticated`, o scan ainda detecta acesso público. Verificar se a política foi efetivamente aplicada.
+
+### 10. Sem rate limiting nas Edge Functions públicas
+Funções como `send-otp`, `send-contact-form`, `send-partner-inquiry` não têm proteção contra abuso.
+
+**Correção:** Implementar rate limiting baseado em IP ou fingerprint.
+
+---
+
+## Plano de Implementação
+
+1. **Atualizar `config.toml`** — Ativar JWT em todas as funções que requerem autenticação (social-*, generate-studio-flyer, delete-user, generate-social-caption, suggest-best-times)
+2. **Restringir CORS** — Substituir `*` pelo domínio de produção em todas as Edge Functions
+3. **Corrigir `delete-user`** — Usar `user_roles` e restringir ao `proprietor`
+4. **Sanitizar FAQ** — Adicionar DOMPurify na LandingPage
+5. **Corrigir políticas RLS** — Limitar campos expostos em `link_pages` e `social_posts` públicos
+6. **Ativar Leaked Password Protection** — Configuração manual no dashboard Supabase
+7. **Remover `@ts-nocheck`** do studio-flyer (fase posterior)
+
+Estas são as correções prioritárias para ir para produção com segurança. Posso implementar todas numa sequência?
 
