@@ -219,7 +219,7 @@ export default function SocialMedia() {
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground font-medium">Contas Conectadas</span>
               <span className={cn("font-bold", !canAddSocialAccount ? "text-destructive" : "text-primary")}>
-                {usage.socialAccountsCount} / {limits.maxSocialAccounts ?? '∞'}
+                {usage.socialAccountsCount} / {limits.maxSocialAccounts}
               </span>
             </div>
             <Progress value={socialUsagePercent} className={cn("h-1.5", !canAddSocialAccount && "bg-destructive/20")} />

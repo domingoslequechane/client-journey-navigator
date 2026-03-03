@@ -114,13 +114,27 @@ export function usePlanLimits(): UsePlanLimitsReturn {
       const currentPlanType = (organization?.plan_type as PlanType) || 'starter';
       setPlanType(currentPlanType);
 
-      const dailyLimits: Record<string, number> = {
+      // Hardcoded fallbacks for social accounts based on plan
+      const socialAccountLimits: Record<string, number> = {
+        'free': 3,
+        'starter': 5,
+        'pro': 15,
+        'agency': 30
+      };
+
+      const clientLimits: Record<string, number> = {
+        'free': 3,
+        'starter': 5,
+        'pro': 15,
+        'agency': 30
+      };
+
+      const dailyStudioLimits: Record<string, number> = {
         'free': 5,
         'starter': 5,
         'pro': 15,
         'agency': 30
       };
-      const dailyStudioLimit = dailyLimits[currentPlanType] || 5;
 
       const { data: planLimitsData } = await supabase
         .from('plan_limits')
@@ -131,14 +145,15 @@ export function usePlanLimits(): UsePlanLimitsReturn {
       if (planLimitsData) {
         const d = planLimitsData as any;
         setLimits({
-          maxClients: d.max_clients,
+          // Use DB value if present, otherwise use hardcoded fallback
+          maxClients: d.max_clients ?? clientLimits[currentPlanType],
+          maxSocialAccounts: d.max_social_accounts ?? socialAccountLimits[currentPlanType],
           maxContractsPerMonth: d.max_contracts_per_month,
           maxAIMessagesPerMonth: d.max_ai_messages_per_month,
           maxTeamMembers: d.max_team_members,
           maxContractTemplates: d.max_contract_templates,
           maxStudioGenerations: d.max_studio_generations,
-          dailyStudioLimit,
-          maxSocialAccounts: d.max_social_accounts,
+          dailyStudioLimit: dailyStudioLimits[currentPlanType],
           maxSocialPostsPerMonth: d.max_social_posts_per_month,
           maxLinkPages: d.max_link_pages,
           can_export_data: d.can_export_data ?? false,
@@ -149,6 +164,14 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           has_social_module: d.has_social_module ?? false,
           has_social_inbox: d.has_social_inbox ?? false,
         });
+      } else {
+        // Fallback if no DB record
+        setLimits({
+          ...DEFAULT_LIMITS,
+          maxClients: clientLimits[currentPlanType],
+          maxSocialAccounts: socialAccountLimits[currentPlanType],
+          dailyStudioLimit: dailyStudioLimits[currentPlanType],
+        });
       }
 
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -156,7 +179,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
 
       const [
         clientsResult, teamResult, contractsUsage, aiUsage,
-        templatesResult, studioUsage, socialClientsCountResult,
+        templatesResult, studioUsage, socialAccountsCountResult,
         socialPostsUsage, linkPagesResult, studioDailyUsageResult,
       ] = await Promise.all([
         supabase.from('clients').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).in('current_stage', OPERATIONAL_STAGES),
@@ -179,7 +202,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         contractTemplatesCount: templatesResult.count || 0,
         studioGenerationsThisMonth: studioUsage.data?.usage_count || 0,
         studioGenerationsToday: studioDailyUsageResult.count || 0,
-        socialAccountsCount: socialClientsCountResult.count || 0,
+        socialAccountsCount: socialAccountsCountResult.count || 0,
         socialPostsThisMonth: socialPostsUsage.data?.usage_count || 0,
         linkPagesCount: linkPagesResult.count || 0,
       });
