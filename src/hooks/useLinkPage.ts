@@ -355,8 +355,9 @@ export function usePublicLinkPage(slug: string | undefined, orgSlug: string | un
 
       return {
         id: pageData.id as string,
-        client_id: pageData.client_id as string,
-        organization_id: pageData.organization_id as string,
+        // Internal IDs are now excluded from the RPC for security
+        client_id: '', 
+        organization_id: '',
         name: pageData.name as string,
         slug: pageData.slug as string,
         logo_url: pageData.logo_url as string | undefined,
