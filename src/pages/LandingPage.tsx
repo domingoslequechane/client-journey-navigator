@@ -539,6 +539,7 @@ export default function LandingPage() {
                   <CardTitle className="text-lg">{t('features.link23.title')}</CardTitle>
                   <CardDescription>{t('features.link23.description')}</CardDescription>
                 </CardHeader>
+              </Card>
 
               {/* Social Media */}
               <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
@@ -549,6 +550,7 @@ export default function LandingPage() {
                   <CardTitle className="text-lg">{t('features.social.title')}</CardTitle>
                   <CardDescription>{t('features.social.description')}</CardDescription>
                 </CardHeader>
+              </Card>
 
               {/* QIA - Destaque */}
               <Card className="border-primary/30 bg-primary/5 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group lg:col-span-2">
@@ -591,6 +593,7 @@ export default function LandingPage() {
                   <CardTitle className="text-lg">{t('features.docs.title')}</CardTitle>
                   <CardDescription>{t('features.docs.description')}</CardDescription>
                 </CardHeader>
+              </Card>
 
               {/* Academia */}
               <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
@@ -601,6 +604,7 @@ export default function LandingPage() {
                   <CardTitle className="text-lg">{t('features.academy.title')}</CardTitle>
                   <CardDescription>{t('features.academy.description')}</CardDescription>
                 </CardHeader>
+              </Card>
             </div>
           </div>
         </div>
