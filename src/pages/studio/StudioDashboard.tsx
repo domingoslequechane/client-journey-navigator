@@ -30,20 +30,17 @@ export default function StudioDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl font-bold flex items-center gap-2">
+          <h1 className="text-3xl font-bold flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
               <Sparkles className="h-8 w-8 text-primary" />
               Studio AI
-            </h1>
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold px-2 py-0.5">
-              BETA
-            </Badge>
+            </div>
             {limits.dailyStudioLimit !== null && (
               <Badge variant="outline" className="font-mono">
                 Créditos hoje: {usage.studioGenerationsToday}/{limits.dailyStudioLimit}
               </Badge>
             )}
-          </div>
+          </h1>
           <p className="text-muted-foreground mt-1">
             Gere flyers profissionais com inteligência artificial
           </p>

@@ -136,7 +136,7 @@ export function Sidebar() {
       { name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: true, locked: !canAccessEditorial, requiredPlan: 'Lança' },
       { name: 'Social Media', href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: true, locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true, locked: false, requiredPlan: '' },
-      { name: 'Studio AI', href: '/app/studio', icon: Workflow, tutorialId: 'sidebar-studio', show: true, locked: !canAccessStudio, requiredPlan: 'Lança', badge: 'Beta' },
+      { name: 'Studio AI', href: '/app/studio', icon: Workflow, tutorialId: 'sidebar-studio', show: true, locked: !canAccessStudio, requiredPlan: 'Lança' },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true, locked: false, requiredPlan: '' },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients, locked: false, requiredPlan: '' },
       { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam, locked: false, requiredPlan: '' },
@@ -203,16 +203,7 @@ export function Sidebar() {
         )}
       >
         <item.icon className="h-5 w-5 shrink-0" />
-        {!collapsed && (
-          <div className="flex items-center justify-between flex-1 min-w-0">
-            <span className="truncate">{item.name}</span>
-            {item.badge && (
-              <Badge variant="secondary" className="ml-2 h-4 px-1 text-[9px] uppercase font-bold bg-primary/10 text-primary border-none">
-                {item.badge}
-              </Badge>
-            )}
-          </div>
-        )}
+        {!collapsed && item.name}
       </Link>
     );
 
@@ -221,7 +212,7 @@ export function Sidebar() {
         <Tooltip>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
           <TooltipContent side="right">
-            {item.name} {item.badge && `(${item.badge})`}
+            {item.name}
           </TooltipContent>
         </Tooltip>
       );

@@ -117,7 +117,7 @@ export function MobileNav() {
     items.push({ name: 'Social Media', href: '/app/social-media', icon: Share2, show: true });
 
     // Add Studio AI to more menu
-    items.push({ name: 'Studio AI', href: '/app/studio', icon: Sparkles, show: true, badge: 'Beta' });
+    items.push({ name: 'Studio AI', href: '/app/studio', icon: Sparkles, show: true });
 
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },
