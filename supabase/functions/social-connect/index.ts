@@ -10,6 +10,12 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const LATE_API_KEY = Deno.env.get("LATE_API_KEY");
+
+    if (!LATE_API_KEY) {
+      console.error("LATE_API_KEY is missing");
+      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -35,7 +41,6 @@ Deno.serve(async (req) => {
     }
 
     const orgId = profile.current_organization_id;
-    const LATE_API_KEY = Deno.env.get("LATE_API_KEY")!;
 
     const { data: client, error: clientError } = await supabase
       .from("clients").select("id, company_name, late_profile_id, organization_id")
@@ -45,33 +50,79 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Client not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    let profileId = client.late_profile_id;
-
-    if (!profileId) {
-      const createRes = await fetch(`${LATE_API_BASE}/profiles`, {
+    // Helper to create profile in Late
+    const createLateProfile = async (name: string) => {
+      console.log("Creating Late profile for:", name);
+      const res = await fetch(`${LATE_API_BASE}/profiles`, {
         method: "POST",
         headers: { Authorization: `Bearer ${LATE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ name: client.company_name }),
+        body: JSON.stringify({ name }),
       });
-      const createData = await createRes.json();
-      if (!createRes.ok) {
-        return new Response(JSON.stringify({ error: "Failed to create Late profile", details: createData }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("Failed to create profile:", data);
+        throw new Error(data.message || "Failed to create profile in Late API");
       }
-      profileId = createData.profile?._id || createData._id;
-      await supabase.from("clients").update({ late_profile_id: profileId }).eq("id", client_id);
+      // Late API might return { profile: { _id: ... } } or { _id: ... } depending on version
+      return data.profile?._id || data._id;
+    };
+
+    let profileId = client.late_profile_id;
+
+    // Create profile if not exists locally
+    if (!profileId) {
+      try {
+        profileId = await createLateProfile(client.company_name);
+        await supabase.from("clients").update({ late_profile_id: profileId }).eq("id", client_id);
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
-    const connectUrl = new URL(`${LATE_API_BASE}/connect/${platform}`);
-    connectUrl.searchParams.set("profileId", profileId);
-    if (redirect_url) connectUrl.searchParams.set("redirect_url", redirect_url);
+    // Helper to get connect URL
+    const getConnectUrlParams = (profId: string) => {
+      const url = new URL(`${LATE_API_BASE}/connect/${platform}`);
+      url.searchParams.set("profileId", profId);
+      if (redirect_url) url.searchParams.set("redirectUrl", redirect_url);
+      return url.toString();
+    };
 
-    const connectRes = await fetch(connectUrl.toString(), { headers: { Authorization: `Bearer ${LATE_API_KEY}` } });
+    // Try to get connect URL
+    let connectRes = await fetch(getConnectUrlParams(profileId), { 
+      headers: { Authorization: `Bearer ${LATE_API_KEY}` } 
+    });
+
+    // If 404, profile might be deleted in Late but exists in our DB. Re-create it.
+    if (connectRes.status === 404) {
+      console.log("Profile not found in Late API (404), re-creating...");
+      try {
+        profileId = await createLateProfile(client.company_name);
+        await supabase.from("clients").update({ late_profile_id: profileId }).eq("id", client_id);
+        
+        // Retry connect
+        connectRes = await fetch(getConnectUrlParams(profileId), { 
+          headers: { Authorization: `Bearer ${LATE_API_KEY}` } 
+        });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: "Failed to recover profile: " + e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     const connectData = await connectRes.json();
     if (!connectRes.ok) {
+      console.error("Failed to get connect URL:", connectData);
       return new Response(JSON.stringify({ error: "Failed to get connect URL", details: connectData }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify({ authUrl: connectData.authUrl, profileId }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // Handle different response formats (authUrl or auth_url)
+    const authUrl = connectData.authUrl || connectData.auth_url;
+
+    if (!authUrl) {
+      console.error("No authUrl in response:", connectData);
+      return new Response(JSON.stringify({ error: "Invalid response from Late API", details: connectData }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    return new Response(JSON.stringify({ authUrl, profileId }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: unknown) {
     console.error("social-connect error:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
