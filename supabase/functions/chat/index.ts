@@ -8,10 +8,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Esquema de validação para mensagens (suporta texto e imagens em base64)
+// Esquema de validação para mensagens
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
-  content: z.any(), // Pode ser string ou array de partes (texto/imagem)
+  content: z.any(),
   file_url: z.string().optional().nullable(),
   file_type: z.string().optional().nullable(),
 });
@@ -84,29 +84,26 @@ Contrato: ${clientData.has_contract ? clientData.contract_name : 'Não possui'}
 `;
     }
 
-    const systemPrompt = `Sou a QIA, a assistente inteligente de marketing digital.
-Minhas especialidades incluem social media, tráfego pago e vendas.
-Tenho a capacidade de ver e analisar imagens e documentos que me enviares.
+    const systemPrompt = `Sou a QIA, a assistente inteligente de marketing digital de elite.
+Minhas especialidades incluem social media, tráfego pago, vendas e estratégia de negócios.
+Tenho a capacidade avançada de ver e analisar imagens e documentos que me enviares com precisão cirúrgica.
 ${clientContext}
 
-REGRAS:
+REGRAS DE RESPOSTA:
 - Respondo sempre em português de Portugal (PT-PT).
-- Sou concisa, prática e profissional.
-- Se me enviares uma imagem, descrevo-a e analiso-a no contexto do marketing do cliente.
-- Sugiro ações específicas baseadas na fase do cliente.`;
+- Sou extremamente profissional, estratégica e direta ao ponto.
+- Analiso arquivos (imagens/PDFs) com profundidade técnica, identificando oportunidades de marketing.
+- Sugiro ações práticas e imediatas baseadas na fase atual do cliente no funil.`;
 
     // Converter mensagens para o formato nativo do Gemini
     const contents = messages.map((m: any) => {
       const parts = [];
       
-      // Se o conteúdo for um array (multi-modal vindo do front)
       if (Array.isArray(m.content)) {
         for (const part of m.content) {
           if (part.type === "text") {
             parts.push({ text: part.text });
           } else if (part.type === "image_url") {
-            // O Gemini nativo prefere inline_data para imagens em base64 ou File API
-            // Aqui assumimos que o front enviou a URL. Se for base64, tratamos.
             if (part.image_url.url.startsWith('data:')) {
               const [mime, data] = part.image_url.url.split(',');
               parts.push({
@@ -116,8 +113,6 @@ REGRAS:
                 }
               });
             } else {
-              // Se for URL, o Gemini nativo via REST não baixa automaticamente.
-              // Por simplicidade, enviamos como texto se não for base64.
               parts.push({ text: `[Imagem para análise: ${part.image_url.url}]` });
             }
           }
@@ -132,7 +127,6 @@ REGRAS:
       };
     });
 
-    // Adicionar o system prompt como uma instrução especial (Gemini 1.5 suporta system_instruction)
     const payload = {
       contents: contents,
       system_instruction: {
@@ -141,13 +135,16 @@ REGRAS:
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 4096,
+        topP: 0.95,
+        topK: 40
       }
     };
 
-    console.log("Chamando Gemini API (Nativa)...");
+    console.log("Chamando Gemini 1.5 Pro API...");
 
+    // Usando o modelo 1.5 Pro conforme solicitado
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -157,11 +154,10 @@ REGRAS:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Erro Gemini:", errorText);
-      return new Response(JSON.stringify({ error: "Erro na comunicação com a IA" }), { status: 500, headers: corsHeaders });
+      console.error("Erro Gemini API:", errorText);
+      return new Response(JSON.stringify({ error: "O modelo Gemini 1.5 Pro não respondeu corretamente. Verifique a cota da API." }), { status: 500, headers: corsHeaders });
     }
 
-    // Transformar o stream do Gemini para o formato que o front espera (OpenAI-like)
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const reader = response.body?.getReader();
@@ -206,7 +202,7 @@ REGRAS:
 
   } catch (error) {
     console.error("Chat error:", error);
-    return new Response(JSON.stringify({ error: error.message || "Erro interno" }), {
+    return new Response(JSON.stringify({ error: error.message || "Erro interno no servidor" }), {
       status: 500,
       headers: corsHeaders,
     });
