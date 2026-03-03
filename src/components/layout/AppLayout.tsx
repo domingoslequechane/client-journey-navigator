@@ -8,7 +8,7 @@ export function AppLayout() {
   const { queueLength, isSyncing } = useSyncQueue();
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <OfflineIndicator pendingCount={queueLength} isSyncing={isSyncing} />
       
       {/* Desktop Sidebar */}
@@ -17,7 +17,7 @@ export function AppLayout() {
       </div>
       
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pb-20 md:pb-0">
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
         <Outlet />
       </main>
       

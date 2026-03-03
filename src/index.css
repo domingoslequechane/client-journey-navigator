@@ -369,8 +369,18 @@ All colors MUST be HSL.
 }
 
 .neon-pulse {
-  animation: neonPulse 2s ease-in-out infinite;
-  border-width: 2px;
-  border-style: solid;
-  border-color: var(--neon-color);
+animation: neonPulse 2s ease-in-out infinite;
+border-width: 2px;
+border-style: solid;
+border-color: var(--neon-color);
+}
+
+@layer utilities {
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
 }

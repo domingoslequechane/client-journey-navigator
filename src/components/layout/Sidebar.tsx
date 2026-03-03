@@ -238,11 +238,11 @@ export function Sidebar() {
   return (
     <TooltipProvider delayDuration={0}>
       <div className={cn(
-        "flex h-screen flex-col bg-card border-r border-border transition-all duration-300",
+        "flex h-screen flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
         collapsed ? "w-16" : "w-64"
       )}>
         <div className={cn(
-          "flex h-16 items-center gap-2 px-4 border-b border-border my-2",
+          "flex h-16 items-center gap-2 px-4 border-b border-border my-2 shrink-0",
           collapsed && "justify-center px-2"
         )}>
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
@@ -256,8 +256,8 @@ export function Sidebar() {
           collapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="px-2 py-3 border-b border-border flex justify-center">
-                  <Building2 
+                <div className="px-2 py-3 border-b border-border flex justify-center shrink-0">
+                  <Building2
                     className="h-5 w-5"
                     style={{ color: `hsl(var(--plan-${planType}-primary, var(--primary)))` }}
                   />
@@ -266,8 +266,8 @@ export function Sidebar() {
               <TooltipContent side="right">{organization.name}</TooltipContent>
             </Tooltip>
           ) : (
-            <div className="px-4 py-3 border-b border-border">
-              <p 
+            <div className="px-4 py-3 border-b border-border shrink-0">
+              <p
                 className="text-sm font-medium truncate"
                 style={{ color: `hsl(var(--plan-${planType}-primary, var(--primary)))` }}
               >
@@ -277,16 +277,16 @@ export function Sidebar() {
           )
         )}
         
-        <nav className="flex-1 px-2 py-4 space-y-1">
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-none">
           {navigation.map((item) => {
-             const isActive = item.href === '/app' 
+             const isActive = item.href === '/app'
                ? location.pathname === '/app'
                : location.pathname.startsWith(item.href);
             return <NavItem key={item.name} item={item} isActive={isActive} />;
           })}
         </nav>
 
-        <div className="p-2 border-t border-border space-y-1">
+        <div className="p-2 border-t border-border space-y-1 shrink-0">
           {/* Theme Toggle & Language Selector */}
           {collapsed ? (
             <>

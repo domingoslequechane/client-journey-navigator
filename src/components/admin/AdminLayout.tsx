@@ -134,14 +134,14 @@ export function AdminLayout() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-background overflow-hidden">
         {/* Sidebar */}
         <div className={cn(
-          "flex h-screen flex-col bg-card border-r border-border transition-all duration-300",
+          "flex h-screen flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
           collapsed ? "w-16" : "w-64"
         )}>
           <div className={cn(
-            "flex h-16 items-center gap-2 px-4 border-b border-border",
+            "flex h-16 items-center gap-2 px-4 border-b border-border shrink-0",
             collapsed && "justify-center px-2"
           )}>
             <div className="h-8 w-8 rounded-lg bg-destructive flex items-center justify-center shrink-0">
@@ -150,15 +150,15 @@ export function AdminLayout() {
             {!collapsed && <span className="font-bold text-xl">Admin</span>}
           </div>
           
-          <nav className="flex-1 px-2 py-4 space-y-1">
+          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-none">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href || 
+              const isActive = location.pathname === item.href ||
                 (item.href !== '/admin' && location.pathname.startsWith(item.href));
               return <NavItem key={item.name} item={item} isActive={isActive} />;
             })}
           </nav>
 
-          <div className="p-2 border-t border-border space-y-1">
+          <div className="p-2 border-t border-border space-y-1 shrink-0">
             {/* Back to App */}
             {collapsed ? (
               <Tooltip>
@@ -258,7 +258,7 @@ export function AdminLayout() {
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>
