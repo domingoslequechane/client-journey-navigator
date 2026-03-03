@@ -198,6 +198,42 @@ export function useSocialPosts(filters?: PostFilters) {
     },
   });
 
+  const deleteAllPosts = useMutation({
+    mutationFn: async (clientId?: string) => {
+      const orgId = await getOrgId();
+      if (!orgId) throw new Error('Organização não encontrada');
+
+      let query = supabase
+        .from('social_posts' as any)
+        .delete()
+        .eq('organization_id', orgId);
+
+      if (clientId && clientId !== 'all') {
+        query = query.eq('client_id', clientId);
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+      
+      // Reset usage count for social_posts in usage_tracking for the current month
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+      await supabase
+        .from('usage_tracking')
+        .update({ usage_count: 0 } as any)
+        .eq('organization_id', orgId)
+        .eq('feature_type', 'social_posts')
+        .eq('period_start', monthStart);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['usage-tracking'] });
+      toast({ title: 'Histórico e contagem resetados com sucesso!' });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Erro ao resetar dados', description: err.message, variant: 'destructive' });
+    },
+  });
+
   const sendForApproval = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase
@@ -283,6 +319,7 @@ export function useSocialPosts(filters?: PostFilters) {
     createPost,
     updatePost,
     deletePost,
+    deleteAllPosts,
     sendForApproval,
     publishPost,
     syncPosts,
