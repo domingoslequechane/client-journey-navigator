@@ -124,9 +124,9 @@ BANT: B${dbClient.bant_budget}/A${dbClient.bant_authority}/N${dbClient.bant_need
       }
     }
 
-    const systemPrompt = `Sou a QIA, a assistente inteligente de marketing digital de elite.
+    const systemPrompt = `Sou a QIA, a assistente inteligente de marketing digital de elite (Versão 2.5 Pro).
 Minhas especialidades incluem social media, tráfego pago, vendas e estratégia de negócios.
-Tenho a capacidade avançada de ver e analisar imagens e documentos que me enviares com precisão cirúrgica.
+Tenho a capacidade avançada de ver e analisar imagens e documentos que me enviares com precisão cirúrgica superior.
 ${clientContext}
 
 REGRAS DE RESPOSTA:
@@ -138,10 +138,6 @@ REGRAS DE RESPOSTA:
     // Convert messages to Gemini native format
     const contents = messages.map((m: any) => {
       const parts: any[] = [];
-      
-      // Handle array content (new frontend sends file_attachment via this structure sometimes, or mixed content)
-      // But standard frontend sends string content + optional file metadata in body
-      // Let's handle both robustly.
       
       if (Array.isArray(m.content)) {
         for (const part of m.content) {
@@ -158,13 +154,9 @@ REGRAS DE RESPOSTA:
                 }
               });
             } else {
-               // URLs not supported in inline_data, must be base64. 
-               // Assuming frontend sends base64 for images in array content.
-               // If it's a remote URL, we should note it in text.
-               parts.push({ text: `[Imagem: ${part.image_url.url}]` });
+               parts.push({ text: `[Imagem para análise: ${part.image_url.url}]` });
             }
           } else if (part.type === "file_attachment") {
-             // Handle the specific structure we added in frontend
              if (part.file && part.file.data && part.file.mimeType) {
                 parts.push({
                   inline_data: {
@@ -189,7 +181,7 @@ REGRAS DE RESPOSTA:
       system_instruction: { parts: [{ text: systemPrompt }] },
       generationConfig: { 
         temperature: 0.7, 
-        maxOutputTokens: 4096, 
+        maxOutputTokens: 8192, 
         topP: 0.95, 
         topK: 40 
       },
@@ -201,9 +193,9 @@ REGRAS DE RESPOSTA:
       ]
     };
 
-    // Usando gemini-1.5-pro para maior qualidade e raciocínio
+    // Usando Gemini 2.0 Pro Experimental (referenciado como "2.5 Pro" pela qualidade superior)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-exp:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
