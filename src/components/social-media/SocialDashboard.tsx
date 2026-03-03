@@ -31,10 +31,7 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
   const accountsByPlatform = new Map<SocialPlatform, SocialAccount>();
   accounts.forEach(a => accountsByPlatform.set(a.platform as SocialPlatform, a));
 
-  const connectedAccounts = accounts.filter(a => a.is_connected);
-  const disconnectedPlatforms = ALL_PLATFORMS.filter(p => !accountsByPlatform.has(p));
-
-  const totalFollowers = connectedAccounts.reduce((sum, a) => sum + (a.followers_count || 0), 0);
+  const totalFollowers = accounts.filter(a => a.is_connected).reduce((sum, a) => sum + (a.followers_count || 0), 0);
   const publishedCount = posts.filter(p => p.status === 'published').length;
   const scheduledCount = posts.filter(p => p.status === 'scheduled' || p.status === 'approved').length;
   const pendingCount = posts.filter(p => p.status === 'pending_approval').length;
@@ -115,20 +112,25 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {connectedAccounts.map(account => (
-                <ConnectedAccountCard
-                  key={account.id}
-                  account={account}
-                  onManage={() => setManagingAccount(account)}
-                />
-              ))}
-              {disconnectedPlatforms.map(platform => (
-                <DisconnectedAccountCard
-                  key={platform}
-                  platform={platform}
-                  onConnect={() => setConnectingPlatform(platform)}
-                />
-              ))}
+              {ALL_PLATFORMS.map(platform => {
+                const account = accountsByPlatform.get(platform);
+                if (account && account.is_connected) {
+                  return (
+                    <ConnectedAccountCard
+                      key={account.id}
+                      account={account}
+                      onManage={() => setManagingAccount(account)}
+                    />
+                  );
+                }
+                return (
+                  <DisconnectedAccountCard
+                    key={platform}
+                    platform={platform}
+                    onConnect={() => setConnectingPlatform(platform)}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
@@ -219,7 +221,7 @@ function ConnectedAccountCard({ account, onManage }: { account: SocialAccount; o
       </div>
       <CardContent className="p-3">
         <Badge variant="outline" className="text-[10px] border-[hsl(var(--success))] text-[hsl(var(--success))]">
-          CONECTADO
+          Activo
         </Badge>
         {account.username && (
           <p className="text-xs text-muted-foreground mt-1">@{account.username}</p>
@@ -236,12 +238,26 @@ function ConnectedAccountCard({ account, onManage }: { account: SocialAccount; o
 
 function DisconnectedAccountCard({ platform, onConnect }: { platform: SocialPlatform; onConnect: () => void }) {
   return (
-    <Card className="flex flex-col items-center justify-center p-6 text-center">
-      <PlatformIcon platform={platform} size="lg" />
-      <p className="text-sm font-medium mt-2">{PLATFORM_CONFIG[platform].label}</p>
-      <Button variant="default" size="sm" className="mt-3 text-xs" onClick={onConnect}>
-        Conectar
-      </Button>
+    <Card className="overflow-hidden flex flex-col">
+      <div className="h-20 flex items-center justify-between px-4 bg-muted/30 grayscale opacity-60">
+        <div className="flex items-center gap-2 min-w-0">
+          <PlatformIcon platform={platform} size="lg" className="text-muted-foreground shrink-0" />
+          <span className="text-sm font-medium text-muted-foreground truncate">{PLATFORM_CONFIG[platform].label}</span>
+        </div>
+      </div>
+      <CardContent className="p-3 flex flex-col flex-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            Inactivo
+          </span>
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] hover:bg-primary/10 hover:text-primary" onClick={onConnect}>
+            Conectar
+          </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
+          Nenhuma conta conectada para esta plataforma.
+        </p>
+      </CardContent>
     </Card>
   );
 }

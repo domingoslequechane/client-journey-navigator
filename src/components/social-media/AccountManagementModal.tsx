@@ -54,7 +54,7 @@ export function AccountManagementModal({
               <div>
                 <span>{config.label}</span>
                 <Badge variant="outline" className="ml-2 text-[10px] border-[hsl(var(--success))] text-[hsl(var(--success))]">
-                  CONECTADO
+                  Activo
                 </Badge>
               </div>
             </DialogTitle>
