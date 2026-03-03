@@ -39,11 +39,12 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
 
       if (clientsError) throw clientsError;
 
-      // Fetch unique client IDs that have social accounts
+      // Fetch unique client IDs that have ACTIVE social accounts
       const { data: accounts, error: accountsError } = await supabase
         .from('social_accounts' as any)
         .select('client_id')
         .eq('organization_id', orgId)
+        .eq('is_connected', true)
         .not('client_id', 'is', null);
 
       if (accountsError) throw accountsError;
@@ -59,17 +60,36 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
   });
 
   const { clients, configuredClientIds } = clientsData;
+  
+  // Determine if the currently selected client is configured
+  const isSelectedConfigured = value !== 'all' && configuredClientIds.has(value);
 
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={className}>
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center gap-2 overflow-hidden">
+          {value === 'all' ? (
+            <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+          ) : (
+            <span 
+              className={cn(
+                "h-2 w-2 rounded-full shrink-0 transition-all duration-300",
+                isSelectedConfigured 
+                  ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" 
+                  : "bg-muted-foreground/30"
+              )} 
+            />
+          )}
           <SelectValue placeholder="Todos os clientes" />
         </div>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">Todos os clientes</SelectItem>
+        <SelectItem value="all">
+          <div className="flex items-center gap-2">
+            <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Todos os clientes</span>
+          </div>
+        </SelectItem>
         {clients.map(client => {
           const isConfigured = configuredClientIds.has(client.id);
           return (
@@ -77,10 +97,12 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
               <div className="flex items-center gap-2">
                 <span 
                   className={cn(
-                    "h-2 w-2 rounded-full shrink-0",
-                    isConfigured ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-muted-foreground/20"
+                    "h-2 w-2 rounded-full shrink-0 transition-all duration-300",
+                    isConfigured 
+                      ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" 
+                      : "bg-muted-foreground/20"
                   )} 
-                  title={isConfigured ? "Contas configuradas" : "Sem contas"}
+                  title={isConfigured ? "Canais conectados" : "Sem canais conectados"}
                 />
                 <span className="truncate">{client.company_name}</span>
               </div>
