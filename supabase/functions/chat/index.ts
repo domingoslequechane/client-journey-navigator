@@ -51,12 +51,18 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Não autorizado" }), { 
+        status: 401, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
     }
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "Configuração de IA ausente (GEMINI_API_KEY)" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Configuração de IA ausente (GEMINI_API_KEY)" }), { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
     }
 
     const body = await req.json();
@@ -88,6 +94,7 @@ REGRAS DE RESPOSTA:
 - Analiso arquivos (imagens/PDFs) com profundidade técnica, identificando oportunidades de marketing.
 - Sugiro ações práticas e imediatas baseadas na fase atual do cliente no funil.`;
 
+    // Convert messages to Gemini native format
     const contents = messages.map((m: any) => {
       const parts: any[] = [];
       if (Array.isArray(m.content)) {
@@ -96,10 +103,11 @@ REGRAS DE RESPOSTA:
             parts.push({ text: part.text });
           } else if (part.type === "image_url") {
             if (part.image_url.url.startsWith('data:')) {
-              const [mime, data] = part.image_url.url.split(',');
+              const [mimePart, data] = part.image_url.url.split(',');
+              const mimeType = mimePart.split(':')[1].split(';')[0];
               parts.push({
                 inline_data: {
-                  mime_type: mime.split(':')[1].split(';')[0],
+                  mime_type: mimeType,
                   data: data
                 }
               });
@@ -120,10 +128,15 @@ REGRAS DE RESPOSTA:
     const payload = {
       contents: contents,
       system_instruction: { parts: [{ text: systemPrompt }] },
-      generationConfig: { temperature: 0.7, maxOutputTokens: 4096, topP: 0.95, topK: 40 }
+      generationConfig: { 
+        temperature: 0.7, 
+        maxOutputTokens: 4096, 
+        topP: 0.95, 
+        topK: 40 
+      }
     };
 
-    console.log("Calling Gemini 2.5 Flash API...");
+    console.log("[chat] Calling Gemini 2.5 Flash API...");
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
@@ -136,8 +149,11 @@ REGRAS DE RESPOSTA:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", errorText);
-      return new Response(JSON.stringify({ error: "O modelo Gemini não respondeu corretamente. Verifique a cota da API." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      console.error("[chat] Gemini API error:", errorText);
+      return new Response(JSON.stringify({ error: "O modelo Gemini não respondeu corretamente. Verifique a cota da API." }), { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
     }
 
     const { readable, writable } = new TransformStream();
@@ -151,8 +167,10 @@ REGRAS DE RESPOSTA:
         while (true) {
           const { done, value } = await reader!.read();
           if (done) break;
+          
           const chunk = decoder.decode(value);
           const lines = chunk.split("\n");
+          
           for (const line of lines) {
             if (line.startsWith("data: ")) {
               try {
@@ -168,7 +186,7 @@ REGRAS DE RESPOSTA:
         }
         await writer.write(encoder.encode("data: [DONE]\n\n"));
       } catch (err) {
-        console.error("Stream error:", err);
+        console.error("[chat] Stream error:", err);
       } finally {
         writer.close();
       }
@@ -179,7 +197,7 @@ REGRAS DE RESPOSTA:
     });
 
   } catch (error: unknown) {
-    console.error("Chat error:", error);
+    console.error("[chat] Error:", error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Erro interno no servidor" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
