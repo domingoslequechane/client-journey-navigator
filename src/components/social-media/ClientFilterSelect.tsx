@@ -15,7 +15,7 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
   const { user } = useAuth();
 
   // Fetch clients and their social account status
-  const { data: clientsData = { clients: [], configuredClientIds: new Set<string>() }, isLoading } = useQuery({
+  const { data: clientsData = { clients: [], configuredClientIds: new Set<string>() } } = useQuery({
     queryKey: ['clients-with-social-status', user?.id],
     queryFn: async () => {
       if (!user) return { clients: [], configuredClientIds: new Set<string>() };
@@ -30,7 +30,6 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
 
       const orgId = profile.current_organization_id;
 
-      // Fetch all clients
       const { data: clients, error: clientsError } = await supabase
         .from('clients')
         .select('id, company_name')
@@ -39,7 +38,6 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
 
       if (clientsError) throw clientsError;
 
-      // Fetch unique client IDs that have ACTIVE social accounts
       const { data: accounts, error: accountsError } = await supabase
         .from('social_accounts')
         .select('client_id')
@@ -49,21 +47,16 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
 
       if (accountsError) throw accountsError;
 
-      // Create a set of client IDs that have at least one connected account
       const configuredClientIds = new Set<string>();
-      if (accounts && accounts.length > 0) {
+      if (accounts) {
         accounts.forEach((a: any) => {
           if (a.client_id) configuredClientIds.add(a.client_id);
         });
       }
 
-      return {
-        clients: clients || [],
-        configuredClientIds
-      };
+      return { clients: clients || [], configuredClientIds };
     },
     enabled: !!user,
-    staleTime: 0,
   });
 
   const { clients, configuredClientIds } = clientsData;
@@ -71,7 +64,8 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={className}>
-        <SelectValue placeholder="Todos os clientes" />
+        {/* Usamos um container customizado para o valor para garantir que o ícone de 'Todos' não duplique */}
+        <SelectValue placeholder="Selecionar marca" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">
@@ -92,7 +86,6 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
                       ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" 
                       : "bg-muted-foreground/20"
                   )} 
-                  title={isConfigured ? "Canais conectados" : "Sem canais conectados"}
                 />
                 <span className="truncate">{client.company_name}</span>
               </div>
