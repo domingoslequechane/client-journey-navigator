@@ -17,6 +17,9 @@ export interface SocialAccount {
   late_account_id: string | null;
   created_at: string;
   updated_at: string;
+  // Joined from clients table
+  is_social_locked?: boolean;
+  social_disconnection_count?: number;
 }
 
 type SocialAccountInsert = Omit<SocialAccount, 'id' | 'created_at' | 'updated_at'>;
@@ -42,8 +45,14 @@ export function useSocialAccounts(clientId?: string | null) {
       if (!orgId) return [];
 
       let query = supabase
-        .from('social_accounts' as any)
-        .select('*')
+        .from('social_accounts')
+        .select(`
+          *,
+          clients (
+            is_social_locked,
+            social_disconnection_count
+          )
+        `)
         .eq('organization_id', orgId)
         .order('platform');
 
@@ -53,7 +62,12 @@ export function useSocialAccounts(clientId?: string | null) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as unknown as SocialAccount[];
+
+      return (data || []).map((acc: any) => ({
+        ...acc,
+        is_social_locked: acc.clients?.is_social_locked || false,
+        social_disconnection_count: acc.clients?.social_disconnection_count || 0,
+      })) as SocialAccount[];
     },
     enabled: !!user,
   });
@@ -64,7 +78,7 @@ export function useSocialAccounts(clientId?: string | null) {
       if (!orgId) throw new Error('Organização não encontrada');
 
       const { data, error } = await supabase
-        .from('social_accounts' as any)
+        .from('social_accounts')
         .insert({ ...account, organization_id: orgId } as any)
         .select()
         .single();
@@ -74,6 +88,7 @@ export function useSocialAccounts(clientId?: string | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['usage-tracking'] });
       toast({ title: 'Conta conectada com sucesso!' });
     },
     onError: (err: any) => {
@@ -84,7 +99,7 @@ export function useSocialAccounts(clientId?: string | null) {
   const updateAccount = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<SocialAccount> & { id: string }) => {
       const { data, error } = await supabase
-        .from('social_accounts' as any)
+        .from('social_accounts')
         .update(updates as any)
         .eq('id', id)
         .select()
@@ -100,64 +115,80 @@ export function useSocialAccounts(clientId?: string | null) {
 
   const deleteAccount = useMutation({
     mutationFn: async (id: string) => {
-      // Get account info first to clean up related posts and disconnect from API
-      const { data: account } = await supabase
-        .from('social_accounts' as any)
-        .select('*')
+      // Get account info first to check lock status and clean up related posts
+      const { data: accountData, error: fetchError } = await supabase
+        .from('social_accounts')
+        .select(`
+          *,
+          clients (
+            is_social_locked
+          )
+        `)
         .eq('id', id)
         .single();
 
-      if (account) {
-        const acc = account as unknown as SocialAccount;
-        
-        // 1. Disconnect from Late.dev API if it has a late_account_id
-        if (acc.late_account_id) {
-          try {
-            await supabase.functions.invoke('social-disconnect', {
-              body: { late_account_id: acc.late_account_id },
-            });
-          } catch (err) {
-            console.error('Failed to disconnect from Late.dev API:', err);
-            // We continue to delete locally even if API call fails
-          }
+      if (fetchError || !accountData) throw new Error('Conta não encontrada');
+      
+      const acc = accountData as any;
+      
+      // Check if client is locked for disconnections
+      if (acc.clients?.is_social_locked) {
+        throw new Error('Este cliente atingiu o limite de 3 desconexões e está bloqueado.');
+      }
+
+      // 1. Disconnect from Late.dev API if it has a late_account_id
+      if (acc.late_account_id) {
+        try {
+          await supabase.functions.invoke('social-disconnect', {
+            body: { late_account_id: acc.late_account_id },
+          });
+        } catch (err) {
+          console.error('Failed to disconnect from Late.dev API:', err);
         }
+      }
 
-        // 2. Delete social_posts that only target this platform for this client
-        if (acc.client_id) {
-          const { data: relatedPosts } = await supabase
-            .from('social_posts' as any)
-            .select('id, platforms')
-            .eq('client_id', acc.client_id);
+      // 2. Delete social_posts that only target this platform for this client
+      if (acc.client_id) {
+        const { data: relatedPosts } = await supabase
+          .from('social_posts')
+          .select('id, platforms')
+          .eq('client_id', acc.client_id);
 
-          if (relatedPosts) {
-            for (const post of relatedPosts as any[]) {
-              const postPlatforms = post.platforms as string[];
-              if (postPlatforms.length === 1 && postPlatforms[0] === acc.platform) {
-                // Only platform — delete entire post
-                await supabase.from('social_posts' as any).delete().eq('id', post.id);
-              } else if (postPlatforms.includes(acc.platform)) {
-                // Remove platform from array
-                await supabase
-                  .from('social_posts' as any)
-                  .update({ platforms: postPlatforms.filter(p => p !== acc.platform) } as any)
-                  .eq('id', post.id);
-              }
+        if (relatedPosts) {
+          for (const post of relatedPosts as any[]) {
+            const postPlatforms = post.platforms as string[];
+            if (postPlatforms.length === 1 && postPlatforms[0] === acc.platform) {
+              await supabase.from('social_posts').delete().eq('id', post.id);
+            } else if (postPlatforms.includes(acc.platform)) {
+              await supabase
+                .from('social_posts')
+                .update({ platforms: postPlatforms.filter(p => p !== acc.platform) } as any)
+                .eq('id', post.id);
             }
           }
         }
       }
 
       // 3. Delete the local account record
-      const { error } = await supabase
-        .from('social_accounts' as any)
+      const { error: deleteError } = await supabase
+        .from('social_accounts')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
+
+      // 4. Increment disconnection count and handle locking via RPC
+      if (acc.client_id) {
+        const { error: rpcError } = await supabase.rpc('handle_social_disconnection', {
+          p_client_id: acc.client_id
+        });
+        if (rpcError) console.error('Error handling disconnection count:', rpcError);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['usage-tracking'] });
       toast({ title: 'Conta removida e registros apagados!' });
     },
     onError: (err: any) => {

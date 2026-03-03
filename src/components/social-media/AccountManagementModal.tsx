@@ -7,9 +7,10 @@ import { PlatformIcon } from './PlatformIcon';
 import { ConfirmActionModal } from './ConfirmActionModal';
 import { type SocialAccount } from '@/hooks/useSocialAccounts';
 import { type SocialPlatform, PLATFORM_CONFIG } from '@/lib/social-media-mock';
-import { Unplug, RefreshCw, User, Calendar } from 'lucide-react';
+import { Unplug, RefreshCw, User, Calendar, Lock, AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface AccountManagementModalProps {
   open: boolean;
@@ -34,6 +35,8 @@ export function AccountManagementModal({
 
   const platform = account.platform as SocialPlatform;
   const config = PLATFORM_CONFIG[platform];
+  const isLocked = account.is_social_locked;
+  const disconnectCount = account.social_disconnection_count || 0;
 
   const handleDisconnect = () => {
     onDisconnect(account.id);
@@ -87,8 +90,31 @@ export function AccountManagementModal({
                 <Calendar className="h-4 w-4" />
                 <span>Conectado em {format(parseISO(account.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
               </div>
+            </div>
 
+            {/* Disconnection Limit Info */}
+            <div className={cn(
+              "p-3 rounded-lg border text-xs space-y-2",
+              isLocked ? "bg-destructive/5 border-destructive/20" : "bg-muted/50 border-border"
+            )}>
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-muted-foreground">Desconexões realizadas:</span>
+                <Badge variant={isLocked ? "destructive" : "outline"} className="text-[10px]">
+                  {disconnectCount} / 3
+                </Badge>
+              </div>
               
+              {isLocked ? (
+                <div className="flex items-start gap-2 text-destructive">
+                  <Lock className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  <p>Limite de desconexões atingido. Esta conta não pode mais ser removida para liberar o slot de cliente.</p>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  <p>Você pode desconectar contas até 3 vezes por cliente. Após isso, o slot ficará travado.</p>
+                </div>
+              )}
             </div>
 
             <Separator />
@@ -107,11 +133,15 @@ export function AccountManagementModal({
 
               <Button
                 variant="outline"
-                className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+                className={cn(
+                  "w-full justify-start gap-3",
+                  !isLocked && "text-destructive hover:text-destructive hover:bg-destructive/10"
+                )}
                 onClick={() => setConfirmDisconnect(true)}
+                disabled={isLocked}
               >
-                <Unplug className="h-4 w-4" />
-                Desconectar conta
+                {isLocked ? <Lock className="h-4 w-4" /> : <Unplug className="h-4 w-4" />}
+                {isLocked ? "Desconexão bloqueada" : "Desconectar conta"}
               </Button>
             </div>
           </div>
@@ -122,7 +152,7 @@ export function AccountManagementModal({
         open={confirmDisconnect}
         onOpenChange={setConfirmDisconnect}
         title="Desconectar conta"
-        description={`Tem certeza que deseja desconectar a conta "${account.account_name}" do ${config.label}? Você não poderá mais publicar ou agendar posts para esta conta até reconectá-la.`}
+        description={`Tem certeza que deseja desconectar a conta "${account.account_name}" do ${config.label}? Esta ação contará como uma das 3 desconexões permitidas para este cliente.`}
         confirmLabel="Desconectar"
         variant="destructive"
         onConfirm={handleDisconnect}
