@@ -334,21 +334,22 @@ export function useApprovalPost(token?: string) {
     queryKey: ['approval-post', token],
     queryFn: async () => {
       if (!token) return null;
-      const { data, error } = await supabase
-        .from('social_posts' as any)
-        .select('*, clients!social_posts_client_id_fkey(company_name)')
-        .eq('approval_token', token)
-        .single();
+      
+      // Usar RPC para buscar o post de forma segura via token
+      const { data, error } = await supabase.rpc('get_social_post_by_token', {
+        p_token: token
+      });
 
       if (error) throw error;
       
       const row = data as any;
+      if (!row) return null;
+
       return {
         ...row,
         media_urls: Array.isArray(row.media_urls) ? row.media_urls : [],
         platforms: Array.isArray(row.platforms) ? row.platforms : [],
         hashtags: Array.isArray(row.hashtags) ? row.hashtags : [],
-        client_name: row.clients?.company_name || null,
       };
     },
     enabled: !!token,
@@ -357,14 +358,13 @@ export function useApprovalPost(token?: string) {
   const approvePost = useMutation({
     mutationFn: async (approverName: string) => {
       if (!token) throw new Error('Token missing');
-      const { error } = await supabase
-        .from('social_posts' as any)
-        .update({
-          status: 'approved',
-          approved_by: approverName,
-          approved_at: new Date().toISOString(),
-        } as any)
-        .eq('approval_token', token);
+      
+      // Usar RPC para aprovar o post de forma segura via token
+      const { error } = await supabase.rpc('respond_to_social_post_approval', {
+        p_token: token,
+        p_status: 'approved',
+        p_approver_name: approverName
+      });
 
       if (error) throw error;
     },
@@ -376,15 +376,14 @@ export function useApprovalPost(token?: string) {
   const rejectPost = useMutation({
     mutationFn: async ({ reason, approverName }: { reason: string; approverName: string }) => {
       if (!token) throw new Error('Token missing');
-      const { error } = await supabase
-        .from('social_posts' as any)
-        .update({
-          status: 'rejected',
-          rejection_reason: reason,
-          approved_by: approverName,
-          approved_at: new Date().toISOString(),
-        } as any)
-        .eq('approval_token', token);
+      
+      // Usar RPC para rejeitar o post de forma segura via token
+      const { error } = await supabase.rpc('respond_to_social_post_approval', {
+        p_token: token,
+        p_status: 'rejected',
+        p_approver_name: approverName,
+        p_rejection_reason: reason
+      });
 
       if (error) throw error;
     },
