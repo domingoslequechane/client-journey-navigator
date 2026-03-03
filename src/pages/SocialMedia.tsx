@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle } from 'lucide-react';
+import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +22,7 @@ import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'inbox' | 'reports';
 
@@ -51,7 +52,7 @@ export default function SocialMedia() {
   const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval, publishPost, syncPosts, refetch: refetchPosts } = useSocialPosts();
   const { accounts, syncAccounts, connectPlatform, refetch: refetchAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
   const { unreadCount, refetch: refetchMessages } = useSocialMessages(selectedClient !== 'all' ? selectedClient : undefined);
-  const { limits, usage } = usePlanLimits();
+  const { limits, usage, canAddSocialAccount } = usePlanLimits();
 
   const [connectGuardOpen, setConnectGuardOpen] = useState(false);
   const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);
@@ -194,6 +195,8 @@ export default function SocialMedia() {
   const publishedCount = clientPosts.filter(p => p.status === 'published').length;
   const pendingCount = clientPosts.filter(p => p.status === 'pending_approval').length;
 
+  const socialUsagePercent = limits.maxSocialAccounts ? (usage.socialAccountsCount / limits.maxSocialAccounts) * 100 : 0;
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
@@ -205,13 +208,26 @@ export default function SocialMedia() {
                 <Share2 className="h-6 w-6 text-primary" />
                 Social Media
               </div>
-              <Badge variant="outline" className="font-mono">
-                Contas: {usage.socialAccountsCount}/{limits.maxSocialAccounts ?? 'Ilimitado'}
-              </Badge>
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               Gerencie e agende posts para suas redes sociais
             </p>
+          </div>
+
+          {/* Usage Indicator */}
+          <div className="w-full sm:w-64 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground font-medium">Contas Conectadas</span>
+              <span className={cn("font-bold", !canAddSocialAccount ? "text-destructive" : "text-primary")}>
+                {usage.socialAccountsCount} / {limits.maxSocialAccounts ?? '∞'}
+              </span>
+            </div>
+            <Progress value={socialUsagePercent} className={cn("h-1.5", !canAddSocialAccount && "bg-destructive/20")} />
+            {!canAddSocialAccount && (
+              <p className="text-[10px] text-destructive flex items-center gap-1">
+                <Lock className="h-2.5 w-2.5" /> Limite do plano atingido
+              </p>
+            )}
           </div>
         </div>
 
