@@ -34,7 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if requesting user has the 'proprietor' role via user_roles table
+    // Verifica se o utilizador que faz o pedido tem a role 'proprietor'
     const { data: hasProprietorRole } = await supabaseAdmin
       .from("user_roles")
       .select("id")
@@ -67,11 +67,35 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { data: userToDelete } = await supabaseAdmin
+    // Obtém o perfil do requerente para saber a sua organização
+    const { data: requesterProfile } = await supabaseAdmin
       .from("profiles")
-      .select("full_name, email")
-      .eq("id", userId)
+      .select("organization_id")
+      .eq("id", requestingUser.id)
       .single();
+
+    // Obtém o perfil do utilizador a eliminar
+    const { data: userToDelete, error: fetchError } = await supabaseAdmin
+      .from("profiles")
+      .select("full_name, email, organization_id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (fetchError || !userToDelete) {
+      return new Response(
+        JSON.stringify({ error: "Usuário não encontrado" }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // VERIFICAÇÃO CRÍTICA DE SEGURANÇA: Garante que o utilizador alvo pertence à mesma organização
+    if (userToDelete.organization_id !== requesterProfile?.organization_id) {
+      console.error(`ALERTA DE SEGURANÇA: Utilizador ${requestingUser.id} tentou eliminar utilizador ${userId} de uma organização diferente.`);
+      return new Response(
+        JSON.stringify({ error: "Você não tem permissão para remover este usuário" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
     if (deleteError) {
@@ -81,14 +105,21 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`User ${userId} deleted by proprietor ${requestingUser.id}`);
+    console.log(`Utilizador ${userId} eliminado pelo proprietário ${requestingUser.id}`);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Usuário removido com sucesso", deletedUser: userToDelete }),
+      JSON.stringify({ 
+        success: true, 
+        message: "Usuário removido com sucesso", 
+        deletedUser: { 
+          full_name: userToDelete.full_name, 
+          email: userToDelete.email 
+        } 
+      }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
-    console.error("Error in delete-user function:", error);
+    console.error("Erro na função delete-user:", error);
     return new Response(
       JSON.stringify({ error: "Erro interno do servidor" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
