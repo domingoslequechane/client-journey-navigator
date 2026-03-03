@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ALL_PLATFORMS } from '@/lib/social-media-mock';
 
 interface ClientFilterSelectProps {
   value: string;
@@ -43,6 +44,7 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
         .select('client_id')
         .eq('organization_id', orgId)
         .eq('is_connected', true)
+        .in('platform', ALL_PLATFORMS)
         .not('client_id', 'is', null);
 
       if (accountsError) throw accountsError;

@@ -29,7 +29,10 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
   const [isResetting, setIsResetting] = useState(false);
 
   const accountsByPlatform = new Map<SocialPlatform, SocialAccount>();
-  accounts.forEach(a => accountsByPlatform.set(a.platform as SocialPlatform, a));
+  // Ordenamos para que as contas conectadas venham por último e sobrescrevam as desconectadas no Map
+  [...accounts]
+    .sort((a, b) => (a.is_connected === b.is_connected ? 0 : a.is_connected ? 1 : -1))
+    .forEach(a => accountsByPlatform.set(a.platform as SocialPlatform, a));
 
   const totalFollowers = accounts.filter(a => a.is_connected).reduce((sum, a) => sum + (a.followers_count || 0), 0);
   const publishedCount = posts.filter(p => p.status === 'published').length;
@@ -163,7 +166,7 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
               <p className="text-2xl font-bold text-[hsl(var(--warning))]">{pendingCount}</p>
               <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
             </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
 
