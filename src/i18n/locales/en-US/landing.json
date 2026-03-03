@@ -117,19 +117,19 @@
       "name": "Lance",
       "subtitle": "For the Small Agency",
       "tagline": "Professionalize your prospecting and closing.",
-      "features": ["15 active clients", "Contracts & invoices", "500 AI messages", "Full Academy"]
+      "features": ["5 active clients", "Contracts & invoices", "500 AI messages", "Full Academy"]
     },
     "pro": {
       "name": "Bow",
       "subtitle": "For the Growing Agency",
       "tagline": "Total automation for those who won't stop.",
-      "features": ["50 active clients", "All documents", "1200 AI messages", "Academy + AI"]
+      "features": ["15 active clients", "All documents", "1200 AI messages", "Academy + AI"]
     },
     "agency": {
       "name": "Catapult",
       "subtitle": "For the Consolidated Agency",
       "tagline": "Total power to dominate the market.",
-      "features": ["Unlimited clients", "Unlimited docs", "Unlimited AI", "Priority support"]
+      "features": ["30 active clients", "Unlimited docs", "Unlimited AI", "Priority support"]
     }
   },
   "faq": {

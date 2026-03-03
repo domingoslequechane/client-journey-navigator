@@ -23,7 +23,7 @@ const plans = [
     period: '/mês',
     description: 'Para agências em crescimento',
     features: [
-      '15 Marcas (Clientes)',
+      '5 Marcas (Clientes)',
       'Redes Sociais Ilimitadas',
       '5 Créditos Studio AI / dia',
       'Finanças + Editorial + Link23',
@@ -33,11 +33,11 @@ const plans = [
   {
     key: 'pro' as const,
     name: 'Arco',
-    price: 39,
+    price: 54,
     period: '/mês',
     description: 'Para agências estabelecidas',
     features: [
-      '25 Marcas (Clientes)',
+      '15 Marcas (Clientes)',
       '15 Créditos Studio AI / dia',
       'Tudo + Inbox/Analytics',
       'Suporte Prioritário',
@@ -48,11 +48,11 @@ const plans = [
   {
     key: 'agency' as const,
     name: 'Catapulta',
-    price: 79,
+    price: 99,
     period: '/mês',
     description: 'Para grandes agências',
     features: [
-      'Marcas Ilimitadas',
+      '30 Marcas (Clientes)',
       '30 Créditos Studio AI / dia',
       'Tudo + Suporte VIP',
       'Todos os Módulos',

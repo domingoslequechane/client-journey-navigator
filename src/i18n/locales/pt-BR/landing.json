@@ -24,7 +24,7 @@
   "problem": {
     "title": "Você é dono de agência ou",
     "titleHighlight": "escravo do WhatsApp?",
-    "description1": "Se você passa o dia respondendo leads, cobrando equipe e tentando entender planilhas que nunca batem, você não tem uma empresa, você tem um emprego exaustivo.",
+    "description1": "Si você passa o dia respondendo leads, cobrando equipe e tentando entender planilhas que nunca batem, você não tem uma empresa, você tem um emprego exaustivo.",
     "description2": "O problema não é sua equipe ou seus leads.",
     "description2Highlight": "É a falta de um processo que trabalhe por você."
   },
@@ -117,19 +117,19 @@
       "name": "Lança",
       "subtitle": "Para a Pequena Agência",
       "tagline": "Profissionalize sua prospecção e fechamento.",
-      "features": ["15 clientes ativos", "Contratos e faturas", "500 msgs IA", "Academia completa"]
+      "features": ["5 clientes ativos", "Contratos e faturas", "500 msgs IA", "Academia completa"]
     },
     "pro": {
       "name": "Arco",
       "subtitle": "Para a Agência em Crescimento",
       "tagline": "Automação total para quem não quer parar.",
-      "features": ["50 clientes ativos", "Todos os documentos", "1200 msgs IA", "Academia + IA"]
+      "features": ["15 clientes ativos", "Todos os documentos", "1200 msgs IA", "Academia + IA"]
     },
     "agency": {
       "name": "Catapulta",
       "subtitle": "Para a Agência Consolidada",
       "tagline": "Poder total para dominar o mercado.",
-      "features": ["Clientes ilimitados", "Docs ilimitados", "IA ilimitada", "Suporte prioritário"]
+      "features": ["30 clientes ativos", "Docs ilimitados", "IA ilimitada", "Suporte prioritário"]
     }
   },
   "faq": {
@@ -157,7 +157,7 @@
     "solution": "O Método",
     "plans": "Planos",
     "faq": "FAQ",
-    "login": "Login"
+    "login": "Entrar"
   },
   "features": {
     "title": "A estrutura para sua escala",

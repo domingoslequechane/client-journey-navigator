@@ -75,7 +75,7 @@ interface UsePlanLimitsReturn {
 }
 
 const DEFAULT_LIMITS: PlanLimits = {
-  maxClients: 3,
+  maxClients: 5,
   maxContractsPerMonth: 3,
   maxAIMessagesPerMonth: 90,
   maxTeamMembers: 1,
