@@ -40,57 +40,23 @@ interface Usage {
   linkPagesCount: number;
 }
 
-interface UsePlanLimitsReturn {
-  loading: boolean;
-  planType: PlanType;
-  limits: PlanLimits;
-  usage: Usage;
-  canAddClient: boolean;
-  canGenerateContract: boolean;
-  canAccessAI: boolean;
-  canInviteTeamMember: boolean;
-  canExportData: boolean;
-  canAddContractTemplate: boolean;
-  canAccessFinance: boolean;
-  canAccessStudio: boolean;
-  canAccessLinkTree: boolean;
-  canAccessEditorial: boolean;
-  canAccessSocialMedia: boolean;
-  canAccessSocialInbox: boolean;
-  canAddSocialAccount: boolean;
-  canPublishSocialPost: boolean;
-  canAddLinkPage: boolean;
-  canGenerateFlyer: boolean;
-  remainingClients: number | null;
-  remainingContracts: number | null;
-  remainingAIMessages: number | null;
-  remainingTeamMembers: number | null;
-  remainingContractTemplates: number | null;
-  remainingSocialAccounts: number | null;
-  remainingSocialPosts: number | null;
-  remainingLinkPages: number | null;
-  remainingStudioGenerations: number | null;
-  incrementUsage: (featureType: 'contracts' | 'ai_messages' | 'studio_generations' | 'social_posts') => Promise<void>;
-  refetch: () => Promise<void>;
-}
-
 const DEFAULT_LIMITS: PlanLimits = {
   maxClients: 5,
-  maxContractsPerMonth: 3,
-  maxAIMessagesPerMonth: 90,
-  maxTeamMembers: 1,
-  maxContractTemplates: 1,
+  maxContractsPerMonth: 15,
+  maxAIMessagesPerMonth: 500,
+  maxTeamMembers: 5,
+  maxContractTemplates: 3,
   maxStudioGenerations: 150,
   dailyStudioLimit: 5,
-  maxSocialAccounts: 0,
-  maxSocialPostsPerMonth: 0,
-  maxLinkPages: 0,
-  can_export_data: false,
-  has_finance_module: false,
+  maxSocialAccounts: 5,
+  maxSocialPostsPerMonth: 100,
+  maxLinkPages: 5,
+  can_export_data: true,
+  has_finance_module: true,
   has_studio_module: true,
-  has_linktree_module: false,
-  has_editorial_module: false,
-  has_social_module: false,
+  has_linktree_module: true,
+  has_editorial_module: true,
+  has_social_module: true,
   has_social_inbox: false,
 };
 
@@ -285,4 +251,38 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     incrementUsage,
     refetch: fetchData,
   };
+}
+
+export interface UsePlanLimitsReturn {
+  loading: boolean;
+  planType: PlanType;
+  limits: PlanLimits;
+  usage: Usage;
+  canAddClient: boolean;
+  canGenerateContract: boolean;
+  canAccessAI: boolean;
+  canInviteTeamMember: boolean;
+  canExportData: boolean;
+  canAddContractTemplate: boolean;
+  canAccessFinance: boolean;
+  canAccessStudio: boolean;
+  canAccessLinkTree: boolean;
+  canAccessEditorial: boolean;
+  canAccessSocialMedia: boolean;
+  canAccessSocialInbox: boolean;
+  canAddSocialAccount: boolean;
+  canPublishSocialPost: boolean;
+  canAddLinkPage: boolean;
+  canGenerateFlyer: boolean;
+  remainingClients: number | null;
+  remainingContracts: number | null;
+  remainingAIMessages: number | null;
+  remainingTeamMembers: number | null;
+  remainingContractTemplates: number | null;
+  remainingSocialAccounts: number | null;
+  remainingSocialPosts: number | null;
+  remainingLinkPages: number | null;
+  remainingStudioGenerations: number | null;
+  incrementUsage: (featureType: 'contracts' | 'ai_messages' | 'studio_generations' | 'social_posts') => Promise<void>;
+  refetch: () => Promise<void>;
 }
