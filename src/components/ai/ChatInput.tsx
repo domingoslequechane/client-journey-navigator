@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from 'react';
+import React, { useRef, forwardRef } from 'react';
 import { Paperclip, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
@@ -15,7 +15,7 @@ interface ChatInputProps {
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const ChatInput = ({
+export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(({
   input,
   setInput,
   isLoading,
@@ -23,9 +23,8 @@ export const ChatInput = ({
   isUploading,
   onSend,
   onFileUpload
-}: ChatInputProps) => {
+}, ref) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -60,7 +59,7 @@ export const ChatInput = ({
           )}
         </Button>
         <AutoResizeTextarea
-          ref={inputRef}
+          ref={ref}
           placeholder="Escreva sua mensagem..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -80,4 +79,6 @@ export const ChatInput = ({
       </div>
     </div>
   );
-};
+});
+
+ChatInput.displayName = "ChatInput";

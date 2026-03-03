@@ -80,6 +80,7 @@ export default function AIAssistant() {
   const [showScrollButton, setShowScrollButton] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const sendingRef = useRef(false);
   const { checkRateLimit, isRateLimited } = useRateLimit({ maxRequests: 15, windowMs: 60000 });
 
@@ -145,6 +146,16 @@ export default function AIAssistant() {
       }]);
     }
   }, [selectedClient?.conversation_id, conversationMessages, selectedClientId]);
+
+  // Focus input when chat opens or finishes loading
+  useEffect(() => {
+    if (selectedClientId && !isLoadingMessages && !isLoading) {
+      // Small timeout to ensure DOM is fully rendered and animations are done
+      setTimeout(() => {
+        chatInputRef.current?.focus();
+      }, 300);
+    }
+  }, [selectedClientId, isLoadingMessages, isLoading]);
 
   const scrollToBottom = useCallback((smooth = true) => {
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
@@ -324,6 +335,11 @@ export default function AIAssistant() {
       });
 
       toast({ title: 'Arquivo anexado', description: file.name });
+      
+      // Focus back on input after file upload
+      setTimeout(() => {
+        chatInputRef.current?.focus();
+      }, 100);
     } catch (error) {
       console.error('Upload error:', error);
       toast({ title: 'Erro no upload', description: 'Não foi possível enviar o arquivo', variant: 'destructive' });
@@ -357,6 +373,12 @@ export default function AIAssistant() {
     const fileToSend = pendingFile;
     setInput('');
     setPendingFile(null);
+    
+    // Focus immediately after clearing input for sending
+    setTimeout(() => {
+      chatInputRef.current?.focus();
+    }, 0);
+    
     setIsLoading(true);
 
     await streamChat(messageText, fileToSend || undefined);
@@ -473,6 +495,7 @@ export default function AIAssistant() {
             <FilePreview file={pendingFile} onRemove={() => setPendingFile(null)} />
 
             <ChatInput 
+              ref={chatInputRef}
               input={input}
               setInput={setInput}
               isLoading={isLoading}
