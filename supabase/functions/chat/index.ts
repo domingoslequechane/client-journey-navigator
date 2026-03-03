@@ -174,7 +174,14 @@ REGRAS DE RESPOSTA:
         maxOutputTokens: 4096, 
         topP: 0.95, 
         topK: 40 
-      }
+      },
+      // Adicionado configurações de segurança para evitar bloqueios falsos positivos
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+      ]
     };
 
     // Usando gemini-1.5-flash que é o modelo estável atual com suporte a multimodal
@@ -190,8 +197,20 @@ REGRAS DE RESPOSTA:
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[chat] Gemini API error:", errorText);
-      return new Response(JSON.stringify({ error: "O modelo Gemini não respondeu corretamente. Verifique a cota da API." }), { 
-        status: 500, 
+      
+      let friendlyError = "A IA encontrou um problema técnico.";
+      try {
+        const errObj = JSON.parse(errorText);
+        if (errObj.error) {
+            // Retorna a mensagem real da API para facilitar o debug do usuário
+            friendlyError = `Erro IA (${errObj.error.code || response.status}): ${errObj.error.message}`;
+        }
+      } catch {
+        friendlyError = `Erro técnico (${response.status}): ${errorText.substring(0, 100)}`;
+      }
+
+      return new Response(JSON.stringify({ error: friendlyError }), { 
+        status: response.status, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
