@@ -136,7 +136,7 @@ export function Sidebar() {
       { name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: true, locked: !canAccessEditorial, requiredPlan: 'Lança' },
       { name: 'Social Media', href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: true, locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true, locked: false, requiredPlan: '' },
-      { name: 'Studio AI', href: '/app/studio', icon: Workflow, tutorialId: 'sidebar-studio', show: true, locked: !canAccessStudio, requiredPlan: 'Lança' },
+      { name: 'Studio AI', href: '/app/studio', icon: Workflow, tutorialId: 'sidebar-studio', show: true, locked: !canAccessStudio, requiredPlan: 'Lança', beta: true },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true, locked: false, requiredPlan: '' },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients, locked: false, requiredPlan: '' },
       { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam, locked: false, requiredPlan: '' },
@@ -203,7 +203,16 @@ export function Sidebar() {
         )}
       >
         <item.icon className="h-5 w-5 shrink-0" />
-        {!collapsed && item.name}
+        {!collapsed && (
+          <div className="flex flex-1 items-center justify-between">
+            <span>{item.name}</span>
+            {item.beta && (
+              <span className="ml-2 rounded-full bg-indigo-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-500 border border-indigo-500/20">
+                Beta
+              </span>
+            )}
+          </div>
+        )}
       </Link>
     );
 

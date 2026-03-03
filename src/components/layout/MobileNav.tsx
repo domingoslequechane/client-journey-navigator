@@ -117,7 +117,7 @@ export function MobileNav() {
     items.push({ name: 'Social Media', href: '/app/social-media', icon: Share2, show: true });
 
     // Add Studio AI to more menu
-    items.push({ name: 'Studio AI', href: '/app/studio', icon: Sparkles, show: true });
+    items.push({ name: 'Studio AI', href: '/app/studio', icon: Workflow, show: true, badge: 'Beta' });
 
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },
@@ -241,7 +241,7 @@ export function MobileNav() {
                   <item.icon className="h-5 w-5 flex-shrink-0" />
                   <span className="font-medium flex-1">{item.name}</span>
                   {item.badge && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase font-semibold">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 uppercase font-semibold">
                       {item.badge}
                     </span>
                   )}
