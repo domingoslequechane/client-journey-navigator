@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { PlatformIcon } from './PlatformIcon';
 import { type SocialPlatform, PLATFORM_CONFIG } from '@/lib/social-media-mock';
-import { CheckCircle2, ExternalLink, Loader2, Building2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ExternalLink, Loader2 } from 'lucide-react';
 
 interface ConnectPlatformModalProps {
   open: boolean;
@@ -15,8 +12,6 @@ interface ConnectPlatformModalProps {
   onConnect: (platform: SocialPlatform, viaMeta?: boolean) => void;
   isConnecting?: boolean;
 }
-
-const META_PLATFORMS: SocialPlatform[] = ['instagram', 'facebook'];
 
 const PLATFORM_INSTRUCTIONS: Partial<Record<SocialPlatform, { steps: string[] }>> = {
   instagram: {
@@ -84,25 +79,17 @@ export function ConnectPlatformModal({
   onConnect,
   isConnecting,
 }: ConnectPlatformModalProps) {
-  const [connectMode, setConnectMode] = useState<'direct' | 'meta' | null>(null);
-
   if (!platform) return null;
 
   const config = PLATFORM_CONFIG[platform];
   const instructions = PLATFORM_INSTRUCTIONS[platform];
-  const isMetaPlatform = META_PLATFORMS.includes(platform);
 
   const handleConnect = () => {
-    onConnect(platform, connectMode === 'meta');
-  };
-
-  const handleClose = (v: boolean) => {
-    if (!v) setConnectMode(null);
-    onOpenChange(v);
+    onConnect(platform, false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
@@ -112,52 +99,8 @@ export function ConnectPlatformModal({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Connection mode for Meta platforms */}
-          {isMetaPlatform && !connectMode && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Escolha como deseja conectar:</p>
-              <button
-                className="w-full flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 transition-colors text-left"
-                onClick={() => setConnectMode('direct')}
-              >
-                <PlatformIcon platform={platform} size="lg" />
-                <div>
-                  <p className="font-medium text-sm">Conexão direta</p>
-                  <p className="text-xs text-muted-foreground">Conecte uma única conta do {config.label}</p>
-                </div>
-              </button>
-              <button
-                className="w-full flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 transition-colors text-left"
-                onClick={() => setConnectMode('meta')}
-              >
-                <div className="w-10 h-10 rounded-full bg-[hsl(220,70%,50%)]/10 flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-[hsl(220,70%,50%)]" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">Entrar com Meta Business Suite</p>
-                  <p className="text-xs text-muted-foreground">
-                    Conecte todas as páginas e contas de uma BM do Facebook
-                  </p>
-                </div>
-              </button>
-            </div>
-          )}
-
-          {/* Instructions (shown after selecting mode or for non-meta platforms) */}
-          {(!isMetaPlatform || connectMode) && instructions && (
+          {instructions && (
             <div className="space-y-4">
-              {connectMode === 'meta' && (
-                <div className="rounded-lg bg-[hsl(220,70%,50%)]/5 border border-[hsl(220,70%,50%)]/20 p-3">
-                  <p className="text-sm font-medium flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-[hsl(220,70%,50%)]" />
-                    Meta Business Suite
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Ao conectar via Meta Business Suite, todas as páginas e contas da sua BM serão importadas automaticamente.
-                  </p>
-                </div>
-              )}
-
               {instructions.steps.map((step, i) => (
                 <div key={i} className="flex gap-3">
                   <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
@@ -173,25 +116,17 @@ export function ConnectPlatformModal({
         </div>
 
         <DialogFooter className="flex-row justify-between sm:justify-between">
-          <Button variant="ghost" onClick={() => {
-            if (connectMode && isMetaPlatform) {
-              setConnectMode(null);
-            } else {
-              handleClose(false);
-            }
-          }}>
-            {connectMode && isMetaPlatform ? 'Voltar' : 'Cancelar'}
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancelar
           </Button>
-          {(!isMetaPlatform || connectMode) && (
-            <Button onClick={handleConnect} disabled={isConnecting} className="gap-2">
-              {isConnecting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ExternalLink className="h-4 w-4" />
-              )}
-              Continuar
-            </Button>
-          )}
+          <Button onClick={handleConnect} disabled={isConnecting} className="gap-2">
+            {isConnecting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ExternalLink className="h-4 w-4" />
+            )}
+            Continuar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
