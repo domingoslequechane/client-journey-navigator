@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,25 @@ export function AdminLayout() {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  const handleScroll = () => {
+    if (navRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = navRef.current;
+      setShowScrollIndicator(scrollHeight > clientHeight && scrollTop + clientHeight < scrollHeight - 5);
+    }
+  };
+
+  useEffect(() => {
+    handleScroll();
+    window.addEventListener('resize', handleScroll);
+    const timeoutId = setTimeout(handleScroll, 350);
+    return () => {
+      window.removeEventListener('resize', handleScroll);
+      clearTimeout(timeoutId);
+    };
+  }, [collapsed]);
 
   useEffect(() => {
     localStorage.setItem(ADMIN_SIDEBAR_COLLAPSED_KEY, String(collapsed));
@@ -150,13 +170,24 @@ export function AdminLayout() {
             {!collapsed && <span className="font-bold text-xl">Admin</span>}
           </div>
           
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-none">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href ||
-                (item.href !== '/admin' && location.pathname.startsWith(item.href));
-              return <NavItem key={item.name} item={item} isActive={isActive} />;
-            })}
-          </nav>
+          <div className="flex-1 relative flex flex-col overflow-hidden">
+            <nav
+              ref={navRef}
+              onScroll={handleScroll}
+              className="flex-1 px-2 py-4 space-y-1 overflow-y-auto custom-scrollbar"
+            >
+              {navigation.map((item) => {
+                const isActive = location.pathname === item.href ||
+                  (item.href !== '/admin' && location.pathname.startsWith(item.href));
+                return <NavItem key={item.name} item={item} isActive={isActive} />;
+              })}
+            </nav>
+            {showScrollIndicator && (
+              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-card to-transparent pointer-events-none flex items-end justify-center pb-2">
+                <ChevronDown className="h-4 w-4 text-muted-foreground animate-bounce" />
+              </div>
+            )}
+          </div>
 
           <div className="p-2 border-t border-border space-y-1 shrink-0">
             {/* Back to App */}

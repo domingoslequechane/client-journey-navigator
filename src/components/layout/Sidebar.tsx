@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   CreditCard,
   HeadphonesIcon,
   Compass,
@@ -125,6 +126,16 @@ export function Sidebar() {
   }, [user]);
 
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  const handleScroll = () => {
+    if (navRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = navRef.current;
+      // Show indicator if there's more than 5px of content below
+      setShowScrollIndicator(scrollHeight > clientHeight && scrollTop + clientHeight < scrollHeight - 5);
+    }
+  };
 
   // Filter navigation items based on role + module access
   const navigation = useMemo(() => {
@@ -143,6 +154,17 @@ export function Sidebar() {
     ];
     return allItems.filter(item => item.show);
   }, [canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, canSeeFinance, canAccessFinance, canAccessStudio, canAccessLinkTree, canAccessEditorial, canAccessSocialMedia, t]);
+
+  useEffect(() => {
+    handleScroll();
+    // Re-check on window resize or when sidebar collapses/expands
+    window.addEventListener('resize', handleScroll);
+    const timeoutId = setTimeout(handleScroll, 350); // Wait for transition to finish
+    return () => {
+      window.removeEventListener('resize', handleScroll);
+      clearTimeout(timeoutId);
+    };
+  }, [collapsed, navigation]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -277,14 +299,25 @@ export function Sidebar() {
           )
         )}
         
-        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-none">
-          {navigation.map((item) => {
-             const isActive = item.href === '/app'
-               ? location.pathname === '/app'
-               : location.pathname.startsWith(item.href);
-            return <NavItem key={item.name} item={item} isActive={isActive} />;
-          })}
-        </nav>
+        <div className="flex-1 relative flex flex-col overflow-hidden">
+          <nav
+            ref={navRef}
+            onScroll={handleScroll}
+            className="flex-1 px-2 py-4 space-y-1 overflow-y-auto custom-scrollbar"
+          >
+            {navigation.map((item) => {
+               const isActive = item.href === '/app'
+                 ? location.pathname === '/app'
+                 : location.pathname.startsWith(item.href);
+              return <NavItem key={item.name} item={item} isActive={isActive} />;
+            })}
+          </nav>
+          {showScrollIndicator && (
+            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-card to-transparent pointer-events-none flex items-end justify-center pb-2">
+              <ChevronDown className="h-4 w-4 text-muted-foreground animate-bounce" />
+            </div>
+          )}
+        </div>
 
         <div className="p-2 border-t border-border space-y-1 shrink-0">
           {/* Theme Toggle & Language Selector */}
