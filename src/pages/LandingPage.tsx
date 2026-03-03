@@ -71,30 +71,30 @@ const planConfig = {
     image: planLanca,
     color: 'hsl(217, 91%, 60%)',
     bgColor: 'hsl(217, 91%, 60%, 0.1)',
-    features: ['15 clientes ativos', 'Funil ilimitado', '500 msgs IA', '5 usuários'],
+    features: ['5 clientes ativos', 'Funil ilimitado', '500 msgs IA', '5 usuários'],
   },
   pro: {
     name: 'Arco',
     subtitle: 'Profissional',
-    price: 39,
+    price: 54,
     originalPrice: null,
     tagline: 'Alcance resultados com precisão!',
     image: planArco,
     color: 'hsl(270, 91%, 65%)',
     bgColor: 'hsl(270, 91%, 65%, 0.1)',
-    features: ['50 clientes ativos', 'Funil ilimitado', '1200 msgs IA', '10 usuários'],
+    features: ['15 clientes ativos', 'Funil ilimitado', '1200 msgs IA', '10 usuários'],
     popular: true,
   },
   agency: {
     name: 'Catapulta',
     subtitle: 'Agência',
-    price: 79,
+    price: 99,
     originalPrice: null,
     tagline: 'Imponha sua agência no mercado!',
     image: planCatapulta,
     color: 'hsl(25, 95%, 53%)',
     bgColor: 'hsl(25, 95%, 53%, 0.1)',
-    features: ['Clientes ilimitados', 'Funil ilimitado', 'IA ilimitada', '20 usuários'],
+    features: ['30 clientes ativos', 'Funil ilimitado', 'IA ilimitada', '20 usuários'],
   },
 };
 
@@ -539,7 +539,6 @@ export default function LandingPage() {
                   <CardTitle className="text-lg">{t('features.link23.title')}</CardTitle>
                   <CardDescription>{t('features.link23.description')}</CardDescription>
                 </CardHeader>
-              </Card>
 
               {/* Social Media */}
               <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
@@ -550,7 +549,6 @@ export default function LandingPage() {
                   <CardTitle className="text-lg">{t('features.social.title')}</CardTitle>
                   <CardDescription>{t('features.social.description')}</CardDescription>
                 </CardHeader>
-              </Card>
 
               {/* QIA - Destaque */}
               <Card className="border-primary/30 bg-primary/5 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group lg:col-span-2">
@@ -593,7 +591,6 @@ export default function LandingPage() {
                   <CardTitle className="text-lg">{t('features.docs.title')}</CardTitle>
                   <CardDescription>{t('features.docs.description')}</CardDescription>
                 </CardHeader>
-              </Card>
 
               {/* Academia */}
               <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
@@ -604,7 +601,6 @@ export default function LandingPage() {
                   <CardTitle className="text-lg">{t('features.academy.title')}</CardTitle>
                   <CardDescription>{t('features.academy.description')}</CardDescription>
                 </CardHeader>
-              </Card>
             </div>
           </div>
         </div>
