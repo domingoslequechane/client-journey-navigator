@@ -89,11 +89,46 @@ Deno.serve(async (req) => {
 
     const platforms = accounts
       .filter((a: any) => a.late_account_id)
-      .map((a: any) => ({
-        platform: a.platform,
-        accountId: a.late_account_id,
-        platformSpecificData: { contentType: getPlatformContentType(a.platform, post.content_type) }
-      }));
+      .map((a: any) => {
+        const platform = a.platform;
+        const contentType = getPlatformContentType(platform, post.content_type);
+        
+        const platformSpecificData: any = { contentType };
+
+        // Add mandatory TikTok settings
+        if (platform === 'tiktok') {
+          platformSpecificData.tiktokSettings = {
+            privacy_level: "PUBLIC_TO_EVERYONE", // Default to public
+            allow_comment: true,
+            allow_duet: true,
+            allow_stitch: true,
+            content_preview_confirmed: true,
+            express_consent_given: true
+          };
+        }
+
+        // Add Instagram Reels defaults
+        if (platform === 'instagram' && contentType === 'reels') {
+          platformSpecificData.shareToFeed = true;
+        }
+
+        // Add YouTube defaults
+        if (platform === 'youtube') {
+          platformSpecificData.madeForKids = false;
+          platformSpecificData.visibility = "public";
+        }
+
+        // Add Facebook defaults
+        if (platform === 'facebook' && contentType === 'reel') {
+          platformSpecificData.title = post.content?.split('\n')[0]?.substring(0, 100) || "New Reel";
+        }
+
+        return {
+          platform,
+          accountId: a.late_account_id,
+          platformSpecificData
+        };
+      });
 
     if (platforms.length === 0) {
       return new Response(JSON.stringify({ error: "No Late.dev connected accounts found." }), {
@@ -136,9 +171,22 @@ Deno.serve(async (req) => {
 
     if (!lateRes.ok) {
       console.error("[social-publish] Late.dev publish error:", lateData);
-      await supabase.from("social_posts").update({ status: "failed", notes: `Late.dev error: ${JSON.stringify(lateData)}` }).eq("id", post_id);
-      return new Response(JSON.stringify({ error: "Failed to publish", details: lateData }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      
+      // Extract a more descriptive error if possible
+      const errorMessage = lateData.error || `Late.dev returned status ${lateRes.status}`;
+      const errorDetails = lateData.details ? `: ${JSON.stringify(lateData.details)}` : "";
+      
+      await supabase.from("social_posts").update({
+        status: "failed",
+        notes: `Late.dev error: ${errorMessage}${errorDetails}`
+      }).eq("id", post_id);
+
+      return new Response(JSON.stringify({
+        error: errorMessage,
+        details: lateData.details
+      }), {
+        status: lateRes.status >= 400 && lateRes.status < 600 ? lateRes.status : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 

@@ -277,14 +277,47 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       
       for (let i = 0; i < totalFiles; i++) {
         const file = files[i];
-        const ext = file.name.split('.').pop();
-        const path = `${crypto.randomUUID()}.${ext}`;
         
-        const { error } = await supabase.storage.from('social-media').upload(path, file);
-        if (error) throw error;
+        // Facebook 4MB limit check
+        const isFacebookSelected = currentPost.schedules.some(s =>
+          s.placements.some(p => {
+            const acc = connectedAccounts.find(a => a.id === p.accountId);
+            return acc?.platform === 'facebook';
+          })
+        );
+
+        if (isFacebookSelected && file.type.startsWith('image/') && file.size > 4 * 1024 * 1024) {
+          toast.error(`A imagem "${file.name}" excede o limite de 4MB do Facebook. Por favor, use uma imagem menor.`);
+          continue;
+        }
+
+        // Step 1: Get presigned URL from Late API via our Edge Function
+        const { data: presignData, error: presignError } = await supabase.functions.invoke('social-media-presign', {
+          body: {
+            fileName: file.name,
+            fileType: file.type
+          }
+        });
+
+        if (presignError || !presignData) {
+          throw new Error(presignError?.message || 'Falha ao obter URL de upload');
+        }
+
+        const { uploadUrl, publicUrl } = presignData;
+
+        // Step 2: Upload directly to the presigned URL (PUT request)
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error('Falha ao enviar arquivo para o servidor de mídia');
+        }
         
-        const { data: urlData } = supabase.storage.from('social-media').getPublicUrl(path);
-        newUrls.push(urlData.publicUrl);
+        // Step 3: Use the publicUrl
+        newUrls.push(publicUrl);
         
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
       }
@@ -292,12 +325,12 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       if (newUrls.length > 1) {
         setPendingFiles(newUrls);
         setShowUploadChoice(true);
-      } else {
+      } else if (newUrls.length === 1) {
         updateCurrentPost({ mediaUrls: [...currentPost.mediaUrls, ...newUrls] });
       }
     } catch (err: any) {
       console.error('Upload error:', err);
-      toast.error('Erro ao carregar arquivos.');
+      toast.error(err.message || 'Erro ao carregar arquivos.');
     } finally {
       setTimeout(() => {
         setUploading(false);
