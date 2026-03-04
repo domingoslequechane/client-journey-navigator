@@ -16,6 +16,8 @@ const VerifyOTPSchema = z.object({
   fullName: z.string().min(2, "Nome muito curto").max(100, "Nome muito longo").trim(),
 });
 
+const MAX_ATTEMPTS = 5;
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -27,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Validate input with Zod
     const validationResult = VerifyOTPSchema.safeParse(body);
     if (!validationResult.success) {
-      console.error("Validation error:", validationResult.error.errors);
+      console.error("[verify-otp] Validation error:", validationResult.error.errors);
       return new Response(
         JSON.stringify({ 
           error: "Dados inválidos", 
@@ -44,17 +46,17 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get OTP record
+    // Get OTP record by email first to check attempts
     const { data: otpRecord, error: fetchError } = await supabase
       .from("email_otps")
       .select("*")
       .eq("email", email)
-      .eq("otp_code", otp)
-      .single();
+      .maybeSingle();
 
     if (fetchError || !otpRecord) {
+      console.error("[verify-otp] OTP record not found for:", email);
       return new Response(
-        JSON.stringify({ error: "Código inválido" }),
+        JSON.stringify({ error: "Código inválido ou expirado" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -76,6 +78,38 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check if too many attempts
+    if ((otpRecord.attempts || 0) >= MAX_ATTEMPTS) {
+      await supabase.from("email_otps").delete().eq("email", email);
+      return new Response(
+        JSON.stringify({ error: "Muitas tentativas incorretas. Solicite um novo código." }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Verify the code
+    if (otpRecord.otp_code !== otp) {
+      const newAttempts = (otpRecord.attempts || 0) + 1;
+      
+      if (newAttempts >= MAX_ATTEMPTS) {
+        await supabase.from("email_otps").delete().eq("email", email);
+        return new Response(
+          JSON.stringify({ error: "Muitas tentativas incorretas. Solicite um novo código." }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      } else {
+        await supabase
+          .from("email_otps")
+          .update({ attempts: newAttempts })
+          .eq("id", otpRecord.id);
+          
+        return new Response(
+          JSON.stringify({ error: `Código inválido. Você tem mais ${MAX_ATTEMPTS - newAttempts} tentativas.` }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
     // Mark OTP as verified
     await supabase.from("email_otps").update({ verified: true }).eq("email", email);
 
@@ -86,16 +120,13 @@ const handler = async (req: Request): Promise<Response> => {
       email_confirm: true,
       user_metadata: {
         full_name: fullName,
-        // Note: The trigger now ignores this role field for security, 
-        // so we explicitly set it in the profile update below.
         role: 'admin',
       },
     });
 
     if (signUpError) {
-      console.error("Error creating user:", signUpError);
+      console.error("[verify-otp] Error creating user:", signUpError);
       
-      // If user already exists, try to sign them in
       if (signUpError.message.includes("already been registered")) {
         return new Response(
           JSON.stringify({ error: "Este e-mail já está cadastrado. Faça login." }),
@@ -112,49 +143,35 @@ const handler = async (req: Request): Promise<Response> => {
     const userId = userData.user?.id;
     
     if (userId) {
-      // Create organization for the new user (without trial - will be set by LemonSqueezy checkout)
       const orgName = fullName ? `${fullName}'s Agency` : `Agency`;
-      
-      // Generate a unique slug
       const { data: slugData } = await supabase.rpc('generate_slug', { name: orgName });
       const slug = slugData || `agency-${Date.now()}`;
       
-      // Create the organization with a placeholder trial_ends_at (will be updated by webhook)
       const { data: orgData, error: orgError } = await supabase
         .from("organizations")
         .insert({
           name: orgName,
           slug: slug,
           owner_id: userId,
-          trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Temporary placeholder
+          trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .select()
         .single();
       
       if (orgError) {
-        console.error("Error creating organization:", orgError);
+        console.error("[verify-otp] Error creating organization:", orgError);
       } else if (orgData) {
-        console.log("Organization created:", orgData.id);
-        
-        // Update profile with organization_id and explicitly set role to admin
-        const { error: profileError } = await supabase
+        await supabase
           .from("profiles")
           .update({ 
             organization_id: orgData.id,
-            role: 'admin' // Explicitly set admin role for the agency owner
+            role: 'admin'
           })
           .eq('id', userId);
-        
-        if (profileError) {
-          console.error("Error updating profile with org and role:", profileError);
-        }
-        
-        // Note: No subscription created here - will be created by LemonSqueezy webhook after checkout
-        console.log("Organization created, user will complete checkout to start trial");
       }
     }
 
-    // Delete OTP record
+    // Delete OTP record after successful verification
     await supabase.from("email_otps").delete().eq("email", email);
 
     return new Response(
@@ -163,10 +180,10 @@ const handler = async (req: Request): Promise<Response> => {
         message: "Email verified and account created",
         user: userData.user 
       }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
-    console.error("Error in verify-otp function:", error);
+    console.error("[verify-otp] Unexpected error:", error);
     return new Response(
       JSON.stringify({ error: "Erro interno do servidor" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
