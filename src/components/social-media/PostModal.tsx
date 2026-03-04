@@ -274,10 +274,13 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     
     // Create local previews for immediate feedback
     const localUrls = Array.from(files).map(file => URL.createObjectURL(file));
-    updateCurrentPost({ mediaUrls: [...currentPost.mediaUrls, ...localUrls] });
+    
+    // Use functional update to avoid stale state
+    setPosts(prev => prev.map((p, i) =>
+      i === activeIndex ? { ...p, mediaUrls: [...p.mediaUrls, ...localUrls] } : p
+    ));
 
     try {
-      const finalUrls: string[] = [];
       const totalFiles = files.length;
       
       for (let i = 0; i < totalFiles; i++) {
@@ -295,7 +298,9 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         if (isFacebookSelected && file.type.startsWith('image/') && file.size > 4 * 1024 * 1024) {
           toast.error(`A imagem "${file.name}" excede o limite de 4MB do Facebook. Por favor, use uma imagem menor.`);
           // Remove local preview if invalid
-          updateCurrentPost({ mediaUrls: currentPost.mediaUrls.filter(u => u !== localUrl) });
+          setPosts(prev => prev.map((p, idx) =>
+            idx === activeIndex ? { ...p, mediaUrls: p.mediaUrls.filter(u => u !== localUrl) } : p
+          ));
           continue;
         }
 
@@ -324,11 +329,13 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           throw new Error('Falha ao enviar arquivo para o servidor de mídia');
         }
         
-        // Step 3: Replace local URL with publicUrl
-        finalUrls.push(publicUrl);
-        updateCurrentPost({
-          mediaUrls: currentPost.mediaUrls.map(u => u === localUrl ? publicUrl : u)
-        });
+        // Step 3: Replace local URL with publicUrl using functional update
+        setPosts(prev => prev.map((p, idx) =>
+          idx === activeIndex ? {
+            ...p,
+            mediaUrls: p.mediaUrls.map(u => u === localUrl ? publicUrl : u)
+          } : p
+        ));
         
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
       }
@@ -336,9 +343,12 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       console.error('Upload error:', err);
       toast.error(err.message || 'Erro ao carregar arquivos.');
       // Cleanup local URLs on error if they weren't replaced
-      updateCurrentPost({
-        mediaUrls: currentPost.mediaUrls.filter(u => !u.startsWith('blob:'))
-      });
+      setPosts(prev => prev.map((p, idx) =>
+        idx === activeIndex ? {
+          ...p,
+          mediaUrls: p.mediaUrls.filter(u => !u.startsWith('blob:'))
+        } : p
+      ));
     } finally {
       setTimeout(() => {
         setUploading(false);
@@ -458,7 +468,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                 try {
                   // Pass silent: true to suppress background toasts
-                  await onSave({ post: itemData, silent: true });
+                  await onSave(itemData, true);
                   setResults(prev => [...prev, {
                     id: crypto.randomUUID(),
                     title: `Post ${pIdx + 1} (Story ${urlIdx + 1})`,
@@ -493,7 +503,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
               try {
                 // Pass silent: true to suppress background toasts
-                await onSave({ post: itemData, silent: true });
+                await onSave(itemData, true);
                 setResults(prev => [...prev, {
                   id: crypto.randomUUID(),
                   title: `Post ${pIdx + 1}`,
