@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PostPreview } from '@/components/social-media/PostPreview';
@@ -21,10 +20,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { 
   Upload, Calendar, Clock, Loader2, X, 
-  Image as ImageIcon, Zap, Sparkles, LayoutGrid, 
-  Layers, Plus, AlertCircle, 
-  Smartphone, MapPin, Phone,
-  ArrowLeft, FileText, Trash2, Copy
+  Image as ImageIcon, Zap, Sparkles, 
+  Plus, Smartphone, MapPin, 
+  ArrowLeft, FileText, Trash2,
+  CircleDashed, Film, Layers, Image
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -32,19 +31,29 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
+interface PostSchedule {
+  id: string;
+  contentType: ContentType;
+  date: string;
+  time: string;
+}
+
 interface PostItem {
   id: string;
   content: string;
   files: File[];
   mediaUrls: string[];
-  contentType: ContentType;
   location: string;
-  ctaType: 'none' | 'channel' | 'whatsapp';
-  ctaValue: string;
-  scheduledAt: string;
-  scheduledTime: string;
-  selectedAccountIds: string[]; // Agora cada post tem seus próprios canais
+  selectedAccountIds: string[];
+  schedules: PostSchedule[];
 }
+
+const CONTENT_TYPE_OPTIONS: { value: ContentType; label: string; icon: any }[] = [
+  { value: 'feed', label: 'Feed', icon: Image },
+  { value: 'stories', label: 'Story', icon: CircleDashed },
+  { value: 'reels', label: 'Reel', icon: Film },
+  { value: 'carousel', label: 'Carrossel', icon: Layers },
+];
 
 export default function SocialPostEditor() {
   const { postId } = useParams();
@@ -68,7 +77,6 @@ export default function SocialPostEditor() {
   const connectedAccounts = accounts.filter(a => a.is_connected);
   const currentPostItem = useMemo(() => postItems[activeIndex] || null, [postItems, activeIndex]);
 
-  // Carregar post se estiver editando
   useEffect(() => {
     if (postId && connectedAccounts.length > 0) {
       const loadPost = async () => {
@@ -88,13 +96,14 @@ export default function SocialPostEditor() {
             content: data.content || '',
             files: [],
             mediaUrls: data.media_urls || [],
-            contentType: (data.content_type as ContentType) || 'feed',
             location: data.location || '',
-            ctaType: (data.cta_type as any) || 'none',
-            ctaValue: data.cta_value || '',
-            scheduledAt: data.scheduled_at ? format(new Date(data.scheduled_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-            scheduledTime: data.scheduled_at ? format(new Date(data.scheduled_at), 'HH:mm') : getDefaultTime(),
             selectedAccountIds: accountIds,
+            schedules: [{
+              id: crypto.randomUUID(),
+              contentType: (data.content_type as ContentType) || 'feed',
+              date: data.scheduled_at ? format(new Date(data.scheduled_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+              time: data.scheduled_at ? format(new Date(data.scheduled_at), 'HH:mm') : getDefaultTime(),
+            }]
           }]);
         }
         setIsLoadingPost(false);
@@ -102,7 +111,6 @@ export default function SocialPostEditor() {
       loadPost();
     } else if (!postId) {
       setIsLoadingPost(false);
-      // Iniciar com um post vazio se não houver mídias ainda
       if (postItems.length === 0) {
         handleAddEmptyPost();
       }
@@ -115,16 +123,58 @@ export default function SocialPostEditor() {
       content: '',
       files: [],
       mediaUrls: [],
-      contentType: 'feed',
       location: '',
-      ctaType: 'none',
-      ctaValue: '',
-      scheduledAt: format(new Date(), 'yyyy-MM-dd'),
-      scheduledTime: getDefaultTime(),
       selectedAccountIds: [],
+      schedules: [{
+        id: crypto.randomUUID(),
+        contentType: 'feed',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        time: getDefaultTime(),
+      }]
     };
     setPostItems(prev => [...prev, newItem]);
     setActiveIndex(postItems.length);
+  };
+
+  const handleAddSchedule = (postId: string) => {
+    setPostItems(prev => prev.map(p => {
+      if (p.id === postId) {
+        return {
+          ...p,
+          schedules: [...p.schedules, {
+            id: crypto.randomUUID(),
+            contentType: 'feed',
+            date: format(new Date(), 'yyyy-MM-dd'),
+            time: getDefaultTime(),
+          }]
+        };
+      }
+      return p;
+    }));
+  };
+
+  const handleRemoveSchedule = (postId: string, scheduleId: string) => {
+    setPostItems(prev => prev.map(p => {
+      if (p.id === postId && p.schedules.length > 1) {
+        return {
+          ...p,
+          schedules: p.schedules.filter(s => s.id !== scheduleId)
+        };
+      }
+      return p;
+    }));
+  };
+
+  const updateSchedule = (postId: string, scheduleId: string, updates: Partial<PostSchedule>) => {
+    setPostItems(prev => prev.map(p => {
+      if (p.id === postId) {
+        return {
+          ...p,
+          schedules: p.schedules.map(s => s.id === scheduleId ? { ...s, ...updates } : s)
+        };
+      }
+      return p;
+    }));
   };
 
   const handleFileSelection = (files: FileList | null) => {
@@ -142,8 +192,11 @@ export default function SocialPostEditor() {
         updatePostItem(currentPostItem.id, {
           files: [...currentPostItem.files, file],
           mediaUrls: [...currentPostItem.mediaUrls, localUrl],
-          contentType: file.type.startsWith('video/') ? 'video' : currentPostItem.contentType
         });
+        // Auto-detect video
+        if (file.type.startsWith('video/')) {
+          updateSchedule(currentPostItem.id, currentPostItem.schedules[0].id, { contentType: 'video' as any });
+        }
       }
     }
   };
@@ -156,8 +209,8 @@ export default function SocialPostEditor() {
         updatePostItem(currentPostItem.id, {
           files: [...currentPostItem.files, ...pendingFiles],
           mediaUrls: [...currentPostItem.mediaUrls, ...localUrls],
-          contentType: 'carousel'
         });
+        updateSchedule(currentPostItem.id, currentPostItem.schedules[0].id, { contentType: 'carousel' });
       }
     } else {
       const newItems: PostItem[] = pendingFiles.map(file => ({
@@ -165,16 +218,17 @@ export default function SocialPostEditor() {
         content: '',
         files: [file],
         mediaUrls: [URL.createObjectURL(file)],
-        contentType: file.type.startsWith('video/') ? 'video' : 'feed',
         location: '',
-        ctaType: 'none',
-        ctaValue: '',
-        scheduledAt: format(new Date(), 'yyyy-MM-dd'),
-        scheduledTime: getDefaultTime(),
         selectedAccountIds: currentPostItem?.selectedAccountIds || [],
+        schedules: [{
+          id: crypto.randomUUID(),
+          contentType: file.type.startsWith('video/') ? 'video' as any : 'feed',
+          date: format(new Date(), 'yyyy-MM-dd'),
+          time: getDefaultTime(),
+        }]
       }));
       setPostItems(prev => [...prev, ...newItems]);
-      setActiveIndex(postItems.length); // Focar no primeiro novo item
+      setActiveIndex(postItems.length);
     }
     setPendingFiles([]);
   };
@@ -211,23 +265,20 @@ export default function SocialPostEditor() {
         const selectedAccounts = connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id));
         const platforms = Array.from(new Set(selectedAccounts.map(a => a.platform)));
 
-        const scheduledAt = new Date(`${item.scheduledAt}T${item.scheduledTime}`).toISOString();
-        const postData = {
-          content: item.content,
-          media_urls: finalMediaUrls,
-          platforms,
-          content_type: item.contentType,
-          location: item.location,
-          cta_type: item.ctaType,
-          cta_value: item.ctaValue,
-          scheduled_at: scheduledAt,
-          status: status,
-          client_id: clientId,
-        };
+        // Criar um post para cada agendamento definido
+        for (const schedule of item.schedules) {
+          const scheduledAt = new Date(`${schedule.date}T${schedule.time}`).toISOString();
+          const postData = {
+            content: item.content,
+            media_urls: finalMediaUrls,
+            platforms,
+            content_type: schedule.contentType,
+            location: item.location,
+            scheduled_at: scheduledAt,
+            status: status,
+            client_id: clientId,
+          };
 
-        if (postId && postItems.length === 1) {
-          await updatePost.mutateAsync({ id: postId, ...postData } as any);
-        } else {
           const created = await createPost.mutateAsync({ post: postData, silent: true });
           if (status !== 'draft' && (created as any)?.data?.id) {
             await publishPost.mutateAsync({ postId: (created as any).data.id, publishNow: status === 'published', silent: true });
@@ -302,7 +353,7 @@ export default function SocialPostEditor() {
 
       <main className="flex-1 overflow-hidden flex">
         
-        {/* NAVEGADOR LATERAL DE POSTS (PÁGINAS) */}
+        {/* NAVEGADOR LATERAL DE POSTS */}
         <aside className="w-64 border-r bg-muted/10 flex flex-col shrink-0">
           <div className="p-4 border-b bg-background/50 flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Páginas</span>
@@ -430,15 +481,15 @@ export default function SocialPostEditor() {
                     <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileSelection(e.target.files)} />
                   </section>
 
-                  {/* SEÇÃO 3: CONFIGURAÇÃO */}
-                  <section className="space-y-6">
+                  {/* SEÇÃO 3: LEGENDA */}
+                  <section className="space-y-4">
                     <Separator />
                     <div className="flex items-center gap-2 text-primary">
                       <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">3</div>
-                      <h3 className="font-bold uppercase tracking-wider text-xs">Legenda e Configurações</h3>
+                      <h3 className="font-bold uppercase tracking-wider text-xs">Legenda e Localização</h3>
                     </div>
 
-                    <div className="space-y-8 bg-card p-6 rounded-3xl border shadow-sm">
+                    <div className="space-y-6 bg-card p-6 rounded-3xl border shadow-sm">
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <Label className="text-sm font-bold">Legenda</Label>
@@ -455,99 +506,104 @@ export default function SocialPostEditor() {
                           value={currentPostItem.content} 
                           onChange={e => updatePostItem(currentPostItem.id, { content: e.target.value })}
                           placeholder="O que você quer dizer ao seu público?"
-                          className="min-h-[180px] rounded-2xl border-2 text-base"
+                          className="min-h-[150px] rounded-2xl border-2 text-base"
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <Label className="text-sm font-bold">Tipo de Conteúdo</Label>
-                          <Select 
-                            value={currentPostItem.contentType} 
-                            onValueChange={(v: any) => updatePostItem(currentPostItem.id, { contentType: v })}
-                          >
-                            <SelectTrigger className="h-12 rounded-xl border-2">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="feed">Feed</SelectItem>
-                              <SelectItem value="stories">Story</SelectItem>
-                              <SelectItem value="reels">Reel</SelectItem>
-                              <SelectItem value="carousel">Carrossel</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-3">
-                          <Label className="text-sm font-bold">Localização</Label>
-                          <div className="relative">
-                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              value={currentPostItem.location} 
-                              onChange={e => updatePostItem(currentPostItem.id, { location: e.target.value })}
-                              placeholder="Onde foi isso?"
-                              className="h-12 pl-11 rounded-xl border-2"
-                            />
-                          </div>
+                      <div className="space-y-3">
+                        <Label className="text-sm font-bold">Localização</Label>
+                        <div className="relative">
+                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            value={currentPostItem.location} 
+                            onChange={e => updatePostItem(currentPostItem.id, { location: e.target.value })}
+                            placeholder="Onde foi isso?"
+                            className="h-12 pl-11 rounded-xl border-2"
+                          />
                         </div>
                       </div>
+                    </div>
+                  </section>
 
-                      <div className="space-y-4">
-                        <Label className="text-sm font-bold">Chamada para Ação (CTA)</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Select 
-                            value={currentPostItem.ctaType} 
-                            onValueChange={(v: any) => updatePostItem(currentPostItem.id, { ctaType: v })}
-                          >
-                            <SelectTrigger className="h-12 rounded-xl border-2">
-                              <SelectValue placeholder="Selecione um CTA" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Nenhum</SelectItem>
-                              <SelectItem value="channel">Mensagem pelo Canal</SelectItem>
-                              <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {currentPostItem.ctaType === 'whatsapp' && (
-                            <div className="relative animate-in fade-in slide-in-from-left-2">
-                              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                value={currentPostItem.ctaValue} 
-                                onChange={e => updatePostItem(currentPostItem.id, { ctaValue: e.target.value })}
-                                placeholder="Número com DDD"
-                                className="h-12 pl-11 rounded-xl border-2"
-                              />
-                            </div>
+                  {/* SEÇÃO 4: AGENDAMENTOS */}
+                  <section className="space-y-4">
+                    <Separator />
+                    <div className="flex items-center gap-2 text-primary">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">4</div>
+                      <h3 className="font-bold uppercase tracking-wider text-xs">Horários e Formatos</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                      {currentPostItem.schedules.map((schedule, sIdx) => (
+                        <div key={schedule.id} className="bg-card p-6 rounded-3xl border shadow-sm space-y-6 relative group/schedule">
+                          {currentPostItem.schedules.length > 1 && (
+                            <button 
+                              onClick={() => handleRemoveSchedule(currentPostItem.id, schedule.id)}
+                              className="absolute top-4 right-4 p-1.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
                           )}
-                        </div>
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <Label className="text-sm font-bold">Data de Publicação</Label>
-                          <div className="relative">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              type="date" 
-                              value={currentPostItem.scheduledAt} 
-                              onChange={e => updatePostItem(currentPostItem.id, { scheduledAt: e.target.value })} 
-                              className="h-12 pl-11 rounded-xl border-2" 
-                            />
+                          <div className="space-y-3">
+                            <Label className="text-xs font-bold uppercase text-muted-foreground">Tipo de Conteúdo</Label>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              {CONTENT_TYPE_OPTIONS.map(opt => {
+                                const Icon = opt.icon;
+                                return (
+                                  <button
+                                    key={opt.value}
+                                    onClick={() => updateSchedule(currentPostItem.id, schedule.id, { contentType: opt.value })}
+                                    className={cn(
+                                      "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                      schedule.contentType === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/20"
+                                    )}
+                                  >
+                                    <Icon className={cn("h-5 w-5", schedule.contentType === opt.value ? "text-primary" : "text-muted-foreground")} />
+                                    <span className="text-[10px] font-bold uppercase">{opt.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                              <Label className="text-xs font-bold uppercase text-muted-foreground">Data</Label>
+                              <div className="relative">
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                  type="date" 
+                                  value={schedule.date} 
+                                  onChange={e => updateSchedule(currentPostItem.id, schedule.id, { date: e.target.value })} 
+                                  className="h-12 pl-11 rounded-xl border-2" 
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-3">
+                              <Label className="text-xs font-bold uppercase text-muted-foreground">Horário</Label>
+                              <div className="relative">
+                                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                  type="time" 
+                                  value={schedule.time} 
+                                  onChange={e => updateSchedule(currentPostItem.id, schedule.id, { time: e.target.value })} 
+                                  className="h-12 pl-11 rounded-xl border-2" 
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <div className="space-y-3">
-                          <Label className="text-sm font-bold">Horário</Label>
-                          <div className="relative">
-                            <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              type="time" 
-                              value={currentPostItem.scheduledTime} 
-                              onChange={e => updatePostItem(currentPostItem.id, { scheduledTime: e.target.value })} 
-                              className="h-12 pl-11 rounded-xl border-2" 
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      ))}
+
+                      <Button 
+                        variant="outline" 
+                        className="w-full h-14 border-dashed border-2 rounded-2xl gap-2 hover:bg-primary/5 hover:border-primary/50 transition-all"
+                        onClick={() => handleAddSchedule(currentPostItem.id)}
+                      >
+                        <Plus className="h-5 w-5" />
+                        Adicionar outro horário/formato
+                      </Button>
                     </div>
                   </section>
                 </AnimatedContainer>
@@ -633,7 +689,7 @@ export default function SocialPostEditor() {
         open={showAICaptionModal}
         onOpenChange={setShowAICaptionModal}
         platforms={currentPlatforms}
-        contentType={currentPostItem?.contentType || 'feed'}
+        contentType={currentPostItem?.schedules[0]?.contentType || 'feed'}
         files={currentPostItem?.files || []}
         clientId={clientId}
         onCaptionGenerated={(c) => currentPostItem && updatePostItem(currentPostItem.id, { content: c })}
