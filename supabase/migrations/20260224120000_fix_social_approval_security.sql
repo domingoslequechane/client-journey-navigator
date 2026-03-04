@@ -1,39 +1,47 @@
--- Remover as políticas inseguras que permitiam acesso a qualquer post com token não nulo
-DROP POLICY IF EXISTS "Anyone can view posts by approval token" ON public.social_posts;
-DROP POLICY IF EXISTS "Anyone can update post status via approval token" ON public.social_posts;
+-- Drop insecure policies that allowed anyone to list or update posts with tokens
+DROP POLICY IF EXISTS "Anyone can view posts by approval token" ON social_posts;
+DROP POLICY IF EXISTS "Anyone can update post status via approval token" ON social_posts;
 
--- Função segura para obter os detalhes de um post usando o token de aprovação
--- Esta função é SECURITY DEFINER para ignorar o RLS, mas filtra estritamente pelo token
+-- Create secure function to fetch a specific post by its secret token
+-- This prevents listing all posts while allowing access to the specific one if the token is known
 CREATE OR REPLACE FUNCTION public.get_social_post_by_token(p_token uuid)
-RETURNS jsonb
+RETURNS TABLE (
+  id uuid,
+  content text,
+  media_urls jsonb,
+  platforms text[],
+  content_type text,
+  hashtags text[],
+  scheduled_at timestamptz,
+  status text,
+  client_name text,
+  rejection_reason text
+) 
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = 'public'
+SET search_path = public
 AS $$
-DECLARE
-  v_post jsonb;
 BEGIN
-  SELECT jsonb_build_object(
-    'id', p.id,
-    'content', p.content,
-    'media_urls', p.media_urls,
-    'platforms', p.platforms,
-    'content_type', p.content_type,
-    'hashtags', p.hashtags,
-    'scheduled_at', p.scheduled_at,
-    'status', p.status,
-    'client_name', c.company_name,
-    'rejection_reason', p.rejection_reason
-  ) INTO v_post
+  RETURN QUERY
+  SELECT 
+    p.id,
+    p.content,
+    p.media_urls,
+    p.platforms,
+    p.content_type,
+    p.hashtags,
+    p.scheduled_at,
+    p.status,
+    c.company_name as client_name,
+    p.rejection_reason
   FROM social_posts p
   LEFT JOIN clients c ON c.id = p.client_id
   WHERE p.approval_token = p_token;
-
-  RETURN v_post;
 END;
 $$;
 
--- Função segura para responder a uma solicitação de aprovação usando o token
+-- Create secure function to update post status by token
+-- This ensures only users with the valid token can approve or reject a post
 CREATE OR REPLACE FUNCTION public.respond_to_social_post_approval(
   p_token uuid,
   p_status text,
@@ -43,25 +51,30 @@ CREATE OR REPLACE FUNCTION public.respond_to_social_post_approval(
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = 'public'
+SET search_path = public
 AS $$
+DECLARE
+  v_post_id uuid;
 BEGIN
-  -- Apenas permite atualizar se o post estiver aguardando aprovação
-  -- ou se estivermos visualizando um já respondido (para feedback visual no frontend)
+  -- Validate status to prevent unauthorized status changes
+  IF p_status NOT IN ('approved', 'rejected') THEN
+    RAISE EXCEPTION 'Invalid status. Must be approved or rejected.';
+  END IF;
+
+  -- Find and update the post only if the token matches
   UPDATE social_posts
   SET 
     status = p_status,
     approved_by = p_approver_name,
     approved_at = now(),
-    rejection_reason = p_rejection_reason,
-    updated_at = now()
+    rejection_reason = p_rejection_reason
   WHERE approval_token = p_token
-    AND status = 'pending_approval';
+  RETURNING id INTO v_post_id;
 
-  RETURN FOUND;
+  RETURN v_post_id IS NOT NULL;
 END;
 $$;
 
--- Garantir que as funções podem ser chamadas publicamente (anon)
+-- Grant access to anon (public) and authenticated users
 GRANT EXECUTE ON FUNCTION public.get_social_post_by_token(uuid) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.respond_to_social_post_approval(uuid, text, text, text) TO anon, authenticated;
