@@ -35,9 +35,9 @@ const LENGTHS = [
 export function AICaptionModal({
   open,
   onOpenChange,
-  platforms,
-  contentType,
-  mediaUrls,
+  platforms = [],
+  contentType = 'feed',
+  mediaUrls = [],
   onCaptionGenerated,
 }: AICaptionModalProps) {
   const [tone, setTone] = useState('direto');
@@ -86,6 +86,9 @@ export function AICaptionModal({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Garantir que mediaUrls seja um array antes de acessar .length
+  const safeMediaUrls = Array.isArray(mediaUrls) ? mediaUrls : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -164,8 +167,8 @@ export function AICaptionModal({
               className="min-h-[70px]"
             />
             <p className="text-[11px] text-muted-foreground">
-              {mediaUrls.length > 0
-                ? `A IA irá analisar ${mediaUrls.length > 1 ? 'as ' + mediaUrls.length + ' mídias' : 'a mídia'} para gerar a legenda${topic.trim() ? ' com o tema informado' : ' automaticamente'}.`
+              {safeMediaUrls.length > 0
+                ? `A IA irá analisar ${safeMediaUrls.length > 1 ? 'as ' + safeMediaUrls.length + ' mídias' : 'a mídia'} para gerar a legenda${topic.trim() ? ' com o tema informado' : ' automaticamente'}.`
                 : 'Descreva o tema ou deixe vazio para gerar com base no contexto do post.'}
             </p>
           </div>
@@ -178,7 +181,7 @@ export function AICaptionModal({
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold">Legenda gerada</Label>
                   <Button variant="ghost" size="sm" className="gap-1.5 h-7 text-xs" onClick={handleCopy}>
-                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-4 w-4" />}
                     {copied ? 'Copiado' : 'Copiar'}
                   </Button>
                 </div>
