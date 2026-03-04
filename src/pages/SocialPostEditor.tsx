@@ -25,7 +25,7 @@ import {
   Plus, Smartphone, MapPin, 
   ArrowLeft, FileText, Trash2,
   CircleDashed, Film, Layers, Image,
-  LayoutGrid
+  LayoutGrid, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
