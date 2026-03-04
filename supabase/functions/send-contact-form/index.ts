@@ -74,7 +74,10 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Email 1: Send to recipient (page owner)
+    // SECURITY FIX: We ONLY send the email to the internal recipientEmail (the owner of the page).
+    // We removed the confirmation email to the senderEmail to prevent the server from being used 
+    // as a spam relay or phishing vector.
+
     const recipientEmailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #6366f1; border-bottom: 2px solid #6366f1; padding-bottom: 10px;">
@@ -143,55 +146,6 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
-
-    // Email 2: Send confirmation to sender
-    const confirmationEmailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #6366f1; border-bottom: 2px solid #6366f1; padding-bottom: 10px;">
-          Mensagem Enviada com Sucesso! ✓
-        </h1>
-        
-        <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-          Olá${senderName ? ` ${senderName}` : ''},
-        </p>
-        
-        <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-          Sua mensagem foi enviada com sucesso para <strong>${pageName}</strong>. 
-          Agradecemos o seu contato!
-        </p>
-        
-        <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-          Entraremos em contato em breve através do seu email.
-        </p>
-        
-        <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6366f1;">
-          <h3 style="color: #334155; margin-top: 0;">Resumo da sua mensagem:</h3>
-          ${message ? `<p style="color: #64748b; white-space: pre-wrap;">${message}</p>` : '<p style="color: #64748b; font-style: italic;">Nenhuma mensagem adicional</p>'}
-        </div>
-        
-        <p style="color: #94a3b8; font-size: 12px; margin-top: 30px;">
-          Este é um email automático de confirmação. Por favor, não responda diretamente a este email.
-        </p>
-        
-        <p style="color: #94a3b8; font-size: 12px;">
-          Enviado através do Qualify - Link23
-        </p>
-      </div>
-    `;
-
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: "Qualify <noreply@onixagence.com>",
-        to: [senderEmail],
-        subject: `Confirmação - Sua mensagem foi enviada para ${pageName}`,
-        html: confirmationEmailHtml,
-      }),
-    });
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
