@@ -60,9 +60,17 @@ export function useSocialPosts(filters?: PostFilters) {
       const orgId = await getOrgId();
       if (!orgId) return [];
 
+      // SECURITY: We explicitly list columns and EXCLUDE 'approval_token' from the general list
+      // to prevent internal users from seeing tokens for posts they didn't create.
       let query = supabase
         .from('social_posts' as any)
-        .select('*, clients!social_posts_client_id_fkey(company_name)')
+        .select(`
+          id, organization_id, client_id, created_by, content, media_urls, 
+          platforms, content_type, hashtags, scheduled_at, status, 
+          approved_by, approved_at, rejection_reason, published_at, 
+          metrics, notes, late_post_id, created_at, updated_at,
+          clients!social_posts_client_id_fkey(company_name)
+        `)
         .eq('organization_id', orgId)
         .order('scheduled_at', { ascending: false, nullsFirst: false });
 
