@@ -48,7 +48,7 @@ export function useSocialAccounts(clientId?: string | null) {
         .from('social_accounts')
         .select(`
           *,
-          clients (
+          clients!social_accounts_client_id_fkey (
             is_social_locked,
             social_disconnection_count
           )
