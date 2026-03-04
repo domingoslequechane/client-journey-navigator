@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 serve(async (req) => {
@@ -15,64 +16,73 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { platforms, content_type, media_urls, tone, length, topic } = await req.json();
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { platforms, content_type, media_data, tone, length, topic, client_id } = await req.json();
+
+    // Buscar contexto do cliente se houver ID
+    let clientContext = "";
+    if (client_id) {
+      const { data: client } = await supabase
+        .from('clients')
+        .select('company_name, services, notes')
+        .eq('id', client_id)
+        .single();
+      
+      if (client) {
+        clientContext = `
+DADOS DO CLIENTE/MARCA:
+Empresa: ${client.company_name}
+Serviços: ${client.services?.join(', ') || 'N/A'}
+Notas Estratégicas: ${client.notes || 'N/A'}
+`;
+      }
+    }
 
     const toneMap: Record<string, string> = {
       direto: "Direto e objetivo, sem rodeios",
       casual: "Casual e descontraído, linguagem informal",
-      persuasivo: "Persuasivo e convincente, com call-to-action",
+      persuasivo: "Persuasivo e convincente, com call-to-action forte",
       alegre: "Alegre e animado, com energia positiva",
       amigavel: "Amigável e acolhedor, próximo do público",
     };
 
     const lengthMap: Record<string, string> = {
-      curta: "CURTA: Máximo 1-2 frases. Seja extremamente conciso e direto. Não ultrapasse 150 caracteres no texto principal (sem contar hashtags).",
-      media: "MÉDIA: Entre 3-5 frases. Desenvolva a ideia de forma moderada, entre 150-400 caracteres no texto principal (sem contar hashtags).",
-      longa: "LONGA: 1-2 parágrafos completos. Desenvolva bem o assunto com detalhes, entre 400-800 caracteres no texto principal (sem contar hashtags).",
+      curta: "CURTA: Máximo 150 caracteres. Seja extremamente conciso.",
+      media: "MÉDIA: Entre 150-400 caracteres. Desenvolva a ideia de forma moderada.",
+      longa: "LONGA: Entre 400-800 caracteres. Desenvolva bem o assunto com detalhes.",
     };
 
     const platformNames = (platforms || []).join(", ") || "redes sociais";
-    const toneLabel = toneMap[tone] || "Profissional";
-    const lengthLabel = lengthMap[length] || lengthMap["media"];
-    const contentTypeLabel = content_type || "feed";
+    
+    const prompt = `Você é um estrategista de social media de elite. Sua tarefa é gerar uma legenda profissional para um post de ${content_type || 'feed'} nas plataformas: ${platformNames}.
 
-    let mediaContext = "";
-    if (media_urls && media_urls.length > 0) {
-      mediaContext = `\nO post contém ${media_urls.length} mídia(s) anexada(s). Analise o contexto visual para criar uma legenda relevante.`;
-      if (media_urls.length > 1) mediaContext += ` É um carrossel com ${media_urls.length} imagens/vídeos.`;
-    }
+${clientContext}
 
-    let topicContext = "";
-    if (topic && topic.trim()) {
-      topicContext = `\nTema/assunto fornecido pelo usuário: ${topic}`;
-    } else if (media_urls && media_urls.length > 0) {
-      topicContext = `\nNenhum tema foi especificado. Analise o conteúdo visual das mídias e crie uma legenda criativa e relevante baseada no que você interpreta do contexto.`;
-    } else {
-      topicContext = `\nNenhum tema foi especificado e não há mídias. Crie uma legenda genérica e envolvente para redes sociais.`;
-    }
-
-    const prompt = `Gere uma legenda profissional para um post de ${contentTypeLabel} nas plataformas: ${platformNames}.
-
-Tom de voz: ${toneLabel}
-
-TAMANHO OBRIGATÓRIO: ${lengthLabel}
-${topicContext}
-${mediaContext}
+DIRETRIZES DA LEGENDA:
+- Tom de voz: ${toneMap[tone] || "Profissional"}
+- Tamanho: ${lengthMap[length] || lengthMap["media"]}
+- Tema sugerido: ${topic || "Analise a imagem e crie algo relevante para a marca"}
 
 REGRAS OBRIGATÓRIAS:
-- Escreva APENAS em português brasileiro
-- Inclua emojis relevantes ao longo do texto
-- OBRIGATÓRIO: Adicione entre 5-10 hashtags relevantes no final, separadas por espaço
-- Adapte o estilo ao tipo de conteúdo (${contentTypeLabel})
-- NÃO inclua instruções, explicações ou comentários - apenas a legenda pronta para publicar
-- Considere os limites de caracteres de cada plataforma
-- RESPEITE RIGOROSAMENTE o tamanho solicitado: ${length === 'curta' ? 'seja MUITO curto' : length === 'longa' ? 'desenvolva BASTANTE' : 'tamanho moderado'}
-- As hashtags devem ser específicas e relevantes ao conteúdo, não genéricas`;
+- Escreva em Português (PT-PT ou PT-BR conforme o contexto do cliente).
+- Use emojis estrategicamente.
+- Inclua 5-8 hashtags relevantes no final.
+- Se houver imagem, descreva o que vê e conecte com os serviços do cliente.
+- NÃO inclua comentários extras, apenas a legenda pronta.`;
 
     const userContent: any[] = [{ type: "text", text: prompt }];
-    if (media_urls && media_urls.length > 0) {
-      for (const url of media_urls.slice(0, 4)) {
-        userContent.push({ type: "image_url", image_url: { url } });
+    
+    // Adicionar dados da imagem (Base64) para análise visual
+    if (media_data && media_data.length > 0) {
+      for (const data of media_data.slice(0, 3)) {
+        userContent.push({ 
+          type: "image_url", 
+          image_url: { url: data } // data deve ser "data:image/jpeg;base64,..."
+        });
       }
     }
 
@@ -82,20 +92,16 @@ REGRAS OBRIGATÓRIAS:
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "Você é um especialista em social media e copywriting para o mercado brasileiro. Gere legendas criativas, envolventes e com hashtags relevantes. SEMPRE inclua hashtags no final da legenda. SEMPRE complete a resposta inteira sem cortar." },
+          { role: "system", content: "Você é um especialista em copywriting para redes sociais. Analise imagens e contexto de marca para criar posts de alta conversão." },
           { role: "user", content: userContent },
         ],
-        temperature: 0.8,
-        max_tokens: 4096,
+        temperature: 0.7,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (response.status === 402) return new Response(JSON.stringify({ error: "Payment required." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`AI gateway error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -103,7 +109,7 @@ REGRAS OBRIGATÓRIAS:
 
     return new Response(JSON.stringify({ caption }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error: unknown) {
-    console.error("Generate caption error:", error);
+    console.error("[generate-social-caption] Error:", error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Erro ao gerar legenda" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

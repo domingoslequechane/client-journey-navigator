@@ -549,7 +549,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
         onOpenChange={setShowAICaptionModal}
         platforms={selectedPlatforms}
         contentType={currentPostItem?.contentType || 'feed'}
-        mediaUrls={currentPostItem?.mediaUrls || []}
+        files={currentPostItem?.files || []}
+        clientId={post?.client_id || clientId}
         onCaptionGenerated={(c) => currentPostItem && updatePostItem(currentPostItem.id, { content: c })}
       />
     </>
