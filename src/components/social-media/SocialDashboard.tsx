@@ -166,7 +166,7 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
               <p className="text-2xl font-bold text-[hsl(var(--warning))]">{pendingCount}</p>
               <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
             </CardContent>
-          </div>
+          </Card>
         </div>
       </div>
 
