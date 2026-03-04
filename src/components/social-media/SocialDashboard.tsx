@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Plus, RefreshCw, User, CheckCircle2, AlertCircle } from 'lucide-react';
 import { PLATFORM_CONFIG, ALL_PLATFORMS, type SocialPlatform } from '@/lib/social-media-mock';
 import { useSocialAccounts, type SocialAccount } from '@/hooks/useSocialAccounts';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
@@ -28,13 +28,11 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
-  const accountsByPlatform = new Map<SocialPlatform, SocialAccount>();
-  // Ordenamos para que as contas conectadas venham por último e sobrescrevam as desconectadas no Map
-  [...accounts]
-    .sort((a, b) => (a.is_connected === b.is_connected ? 0 : a.is_connected ? 1 : -1))
-    .forEach(a => accountsByPlatform.set(a.platform as SocialPlatform, a));
+  const connectedAccounts = accounts.filter(a => a.is_connected);
+  const connectedPlatforms = new Set(connectedAccounts.map(a => a.platform));
+  const availablePlatforms = ALL_PLATFORMS.filter(p => !connectedPlatforms.has(p));
 
-  const totalFollowers = accounts.filter(a => a.is_connected).reduce((sum, a) => sum + (a.followers_count || 0), 0);
+  const totalFollowers = connectedAccounts.reduce((sum, a) => sum + (a.followers_count || 0), 0);
   const publishedCount = posts.filter(p => p.status === 'published').length;
   const scheduledCount = posts.filter(p => p.status === 'scheduled' || p.status === 'approved').length;
   const pendingCount = posts.filter(p => p.status === 'pending_approval').length;
@@ -62,10 +60,7 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
     
     setIsResetting(true);
     try {
-      // 1. Apagar todos os posts do cliente
       await deleteAllPosts.mutateAsync(clientId);
-      
-      // 2. Desconectar todas as contas (iterar sobre as contas e deletar)
       for (const account of accounts) {
         try {
           await deleteAccount.mutateAsync(account.id);
@@ -73,7 +68,6 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
           console.error(`Erro ao remover conta ${account.id}:`, err);
         }
       }
-      
       toast.success('Todos os dados e conexões foram resetados com sucesso!');
       setResetModalOpen(false);
     } catch (error) {
@@ -85,7 +79,7 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {selectedClient === 'all' && (
         <div className="rounded-lg border border-border bg-muted/50 p-6 text-center">
           <p className="text-sm text-muted-foreground">
@@ -95,80 +89,115 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
       )}
 
       {selectedClient !== 'all' && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Canais Conectados</h2>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
-              onClick={() => setResetModalOpen(true)}
-              disabled={isResetting || (accounts.length === 0 && posts.length === 0)}
-            >
-              {isResetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              Resetar Dados
-            </Button>
-          </div>
-          {loadingAccounts ? (
-            <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-              <Loader2 className="h-5 w-5 animate-spin" /> Carregando canais...
+        <div className="space-y-8">
+          {/* Connected Channels Section */}
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold tracking-tight">Canais Conectados</h2>
+                <p className="text-sm text-muted-foreground">Gerencie suas contas ativas e sincronize dados.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={handleSync}
+                  disabled={syncAccounts.isPending || connectedAccounts.length === 0}
+                >
+                  <RefreshCw className={cn("h-4 w-4", syncAccounts.isPending && "animate-spin")} />
+                  Sincronizar
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
+                  onClick={() => setResetModalOpen(true)}
+                  disabled={isResetting || (accounts.length === 0 && posts.length === 0)}
+                >
+                  {isResetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Resetar
+                </Button>
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {ALL_PLATFORMS.map(platform => {
-                const account = accountsByPlatform.get(platform);
-                if (account && account.is_connected) {
-                  return (
-                    <ConnectedAccountCard
-                      key={account.id}
-                      account={account}
-                      onManage={() => setManagingAccount(account)}
-                    />
-                  );
-                }
-                return (
-                  <DisconnectedAccountCard
-                    key={platform}
-                    platform={platform}
-                    onConnect={() => setConnectingPlatform(platform)}
+
+            {loadingAccounts ? (
+              <div className="flex flex-col items-center justify-center py-12 border rounded-xl bg-muted/10 border-dashed">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground font-medium">Carregando canais...</p>
+              </div>
+            ) : connectedAccounts.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {connectedAccounts.map(account => (
+                  <ConnectedAccountCard
+                    key={account.id}
+                    account={account}
+                    onManage={() => setManagingAccount(account)}
                   />
-                );
-              })}
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 border rounded-xl bg-muted/10 border-dashed text-center px-4">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <AlertCircle className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold text-lg">Nenhum canal conectado</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mt-1">
+                  Conecte suas redes sociais abaixo para começar a agendar posts e ver métricas.
+                </p>
+              </div>
+            )}
+          </section>
+
+          {/* Available Channels Section */}
+          <section>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold tracking-tight">Canais Disponíveis</h2>
+              <p className="text-sm text-muted-foreground">Conecte novas plataformas para expandir sua presença.</p>
             </div>
-          )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+              {availablePlatforms.map(platform => (
+                <AvailablePlatformCard
+                  key={platform}
+                  platform={platform}
+                  onConnect={() => setConnectingPlatform(platform)}
+                />
+              ))}
+            </div>
+          </section>
         </div>
       )}
 
       {/* Quick Stats */}
-      <div>
+      <section>
         <h2 className="text-lg font-semibold mb-4">Resumo Rápido {selectedClient === 'all' ? '(Geral)' : ''}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">{totalFollowers.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">Seguidores totais</p>
+          <Card className="bg-card/50 backdrop-blur-sm">
+            <CardContent className="p-6 text-center">
+              <p className="text-3xl font-bold tracking-tight">{totalFollowers.toLocaleString()}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mt-1">Seguidores totais</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">{publishedCount}</p>
-              <p className="text-xs text-muted-foreground">Posts publicados</p>
+          <Card className="bg-card/50 backdrop-blur-sm">
+            <CardContent className="p-6 text-center">
+              <p className="text-3xl font-bold tracking-tight">{publishedCount}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mt-1">Posts publicados</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-[hsl(var(--info))]">{scheduledCount}</p>
-              <p className="text-xs text-muted-foreground">Agendados</p>
+          <Card className="bg-card/50 backdrop-blur-sm">
+            <CardContent className="p-6 text-center">
+              <p className="text-3xl font-bold tracking-tight text-[hsl(var(--info))]">{scheduledCount}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mt-1">Agendados</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-[hsl(var(--warning))]">{pendingCount}</p>
-              <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
+          <Card className="bg-card/50 backdrop-blur-sm">
+            <CardContent className="p-6 text-center">
+              <p className="text-3xl font-bold tracking-tight text-[hsl(var(--warning))]">{pendingCount}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mt-1">Aguardando aprovação</p>
             </CardContent>
           </Card>
         </div>
-      </div>
+      </section>
 
       <AccountManagementModal
         open={!!managingAccount}
@@ -203,63 +232,85 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
 
 function ConnectedAccountCard({ account, onManage }: { account: SocialAccount; onManage: () => void }) {
   const platform = account.platform as SocialPlatform;
+  
   return (
-    <Card className="overflow-hidden cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all" onClick={onManage}>
+    <Card 
+      className="group relative overflow-hidden border-border/50 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer"
+      onClick={onManage}
+    >
       <div className={cn(
-        "h-20 flex items-center justify-between px-4",
-        platform === 'instagram'
-          ? 'bg-gradient-to-br from-[hsl(280,70%,50%)] via-[hsl(330,80%,55%)] to-[hsl(30,90%,55%)]'
-          : platform === 'facebook'
-          ? 'bg-[hsl(220,70%,50%)]'
-          : platform === 'linkedin'
-          ? 'bg-[hsl(210,80%,40%)]'
-          : platform === 'youtube'
-          ? 'bg-[hsl(0,80%,50%)]'
-          : 'bg-primary'
-      )}>
-        <div className="flex items-center gap-2 min-w-0">
-          <PlatformIcon platform={platform} size="lg" className="text-primary-foreground shrink-0" />
-          <span className="text-sm font-medium text-primary-foreground truncate">{account.account_name}</span>
+        "absolute top-0 left-0 w-full h-1",
+        platform === 'instagram' ? 'bg-gradient-to-r from-[hsl(330,70%,50%)] to-[hsl(30,90%,55%)]' :
+        platform === 'facebook' ? 'bg-[hsl(220,70%,50%)]' :
+        platform === 'linkedin' ? 'bg-[hsl(210,80%,40%)]' :
+        platform === 'youtube' ? 'bg-[hsl(0,80%,50%)]' :
+        'bg-primary'
+      )} />
+      
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div className="relative">
+            {account.avatar_url ? (
+              <img 
+                src={account.avatar_url} 
+                alt={account.account_name} 
+                className="h-14 w-14 rounded-full object-cover border-2 border-background shadow-sm"
+              />
+            ) : (
+              <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center border-2 border-background shadow-sm">
+                <User className="h-7 w-7 text-muted-foreground" />
+              </div>
+            )}
+            <div className="absolute -bottom-1 -right-1">
+              <PlatformIcon platform={platform} variant="circle" size="sm" className="border-2 border-background shadow-sm" />
+            </div>
+          </div>
+          <Badge variant="outline" className="bg-success/5 text-success border-success/20 gap-1 py-0.5 px-2">
+            <CheckCircle2 className="h-3 w-3" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Ativo</span>
+          </Badge>
         </div>
-      </div>
-      <CardContent className="p-3">
-        <Badge variant="outline" className="text-[10px] border-[hsl(var(--success))] text-[hsl(var(--success))]">
-          Activo
-        </Badge>
-        {account.username && (
-          <p className="text-xs text-muted-foreground mt-1">@{account.username}</p>
-        )}
-        {account.followers_count > 0 && (
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {account.followers_count.toLocaleString()} seguidores
-          </p>
-        )}
+
+        <div className="space-y-1">
+          <h3 className="font-bold text-base truncate leading-tight">{account.account_name}</h3>
+          {account.username && (
+            <p className="text-xs text-muted-foreground truncate">@{account.username}</p>
+          )}
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Seguidores</span>
+            <span className="text-sm font-bold">{(account.followers_count || 0).toLocaleString()}</span>
+          </div>
+          <Button variant="ghost" size="sm" className="h-8 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+            Gerenciar
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-function DisconnectedAccountCard({ platform, onConnect }: { platform: SocialPlatform; onConnect: () => void }) {
+function AvailablePlatformCard({ platform, onConnect }: { platform: SocialPlatform; onConnect: () => void }) {
+  const config = PLATFORM_CONFIG[platform];
+  
   return (
-    <Card className="overflow-hidden flex flex-col">
-      <div className="h-20 flex items-center justify-between px-4 bg-muted/30 grayscale opacity-60">
-        <div className="flex items-center gap-2 min-w-0">
-          <PlatformIcon platform={platform} size="lg" className="text-muted-foreground shrink-0" />
-          <span className="text-sm font-medium text-muted-foreground truncate">{PLATFORM_CONFIG[platform].label}</span>
+    <Card 
+      className="group hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer border-dashed"
+      onClick={onConnect}
+    >
+      <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-3">
+        <div className="relative">
+          <PlatformIcon platform={platform} size="lg" className="grayscale group-hover:grayscale-0 transition-all" />
+          <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Plus className="h-3 w-3" />
+          </div>
         </div>
-      </div>
-      <CardContent className="p-3 flex flex-col flex-1">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-            Inactivo
-          </span>
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] hover:bg-primary/10 hover:text-primary" onClick={onConnect}>
-            Conectar
-          </Button>
+        <div className="space-y-0.5">
+          <p className="text-xs font-bold truncate">{config.label}</p>
+          <p className="text-[10px] text-muted-foreground">Conectar</p>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
-          Nenhuma conta conectada para esta plataforma.
-        </p>
       </CardContent>
     </Card>
   );

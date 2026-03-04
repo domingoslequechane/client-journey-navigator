@@ -62,33 +62,43 @@ export function AccountManagementModal({
 
           <div className="space-y-4">
             {/* Account info */}
-            <div className="rounded-lg border border-border p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                {account.avatar_url ? (
-                  <img src={account.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                    <User className="h-6 w-6 text-muted-foreground" />
+            <div className="rounded-xl border border-border p-5 space-y-4 bg-muted/5">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  {account.avatar_url ? (
+                    <img src={account.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-background shadow-sm" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center border-2 border-background shadow-sm">
+                      <User className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="absolute -bottom-1 -right-1">
+                    <PlatformIcon platform={platform} variant="circle" size="sm" className="border-2 border-background shadow-sm" />
                   </div>
-                )}
+                </div>
                 <div className="min-w-0">
-                  <p className="font-semibold truncate">{account.account_name}</p>
+                  <p className="text-lg font-bold truncate leading-tight">{account.account_name}</p>
                   {account.username && (
                     <p className="text-sm text-muted-foreground">@{account.username}</p>
                   )}
                 </div>
               </div>
 
-              {account.followers_count > 0 && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <User className="h-4 w-4" />
-                  <span>{account.followers_count.toLocaleString()} seguidores</span>
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Seguidores</span>
+                  <div className="flex items-center gap-2">
+                    <User className="h-3.5 w-3.5 text-primary" />
+                    <span className="font-bold">{(account.followers_count || 0).toLocaleString()}</span>
+                  </div>
                 </div>
-              )}
-
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>Conectado em {format(parseISO(account.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Conectado em</span>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                    <span className="font-medium text-sm">{format(parseISO(account.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
