@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://api.getlate.dev/v1";
+const LATE_API_BASE = "https://getlate.dev/api/v1";
 
 const getPlatformContentType = (platform: string, internalContentType: string): string => {
   if (internalContentType === 'stories') return 'story';
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
     }
 
     if (!lateRes.ok) {
-      console.error("Late.dev publish error:", lateData);
+      console.error("[social-publish] Late.dev publish error:", lateData);
       await supabase.from("social_posts").update({ status: "failed", notes: `Late.dev error: ${JSON.stringify(lateData)}` }).eq("id", post_id);
       return new Response(JSON.stringify({ error: "Failed to publish", details: lateData }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: unknown) {
-    console.error("social-publish error:", err);
+    console.error("[social-publish] error:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

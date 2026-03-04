@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
+const LATE_API_BASE = "https://getlate.dev/api/v1";
+
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -26,7 +28,6 @@ Deno.serve(async (req) => {
 
     const orgId = profile.current_organization_id;
     const LATE_API_KEY = Deno.env.get("LATE_API_KEY")!;
-    const LATE_API_BASE = "https://api.getlate.dev/v1";
 
     const { data: posts, error: postsError } = await supabase
       .from("social_posts").select("id, late_post_id, status")
@@ -58,7 +59,7 @@ Deno.serve(async (req) => {
           }
         }
       } catch (err) {
-        console.error(`Failed to sync post ${post.id}:`, err);
+        console.error(`[social-sync-posts] Failed to sync post ${post.id}:`, err);
       }
     }
 

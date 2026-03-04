@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://api.getlate.dev/v1";
+const LATE_API_BASE = "https://getlate.dev/api/v1";
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -55,11 +55,18 @@ Deno.serve(async (req) => {
     let totalSynced = 0;
 
     for (const client of clientsToSync) {
-      const accountsRes = await fetch(`${LATE_API_BASE}/profiles/${client.late_profile_id}/accounts`, { headers: { Authorization: `Bearer ${LATE_API_KEY}` } });
+      console.log(`[social-sync-accounts] Syncing accounts for client ${client.id} (Late Profile: ${client.late_profile_id})`);
+      
+      const accountsRes = await fetch(`${LATE_API_BASE}/accounts?profileId=${client.late_profile_id}`, { headers: { Authorization: `Bearer ${LATE_API_KEY}` } });
       const accountsData = await accountsRes.json();
-      if (!accountsRes.ok) { console.error(`Failed to fetch Late accounts for client ${client.id}:`, accountsData); continue; }
+      
+      if (!accountsRes.ok) { 
+        console.error(`[social-sync-accounts] Failed to fetch Late accounts for client ${client.id}:`, accountsData); 
+        continue; 
+      }
 
       const lateAccounts = accountsData.accounts || accountsData.data || [];
+      console.log(`[social-sync-accounts] Found ${lateAccounts.length} accounts in Late.dev for profile ${client.late_profile_id}`);
 
       const { data: existingAccounts } = await supabase.from("social_accounts").select("*").eq("organization_id", orgId).eq("client_id", client.id);
       const existing = existingAccounts || [];
@@ -103,7 +110,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ synced: totalSynced }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: unknown) {
-    console.error("social-sync-accounts error:", err);
+    console.error("[social-sync-accounts] error:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

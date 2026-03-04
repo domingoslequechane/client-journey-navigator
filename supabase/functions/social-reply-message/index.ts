@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
+const LATE_API_BASE = "https://getlate.dev/api/v1";
+
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -52,8 +54,8 @@ Deno.serve(async (req) => {
     if (lateProfileId && lateApiKey && message.external_id) {
       try {
         const endpoint = message.message_type === "comment"
-          ? `https://api.getlate.dev/v1/profiles/${lateProfileId}/comments/${message.external_id}/reply`
-          : `https://api.getlate.dev/v1/profiles/${lateProfileId}/messages/${message.external_id}/reply`;
+          ? `${LATE_API_BASE}/comments/${message.external_id}/reply?profileId=${lateProfileId}`
+          : `${LATE_API_BASE}/messages/${message.external_id}/reply?profileId=${lateProfileId}`;
 
         const lateResponse = await fetch(endpoint, {
           method: "POST",
@@ -61,9 +63,9 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ content: reply_content }),
         });
 
-        if (!lateResponse.ok) console.error("Late.dev reply error:", await lateResponse.text());
+        if (!lateResponse.ok) console.error("[social-reply-message] Late.dev reply error:", await lateResponse.text());
       } catch (err) {
-        console.error("Late.dev reply failed:", err);
+        console.error("[social-reply-message] Late.dev reply failed:", err);
       }
     }
 
@@ -75,7 +77,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error: unknown) {
-    console.error("Error:", error);
+    console.error("[social-reply-message] Error:", error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

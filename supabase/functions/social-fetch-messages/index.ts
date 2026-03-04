@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
+const LATE_API_BASE = "https://getlate.dev/api/v1";
+
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -58,11 +60,11 @@ Deno.serve(async (req) => {
     let totalFetched = 0;
 
     for (const client of clientsToFetch) {
-      const lateResponse = await fetch(`https://api.getlate.dev/v1/profiles/${client.late_profile_id}/messages`, {
+      const lateResponse = await fetch(`${LATE_API_BASE}/messages?profileId=${client.late_profile_id}`, {
         headers: { Authorization: `Bearer ${lateApiKey}`, "Content-Type": "application/json" },
       });
 
-      if (!lateResponse.ok) { console.error(`Late.dev API error for client ${client.id}:`, await lateResponse.text()); continue; }
+      if (!lateResponse.ok) { console.error(`[social-fetch-messages] Late.dev API error for client ${client.id}:`, await lateResponse.text()); continue; }
 
       const lateData = await lateResponse.json();
       const lateMessages = lateData.data || lateData.messages || [];
@@ -88,7 +90,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ fetched: totalFetched }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error: unknown) {
-    console.error("Error:", error);
+    console.error("[social-fetch-messages] Error:", error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
