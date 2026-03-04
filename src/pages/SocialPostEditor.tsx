@@ -23,8 +23,8 @@ import {
   Upload, Calendar, Clock, Loader2, X, 
   Image as ImageIcon, Zap, Sparkles, LayoutGrid, 
   Layers, Plus, AlertCircle, 
-  CheckCircle2, Smartphone, Type, Share2, MapPin, MessageSquare, Phone,
-  CircleDashed, Film, ArrowLeft, Save, Trash2
+  Smartphone, MapPin, Phone,
+  ArrowLeft, FileText, Trash2, Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -43,6 +43,7 @@ interface PostItem {
   ctaValue: string;
   scheduledAt: string;
   scheduledTime: string;
+  selectedAccountIds: string[]; // Agora cada post tem seus próprios canais
 }
 
 export default function SocialPostEditor() {
@@ -51,10 +52,9 @@ export default function SocialPostEditor() {
   const navigate = useNavigate();
   const clientId = searchParams.get('clientId');
   
-  const { posts, createPost, updatePost, publishPost } = useSocialPosts();
+  const { createPost, updatePost, publishPost } = useSocialPosts();
   const { accounts } = useSocialAccounts(clientId);
   
-  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [postItems, setPostItems] = useState<PostItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [previewPlatform, setPreviewPlatform] = useState<SocialPlatform>('instagram');
@@ -70,7 +70,7 @@ export default function SocialPostEditor() {
 
   // Carregar post se estiver editando
   useEffect(() => {
-    if (postId) {
+    if (postId && connectedAccounts.length > 0) {
       const loadPost = async () => {
         const { data, error } = await supabase
           .from('social_posts')
@@ -79,7 +79,10 @@ export default function SocialPostEditor() {
           .single();
         
         if (data) {
-          setSelectedAccountIds(connectedAccounts.filter(a => data.platforms.includes(a.platform)).map(a => a.id));
+          const accountIds = connectedAccounts
+            .filter(a => data.platforms.includes(a.platform))
+            .map(a => a.id);
+
           setPostItems([{
             id: data.id,
             content: data.content || '',
@@ -91,35 +94,57 @@ export default function SocialPostEditor() {
             ctaValue: data.cta_value || '',
             scheduledAt: data.scheduled_at ? format(new Date(data.scheduled_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
             scheduledTime: data.scheduled_at ? format(new Date(data.scheduled_at), 'HH:mm') : getDefaultTime(),
+            selectedAccountIds: accountIds,
           }]);
         }
         setIsLoadingPost(false);
       };
       loadPost();
+    } else if (!postId) {
+      setIsLoadingPost(false);
+      // Iniciar com um post vazio se não houver mídias ainda
+      if (postItems.length === 0) {
+        handleAddEmptyPost();
+      }
     }
   }, [postId, connectedAccounts.length]);
+
+  const handleAddEmptyPost = () => {
+    const newItem: PostItem = {
+      id: crypto.randomUUID(),
+      content: '',
+      files: [],
+      mediaUrls: [],
+      contentType: 'feed',
+      location: '',
+      ctaType: 'none',
+      ctaValue: '',
+      scheduledAt: format(new Date(), 'yyyy-MM-dd'),
+      scheduledTime: getDefaultTime(),
+      selectedAccountIds: [],
+    };
+    setPostItems(prev => [...prev, newItem]);
+    setActiveIndex(postItems.length);
+  };
 
   const handleFileSelection = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const selectedFiles = Array.from(files);
+    
     if (selectedFiles.length > 1) {
       setPendingFiles(selectedFiles);
       setShowUploadChoice(true);
     } else {
       const file = selectedFiles[0];
       const localUrl = URL.createObjectURL(file);
-      setPostItems([{
-        id: crypto.randomUUID(),
-        content: '',
-        files: [file],
-        mediaUrls: [localUrl],
-        contentType: file.type.startsWith('video/') ? 'video' : 'feed',
-        location: '',
-        ctaType: 'none',
-        ctaValue: '',
-        scheduledAt: format(new Date(), 'yyyy-MM-dd'),
-        scheduledTime: getDefaultTime(),
-      }]);
+      
+      if (currentPostItem) {
+        updatePostItem(currentPostItem.id, {
+          files: [...currentPostItem.files, file],
+          mediaUrls: [...currentPostItem.mediaUrls, localUrl],
+          contentType: file.type.startsWith('video/') ? 'video' : currentPostItem.contentType
+        });
+      }
     }
   };
 
@@ -127,18 +152,13 @@ export default function SocialPostEditor() {
     setShowUploadChoice(false);
     if (choice === 'carousel') {
       const localUrls = pendingFiles.map(f => URL.createObjectURL(f));
-      setPostItems([{
-        id: crypto.randomUUID(),
-        content: '',
-        files: pendingFiles,
-        mediaUrls: localUrls,
-        contentType: 'carousel',
-        location: '',
-        ctaType: 'none',
-        ctaValue: '',
-        scheduledAt: format(new Date(), 'yyyy-MM-dd'),
-        scheduledTime: getDefaultTime(),
-      }]);
+      if (currentPostItem) {
+        updatePostItem(currentPostItem.id, {
+          files: [...currentPostItem.files, ...pendingFiles],
+          mediaUrls: [...currentPostItem.mediaUrls, ...localUrls],
+          contentType: 'carousel'
+        });
+      }
     } else {
       const newItems: PostItem[] = pendingFiles.map(file => ({
         id: crypto.randomUUID(),
@@ -151,8 +171,10 @@ export default function SocialPostEditor() {
         ctaValue: '',
         scheduledAt: format(new Date(), 'yyyy-MM-dd'),
         scheduledTime: getDefaultTime(),
+        selectedAccountIds: currentPostItem?.selectedAccountIds || [],
       }));
-      setPostItems(newItems);
+      setPostItems(prev => [...prev, ...newItems]);
+      setActiveIndex(postItems.length); // Focar no primeiro novo item
     }
     setPendingFiles([]);
   };
@@ -171,21 +193,24 @@ export default function SocialPostEditor() {
   };
 
   const handleSaveAction = async (status: 'draft' | 'scheduled' | 'published') => {
-    if (selectedAccountIds.length === 0) {
-      toast.error('Selecione pelo menos um canal.');
+    const invalidPosts = postItems.filter(item => item.selectedAccountIds.length === 0);
+    if (invalidPosts.length > 0) {
+      toast.error('Todas as postagens devem ter pelo menos um canal selecionado.');
       return;
     }
+
     setIsSaving(true);
     try {
-      const selectedAccounts = connectedAccounts.filter(a => selectedAccountIds.includes(a.id));
-      const platforms = Array.from(new Set(selectedAccounts.map(a => a.platform)));
-
       for (const item of postItems) {
         let finalMediaUrls = item.mediaUrls.filter(url => !url.startsWith('blob:'));
         if (item.files.length > 0) {
           const uploadedUrls = await uploadFilesToLate(item.files);
           finalMediaUrls = [...finalMediaUrls, ...uploadedUrls];
         }
+
+        const selectedAccounts = connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id));
+        const platforms = Array.from(new Set(selectedAccounts.map(a => a.platform)));
+
         const scheduledAt = new Date(`${item.scheduledAt}T${item.scheduledTime}`).toISOString();
         const postData = {
           content: item.content,
@@ -200,16 +225,16 @@ export default function SocialPostEditor() {
           client_id: clientId,
         };
 
-        if (postId) {
+        if (postId && postItems.length === 1) {
           await updatePost.mutateAsync({ id: postId, ...postData } as any);
         } else {
           const created = await createPost.mutateAsync({ post: postData, silent: true });
           if (status !== 'draft' && (created as any)?.data?.id) {
-            await publishPost.mutateAsync({ postId: (created as any).data.id, publishNow: status === 'published' });
+            await publishPost.mutateAsync({ postId: (created as any).data.id, publishNow: status === 'published', silent: true });
           }
         }
       }
-      toast.success('Postagem processada com sucesso!');
+      toast.success('Todas as postagens foram processadas!');
       navigate('/app/social-media');
     } catch (err: any) {
       toast.error('Erro: ' + err.message);
@@ -222,9 +247,25 @@ export default function SocialPostEditor() {
     setPostItems(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
   };
 
-  const selectedPlatforms = useMemo(() => {
-    return Array.from(new Set(connectedAccounts.filter(a => selectedAccountIds.includes(a.id)).map(a => a.platform as SocialPlatform)));
-  }, [selectedAccountIds, connectedAccounts]);
+  const handleDeletePostItem = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (postItems.length === 1) {
+      toast.error('Você deve ter pelo menos uma postagem.');
+      return;
+    }
+    const newItems = postItems.filter(p => p.id !== id);
+    setPostItems(newItems);
+    if (activeIndex >= newItems.length) {
+      setActiveIndex(newItems.length - 1);
+    }
+  };
+
+  const currentPlatforms = useMemo(() => {
+    if (!currentPostItem) return [];
+    return Array.from(new Set(connectedAccounts
+      .filter(a => currentPostItem.selectedAccountIds.includes(a.id))
+      .map(a => a.platform as SocialPlatform)));
+  }, [currentPostItem, connectedAccounts]);
 
   if (isLoadingPost) {
     return <div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -240,266 +281,291 @@ export default function SocialPostEditor() {
           </Button>
           <div>
             <h1 className="font-bold text-lg">{postId ? 'Editar Publicação' : 'Nova Publicação'}</h1>
-            <p className="text-xs text-muted-foreground">Configure os detalhes e visualize em tempo real</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+              {postItems.length} {postItems.length === 1 ? 'Postagem' : 'Postagens em lote'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving || postItems.length === 0}>
-            Salvar Rascunho
+          <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving}>
+            Salvar Rascunhos
           </Button>
-          <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || postItems.length === 0} className="gap-2">
-            <Calendar className="h-4 w-4" /> Agendar
+          <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving} className="gap-2">
+            <Calendar className="h-4 w-4" /> Agendar Tudo
           </Button>
-          <Button onClick={() => handleSaveAction('published')} disabled={isSaving || postItems.length === 0} className="gap-2 shadow-lg shadow-primary/20 px-6">
+          <Button onClick={() => handleSaveAction('published')} disabled={isSaving} className="gap-2 shadow-lg shadow-primary/20 px-6">
             <Zap className="h-4 w-4" /> Publicar Agora
           </Button>
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[1fr,450px]">
-        {/* Coluna de Configuração */}
-        <ScrollArea className="h-full bg-muted/5">
-          <div className="p-6 md:p-10 max-w-3xl mx-auto space-y-10">
-            
-            {/* SEÇÃO 1: CANAIS */}
-            <AnimatedContainer animation="fade-up" className="space-y-4">
-              <div className="flex items-center gap-2 text-primary">
-                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">1</div>
-                <h3 className="font-bold uppercase tracking-wider text-xs">Canais de Destino</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {connectedAccounts.map(acc => (
-                  <div 
-                    key={acc.id} 
-                    className={cn(
-                      "flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer",
-                      selectedAccountIds.includes(acc.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/20"
-                    )}
-                    onClick={() => {
-                      setSelectedAccountIds(prev => 
-                        prev.includes(acc.id) ? prev.filter(id => id !== acc.id) : [...prev, acc.id]
-                      );
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <PlatformIcon platform={acc.platform as SocialPlatform} size="md" variant="circle" />
-                      <div>
-                        <p className="font-bold text-sm">{acc.account_name}</p>
-                        <p className="text-[10px] text-muted-foreground">@{acc.username}</p>
+      <main className="flex-1 overflow-hidden flex">
+        
+        {/* NAVEGADOR LATERAL DE POSTS (PÁGINAS) */}
+        <aside className="w-64 border-r bg-muted/10 flex flex-col shrink-0">
+          <div className="p-4 border-b bg-background/50 flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Páginas</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleAddEmptyPost}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <ScrollArea className="flex-1">
+            <div className="p-2 space-y-2">
+              {postItems.map((item, index) => (
+                <div 
+                  key={item.id}
+                  onClick={() => setActiveIndex(index)}
+                  className={cn(
+                    "group relative p-3 rounded-xl border-2 transition-all cursor-pointer overflow-hidden",
+                    activeIndex === index ? "border-primary bg-primary/5 shadow-sm" : "border-transparent hover:bg-muted/50"
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden border">
+                      {item.mediaUrls[0] ? (
+                        <img src={item.mediaUrls[0]} className="w-full h-full object-cover" />
+                      ) : (
+                        <FileText className="h-5 w-5 text-muted-foreground/50" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold truncate">Post #{index + 1}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {item.content || 'Sem legenda...'}
+                      </p>
+                      <div className="flex gap-1 mt-1">
+                        {connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).slice(0, 3).map(a => (
+                          <PlatformIcon key={a.id} platform={a.platform as SocialPlatform} size="xs" />
+                        ))}
                       </div>
                     </div>
-                    <Checkbox checked={selectedAccountIds.includes(acc.id)} onCheckedChange={() => {}} />
                   </div>
-                ))}
-              </div>
-            </AnimatedContainer>
-
-            {/* SEÇÃO 2: MÍDIA */}
-            <AnimatedContainer animation="fade-up" delay={0.1} className="space-y-4">
-              <Separator />
-              <div className="flex items-center gap-2 text-primary">
-                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">2</div>
-                <h3 className="font-bold uppercase tracking-wider text-xs">Conteúdo Visual</h3>
-              </div>
-
-              {postItems.length === 0 ? (
-                <div 
-                  className="border-2 border-dashed border-border rounded-2xl p-16 text-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                    <Upload className="h-10 w-10 text-primary" />
-                  </div>
-                  <p className="text-lg font-medium">Carregar fotos ou vídeos</p>
-                  <p className="text-sm text-muted-foreground mt-1">Clique para selecionar arquivos do seu dispositivo</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {postItems.flatMap(item => item.mediaUrls).map((url, i) => (
-                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-border group shadow-sm">
-                      <img src={url} className="w-full h-full object-cover" />
-                      <button 
-                        onClick={() => {
-                          const newItems = postItems.map(item => ({
-                            ...item,
-                            mediaUrls: item.mediaUrls.filter(u => u !== url),
-                            files: item.files.filter((_, idx) => item.mediaUrls[idx] !== url)
-                          })).filter(item => item.mediaUrls.length > 0);
-                          setPostItems(newItems);
-                        }}
-                        className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
                   <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 hover:bg-muted/50 transition-colors text-muted-foreground"
+                    onClick={(e) => handleDeletePostItem(item.id, e)}
+                    className="absolute top-1 right-1 p-1 rounded-full bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-white"
                   >
-                    <Plus className="h-6 w-6" />
-                    <span className="text-[10px] font-bold uppercase">Adicionar</span>
+                    <X className="h-3 w-3" />
                   </button>
                 </div>
-              )}
-              <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileSelection(e.target.files)} />
-            </AnimatedContainer>
+              ))}
+            </div>
+          </ScrollArea>
+        </aside>
 
-            {/* SEÇÃO 3: DETALHES */}
-            {postItems.length > 0 && (
-              <AnimatedContainer animation="fade-up" delay={0.2} className="space-y-6">
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-primary">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">3</div>
-                    <h3 className="font-bold uppercase tracking-wider text-xs">Configuração do Post</h3>
-                  </div>
-                  {postItems.length > 1 && (
-                    <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
-                      {postItems.map((_, i) => (
-                        <Button 
-                          key={i} 
-                          variant={activeIndex === i ? "default" : "ghost"} 
-                          size="sm" 
-                          className="h-7 w-7 p-0 text-xs" 
-                          onClick={() => setActiveIndex(i)}
+        {/* EDITOR CENTRAL */}
+        <div className="flex-1 overflow-hidden flex flex-col bg-background">
+          <ScrollArea className="flex-1">
+            <div className="p-6 md:p-10 max-w-3xl mx-auto w-full space-y-10">
+              
+              {currentPostItem && (
+                <AnimatedContainer animation="fade-in" key={currentPostItem.id} className="space-y-10">
+                  
+                  {/* SEÇÃO 1: CANAIS */}
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2 text-primary">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">1</div>
+                      <h3 className="font-bold uppercase tracking-wider text-xs">Canais para este Post</h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {connectedAccounts.map(acc => (
+                        <div 
+                          key={acc.id} 
+                          className={cn(
+                            "flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer",
+                            currentPostItem.selectedAccountIds.includes(acc.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/20"
+                          )}
+                          onClick={() => {
+                            const ids = currentPostItem.selectedAccountIds.includes(acc.id)
+                              ? currentPostItem.selectedAccountIds.filter(id => id !== acc.id)
+                              : [...currentPostItem.selectedAccountIds, acc.id];
+                            updatePostItem(currentPostItem.id, { selectedAccountIds: ids });
+                          }}
                         >
-                          {i + 1}
-                        </Button>
+                          <div className="flex items-center gap-3">
+                            <PlatformIcon platform={acc.platform as SocialPlatform} size="md" variant="circle" />
+                            <div>
+                              <p className="font-bold text-sm">{acc.account_name}</p>
+                              <p className="text-[10px] text-muted-foreground">@{acc.username}</p>
+                            </div>
+                          </div>
+                          <Checkbox checked={currentPostItem.selectedAccountIds.includes(acc.id)} onCheckedChange={() => {}} />
+                        </div>
                       ))}
                     </div>
-                  )}
-                </div>
+                  </section>
 
-                {currentPostItem && (
-                  <div className="space-y-8 bg-card p-6 rounded-3xl border shadow-sm">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-bold">Legenda</Label>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="gap-2 border-primary/30 text-primary hover:bg-primary/5 h-8"
-                          onClick={() => setShowAICaptionModal(true)}
-                        >
-                          <Sparkles className="h-4 w-4" /> Gerar com QIA
-                        </Button>
-                      </div>
-                      <Textarea 
-                        value={currentPostItem.content} 
-                        onChange={e => updatePostItem(currentPostItem.id, { content: e.target.value })}
-                        placeholder="O que você quer dizer ao seu público?"
-                        className="min-h-[180px] rounded-2xl border-2 text-base"
-                      />
+                  {/* SEÇÃO 2: MÍDIA */}
+                  <section className="space-y-4">
+                    <Separator />
+                    <div className="flex items-center gap-2 text-primary">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">2</div>
+                      <h3 className="font-bold uppercase tracking-wider text-xs">Conteúdo Visual</h3>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <Label className="text-sm font-bold">Tipo de Conteúdo</Label>
-                        <Select 
-                          value={currentPostItem.contentType} 
-                          onValueChange={(v: any) => updatePostItem(currentPostItem.id, { contentType: v })}
-                        >
-                          <SelectTrigger className="h-12 rounded-xl border-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="feed">Feed</SelectItem>
-                            <SelectItem value="stories">Story</SelectItem>
-                            <SelectItem value="reels">Reel</SelectItem>
-                            <SelectItem value="carousel">Carrossel</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-3">
-                        <Label className="text-sm font-bold">Localização</Label>
-                        <div className="relative">
-                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input 
-                            value={currentPostItem.location} 
-                            onChange={e => updatePostItem(currentPostItem.id, { location: e.target.value })}
-                            placeholder="Onde foi isso?"
-                            className="h-12 pl-11 rounded-xl border-2"
-                          />
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                      {currentPostItem.mediaUrls.map((url, i) => (
+                        <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-border group shadow-sm">
+                          <img src={url} className="w-full h-full object-cover" />
+                          <button 
+                            onClick={() => {
+                              const newUrls = currentPostItem.mediaUrls.filter((_, idx) => idx !== i);
+                              const newFiles = currentPostItem.files.filter((_, idx) => idx !== i);
+                              updatePostItem(currentPostItem.id, { mediaUrls: newUrls, files: newFiles });
+                            }}
+                            className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
                         </div>
-                      </div>
+                      ))}
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 hover:bg-muted/50 transition-colors text-muted-foreground"
+                      >
+                        <Upload className="h-6 w-6" />
+                        <span className="text-[10px] font-bold uppercase">Upload</span>
+                      </button>
+                    </div>
+                    <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileSelection(e.target.files)} />
+                  </section>
+
+                  {/* SEÇÃO 3: CONFIGURAÇÃO */}
+                  <section className="space-y-6">
+                    <Separator />
+                    <div className="flex items-center gap-2 text-primary">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">3</div>
+                      <h3 className="font-bold uppercase tracking-wider text-xs">Legenda e Configurações</h3>
                     </div>
 
-                    <div className="space-y-4">
-                      <Label className="text-sm font-bold">Chamada para Ação (CTA)</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Select 
-                          value={currentPostItem.ctaType} 
-                          onValueChange={(v: any) => updatePostItem(currentPostItem.id, { ctaType: v })}
-                        >
-                          <SelectTrigger className="h-12 rounded-xl border-2">
-                            <SelectValue placeholder="Selecione um CTA" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhum</SelectItem>
-                            <SelectItem value="channel">Mensagem pelo Canal</SelectItem>
-                            <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {currentPostItem.ctaType === 'whatsapp' && (
-                          <div className="relative animate-in fade-in slide-in-from-left-2">
-                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <div className="space-y-8 bg-card p-6 rounded-3xl border shadow-sm">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-bold">Legenda</Label>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="gap-2 border-primary/30 text-primary hover:bg-primary/5 h-8"
+                            onClick={() => setShowAICaptionModal(true)}
+                          >
+                            <Sparkles className="h-4 w-4" /> Gerar com QIA
+                          </Button>
+                        </div>
+                        <Textarea 
+                          value={currentPostItem.content} 
+                          onChange={e => updatePostItem(currentPostItem.id, { content: e.target.value })}
+                          placeholder="O que você quer dizer ao seu público?"
+                          className="min-h-[180px] rounded-2xl border-2 text-base"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <Label className="text-sm font-bold">Tipo de Conteúdo</Label>
+                          <Select 
+                            value={currentPostItem.contentType} 
+                            onValueChange={(v: any) => updatePostItem(currentPostItem.id, { contentType: v })}
+                          >
+                            <SelectTrigger className="h-12 rounded-xl border-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="feed">Feed</SelectItem>
+                              <SelectItem value="stories">Story</SelectItem>
+                              <SelectItem value="reels">Reel</SelectItem>
+                              <SelectItem value="carousel">Carrossel</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="text-sm font-bold">Localização</Label>
+                          <div className="relative">
+                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
-                              value={currentPostItem.ctaValue} 
-                              onChange={e => updatePostItem(currentPostItem.id, { ctaValue: e.target.value })}
-                              placeholder="Número com DDD"
+                              value={currentPostItem.location} 
+                              onChange={e => updatePostItem(currentPostItem.id, { location: e.target.value })}
+                              placeholder="Onde foi isso?"
                               className="h-12 pl-11 rounded-xl border-2"
                             />
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <Label className="text-sm font-bold">Data de Publicação</Label>
-                        <div className="relative">
-                          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input 
-                            type="date" 
-                            value={currentPostItem.scheduledAt} 
-                            onChange={e => updatePostItem(currentPostItem.id, { scheduledAt: e.target.value })} 
-                            className="h-12 pl-11 rounded-xl border-2" 
-                          />
                         </div>
                       </div>
-                      <div className="space-y-3">
-                        <Label className="text-sm font-bold">Horário</Label>
-                        <div className="relative">
-                          <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input 
-                            type="time" 
-                            value={currentPostItem.scheduledTime} 
-                            onChange={e => updatePostItem(currentPostItem.id, { scheduledTime: e.target.value })} 
-                            className="h-12 pl-11 rounded-xl border-2" 
-                          />
+
+                      <div className="space-y-4">
+                        <Label className="text-sm font-bold">Chamada para Ação (CTA)</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Select 
+                            value={currentPostItem.ctaType} 
+                            onValueChange={(v: any) => updatePostItem(currentPostItem.id, { ctaType: v })}
+                          >
+                            <SelectTrigger className="h-12 rounded-xl border-2">
+                              <SelectValue placeholder="Selecione um CTA" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Nenhum</SelectItem>
+                              <SelectItem value="channel">Mensagem pelo Canal</SelectItem>
+                              <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {currentPostItem.ctaType === 'whatsapp' && (
+                            <div className="relative animate-in fade-in slide-in-from-left-2">
+                              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input 
+                                value={currentPostItem.ctaValue} 
+                                onChange={e => updatePostItem(currentPostItem.id, { ctaValue: e.target.value })}
+                                placeholder="Número com DDD"
+                                className="h-12 pl-11 rounded-xl border-2"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <Label className="text-sm font-bold">Data de Publicação</Label>
+                          <div className="relative">
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                              type="date" 
+                              value={currentPostItem.scheduledAt} 
+                              onChange={e => updatePostItem(currentPostItem.id, { scheduledAt: e.target.value })} 
+                              className="h-12 pl-11 rounded-xl border-2" 
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <Label className="text-sm font-bold">Horário</Label>
+                          <div className="relative">
+                            <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                              type="time" 
+                              value={currentPostItem.scheduledTime} 
+                              onChange={e => updatePostItem(currentPostItem.id, { scheduledTime: e.target.value })} 
+                              className="h-12 pl-11 rounded-xl border-2" 
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </AnimatedContainer>
-            )}
-          </div>
-        </ScrollArea>
+                  </section>
+                </AnimatedContainer>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
 
-        {/* Coluna de Preview Lateral */}
-        <aside className="hidden lg:flex flex-col bg-muted/10 border-l border-border overflow-hidden">
+        {/* PREVIEW LATERAL DIREITO */}
+        <aside className="w-[400px] flex flex-col bg-muted/10 border-l border-border overflow-hidden shrink-0">
           <div className="p-4 border-b bg-background/50 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               <Smartphone className="h-4 w-4 text-muted-foreground" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Preview Real</span>
             </div>
             <div className="flex gap-1">
-              {selectedPlatforms.length > 0 ? (
-                selectedPlatforms.map(p => (
+              {currentPlatforms.length > 0 ? (
+                currentPlatforms.map(p => (
                   <button 
                     key={p} 
                     onClick={() => setPreviewPlatform(p)}
@@ -517,8 +583,8 @@ export default function SocialPostEditor() {
             </div>
           </div>
           
-          <div className="flex-1 flex items-center justify-center p-10 overflow-y-auto">
-            <div className="w-full max-w-[320px] animate-in fade-in zoom-in-95 duration-500">
+          <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+            <div className="w-full max-w-[300px] animate-in fade-in zoom-in-95 duration-500">
               <div className="shadow-2xl rounded-[3rem] overflow-hidden border-[10px] border-black bg-black">
                 {currentPostItem ? (
                   <PostPreview
@@ -540,7 +606,7 @@ export default function SocialPostEditor() {
         </aside>
       </main>
 
-      {/* Diálogos Auxiliares */}
+      {/* DIÁLOGOS AUXILIARES */}
       <Dialog open={showUploadChoice} onOpenChange={setShowUploadChoice}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader><DialogTitle>Como deseja postar?</DialogTitle></DialogHeader>
@@ -566,7 +632,7 @@ export default function SocialPostEditor() {
       <AICaptionModal
         open={showAICaptionModal}
         onOpenChange={setShowAICaptionModal}
-        platforms={selectedPlatforms}
+        platforms={currentPlatforms}
         contentType={currentPostItem?.contentType || 'feed'}
         files={currentPostItem?.files || []}
         clientId={clientId}
