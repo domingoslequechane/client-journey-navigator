@@ -25,12 +25,18 @@ import {
   Plus, Smartphone, MapPin, 
   ArrowLeft, FileText, Trash2,
   CircleDashed, Film, Layers, Image,
-  LayoutGrid, Info
+  LayoutGrid
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
