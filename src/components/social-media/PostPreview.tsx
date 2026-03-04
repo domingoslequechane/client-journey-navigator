@@ -21,6 +21,38 @@ export function PostPreview({ content, mediaUrl, platform, accountName, accountU
   const username = accountUsername || 'minhapagina';
   const initials = displayName.substring(0, 2).toUpperCase();
 
+  const isVideo = (url?: string) => {
+    if (!url) return false;
+    return /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video');
+  };
+
+  const MediaDisplay = ({ url, className }: { url?: string; className?: string }) => {
+    if (!url) return (
+      <div className={cn("aspect-square bg-muted flex items-center justify-center", className)}>
+        <span className="text-muted-foreground text-xs">Sem mídia</span>
+      </div>
+    );
+
+    if (isVideo(url)) {
+      return (
+        <div className={cn("aspect-square bg-black relative flex items-center justify-center", className)}>
+          <video src={url} className="w-full h-full object-contain" muted playsInline />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={cn("aspect-square bg-muted", className)}>
+        <img src={url} alt="" className="w-full h-full object-cover" />
+      </div>
+    );
+  };
+
   const Avatar = ({ size = 'w-8 h-8', className }: { size?: string; className?: string }) => (
     accountAvatarUrl ? (
       <img src={accountAvatarUrl} alt="" className={cn(size, "rounded-full object-cover", className)} />
@@ -33,23 +65,23 @@ export function PostPreview({ content, mediaUrl, platform, accountName, accountU
 
   if (platform === 'instagram') return (
     <InstagramPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit}
-      displayName={displayName} username={username} avatar={<Avatar size="w-8 h-8" className="bg-gradient-to-br from-[hsl(280,70%,50%)] via-[hsl(330,80%,55%)] to-[hsl(30,90%,55%)]" />} />
+      displayName={displayName} username={username} avatar={<Avatar size="w-8 h-8" className="bg-gradient-to-br from-[hsl(280,70%,50%)] via-[hsl(330,80%,55%)] to-[hsl(30,90%,55%)]" />} MediaDisplay={MediaDisplay} />
   );
   if (platform === 'facebook') return (
     <FacebookPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit}
-      displayName={displayName} avatar={<Avatar size="w-10 h-10" className="bg-[hsl(220,70%,50%)]" />} />
+      displayName={displayName} avatar={<Avatar size="w-10 h-10" className="bg-[hsl(220,70%,50%)]" />} MediaDisplay={MediaDisplay} />
   );
   if (platform === 'linkedin') return (
     <LinkedInPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit}
-      displayName={displayName} avatar={<Avatar size="w-10 h-10" className="bg-[hsl(210,80%,40%)]" />} />
+      displayName={displayName} avatar={<Avatar size="w-10 h-10" className="bg-[hsl(210,80%,40%)]" />} MediaDisplay={MediaDisplay} />
   );
   if (platform === 'twitter') return (
     <TwitterPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit}
-      displayName={displayName} username={username} avatar={<Avatar size="w-10 h-10" className="bg-foreground" />} />
+      displayName={displayName} username={username} avatar={<Avatar size="w-10 h-10" className="bg-foreground" />} MediaDisplay={MediaDisplay} />
   );
   return (
     <GenericPreview content={content} mediaUrl={mediaUrl} platform={platform} isOverLimit={isOverLimit} charLimit={charLimit}
-      displayName={displayName} username={username} avatarUrl={accountAvatarUrl} />
+      displayName={displayName} username={username} avatarUrl={accountAvatarUrl} MediaDisplay={MediaDisplay} />
   );
 }
 
@@ -60,9 +92,10 @@ interface PreviewCommonProps {
   charLimit: number;
   displayName: string;
   avatar: React.ReactNode;
+  MediaDisplay: React.ComponentType<{ url?: string; className?: string }>;
 }
 
-function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, username }: PreviewCommonProps & { username: string }) {
+function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, username, MediaDisplay }: PreviewCommonProps & { username: string }) {
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
       <div className="flex items-center justify-between p-3">
@@ -79,15 +112,7 @@ function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit, displayNa
         <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
       </div>
 
-      {mediaUrl ? (
-        <div className="aspect-square bg-muted">
-          <img src={mediaUrl} alt="" className="w-full h-full object-cover" />
-        </div>
-      ) : (
-        <div className="aspect-square bg-muted flex items-center justify-center">
-          <span className="text-muted-foreground text-xs">Sem imagem</span>
-        </div>
-      )}
+      <MediaDisplay url={mediaUrl} />
 
       <div className="p-3 space-y-2">
         <div className="flex items-center justify-between">
@@ -115,7 +140,7 @@ function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit, displayNa
   );
 }
 
-function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar }: PreviewCommonProps) {
+function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, MediaDisplay }: PreviewCommonProps) {
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
       <div className="flex items-center gap-2 p-3">
@@ -132,11 +157,7 @@ function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit, displayNam
         </p>
       </div>
 
-      {mediaUrl && (
-        <div className="aspect-video bg-muted">
-          <img src={mediaUrl} alt="" className="w-full h-full object-cover" />
-        </div>
-      )}
+      {mediaUrl && <MediaDisplay url={mediaUrl} className="aspect-video" />}
 
       <div className="p-3 border-t border-border flex items-center justify-around text-muted-foreground">
         <div className="flex items-center gap-1 text-xs"><ThumbsUp className="h-4 w-4" /> Curtir</div>
@@ -153,7 +174,7 @@ function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit, displayNam
   );
 }
 
-function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar }: PreviewCommonProps) {
+function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, MediaDisplay }: PreviewCommonProps) {
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
       <div className="flex items-center gap-2 p-3">
@@ -170,11 +191,7 @@ function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit, displayNam
         </p>
       </div>
 
-      {mediaUrl && (
-        <div className="aspect-video bg-muted">
-          <img src={mediaUrl} alt="" className="w-full h-full object-cover" />
-        </div>
-      )}
+      {mediaUrl && <MediaDisplay url={mediaUrl} className="aspect-video" />}
 
       <div className="p-3 border-t border-border flex items-center justify-around text-muted-foreground">
         <div className="flex items-center gap-1 text-xs"><ThumbsUp className="h-4 w-4" /> Gostei</div>
@@ -192,7 +209,7 @@ function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit, displayNam
   );
 }
 
-function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, username, avatar }: PreviewCommonProps & { username: string }) {
+function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, username, avatar, MediaDisplay }: PreviewCommonProps & { username: string }) {
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
       <div className="flex items-start gap-2 p-3">
@@ -205,11 +222,7 @@ function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit, displayName
           <p className="text-xs whitespace-pre-wrap mt-1 line-clamp-4">
             {content || <span className="text-muted-foreground italic">Escreva o conteúdo...</span>}
           </p>
-          {mediaUrl && (
-            <div className="mt-2 rounded-xl overflow-hidden aspect-video bg-muted">
-              <img src={mediaUrl} alt="" className="w-full h-full object-cover" />
-            </div>
-          )}
+          {mediaUrl && <MediaDisplay url={mediaUrl} className="mt-2 rounded-xl overflow-hidden aspect-video" />}
           <div className="flex items-center justify-between mt-2 text-muted-foreground">
             <MessageCircle className="h-4 w-4" />
             <Repeat2 className="h-4 w-4" />
@@ -227,9 +240,10 @@ function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit, displayName
   );
 }
 
-function GenericPreview({ content, mediaUrl, platform, isOverLimit, charLimit, displayName, username, avatarUrl }: {
+function GenericPreview({ content, mediaUrl, platform, isOverLimit, charLimit, displayName, username, avatarUrl, MediaDisplay }: {
   content: string; mediaUrl?: string; platform: SocialPlatform; isOverLimit: boolean; charLimit: number;
   displayName: string; username: string; avatarUrl?: string;
+  MediaDisplay: React.ComponentType<{ url?: string; className?: string }>;
 }) {
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
@@ -244,11 +258,7 @@ function GenericPreview({ content, mediaUrl, platform, isOverLimit, charLimit, d
           <p className="text-[10px] text-muted-foreground">@{username}</p>
         </div>
       </div>
-      {mediaUrl && (
-        <div className="aspect-square bg-muted">
-          <img src={mediaUrl} alt="" className="w-full h-full object-cover" />
-        </div>
-      )}
+      {mediaUrl && <MediaDisplay url={mediaUrl} />}
       <div className="p-3">
         <p className="text-xs whitespace-pre-wrap line-clamp-4">
           {content || <span className="text-muted-foreground italic">Escreva o conteúdo...</span>}

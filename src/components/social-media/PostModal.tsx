@@ -271,12 +271,18 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     if (!files || files.length === 0) return;
     setUploading(true);
     setUploadProgress(0);
+    
+    // Create local previews for immediate feedback
+    const localUrls = Array.from(files).map(file => URL.createObjectURL(file));
+    updateCurrentPost({ mediaUrls: [...currentPost.mediaUrls, ...localUrls] });
+
     try {
-      const newUrls: string[] = [];
+      const finalUrls: string[] = [];
       const totalFiles = files.length;
       
       for (let i = 0; i < totalFiles; i++) {
         const file = files[i];
+        const localUrl = localUrls[i];
         
         // Facebook 4MB limit check
         const isFacebookSelected = currentPost.schedules.some(s =>
@@ -288,6 +294,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
         if (isFacebookSelected && file.type.startsWith('image/') && file.size > 4 * 1024 * 1024) {
           toast.error(`A imagem "${file.name}" excede o limite de 4MB do Facebook. Por favor, use uma imagem menor.`);
+          // Remove local preview if invalid
+          updateCurrentPost({ mediaUrls: currentPost.mediaUrls.filter(u => u !== localUrl) });
           continue;
         }
 
@@ -316,21 +324,21 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
           throw new Error('Falha ao enviar arquivo para o servidor de mídia');
         }
         
-        // Step 3: Use the publicUrl
-        newUrls.push(publicUrl);
+        // Step 3: Replace local URL with publicUrl
+        finalUrls.push(publicUrl);
+        updateCurrentPost({
+          mediaUrls: currentPost.mediaUrls.map(u => u === localUrl ? publicUrl : u)
+        });
         
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
-      }
-
-      if (newUrls.length > 1) {
-        setPendingFiles(newUrls);
-        setShowUploadChoice(true);
-      } else if (newUrls.length === 1) {
-        updateCurrentPost({ mediaUrls: [...currentPost.mediaUrls, ...newUrls] });
       }
     } catch (err: any) {
       console.error('Upload error:', err);
       toast.error(err.message || 'Erro ao carregar arquivos.');
+      // Cleanup local URLs on error if they weren't replaced
+      updateCurrentPost({
+        mediaUrls: currentPost.mediaUrls.filter(u => !u.startsWith('blob:'))
+      });
     } finally {
       setTimeout(() => {
         setUploading(false);
@@ -671,16 +679,28 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
                   {currentPost.mediaUrls.length > 0 && (
                     <div className="grid grid-cols-4 gap-1.5">
-                      {currentPost.mediaUrls.map((url, i) => (
-                        <div key={i} className="relative aspect-square rounded-md overflow-hidden group border border-border">
-                          <img src={url} alt="" className="w-full h-full object-cover" />
-                          {!isPublished && (
-                            <button onClick={() => removeMedia(i)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100" disabled={isSaving}>
-                              <X className="h-2.5 w-2.5" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                      {currentPost.mediaUrls.map((url, i) => {
+                        const isVideo = /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video') || url.startsWith('blob:');
+                        return (
+                          <div key={i} className="relative aspect-square rounded-md overflow-hidden group border border-border bg-muted">
+                            {isVideo ? (
+                              <video src={url} className="w-full h-full object-cover" muted />
+                            ) : (
+                              <img src={url} alt="" className="w-full h-full object-cover" />
+                            )}
+                            {!isPublished && (
+                              <button onClick={() => removeMedia(i)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100" disabled={isSaving}>
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            )}
+                            {url.startsWith('blob:') && (
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
