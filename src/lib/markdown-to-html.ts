@@ -1,4 +1,10 @@
-// Convert markdown to clean HTML for web display
+import DOMPurify from 'dompurify';
+
+/**
+ * Convert markdown to clean HTML for web display.
+ * This function uses regex for conversion and DOMPurify for sanitization
+ * to prevent XSS vulnerabilities.
+ */
 export function markdownToHtml(text: string): string {
   if (!text) return '';
   
@@ -59,5 +65,9 @@ export function markdownToHtml(text: string): string {
   html = html.replace(/<br\/>\s*<ol/g, '<ol');
   html = html.replace(/<\/ol>\s*<br\/>/g, '</ol>');
   
-  return html;
+  // Sanitize the final HTML to prevent XSS
+  // We allow 'target' and 'rel' attributes for links as they are explicitly added above
+  return DOMPurify.sanitize(html, {
+    ADD_ATTR: ['target', 'rel'],
+  });
 }
