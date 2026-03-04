@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const LATE_API_BASE = "https://api.getlate.dev/v1";
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
 
     if (!LATE_API_KEY) {
       console.error("LATE_API_KEY is missing");
-      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Server configuration error: LATE_API_KEY is missing" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const authHeader = req.headers.get("Authorization");
@@ -63,7 +63,6 @@ Deno.serve(async (req) => {
         console.error("Failed to create profile:", data);
         throw new Error(data.message || "Failed to create profile in Late API");
       }
-      // Late API might return { profile: { _id: ... } } or { _id: ... } depending on version
       return data.profile?._id || data._id;
     };
 
@@ -80,15 +79,14 @@ Deno.serve(async (req) => {
     }
 
     // Helper to get connect URL
-    const getConnectUrlParams = (profId: string) => {
-      const url = new URL(`${LATE_API_BASE}/connect/${platform}`);
-      url.searchParams.set("profileId", profId);
+    const getConnectUrl = (profId: string) => {
+      const url = new URL(`${LATE_API_BASE}/profiles/${profId}/connect/${platform}`);
       if (redirect_url) url.searchParams.set("redirectUrl", redirect_url);
       return url.toString();
     };
 
     // Try to get connect URL
-    let connectRes = await fetch(getConnectUrlParams(profileId), { 
+    let connectRes = await fetch(getConnectUrl(profileId), { 
       headers: { Authorization: `Bearer ${LATE_API_KEY}` } 
     });
 
@@ -100,7 +98,7 @@ Deno.serve(async (req) => {
         await supabase.from("clients").update({ late_profile_id: profileId }).eq("id", client_id);
         
         // Retry connect
-        connectRes = await fetch(getConnectUrlParams(profileId), { 
+        connectRes = await fetch(getConnectUrl(profileId), { 
           headers: { Authorization: `Bearer ${LATE_API_KEY}` } 
         });
       } catch (e: any) {

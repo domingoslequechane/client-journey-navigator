@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const LATE_API_BASE = "https://api.getlate.dev/v1";
 
 const getPlatformContentType = (platform: string, internalContentType: string): string => {
   if (internalContentType === 'stories') return 'story';

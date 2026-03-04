@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const LATE_API_BASE = "https://api.getlate.dev/v1";
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
     const platformMap: Record<string, string> = {
       twitter: "twitter", instagram: "instagram", facebook: "facebook", linkedin: "linkedin",
       tiktok: "tiktok", youtube: "youtube", pinterest: "pinterest", threads: "threads",
+      google_business: "google_business", bluesky: "bluesky", reddit: "reddit", telegram: "telegram"
     };
 
     let clientsToSync: { id: string; late_profile_id: string }[] = [];
@@ -54,11 +55,11 @@ Deno.serve(async (req) => {
     let totalSynced = 0;
 
     for (const client of clientsToSync) {
-      const accountsRes = await fetch(`${LATE_API_BASE}/accounts?profileId=${client.late_profile_id}`, { headers: { Authorization: `Bearer ${LATE_API_KEY}` } });
+      const accountsRes = await fetch(`${LATE_API_BASE}/profiles/${client.late_profile_id}/accounts`, { headers: { Authorization: `Bearer ${LATE_API_KEY}` } });
       const accountsData = await accountsRes.json();
       if (!accountsRes.ok) { console.error(`Failed to fetch Late accounts for client ${client.id}:`, accountsData); continue; }
 
-      const lateAccounts = accountsData.accounts || [];
+      const lateAccounts = accountsData.accounts || accountsData.data || [];
 
       const { data: existingAccounts } = await supabase.from("social_accounts").select("*").eq("organization_id", orgId).eq("client_id", client.id);
       const existing = existingAccounts || [];
@@ -67,14 +68,15 @@ Deno.serve(async (req) => {
 
       for (const account of lateAccounts) {
         const platform = platformMap[account.platform] || account.platform;
-        const lateId = account._id;
+        const lateId = account._id || account.id;
         syncedIds.add(lateId);
 
         const accountData = {
           organization_id: orgId, client_id: client.id, platform,
           account_name: account.displayName || account.username || platform,
-          username: account.username || "", avatar_url: account.avatarUrl || null,
-          is_connected: account.isActive !== false, followers_count: account.followers || 0,
+          username: account.username || "", avatar_url: account.avatarUrl || account.avatar_url || null,
+          is_connected: account.isActive !== false && account.status !== 'inactive', 
+          followers_count: account.followers || account.followers_count || 0,
           late_account_id: lateId,
         };
 
@@ -91,6 +93,7 @@ Deno.serve(async (req) => {
         totalSynced++;
       }
 
+      // Mark accounts as disconnected if they are no longer in Late.dev
       for (const acc of existing) {
         if (acc.late_account_id && !syncedIds.has(acc.late_account_id)) {
           await supabase.from("social_accounts").update({ is_connected: false }).eq("id", acc.id);
