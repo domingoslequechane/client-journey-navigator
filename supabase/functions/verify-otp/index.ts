@@ -86,6 +86,8 @@ const handler = async (req: Request): Promise<Response> => {
       email_confirm: true,
       user_metadata: {
         full_name: fullName,
+        // Note: The trigger now ignores this role field for security, 
+        // so we explicitly set it in the profile update below.
         role: 'admin',
       },
     });
@@ -134,14 +136,17 @@ const handler = async (req: Request): Promise<Response> => {
       } else if (orgData) {
         console.log("Organization created:", orgData.id);
         
-        // Update profile with organization_id
+        // Update profile with organization_id and explicitly set role to admin
         const { error: profileError } = await supabase
           .from("profiles")
-          .update({ organization_id: orgData.id })
-          .eq("id", userId);
+          .update({ 
+            organization_id: orgData.id,
+            role: 'admin' // Explicitly set admin role for the agency owner
+          })
+          .eq('id', userId);
         
         if (profileError) {
-          console.error("Error updating profile with org:", profileError);
+          console.error("Error updating profile with org and role:", profileError);
         }
         
         // Note: No subscription created here - will be created by LemonSqueezy webhook after checkout
