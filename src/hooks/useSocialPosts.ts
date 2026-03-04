@@ -348,7 +348,7 @@ export function useApprovalPost(token?: string) {
       if (!token) return null;
       
       // Use secure RPC instead of direct table access to prevent data leakage
-      const { data, error } = await supabase.rpc('get_social_post_by_token', {
+      const { data, error } = await (supabase as any).rpc('get_social_post_by_token', {
         p_token: token
       });
 
@@ -357,11 +357,13 @@ export function useApprovalPost(token?: string) {
       const row = Array.isArray(data) ? data[0] : data;
       if (!row) return null;
 
+      const rowAny = row as any;
+
       return {
-        ...row,
-        media_urls: Array.isArray(row.media_urls) ? row.media_urls : [],
-        platforms: Array.isArray(row.platforms) ? row.platforms : [],
-        hashtags: Array.isArray(row.hashtags) ? row.hashtags : [],
+        ...rowAny,
+        media_urls: Array.isArray(rowAny.media_urls) ? rowAny.media_urls : [],
+        platforms: Array.isArray(rowAny.platforms) ? rowAny.platforms : [],
+        hashtags: Array.isArray(rowAny.hashtags) ? rowAny.hashtags : [],
       };
     },
     enabled: !!token,
@@ -372,7 +374,7 @@ export function useApprovalPost(token?: string) {
       if (!token) throw new Error('Token missing');
       
       // Use secure RPC to update status via token
-      const { error } = await supabase.rpc('respond_to_social_post_approval', {
+      const { error } = await (supabase as any).rpc('respond_to_social_post_approval', {
         p_token: token,
         p_status: 'approved',
         p_approver_name: approverName
@@ -390,7 +392,7 @@ export function useApprovalPost(token?: string) {
       if (!token) throw new Error('Token missing');
       
       // Use secure RPC to update status via token
-      const { error } = await supabase.rpc('respond_to_social_post_approval', {
+      const { error } = await (supabase as any).rpc('respond_to_social_post_approval', {
         p_token: token,
         p_status: 'rejected',
         p_approver_name: approverName,
