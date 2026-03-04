@@ -59,6 +59,8 @@ export function ClientFilterSelect({ value, onChange, className }: ClientFilterS
       return { clients: clients || [], configuredClientIds };
     },
     enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const { clients, configuredClientIds } = clientsData;
