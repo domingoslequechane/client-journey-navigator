@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { format, addMinutes } from 'date-fns';
+import { format, addMinutes, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,16 +25,18 @@ import {
   Plus, Smartphone, MapPin, 
   ArrowLeft, FileText, Trash2,
   CircleDashed, Film, Layers, Image,
-  LayoutGrid
+  LayoutGrid, Info
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
 interface PostSchedule {
   id: string;
+  platform: SocialPlatform;
   contentType: ContentType;
   date: string;
   time: string;
@@ -73,6 +76,8 @@ export default function SocialPostEditor() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingPost, setIsLoadingPost] = useState(!!postId);
+  const [suggestedTimes, setSuggestedTimes] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
@@ -101,6 +106,7 @@ export default function SocialPostEditor() {
             selectedAccountIds: accountIds,
             schedules: [{
               id: crypto.randomUUID(),
+              platform: (data.platforms[0] as SocialPlatform) || 'instagram',
               contentType: (data.content_type as ContentType) || 'feed',
               date: data.scheduled_at ? format(new Date(data.scheduled_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
               time: data.scheduled_at ? format(new Date(data.scheduled_at), 'HH:mm') : getDefaultTime(),
@@ -128,6 +134,7 @@ export default function SocialPostEditor() {
       selectedAccountIds: [],
       schedules: [{
         id: crypto.randomUUID(),
+        platform: 'instagram',
         contentType: 'feed',
         date: format(new Date(), 'yyyy-MM-dd'),
         time: getDefaultTime(),
@@ -140,13 +147,15 @@ export default function SocialPostEditor() {
   const handleAddSchedule = (postId: string) => {
     setPostItems(prev => prev.map(p => {
       if (p.id === postId) {
+        const lastSchedule = p.schedules[p.schedules.length - 1];
         return {
           ...p,
           schedules: [...p.schedules, {
             id: crypto.randomUUID(),
+            platform: lastSchedule?.platform || 'instagram',
             contentType: 'feed',
-            date: format(new Date(), 'yyyy-MM-dd'),
-            time: getDefaultTime(),
+            date: lastSchedule?.date || format(new Date(), 'yyyy-MM-dd'),
+            time: lastSchedule?.time || getDefaultTime(),
           }]
         };
       }
@@ -210,7 +219,6 @@ export default function SocialPostEditor() {
         updatePostItem(currentPostItem.id, {
           files: [...currentPostItem.files, ...pendingFiles],
           mediaUrls: [...currentPostItem.mediaUrls, ...localUrls],
-          contentType: 'carousel'
         });
         updateSchedule(currentPostItem.id, currentPostItem.schedules[0].id, { contentType: 'carousel' });
       }
@@ -224,6 +232,7 @@ export default function SocialPostEditor() {
         selectedAccountIds: currentPostItem?.selectedAccountIds || [],
         schedules: [{
           id: crypto.randomUUID(),
+          platform: 'instagram',
           contentType: file.type.startsWith('video/') ? 'video' as any : 'feed',
           date: format(new Date(), 'yyyy-MM-dd'),
           time: getDefaultTime(),
@@ -264,16 +273,13 @@ export default function SocialPostEditor() {
           finalMediaUrls = [...finalMediaUrls, ...uploadedUrls];
         }
 
-        const selectedAccounts = connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id));
-        const platforms = Array.from(new Set(selectedAccounts.map(a => a.platform)));
-
         // Criar um post para cada agendamento definido
         for (const schedule of item.schedules) {
           const scheduledAt = new Date(`${schedule.date}T${schedule.time}`).toISOString();
           const postData = {
             content: item.content,
             media_urls: finalMediaUrls,
-            platforms,
+            platforms: [schedule.platform],
             content_type: schedule.contentType,
             location: item.location,
             scheduled_at: scheduledAt,
@@ -311,6 +317,40 @@ export default function SocialPostEditor() {
     if (activeIndex >= newItems.length) {
       setActiveIndex(newItems.length - 1);
     }
+  };
+
+  const fetchSuggestions = async () => {
+    if (!currentPostItem || currentPostItem.selectedAccountIds.length === 0) return;
+    
+    setLoadingSuggestions(true);
+    try {
+      const selectedAccounts = connectedAccounts.filter(a => currentPostItem.selectedAccountIds.includes(a.id));
+      const platforms = Array.from(new Set(selectedAccounts.map(a => a.platform)));
+      
+      const { data, error } = await supabase.functions.invoke('suggest-best-times', {
+        body: { 
+          platforms, 
+          content_type: currentPostItem.schedules[0].contentType,
+          slots_count: 3
+        }
+      });
+
+      if (error) throw error;
+      setSuggestedTimes(data.slots || []);
+    } catch (err) {
+      console.error('Error fetching suggestions:', err);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const applySuggestion = (slot: any) => {
+    if (!currentPostItem) return;
+    updateSchedule(currentPostItem.id, currentPostItem.schedules[0].id, {
+      date: slot.date,
+      time: slot.time
+    });
+    toast.success('Horário sugerido aplicado!');
   };
 
   const currentPlatforms = useMemo(() => {
@@ -537,74 +577,137 @@ export default function SocialPostEditor() {
 
                     <div className="space-y-4">
                       {currentPostItem.schedules.map((schedule, sIdx) => (
-                        <div key={schedule.id} className="bg-card p-6 rounded-3xl border shadow-sm space-y-6 relative group/schedule">
-                          {currentPostItem.schedules.length > 1 && (
-                            <button 
-                              onClick={() => handleRemoveSchedule(currentPostItem.id, schedule.id)}
-                              className="absolute top-4 right-4 p-1.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          )}
+                        <div key={schedule.id} className="bg-card p-4 rounded-2xl border shadow-sm relative group/schedule">
+                          <div className="flex flex-wrap items-center gap-4">
+                            {/* Platform & Format */}
+                            <div className="flex items-center gap-2 min-w-[140px]">
+                              <Select 
+                                value={schedule.platform} 
+                                onValueChange={(v: any) => updateSchedule(currentPostItem.id, schedule.id, { platform: v })}
+                              >
+                                <SelectTrigger className="w-10 h-10 p-0 rounded-full border-none bg-muted/50 flex items-center justify-center">
+                                  <PlatformIcon platform={schedule.platform} size="sm" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {currentPlatforms.map(p => (
+                                    <SelectItem key={p} value={p}>
+                                      <div className="flex items-center gap-2">
+                                        <PlatformIcon platform={p} size="xs" />
+                                        <span className="capitalize">{p}</span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
 
-                          <div className="space-y-3">
-                            <Label className="text-xs font-bold uppercase text-muted-foreground">Tipo de Conteúdo</Label>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                              {CONTENT_TYPE_OPTIONS.map(opt => {
-                                const Icon = opt.icon;
-                                return (
-                                  <button
-                                    key={opt.value}
-                                    onClick={() => updateSchedule(currentPostItem.id, schedule.id, { contentType: opt.value })}
-                                    className={cn(
-                                      "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-                                      schedule.contentType === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/20"
-                                    )}
-                                  >
-                                    <Icon className={cn("h-5 w-5", schedule.contentType === opt.value ? "text-primary" : "text-muted-foreground")} />
-                                    <span className="text-[10px] font-bold uppercase">{opt.label}</span>
-                                  </button>
-                                );
-                              })}
+                              <Select 
+                                value={schedule.contentType} 
+                                onValueChange={(v: any) => updateSchedule(currentPostItem.id, schedule.id, { contentType: v })}
+                              >
+                                <SelectTrigger className="h-10 rounded-xl border-2 bg-background min-w-[120px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {CONTENT_TYPE_OPTIONS.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      <div className="flex items-center gap-2">
+                                        <opt.icon className="h-3.5 w-3.5" />
+                                        <span>{opt.label}</span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
-                          </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                              <Label className="text-xs font-bold uppercase text-muted-foreground">Data</Label>
-                              <div className="relative">
-                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            {/* Date & Time */}
+                            <div className="flex items-center gap-2 flex-1 min-w-[280px]">
+                              <div className="relative flex-1">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                                 <Input 
                                   type="date" 
                                   value={schedule.date} 
                                   onChange={e => updateSchedule(currentPostItem.id, schedule.id, { date: e.target.value })} 
-                                  className="h-12 pl-11 rounded-xl border-2" 
+                                  className="h-10 pl-9 rounded-xl border-2" 
                                 />
                               </div>
-                            </div>
-                            <div className="space-y-3">
-                              <Label className="text-xs font-bold uppercase text-muted-foreground">Horário</Label>
-                              <div className="relative">
-                                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <div className="relative w-32">
+                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                                 <Input 
                                   type="time" 
                                   value={schedule.time} 
                                   onChange={e => updateSchedule(currentPostItem.id, schedule.id, { time: e.target.value })} 
-                                  className="h-12 pl-11 rounded-xl border-2" 
+                                  className="h-10 pl-9 rounded-xl border-2" 
                                 />
                               </div>
                             </div>
+
+                            {/* Remove */}
+                            {currentPostItem.schedules.length > 1 && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-10 w-10 text-destructive hover:bg-destructive/10"
+                                onClick={() => handleRemoveSchedule(currentPostItem.id, schedule.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
+
+                          {/* Active Times Suggestions (Only for first schedule for now) */}
+                          {sIdx === 0 && (
+                            <div className="mt-4 pt-4 border-t border-dashed">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                  <Zap className="h-3 w-3 text-primary" />
+                                  Melhores Horários (Active Times)
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 text-[10px] gap-1"
+                                  onClick={fetchSuggestions}
+                                  disabled={loadingSuggestions}
+                                >
+                                  {loadingSuggestions ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                  Atualizar
+                                </Button>
+                              </div>
+                              
+                              <div className="flex gap-2 overflow-x-auto pb-1">
+                                {suggestedTimes.length > 0 ? (
+                                  suggestedTimes.map((slot, i) => (
+                                    <button
+                                      key={i}
+                                      onClick={() => applySuggestion(slot)}
+                                      className="flex flex-col items-start p-2 rounded-xl border bg-muted/30 hover:border-primary/50 hover:bg-primary/5 transition-all min-w-[120px] text-left"
+                                    >
+                                      <span className="text-[10px] font-bold text-foreground">
+                                        {format(parseISO(slot.date), "eee, dd/MM", { locale: ptBR })}
+                                      </span>
+                                      <span className="text-sm font-bold text-primary">{slot.time}</span>
+                                      <span className="text-[9px] text-muted-foreground truncate w-full">{slot.reason}</span>
+                                    </button>
+                                  ))
+                                ) : (
+                                  <p className="text-[10px] text-muted-foreground italic">
+                                    {loadingSuggestions ? 'Analisando audiência...' : 'Clique em atualizar para ver sugestões da QIA'}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
 
                       <Button 
                         variant="outline" 
-                        className="w-full h-14 border-dashed border-2 rounded-2xl gap-2 hover:bg-primary/5 hover:border-primary/50 transition-all"
+                        className="w-full h-12 border-dashed border-2 rounded-2xl gap-2 hover:bg-primary/5 hover:border-primary/50 transition-all"
                         onClick={() => handleAddSchedule(currentPostItem.id)}
                       >
-                        <Plus className="h-5 w-5" />
-                        Adicionar outro horário/formato
+                        <Plus className="h-4 w-4" />
+                        Adicionar outro horário ou formato
                       </Button>
                     </div>
                   </section>
