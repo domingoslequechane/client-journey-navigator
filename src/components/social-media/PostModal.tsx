@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { format, addMinutes } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,7 +25,7 @@ import {
   Image as ImageIcon, Zap, Sparkles, LayoutGrid, 
   Layers, Trash2, Plus, Copy, AlertCircle, 
   CheckCircle2, MessageCircle, ChevronRight, ChevronLeft,
-  Smartphone, Type, Share2
+  Smartphone, Type, Share2, MapPin, MessageSquare, Phone
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -35,15 +36,24 @@ const PLATFORM_LIMITS: Record<string, number> = {
 
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
-interface Placement { accountId: string; format: ContentType; }
-interface ScheduleEntry { id: string; date: string; time: string; placements: Placement[]; }
-interface PostData { id: string; content: string; mediaUrls: string[]; schedules: ScheduleEntry[]; isGeneratingCaption?: boolean; }
-interface ProcessingResult { id: string; title: string; platform: SocialPlatform; format: ContentType; status: 'success' | 'error'; error?: string; }
+interface PostItem {
+  id: string;
+  content: string;
+  mediaUrls: string[];
+  contentType: ContentType;
+  location: string;
+  ctaType: 'none' | 'channel' | 'whatsapp';
+  ctaValue: string;
+  scheduledAt: string;
+  scheduledTime: string;
+  isGeneratingCaption?: boolean;
+}
 
 export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultDate, isPublished }: any) {
   const { accounts } = useSocialAccounts(post?.client_id || clientId);
   const [step, setStep] = useState(1);
-  const [posts, setPosts] = useState<PostData[]>([]);
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  const [postItems, setPostItems] = useState<PostItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [previewPlatform, setPreviewPlatform] = useState<SocialPlatform>('instagram');
   const [uploading, setUploading] = useState(false);
@@ -52,48 +62,32 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
   const [showUploadChoice, setShowUploadChoice] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [savingProgress, setSavingProgress] = useState({ current: 0, total: 0 });
-  const [results, setResults] = useState<ProcessingResult[]>([]);
-  const [showReportModal, setShowReportModal] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
 
-  const currentPost = useMemo(() => posts[activeIndex] || { id: 'temp', content: '', mediaUrls: [], schedules: [] }, [posts, activeIndex]);
+  const currentPostItem = useMemo(() => postItems[activeIndex] || null, [postItems, activeIndex]);
 
   useEffect(() => {
     if (open) {
       setStep(1);
       if (post) {
-        const content = post.content || '';
-        const mediaUrls = post.media_urls || [];
-        const postPlatforms = post.platforms || [];
-        const ct = (post.content_type as ContentType) || 'feed';
-        const initialPlacements: Placement[] = [];
-        
-        postPlatforms.forEach(p => {
-          const acc = connectedAccounts.find(a => a.platform === p);
-          if (acc) initialPlacements.push({ accountId: acc.id, format: ct });
-        });
-
-        let date = defaultDate || format(new Date(), 'yyyy-MM-dd');
-        let time = getDefaultTime();
-        if (post.scheduled_at) {
-          const dt = new Date(post.scheduled_at);
-          date = format(dt, 'yyyy-MM-dd');
-          time = format(dt, 'HH:mm');
-        }
-
-        setPosts([{
-          id: post.id, content, mediaUrls,
-          schedules: [{ id: crypto.randomUUID(), date, time, placements: initialPlacements }]
+        setSelectedAccountIds(connectedAccounts.filter(a => post.platforms.includes(a.platform)).map(a => a.id));
+        setPostItems([{
+          id: post.id,
+          content: post.content || '',
+          mediaUrls: post.media_urls || [],
+          contentType: (post.content_type as ContentType) || 'feed',
+          location: post.location || '',
+          ctaType: (post.cta_type as any) || 'none',
+          ctaValue: post.cta_value || '',
+          scheduledAt: post.scheduled_at ? format(new Date(post.scheduled_at), 'yyyy-MM-dd') : (defaultDate || format(new Date(), 'yyyy-MM-dd')),
+          scheduledTime: post.scheduled_at ? format(new Date(post.scheduled_at), 'HH:mm') : getDefaultTime(),
         }]);
-        setPreviewPlatform(postPlatforms[0] as SocialPlatform || 'instagram');
+        setStep(3); // Go straight to config if editing
       } else {
-        setPosts([{
-          id: crypto.randomUUID(), content: '', mediaUrls: [],
-          schedules: [{ id: crypto.randomUUID(), date: defaultDate || format(new Date(), 'yyyy-MM-dd'), time: getDefaultTime(), placements: [] }]
-        }]);
+        setSelectedAccountIds([]);
+        setPostItems([]);
       }
     }
   }, [post, open, defaultDate, connectedAccounts.length]);
@@ -104,65 +98,137 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
     setUploadProgress(0);
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
-        const { data: presignData } = await supabase.functions.invoke('social-media-presign', {
+        const { data: presignData, error: presignError } = await supabase.functions.invoke('social-media-presign', {
           body: { fileName: file.name, fileType: file.type }
         });
+        if (presignError) throw presignError;
+
         await fetch(presignData.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
         setUploadProgress(prev => prev + (100 / files.length));
         return presignData.publicUrl;
       });
       const newUrls = await Promise.all(uploadPromises);
-      if (newUrls.length > 1) { setPendingFiles(newUrls); setShowUploadChoice(true); }
-      else { updateCurrentPost({ mediaUrls: [...currentPost.mediaUrls, ...newUrls] }); }
-    } catch (err) { toast.error('Erro ao carregar arquivos.'); }
-    finally { setUploading(false); setUploadProgress(0); }
+      
+      if (newUrls.length > 1) {
+        setPendingFiles(newUrls);
+        setShowUploadChoice(true);
+      } else {
+        const newItem: PostItem = {
+          id: crypto.randomUUID(),
+          content: '',
+          mediaUrls: newUrls,
+          contentType: 'feed',
+          location: '',
+          ctaType: 'none',
+          ctaValue: '',
+          scheduledAt: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+          scheduledTime: getDefaultTime(),
+        };
+        setPostItems([newItem]);
+        setStep(3);
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error('Erro ao carregar arquivos.');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
   };
 
-  const handleSaveAction = async (status: string) => {
+  const handleUploadChoice = (choice: 'carousel' | 'separate') => {
+    setShowUploadChoice(false);
+    if (choice === 'carousel') {
+      const newItem: PostItem = {
+        id: crypto.randomUUID(),
+        content: '',
+        mediaUrls: pendingFiles,
+        contentType: 'carousel',
+        location: '',
+        ctaType: 'none',
+        ctaValue: '',
+        scheduledAt: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+        scheduledTime: getDefaultTime(),
+      };
+      setPostItems([newItem]);
+    } else {
+      const newItems: PostItem[] = pendingFiles.map(url => ({
+        id: crypto.randomUUID(),
+        content: '',
+        mediaUrls: [url],
+        contentType: 'feed',
+        location: '',
+        ctaType: 'none',
+        ctaValue: '',
+        scheduledAt: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+        scheduledTime: getDefaultTime(),
+      }));
+      setPostItems(newItems);
+    }
+    setStep(3);
+    setPendingFiles([]);
+  };
+
+  const handleSaveAction = async (status: 'draft' | 'scheduled' | 'published') => {
+    if (selectedAccountIds.length === 0) {
+      toast.error('Selecione pelo menos um canal.');
+      return;
+    }
+
     setIsSaving(true);
-    setResults([]);
-    let totalItems = 0;
-    posts.forEach(p => p.schedules.forEach(s => totalItems += s.placements.length));
-    setSavingProgress({ current: 0, total: totalItems });
-
     try {
-      for (let pIdx = 0; pIdx < posts.length; pIdx++) {
-        const postData = posts[pIdx];
-        for (const schedule of postData.schedules) {
-          for (const placement of schedule.placements) {
-            const account = connectedAccounts.find(a => a.id === placement.accountId);
-            if (!account) continue;
-            const [year, month, day] = schedule.date.split('-').map(Number);
-            const [hours, minutes] = schedule.time.split(':').map(Number);
-            const scheduledAt = new Date(year, month - 1, day, hours, minutes).toISOString();
+      const selectedAccounts = connectedAccounts.filter(a => selectedAccountIds.includes(a.id));
+      const platforms = Array.from(new Set(selectedAccounts.map(a => a.platform)));
 
-            try {
-              await onSave({ post: {
-                content: postData.content, platforms: [account.platform],
-                content_type: placement.format, media_urls: postData.mediaUrls,
-                status: status === 'published' ? 'published' : status,
-                scheduled_at: status === 'published' ? new Date().toISOString() : scheduledAt,
-                client_id: post?.client_id || clientId,
-              }, silent: true });
-              setResults(prev => [...prev, { id: crypto.randomUUID(), title: `Post ${pIdx + 1}`, platform: account.platform as SocialPlatform, format: placement.format, status: 'success' }]);
-            } catch (err: any) {
-              setResults(prev => [...prev, { id: crypto.randomUUID(), title: `Post ${pIdx + 1}`, platform: account.platform as SocialPlatform, format: placement.format, status: 'error', error: err.message }]);
-            }
-            setSavingProgress(prev => ({ ...prev, current: prev.current + 1 }));
-          }
+      for (const item of postItems) {
+        const scheduledAt = new Date(`${item.scheduledAt}T${item.scheduledTime}`).toISOString();
+        
+        const postData = {
+          content: item.content,
+          media_urls: item.mediaUrls,
+          platforms,
+          content_type: item.contentType,
+          location: item.location,
+          cta_type: item.ctaType,
+          cta_value: item.ctaValue,
+          scheduled_at: scheduledAt,
+          status: status,
+          client_id: post?.client_id || clientId,
+        };
+
+        const savedPost = await onSave({ post: postData, silent: true });
+
+        if (status !== 'draft' && savedPost?.id) {
+          const { error: publishError } = await supabase.functions.invoke('social-publish', {
+            body: { post_id: savedPost.id, publish_now: status === 'published' }
+          });
+          if (publishError) throw publishError;
         }
       }
-      setShowReportModal(true);
-    } finally { setIsSaving(false); }
+
+      toast.success(status === 'draft' ? 'Rascunho salvo!' : (status === 'published' ? 'Publicado com sucesso!' : 'Agendado com sucesso!'));
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error('Save error:', err);
+      toast.error('Erro ao processar postagem: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const updateCurrentPost = (updates: Partial<PostData>) => setPosts(prev => prev.map((p, i) => i === activeIndex ? { ...p, ...updates } : p));
+  const updatePostItem = (id: string, updates: Partial<PostItem>) => {
+    setPostItems(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  };
 
   const steps = [
-    { id: 1, label: 'Mídia', icon: ImageIcon },
-    { id: 2, label: 'Legenda', icon: Type },
-    { id: 3, label: 'Canais', icon: Share2 },
+    { id: 1, label: 'Canais', icon: Share2 },
+    { id: 2, label: 'Mídia', icon: ImageIcon },
+    { id: 3, label: 'Configuração', icon: Type },
   ];
+
+  const selectedPlatforms = useMemo(() => {
+    return Array.from(new Set(connectedAccounts.filter(a => selectedAccountIds.includes(a.id)).map(a => a.platform as SocialPlatform)));
+  }, [selectedAccountIds, connectedAccounts]);
 
   return (
     <>
@@ -171,8 +237,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
           {isSaving && (
             <div className="absolute inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-lg font-bold">Publicando...</p>
-              <p className="text-sm text-muted-foreground">{savingProgress.current} de {savingProgress.total}</p>
+              <p className="text-lg font-bold">Processando...</p>
             </div>
           )}
 
@@ -202,18 +267,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {posts.length > 1 && (
-                <div className="flex items-center bg-muted rounded-lg p-1 gap-1">
-                  {posts.map((_, i) => (
-                    <Button key={i} variant={activeIndex === i ? "default" : "ghost"} size="sm" className="h-7 w-7 p-0 text-xs" onClick={() => setActiveIndex(i)}>
-                      {i + 1}
-                    </Button>
-                  ))}
-                </div>
-              )}
-              <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}><X className="h-5 w-5" /></Button>
-            </div>
+            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}><X className="h-5 w-5" /></Button>
           </div>
 
           <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[1fr,400px]">
@@ -222,8 +276,51 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
               <ScrollArea className="flex-1">
                 <div className="p-8 max-w-2xl mx-auto w-full space-y-8">
                   
-                  {/* PASSO 1: MÍDIA */}
+                  {/* PASSO 1: CANAIS */}
                   {step === 1 && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                      <div className="space-y-2">
+                        <h2 className="text-2xl font-bold">Onde vamos postar?</h2>
+                        <p className="text-muted-foreground">Selecione os canais conectados para esta publicação.</p>
+                      </div>
+
+                      <div className="grid gap-3">
+                        {connectedAccounts.length === 0 ? (
+                          <div className="p-8 text-center border-2 border-dashed rounded-2xl">
+                            <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">Nenhum canal conectado para este cliente.</p>
+                          </div>
+                        ) : (
+                          connectedAccounts.map(acc => (
+                            <div 
+                              key={acc.id} 
+                              className={cn(
+                                "flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer",
+                                selectedAccountIds.includes(acc.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+                              )}
+                              onClick={() => {
+                                setSelectedAccountIds(prev => 
+                                  prev.includes(acc.id) ? prev.filter(id => id !== acc.id) : [...prev, acc.id]
+                                );
+                              }}
+                            >
+                              <div className="flex items-center gap-3">
+                                <PlatformIcon platform={acc.platform as SocialPlatform} size="md" variant="circle" />
+                                <div>
+                                  <p className="font-bold text-sm">{acc.account_name}</p>
+                                  <p className="text-xs text-muted-foreground">@{acc.username}</p>
+                                </div>
+                              </div>
+                              <Checkbox checked={selectedAccountIds.includes(acc.id)} onCheckedChange={() => {}} />
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PASSO 2: MÍDIA */}
+                  {step === 2 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                       <div className="space-y-2">
                         <h2 className="text-2xl font-bold">Escolha suas mídias</h2>
@@ -247,127 +344,178 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                         )}
                       </div>
                       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileUpload(e.target.files)} />
+                    </div>
+                  )}
 
-                      {currentPost.mediaUrls.length > 0 && (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                          {currentPost.mediaUrls.map((url, i) => (
+                  {/* PASSO 3: CONFIGURAÇÃO */}
+                  {step === 3 && currentPostItem && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <h2 className="text-2xl font-bold">Configuração do Post</h2>
+                          <p className="text-muted-foreground">
+                            {postItems.length > 1 ? `Post ${activeIndex + 1} de ${postItems.length}` : 'Ajuste os detalhes da sua publicação.'}
+                          </p>
+                        </div>
+                        {postItems.length > 1 && (
+                          <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
+                            {postItems.map((_, i) => (
+                              <Button 
+                                key={i} 
+                                variant={activeIndex === i ? "default" : "ghost"} 
+                                size="sm" 
+                                className="h-7 w-7 p-0 text-xs" 
+                                onClick={() => setActiveIndex(i)}
+                              >
+                                {i + 1}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-6">
+                        {/* Mídia Preview */}
+                        <div className="grid grid-cols-4 gap-2">
+                          {currentPostItem.mediaUrls.map((url, i) => (
                             <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-border group shadow-sm">
                               <img src={url} className="w-full h-full object-cover" />
                               <button 
-                                onClick={() => updateCurrentPost({ mediaUrls: currentPost.mediaUrls.filter((_, idx) => idx !== i) })}
+                                onClick={() => updatePostItem(currentPostItem.id, { mediaUrls: currentPostItem.mediaUrls.filter((_, idx) => idx !== i) })}
                                 className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                               >
                                 <X className="h-3 w-3" />
                               </button>
                             </div>
                           ))}
+                          <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="aspect-square rounded-xl border-2 border-dashed flex items-center justify-center hover:bg-muted/50 transition-colors"
+                          >
+                            <Plus className="h-6 w-6 text-muted-foreground" />
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  )}
 
-                  {/* PASSO 2: LEGENDA */}
-                  {step === 2 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <h2 className="text-2xl font-bold">O que vamos dizer?</h2>
-                          <p className="text-muted-foreground">Escreva uma legenda envolvente para seu público.</p>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          className="gap-2 border-primary/30 text-primary hover:bg-primary/5"
-                          onClick={() => setShowAICaptionModal(true)}
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          Gerar com IA
-                        </Button>
-                      </div>
-
-                      <div className="relative">
-                        <Textarea 
-                          value={currentPost.content} 
-                          onChange={e => updateCurrentPost({ content: e.target.value })}
-                          placeholder="Escreva aqui sua legenda... Use #hashtags para aumentar o alcance."
-                          className="min-h-[300px] text-lg p-6 rounded-2xl border-2 focus-visible:ring-primary/20 resize-none"
-                        />
-                        <div className="absolute bottom-4 right-4 text-xs text-muted-foreground font-mono">
-                          {currentPost.content.length} caracteres
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* PASSO 3: CANAIS E AGENDAMENTO */}
-                  {step === 3 && (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                      <div className="space-y-1">
-                        <h2 className="text-2xl font-bold">Onde e quando?</h2>
-                        <p className="text-muted-foreground">Selecione as redes sociais e o horário da publicação.</p>
-                      </div>
-
-                      {currentPost.schedules.map((schedule) => (
-                        <div key={schedule.id} className="space-y-6">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Data</Label>
-                              <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
-                                <Input type="date" value={schedule.date} onChange={e => updateCurrentPost({ schedules: currentPost.schedules.map(s => s.id === schedule.id ? { ...s, date: e.target.value } : s) })} className="pl-10 h-12 rounded-xl border-2" />
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Horário</Label>
-                              <div className="relative">
-                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
-                                <Input type="time" value={schedule.time} onChange={e => updateCurrentPost({ schedules: currentPost.schedules.map(s => s.id === schedule.id ? { ...s, time: e.target.value } : s) })} className="pl-10 h-12 rounded-xl border-2" />
-                              </div>
-                            </div>
+                        {/* Legenda */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-bold">Legenda</Label>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="gap-2 border-primary/30 text-primary hover:bg-primary/5 h-7 text-xs"
+                              onClick={() => setShowAICaptionModal(true)}
+                            >
+                              <Sparkles className="h-3 w-3" />
+                              Gerar com IA
+                            </Button>
                           </div>
+                          <Textarea 
+                            value={currentPostItem.content} 
+                            onChange={e => updatePostItem(currentPostItem.id, { content: e.target.value })}
+                            placeholder="Escreva sua legenda aqui..."
+                            className="min-h-[150px] rounded-xl border-2"
+                          />
+                        </div>
 
-                          <div className="space-y-4">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Selecione os Canais</Label>
-                            <div className="grid gap-3">
-                              {connectedAccounts.map(acc => (
-                                <div key={acc.id} className="flex items-center justify-between p-4 rounded-2xl border-2 bg-muted/5 hover:bg-muted/10 transition-colors">
-                                  <div className="flex items-center gap-3">
-                                    <PlatformIcon platform={acc.platform as SocialPlatform} size="md" variant="circle" />
-                                    <div>
-                                      <p className="font-bold text-sm">{acc.account_name}</p>
-                                      <p className="text-xs text-muted-foreground">@{acc.username}</p>
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    {['feed', 'stories', 'reels'].map(fmt => {
-                                      const isSelected = schedule.placements.some(p => p.accountId === acc.id && p.format === fmt);
-                                      return (
-                                        <TooltipProvider key={fmt}>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <button
-                                                onClick={() => togglePlacementInSchedule(schedule.id, acc.id, fmt as ContentType)}
-                                                className={cn(
-                                                  "h-10 w-10 rounded-xl border-2 flex items-center justify-center transition-all",
-                                                  isSelected ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" : "bg-background border-border text-muted-foreground hover:border-primary/50"
-                                                )}
-                                              >
-                                                {fmt === 'feed' && <LayoutGrid className="h-4 w-4" />}
-                                                {fmt === 'stories' && <CircleDashed className="h-4 w-4" />}
-                                                {fmt === 'reels' && <Film className="h-4 w-4" />}
-                                              </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent className="capitalize">{fmt}</TooltipContent>
-                                          </Tooltip>
-                                        </TooltipProvider>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                        {/* Tipo de Conteúdo */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-bold">Tipo de Conteúdo</Label>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {[
+                              { id: 'feed', label: 'Feed', icon: LayoutGrid },
+                              { id: 'stories', label: 'Story', icon: CircleDashed },
+                              { id: 'reels', label: 'Reel', icon: Film },
+                              { id: 'carousel', label: 'Carrossel', icon: Layers },
+                            ].map(type => (
+                              <button
+                                key={type.id}
+                                onClick={() => updatePostItem(currentPostItem.id, { contentType: type.id as ContentType })}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                  currentPostItem.contentType === type.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+                                )}
+                              >
+                                <type.icon className={cn("h-5 w-5", currentPostItem.contentType === type.id ? "text-primary" : "text-muted-foreground")} />
+                                <span className="text-[10px] font-bold uppercase">{type.label}</span>
+                              </button>
+                            ))}
                           </div>
                         </div>
-                      ))}
+
+                        {/* Localização e CTA */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-bold flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-primary" /> Localização
+                            </Label>
+                            <Input 
+                              value={currentPostItem.location} 
+                              onChange={e => updatePostItem(currentPostItem.id, { location: e.target.value })}
+                              placeholder="Adicionar localização..."
+                              className="h-10 rounded-xl border-2"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-bold flex items-center gap-2">
+                              <MessageSquare className="h-4 w-4 text-primary" /> Chamada para Ação (CTA)
+                            </Label>
+                            <Select 
+                              value={currentPostItem.ctaType} 
+                              onValueChange={(v: any) => updatePostItem(currentPostItem.id, { ctaType: v })}
+                            >
+                              <SelectTrigger className="h-10 rounded-xl border-2">
+                                <SelectValue placeholder="Selecione um CTA" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Nenhum</SelectItem>
+                                <SelectItem value="channel">Mensagem pelo Canal</SelectItem>
+                                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {currentPostItem.ctaType === 'whatsapp' && (
+                          <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                            <Label className="text-sm font-bold flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-primary" /> Número do WhatsApp
+                            </Label>
+                            <Input 
+                              value={currentPostItem.ctaValue} 
+                              onChange={e => updatePostItem(currentPostItem.id, { ctaValue: e.target.value })}
+                              placeholder="Ex: +55 11 99999-9999"
+                              className="h-10 rounded-xl border-2"
+                            />
+                          </div>
+                        )}
+
+                        {/* Agendamento */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-bold flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-primary" /> Data
+                            </Label>
+                            <Input 
+                              type="date" 
+                              value={currentPostItem.scheduledAt} 
+                              onChange={e => updatePostItem(currentPostItem.id, { scheduledAt: e.target.value })} 
+                              className="h-10 rounded-xl border-2" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-bold flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-primary" /> Horário
+                            </Label>
+                            <Input 
+                              type="time" 
+                              value={currentPostItem.scheduledTime} 
+                              onChange={e => updatePostItem(currentPostItem.id, { scheduledTime: e.target.value })} 
+                              className="h-10 rounded-xl border-2" 
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -389,7 +537,10 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                     <Button 
                       onClick={() => setStep(step + 1)} 
                       className="gap-2 px-8"
-                      disabled={step === 1 && currentPost.mediaUrls.length === 0}
+                      disabled={
+                        (step === 1 && selectedAccountIds.length === 0) ||
+                        (step === 2 && uploading)
+                      }
                     >
                       Próximo Passo
                       <ChevronRight className="h-4 w-4" />
@@ -397,9 +548,12 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                   ) : (
                     <>
                       <Button variant="outline" onClick={() => handleSaveAction('draft')}>Salvar Rascunho</Button>
-                      <Button onClick={() => handleSaveAction('scheduled')} className="gap-2 shadow-xl shadow-primary/20 px-8">
+                      <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} className="gap-2">
+                        <Calendar className="h-4 w-4" /> Agendar
+                      </Button>
+                      <Button onClick={() => handleSaveAction('published')} className="gap-2 shadow-xl shadow-primary/20 px-8">
                         <Zap className="h-4 w-4" />
-                        Finalizar e Agendar
+                        Publicar Agora
                       </Button>
                     </>
                   )}
@@ -415,65 +569,48 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                   <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Visualização Real</span>
                 </div>
                 <div className="flex gap-1">
-                  {['instagram', 'facebook', 'tiktok'].map(p => (
-                    <button 
-                      key={p} 
-                      onClick={() => setPreviewPlatform(p as SocialPlatform)}
-                      className={cn(
-                        "p-1.5 rounded-md transition-all",
-                        previewPlatform === p ? "bg-primary/10 text-primary ring-1 ring-primary/30" : "opacity-30 hover:opacity-60"
-                      )}
-                    >
-                      <PlatformIcon platform={p as SocialPlatform} size="xs" />
-                    </button>
-                  ))}
+                  {selectedPlatforms.length > 0 ? (
+                    selectedPlatforms.map(p => (
+                      <button 
+                        key={p} 
+                        onClick={() => setPreviewPlatform(p)}
+                        className={cn(
+                          "p-1.5 rounded-md transition-all",
+                          previewPlatform === p ? "bg-primary/10 text-primary ring-1 ring-primary/30" : "opacity-30 hover:opacity-60"
+                        )}
+                      >
+                        <PlatformIcon platform={p} size="xs" />
+                      </button>
+                    ))
+                  ) : (
+                    ['instagram', 'facebook', 'tiktok'].map(p => (
+                      <button key={p} disabled className="opacity-10 p-1.5">
+                        <PlatformIcon platform={p as any} size="xs" />
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
               
               <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
                 <div className="w-full max-w-[320px] animate-in fade-in zoom-in-95 duration-500">
                   <div className="shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem] overflow-hidden border-8 border-black bg-black">
-                    <PostPreview
-                      content={currentPost.content}
-                      mediaUrl={currentPost.mediaUrls[0]}
-                      platform={previewPlatform}
-                    />
+                    {currentPostItem ? (
+                      <PostPreview
+                        content={currentPostItem.content}
+                        mediaUrl={currentPostItem.mediaUrls[0]}
+                        platform={previewPlatform}
+                      />
+                    ) : (
+                      <div className="aspect-[9/16] bg-muted flex items-center justify-center p-8 text-center">
+                        <p className="text-xs text-muted-foreground">Selecione mídias para ver o preview</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modais Auxiliares */}
-      <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-6 w-6 text-green-500" />
-              Publicações Processadas
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-4">
-            {results.map((r, i) => (
-              <div key={i} className="p-4 rounded-xl border bg-muted/30 flex items-center gap-4">
-                <PlatformIcon platform={r.platform} size="sm" variant="circle" />
-                <div className="flex-1">
-                  <p className="text-sm font-bold">{r.title}</p>
-                  <Badge variant={r.status === 'success' ? 'default' : 'destructive'} className="text-[10px] mt-1">
-                    {r.status === 'success' ? 'Sucesso' : 'Erro'}
-                  </Badge>
-                </div>
-                {r.status === 'error' && (
-                  <Button variant="ghost" size="icon" onClick={() => window.open(`https://wa.me/258868499221?text=Erro: ${r.error}`)}>
-                    <MessageCircle className="h-4 w-4 text-primary" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-          <Button onClick={() => { setShowReportModal(false); onOpenChange(false); }} className="w-full">Concluir</Button>
         </DialogContent>
       </Dialog>
 
@@ -502,7 +639,10 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
       <AICaptionModal
         open={showAICaptionModal}
         onOpenChange={setShowAICaptionModal}
-        onCaptionGenerated={(c) => updateCurrentPost({ content: c })}
+        platforms={selectedPlatforms}
+        contentType={currentPostItem?.contentType || 'feed'}
+        mediaUrls={currentPostItem?.mediaUrls || []}
+        onCaptionGenerated={(c) => currentPostItem && updatePostItem(currentPostItem.id, { content: c })}
       />
     </>
   );

@@ -87,6 +87,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Prepare content with CTA if needed
+    let finalContent = post.content;
+    if (post.cta_type === 'whatsapp' && post.cta_value) {
+      const whatsappLink = `https://wa.me/${post.cta_value.replace(/\D/g, '')}`;
+      finalContent += `\n\nFale conosco pelo WhatsApp: ${whatsappLink}`;
+    }
+
     const platforms = accounts
       .filter((a: any) => a.late_account_id)
       .map((a: any) => {
@@ -98,13 +105,28 @@ Deno.serve(async (req) => {
         // Add mandatory TikTok settings
         if (platform === 'tiktok') {
           platformSpecificData.tiktokSettings = {
-            privacy_level: "PUBLIC_TO_EVERYONE", // Default to public
+            privacy_level: "PUBLIC_TO_EVERYONE",
             allow_comment: true,
             allow_duet: true,
             allow_stitch: true,
             content_preview_confirmed: true,
             express_consent_given: true
           };
+        }
+
+        // Google Business Profile CTA
+        if (platform === 'googlebusiness' && post.cta_type !== 'none') {
+          if (post.cta_type === 'whatsapp' && post.cta_value) {
+            platformSpecificData.callToAction = {
+              type: "CALL",
+              url: `https://wa.me/${post.cta_value.replace(/\D/g, '')}`
+            };
+          } else if (post.cta_type === 'channel') {
+            platformSpecificData.callToAction = {
+              type: "LEARN_MORE",
+              url: "https://getlate.dev" // Placeholder or actual channel link
+            };
+          }
         }
 
         // Add Instagram Reels defaults
@@ -116,6 +138,7 @@ Deno.serve(async (req) => {
         if (platform === 'youtube') {
           platformSpecificData.madeForKids = false;
           platformSpecificData.visibility = "public";
+          platformSpecificData.title = post.content?.split('\n')[0]?.substring(0, 100) || "New Video";
         }
 
         // Add Facebook defaults
@@ -136,7 +159,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const latePayload: any = { content: post.content, platforms };
+    const latePayload: any = { 
+      content: finalContent, 
+      platforms,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone // Use server/browser timezone
+    };
 
     if (post.media_urls && post.media_urls.length > 0) {
       latePayload.mediaItems = post.media_urls.map((url: string) => {
@@ -172,7 +199,6 @@ Deno.serve(async (req) => {
     if (!lateRes.ok) {
       console.error("[social-publish] Late.dev publish error:", lateData);
       
-      // Extract a more descriptive error if possible
       const errorMessage = lateData.error || `Late.dev returned status ${lateRes.status}`;
       const errorDetails = lateData.details ? `: ${JSON.stringify(lateData.details)}` : "";
       
