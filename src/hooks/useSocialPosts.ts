@@ -335,10 +335,12 @@ export function useApprovalPost(token?: string) {
     queryFn: async () => {
       if (!token) return null;
       
-      // Usar RPC para buscar o post de forma segura via token
-      const { data, error } = await supabase.rpc('get_social_post_by_token', {
-        p_token: token
-      });
+      // Buscar post via token de aprovação
+      const { data, error } = await supabase
+        .from('social_posts')
+        .select('*')
+        .eq('approval_token', token)
+        .maybeSingle();
 
       if (error) throw error;
       
@@ -359,12 +361,15 @@ export function useApprovalPost(token?: string) {
     mutationFn: async (approverName: string) => {
       if (!token) throw new Error('Token missing');
       
-      // Usar RPC para aprovar o post de forma segura via token
-      const { error } = await supabase.rpc('respond_to_social_post_approval', {
-        p_token: token,
-        p_status: 'approved',
-        p_approver_name: approverName
-      });
+      // Aprovar post via token
+      const { error } = await supabase
+        .from('social_posts')
+        .update({ 
+          status: 'approved', 
+          approved_by: approverName,
+          approved_at: new Date().toISOString()
+        } as any)
+        .eq('approval_token', token);
 
       if (error) throw error;
     },
@@ -377,13 +382,16 @@ export function useApprovalPost(token?: string) {
     mutationFn: async ({ reason, approverName }: { reason: string; approverName: string }) => {
       if (!token) throw new Error('Token missing');
       
-      // Usar RPC para rejeitar o post de forma segura via token
-      const { error } = await supabase.rpc('respond_to_social_post_approval', {
-        p_token: token,
-        p_status: 'rejected',
-        p_approver_name: approverName,
-        p_rejection_reason: reason
-      });
+      // Rejeitar post via token
+      const { error } = await supabase
+        .from('social_posts')
+        .update({ 
+          status: 'rejected', 
+          approved_by: approverName,
+          rejection_reason: reason,
+          approved_at: new Date().toISOString()
+        } as any)
+        .eq('approval_token', token);
 
       if (error) throw error;
     },

@@ -207,11 +207,27 @@ export function useSocialAccounts(clientId?: string | null) {
       const checkPopup = setInterval(async () => {
         if (!popup || popup.closed) {
           clearInterval(checkPopup);
+          
+          // Delay to give Late API time to register the account
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
           try {
-            await syncAccounts.mutateAsync(data.clientId);
-          } catch {
-            // Silently handle sync errors
+            const result = await syncAccounts.mutateAsync(data.clientId);
+            
+            // Retry once if no accounts were synced (timing issue)
+            if (result?.synced === 0) {
+              await new Promise(resolve => setTimeout(resolve, 3000));
+              await syncAccounts.mutateAsync(data.clientId);
+            }
+          } catch (err) {
+            console.error('Sync after connection failed:', err);
+            toast({ title: 'Erro ao sincronizar contas', description: 'Tente sincronizar manualmente.', variant: 'destructive' });
           }
+          
+          // Always invalidate queries regardless of sync result
+          queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+          queryClient.invalidateQueries({ queryKey: ['clients-with-social-status'] });
+          queryClient.invalidateQueries({ queryKey: ['usage-tracking'] });
         }
       }, 1000);
     },
