@@ -53,12 +53,13 @@ export function VideoBlockEditor({
   };
 
   const getVideoEmbed = (url: string) => {
-    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|vimeo\.com\/)([^&\n?#]+)/)?.[1];
-    const isYoutube = url.includes('youtube') || url.includes('youtu.be');
-    if (videoId) {
-      return isYoutube
-        ? `https://www.youtube.com/embed/${videoId}`
-        : `https://player.vimeo.com/video/${videoId}`;
+    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    const vimeoMatch = url.match(/vimeo\.com\/([0-9]{9,12})/);
+    
+    if (youtubeMatch) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    } else if (vimeoMatch) {
+      return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
     }
     return null;
   };

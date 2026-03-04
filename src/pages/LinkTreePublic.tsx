@@ -321,12 +321,21 @@ export default function LinkTreePublic() {
 
                   case 'video':
                     if (!block.content.videoUrl) return null;
-                    const videoId = block.content.videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|vimeo\.com\/)([^&\n?#]+)/)?.[1];
-                    const isYoutube = block.content.videoUrl.includes('youtube') || block.content.videoUrl.includes('youtu.be');
-                    return videoId ? (
+                    
+                    let videoEmbedUrl = null;
+                    const youtubeMatch = block.content.videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                    const vimeoMatch = block.content.videoUrl.match(/vimeo\.com\/([0-9]{9,12})/);
+                    
+                    if (youtubeMatch) {
+                      videoEmbedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+                    } else if (vimeoMatch) {
+                      videoEmbedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+                    }
+
+                    return videoEmbedUrl ? (
                       <div key={block.id} className="rounded-xl overflow-hidden aspect-video">
                         <iframe
-                          src={isYoutube ? `https://www.youtube.com/embed/${videoId}` : `https://player.vimeo.com/video/${videoId}`}
+                          src={videoEmbedUrl}
                           className="w-full h-full"
                           allowFullScreen
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
