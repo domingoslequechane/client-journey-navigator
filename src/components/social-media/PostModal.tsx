@@ -25,31 +25,28 @@ import {
   Image as ImageIcon, Zap, Sparkles, LayoutGrid, 
   Layers, Trash2, Plus, Copy, AlertCircle, 
   CheckCircle2, MessageCircle, ChevronRight, ChevronLeft,
-  Smartphone, Type, Share2, MapPin, MessageSquare, Phone
+  Smartphone, Type, Share2, MapPin, MessageSquare, Phone,
+  CircleDashed, Film
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-const PLATFORM_LIMITS: Record<string, number> = {
-  instagram: 10, facebook: 10, twitter: 4, linkedin: 20, tiktok: 35,
-};
 
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
 interface PostItem {
   id: string;
   content: string;
-  mediaUrls: string[];
+  files: File[]; // Arquivos brutos para upload posterior
+  mediaUrls: string[]; // URLs locais (blob) para preview ou remotas (se editando)
   contentType: ContentType;
   location: string;
   ctaType: 'none' | 'channel' | 'whatsapp';
   ctaValue: string;
   scheduledAt: string;
   scheduledTime: string;
-  isGeneratingCaption?: boolean;
 }
 
-export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultDate, isPublished }: any) {
+export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultDate }: any) {
   const { accounts } = useSocialAccounts(post?.client_id || clientId);
   const [step, setStep] = useState(1);
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
@@ -57,16 +54,26 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
   const [activeIndex, setActiveIndex] = useState(0);
   const [previewPlatform, setPreviewPlatform] = useState<SocialPlatform>('instagram');
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [showAICaptionModal, setShowAICaptionModal] = useState(false);
   const [showUploadChoice, setShowUploadChoice] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
 
   const currentPostItem = useMemo(() => postItems[activeIndex] || null, [postItems, activeIndex]);
+
+  // Limpeza de URLs de objeto para evitar vazamento de memória
+  useEffect(() => {
+    return () => {
+      postItems.forEach(item => {
+        item.mediaUrls.forEach(url => {
+          if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+        });
+      });
+    };
+  }, [postItems]);
 
   useEffect(() => {
     if (open) {
@@ -76,6 +83,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
         setPostItems([{
           id: post.id,
           content: post.content || '',
+          files: [],
           mediaUrls: post.media_urls || [],
           contentType: (post.content_type as ContentType) || 'feed',
           location: post.location || '',
@@ -84,7 +92,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
           scheduledAt: post.scheduled_at ? format(new Date(post.scheduled_at), 'yyyy-MM-dd') : (defaultDate || format(new Date(), 'yyyy-MM-dd')),
           scheduledTime: post.scheduled_at ? format(new Date(post.scheduled_at), 'HH:mm') : getDefaultTime(),
         }]);
-        setStep(3); // Go straight to config if editing
+        setStep(3);
       } else {
         setSelectedAccountIds([]);
         setPostItems([]);
@@ -92,57 +100,43 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
     }
   }, [post, open, defaultDate, connectedAccounts.length]);
 
-  const handleFileUpload = async (files: FileList | null) => {
+  const handleFileSelection = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setUploading(true);
-    setUploadProgress(0);
-    try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        const { data: presignData, error: presignError } = await supabase.functions.invoke('social-media-presign', {
-          body: { fileName: file.name, fileType: file.type }
-        });
-        if (presignError) throw presignError;
-
-        await fetch(presignData.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
-        setUploadProgress(prev => prev + (100 / files.length));
-        return presignData.publicUrl;
-      });
-      const newUrls = await Promise.all(uploadPromises);
-      
-      if (newUrls.length > 1) {
-        setPendingFiles(newUrls);
-        setShowUploadChoice(true);
-      } else {
-        const newItem: PostItem = {
-          id: crypto.randomUUID(),
-          content: '',
-          mediaUrls: newUrls,
-          contentType: 'feed',
-          location: '',
-          ctaType: 'none',
-          ctaValue: '',
-          scheduledAt: defaultDate || format(new Date(), 'yyyy-MM-dd'),
-          scheduledTime: getDefaultTime(),
-        };
-        setPostItems([newItem]);
-        setStep(3);
-      }
-    } catch (err) {
-      console.error('Upload error:', err);
-      toast.error('Erro ao carregar arquivos.');
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
+    
+    const selectedFiles = Array.from(files);
+    
+    if (selectedFiles.length > 1) {
+      setPendingFiles(selectedFiles);
+      setShowUploadChoice(true);
+    } else {
+      const file = selectedFiles[0];
+      const localUrl = URL.createObjectURL(file);
+      const newItem: PostItem = {
+        id: crypto.randomUUID(),
+        content: '',
+        files: [file],
+        mediaUrls: [localUrl],
+        contentType: file.type.startsWith('video/') ? 'video' : 'feed',
+        location: '',
+        ctaType: 'none',
+        ctaValue: '',
+        scheduledAt: defaultDate || format(new Date(), 'yyyy-MM-dd'),
+        scheduledTime: getDefaultTime(),
+      };
+      setPostItems([newItem]);
+      setStep(3);
     }
   };
 
   const handleUploadChoice = (choice: 'carousel' | 'separate') => {
     setShowUploadChoice(false);
     if (choice === 'carousel') {
+      const localUrls = pendingFiles.map(f => URL.createObjectURL(f));
       const newItem: PostItem = {
         id: crypto.randomUUID(),
         content: '',
-        mediaUrls: pendingFiles,
+        files: pendingFiles,
+        mediaUrls: localUrls,
         contentType: 'carousel',
         location: '',
         ctaType: 'none',
@@ -152,11 +146,12 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
       };
       setPostItems([newItem]);
     } else {
-      const newItems: PostItem[] = pendingFiles.map(url => ({
+      const newItems: PostItem[] = pendingFiles.map(file => ({
         id: crypto.randomUUID(),
         content: '',
-        mediaUrls: [url],
-        contentType: 'feed',
+        files: [file],
+        mediaUrls: [URL.createObjectURL(file)],
+        contentType: file.type.startsWith('video/') ? 'video' : 'feed',
         location: '',
         ctaType: 'none',
         ctaValue: '',
@@ -167,6 +162,27 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
     }
     setStep(3);
     setPendingFiles([]);
+  };
+
+  const uploadFilesToLate = async (files: File[]): Promise<string[]> => {
+    if (files.length === 0) return [];
+    
+    const uploadPromises = files.map(async (file) => {
+      const { data: presignData, error: presignError } = await supabase.functions.invoke('social-media-presign', {
+        body: { fileName: file.name, fileType: file.type }
+      });
+      if (presignError) throw presignError;
+
+      await fetch(presignData.uploadUrl, { 
+        method: 'PUT', 
+        headers: { 'Content-Type': file.type }, 
+        body: file 
+      });
+      
+      return presignData.publicUrl;
+    });
+    
+    return await Promise.all(uploadPromises);
   };
 
   const handleSaveAction = async (status: 'draft' | 'scheduled' | 'published') => {
@@ -181,11 +197,18 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
       const platforms = Array.from(new Set(selectedAccounts.map(a => a.platform)));
 
       for (const item of postItems) {
+        // 1. Upload das mídias se houver arquivos novos (blob)
+        let finalMediaUrls = item.mediaUrls.filter(url => !url.startsWith('blob:'));
+        if (item.files.length > 0) {
+          const uploadedUrls = await uploadFilesToLate(item.files);
+          finalMediaUrls = [...finalMediaUrls, ...uploadedUrls];
+        }
+
         const scheduledAt = new Date(`${item.scheduledAt}T${item.scheduledTime}`).toISOString();
         
         const postData = {
           content: item.content,
-          media_urls: item.mediaUrls,
+          media_urls: finalMediaUrls,
           platforms,
           content_type: item.contentType,
           location: item.location,
@@ -196,8 +219,10 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
           client_id: post?.client_id || clientId,
         };
 
+        // 2. Salvar no banco de dados
         const savedPost = await onSave({ post: postData, silent: true });
 
+        // 3. Se não for rascunho, enviar para o Late.dev
         if (status !== 'draft' && savedPost?.id) {
           const { error: publishError } = await supabase.functions.invoke('social-publish', {
             body: { post_id: savedPost.id, publish_now: status === 'published' }
@@ -237,7 +262,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
           {isSaving && (
             <div className="absolute inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-lg font-bold">Processando...</p>
+              <p className="text-lg font-bold">Processando e Enviando...</p>
+              <p className="text-sm text-muted-foreground">Isso pode levar alguns segundos dependendo do tamanho das mídias.</p>
             </div>
           )}
 
@@ -334,16 +360,10 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                         <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                           <Upload className="h-8 w-8 text-primary" />
                         </div>
-                        <p className="font-medium">Clique para carregar</p>
-                        <p className="text-sm text-muted-foreground mt-1">Arraste arquivos ou clique aqui</p>
-                        {uploading && (
-                          <div className="mt-6 max-w-xs mx-auto space-y-2">
-                            <Progress value={uploadProgress} className="h-1.5" />
-                            <p className="text-xs text-primary font-bold animate-pulse">CARREGANDO...</p>
-                          </div>
-                        )}
+                        <p className="font-medium">Clique para selecionar</p>
+                        <p className="text-sm text-muted-foreground mt-1">As mídias serão carregadas localmente para preview.</p>
                       </div>
-                      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileUpload(e.target.files)} />
+                      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileSelection(e.target.files)} />
                     </div>
                   )}
 
@@ -381,7 +401,11 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                             <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-border group shadow-sm">
                               <img src={url} className="w-full h-full object-cover" />
                               <button 
-                                onClick={() => updatePostItem(currentPostItem.id, { mediaUrls: currentPostItem.mediaUrls.filter((_, idx) => idx !== i) })}
+                                onClick={() => {
+                                  const newUrls = currentPostItem.mediaUrls.filter((_, idx) => idx !== i);
+                                  const newFiles = currentPostItem.files.filter((_, idx) => idx !== i);
+                                  updatePostItem(currentPostItem.id, { mediaUrls: newUrls, files: newFiles });
+                                }}
                                 className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                               >
                                 <X className="h-3 w-3" />
@@ -484,7 +508,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                             <Input 
                               value={currentPostItem.ctaValue} 
                               onChange={e => updatePostItem(currentPostItem.id, { ctaValue: e.target.value })}
-                              placeholder="Ex: +55 11 99999-9999"
+                              placeholder="Ex: +258 84 000 0000"
                               className="h-10 rounded-xl border-2"
                             />
                           </div>
