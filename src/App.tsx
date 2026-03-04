@@ -55,6 +55,7 @@ import LinkTreePublic from "./pages/LinkTreePublic";
 import { FinanceTransactions, FinanceProjects, FinanceGoals, FinanceReports } from "./pages/finance";
 import Editorial from "./pages/Editorial";
 import SocialMedia from "./pages/SocialMedia";
+import SocialPostEditor from "./pages/SocialPostEditor";
 import SocialApproval from "./pages/SocialApproval";
 
 const queryClient = new QueryClient({
@@ -183,6 +184,8 @@ const App = () => (
                 } />
                 <Route path="editorial" element={<Editorial />} />
                 <Route path="social-media" element={<SocialMedia />} />
+                <Route path="social-media/new" element={<SocialPostEditor />} />
+                <Route path="social-media/edit/:postId" element={<SocialPostEditor />} />
               </Route>
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminLayout />}>

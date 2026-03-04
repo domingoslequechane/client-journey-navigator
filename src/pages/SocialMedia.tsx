@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle, Lock } from 'lucide-react';
@@ -8,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SocialCalendar } from '@/components/social-media/SocialCalendar';
 import { SocialDashboard } from '@/components/social-media/SocialDashboard';
 import { PostCard } from '@/components/social-media/PostCard';
-import { PostModal } from '@/components/social-media/PostModal';
 import { MetricsDashboard } from '@/components/social-media/MetricsDashboard';
 import { SocialInbox } from '@/components/social-media/SocialInbox';
 import { ClientFilterSelect } from '@/components/social-media/ClientFilterSelect';
@@ -35,9 +35,7 @@ const TABS: { value: TabValue; label: string; icon: React.ComponentType<{ classN
 ];
 
 export default function SocialMedia() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<SocialPostRow | null>(null);
-  const [defaultDate, setDefaultDate] = useState<string | undefined>();
+  const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState<TabValue>('dashboard');
 
@@ -49,7 +47,7 @@ export default function SocialMedia() {
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const { posts, isLoading, createPost, updatePost, deletePost, sendForApproval, publishPost, syncPosts, refetch: refetchPosts } = useSocialPosts();
+  const { posts, isLoading, deletePost, sendForApproval, publishPost, syncPosts, refetch: refetchPosts } = useSocialPosts();
   const { accounts, syncAccounts, connectPlatform, refetch: refetchAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
   const { unreadCount, refetch: refetchMessages } = useSocialMessages(selectedClient !== 'all' ? selectedClient : undefined);
   const { limits, usage, canAddSocialAccount } = usePlanLimits();
@@ -58,7 +56,6 @@ export default function SocialMedia() {
   const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);
 
   const connectedAccounts = accounts.filter(a => a.is_connected);
-
   const hasClientSelected = selectedClient !== 'all';
 
   // Sync posts on mount
@@ -101,49 +98,14 @@ export default function SocialMedia() {
       setConnectGuardOpen(true);
       return;
     }
-    setEditingPost(null);
-    setDefaultDate(date);
-    setModalOpen(true);
+    const params = new URLSearchParams();
+    if (selectedClient !== 'all') params.set('clientId', selectedClient);
+    if (date) params.set('date', date);
+    navigate(`/app/social-media/new?${params.toString()}`);
   };
 
   const handleEditPost = (post: SocialPostRow) => {
-    setEditingPost(post);
-    setModalOpen(true);
-  };
-
-  const handleSave = async (data: {
-    content: string;
-    media_urls: string[];
-    platforms: SocialPlatform[];
-    content_type: string;
-    hashtags: string[];
-    scheduled_at: string;
-    status: string;
-    client_id?: string | null;
-    notes?: string;
-    _isNew?: boolean;
-  }) => {
-    const clientId = selectedClient !== 'all' ? selectedClient : null;
-    const { _isNew, ...postData } = data;
-
-    try {
-      if (editingPost && !_isNew) {
-        const updated = await updatePost.mutateAsync({ id: editingPost.id, ...postData, client_id: clientId } as any);
-        if (data.status === 'scheduled' || data.status === 'published') {
-          await publishPost.mutateAsync({ postId: editingPost.id, publishNow: data.status === 'published' });
-        }
-        return updated;
-      } else {
-        const created = await createPost.mutateAsync({ ...postData, client_id: clientId } as any);
-        if (data.status === 'scheduled' || data.status === 'published') {
-          await publishPost.mutateAsync({ postId: (created as any).id, publishNow: data.status === 'published' });
-        }
-        return created;
-      }
-    } catch (error: any) {
-      console.error('Erro ao salvar post:', error);
-      throw error;
-    }
+    navigate(`/app/social-media/edit/${post.id}?clientId=${post.client_id}`);
   };
 
   const handleDelete = (id: string) => {
@@ -163,20 +125,10 @@ export default function SocialMedia() {
   };
 
   const handleClonePost = (post: SocialPostRow) => {
-    createPost.mutate({
-      content: post.content,
-      media_urls: post.media_urls || [],
-      platforms: post.platforms,
-      content_type: post.content_type || 'feed',
-      hashtags: post.hashtags || [],
-      scheduled_at: new Date().toISOString(),
-      status: 'draft',
-      client_id: post.client_id,
-    } as any, {
-      onSuccess: () => {
-        toast.success('Post clonado como rascunho!');
-      }
-    });
+    const params = new URLSearchParams();
+    params.set('clientId', post.client_id || '');
+    params.set('cloneFrom', post.id);
+    navigate(`/app/social-media/new?${params.toString()}`);
   };
 
   const handleBoostPost = (post: SocialPostRow) => {
@@ -245,7 +197,7 @@ export default function SocialMedia() {
             <span className="hidden sm:inline">Sincronizar</span>
           </Button>
           <Button
-            onClick={() => { setActiveTab('schedule'); handleCreatePost(); }}
+            onClick={() => handleCreatePost()}
             className="gap-2 shrink-0"
             disabled={!hasClientSelected}
             size="sm"
@@ -403,15 +355,6 @@ export default function SocialMedia() {
       {activeTab === 'inbox' && hasClientSelected && <SocialInbox selectedClient={selectedClient} />}
 
       {activeTab === 'reports' && hasClientSelected && <MetricsDashboard posts={clientPosts} selectedClient={selectedClient} />}
-
-      <PostModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        post={editingPost}
-        clientId={selectedClient !== 'all' ? selectedClient : null}
-        onSave={handleSave}
-        defaultDate={defaultDate}
-      />
 
       <ConnectAccountsGuardModal
         open={connectGuardOpen}
