@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,8 +11,8 @@ const corsHeaders = {
 };
 
 interface ContactFormRequest {
-  recipientEmail: string;
-  pageName: string;
+  linkPageId: string;
+  blockId: string;
   senderName?: string;
   senderEmail: string;
   senderPhone?: string;
@@ -17,43 +20,58 @@ interface ContactFormRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("Received contact form request - Method:", req.method, "URL:", req.url);
-
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    console.log("Handling OPTIONS preflight");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const body = await req.text();
-    console.log("Raw request body:", body);
-    
-    const { recipientEmail, pageName, senderName, senderEmail, senderPhone, message }: ContactFormRequest = JSON.parse(body);
+    const { linkPageId, blockId, senderName, senderEmail, senderPhone, message }: ContactFormRequest = await req.json();
 
-    console.log("Contact form data:", { recipientEmail, pageName, senderEmail, hasSenderName: !!senderName });
-
-    // Validate required fields
     if (!senderEmail) {
-      console.error("Missing sender email");
-      return new Response(
-        JSON.stringify({ error: "Email do remetente é obrigatório" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Email do remetente é obrigatório" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
+    if (!linkPageId || !blockId) {
+      return new Response(JSON.stringify({ error: "IDs de página e bloco são obrigatórios" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Initialize Supabase Admin client to fetch secure data
+    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+    // Fetch the block content to get the configured recipient email
+    // We also join with link_pages to get the page name
+    const { data: block, error: blockError } = await supabaseAdmin
+      .from("link_blocks")
+      .select("content, link_pages(name)")
+      .eq("id", blockId)
+      .eq("link_page_id", linkPageId)
+      .single();
+
+    if (blockError || !block) {
+      console.error("[send-contact-form] Block not found or error:", blockError);
+      return new Response(JSON.stringify({ error: "Configuração do formulário não encontrada" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const formConfig = (block.content as any)?.formConfig;
+    const recipientEmail = formConfig?.recipientEmail;
+    const pageName = (block.link_pages as any)?.name || "Página de Links";
+
     if (!recipientEmail) {
-      console.error("Missing recipient email");
-      return new Response(
-        JSON.stringify({ error: "Email do destinatário não está configurado" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      console.error("[send-contact-form] Recipient email not configured in block content");
+      return new Response(JSON.stringify({ error: "Destinatário não configurado para este formulário" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Email 1: Send to recipient (page owner)
@@ -117,18 +135,14 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
 
-    const recipientData = await recipientEmailResponse.json();
-
     if (!recipientEmailResponse.ok) {
-      console.error("Resend API error (recipient):", recipientData);
-      const errorMessage = recipientData?.message || "Failed to send email to recipient";
-      return new Response(JSON.stringify({ error: errorMessage }), {
-        status: recipientEmailResponse.status || 500,
+      const errorData = await recipientEmailResponse.json();
+      console.error("[send-contact-form] Resend API error (recipient):", errorData);
+      return new Response(JSON.stringify({ error: "Falha ao enviar e-mail para o destinatário" }), {
+        status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
-
-    console.log("Email sent to recipient successfully:", recipientData);
 
     // Email 2: Send confirmation to sender
     const confirmationEmailHtml = `
@@ -165,7 +179,7 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
-    const confirmationEmailResponse = await fetch("https://api.resend.com/emails", {
+    await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -179,28 +193,16 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
 
-    const confirmationData = await confirmationEmailResponse.json();
-
-    if (!confirmationEmailResponse.ok) {
-      console.warn("Failed to send confirmation email:", confirmationData);
-      // Don't fail the request, as the main email was sent successfully
-    } else {
-      console.log("Confirmation email sent successfully:", confirmationData);
-    }
-
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    console.error("Error in send-contact-form function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    console.error("[send-contact-form] Unexpected error:", error);
+    return new Response(JSON.stringify({ error: "Erro interno do servidor" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 

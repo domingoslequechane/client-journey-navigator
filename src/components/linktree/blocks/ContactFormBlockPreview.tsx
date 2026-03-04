@@ -62,35 +62,22 @@ export function ContactFormBlockPreview({
       return;
     }
 
-    // Validate recipient email
-    if (!formConfig.recipientEmail) {
-      setErrorMessage('Formulário não configurado corretamente.');
-      return;
-    }
-
     onRecordClick?.(block.id);
     setIsSubmitting(true);
 
     try {
-      console.log('[ContactForm] Sending form data:', {
-        recipientEmail: formConfig.recipientEmail,
-        pageName: linkPageName,
-        senderEmail: formData.email,
-        hasSenderName: !!formData.name,
-      });
+      console.log('[ContactForm] Sending form data for block:', block.id);
 
       const response = await supabase.functions.invoke('send-contact-form', {
         body: {
-          recipientEmail: formConfig.recipientEmail,
-          pageName: linkPageName,
+          linkPageId: block.link_page_id,
+          blockId: block.id,
           senderName: formData.name || undefined,
           senderEmail: formData.email,
           senderPhone: formData.phone || undefined,
           message: formData.message || undefined,
         },
       });
-
-      console.log('[ContactForm] Response:', response);
 
       if (response.error) {
         console.error('[ContactForm] Error response:', response.error);
