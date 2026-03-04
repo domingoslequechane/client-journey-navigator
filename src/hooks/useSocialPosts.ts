@@ -305,19 +305,23 @@ export function useSocialPosts(filters?: PostFilters) {
 
   const syncPosts = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('social-sync-posts');
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
+      // Use a try-catch to prevent generic toast from Supabase client
+      try {
+        const { data, error } = await supabase.functions.invoke('social-sync-posts');
+        if (error) return { synced: 0, error: error.message };
+        return data;
+      } catch (err) {
+        return { synced: 0, error: 'Network error' };
+      }
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
       if (data?.synced > 0) {
+        queryClient.invalidateQueries({ queryKey: ['social-posts'] });
         toast({ title: `${data.synced} post(s) atualizado(s)!` });
       }
     },
     onError: (err: any) => {
-      console.error('Sync posts error:', err);
+      console.warn('[social-sync-posts] Background sync failed silently:', err);
     },
   });
 

@@ -250,24 +250,26 @@ export function useSocialAccounts(clientId?: string | null) {
 
   const syncAccounts = useMutation({
     mutationFn: async (syncClientId?: string) => {
-      const { data, error } = await supabase.functions.invoke('social-sync-accounts', {
-        body: syncClientId ? { client_id: syncClientId } : {},
-      });
+      try {
+        const { data, error } = await supabase.functions.invoke('social-sync-accounts', {
+          body: syncClientId ? { client_id: syncClientId } : {},
+        });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      return data;
+        if (error) return { synced: 0, error: error.message };
+        return data;
+      } catch (err) {
+        return { synced: 0, error: 'Network error' };
+      }
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['clients-with-social-status'] });
       if (data?.synced > 0) {
+        queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+        queryClient.invalidateQueries({ queryKey: ['clients-with-social-status'] });
         toast({ title: `${data.synced} conta(s) sincronizada(s)!` });
       }
     },
     onError: (err: any) => {
-      console.error('Sync error:', err);
+      console.warn('[social-sync-accounts] Background sync failed silently:', err);
     },
   });
 

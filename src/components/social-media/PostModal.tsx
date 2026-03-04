@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { format, addMinutes } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -276,7 +278,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
     const localUrls = Array.from(files).map(file => URL.createObjectURL(file));
     
     // Use functional update to avoid stale state
-    setPosts(prev => prev.map((p, i) =>
+    setPosts(prev => prev.map((p, i) => 
       i === activeIndex ? { ...p, mediaUrls: [...p.mediaUrls, ...localUrls] } : p
     ));
 
@@ -288,7 +290,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         const localUrl = localUrls[i];
         
         // Facebook 4MB limit check
-        const isFacebookSelected = currentPost.schedules.some(s =>
+        const isFacebookSelected = currentPost.schedules.some(s => 
           s.placements.some(p => {
             const acc = connectedAccounts.find(a => a.id === p.accountId);
             return acc?.platform === 'facebook';
@@ -298,7 +300,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         if (isFacebookSelected && file.type.startsWith('image/') && file.size > 4 * 1024 * 1024) {
           toast.error(`A imagem "${file.name}" excede o limite de 4MB do Facebook. Por favor, use uma imagem menor.`);
           // Remove local preview if invalid
-          setPosts(prev => prev.map((p, idx) =>
+          setPosts(prev => prev.map((p, idx) => 
             idx === activeIndex ? { ...p, mediaUrls: p.mediaUrls.filter(u => u !== localUrl) } : p
           ));
           continue;
@@ -306,7 +308,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
 
         // Step 1: Get presigned URL from Late API via our Edge Function
         const { data: presignData, error: presignError } = await supabase.functions.invoke('social-media-presign', {
-          body: {
+          body: { 
             fileName: file.name,
             fileType: file.type
           }
@@ -330,10 +332,10 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
         }
         
         // Step 3: Replace local URL with publicUrl using functional update
-        setPosts(prev => prev.map((p, idx) =>
-          idx === activeIndex ? {
-            ...p,
-            mediaUrls: p.mediaUrls.map(u => u === localUrl ? publicUrl : u)
+        setPosts(prev => prev.map((p, idx) => 
+          idx === activeIndex ? { 
+            ...p, 
+            mediaUrls: p.mediaUrls.map(u => u === localUrl ? publicUrl : u) 
           } : p
         ));
         
@@ -343,10 +345,10 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
       console.error('Upload error:', err);
       toast.error(err.message || 'Erro ao carregar arquivos.');
       // Cleanup local URLs on error if they weren't replaced
-      setPosts(prev => prev.map((p, idx) =>
-        idx === activeIndex ? {
-          ...p,
-          mediaUrls: p.mediaUrls.filter(u => !u.startsWith('blob:'))
+      setPosts(prev => prev.map((p, idx) => 
+        idx === activeIndex ? { 
+          ...p, 
+          mediaUrls: p.mediaUrls.filter(u => !u.startsWith('blob:')) 
         } : p
       ));
     } finally {
@@ -835,20 +837,20 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, onPublis
                                               disabled={isPublished || isSaving}
                                               onClick={() => togglePlacementInSchedule(schedule.id, account.id, fmt)}
                                               className={cn(
-                                                "relative p-1.5 rounded-full border-2 transition-all",
+                                                "relative p-2.5 rounded-full border-2 transition-all",
                                                 isSelected 
                                                   ? "border-primary bg-primary/10 scale-105" 
                                                   : "border-transparent bg-muted/50 opacity-40 hover:opacity-100 hover:border-border"
                                               )}
                                             >
                                               <div className="relative">
-                                                <PlatformIcon platform={p} size="xs" />
-                                                <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 border border-border">
-                                                  {fmt === 'feed' && <Image className="h-2 w-2 text-primary" />}
-                                                  {fmt === 'stories' && <CircleDashed className="h-2 w-2 text-primary" />}
-                                                  {fmt === 'reels' && <Film className="h-2 w-2 text-primary" />}
-                                                  {fmt === 'carousel' && <Layers className="h-2 w-2 text-primary" />}
-                                                  {fmt === 'video' && <Film className="h-2 w-2 text-primary" />}
+                                                <PlatformIcon platform={p} size="sm" />
+                                                <div className="absolute -bottom-1.5 -right-1.5 bg-background rounded-full p-0.5 border border-border">
+                                                  {fmt === 'feed' && <Image className="h-2.5 w-2.5 text-primary" />}
+                                                  {fmt === 'stories' && <CircleDashed className="h-2.5 w-2.5 text-primary" />}
+                                                  {fmt === 'reels' && <Film className="h-2.5 w-2.5 text-primary" />}
+                                                  {fmt === 'carousel' && <Layers className="h-2.5 w-2.5 text-primary" />}
+                                                  {fmt === 'video' && <Film className="h-2.5 w-2.5 text-primary" />}
                                                 </div>
                                               </div>
                                             </button>

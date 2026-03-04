@@ -322,7 +322,7 @@ export function Sidebar() {
         <div className="p-2 border-t border-border space-y-1 shrink-0">
           {/* Theme Toggle & Language Selector */}
           {collapsed ? (
-            <>
+            <div className="flex flex-col items-center gap-1 py-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex justify-center">
@@ -339,12 +339,14 @@ export function Sidebar() {
                 </TooltipTrigger>
                 <TooltipContent side="right">{t('language.select')}</TooltipContent>
               </Tooltip>
-            </>
+            </div>
           ) : (
-            <div className="flex items-center gap-3 px-3 py-2.5">
-              <ThemeToggle />
-              <LanguageSelector />
-              <span className="text-sm text-muted-foreground">{t('theme.toggle')}</span>
+            <div className="flex items-center justify-between px-2 py-2">
+              <div className="flex items-center gap-1">
+                <ThemeToggle />
+                <LanguageSelector />
+              </div>
+              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{t('theme.toggle')}</span>
             </div>
           )}
 
