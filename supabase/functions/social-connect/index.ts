@@ -82,7 +82,11 @@ Deno.serve(async (req) => {
     const getConnectUrl = (profId: string) => {
       const url = new URL(`${LATE_API_BASE}/connect/${platform}`);
       url.searchParams.set("profileId", profId);
-      if (redirect_url) url.searchParams.set("redirectUrl", redirect_url);
+      if (redirect_url) {
+        // Documentation uses redirect_url in curl but redirectUrl in Node.js. Setting both to be safe.
+        url.searchParams.set("redirect_url", redirect_url);
+        url.searchParams.set("redirectUrl", redirect_url);
+      }
       return url.toString();
     };
 

@@ -208,16 +208,28 @@ export function useSocialAccounts(clientId?: string | null) {
         if (!popup || popup.closed) {
           clearInterval(checkPopup);
           
+          const syncToast = toast({
+            title: 'Sincronizando conta...',
+            description: 'Aguarde enquanto buscamos a nova conexão.',
+          });
+          
           // Delay to give Late API time to register the account
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
           
           try {
             const result = await syncAccounts.mutateAsync(data.clientId);
             
             // Retry once if no accounts were synced (timing issue)
             if (result?.synced === 0) {
-              await new Promise(resolve => setTimeout(resolve, 3000));
-              await syncAccounts.mutateAsync(data.clientId);
+              await new Promise(resolve => setTimeout(resolve, 4000));
+              const retryResult = await syncAccounts.mutateAsync(data.clientId);
+              if (retryResult?.synced === 0) {
+                toast({
+                  title: 'Conta não encontrada',
+                  description: 'A conexão foi concluída, mas a conta ainda não apareceu. Tente sincronizar manualmente em alguns instantes.',
+                  variant: 'destructive'
+                });
+              }
             }
           } catch (err) {
             console.error('Sync after connection failed:', err);

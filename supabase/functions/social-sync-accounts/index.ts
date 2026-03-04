@@ -65,8 +65,12 @@ Deno.serve(async (req) => {
         continue; 
       }
 
-      const lateAccounts = accountsData.accounts || accountsData.data || [];
+      // Handle different response formats: array directly, or { accounts: [] }, or { data: [] }
+      const lateAccounts = Array.isArray(accountsData) ? accountsData : (accountsData.accounts || accountsData.data || []);
       console.log(`[social-sync-accounts] Found ${lateAccounts.length} accounts in Late.dev for profile ${client.late_profile_id}`);
+      if (lateAccounts.length === 0) {
+        console.log(`[social-sync-accounts] Raw response for profile ${client.late_profile_id}:`, JSON.stringify(accountsData));
+      }
 
       const { data: existingAccounts } = await supabase.from("social_accounts").select("*").eq("organization_id", orgId).eq("client_id", client.id);
       const existing = existingAccounts || [];
