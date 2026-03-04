@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PostPreview } from '@/components/social-media/PostPreview';
-import { PlatformIcon } from './PlatformIcon';
+import { PlatformIcon } from '@/components/social-media/PlatformIcon';
 import { AICaptionModal } from '@/components/social-media/AICaptionModal';
 import { type SocialPlatform, type ContentType } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
@@ -210,6 +210,7 @@ export default function SocialPostEditor() {
         updatePostItem(currentPostItem.id, {
           files: [...currentPostItem.files, ...pendingFiles],
           mediaUrls: [...currentPostItem.mediaUrls, ...localUrls],
+          contentType: 'carousel'
         });
         updateSchedule(currentPostItem.id, currentPostItem.schedules[0].id, { contentType: 'carousel' });
       }
