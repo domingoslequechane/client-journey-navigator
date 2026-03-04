@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PostPreview } from '@/components/social-media/PostPreview';
-import { PlatformIcon } from '@/components/social-media/PlatformIcon';
+import { PlatformIcon } from './PlatformIcon';
 import { AICaptionModal } from '@/components/social-media/AICaptionModal';
 import { type SocialPlatform, type ContentType } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
@@ -23,7 +23,8 @@ import {
   Image as ImageIcon, Zap, Sparkles, 
   Plus, Smartphone, MapPin, 
   ArrowLeft, FileText, Trash2,
-  CircleDashed, Film, Layers, Image
+  CircleDashed, Film, Layers, Image,
+  LayoutGrid
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
