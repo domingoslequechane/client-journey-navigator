@@ -26,14 +26,14 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -42,13 +42,13 @@ Deno.serve(async (req) => {
       body = await req.json();
     } catch {
       return new Response(JSON.stringify({ error: "Invalid or empty request body" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     const { post_id, publish_now } = body;
     if (!post_id) {
       return new Response(JSON.stringify({ error: "post_id is required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -57,19 +57,25 @@ Deno.serve(async (req) => {
 
     if (!profile?.current_organization_id) {
       return new Response(JSON.stringify({ error: "No organization found" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const orgId = profile.current_organization_id;
-    const LATE_API_KEY = Deno.env.get("LATE_API_KEY")!;
+    const LATE_API_KEY = Deno.env.get("LATE_API_KEY");
+
+    if (!LATE_API_KEY) {
+      return new Response(JSON.stringify({ error: "LATE_API_KEY not configured in Supabase secrets" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: post, error: postError } = await supabase
       .from("social_posts").select("*").eq("id", post_id).eq("organization_id", orgId).single();
 
     if (postError || !post) {
       return new Response(JSON.stringify({ error: "Post not found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -83,7 +89,7 @@ Deno.serve(async (req) => {
 
     if (!accounts || accounts.length === 0) {
       return new Response(JSON.stringify({ error: "No connected accounts for selected platforms" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -99,7 +105,7 @@ Deno.serve(async (req) => {
       .map((a: any) => {
         const platform = a.platform;
         const contentType = getPlatformContentType(platform, post.content_type);
-        
+
         const platformSpecificData: any = { contentType };
 
         // Add mandatory TikTok settings
@@ -142,8 +148,15 @@ Deno.serve(async (req) => {
         }
 
         // Add Facebook defaults
-        if (platform === 'facebook' && contentType === 'reel') {
-          platformSpecificData.title = post.content?.split('\n')[0]?.substring(0, 100) || "New Reel";
+        if (platform === 'facebook') {
+          if (contentType === 'reel') {
+            platformSpecificData.title = post.content?.split('\n')[0]?.substring(0, 100) || "New Reel";
+          }
+          // Some setups use a specific pageId, if it's stored in the database as late_account_id
+          // Defaulting to sending pageId since FB sometimes requires it.
+          // In Late API, if there's no pageId specified, it posts to the default page.
+          // Adding it here using our a.late_account_id if we assume 1 account = 1 page.
+          platformSpecificData.pageId = a.page_id || a.late_account_id;
         }
 
         return {
@@ -155,53 +168,73 @@ Deno.serve(async (req) => {
 
     if (platforms.length === 0) {
       return new Response(JSON.stringify({ error: "No Late.dev connected accounts found." }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const latePayload: any = { 
-      content: finalContent, 
+    const latePayload: any = {
+      content: finalContent,
       platforms,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone // Use server/browser timezone
+      timezone: "UTC" // Force UTC to match DB timestamps without Z
     };
-
-    if (post.media_urls && post.media_urls.length > 0) {
-      latePayload.mediaItems = post.media_urls.map((url: string) => {
-        const isVideo = /\.(mp4|mov|avi|webm)$/i.test(url);
-        return { type: isVideo ? "video" : "image", url };
-      });
-    }
 
     if (publish_now) {
       latePayload.publishNow = true;
     } else if (post.scheduled_at) {
-      latePayload.scheduledFor = post.scheduled_at;
+      // Parse ISO string and remove the Z/milliseconds to match YYYY-MM-DDTHH:mm:ss in UTC
+      const d = new Date(post.scheduled_at);
+      latePayload.scheduledFor = d.toISOString().split('.')[0];
     } else {
       latePayload.publishNow = true;
     }
 
-    console.log(`[social-publish] Sending post ${post_id} to Late.dev`);
+    const isMultiStory = post.content_type === 'stories' && post.media_urls && post.media_urls.length > 1;
+    const mediaToProcess = isMultiStory
+      ? post.media_urls.map((url: string) => [url])
+      : [post.media_urls || []];
 
-    const lateRes = await fetch(`${LATE_API_BASE}/posts`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LATE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify(latePayload),
-    });
+    const results = [];
+    let lastError = null;
 
-    let lateData: any = {};
-    try {
-      const lateText = await lateRes.text();
-      lateData = lateText ? JSON.parse(lateText) : {};
-    } catch {
-      lateData = { error: `Late.dev returned status ${lateRes.status}` };
+    for (const currentMediaUrls of mediaToProcess) {
+      const currentLatePayload = { ...latePayload };
+
+      if (currentMediaUrls.length > 0) {
+        currentLatePayload.mediaItems = currentMediaUrls.map((url: string) => {
+          const isVideo = /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video');
+          return { type: isVideo ? "video" : "image", url };
+        });
+      }
+
+      console.log(`[social-publish] Publishing ${isMultiStory ? 'story slide' : 'post'} to Late.dev`);
+
+      const lateRes = await fetch(`${LATE_API_BASE}/posts`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LATE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify(currentLatePayload),
+      });
+
+      let lateData: any = {};
+      try {
+        const lateText = await lateRes.text();
+        lateData = lateText ? JSON.parse(lateText) : {};
+      } catch {
+        lateData = { error: `Late.dev returned status ${lateRes.status}` };
+      }
+
+      if (!lateRes.ok) {
+        console.error("[social-publish] Late.dev publish error:", lateData);
+        lastError = lateData;
+        if (!isMultiStory) break; // If not multi-story, stop on first error
+      } else {
+        results.push(lateData.post?._id || lateData._id);
+      }
     }
 
-    if (!lateRes.ok) {
-      console.error("[social-publish] Late.dev publish error:", lateData);
-      
-      const errorMessage = lateData.error || `Late.dev returned status ${lateRes.status}`;
-      const errorDetails = lateData.details ? `: ${JSON.stringify(lateData.details)}` : "";
-      
+    if (results.length === 0 && lastError) {
+      const errorMessage = lastError.error || "Late.dev publication failed";
+      const errorDetails = lastError.details ? `: ${JSON.stringify(lastError.details)}` : "";
+
       await supabase.from("social_posts").update({
         status: "failed",
         notes: `Late.dev error: ${errorMessage}${errorDetails}`
@@ -209,28 +242,29 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({
         error: errorMessage,
-        details: lateData.details
+        details: lastError.details
       }), {
-        status: lateRes.status >= 400 && lateRes.status < 600 ? lateRes.status : 500,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const latePostId = lateData.post?._id || lateData._id;
+    const latePostId = results.join(',');
     const newStatus = publish_now ? "published" : "scheduled";
 
     await supabase.from("social_posts").update({
       late_post_id: latePostId, status: newStatus,
       ...(publish_now ? { published_at: new Date().toISOString() } : {}),
+      notes: results.length < mediaToProcess.length ? `${results.length}/${mediaToProcess.length} slides publicados.` : null
     }).eq("id", post_id);
 
-    return new Response(JSON.stringify({ success: true, latePostId, status: newStatus }), {
+    return new Response(JSON.stringify({ success: true, latePostId, status: newStatus, publishedCount: results.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: unknown) {
     console.error("[social-publish] error:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

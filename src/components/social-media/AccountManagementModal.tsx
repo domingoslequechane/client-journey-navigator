@@ -3,14 +3,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlatformIcon } from './PlatformIcon';
 import { ConfirmActionModal } from './ConfirmActionModal';
 import { type SocialAccount } from '@/hooks/useSocialAccounts';
 import { type SocialPlatform, PLATFORM_CONFIG } from '@/lib/social-media-mock';
-import { Unplug, RefreshCw, User, Calendar, Lock, AlertCircle } from 'lucide-react';
+import { Unplug, RefreshCw, User, Calendar, Lock, AlertCircle, FileEdit, Loader2, CheckCircle2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AccountManagementModalProps {
   open: boolean;
@@ -19,6 +23,11 @@ interface AccountManagementModalProps {
   onDisconnect: (id: string) => void;
   onSync: () => void;
   isSyncing?: boolean;
+}
+
+interface FacebookPage {
+  id: string;
+  name: string;
 }
 
 export function AccountManagementModal({
@@ -30,6 +39,11 @@ export function AccountManagementModal({
   isSyncing,
 }: AccountManagementModalProps) {
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const [fbPages, setFbPages] = useState<FacebookPage[] | null>(null);
+  const [loadingPages, setLoadingPages] = useState(false);
+  const [selectedPageId, setSelectedPageId] = useState<string>('');
+  const [savingPage, setSavingPage] = useState(false);
+  const queryClient = useQueryClient();
 
   if (!account) return null;
 
@@ -37,11 +51,53 @@ export function AccountManagementModal({
   const config = PLATFORM_CONFIG[platform];
   const isLocked = account.is_social_locked;
   const disconnectCount = account.social_disconnection_count || 0;
+  const isFacebook = platform === 'facebook';
 
   const handleDisconnect = () => {
     onDisconnect(account.id);
     setConfirmDisconnect(false);
     onOpenChange(false);
+  };
+
+  const handleLoadFbPages = async () => {
+    setLoadingPages(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('facebook-pages', {
+        body: { account_id: account.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Late API returns { pages: [...] } or an array directly
+      const pages: FacebookPage[] = Array.isArray(data) ? data : (data.pages || data.data || []);
+      setFbPages(pages);
+      // Pre-select the already saved one
+      if (account.facebook_page_id) setSelectedPageId(account.facebook_page_id);
+    } catch (err: any) {
+      toast.error('Erro ao buscar páginas: ' + err.message);
+    } finally {
+      setLoadingPages(false);
+    }
+  };
+
+  const handleSavePage = async () => {
+    if (!selectedPageId) return;
+    setSavingPage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('facebook-pages', {
+        body: { account_id: account.id, facebook_page_id: selectedPageId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success('Página do Facebook guardada!');
+      queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error('Erro ao guardar página: ' + err.message);
+    } finally {
+      setSavingPage(false);
+    }
   };
 
   return (
@@ -102,6 +158,73 @@ export function AccountManagementModal({
               </div>
             </div>
 
+            {/* Facebook Page Picker */}
+            {isFacebook && (
+              <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <FileEdit className="h-4 w-4 text-blue-500" />
+                  <p className="text-sm font-semibold">Página do Facebook</p>
+                </div>
+
+                {account.facebook_page_id && !fbPages && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                    <span>Página configurada (ID: {account.facebook_page_id})</span>
+                  </div>
+                )}
+                {!account.facebook_page_id && !fbPages && (
+                  <p className="text-xs text-muted-foreground">
+                    Configure qual página do Facebook será usada ao publicar posts.
+                  </p>
+                )}
+
+                {!fbPages && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 border-blue-500/30 hover:bg-blue-500/10"
+                    onClick={handleLoadFbPages}
+                    disabled={loadingPages}
+                  >
+                    {loadingPages ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileEdit className="h-4 w-4" />}
+                    {account.facebook_page_id ? 'Alterar página' : 'Selecionar página'}
+                  </Button>
+                )}
+
+                {fbPages && (
+                  <div className="space-y-3">
+                    {fbPages.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Nenhuma página encontrada nesta conta.</p>
+                    ) : (
+                      <>
+                        <Select value={selectedPageId} onValueChange={setSelectedPageId}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="Selecione uma página..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {fbPages.map((page) => (
+                              <SelectItem key={page.id} value={page.id}>
+                                {page.name} ({page.id})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          className="w-full gap-2"
+                          onClick={handleSavePage}
+                          disabled={!selectedPageId || savingPage}
+                        >
+                          {savingPage ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                          Guardar página
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Disconnection Limit Info */}
             <div className={cn(
               "p-3 rounded-lg border text-xs space-y-2",
@@ -113,7 +236,7 @@ export function AccountManagementModal({
                   {disconnectCount} / 3
                 </Badge>
               </div>
-              
+
               {isLocked ? (
                 <div className="flex items-start gap-2 text-destructive">
                   <Lock className="h-3.5 w-3.5 shrink-0 mt-0.5" />

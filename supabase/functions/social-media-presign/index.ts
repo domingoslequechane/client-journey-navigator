@@ -43,9 +43,9 @@ Deno.serve(async (req) => {
 
     const lateRes = await fetch(`${LATE_API_BASE}/media/presign`, {
       method: "POST",
-      headers: { 
-        Authorization: `Bearer ${LATE_API_KEY}`, 
-        "Content-Type": "application/json" 
+      headers: {
+        Authorization: `Bearer ${LATE_API_KEY}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({ fileName, fileType }),
     });
@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
 
     if (!lateRes.ok) {
       console.error("[social-media-presign] Late.dev error:", lateData);
-      return new Response(JSON.stringify({ error: "Failed to get presigned URL", details: lateData }), {
-        status: lateRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: lateData.message || lateData.error || "Failed to get presigned URL", details: lateData }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
   } catch (err: unknown) {
     console.error("[social-media-presign] error:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

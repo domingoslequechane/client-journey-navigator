@@ -222,7 +222,7 @@ export function useSocialPosts(filters?: PostFilters) {
 
       const { error } = await query;
       if (error) throw error;
-      
+
       // Reset usage count for social_posts in usage_tracking for the current month
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
       await supabase
@@ -292,12 +292,19 @@ export function useSocialPosts(filters?: PostFilters) {
     onError: (err: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
       console.error('Erro ao publicar/agendar post:', err);
-      
+
       if (variables.silent) return;
+
+      let message = 'Não conseguimos processar o agendamento agora. Verifique sua conexão e tente novamente.';
+      if (err instanceof Error && err.message) {
+        message = err.message;
+      } else if (typeof err === 'string') {
+        message = err;
+      }
 
       toast({
         title: 'Erro no agendamento',
-        description: 'Não conseguimos processar o agendamento agora. Verifique sua conexão e tente novamente.',
+        description: message,
         variant: 'destructive'
       });
     },
@@ -346,14 +353,14 @@ export function useApprovalPost(token?: string) {
     queryKey: ['approval-post', token],
     queryFn: async () => {
       if (!token) return null;
-      
+
       // Use secure RPC instead of direct table access to prevent data leakage
       const { data, error } = await (supabase as any).rpc('get_social_post_by_token', {
         p_token: token
       });
 
       if (error) throw error;
-      
+
       const row = Array.isArray(data) ? data[0] : data;
       if (!row) return null;
 
@@ -372,7 +379,7 @@ export function useApprovalPost(token?: string) {
   const approvePost = useMutation({
     mutationFn: async (approverName: string) => {
       if (!token) throw new Error('Token missing');
-      
+
       // Use secure RPC to update status via token
       const { error } = await (supabase as any).rpc('respond_to_social_post_approval', {
         p_token: token,
@@ -390,7 +397,7 @@ export function useApprovalPost(token?: string) {
   const rejectPost = useMutation({
     mutationFn: async ({ reason, approverName }: { reason: string; approverName: string }) => {
       if (!token) throw new Error('Token missing');
-      
+
       // Use secure RPC to update status via token
       const { error } = await (supabase as any).rpc('respond_to_social_post_approval', {
         p_token: token,

@@ -39,8 +39,15 @@ export default function SocialMedia() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState<TabValue>('dashboard');
 
-  // Global client filter
-  const [selectedClient, setSelectedClient] = useState<string>('all');
+  // Global client filter — persisted for the duration of the browser session
+  const [selectedClient, setSelectedClient] = useState<string>(
+    () => sessionStorage.getItem('social_selected_client') || 'all'
+  );
+
+  const handleClientChange = (value: string) => {
+    setSelectedClient(value);
+    sessionStorage.setItem('social_selected_client', value);
+  };
 
   // Filters for posts tab
   const [searchQuery, setSearchQuery] = useState('');
@@ -185,7 +192,7 @@ export default function SocialMedia() {
 
         {/* Global controls bar */}
         <div className="flex items-center gap-3">
-          <ClientFilterSelect value={selectedClient} onChange={setSelectedClient} className="min-w-0 flex-1 sm:flex-none sm:w-[240px]" />
+          <ClientFilterSelect value={selectedClient} onChange={handleClientChange} className="min-w-0 flex-1 sm:flex-none sm:w-[240px]" />
           <Button
             variant="outline"
             size="sm"

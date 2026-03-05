@@ -15,6 +15,7 @@ export interface SocialAccount {
   is_connected: boolean;
   followers_count: number;
   late_account_id: string | null;
+  facebook_page_id: string | null;
   created_at: string;
   updated_at: string;
   // Joined from clients table
@@ -129,9 +130,9 @@ export function useSocialAccounts(clientId?: string | null) {
         .single();
 
       if (fetchError || !accountData) throw new Error('Conta não encontrada');
-      
+
       const acc = accountData as any;
-      
+
       if (acc.clients?.is_social_locked) {
         throw new Error('Este cliente atingiu o limite de 3 desconexões e está bloqueado.');
       }
@@ -191,7 +192,7 @@ export function useSocialAccounts(clientId?: string | null) {
   const connectPlatform = useMutation({
     mutationFn: async ({ platform, clientId: cId }: { platform: SocialPlatform; clientId: string }) => {
       const redirectUrl = `${window.location.origin}/app/social-media`;
-      
+
       const { data, error } = await supabase.functions.invoke('social-connect', {
         body: { platform, redirect_url: redirectUrl, client_id: cId },
       });
@@ -203,22 +204,22 @@ export function useSocialAccounts(clientId?: string | null) {
     },
     onSuccess: (data) => {
       const popup = window.open(data.authUrl, 'social-connect', 'width=600,height=700');
-      
+
       const checkPopup = setInterval(async () => {
         if (!popup || popup.closed) {
           clearInterval(checkPopup);
-          
+
           const syncToast = toast({
             title: 'Sincronizando conta...',
             description: 'Aguarde enquanto buscamos a nova conexão.',
           });
-          
+
           // Delay to give Late API time to register the account
           await new Promise(resolve => setTimeout(resolve, 3000));
-          
+
           try {
             const result = await syncAccounts.mutateAsync(data.clientId);
-            
+
             // Retry once if no accounts were synced (timing issue)
             if (result?.synced === 0) {
               await new Promise(resolve => setTimeout(resolve, 4000));
@@ -235,7 +236,7 @@ export function useSocialAccounts(clientId?: string | null) {
             console.error('Sync after connection failed:', err);
             toast({ title: 'Erro ao sincronizar contas', description: 'Tente sincronizar manualmente.', variant: 'destructive' });
           }
-          
+
           // Always invalidate queries regardless of sync result
           queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
           queryClient.invalidateQueries({ queryKey: ['clients-with-social-status'] });

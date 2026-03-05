@@ -1,24 +1,26 @@
-import { type SocialPlatform, PLATFORM_CONFIG } from '@/lib/social-media-mock';
+import React from 'react';
+import { type SocialPlatform, PLATFORM_CONFIG, type ContentType } from '@/lib/social-media-mock';
 import { PlatformIcon } from './PlatformIcon';
 import { cn } from '@/lib/utils';
-import { Heart, MessageCircle, Send, Bookmark, Share2, ThumbsUp, Repeat2, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Send, Bookmark, Share2, ThumbsUp, Repeat2, MoreHorizontal, Camera } from 'lucide-react';
 
 interface PostPreviewProps {
   content: string;
   mediaUrl?: string;
   platform: SocialPlatform;
+  contentType?: ContentType;
   accountName?: string;
   accountUsername?: string;
   accountAvatarUrl?: string;
 }
 
-export function PostPreview({ content, mediaUrl, platform, accountName, accountUsername, accountAvatarUrl }: PostPreviewProps) {
+export function PostPreview({ content, mediaUrl, platform, contentType, accountName, accountUsername, accountAvatarUrl }: PostPreviewProps) {
   const config = PLATFORM_CONFIG[platform];
   const charLimit = config.charLimit;
   const isOverLimit = content.length > charLimit;
 
-  const displayName = accountName || 'Minha Página';
-  const username = accountUsername || 'minhapagina';
+  const displayName = accountName || 'Conta Social';
+  const username = accountUsername ? (accountUsername.startsWith('@') ? accountUsername : `@${accountUsername}`) : '@usuario';
   const initials = displayName.substring(0, 2).toUpperCase();
 
   const isVideo = (url?: string) => {
@@ -26,7 +28,7 @@ export function PostPreview({ content, mediaUrl, platform, accountName, accountU
     return /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video');
   };
 
-  const MediaDisplay = ({ url, className }: { url?: string; className?: string }) => {
+  const MediaDisplay = ({ url, className, objectFit = 'object-cover' }: { url?: string; className?: string, objectFit?: 'object-cover' | 'object-contain' }) => {
     if (!url) return (
       <div className={cn("aspect-square bg-muted flex items-center justify-center", className)}>
         <span className="text-muted-foreground text-xs">Sem mídia</span>
@@ -36,7 +38,7 @@ export function PostPreview({ content, mediaUrl, platform, accountName, accountU
     if (isVideo(url)) {
       return (
         <div className={cn("aspect-square bg-black relative flex items-center justify-center", className)}>
-          <video src={url} className="w-full h-full object-contain" muted playsInline />
+          <video src={url} className={cn("w-full h-full", objectFit)} muted playsInline />
           <div className="absolute inset-0 flex items-center justify-center bg-black/20">
             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
@@ -47,25 +49,39 @@ export function PostPreview({ content, mediaUrl, platform, accountName, accountU
     }
 
     return (
-      <div className={cn("aspect-square bg-muted", className)}>
-        <img src={url} alt="" className="w-full h-full object-cover" />
+      <div className={cn("aspect-square bg-muted overflow-hidden", className)}>
+        <img src={url} alt="" className={cn("w-full h-full", objectFit)} />
       </div>
     );
   };
 
   const Avatar = ({ size = 'w-8 h-8', className }: { size?: string; className?: string }) => (
     accountAvatarUrl ? (
-      <img src={accountAvatarUrl} alt="" className={cn(size, "rounded-full object-cover", className)} />
+      <img src={accountAvatarUrl} alt="" className={cn(size, "rounded-full object-cover border border-white/10 shadow-sm", className)} />
     ) : (
-      <div className={cn(size, "rounded-full flex items-center justify-center text-primary-foreground text-[10px] font-bold", className)}>
+      <div className={cn(size, "rounded-full flex items-center justify-center text-primary-foreground text-[10px] font-bold border border-white/10 shadow-sm", className)}>
         {initials}
       </div>
     )
   );
 
+  // Dedicated Story Preview
+  if (contentType === 'stories') {
+    return (
+      <StoryPreview
+        content={content}
+        mediaUrl={mediaUrl}
+        platform={platform}
+        displayName={displayName}
+        username={username}
+        avatar={<Avatar size="w-8 h-8" />}
+      />
+    );
+  }
+
   if (platform === 'instagram') return (
     <InstagramPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit}
-      displayName={displayName} username={username} avatar={<Avatar size="w-8 h-8" className="bg-gradient-to-br from-[hsl(280,70%,50%)] via-[hsl(330,80%,55%)] to-[hsl(30,90%,55%)]" />} MediaDisplay={MediaDisplay} />
+      displayName={displayName} username={username} avatar={<Avatar size="w-8 h-8" className="ring-2 ring-pink-500 ring-offset-1 ring-offset-[#1a1a1a]" />} MediaDisplay={MediaDisplay} />
   );
   if (platform === 'facebook') return (
     <FacebookPreview content={content} mediaUrl={mediaUrl} isOverLimit={isOverLimit} charLimit={charLimit}
@@ -81,7 +97,7 @@ export function PostPreview({ content, mediaUrl, platform, accountName, accountU
   );
   return (
     <GenericPreview content={content} mediaUrl={mediaUrl} platform={platform} isOverLimit={isOverLimit} charLimit={charLimit}
-      displayName={displayName} username={username} avatarUrl={accountAvatarUrl} MediaDisplay={MediaDisplay} />
+      displayName={displayName} username={username} avatar={<Avatar size="w-11 h-11" />} MediaDisplay={MediaDisplay} />
   );
 }
 
@@ -97,44 +113,46 @@ interface PreviewCommonProps {
 
 function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, username, MediaDisplay }: PreviewCommonProps & { username: string }) {
   return (
-    <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
-      <div className="flex items-center justify-between p-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[hsl(280,70%,50%)] via-[hsl(330,80%,55%)] to-[hsl(30,90%,55%)] p-[2px]">
-            <div className="w-full h-full rounded-full bg-card overflow-hidden">
+    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex items-center justify-between p-3.5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#f09433] via-[#e6683c] to-[#bc1888] p-[1.5px] shrink-0">
+            <div className="w-full h-full rounded-full bg-[#1a1a1a] overflow-hidden border border-black/10">
               {avatar}
             </div>
           </div>
-          <div>
-            <p className="text-xs font-semibold">{username}</p>
+          <div className="min-w-0">
+            <p className="text-[12px] font-bold tracking-tight truncate max-w-[160px]">{username.replace('@', '')}</p>
           </div>
         </div>
-        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+        <MoreHorizontal className="h-4 w-4 text-white/40" />
       </div>
 
-      <MediaDisplay url={mediaUrl} />
+      <MediaDisplay url={mediaUrl} className="aspect-square bg-[#121212]" />
 
-      <div className="p-3 space-y-2">
+      <div className="p-4 space-y-3.5 font-sans">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Heart className="h-5 w-5" />
-            <MessageCircle className="h-5 w-5" />
-            <Send className="h-5 w-5" />
+          <div className="flex items-center gap-5">
+            <Heart className="h-6 w-6 text-white/90" />
+            <MessageCircle className="h-6 w-6 text-white/90" />
+            <Send className="h-6 w-6 text-white/90" />
           </div>
-          <Bookmark className="h-5 w-5" />
+          <Bookmark className="h-6 w-6 text-white/90" />
         </div>
-        <p className="text-xs">
-          <span className="font-semibold">{username} </span>
-          <span className="whitespace-pre-wrap line-clamp-3">
-            {content || <span className="text-muted-foreground italic">Escreva o conteúdo...</span>}
-          </span>
-        </p>
-      </div>
-
-      <div className="px-3 pb-2 flex justify-end">
-        <span className={cn("text-[10px]", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
-          {content.length}/{charLimit}
-        </span>
+        <div className="space-y-1.5">
+          <p className="text-[13px] leading-snug">
+            <span className="font-bold mr-2">{username.replace('@', '')}</span>
+            <span className={cn("whitespace-pre-wrap", !content && "text-white/30 italic font-normal")}>
+              {content || 'Escreva o conteúdo...'}
+            </span>
+          </p>
+          <div className="flex justify-between items-center pt-3">
+            <span className="text-[11px] text-white/20">Agora mesmo</span>
+            <span className={cn("text-[11px] font-mono font-medium", isOverLimit ? "text-red-400 font-bold" : "text-white/20")}>
+              {content.length}/{charLimit}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -142,31 +160,33 @@ function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit, displayNa
 
 function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, MediaDisplay }: PreviewCommonProps) {
   return (
-    <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
-      <div className="flex items-center gap-2 p-3">
-        {avatar}
+    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex items-center gap-3.5 p-5">
+        <div className="w-11 h-11 rounded-full overflow-hidden border border-white/10 shrink-0">
+          {avatar}
+        </div>
         <div>
-          <p className="text-xs font-semibold">{displayName}</p>
-          <p className="text-[10px] text-muted-foreground">Agora mesmo · 🌐</p>
+          <p className="text-[14px] font-bold truncate max-w-[180px]">{displayName}</p>
+          <p className="text-[11px] text-white/40 flex items-center gap-1">Agora mesmo · <span className="text-[9px]">🌐</span></p>
         </div>
       </div>
 
-      <div className="px-3 pb-2">
-        <p className="text-xs whitespace-pre-wrap line-clamp-4">
-          {content || <span className="text-muted-foreground italic">Escreva o conteúdo...</span>}
+      <div className="px-5 pb-4">
+        <p className={cn("text-[14px] whitespace-pre-wrap leading-relaxed font-sans", !content && "text-white/30 italic font-normal")}>
+          {content || 'Escreva o conteúdo...'}
         </p>
       </div>
 
-      {mediaUrl && <MediaDisplay url={mediaUrl} className="aspect-video" />}
+      <MediaDisplay url={mediaUrl} className="aspect-video bg-[#121212]" />
 
-      <div className="p-3 border-t border-border flex items-center justify-around text-muted-foreground">
-        <div className="flex items-center gap-1 text-xs"><ThumbsUp className="h-4 w-4" /> Curtir</div>
-        <div className="flex items-center gap-1 text-xs"><MessageCircle className="h-4 w-4" /> Comentar</div>
-        <div className="flex items-center gap-1 text-xs"><Share2 className="h-4 w-4" /> Compartilhar</div>
+      <div className="px-5 py-4 flex items-center justify-between border-t border-white/5 mt-2 font-sans font-semibold">
+        <div className="flex items-center gap-2 text-white/60 text-[12px]"><ThumbsUp className="h-5 w-5" /> Curtir</div>
+        <div className="flex items-center gap-2 text-white/60 text-[12px]"><MessageCircle className="h-5 w-5" /> Comentar</div>
+        <div className="flex items-center gap-2 text-white/60 text-[12px]"><Share2 className="h-5 w-5" /> Compartilhar</div>
       </div>
 
-      <div className="px-3 pb-2 flex justify-end">
-        <span className={cn("text-[10px]", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
+      <div className="px-5 pb-4 flex justify-end">
+        <span className={cn("text-[11px] font-mono font-medium", isOverLimit ? "text-red-400 font-bold" : "text-white/20")}>
           {content.length}/{charLimit}
         </span>
       </div>
@@ -176,32 +196,34 @@ function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit, displayNam
 
 function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, MediaDisplay }: PreviewCommonProps) {
   return (
-    <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
-      <div className="flex items-center gap-2 p-3">
-        {avatar}
-        <div>
-          <p className="text-xs font-semibold">{displayName}</p>
-          <p className="text-[10px] text-muted-foreground">Marketing Agency · 1h</p>
+    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex items-center gap-4 p-5">
+        <div className="w-11 h-11 rounded-full overflow-hidden border border-white/10 shrink-0">
+          {avatar}
+        </div>
+        <div className="min-w-0">
+          <p className="text-[14px] font-bold truncate max-w-[180px]">{displayName}</p>
+          <p className="text-[11px] text-white/40">Marketing Expert · Agora</p>
         </div>
       </div>
 
-      <div className="px-3 pb-2">
-        <p className="text-xs whitespace-pre-wrap line-clamp-4">
-          {content || <span className="text-muted-foreground italic">Escreva o conteúdo...</span>}
+      <div className="px-5 pb-4 font-sans">
+        <p className={cn("text-[14px] whitespace-pre-wrap leading-relaxed", !content && "text-white/30 italic")}>
+          {content || 'Escreva o conteúdo...'}
         </p>
       </div>
 
-      {mediaUrl && <MediaDisplay url={mediaUrl} className="aspect-video" />}
+      <MediaDisplay url={mediaUrl} className="aspect-video bg-[#121212]" />
 
-      <div className="p-3 border-t border-border flex items-center justify-around text-muted-foreground">
-        <div className="flex items-center gap-1 text-xs"><ThumbsUp className="h-4 w-4" /> Gostei</div>
-        <div className="flex items-center gap-1 text-xs"><MessageCircle className="h-4 w-4" /> Comentar</div>
-        <div className="flex items-center gap-1 text-xs"><Repeat2 className="h-4 w-4" /> Repostar</div>
-        <div className="flex items-center gap-1 text-xs"><Send className="h-4 w-4" /> Enviar</div>
+      <div className="px-5 py-4 flex items-center justify-between border-t border-white/5 mt-2 text-white/60 font-sans font-semibold">
+        <div className="flex items-center gap-2 text-[12px]"><ThumbsUp className="h-5 w-5" /> Gostei</div>
+        <div className="flex items-center gap-2 text-[12px]"><MessageCircle className="h-5 w-5" /> Comentar</div>
+        <div className="flex items-center gap-2 text-[12px]"><Repeat2 className="h-5 w-5" /> Repostar</div>
+        <div className="flex items-center gap-2 text-[12px]"><Send className="h-5 w-5" /> Enviar</div>
       </div>
 
-      <div className="px-3 pb-2 flex justify-end">
-        <span className={cn("text-[10px]", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
+      <div className="px-5 pb-4 flex justify-end">
+        <span className={cn("text-[11px] font-mono font-medium", isOverLimit ? "text-red-400 font-bold" : "text-white/20")}>
           {content.length}/{charLimit}
         </span>
       </div>
@@ -211,28 +233,30 @@ function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit, displayNam
 
 function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, username, avatar, MediaDisplay }: PreviewCommonProps & { username: string }) {
   return (
-    <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
-      <div className="flex items-start gap-2 p-3">
-        {avatar}
+    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex items-start gap-4 p-5">
+        <div className="w-11 h-11 rounded-full overflow-hidden border border-white/10 shrink-0">
+          {avatar}
+        </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1">
-            <p className="text-xs font-semibold">{displayName}</p>
-            <p className="text-[10px] text-muted-foreground">@{username} · 1h</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-[14px] font-bold truncate max-w-[140px]">{displayName}</p>
+            <p className="text-[11px] text-white/40 truncate">{username} · Agora</p>
           </div>
-          <p className="text-xs whitespace-pre-wrap mt-1 line-clamp-4">
-            {content || <span className="text-muted-foreground italic">Escreva o conteúdo...</span>}
+          <p className={cn("text-[14px] whitespace-pre-wrap mt-2.5 leading-relaxed font-sans", !content && "text-white/30 italic")}>
+            {content || 'Escreva o conteúdo...'}
           </p>
-          {mediaUrl && <MediaDisplay url={mediaUrl} className="mt-2 rounded-xl overflow-hidden aspect-video" />}
-          <div className="flex items-center justify-between mt-2 text-muted-foreground">
-            <MessageCircle className="h-4 w-4" />
-            <Repeat2 className="h-4 w-4" />
-            <Heart className="h-4 w-4" />
-            <Share2 className="h-4 w-4" />
+          {mediaUrl && <MediaDisplay url={mediaUrl} className="mt-4 rounded-2xl overflow-hidden aspect-video bg-[#121212]" />}
+          <div className="flex items-center justify-between mt-5 px-3 text-white/40">
+            <MessageCircle className="h-5 w-5" />
+            <Repeat2 className="h-5 w-5" />
+            <Heart className="h-5 w-5" />
+            <Share2 className="h-5 w-5" />
           </div>
         </div>
       </div>
-      <div className="px-3 pb-2 flex justify-end">
-        <span className={cn("text-[10px]", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
+      <div className="px-5 pb-4 flex justify-end">
+        <span className={cn("text-[11px] font-mono font-medium", isOverLimit ? "text-red-400 font-bold" : "text-white/20")}>
           {content.length}/{charLimit}
         </span>
       </div>
@@ -240,34 +264,104 @@ function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit, displayName
   );
 }
 
-function GenericPreview({ content, mediaUrl, platform, isOverLimit, charLimit, displayName, username, avatarUrl, MediaDisplay }: {
-  content: string; mediaUrl?: string; platform: SocialPlatform; isOverLimit: boolean; charLimit: number;
-  displayName: string; username: string; avatarUrl?: string;
-  MediaDisplay: React.ComponentType<{ url?: string; className?: string }>;
-}) {
+function GenericPreview({ content, mediaUrl, platform, isOverLimit, charLimit, displayName, username, avatar, MediaDisplay }: PreviewCommonProps & { username: string; platform: SocialPlatform; }) {
   return (
-    <div className="border border-border rounded-xl overflow-hidden bg-card max-w-[320px]">
-      <div className="flex items-center gap-2 p-3">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
-        ) : (
-          <PlatformIcon platform={platform} size="md" variant="circle" />
-        )}
-        <div>
-          <p className="text-xs font-semibold">{displayName}</p>
-          <p className="text-[10px] text-muted-foreground">@{username}</p>
+    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex items-center gap-4 p-5">
+        <div className="w-11 h-11 rounded-full overflow-hidden border border-white/10 shrink-0">
+          {avatar}
+        </div>
+        <div className="min-w-0">
+          <p className="text-[14px] font-bold truncate max-w-[180px]">{displayName}</p>
+          <p className="text-[11px] text-white/40 truncate">{username}</p>
         </div>
       </div>
-      {mediaUrl && <MediaDisplay url={mediaUrl} />}
-      <div className="p-3">
-        <p className="text-xs whitespace-pre-wrap line-clamp-4">
-          {content || <span className="text-muted-foreground italic">Escreva o conteúdo...</span>}
+
+      <MediaDisplay url={mediaUrl} className="aspect-square bg-[#121212]" />
+
+      <div className="p-5 font-sans">
+        <p className={cn("text-[14px] whitespace-pre-wrap leading-relaxed", !content && "text-white/30 italic")}>
+          {content || 'Escreva o conteúdo...'}
         </p>
       </div>
-      <div className="px-3 pb-2 flex justify-end">
-        <span className={cn("text-[10px]", isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>
+
+      <div className="px-5 pb-4 flex justify-end">
+        <span className={cn("text-[11px] font-mono font-medium", isOverLimit ? "text-red-400 font-bold" : "text-white/20")}>
           {content.length}/{charLimit}
         </span>
+      </div>
+    </div>
+  );
+}
+
+function StoryPreview({ content, mediaUrl, platform, displayName, username, avatar }: { content: string; mediaUrl?: string; platform: SocialPlatform; displayName: string; username: string; avatar: React.ReactNode }) {
+  return (
+    <div className="rounded-[32px] overflow-hidden bg-black text-white border border-white/10 shadow-2xl w-full aspect-[9/16] relative flex flex-col group/story animate-in fade-in zoom-in-95 duration-500">
+      {/* Background with blur effect to avoid "empty" space */}
+      <div className="absolute inset-0 z-0">
+        {mediaUrl ? (
+          <div className="w-full h-full relative">
+            <img src={mediaUrl} className="w-full h-full object-cover blur-2xl opacity-40 scale-110" alt="" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+          </div>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-indigo-900 via-slate-900 to-black" />
+        )}
+      </div>
+
+      {/* Foreground Content */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 pt-6">
+          <div className="flex items-center gap-2">
+            <div className="ring-2 ring-primary ring-offset-2 ring-offset-black rounded-full overflow-hidden">
+              {avatar}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold leading-none">{username.replace('@', '')}</span>
+              <span className="text-[10px] text-white/60 leading-tight">2 min</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <MoreHorizontal className="h-4 w-4 text-white/80" />
+          </div>
+        </div>
+
+        {/* Media Block - Aspect Contain to avoid zoom/crop */}
+        <div className="flex-1 flex items-center justify-center p-2">
+          {mediaUrl ? (
+            <div className="w-full max-h-full aspect-square relative shadow-2xl rounded-lg overflow-hidden border border-white/5">
+              <img src={mediaUrl} className="w-full h-full object-contain" alt="" />
+            </div>
+          ) : (
+            <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center">
+              <Camera className="h-8 w-8 text-white/20" />
+            </div>
+          )}
+        </div>
+
+        {/* Caption Overlay (Story style) */}
+        {content && (
+          <div className="px-6 py-8">
+            <div className="bg-black/40 backdrop-blur-md rounded-xl p-3 border border-white/10">
+              <p className="text-xs leading-relaxed line-clamp-3 text-white/90 shadow-sm">{content}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="p-6 flex items-center gap-4 border-t border-white/5 bg-black/20 backdrop-blur-sm">
+          <div className="flex-1 h-10 rounded-full border border-white/20 px-4 flex items-center text-[11px] text-white/40">
+            Diz alguma coisa...
+          </div>
+          <Heart className="h-6 w-6 text-white/80" />
+          <Send className="h-6 w-6 text-white/80 -rotate-12" />
+        </div>
+      </div>
+
+      {/* Platform Badge */}
+      <div className="absolute top-4 right-4 z-20">
+        <PlatformIcon platform={platform} size="xs" variant="circle" />
       </div>
     </div>
   );
