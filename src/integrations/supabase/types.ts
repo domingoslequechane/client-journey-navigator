@@ -348,6 +348,7 @@ export type Database = {
           current_stage: Database["public"]["Enums"]["journey_stage"]
           email: string | null
           id: string
+          is_social_locked: boolean | null
           late_profile_id: string | null
           monthly_budget: number | null
           notes: string | null
@@ -359,6 +360,7 @@ export type Database = {
           phone: string | null
           qualification: Database["public"]["Enums"]["lead_qualification"]
           services: string[] | null
+          social_disconnection_count: number | null
           source: string | null
           updated_at: string
           user_id: string | null
@@ -378,6 +380,7 @@ export type Database = {
           current_stage?: Database["public"]["Enums"]["journey_stage"]
           email?: string | null
           id?: string
+          is_social_locked?: boolean | null
           late_profile_id?: string | null
           monthly_budget?: number | null
           notes?: string | null
@@ -389,6 +392,7 @@ export type Database = {
           phone?: string | null
           qualification?: Database["public"]["Enums"]["lead_qualification"]
           services?: string[] | null
+          social_disconnection_count?: number | null
           source?: string | null
           updated_at?: string
           user_id?: string | null
@@ -408,6 +412,7 @@ export type Database = {
           current_stage?: Database["public"]["Enums"]["journey_stage"]
           email?: string | null
           id?: string
+          is_social_locked?: boolean | null
           late_profile_id?: string | null
           monthly_budget?: number | null
           notes?: string | null
@@ -419,6 +424,7 @@ export type Database = {
           phone?: string | null
           qualification?: Database["public"]["Enums"]["lead_qualification"]
           services?: string[] | null
+          social_disconnection_count?: number | null
           source?: string | null
           updated_at?: string
           user_id?: string | null
@@ -1661,6 +1667,7 @@ export type Database = {
           avatar_url: string | null
           client_id: string | null
           created_at: string
+          facebook_page_id: string | null
           followers_count: number | null
           id: string
           is_connected: boolean
@@ -1676,6 +1683,7 @@ export type Database = {
           avatar_url?: string | null
           client_id?: string | null
           created_at?: string
+          facebook_page_id?: string | null
           followers_count?: number | null
           id?: string
           is_connected?: boolean
@@ -1691,6 +1699,7 @@ export type Database = {
           avatar_url?: string | null
           client_id?: string | null
           created_at?: string
+          facebook_page_id?: string | null
           followers_count?: number | null
           id?: string
           is_connected?: boolean
@@ -1802,9 +1811,12 @@ export type Database = {
           content_type: string
           created_at: string
           created_by: string | null
+          cta_type: string | null
+          cta_value: string | null
           hashtags: string[] | null
           id: string
           late_post_id: string | null
+          location: string | null
           media_urls: Json | null
           metrics: Json | null
           notes: string | null
@@ -1825,9 +1837,12 @@ export type Database = {
           content_type?: string
           created_at?: string
           created_by?: string | null
+          cta_type?: string | null
+          cta_value?: string | null
           hashtags?: string[] | null
           id?: string
           late_post_id?: string | null
+          location?: string | null
           media_urls?: Json | null
           metrics?: Json | null
           notes?: string | null
@@ -1848,9 +1863,12 @@ export type Database = {
           content_type?: string
           created_at?: string
           created_by?: string | null
+          cta_type?: string | null
+          cta_value?: string | null
           hashtags?: string[] | null
           id?: string
           late_post_id?: string | null
+          location?: string | null
           media_urls?: Json | null
           metrics?: Json | null
           notes?: string | null
@@ -2379,6 +2397,15 @@ export type Database = {
           removed_by_user_id: string
         }
         Returns: boolean
+      }
+      respond_to_social_post_approval: {
+        Args: {
+          p_approver_name?: string
+          p_rejection_reason?: string
+          p_status: string
+          p_token: string
+        }
+        Returns: undefined
       }
       restore_organization: {
         Args: { org_id: string; user_id: string }

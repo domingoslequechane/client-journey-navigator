@@ -1,9 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 // Pre-defined prompts for each section
 const sectionPrompts: Record<string, string> = {
@@ -14,12 +11,35 @@ const sectionPrompts: Record<string, string> = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
+    // Authenticate the user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { section } = await req.json();
     
     if (!section || !sectionPrompts[section]) {
@@ -98,7 +118,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error generating image:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "An unexpected error occurred" }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
