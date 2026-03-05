@@ -18,12 +18,44 @@ const VerifyOTPSchema = z.object({
 
 const MAX_ATTEMPTS = 5;
 
+// In-memory IP rate limiting (per instance)
+const ipRequestCounts = new Map<string, { count: number; resetAt: number }>();
+const MAX_REQUESTS_PER_IP = 15; // 15 verify attempts per IP per minute
+const IP_WINDOW_MS = 60 * 1000;
+
+function checkIpRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = ipRequestCounts.get(ip);
+  
+  if (!record || now > record.resetAt) {
+    ipRequestCounts.set(ip, { count: 1, resetAt: now + IP_WINDOW_MS });
+    return true;
+  }
+  
+  if (record.count >= MAX_REQUESTS_PER_IP) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // IP-based rate limiting
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!checkIpRateLimit(clientIp)) {
+      console.warn(`IP rate limit exceeded for verify-otp: ${clientIp}`);
+      return new Response(
+        JSON.stringify({ error: "Muitas tentativas. Aguarde antes de tentar novamente." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const body = await req.json();
 
     // Validate input with Zod
@@ -54,6 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (fetchError || !otpRecord) {
+      // Generic error to prevent enumeration
       console.error("[verify-otp] OTP record not found for:", email);
       return new Response(
         JSON.stringify({ error: "Código inválido ou expirado" }),
@@ -104,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
           .eq("id", otpRecord.id);
           
         return new Response(
-          JSON.stringify({ error: `Código inválido. Você tem mais ${MAX_ATTEMPTS - newAttempts} tentativas.` }),
+          JSON.stringify({ error: "Código inválido ou expirado" }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
@@ -127,16 +160,10 @@ const handler = async (req: Request): Promise<Response> => {
     if (signUpError) {
       console.error("[verify-otp] Error creating user:", signUpError);
       
-      if (signUpError.message.includes("already been registered")) {
-        return new Response(
-          JSON.stringify({ error: "Este e-mail já está cadastrado. Faça login." }),
-          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-      
+      // Generic error for all cases to prevent enumeration
       return new Response(
         JSON.stringify({ error: "Erro ao criar conta. Tente novamente." }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 

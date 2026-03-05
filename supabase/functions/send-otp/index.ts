@@ -19,7 +19,29 @@ const OTPRequestSchema = z.object({
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_EMAIL = 3; // Max 3 OTP requests per email per minute
+const MAX_REQUESTS_PER_EMAIL = 3;
+
+// In-memory IP rate limiting (per instance)
+const ipRequestCounts = new Map<string, { count: number; resetAt: number }>();
+const MAX_REQUESTS_PER_IP = 10; // 10 OTP requests per IP per minute
+const IP_WINDOW_MS = 60 * 1000;
+
+function checkIpRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = ipRequestCounts.get(ip);
+  
+  if (!record || now > record.resetAt) {
+    ipRequestCounts.set(ip, { count: 1, resetAt: now + IP_WINDOW_MS });
+    return true;
+  }
+  
+  if (record.count >= MAX_REQUESTS_PER_IP) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -31,6 +53,17 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // IP-based rate limiting
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!checkIpRateLimit(clientIp)) {
+      console.warn(`IP rate limit exceeded for: ${clientIp}`);
+      // Return generic success to prevent enumeration
+      return new Response(
+        JSON.stringify({ success: true, message: "Se o e-mail for válido, um código será enviado." }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const body = await req.json();
 
     // Validate input with Zod
@@ -65,15 +98,12 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error checking rate limit:", countError);
     }
 
-    // If too many recent requests, reject
+    // If too many recent requests, return generic response (prevent enumeration)
     if (recentOtps && recentOtps.length >= MAX_REQUESTS_PER_EMAIL) {
-      console.warn(`Rate limit exceeded for email: ${email}`);
+      console.warn(`Email rate limit exceeded for: ${email}`);
       return new Response(
-        JSON.stringify({ 
-          error: "Muitas tentativas. Aguarde 1 minuto antes de tentar novamente.",
-          code: "RATE_LIMITED"
-        }),
-        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ success: true, message: "Se o e-mail for válido, um código será enviado." }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -158,7 +188,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("OTP email sent successfully:", JSON.stringify(emailResponse, null, 2));
 
     return new Response(
-      JSON.stringify({ success: true, message: "OTP sent successfully" }),
+      JSON.stringify({ success: true, message: "Se o e-mail for válido, um código será enviado." }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
