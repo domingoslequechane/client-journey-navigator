@@ -187,8 +187,12 @@ const App = () => (
                 <Route path="social-media/new" element={<SocialPostEditor />} />
                 <Route path="social-media/edit/:postId" element={<SocialPostEditor />} />
               </Route>
-              {/* Admin Routes */}
-              <Route path="/admin" element={<AdminLayout />}>
+              {/* Admin Routes - wrapped in ProtectedRoute for auth gate */}
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="subscriptions" element={<AdminSubscriptions />} />
