@@ -227,8 +227,8 @@ serve(async (req) => {
     }
 
     // Create accept invite link
-    const baseUrl = "https://qualify.onixagence.com";
-    const acceptInviteLink = `${baseUrl}/accept-invite?token=${inviteToken}`;
+    const origin = req.headers.get("origin") || "https://qualify.onixagence.com";
+    const acceptInviteLink = `${origin}/accept-invite?token=${inviteToken}`;
 
     // If user doesn't exist, also generate Supabase invite link for account creation
     let supabaseInviteLink: string | null = null;
