@@ -1201,6 +1201,7 @@ export type Database = {
           invite_token: string
           invited_by: string
           organization_id: string
+          privileges: string[] | null
           role: Database["public"]["Enums"]["user_role"]
           status: string
         }
@@ -1214,6 +1215,7 @@ export type Database = {
           invite_token?: string
           invited_by: string
           organization_id: string
+          privileges?: string[] | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: string
         }
@@ -1227,6 +1229,7 @@ export type Database = {
           invite_token?: string
           invited_by?: string
           organization_id?: string
+          privileges?: string[] | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: string
         }
@@ -1247,6 +1250,7 @@ export type Database = {
           is_active: boolean
           joined_at: string
           organization_id: string
+          privileges: string[] | null
           removed_at: string | null
           removed_by: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -1259,6 +1263,7 @@ export type Database = {
           is_active?: boolean
           joined_at?: string
           organization_id: string
+          privileges?: string[] | null
           removed_at?: string | null
           removed_by?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -1271,6 +1276,7 @@ export type Database = {
           is_active?: boolean
           joined_at?: string
           organization_id?: string
+          privileges?: string[] | null
           removed_at?: string | null
           removed_by?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -1527,13 +1533,17 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: Database["public"]["Enums"]["account_type"] | null
           avatar_url: string | null
           created_at: string | null
           current_organization_id: string | null
           email: string | null
           full_name: string | null
           id: string
+          last_notified_privileges: string[] | null
+          last_notified_role: Database["public"]["Enums"]["user_role"] | null
           organization_id: string | null
+          privileges: string[] | null
           role: Database["public"]["Enums"]["user_role"]
           suspended: boolean
           suspended_at: string | null
@@ -1542,13 +1552,17 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
           avatar_url?: string | null
           created_at?: string | null
           current_organization_id?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          last_notified_privileges?: string[] | null
+          last_notified_role?: Database["public"]["Enums"]["user_role"] | null
           organization_id?: string | null
+          privileges?: string[] | null
           role?: Database["public"]["Enums"]["user_role"]
           suspended?: boolean
           suspended_at?: string | null
@@ -1557,13 +1571,17 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
           avatar_url?: string | null
           created_at?: string | null
           current_organization_id?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          last_notified_privileges?: string[] | null
+          last_notified_role?: Database["public"]["Enums"]["user_role"] | null
           organization_id?: string | null
+          privileges?: string[] | null
           role?: Database["public"]["Enums"]["user_role"]
           suspended?: boolean
           suspended_at?: string | null
@@ -2357,6 +2375,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_invite_email_exists: { Args: { token: string }; Returns: boolean }
       cleanup_old_support_tickets: { Args: never; Returns: undefined }
       generate_slug: { Args: { name: string }; Returns: string }
       get_current_user_email: { Args: never; Returns: string }
@@ -2378,6 +2397,7 @@ export type Database = {
         }[]
       }
       has_active_subscription: { Args: { org_uuid: string }; Returns: boolean }
+      has_pending_invite: { Args: { org_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2430,6 +2450,7 @@ export type Database = {
       user_owns_contract: { Args: { contract_path: string }; Returns: boolean }
     }
     Enums: {
+      account_type: "owner" | "collaborator"
       activity_type:
         | "call"
         | "email"
@@ -2601,6 +2622,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["owner", "collaborator"],
       activity_type: [
         "call",
         "email",
