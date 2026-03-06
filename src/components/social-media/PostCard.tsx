@@ -34,7 +34,20 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
       <CardContent className="p-4">
         <div className="flex gap-4">
           {mediaUrl && (
-            <img src={mediaUrl} alt="" className="w-24 h-24 rounded-lg object-cover shrink-0" />
+            <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 border bg-muted relative">
+              {(mediaUrl.includes('video') || mediaUrl.endsWith('.mp4') || mediaUrl.endsWith('.mov') || mediaUrl.endsWith('.webm')) ? (
+                <div className="w-full h-full relative flex items-center justify-center bg-black">
+                  <video src={mediaUrl} className="w-full h-full object-cover" autoPlay loop muted playsInline />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[7px] border-l-white border-b-[4px] border-b-transparent ml-0.5" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <img src={mediaUrl} alt="" className="w-full h-full object-cover" />
+              )}
+            </div>
           )}
 
           <div className="flex-1 min-w-0 space-y-2">
@@ -44,7 +57,7 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
               )}
               <Badge variant="outline" className="text-[10px]">{contentTypeCfg.label}</Badge>
               <Badge variant={statusCfg.variant} className="text-[10px]">{statusCfg.label}</Badge>
-              
+
             </div>
 
             <p className="text-sm line-clamp-2">{post.content}</p>

@@ -12,9 +12,16 @@ interface PostPreviewProps {
   accountName?: string;
   accountUsername?: string;
   accountAvatarUrl?: string;
+  isVideo?: boolean;
 }
 
-export function PostPreview({ content, mediaUrl, platform, contentType, accountName, accountUsername, accountAvatarUrl }: PostPreviewProps) {
+const isVideo = (url?: string, isVideoProp?: boolean) => {
+  if (isVideoProp !== undefined) return isVideoProp;
+  if (!url) return false;
+  return /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video');
+};
+
+export function PostPreview({ content, mediaUrl, platform, contentType, accountName, accountUsername, accountAvatarUrl, isVideo: isVideoProp }: PostPreviewProps) {
   const config = PLATFORM_CONFIG[platform];
   const charLimit = config.charLimit;
   const isOverLimit = content.length > charLimit;
@@ -23,11 +30,6 @@ export function PostPreview({ content, mediaUrl, platform, contentType, accountN
   const username = accountUsername ? (accountUsername.startsWith('@') ? accountUsername : `@${accountUsername}`) : '@usuario';
   const initials = displayName.substring(0, 2).toUpperCase();
 
-  const isVideo = (url?: string) => {
-    if (!url) return false;
-    return /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video');
-  };
-
   const MediaDisplay = ({ url, className, objectFit = 'object-cover' }: { url?: string; className?: string, objectFit?: 'object-cover' | 'object-contain' }) => {
     if (!url) return (
       <div className={cn("aspect-square bg-muted flex items-center justify-center", className)}>
@@ -35,10 +37,10 @@ export function PostPreview({ content, mediaUrl, platform, contentType, accountN
       </div>
     );
 
-    if (isVideo(url)) {
+    if (isVideo(url, isVideoProp)) {
       return (
         <div className={cn("aspect-square bg-black relative flex items-center justify-center", className)}>
-          <video src={url} className={cn("w-full h-full", objectFit)} muted playsInline />
+          <video src={url} className={cn("w-full h-full", objectFit)} autoPlay loop muted playsInline />
           <div className="absolute inset-0 flex items-center justify-center bg-black/20">
             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
@@ -75,6 +77,7 @@ export function PostPreview({ content, mediaUrl, platform, contentType, accountN
         displayName={displayName}
         username={username}
         avatar={<Avatar size="w-8 h-8" />}
+        isVideo={isVideoProp}
       />
     );
   }
@@ -294,14 +297,19 @@ function GenericPreview({ content, mediaUrl, platform, isOverLimit, charLimit, d
   );
 }
 
-function StoryPreview({ content, mediaUrl, platform, displayName, username, avatar }: { content: string; mediaUrl?: string; platform: SocialPlatform; displayName: string; username: string; avatar: React.ReactNode }) {
+function StoryPreview({ content, mediaUrl, platform, displayName, username, avatar, isVideo: isVideoProp }: { content: string; mediaUrl?: string; platform: SocialPlatform; displayName: string; username: string; avatar: React.ReactNode; isVideo?: boolean }) {
+  const isVid = isVideo(mediaUrl, isVideoProp);
   return (
     <div className="rounded-[32px] overflow-hidden bg-black text-white border border-white/10 shadow-2xl w-full aspect-[9/16] relative flex flex-col group/story animate-in fade-in zoom-in-95 duration-500">
       {/* Background with blur effect to avoid "empty" space */}
       <div className="absolute inset-0 z-0">
         {mediaUrl ? (
           <div className="w-full h-full relative">
-            <img src={mediaUrl} className="w-full h-full object-cover blur-2xl opacity-40 scale-110" alt="" />
+            {isVid ? (
+              <video src={mediaUrl} className="w-full h-full object-cover blur-2xl opacity-40 scale-110" autoPlay loop muted playsInline />
+            ) : (
+              <img src={mediaUrl} className="w-full h-full object-cover blur-2xl opacity-40 scale-110" alt="" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
           </div>
         ) : (
@@ -330,8 +338,12 @@ function StoryPreview({ content, mediaUrl, platform, displayName, username, avat
         {/* Media Block - Aspect Contain to avoid zoom/crop */}
         <div className="flex-1 flex items-center justify-center p-2">
           {mediaUrl ? (
-            <div className="w-full max-h-full aspect-square relative shadow-2xl rounded-lg overflow-hidden border border-white/5">
-              <img src={mediaUrl} className="w-full h-full object-contain" alt="" />
+            <div className="w-full max-h-full aspect-square relative shadow-2xl rounded-lg overflow-hidden border border-white/5 bg-black">
+              {isVid ? (
+                <video src={mediaUrl} className="w-full h-full object-contain" autoPlay loop muted playsInline />
+              ) : (
+                <img src={mediaUrl} className="w-full h-full object-contain" alt="" />
+              )}
             </div>
           ) : (
             <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center">

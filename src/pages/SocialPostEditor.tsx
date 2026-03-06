@@ -104,6 +104,25 @@ const getAllowedContentTypes = (platforms: string[], files: File[] = []): Conten
   return baseTypes.filter(ct => sets.every(s => s.has(ct)));
 };
 
+const MediaThumbnail = ({ url, className, isVideo: isVideoProp }: { url: string; className?: string; isVideo?: boolean }) => {
+  const isVideo = isVideoProp ?? (url.includes('video') || url.endsWith('.mp4') || url.endsWith('.mov') || url.endsWith('.webm') || (url.startsWith('blob:') && url.includes('video')));
+
+  if (isVideo) {
+    return (
+      <div className={cn("relative w-full h-full bg-black flex items-center justify-center", className)}>
+        <video src={url} className="w-full h-full object-cover" autoPlay loop muted playsInline preload="metadata" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+          <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[7px] border-l-white border-b-[4px] border-b-transparent ml-0.5" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <img src={url} className={cn("w-full h-full object-cover", className)} alt="" />;
+};
+
 export default function SocialPostEditor() {
   const { postId } = useParams();
   const [searchParams] = useSearchParams();
@@ -150,7 +169,7 @@ export default function SocialPostEditor() {
           setPostItems([{
             id: data.id,
             content: data.content || '',
-            files: [],
+            files: new Array((data.media_urls as string[])?.length || 0).fill(null),
             mediaUrls: (data.media_urls as string[]) || [],
             location: (data as any).location || '',
             latePostId: data.late_post_id || undefined,
@@ -848,7 +867,10 @@ export default function SocialPostEditor() {
                   <div className="flex items-start gap-4">
                     <div className="h-10 w-10 rounded-lg bg-muted flex flex-col items-center justify-center shrink-0 overflow-hidden border">
                       {item.mediaUrls[0] ? (
-                        <img src={item.mediaUrls[0]} className="w-full h-full object-cover" />
+                        <MediaThumbnail
+                          url={item.mediaUrls[0]}
+                          isVideo={item.files[0]?.type.startsWith('video/')}
+                        />
                       ) : (
                         <FileText className="h-5 w-5 text-muted-foreground/30" />
                       )}
@@ -938,11 +960,12 @@ export default function SocialPostEditor() {
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                       {currentPostItem.mediaUrls.map((url, i) => {
                         const isStory = currentPostItem.schedules[0]?.contentType === 'stories';
-                        const isVideo = url.includes('video') || url.endsWith('.mp4');
+                        const file = currentPostItem.files[i];
+                        const isVideo = file ? file.type.startsWith('video/') : (url.includes('video') || url.endsWith('.mp4') || url.endsWith('.mov') || url.endsWith('.webm'));
 
                         return (
                           <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-border group shadow-sm bg-muted">
-                            <img src={url} className="w-full h-full object-cover" />
+                            <MediaThumbnail url={url} isVideo={isVideo} />
 
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                               {isStory && !isVideo && (
@@ -1218,6 +1241,7 @@ export default function SocialPostEditor() {
                             accountName={account?.account_name}
                             accountUsername={account?.username}
                             accountAvatarUrl={account?.avatar_url || undefined}
+                            isVideo={currentPostItem?.files[0]?.type.startsWith('video/')}
                           />
                         );
                       })()}
