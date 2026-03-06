@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,15 +61,10 @@ export function Sidebar() {
   const { user, signOut } = useAuth();
   const { planType, organization } = useSubscription();
   const { t } = useTranslation('common');
-  const { 
-    canSeeSalesFunnel, 
-    canSeeOperationalFlow, 
-    canSeeClients, 
-    canSeeTeam, 
-    canSeeSettings, 
-    canSeeSubscription,
-    canSeeFinance 
-  } = useUserRole();
+  const {
+    canAccessModule,
+    isAdmin
+  } = usePermissions();
 
   const {
     canAccessFinance,
@@ -97,7 +92,7 @@ export function Sidebar() {
       const width = window.innerWidth;
       setIsTablet(width >= TABLET_MIN && width < TABLET_MAX);
     };
-    
+
     checkTablet();
     window.addEventListener('resize', checkTablet);
     return () => window.removeEventListener('resize', checkTablet);
@@ -114,14 +109,14 @@ export function Sidebar() {
   useEffect(() => {
     const checkMultipleOrgs = async () => {
       if (!user) return;
-      
+
       const { data } = await supabase.rpc('get_user_organizations', {
         user_uuid: user.id
       });
-      
+
       setHasMultipleOrgs(data && data.length > 1);
     };
-    
+
     checkMultipleOrgs();
   }, [user]);
 
@@ -141,19 +136,19 @@ export function Sidebar() {
   const navigation = useMemo(() => {
     const allItems = [
       { name: t('navigation.dashboard'), href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true, locked: false, requiredPlan: '' },
-      { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canSeeSalesFunnel || canSeeOperationalFlow, locked: false, requiredPlan: '' },
-      { name: 'Finanças', href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canSeeFinance, locked: !canAccessFinance, requiredPlan: 'Lança' },
-      { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: true, locked: !canAccessLinkTree, requiredPlan: 'Lança' },
-      { name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: true, locked: !canAccessEditorial, requiredPlan: 'Lança' },
-      { name: 'Social Media', href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: true, locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
-      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: true, locked: false, requiredPlan: '' },
-      { name: 'Studio AI', href: '/app/studio', icon: Workflow, tutorialId: 'sidebar-studio', show: true, locked: !canAccessStudio, requiredPlan: 'Lança', beta: true },
-      { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: true, locked: false, requiredPlan: '' },
-      { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canSeeClients, locked: false, requiredPlan: '' },
-      { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canSeeTeam, locked: false, requiredPlan: '' },
+      { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canAccessModule('pipeline'), locked: false, requiredPlan: '' },
+      { name: 'Finanças', href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canAccessModule('finances'), locked: !canAccessFinance, requiredPlan: 'Lança' },
+      { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: canAccessModule('link23'), locked: !canAccessLinkTree, requiredPlan: 'Lança' },
+      { name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: canAccessModule('editorial'), locked: !canAccessEditorial, requiredPlan: 'Lança' },
+      { name: 'Social Media', href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: canAccessModule('social'), locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
+      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: canAccessModule('qia'), locked: false, requiredPlan: '' },
+      { name: 'Studio AI', href: '/app/studio', icon: Workflow, tutorialId: 'sidebar-studio', show: canAccessModule('studio'), locked: !canAccessStudio, requiredPlan: 'Lança', beta: true },
+      { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: canAccessModule('academy'), locked: false, requiredPlan: '' },
+      { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canAccessModule('clients'), locked: false, requiredPlan: '' },
+      { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canAccessModule('team'), locked: false, requiredPlan: '' },
     ];
     return allItems.filter(item => item.show);
-  }, [canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, canSeeFinance, canAccessFinance, canAccessStudio, canAccessLinkTree, canAccessEditorial, canAccessSocialMedia, t]);
+  }, [canAccessModule, canAccessFinance, canAccessStudio, canAccessLinkTree, canAccessEditorial, canAccessSocialMedia, t]);
 
   useEffect(() => {
     handleScroll();
@@ -231,8 +226,8 @@ export function Sidebar() {
             {item.beta && (
               <span className={cn(
                 "ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-semibold border transition-colors animate-pulse",
-                isActive 
-                  ? "bg-white/20 text-white border-white/30" 
+                isActive
+                  ? "bg-white/20 text-white border-white/30"
                   : "bg-indigo-500/10 text-indigo-500 border-indigo-500/20"
               )}>
                 Beta
@@ -298,7 +293,7 @@ export function Sidebar() {
             </div>
           )
         )}
-        
+
         <div className="flex-1 relative flex flex-col overflow-hidden">
           <nav
             ref={navRef}
@@ -306,9 +301,9 @@ export function Sidebar() {
             className="flex-1 px-2 py-4 space-y-1 overflow-y-auto custom-scrollbar"
           >
             {navigation.map((item) => {
-               const isActive = item.href === '/app'
-                 ? location.pathname === '/app'
-                 : location.pathname.startsWith(item.href);
+              const isActive = item.href === '/app'
+                ? location.pathname === '/app'
+                : location.pathname.startsWith(item.href);
               return <NavItem key={item.name} item={item} isActive={isActive} />;
             })}
           </nav>
@@ -422,7 +417,7 @@ export function Sidebar() {
           )}
 
           {/* Subscription - Admin only */}
-          {canSeeSubscription && (
+          {isAdmin && (
             collapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -518,8 +513,8 @@ export function Sidebar() {
               </DialogHeader>
               <div className="flex flex-col gap-3 py-4">
                 {hasMultipleOrgs && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full justify-start gap-3 h-auto py-3"
                     onClick={handleSwitchOrganization}
                   >
@@ -530,8 +525,8 @@ export function Sidebar() {
                     </div>
                   </Button>
                 )}
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   className="w-full justify-start gap-3 h-auto py-3"
                   onClick={handleSignOut}
                 >

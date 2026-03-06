@@ -52,9 +52,9 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { 
-        status: 401, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
@@ -76,7 +76,7 @@ serve(async (req) => {
     // SECURITY: Get user's organization_id
     const { data: profile } = await supabase
       .from('profiles')
-      .select('organization_id, current_organization_id')
+      .select('organization_id, current_organization_id, role, privileges')
       .eq('id', user.id)
       .single();
 
@@ -91,9 +91,9 @@ serve(async (req) => {
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "Configuração de IA ausente (GEMINI_API_KEY)" }), { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      return new Response(JSON.stringify({ error: "Configuração de IA ausente (GEMINI_API_KEY)" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
@@ -124,9 +124,18 @@ BANT: B${dbClient.bant_budget}/A${dbClient.bant_authority}/N${dbClient.bant_need
       }
     }
 
+    const userPrivileges = profile?.privileges || [];
+    const userRole = profile?.role || 'member';
+    const isAdmin = userRole === 'admin';
+
     const systemPrompt = `Sou a QIA, a assistente inteligente de marketing digital de elite (Versão 2.5 Flash).
 Minhas especialidades incluem social media, tráfego pago, vendas e estratégia de negócios.
 Tenho a capacidade avançada de ver e analisar imagens e documentos que me enviares com precisão cirúrgica.
+
+REGRAS DE ACESSO (CRÍTICO):
+Sou um agente consciente de permissão. O utilizador atual tem os seguintes privilégios: ${isAdmin ? 'ADMIN (ACESSO TOTAL)' : userPrivileges.join(', ') || 'NENHUM (ACESSO LIMITADO)'}.
+SE o utilizador solicitar informações ou ações relacionadas a módulos que NÃO possui (ex: Finanças, Studio AI, etc.), devo recusar educadamente dizendo: "Não estou autorizado a lhe fornecer estas informações ou realizar esta ação com base nas tuas permissões atuais."
+
 ${clientContext}
 
 REGRAS DE RESPOSTA:
@@ -138,7 +147,7 @@ REGRAS DE RESPOSTA:
     // Convert messages to Gemini native format
     const contents = messages.map((m: any) => {
       const parts: any[] = [];
-      
+
       if (Array.isArray(m.content)) {
         for (const part of m.content) {
           if (part.type === "text") {
@@ -154,17 +163,17 @@ REGRAS DE RESPOSTA:
                 }
               });
             } else {
-               parts.push({ text: `[Imagem para análise: ${part.image_url.url}]` });
+              parts.push({ text: `[Imagem para análise: ${part.image_url.url}]` });
             }
           } else if (part.type === "file_attachment") {
-             if (part.file && part.file.data && part.file.mimeType) {
-                parts.push({
-                  inline_data: {
-                    mime_type: part.file.mimeType,
-                    data: part.file.data
-                  }
-                });
-             }
+            if (part.file && part.file.data && part.file.mimeType) {
+              parts.push({
+                inline_data: {
+                  mime_type: part.file.mimeType,
+                  data: part.file.data
+                }
+              });
+            }
           }
         }
       } else {
@@ -179,11 +188,11 @@ REGRAS DE RESPOSTA:
     const payload = {
       contents: contents,
       system_instruction: { parts: [{ text: systemPrompt }] },
-      generationConfig: { 
-        temperature: 0.7, 
-        maxOutputTokens: 8192, 
-        topP: 0.95, 
-        topK: 40 
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 8192,
+        topP: 0.95,
+        topK: 40
       },
       safetySettings: [
         { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
@@ -206,20 +215,20 @@ REGRAS DE RESPOSTA:
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[chat] Gemini API error:", errorText);
-      
+
       let friendlyError = "A IA encontrou um problema técnico.";
       try {
         const errObj = JSON.parse(errorText);
         if (errObj.error) {
-            friendlyError = `Erro IA (${errObj.error.code || response.status}): ${errObj.error.message}`;
+          friendlyError = `Erro IA (${errObj.error.code || response.status}): ${errObj.error.message}`;
         }
       } catch {
         friendlyError = `Erro técnico (${response.status}): ${errorText.substring(0, 100)}`;
       }
 
-      return new Response(JSON.stringify({ error: friendlyError }), { 
-        status: response.status, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      return new Response(JSON.stringify({ error: friendlyError }), {
+        status: response.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
@@ -234,10 +243,10 @@ REGRAS DE RESPOSTA:
         while (true) {
           const { done, value } = await reader!.read();
           if (done) break;
-          
+
           const chunk = decoder.decode(value);
           const lines = chunk.split("\n");
-          
+
           for (const line of lines) {
             if (line.startsWith("data: ")) {
               try {

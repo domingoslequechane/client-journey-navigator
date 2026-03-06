@@ -21,8 +21,8 @@ import ResetPassword from "./pages/ResetPassword";
 import AcceptInvite from "./pages/AcceptInvite";
 import Demo from "./pages/Demo";
 import Dashboard from "./pages/Dashboard";
- import Pipeline from "./pages/Pipeline";
- import { Navigate } from "react-router-dom";
+import Pipeline from "./pages/Pipeline";
+import { Navigate } from "react-router-dom";
 import Clients from "./pages/Clients";
 import NewClient from "./pages/NewClient";
 import EditClient from "./pages/EditClient";
@@ -88,119 +88,159 @@ const App = () => (
             <PlanThemeProvider>
               <InstallPromptBanner />
               <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/demo/*" element={<Demo />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/parcerias" element={<PartnerProgram />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route path="/set-password" element={<SetPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/select-plan" element={<SelectPlan />} />
-              <Route path="/accept-invite" element={<AcceptInvite />} />
-              <Route path="/approve/:token" element={<SocialApproval />} />
-              {/* Public Link23 page (handle includes the leading @) */}
-              <Route path="/:orgSlug/:handle" element={<LinkTreePublic />} />
-              <Route path="/app/onboarding" element={<Onboarding />} />
-              <Route path="/app/select-organization" element={<SelectOrganization />} />
-              <Route
-                path="/app"
-                element={
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/demo/*" element={<Demo />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/parcerias" element={<PartnerProgram />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/set-password" element={<SetPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/select-plan" element={<SelectPlan />} />
+                <Route path="/accept-invite" element={<AcceptInvite />} />
+                <Route path="/approve/:token" element={<SocialApproval />} />
+                {/* Public Link23 page (handle includes the leading @) */}
+                <Route path="/:orgSlug/:handle" element={<LinkTreePublic />} />
+                <Route path="/app/onboarding" element={<Onboarding />} />
+                <Route path="/app/select-organization" element={<SelectOrganization />} />
+                <Route
+                  path="/app"
+                  element={
+                    <ProtectedRoute>
+                      <AppLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Dashboard />} />
+                  <Route path="pipeline" element={<Pipeline />} />
+                  <Route path="sales-funnel" element={<Navigate to="/app/pipeline?tab=sales" replace />} />
+                  <Route path="operational-flow" element={<Navigate to="/app/pipeline?tab=operations" replace />} />
+                  <Route path="clients" element={
+                    <RoleProtectedRoute requireClients>
+                      <Clients />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="clients/:clientId" element={<ClientDetail />} />
+                  <Route path="clients/edit/:clientId" element={
+                    <RoleProtectedRoute allowedRoles={['admin', 'sales']}>
+                      <EditClient />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="new-client" element={
+                    <RoleProtectedRoute allowedRoles={['admin', 'sales']}>
+                      <NewClient />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="academia" element={<Academia />} />
+                  <Route path="team" element={
+                    <RoleProtectedRoute requireTeam>
+                      <Team />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="ai-assistant" element={<AIAssistant />} />
+                  <Route path="link-trees" element={
+                    <RoleProtectedRoute privilege="link23">
+                      <LinkTreeDashboard />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="clients/:clientId/links" element={
+                    <RoleProtectedRoute privilege="link23">
+                      <LinkTreeEditor />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="studio" element={
+                    <RoleProtectedRoute privilege="studio">
+                      <StudioDashboard />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="studio/new" element={
+                    <RoleProtectedRoute privilege="studio">
+                      <NewStudioProject />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="studio/:projectId" element={
+                    <RoleProtectedRoute privilege="studio">
+                      <StudioEditor />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="studio/:projectId/edit" element={
+                    <RoleProtectedRoute privilege="studio">
+                      <NewStudioProject />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="settings" element={
+                    <RoleProtectedRoute requireSettings>
+                      <Settings />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="subscription" element={
+                    <RoleProtectedRoute requireSubscription>
+                      <Subscription />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="notifications" element={<Notifications />} />
+                  <Route path="support" element={<SupportFeedback />} />
+                  <Route path="upgrade" element={<Upgrade />} />
+                  <Route path="finance" element={
+                    <RoleProtectedRoute privilege="finance">
+                      <FinanceTransactions />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="finance/transactions" element={
+                    <RoleProtectedRoute privilege="finance">
+                      <FinanceTransactions />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="finance/projects" element={
+                    <RoleProtectedRoute privilege="finance">
+                      <FinanceProjects />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="finance/goals" element={
+                    <RoleProtectedRoute privilege="finance">
+                      <FinanceGoals />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="finance/reports" element={
+                    <RoleProtectedRoute privilege="finance">
+                      <FinanceReports />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="editorial" element={
+                    <RoleProtectedRoute privilege="editorial">
+                      <Editorial />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="social-media" element={
+                    <RoleProtectedRoute privilege="social_media">
+                      <SocialMedia />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="social-media/new" element={
+                    <RoleProtectedRoute privilege="social_media">
+                      <SocialPostEditor />
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="social-media/edit/:postId" element={
+                    <RoleProtectedRoute privilege="social_media">
+                      <SocialPostEditor />
+                    </RoleProtectedRoute>
+                  } />
+                </Route>
+                {/* Admin Routes - wrapped in ProtectedRoute for auth gate */}
+                <Route path="/admin" element={
                   <ProtectedRoute>
-                    <AppLayout />
+                    <AdminLayout />
                   </ProtectedRoute>
-                }
-              >
-                <Route index element={<Dashboard />} />
-                 <Route path="pipeline" element={<Pipeline />} />
-                 <Route path="sales-funnel" element={<Navigate to="/app/pipeline?tab=sales" replace />} />
-                 <Route path="operational-flow" element={<Navigate to="/app/pipeline?tab=operations" replace />} />
-                <Route path="clients" element={
-                  <RoleProtectedRoute requireClients>
-                    <Clients />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="clients/:clientId" element={<ClientDetail />} />
-                <Route path="clients/edit/:clientId" element={
-                  <RoleProtectedRoute allowedRoles={['admin', 'sales']}>
-                    <EditClient />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="new-client" element={
-                  <RoleProtectedRoute allowedRoles={['admin', 'sales']}>
-                    <NewClient />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="academia" element={<Academia />} />
-                <Route path="team" element={
-                  <RoleProtectedRoute requireTeam>
-                    <Team />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="ai-assistant" element={<AIAssistant />} />
-                <Route path="link-trees" element={<LinkTreeDashboard />} />
-                <Route path="clients/:clientId/links" element={<LinkTreeEditor />} />
-                <Route path="studio" element={<StudioDashboard />} />
-                <Route path="studio/new" element={<NewStudioProject />} />
-                <Route path="studio/:projectId" element={<StudioEditor />} />
-                <Route path="studio/:projectId/edit" element={<NewStudioProject />} />
-                <Route path="settings" element={
-                  <RoleProtectedRoute requireSettings>
-                    <Settings />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="subscription" element={
-                  <RoleProtectedRoute requireSubscription>
-                    <Subscription />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="support" element={<SupportFeedback />} />
-                <Route path="upgrade" element={<Upgrade />} />
-                <Route path="finance" element={
-                  <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
-                    <FinanceTransactions />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="finance/transactions" element={
-                  <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
-                    <FinanceTransactions />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="finance/projects" element={
-                  <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
-                    <FinanceProjects />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="finance/goals" element={
-                  <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
-                    <FinanceGoals />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="finance/reports" element={
-                  <RoleProtectedRoute allowedRoles={['admin', 'sales', 'operations']}>
-                    <FinanceReports />
-                  </RoleProtectedRoute>
-                } />
-                <Route path="editorial" element={<Editorial />} />
-                <Route path="social-media" element={<SocialMedia />} />
-                <Route path="social-media/new" element={<SocialPostEditor />} />
-                <Route path="social-media/edit/:postId" element={<SocialPostEditor />} />
-              </Route>
-              {/* Admin Routes - wrapped in ProtectedRoute for auth gate */}
-              <Route path="/admin" element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }>
-                <Route index element={<AdminDashboard />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="subscriptions" element={<AdminSubscriptions />} />
-                <Route path="feedbacks" element={<AdminFeedbacks />} />
-                <Route path="support" element={<AdminSupport />} />
-              </Route>
-              <Route path="/not-found" element={<NotFound />} />
-              <Route path="*" element={<NotFound />} />
+                }>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="subscriptions" element={<AdminSubscriptions />} />
+                  <Route path="feedbacks" element={<AdminFeedbacks />} />
+                  <Route path="support" element={<AdminSupport />} />
+                </Route>
+                <Route path="/not-found" element={<NotFound />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </PlanThemeProvider>
           </AuthProvider>

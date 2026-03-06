@@ -12,7 +12,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw, Lock, Ban } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw, Lock, Ban, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { z } from 'zod';
@@ -30,6 +32,7 @@ interface TeamMember {
   status: 'active' | 'pending' | 'suspended';
   type: 'member' | 'invite';
   inviteId?: string;
+  privileges?: string[] | null;
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -45,10 +48,31 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
   suspended: { label: 'Suspenso', color: 'bg-red-100 text-red-800', icon: XCircle },
 };
 
+const PRIVILEGES = [
+  { id: 'admin', label: 'Administrador', description: 'Acesso total ao sistema, gerenciamento de equipe e configurações' },
+  { id: 'sales', label: 'Vendas', description: 'Funil de vendas no Pipeline e edição de clientes' },
+  { id: 'designer', label: 'Designer', description: 'Fluxo operacional no Pipeline (sem edição de clientes)' },
+  { id: 'finance', label: 'Finanças', description: 'Gerenciamento financeiro da agência' },
+  { id: 'link23', label: 'Link 23', description: 'Gerenciamento de árvores de links' },
+  { id: 'editorial', label: 'Linha Editorial', description: 'Gerenciamento da linha editorial' },
+  { id: 'social_media', label: 'Social Media', description: 'Gerenciamento de redes sociais sem restrições' },
+  { id: 'studio', label: 'Studio AI', description: 'Geração de imagens e créditos de IA' },
+  { id: 'clients', label: 'Clientes', description: 'Gerenciamento de usuários das empresas' },
+  { id: 'team', label: 'Equipa', description: 'Gerenciamento de membros da equipe da agência' },
+] as const;
+
+const UNIVERSAL_PRIVILEGES = [
+  { id: 'qia', label: 'QIA' },
+  { id: 'academy', label: 'Academia' },
+  { id: 'support', label: 'Suporte e Feedback' },
+  { id: 'notifications', label: 'Notificações' },
+  { id: 'settings', label: 'Configurações' },
+];
+
 const inviteSchema = z.object({
   email: z.string().email({ message: 'E-mail inválido' }),
   fullName: z.string().min(2, { message: 'Nome deve ter no mínimo 2 caracteres' }),
-  role: z.enum(['sales', 'operations', 'campaign_management'], { message: 'Selecione uma função' }),
+  privileges: z.array(z.string()).min(1, { message: 'Selecione pelo menos um privilégio' }),
 });
 
 export default function Team() {
@@ -63,15 +87,14 @@ export default function Team() {
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<string>('');
-  const [errors, setErrors] = useState<{ email?: string; fullName?: string; role?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; fullName?: string }>({});
   const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState<boolean | null>(null);
   const [currentUserOrgId, setCurrentUserOrgId] = useState<string | null>(null);
   const [isProprietor, setIsProprietor] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedPrivileges, setSelectedPrivileges] = useState<string[]>([]);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
-  const [newRole, setNewRole] = useState<string>('');
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [adminPromotionDialogOpen, setAdminPromotionDialogOpen] = useState(false);
@@ -136,11 +159,11 @@ export default function Team() {
       }
 
       // Fetch active members from organization_members table
-      const { data: orgMembers, error: membersError } = await supabase
+      const { data: orgMembers, error: membersError } = (await supabase
         .from('organization_members')
-        .select('user_id, role')
+        .select('user_id, role, privileges')
         .eq('organization_id', currentUserOrgId)
-        .eq('is_active', true);
+        .eq('is_active', true)) as any;
 
       if (membersError) {
         console.error('Error fetching organization members:', membersError);
@@ -151,7 +174,7 @@ export default function Team() {
       try {
         const { data: invitesData, error: invitesError } = await supabase
           .from('organization_invites')
-          .select('id, email, full_name, role, created_at, status')
+          .select('id, email, full_name, role, created_at, status, privileges')
           .eq('organization_id', currentUserOrgId)
           .eq('status', 'pending');
 
@@ -167,7 +190,7 @@ export default function Team() {
       // Fetch profiles for active members
       const memberUserIds = orgMembers?.map(m => m.user_id) || [];
       let profiles: any[] = [];
-      
+
       if (memberUserIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
@@ -196,19 +219,23 @@ export default function Team() {
       });
 
       // Create a map of user_id to role from organization_members
-      const memberRoleMap = new Map(orgMembers?.map(m => [m.user_id, m.role]) || []);
+      const memberDataMap = new Map(orgMembers?.map(m => [m.user_id, { role: m.role, privileges: m.privileges }]) || []);
 
       // Map active members
-      const activeMembers: TeamMember[] = filteredProfiles.map(member => ({
-        id: member.id,
-        full_name: member.full_name,
-        avatar_url: member.avatar_url,
-        role: memberRoleMap.get(member.id) || member.role,
-        created_at: member.created_at,
-        email: member.email,
-        status: member.suspended ? 'suspended' : 'active',
-        type: 'member' as const,
-      }));
+      const activeMembers: TeamMember[] = filteredProfiles.map(member => {
+        const memberData = memberDataMap.get(member.id) as any;
+        return {
+          id: member.id,
+          full_name: member.full_name,
+          avatar_url: member.avatar_url,
+          role: memberData?.role || member.role,
+          privileges: memberData?.privileges || member.privileges,
+          created_at: member.created_at,
+          email: member.email,
+          status: member.suspended ? 'suspended' : 'active',
+          type: 'member' as const,
+        };
+      });
 
       // Map pending invites
       const pendingMembers: TeamMember[] = pendingInvites.map(invite => ({
@@ -221,6 +248,7 @@ export default function Team() {
         status: 'pending' as const,
         type: 'invite' as const,
         inviteId: invite.id,
+        privileges: invite.privileges,
       }));
 
       // Combine and sort: active first, then pending
@@ -236,7 +264,7 @@ export default function Team() {
 
   const handleInvite = async () => {
     try {
-      inviteSchema.parse({ email, fullName, role });
+      inviteSchema.parse({ email, fullName, privileges: selectedPrivileges });
       setErrors({});
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -253,8 +281,11 @@ export default function Team() {
 
     setInviting(true);
     try {
+      // Derive role from privileges: if 'admin' privilege is selected, role is 'admin', else 'operations'
+      const derivedRole = selectedPrivileges.includes('admin') ? 'admin' : 'operations';
+
       const response = await supabase.functions.invoke('invite-user', {
-        body: { email, fullName, role },
+        body: { email, fullName, role: derivedRole, privileges: selectedPrivileges },
       });
 
       if (response.error) {
@@ -265,21 +296,21 @@ export default function Team() {
         throw new Error(response.data.error);
       }
 
-      toast({ 
-        title: 'Convite enviado!', 
-        description: `Um e-mail de convite foi enviado para ${email}` 
+      toast({
+        title: 'Convite enviado!',
+        description: `Um e-mail de convite foi enviado para ${email}`
       });
       setInviteOpen(false);
       setEmail('');
       setFullName('');
-      setRole('');
+      setSelectedPrivileges([]);
       fetchMembers();
     } catch (error) {
       console.error('Invite error:', error);
-      toast({ 
-        title: 'Erro', 
-        description: error instanceof Error ? error.message : 'Não foi possível enviar o convite', 
-        variant: 'destructive' 
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Não foi possível enviar o convite',
+        variant: 'destructive'
       });
     } finally {
       setInviting(false);
@@ -287,24 +318,19 @@ export default function Team() {
   };
 
   const handleChangeRole = async () => {
-    if (!selectedMember || !newRole) return;
-    
-    if (newRole === 'admin' && selectedMember.role !== 'admin') {
-      setPendingAdminPromotion({ member: selectedMember, role: newRole });
-      setAdminPromotionDialogOpen(true);
-      setRoleDialogOpen(false);
-      return;
-    }
-    
-    await executeRoleChange(selectedMember.id, newRole);
+    if (!selectedMember) return;
+
+    // For execution, derive role from selected privileges
+    const derivedRole = selectedPrivileges.includes('admin') ? 'admin' : 'operations';
+    await executeRoleChange(selectedMember.id, derivedRole, selectedPrivileges);
   };
 
-  const executeRoleChange = async (memberId: string, role: string) => {
+  const executeRoleChange = async (memberId: string, role: string, privileges: string[] = []) => {
     setActionLoading(memberId);
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ role: role as any })
+        .update({ role: role as any, privileges })
         .eq('id', memberId);
 
       if (error) throw error;
@@ -313,16 +339,15 @@ export default function Team() {
       if (currentUserOrgId) {
         await supabase
           .from('organization_members')
-          .update({ role: role as any })
+          .update({ role: role as any, privileges })
           .eq('user_id', memberId)
           .eq('organization_id', currentUserOrgId);
       }
 
-      toast({ title: 'Sucesso!', description: 'Função alterada com sucesso' });
+      toast({ title: 'Sucesso!', description: 'Privilégios alterados com sucesso' });
       setRoleDialogOpen(false);
       setAdminPromotionDialogOpen(false);
       setSelectedMember(null);
-      setNewRole('');
       setPendingAdminPromotion(null);
       fetchMembers();
     } catch (error) {
@@ -340,7 +365,7 @@ export default function Team() {
 
   const handleRemoveMember = async () => {
     if (!memberToRemove || !currentUserOrgId) return;
-    
+
     setActionLoading(memberToRemove.id);
     try {
       const { data, error } = await supabase.functions.invoke('remove-member', {
@@ -358,17 +383,17 @@ export default function Team() {
         throw new Error(data.error);
       }
 
-      toast({ 
-        title: 'Sucesso!', 
-        description: 'Membro removido da equipe e notificado por email' 
+      toast({
+        title: 'Sucesso!',
+        description: 'Membro removido da equipe e notificado por email'
       });
       fetchMembers();
     } catch (error) {
       console.error('Error removing member:', error);
-      toast({ 
-        title: 'Erro', 
-        description: error instanceof Error ? error.message : 'Não foi possível remover o membro', 
-        variant: 'destructive' 
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Não foi possível remover o membro',
+        variant: 'destructive'
       });
     } finally {
       setActionLoading(null);
@@ -387,7 +412,7 @@ export default function Team() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const isSuspending = member.status !== 'suspended';
-      
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -398,14 +423,14 @@ export default function Team() {
         .eq('id', member.id);
 
       if (error) throw error;
-      
-      toast({ 
+
+      toast({
         title: isSuspending ? 'Usuário suspenso' : 'Usuário ativado',
-        description: isSuspending 
+        description: isSuspending
           ? 'O usuário não poderá mais acessar o sistema'
           : 'O usuário pode acessar o sistema novamente'
       });
-      
+
       fetchMembers();
     } catch (error) {
       console.error('Error toggling suspend:', error);
@@ -424,11 +449,11 @@ export default function Team() {
     setActionLoading(member.id);
     try {
       const response = await supabase.functions.invoke('invite-user', {
-        body: { 
-          email: member.email, 
-          fullName: member.full_name || 'Colaborador', 
+        body: {
+          email: member.email,
+          fullName: member.full_name || 'Colaborador',
           role: member.role === 'admin' ? 'operations' : member.role,
-          resend: true 
+          resend: true
         },
       });
 
@@ -440,16 +465,16 @@ export default function Team() {
         throw new Error(response.data.error);
       }
 
-      toast({ 
-        title: 'Convite reenviado!', 
-        description: `Um novo e-mail foi enviado para ${member.email}` 
+      toast({
+        title: 'Convite reenviado!',
+        description: `Um novo e-mail foi enviado para ${member.email}`
       });
     } catch (error) {
       console.error('Resend invite error:', error);
-      toast({ 
-        title: 'Erro', 
-        description: error instanceof Error ? error.message : 'Não foi possível reenviar o convite', 
-        variant: 'destructive' 
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Não foi possível reenviar o convite',
+        variant: 'destructive'
       });
     } finally {
       setActionLoading(null);
@@ -468,17 +493,17 @@ export default function Team() {
 
       if (error) throw error;
 
-      toast({ 
-        title: 'Convite cancelado', 
-        description: 'O convite foi cancelado com sucesso' 
+      toast({
+        title: 'Convite cancelado',
+        description: 'O convite foi cancelado com sucesso'
       });
       fetchMembers();
     } catch (error) {
       console.error('Error cancelling invite:', error);
-      toast({ 
-        title: 'Erro', 
-        description: 'Não foi possível cancelar o convite', 
-        variant: 'destructive' 
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível cancelar o convite',
+        variant: 'destructive'
       });
     } finally {
       setActionLoading(null);
@@ -502,10 +527,10 @@ export default function Team() {
   return (
     <div className="p-4 md:p-8 space-y-6">
       {!canInviteTeamMember && limits.maxTeamMembers !== null && (
-        <LimitReachedCard 
-          feature="membros da equipe" 
-          current={usage.teamMembersCount} 
-          limit={limits.maxTeamMembers} 
+        <LimitReachedCard
+          feature="membros da equipe"
+          current={usage.teamMembersCount}
+          limit={limits.maxTeamMembers}
           planType={planType}
           variant="banner"
         />
@@ -524,8 +549,8 @@ export default function Team() {
         </div>
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <DialogTrigger asChild>
-            <Button 
-              className="gap-2 w-full sm:w-auto" 
+            <Button
+              className="gap-2 w-full sm:w-auto"
               disabled={!canInviteTeamMember}
             >
               {!canInviteTeamMember ? (
@@ -572,19 +597,49 @@ export default function Team() {
                 />
                 {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="invite-role">Função</Label>
-                <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a função" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sales">Vendas</SelectItem>
-                    <SelectItem value="operations">Operações</SelectItem>
-                    <SelectItem value="campaign_management">Gestão de Campanhas</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.role && <p className="text-sm text-destructive">{errors.role}</p>}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-0.5 gap-y-2">
+                  <TooltipProvider>
+                    {PRIVILEGES.map((privilege) => (
+                      <div key={privilege.id} className="flex items-start space-x-2 p-1.5 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-border/30">
+                        <Checkbox
+                          id={`privilege-${privilege.id}`}
+                          checked={selectedPrivileges.includes(privilege.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedPrivileges([...selectedPrivileges, privilege.id]);
+                            } else {
+                              setSelectedPrivileges(selectedPrivileges.filter(id => id !== privilege.id));
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        <div className="grid gap-0.5 leading-tight">
+                          <label
+                            htmlFor={`privilege-${privilege.id}`}
+                            className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
+                          >
+                            {privilege.label}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary transition-colors" />
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="max-w-[220px]">
+                                <p className="text-xs">{privilege.description}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </TooltipProvider>
+                </div>
+                <div className="flex items-center gap-2 px-1">
+                  <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">Universal</Badge>
+                  <p className="text-[11px] text-muted-foreground italic">
+                    Academia, QIA, Suporte, Notificações e Configurações são liberados para todos os membros.
+                  </p>
+                </div>
               </div>
             </div>
             <DialogFooter>
@@ -613,30 +668,60 @@ export default function Team() {
       <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Alterar Função</DialogTitle>
+            <DialogTitle>Alterar Privilégios</DialogTitle>
             <DialogDescription>
-              Altere a função de {selectedMember?.full_name || 'este membro'}
+              Altere os privilégios de {selectedMember?.full_name || 'este membro'}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Label>Nova Função</Label>
-            <Select value={newRole} onValueChange={setNewRole}>
-              <SelectTrigger className="mt-2">
-                <SelectValue placeholder="Selecione a nova função" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sales">Vendas</SelectItem>
-                <SelectItem value="operations">Operações</SelectItem>
-                <SelectItem value="campaign_management">Gestão de Campanhas</SelectItem>
-                <SelectItem value="admin">Administrador</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="py-2 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-0.5 gap-y-2">
+              <TooltipProvider>
+                {PRIVILEGES.map((privilege) => (
+                  <div key={`edit-${privilege.id}`} className="flex items-start space-x-2 p-1.5 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-border/30">
+                    <Checkbox
+                      id={`edit-privilege-${privilege.id}`}
+                      checked={selectedPrivileges.includes(privilege.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedPrivileges([...selectedPrivileges, privilege.id]);
+                        } else {
+                          setSelectedPrivileges(selectedPrivileges.filter(id => id !== privilege.id));
+                        }
+                      }}
+                      className="mt-1"
+                    />
+                    <div className="grid gap-0.5 leading-tight">
+                      <label
+                        htmlFor={`edit-privilege-${privilege.id}`}
+                        className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
+                      >
+                        {privilege.label}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <p className="text-xs">{privilege.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </TooltipProvider>
+            </div>
+            <div className="flex items-center gap-2 px-1 pt-2">
+              <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">Universal</Badge>
+              <p className="text-[11px] text-muted-foreground italic">
+                Academia, QIA, Suporte, Notificações e Configurações são liberados para todos os membros.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRoleDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleChangeRole} disabled={!newRole || actionLoading === selectedMember?.id}>
+            <Button onClick={handleChangeRole} disabled={actionLoading === selectedMember?.id}>
               {actionLoading === selectedMember?.id ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -653,14 +738,14 @@ export default function Team() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover da Equipe</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover {memberToRemove?.full_name || 'este membro'} da equipe? 
-              O usuário perderá acesso a esta agência, mas sua conta permanecerá ativa caso esteja 
+              Tem certeza que deseja remover {memberToRemove?.full_name || 'este membro'} da equipe?
+              O usuário perderá acesso a esta agência, mas sua conta permanecerá ativa caso esteja
               em outras organizações.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleRemoveMember}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
@@ -680,13 +765,13 @@ export default function Team() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar Convite</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja cancelar o convite para {inviteToCancel?.full_name || inviteToCancel?.email}? 
+              Tem certeza que deseja cancelar o convite para {inviteToCancel?.full_name || inviteToCancel?.email}?
               O link de convite será invalidado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleCancelInvite}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
@@ -724,7 +809,7 @@ export default function Team() {
             <AlertDialogCancel onClick={() => setPendingAdminPromotion(null)}>
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleConfirmAdminPromotion}
               className="bg-amber-600 text-white hover:bg-amber-700"
             >
@@ -786,9 +871,20 @@ export default function Team() {
                       {member.email || '-'}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={ROLE_COLORS[member.role] || ''}>
-                        {getRoleLabel(member.role)}
-                      </Badge>
+                      <div className="flex flex-col gap-1.5">
+                        <Badge variant="secondary" className={`w-fit ${ROLE_COLORS[member.role] || ''}`}>
+                          {getRoleLabel(member.role)}
+                        </Badge>
+                        {member.privileges && member.privileges.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {member.privileges.map(p => (
+                              <Badge key={p} variant="outline" className="text-[10px] px-1 py-0 h-4 bg-muted/50">
+                                {PRIVILEGES.find(pr => pr.id === p)?.label || p}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={`gap-1 ${STATUS_CONFIG[member.status].color}`}>
@@ -797,7 +893,7 @@ export default function Team() {
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-muted-foreground">
-                      {member.created_at 
+                      {member.created_at
                         ? new Date(member.created_at).toLocaleDateString('pt-BR')
                         : '-'
                       }
@@ -821,7 +917,7 @@ export default function Team() {
                                 Reenviar Convite
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => {
                                   setInviteToCancel(member);
                                   setCancelInviteDialogOpen(true);
@@ -836,7 +932,7 @@ export default function Team() {
                             <>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedMember(member);
-                                setNewRole(member.role);
+                                setSelectedPrivileges(member.privileges || []);
                                 setRoleDialogOpen(true);
                               }}>
                                 <Shield className="h-4 w-4 mr-2" />
@@ -856,7 +952,7 @@ export default function Team() {
                                 )}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => openRemoveDialog(member)}
                                 className="text-destructive"
                               >

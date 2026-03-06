@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Mail, 
-  Phone, 
+import {
+  Mail,
+  Phone,
   ArrowRight,
   ArrowLeft,
   MessageSquare,
@@ -44,13 +44,12 @@ import { ClientHistoryTab } from './ClientHistoryTab';
 import { formatPhoneNumber } from '@/lib/phone-utils';
 import { useNavigate } from 'react-router-dom';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { usePermissions } from '@/hooks/usePermissions';
 
 
 interface ClientDetailContentProps {
   client: Client;
   onUpdate: (client: Client) => Promise<void>;
-  isAdmin?: boolean;
-  userRole?: string;
   userId?: string;
 }
 
@@ -60,12 +59,14 @@ interface ChecklistReport {
   completedAt: string | null;
 }
 
-export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRole = 'sales', userId }: ClientDetailContentProps) {
+export function ClientDetailContent({ client, onUpdate, userId }: ClientDetailContentProps) {
   const navigate = useNavigate();
   const { limits, usage } = usePlanLimits();
+  const { hasPrivilege, isAdmin } = usePermissions();
+
   // Permission checks
-  const canEditClient = userRole === 'admin' || userRole === 'sales' || isAdmin;
-  const canSeeContracts = userRole === 'admin' || userRole === 'sales' || isAdmin;
+  const canEditClient = hasPrivilege('sales');
+  const canSeeContracts = hasPrivilege('sales');
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
   const [isLoadingStage, setIsLoadingStage] = useState<'next' | 'prev' | null>(null);
   const [pauseDialogOpen, setPauseDialogOpen] = useState(false);
@@ -79,7 +80,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
   const [activeTab, setActiveTab] = useState('checklist');
   const [documentModalOpen, setDocumentModalOpen] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState<DocumentType>('proforma_invoice');
-  
+
   // Report modal state
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [selectedChecklistItem, setSelectedChecklistItem] = useState<{
@@ -107,7 +108,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         .select('contract_url, contract_name')
         .eq('id', client.id)
         .single();
-      
+
       if (contractData) {
         setContractUrl(contractData.contract_url);
         setContractName(contractData.contract_name);
@@ -149,7 +150,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       .select('contract_url, contract_name')
       .eq('id', client.id)
       .single();
-    
+
     if (data) {
       setContractUrl(data.contract_url);
       setContractName(data.contract_name);
@@ -169,10 +170,10 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
     if (!selectedChecklistItem) return;
 
     setLoadingTaskId(selectedChecklistItem.id);
-    
+
     const existingTask = client.tasks.find(t => t.id === selectedChecklistItem.id);
     let updatedTasks;
-    
+
     if (existingTask) {
       updatedTasks = client.tasks.map(task =>
         task.id === selectedChecklistItem.id ? { ...task, completed: true } : task
@@ -229,9 +230,9 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
     setChecklistReports(prev => {
       const existing = prev.find(r => r.itemId === selectedChecklistItem.title);
       if (existing) {
-        return prev.map(r => 
-          r.itemId === selectedChecklistItem.title 
-            ? { ...r, report, completedAt: new Date().toISOString() } 
+        return prev.map(r =>
+          r.itemId === selectedChecklistItem.title
+            ? { ...r, report, completedAt: new Date().toISOString() }
             : r
         );
       }
@@ -247,7 +248,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           .select('organization_id')
           .eq('id', user.id)
           .single();
-        
+
         await supabase.from('activities').insert({
           client_id: client.id,
           type: 'task_completed' as const,
@@ -276,7 +277,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
     if (!selectedChecklistItem) return;
 
     setLoadingTaskId(selectedChecklistItem.id);
-    
+
     const updatedTasks = client.tasks.map(task =>
       task.id === selectedChecklistItem.id ? { ...task, completed: false } : task
     );
@@ -311,7 +312,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           .select('organization_id')
           .eq('id', user.id)
           .single();
-        
+
         await supabase.from('activities').insert({
           client_id: client.id,
           type: 'task_uncompleted' as const,
@@ -357,7 +358,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             .select('organization_id')
             .eq('id', user.id)
             .single();
-          
+
           await supabase.from('activities').insert({
             client_id: client.id,
             type: 'stage_change' as const,
@@ -370,7 +371,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             new_value: nextStage.id,
           });
         }
-        
+
         await onUpdate({ ...client, stage: nextStage.id });
       } finally {
         setIsLoadingStage(null);
@@ -395,7 +396,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             .select('organization_id')
             .eq('id', user.id)
             .single();
-          
+
           await supabase.from('activities').insert({
             client_id: client.id,
             type: 'stage_change' as const,
@@ -408,7 +409,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
             new_value: prevStage.id,
           });
         }
-        
+
         await onUpdate({ ...client, stage: prevStage.id });
       } finally {
         setIsLoadingStage(null);
@@ -430,12 +431,12 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
 
       if (error) throw error;
 
-      toast({ 
-        title: isPaused ? 'Cliente reativado!' : 'Cliente suspenso!', 
+      toast({
+        title: isPaused ? 'Cliente reativado!' : 'Cliente suspenso!',
         description: isPaused ? 'O cliente foi reativado com sucesso.' : 'Todas as atividades foram bloqueadas.'
       });
       setPauseDialogOpen(false);
-      
+
       // Trigger a refetch by calling onUpdate with paused state
       await onUpdate({ ...client, stage: client.stage });
     } catch (error) {
@@ -465,10 +466,10 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
       {/* Current Stage Badge */}
       <div className="flex items-center gap-3">
         <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${currentStage?.color} ${currentStage?.borderColor} border-2`}>
-        {isPaused && <Lock className="h-3 w-3 mr-1.5" />}
-        {currentStage?.name}
-      </div>
-      {isPaused && <Badge variant="destructive" className="gap-1"><Lock className="h-3 w-3" /> Suspenso</Badge>}
+          {isPaused && <Lock className="h-3 w-3 mr-1.5" />}
+          {currentStage?.name}
+        </div>
+        {isPaused && <Badge variant="destructive" className="gap-1"><Lock className="h-3 w-3" /> Suspenso</Badge>}
       </div>
 
       {/* All Client Info */}
@@ -476,21 +477,21 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         <h4 className="font-semibold text-sm">Informações do Cliente</h4>
         <div className="flex flex-wrap items-center gap-2">
           {/* Link Tree Button */}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2 flex-1 sm:flex-none" 
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 flex-1 sm:flex-none"
             onClick={() => navigate(`/app/clients/${client.id}/links`)}
           >
             <Link className="h-3 w-3" />
             Links
           </Button>
-          
+
           {canEditClient && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2 flex-1 sm:flex-none" 
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 flex-1 sm:flex-none"
               disabled={isPaused}
               onClick={() => navigate(`/app/clients/edit/${client.id}`)}
             >
@@ -498,13 +499,13 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               Editar
             </Button>
           )}
-          
+
           {/* Suspend Button - Only for Admins */}
           {isAdmin && (
             <Dialog open={pauseDialogOpen} onOpenChange={setPauseDialogOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  variant={isPaused ? "outline" : "secondary"} 
+                <Button
+                  variant={isPaused ? "outline" : "secondary"}
                   size="sm"
                   className={`gap-2 flex-1 sm:flex-none ${isPaused ? 'border-green-500 text-green-500 hover:bg-green-500 hover:text-white' : ''}`}
                 >
@@ -517,7 +518,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                 <DialogHeader>
                   <DialogTitle>{isPaused ? 'Reativar Cliente' : 'Suspender Cliente'}</DialogTitle>
                   <DialogDescription>
-                    {isPaused 
+                    {isPaused
                       ? 'Deseja reativar este cliente? Todas as atividades serão desbloqueadas.'
                       : 'Tem certeza que deseja suspender este cliente? Todas as atividades serão bloqueadas até que um administrador o reative.'
                     }
@@ -527,8 +528,8 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                   <Button variant="outline" onClick={() => setPauseDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button 
-                    variant={isPaused ? "default" : "destructive"} 
+                  <Button
+                    variant={isPaused ? "default" : "destructive"}
                     onClick={handleTogglePause}
                     disabled={isPausing}
                   >
@@ -549,8 +550,8 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           {/* Delete Button - Only for Admins */}
           {isAdmin && (
             <>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 flex-1 sm:flex-none"
                 onClick={() => setDeleteDialogOpen(true)}
@@ -623,7 +624,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           </div>
         )}
         {/* Monthly Budget - Only visible for sales and admin */}
-        {(userRole === 'admin' || userRole === 'sales' || isAdmin) && client.monthlyBudget && (
+        {hasPrivilege('sales') && client.monthlyBudget && (
           <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg relative">
             {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
             <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -647,7 +648,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
         </div>
         <div className="flex-1 flex items-center gap-2">
           <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-primary rounded-full transition-all"
               style={{ width: `${bantScore}%` }}
             />
@@ -673,7 +674,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                 Dev
               </Badge>
             </Button>
-            
+
             <Button
               variant="outline"
               className="gap-2"
@@ -695,7 +696,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                 Gerar Contrato
               </Button>
             )}
-            
+
             {/* Documents Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -735,7 +736,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               Uso de contratos este mês: <strong>{usage.contractsThisMonth} de {limits.maxContractsPerMonth}</strong>
             </div>
           )}
-          
+
           <ContractModal
             open={contractDialogOpen}
             onOpenChange={setContractDialogOpen}
@@ -822,23 +823,23 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
               <span className="text-success font-medium">✓ Completo</span>
             )}
           </div>
-          
+
           {currentStage?.checklist.map((item) => {
             const task = client.tasks.find(t => t.id === item.id);
             const isCompleted = task?.completed || false;
             const isLoading = loadingTaskId === item.id;
             const reportData = getReportForItem(item.title);
             const hasReport = !!reportData?.report;
-            
+
             return (
-              <div 
+              <div
                 key={item.id}
                 className={`flex items-start gap-3 p-3 bg-card border border-border rounded-lg cursor-pointer transition-all relative ${isLoading ? 'opacity-70' : 'hover:border-primary/50'} ${isPaused ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={() => !isLoading && !isPaused && handleOpenReportModal({ 
-                  id: item.id, 
-                  title: item.title, 
+                onClick={() => !isLoading && !isPaused && handleOpenReportModal({
+                  id: item.id,
+                  title: item.title,
                   description: item.description,
-                  required: item.required 
+                  required: item.required
                 })}
               >
                 {isPaused && <Lock className="h-3 w-3 text-destructive absolute top-2 right-2" />}
@@ -847,7 +848,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                 ) : isPaused ? (
                   <Lock className="h-4 w-4 mt-0.5 text-destructive" />
                 ) : (
-                  <Checkbox 
+                  <Checkbox
                     checked={isCompleted}
                     className="mt-0.5 pointer-events-none"
                     disabled={isPaused}
@@ -893,7 +894,7 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
           {/* Stage Navigation Buttons - Only in Checklist tab */}
           <div className={`flex gap-2 mt-6 pt-4 border-t ${isPaused ? 'opacity-50' : ''}`}>
             {prevStage && (
-              <Button 
+              <Button
                 variant="outline"
                 onClick={handleMoveToPrevStage}
                 disabled={isLoadingStage !== null || isPaused}
@@ -909,9 +910,9 @@ export function ClientDetailContent({ client, onUpdate, isAdmin = false, userRol
                 <span className="truncate">{prevStage.name}</span>
               </Button>
             )}
-            
+
             {nextStage && (
-              <Button 
+              <Button
                 onClick={handleMoveToNextStage}
                 disabled={!allRequiredCompleted || isLoadingStage !== null || isPaused}
                 className="flex-1 gap-1 sm:gap-2 text-xs sm:text-sm min-w-0 px-2 sm:px-4"

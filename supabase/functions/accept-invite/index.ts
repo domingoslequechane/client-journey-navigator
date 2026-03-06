@@ -45,15 +45,15 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    
+
     // Validate input
     const validationResult = AcceptInviteSchema.safeParse(body);
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.errors);
       return new Response(
-        JSON.stringify({ 
-          error: "Token de convite inválido", 
-          details: validationResult.error.errors.map(e => e.message) 
+        JSON.stringify({
+          error: "Token de convite inválido",
+          details: validationResult.error.errors.map(e => e.message)
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -105,9 +105,9 @@ serve(async (req) => {
     if (user.email?.toLowerCase() !== invite.email.toLowerCase()) {
       console.error(`Email mismatch: ${user.email} vs ${invite.email}`);
       return new Response(
-        JSON.stringify({ 
-          error: "Este convite foi enviado para outro e-mail", 
-          details: `O convite é para ${invite.email}, mas você está logado como ${user.email}` 
+        JSON.stringify({
+          error: "Este convite foi enviado para outro e-mail",
+          details: `O convite é para ${invite.email}, mas você está logado como ${user.email}`
         }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -129,8 +129,8 @@ serve(async (req) => {
         .eq("id", invite.id);
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           message: "Você já faz parte desta organização",
           organizationId: invite.organization_id,
           organizationName: invite.organizations?.name
@@ -146,6 +146,7 @@ serve(async (req) => {
         user_id: user.id,
         organization_id: invite.organization_id,
         role: invite.role,
+        privileges: invite.privileges,
         is_active: true,
         joined_at: new Date().toISOString(),
       }, {
@@ -167,6 +168,7 @@ serve(async (req) => {
         organization_id: invite.organization_id,
         current_organization_id: invite.organization_id,
         role: invite.role,
+        privileges: invite.privileges,
         full_name: invite.full_name,
       })
       .eq("id", user.id);
@@ -179,9 +181,9 @@ serve(async (req) => {
     // Update invite status to accepted
     const { error: updateError } = await supabaseAdmin
       .from("organization_invites")
-      .update({ 
-        status: "accepted", 
-        accepted_at: new Date().toISOString() 
+      .update({
+        status: "accepted",
+        accepted_at: new Date().toISOString()
       })
       .eq("id", invite.id);
 

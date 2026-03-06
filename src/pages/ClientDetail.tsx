@@ -39,8 +39,6 @@ export default function ClientDetail() {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [userRole, setUserRole] = useState('sales');
 
   // Handle back navigation - go to previous page or fallback to clients
   const handleBack = () => {
@@ -63,21 +61,9 @@ export default function ClientDetail() {
     }
   }, [error]);
 
-  useEffect(() => {
-    const checkUserRole = async () => {
-      if (!user) return;
-      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-      if (data) {
-        setUserRole(data.role);
-        setIsAdmin(data.role === 'admin');
-      }
-    };
-    checkUserRole();
-  }, [user]);
-
   const handleUpdateClient = async (updatedClient: Client) => {
     // This function handles updates to the DB (stage and checklist items)
-    
+
     // Helper map for DB stage names
     const dbStageMap: Record<string, string> = {
       prospecting: 'prospeccao',
@@ -87,15 +73,15 @@ export default function ClientDetail() {
       campaigns: 'trafego',
       retention: 'retencao',
     };
-    
+
     const newDbStage = dbStageMap[updatedClient.stage];
-    
+
     if (client && dbStageMap[client.stage] !== newDbStage) {
       const { error: stageError } = await supabase
         .from('clients')
         .update({ current_stage: newDbStage as any })
         .eq('id', updatedClient.id);
-      
+
       if (stageError) {
         toast({ title: 'Erro ao atualizar fase', description: stageError.message, variant: 'destructive' });
         return;
@@ -105,7 +91,7 @@ export default function ClientDetail() {
     // Update Checklist Items (tasks)
     for (const task of updatedClient.tasks) {
       const stageDbName = dbStageMap[task.stageId];
-      
+
       // Check if the task exists in the DB for this client/stage/title combination
       const { data: existingItem } = await supabase
         .from('checklist_items')
@@ -120,12 +106,12 @@ export default function ClientDetail() {
           // Update existing item
           const { error: updateError } = await supabase
             .from('checklist_items')
-            .update({ 
+            .update({
               completed: task.completed,
               completed_at: task.completed ? new Date().toISOString() : null,
             })
             .eq('id', existingItem.id);
-          
+
           if (updateError) {
             toast({ title: 'Erro ao atualizar tarefa', description: updateError.message, variant: 'destructive' });
             return;
@@ -142,7 +128,7 @@ export default function ClientDetail() {
             completed: true,
             completed_at: new Date().toISOString(),
           });
-        
+
         if (insertError) {
           toast({ title: 'Erro ao inserir tarefa', description: insertError.message, variant: 'destructive' });
           return;
@@ -185,9 +171,9 @@ export default function ClientDetail() {
           <p className="text-sm md:text-base text-muted-foreground">Detalhes e acompanhamento da jornada</p>
         </div>
       </AnimatedContainer>
-      
+
       <AnimatedContainer animation="fade-up" delay={0.1}>
-        <ClientDetailContent client={client} onUpdate={handleUpdateClient} isAdmin={isAdmin} userRole={userRole} userId={user?.id} />
+        <ClientDetailContent client={client} onUpdate={handleUpdateClient} userId={user?.id} />
       </AnimatedContainer>
     </div>
   );

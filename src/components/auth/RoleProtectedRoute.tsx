@@ -1,14 +1,14 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { useUserRole } from '@/hooks/useUserRole';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PrivilegeKey } from '@/hooks/usePermissions';
 import { ShieldX, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface RoleProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: ('admin' | 'sales' | 'operations' | 'campaign_management')[];
-  requireSalesFunnel?: boolean;
-  requireOperationalFlow?: boolean;
+  privilege?: PrivilegeKey;
   requireClients?: boolean;
   requireTeam?: boolean;
   requireSettings?: boolean;
@@ -18,8 +18,7 @@ interface RoleProtectedRouteProps {
 export function RoleProtectedRoute({
   children,
   allowedRoles,
-  requireSalesFunnel,
-  requireOperationalFlow,
+  privilege,
   requireClients,
   requireTeam,
   requireSettings,
@@ -27,16 +26,12 @@ export function RoleProtectedRoute({
 }: RoleProtectedRouteProps) {
   const {
     role,
-    loading,
-    canSeeSalesFunnel,
-    canSeeOperationalFlow,
-    canSeeClients,
-    canSeeTeam,
-    canSeeSettings,
-    canSeeSubscription,
-  } = useUserRole();
+    isLoading,
+    hasPrivilege,
+    isAdmin
+  } = usePermissions();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -51,12 +46,11 @@ export function RoleProtectedRoute({
     hasAccess = allowedRoles.includes(role);
   }
 
-  if (requireSalesFunnel && !canSeeSalesFunnel) hasAccess = false;
-  if (requireOperationalFlow && !canSeeOperationalFlow) hasAccess = false;
-  if (requireClients && !canSeeClients) hasAccess = false;
-  if (requireTeam && !canSeeTeam) hasAccess = false;
-  if (requireSettings && !canSeeSettings) hasAccess = false;
-  if (requireSubscription && !canSeeSubscription) hasAccess = false;
+  if (privilege && !hasPrivilege(privilege)) hasAccess = false;
+  if (requireClients && !hasPrivilege('clients')) hasAccess = false;
+  if (requireTeam && !hasPrivilege('team')) hasAccess = false;
+  if (requireSettings && !hasPrivilege('settings')) hasAccess = false;
+  if (requireSubscription && !isAdmin) hasAccess = false;
 
   if (!hasAccess) {
     return (

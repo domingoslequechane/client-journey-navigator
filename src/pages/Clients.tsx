@@ -11,10 +11,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { ClientListSkeleton } from '@/components/ui/loading-skeleton';
-import { 
-  Search, 
-  Plus, 
-  Building2, 
+import {
+  Search,
+  Plus,
+  Building2,
   Phone,
   Mail,
   Filter,
@@ -24,6 +24,7 @@ import {
 import type { Tables } from '@/integrations/supabase/types';
 import { useClientExport } from '@/hooks/useClientExport';
 import { formatPhoneNumber } from '@/lib/phone-utils';
+import { usePermissions } from '@/hooks/usePermissions';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { useSubscription } from '@/hooks/useSubscription';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
@@ -50,6 +51,7 @@ export default function Clients() {
   const [filterStage, setFilterStage] = useState<string | null>(null);
   const [filterQualification, setFilterQualification] = useState<string | null>(null);
   const { exportToCSV } = useClientExport();
+  const { hasPrivilege } = usePermissions();
   const { canExportData, canAddClient, planType, usage, limits } = usePlanLimits();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
 
@@ -77,8 +79,8 @@ export default function Clients() {
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.contact_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (client.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
+      client.contact_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     const matchesStage = !filterStage || client.current_stage === filterStage;
     const matchesQualification = !filterQualification || client.qualification === filterQualification;
     return matchesSearch && matchesStage && matchesQualification;
@@ -87,7 +89,7 @@ export default function Clients() {
   const getStageFromDb = (dbStage: string) => {
     const stageMap: Record<string, string> = {
       prospeccao: 'prospecting',
-      reuniao: 'qualification', 
+      reuniao: 'qualification',
       contratacao: 'closing',
       producao: 'production',
       trafego: 'campaigns',
@@ -124,8 +126,8 @@ export default function Clients() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="gap-2"
                     onClick={() => exportToCSV(filteredClients)}
                     disabled={filteredClients.length === 0}
@@ -140,9 +142,9 @@ export default function Clients() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          {!isReadOnly && (
-            <Button 
-              className="gap-2 flex-1 sm:flex-none" 
+          {hasPrivilege('sales') && !isReadOnly && (
+            <Button
+              className="gap-2 flex-1 sm:flex-none"
               onClick={() => navigate('/app/new-client')}
               disabled={!canAddClient}
             >
@@ -206,9 +208,9 @@ export default function Clients() {
             const mappedStage = getStageFromDb(client.current_stage);
             const stage = ALL_STAGES.find(s => s.id === mappedStage);
             const bantScore = (client.bant_budget || 0) + (client.bant_authority || 0) + (client.bant_need || 0) + (client.bant_timeline || 0);
-            
+
             return (
-              <div 
+              <div
                 key={client.id}
                 className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
                 onClick={() => navigate(`/app/clients/${client.id}`)}
@@ -262,9 +264,9 @@ export default function Clients() {
                 const mappedStage = getStageFromDb(client.current_stage);
                 const stage = ALL_STAGES.find(s => s.id === mappedStage);
                 const bantScore = (client.bant_budget || 0) + (client.bant_authority || 0) + (client.bant_need || 0) + (client.bant_timeline || 0);
-                
+
                 return (
-                  <tr 
+                  <tr
                     key={client.id}
                     className="border-b border-border hover:bg-muted/50 cursor-pointer transition-colors"
                     onClick={() => navigate(`/app/clients/${client.id}`)}
@@ -301,7 +303,7 @@ export default function Clients() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-primary rounded-full"
                             style={{ width: `${(bantScore / 40) * 100}%` }}
                           />

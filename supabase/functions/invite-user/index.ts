@@ -14,9 +14,8 @@ const corsHeaders = {
 const InviteRequestSchema = z.object({
   email: z.string().email("Email inválido").max(255, "Email muito longo"),
   fullName: z.string().min(2, "Nome muito curto").max(100, "Nome muito longo").trim(),
-  role: z.enum(["sales", "operations", "campaign_management"], {
-    errorMap: () => ({ message: "Função inválida" })
-  }),
+  role: z.enum(["sales", "operations", "campaign_management", "admin"]).optional(),
+  privileges: z.array(z.string()).min(1, "Selecione pelo menos um privilégio"),
   resend: z.boolean().optional(),
 });
 
@@ -24,6 +23,25 @@ const ROLE_LABELS: Record<string, string> = {
   sales: "Vendas",
   operations: "Operações",
   campaign_management: "Gestão de Campanhas",
+  admin: "Administrador",
+};
+
+const PRIVILEGE_LABELS: Record<string, string> = {
+  sales: "Vendas (Pipeline)",
+  designer: "Designer (Operacional)",
+  finance: "Finanças",
+  link23: "Link 23",
+  editorial: "Linha Editorial",
+  social_media: "Social Media",
+  qia: "QIA",
+  studio: "Studio AI",
+  academy: "Academia",
+  clients: "Clientes",
+  team: "Equipa",
+  support: "Suporte e Feedback",
+  notifications: "Notificações",
+  settings: "Configurações",
+  plans: "Planos",
 };
 
 serve(async (req) => {
@@ -111,22 +129,22 @@ serve(async (req) => {
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.errors);
       return new Response(
-        JSON.stringify({ 
-          error: "Dados inválidos", 
-          details: validationResult.error.errors.map(e => e.message) 
+        JSON.stringify({
+          error: "Dados inválidos",
+          details: validationResult.error.errors.map(e => e.message)
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { email, fullName, role, resend: isResend } = validationResult.data;
+    const { email, fullName, role = "operations", privileges = [], resend: isResend } = validationResult.data;
 
-    console.log(`Admin ${user.id} ${isResend ? 'resending invite to' : 'inviting user'}: ${email}, ${fullName}, ${role}`);
+    console.log(`Admin ${user.id} ${isResend ? 'resending invite to' : 'inviting user'}: ${email}, ${fullName}, ${role}, privileges: ${privileges.join(', ')}`);
 
     // Check if user is already an active member of this organization
     const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
     const existingUserRecord = existingUser?.users?.find(u => u.email === email);
-    
+
     if (existingUserRecord) {
       const { data: existingMember } = await supabaseAdmin
         .from("organization_members")
@@ -134,7 +152,7 @@ serve(async (req) => {
         .eq("user_id", existingUserRecord.id)
         .eq("organization_id", adminOrgId)
         .single();
-      
+
       if (existingMember?.is_active && !isResend) {
         return new Response(
           JSON.stringify({ error: "Este usuário já faz parte desta organização" }),
@@ -164,6 +182,7 @@ serve(async (req) => {
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
           full_name: fullName,
           role: role,
+          privileges: privileges,
         })
         .eq("id", existingInvite.id);
 
@@ -190,6 +209,7 @@ serve(async (req) => {
           email: email.toLowerCase(),
           full_name: fullName,
           role: role,
+          privileges: privileges,
           invited_by: user.id,
           invite_token: inviteToken,
           status: "pending",
@@ -240,6 +260,7 @@ serve(async (req) => {
         inviterName,
         organizationName,
         role,
+        privileges,
         acceptInviteLink,
         supabaseInviteLink,
         isExistingUser: !!existingUserRecord,
@@ -258,8 +279,8 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: isResend ? "Convite reenviado com sucesso!" : "Convite enviado com sucesso!",
         inviteToken: inviteToken, // For debugging
       }),
@@ -279,6 +300,7 @@ function generateInviteEmailHtml({
   inviterName,
   organizationName,
   role,
+  privileges,
   acceptInviteLink,
   supabaseInviteLink,
   isExistingUser,
@@ -287,6 +309,7 @@ function generateInviteEmailHtml({
   inviterName: string;
   organizationName: string;
   role: string;
+  privileges: string[];
   acceptInviteLink: string;
   supabaseInviteLink: string | null;
   isExistingUser: boolean;
@@ -489,8 +512,10 @@ function generateInviteEmailHtml({
           </div>
           
           <div class="role-section">
-            <p class="role-label">Você foi convidado como:</p>
-            <span class="role-badge">✨ ${ROLE_LABELS[role] || role}</span>
+            <p class="role-label">Você foi convidado com os seguintes privilégios:</p>
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px;">
+              ${privileges.map(p => `<span style="background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">${PRIVILEGE_LABELS[p] || p}</span>`).join('')}
+            </div>
           </div>
 
           ${isExistingUser ? `

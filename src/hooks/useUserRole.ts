@@ -12,10 +12,11 @@ const CAMPAIGN_STAGES = ['trafego', 'retencao', 'fidelizacao'];
 export function useUserRole() {
   const { user } = useAuth();
   const [role, setRole] = useState<UserRole | null>(null);
+  const [privileges, setPrivileges] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRole = async () => {
+    const fetchProfile = async () => {
       if (!user) {
         setLoading(false);
         return;
@@ -24,62 +25,65 @@ export function useUserRole() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, privileges')
           .eq('id', user.id)
           .single();
 
         if (error) throw error;
         setRole(data?.role as UserRole || 'sales');
+        setPrivileges((data?.privileges as string[]) || []);
       } catch (error) {
-        console.error('Error fetching user role:', error);
+        console.error('Error fetching user profile:', error);
         setRole('sales');
+        setPrivileges([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRole();
+    fetchProfile();
   }, [user]);
 
   const permissions = useMemo(() => {
-    const isAdmin = role === 'admin';
-    const isSales = role === 'sales';
-    const isOperations = role === 'operations';
-    const isCampaigns = role === 'campaign_management';
+    const isAdmin = role === 'admin' || privileges.includes('admin');
+    const hasPrivilege = (p: string) => isAdmin || privileges.includes(p);
+
+    const isSales = hasPrivilege('sales');
+    const isOperations = hasPrivilege('designer');
+    const isCampaigns = hasPrivilege('social_media') || hasPrivilege('editorial');
 
     return {
       // Menu visibility
-      canSeeSalesFunnel: isAdmin || isSales,
-      canSeeOperationalFlow: isAdmin || isOperations || isCampaigns,
-      canSeeClients: isAdmin || isSales,
-      canSeeTeam: isAdmin,
-      canSeeSettings: true, // All users can see settings, but tabs are restricted
+      canSeeSalesFunnel: hasPrivilege('sales') || hasPrivilege('designer'),
+      canSeeOperationalFlow: hasPrivilege('designer'),
+      canSeeClients: hasPrivilege('clients'),
+      canSeeTeam: hasPrivilege('team'),
+      canSeeSettings: hasPrivilege('settings'),
       canSeeSubscription: isAdmin,
-      canSeeFinance: isAdmin || isSales, // Finance module access
-      
+      canSeeFinance: hasPrivilege('finance'),
+
       // Dashboard visibility
-      canAddClient: isAdmin || isSales,
-      
+      canAddClient: hasPrivilege('sales'),
+
       // Client profile actions
-      canEditClient: isAdmin || isSales,
-      canSeeContracts: isAdmin || isSales,
+      canEditClient: hasPrivilege('sales'),
+      canSeeContracts: hasPrivilege('sales') || hasPrivilege('link23'),
       canSuspendClient: isAdmin,
-      
+
       // Finance module actions
-      canManageFinance: isAdmin || isSales, // Full CRUD
-      canViewFinance: isAdmin || isSales || isOperations, // Read-only for operations
-      canDeleteFinanceRecords: isAdmin, // Only admin can delete
-      
+      canManageFinance: hasPrivilege('finance'),
+      canViewFinance: hasPrivilege('finance'),
+      canDeleteFinanceRecords: isAdmin,
+
       // Get stages visible to user for recent clients
       getVisibleStages: () => {
         if (isAdmin) return null; // null means all stages
-        if (isSales) return SALES_STAGES;
-        if (isOperations) return OPERATIONS_STAGES;
-        if (isCampaigns) return CAMPAIGN_STAGES;
+        if (hasPrivilege('sales')) return SALES_STAGES;
+        if (hasPrivilege('designer')) return OPERATIONS_STAGES;
         return [];
       },
     };
-  }, [role]);
+  }, [role, privileges]);
 
   return {
     role,
