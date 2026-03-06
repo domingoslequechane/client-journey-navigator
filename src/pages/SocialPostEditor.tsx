@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
@@ -125,6 +126,7 @@ export default function SocialPostEditor() {
   const [violatingPostIndices, setViolatingPostIndices] = useState<number[]>([]);
   const [isLoadingPost, setIsLoadingPost] = useState(!!postId);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -303,9 +305,22 @@ export default function SocialPostEditor() {
     setPendingFiles([]);
   };
 
-  const uploadFilesToLate = async (files: File[]): Promise<string[]> => {
+  const uploadFilesToLate = async (files: File[], onProgressChange?: (percent: number) => void): Promise<string[]> => {
     if (files.length === 0) return [];
-    const uploadPromises = files.map(async (file) => {
+
+    // Track loaded bytes for each file to calculate total progress
+    const loadedBytes = new Array(files.length).fill(0);
+    const totalBytes = files.reduce((acc, file) => acc + file.size, 0);
+
+    const updateGlobalProgress = () => {
+      if (onProgressChange) {
+        const currentLoaded = loadedBytes.reduce((acc, val) => acc + val, 0);
+        const percent = Math.round((currentLoaded / totalBytes) * 100);
+        onProgressChange(percent);
+      }
+    };
+
+    const uploadPromises = files.map(async (file, index) => {
       const { data: presignData, error: presignError } = await supabase.functions.invoke('social-media-presign', {
         body: { fileName: file.name, fileType: file.type }
       });
@@ -313,18 +328,33 @@ export default function SocialPostEditor() {
       if (presignData.error) throw new Error(presignData.error);
       if (!presignData.uploadUrl) throw new Error("Não foi possível obter URL de upload.");
 
-      const uploadRes = await fetch(presignData.uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file
+      return new Promise<string>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', presignData.uploadUrl);
+        xhr.setRequestHeader('Content-Type', file.type);
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            loadedBytes[index] = event.loaded;
+            updateGlobalProgress();
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            loadedBytes[index] = file.size; // Ensure it's marked as complete
+            updateGlobalProgress();
+            resolve(presignData.publicUrl);
+          } else {
+            reject(new Error(`Falha no upload do arquivo: ${xhr.statusText}`));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Erro de rede durante o upload.'));
+        xhr.send(file);
       });
-
-      if (!uploadRes.ok) {
-        throw new Error(`Falha no upload do arquivo: ${uploadRes.statusText}`);
-      }
-
-      return presignData.publicUrl;
     });
+
     return await Promise.all(uploadPromises);
   };
 
@@ -405,8 +435,10 @@ export default function SocialPostEditor() {
 
         if (filesToUpload.length > 0) {
           setSavingStatus(`A fazer upload de ${filesToUpload.length} mídia${filesToUpload.length > 1 ? 's' : ''}...`);
-          const uploadedUrls = await uploadFilesToLate(filesToUpload);
+          setUploadProgress(0);
+          const uploadedUrls = await uploadFilesToLate(filesToUpload, (p) => setUploadProgress(p));
           finalMediaUrls = [...finalMediaUrls, ...uploadedUrls];
+          setUploadProgress(0);
         }
 
         for (const schedule of item.schedules) {
@@ -692,9 +724,18 @@ export default function SocialPostEditor() {
                 <Zap className="h-6 w-6 text-primary" />
               </div>
             </div>
-            <div className="space-y-1">
-              <p className="font-bold text-base">A processar...</p>
-              <p className="text-sm text-muted-foreground">{savingStatus || 'A preparar publicação...'}</p>
+            <div className="space-y-3 w-full">
+              <div className="space-y-1">
+                <p className="font-bold text-base">A processar...</p>
+                <p className="text-sm text-muted-foreground">{savingStatus || 'A preparar publicação...'}</p>
+              </div>
+
+              {uploadProgress > 0 && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                  <Progress value={uploadProgress} className="h-2" />
+                  <p className="text-[10px] font-bold text-primary">{uploadProgress}% concluído</p>
+                </div>
+              )}
             </div>
             <p className="text-xs text-muted-foreground/60">Pode demorar alguns segundos. Por favor aguarde.</p>
           </div>
