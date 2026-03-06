@@ -60,7 +60,7 @@ interface PostItem {
 }
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
 const ALL_CONTENT_TYPES: { value: ContentType; label: string; icon: any }[] = [
   { value: 'feed', label: 'Feed', icon: Image },
@@ -243,7 +243,7 @@ export default function SocialPostEditor() {
       const isVideo = file.type.startsWith('video/');
       const limit = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
       if (file.size > limit) {
-        toast.error(`O ficheiro ${file.name} excede o limite de ${isVideo ? '50MB para vídeo' : '5MB para imagem'}.`);
+        toast.error(`O ficheiro ${file.name} excede o limite de ${isVideo ? '100MB para vídeo' : '5MB para imagem'}.`);
         return;
       }
     }
