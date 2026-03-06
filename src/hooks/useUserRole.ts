@@ -66,6 +66,8 @@ export function useUserRole() {
   const permissions = useMemo(() => {
     const isAdmin = role === 'admin' || privileges.includes('admin');
     const hasPrivilege = (p: string) => isAdmin || privileges.includes(p);
+    // Finance access is ALWAYS explicit — never inherited from admin role
+    const hasFinanceAccess = privileges.includes('finance');
 
     const isSales = hasPrivilege('sales');
     const isOperations = hasPrivilege('designer');
@@ -79,7 +81,7 @@ export function useUserRole() {
       canSeeTeam: hasPrivilege('team'),
       canSeeSettings: hasPrivilege('settings'),
       canSeeSubscription: isAdmin,
-      canSeeFinance: hasPrivilege('finance'),
+      canSeeFinance: hasFinanceAccess, // EXPLICIT only
 
       // Dashboard visibility
       canAddClient: hasPrivilege('sales'),
@@ -89,10 +91,10 @@ export function useUserRole() {
       canSeeContracts: hasPrivilege('sales') || hasPrivilege('link23'),
       canSuspendClient: isAdmin,
 
-      // Finance module actions
-      canManageFinance: hasPrivilege('finance'),
-      canViewFinance: hasPrivilege('finance'),
-      canDeleteFinanceRecords: isAdmin,
+      // Finance module actions — ALWAYS require explicit finance privilege
+      canManageFinance: hasFinanceAccess,
+      canViewFinance: hasFinanceAccess,
+      canDeleteFinanceRecords: hasFinanceAccess && isAdmin,
 
       // Get stages visible to user for recent clients
       getVisibleStages: () => {
