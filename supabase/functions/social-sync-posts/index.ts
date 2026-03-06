@@ -40,23 +40,63 @@ Deno.serve(async (req) => {
 
     for (const post of (posts || [])) {
       try {
-        const response = await fetch(`${LATE_API_BASE}/posts/${post.late_post_id}`, { headers: { Authorization: `Bearer ${LATE_API_KEY}` } });
+        const ids = post.late_post_id.split(',').filter(Boolean);
+        let somePublished = false;
+        let allFailed = true;
+        let someScheduled = false;
+        let allDeleted = true;
 
-        if (response.ok) {
-          const lateData = await response.json();
-          const lateStatus = lateData.post?.status || lateData.status;
+        for (const lateId of ids) {
+          const response = await fetch(`${LATE_API_BASE}/posts/${lateId}`, {
+            headers: { Authorization: `Bearer ${LATE_API_KEY}` }
+          });
 
-          let newStatus = post.status;
-          if (lateStatus === 'published' || lateStatus === 'sent') newStatus = 'published';
-          else if (lateStatus === 'failed' || lateStatus === 'error') newStatus = 'failed';
-          else if (lateStatus === 'scheduled') newStatus = 'scheduled';
-
-          if (newStatus !== post.status) {
-            await supabase.from("social_posts").update({
-              status: newStatus, ...(newStatus === 'published' ? { published_at: new Date().toISOString() } : {})
-            }).eq("id", post.id);
-            syncedCount++;
+          if (response.status === 404) {
+            console.log(`[social-sync-posts] Post ${lateId} not found on Late.dev (404)`);
+            continue; // Treat as deleted on Late.dev
           }
+
+          if (response.ok) {
+            allDeleted = false;
+            const lateData = await response.json();
+            const lateStatus = lateData.post?.status || lateData.status;
+
+            if (lateStatus === 'published' || lateStatus === 'sent') {
+              somePublished = true;
+              allFailed = false;
+            } else if (lateStatus === 'scheduled') {
+              someScheduled = true;
+              allFailed = false;
+            } else if (lateStatus === 'failed' || lateStatus === 'error') {
+              // remains allFailed true unless another part is scheduled/published
+            } else if (lateStatus === 'cancelled' || lateStatus === 'deleted') {
+              // treat as deleted/ignored for status aggregation
+            } else {
+              allFailed = false;
+            }
+          }
+        }
+
+        // Aggregate status for multi-part posts
+        let newStatus = post.status;
+
+        if (allDeleted && ids.length > 0) {
+          console.log(`[social-sync-posts] All parts of post ${post.id} deleted from Late.dev. Removing from DB.`);
+          await supabase.from("social_posts").delete().eq("id", post.id);
+          syncedCount++;
+          continue;
+        }
+
+        if (somePublished) newStatus = 'published';
+        else if (someScheduled) newStatus = 'scheduled';
+        else if (allFailed && ids.length > 0) newStatus = 'failed';
+
+        if (newStatus !== post.status) {
+          await supabase.from("social_posts").update({
+            status: newStatus,
+            ...(newStatus === 'published' ? { published_at: new Date().toISOString() } : {})
+          }).eq("id", post.id);
+          syncedCount++;
         }
       } catch (err) {
         console.error(`[social-sync-posts] Failed to sync post ${post.id}:`, err);

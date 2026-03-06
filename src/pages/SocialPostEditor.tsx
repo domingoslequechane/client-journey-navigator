@@ -57,6 +57,7 @@ interface PostItem {
   location: string;
   selectedAccountIds: string[];
   schedules: PostSchedule[];
+  latePostId?: string;
 }
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -131,7 +132,7 @@ export default function SocialPostEditor() {
   const currentPostItem = useMemo(() => postItems[activeIndex] || null, [postItems, activeIndex]);
 
   useEffect(() => {
-    if (postId && connectedAccounts.length > 0) {
+    if (postId) {
       const loadPost = async () => {
         const { data, error } = await supabase
           .from('social_posts')
@@ -150,6 +151,7 @@ export default function SocialPostEditor() {
             files: [],
             mediaUrls: (data.media_urls as string[]) || [],
             location: (data as any).location || '',
+            latePostId: data.late_post_id || undefined,
             selectedAccountIds: accountIds,
             schedules: [{
               id: crypto.randomUUID(),
@@ -181,7 +183,7 @@ export default function SocialPostEditor() {
       selectedAccountIds: [],
       schedules: [{
         id: crypto.randomUUID(),
-        platforms: [],
+        platforms: connectedAccounts.map(a => a.platform as SocialPlatform),
         contentType: ['feed'],
         date: format(new Date(), 'yyyy-MM-dd'),
         time: getDefaultTime(),
@@ -199,10 +201,10 @@ export default function SocialPostEditor() {
           ...p,
           schedules: [...p.schedules, {
             id: crypto.randomUUID(),
-            platforms: lastSchedule?.platforms || [],
-            contentType: ['feed'],
-            date: lastSchedule?.date || format(new Date(), 'yyyy-MM-dd'),
-            time: lastSchedule?.time || getDefaultTime(),
+            platforms: connectedAccounts.map(a => a.platform as SocialPlatform),
+            contentType: lastSchedule ? lastSchedule.contentType : ['feed'],
+            date: lastSchedule ? lastSchedule.date : format(new Date(), 'yyyy-MM-dd'),
+            time: lastSchedule ? lastSchedule.time : getDefaultTime(),
           }]
         };
       }
@@ -452,9 +454,26 @@ export default function SocialPostEditor() {
                 };
                 const capturedPostData = postData;
                 publishTasks.push(async () => {
-                  const created = await createPost.mutateAsync({ post: capturedPostData, silent: true });
-                  if (status !== 'draft' && (created as any)?.data?.id) {
-                    await publishPost.mutateAsync({ postId: (created as any).data.id, publishNow: status === 'published', silent: true });
+                  let result;
+                  if (urlIdx === 0 && item.id === postId) {
+                    result = await updatePost.mutateAsync({
+                      post: { ...capturedPostData, id: item.id } as any,
+                      silent: true
+                    });
+                  } else {
+                    result = await createPost.mutateAsync({
+                      post: capturedPostData as any,
+                      silent: true
+                    });
+                  }
+
+                  if (status !== 'draft' && (result as any)?.data?.id) {
+                    await publishPost.mutateAsync({
+                      postId: (result as any).data.id,
+                      publishNow: status === 'published',
+                      replaceLatePostId: urlIdx === 0 ? item.latePostId : undefined,
+                      silent: true
+                    });
                   }
                 });
               });
@@ -471,9 +490,26 @@ export default function SocialPostEditor() {
               };
               const capturedPostData = postData;
               publishTasks.push(async () => {
-                const created = await createPost.mutateAsync({ post: capturedPostData, silent: true });
-                if (status !== 'draft' && (created as any)?.data?.id) {
-                  await publishPost.mutateAsync({ postId: (created as any).data.id, publishNow: status === 'published', silent: true });
+                let result;
+                if (item.id === postId) {
+                  result = await updatePost.mutateAsync({
+                    post: { ...capturedPostData, id: item.id } as any,
+                    silent: true
+                  });
+                } else {
+                  result = await createPost.mutateAsync({
+                    post: capturedPostData as any,
+                    silent: true
+                  });
+                }
+
+                if (status !== 'draft' && (result as any)?.data?.id) {
+                  await publishPost.mutateAsync({
+                    postId: (result as any).data.id,
+                    publishNow: status === 'published',
+                    replaceLatePostId: item.latePostId,
+                    silent: true
+                  });
                 }
               });
             }
@@ -493,6 +529,9 @@ export default function SocialPostEditor() {
           setSavingStatus('A guardar rascunhos...');
         }
         await Promise.all(publishTasks.map(fn => fn()));
+      } else if (status !== 'draft') {
+        // Validation: If no platforms were selected for any schedule, warn the user
+        throw new Error("Nenhum canal selecionado para os horários agendados. Verifique as configurações de cada postagem.");
       }
 
       setIsSaving(false);
@@ -723,21 +762,28 @@ export default function SocialPostEditor() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/app/social-media')}
+            disabled={isSaving}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Cancelar
+          </Button>
           <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving}>
-            Salvar Rascunhos
+            {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
           </Button>
           <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2">
-            <Calendar className="h-4 w-4" /> Agendar Tudo
+            <Calendar className="h-4 w-4" /> {postId ? 'Atualizar Agendamento' : 'Agendar Tudo'}
           </Button>
           <Button onClick={() => handleSaveAction('published')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 shadow-lg shadow-primary/20 px-6">
-            <Zap className="h-4 w-4" /> Publicar Agora
+            <Zap className="h-4 w-4" /> {postId ? 'Atualizar e Publicar' : 'Publicar Agora'}
           </Button>
         </div>
       </header>
 
       <main className="flex-1 overflow-hidden flex">
 
-        {/* NAVEGADOR LATERAL DE POSTS */}
         <aside className="w-64 border-r bg-muted/10 flex flex-col shrink-0">
           <div className="p-4 border-b border-border/50 bg-background flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Páginas</span>

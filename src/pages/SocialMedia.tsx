@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle, Lock, FileText, Pencil } from 'lucide-react';
+import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle, Lock, FileText, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { CheckCircle2 } from 'lucide-react';
 
 type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'inbox' | 'reports';
 
@@ -53,6 +55,9 @@ export default function SocialMedia() {
   const [searchQuery, setSearchQuery] = useState('');
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const { posts, isLoading, deletePost, sendForApproval, publishPost, syncPosts, refetch: refetchPosts } = useSocialPosts();
   const { accounts, syncAccounts, connectPlatform, refetch: refetchAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
@@ -100,6 +105,16 @@ export default function SocialMedia() {
     });
   }, [clientPosts, searchQuery, platformFilter, statusFilter]);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, platformFilter, statusFilter, selectedClient]);
+
+  const totalPages = Math.ceil(filteredPosts.length / ITEMS_PER_PAGE);
+  const paginatedPosts = useMemo(() => {
+    return filteredPosts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  }, [filteredPosts, currentPage]);
+
   const handleCreatePost = (date?: string) => {
     if (connectedAccounts.length === 0) {
       setConnectGuardOpen(true);
@@ -116,7 +131,15 @@ export default function SocialMedia() {
   };
 
   const handleDelete = (id: string) => {
-    deletePost.mutate(id);
+    deletePost.mutate(id, {
+      onSuccess: () => {
+        setShowDeleteSuccess(true);
+        setTimeout(() => {
+          setShowDeleteSuccess(false);
+          handleSync();
+        }, 2000);
+      }
+    });
   };
 
   const handleSendForApproval = (id: string) => {
@@ -315,31 +338,6 @@ export default function SocialMedia() {
 
       {activeTab === 'posts' && hasClientSelected && (
         <div className="space-y-4">
-          {/* Quick stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div
-              className={cn(
-                "rounded-lg border bg-card p-4 text-center cursor-pointer transition-all hover:border-primary/50",
-                statusFilter === 'draft' ? "border-primary bg-primary/5" : "border-border"
-              )}
-              onClick={() => setStatusFilter(statusFilter === 'draft' ? 'all' : 'draft')}
-            >
-              <p className="text-2xl font-bold">{draftCount}</p>
-              <p className="text-xs text-muted-foreground">Rascunhos</p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4 text-center">
-              <p className="text-2xl font-bold text-[hsl(var(--warning))]">{pendingCount}</p>
-              <p className="text-xs text-muted-foreground">Aguardando</p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4 text-center">
-              <p className="text-2xl font-bold text-[hsl(var(--info))]">{scheduledCount}</p>
-              <p className="text-xs text-muted-foreground">Agendados</p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4 text-center">
-              <p className="text-2xl font-bold text-[hsl(var(--success))]">{publishedCount}</p>
-              <p className="text-xs text-muted-foreground">Publicados</p>
-            </div>
-          </div>
 
           {/* Drafts Quick Access - shown at top of Posts tab always */}
           {draftCount > 0 && (
@@ -425,8 +423,8 @@ export default function SocialMedia() {
             </Select>
           </div>
 
-          {/* Posts list */}
-          <div className="space-y-6 relative before:absolute before:left-[47px] before:top-2 before:bottom-2 before:w-0.5 before:bg-border/50">
+          {/* Posts list in Grid Layout */}
+          <div className="space-y-8">
             {isLoading ? (
               <div className="text-center py-12 text-muted-foreground">Carregando...</div>
             ) : filteredPosts.length === 0 ? (
@@ -434,29 +432,56 @@ export default function SocialMedia() {
                 <p>Nenhum post encontrado</p>
               </div>
             ) : (
-              filteredPosts.map((post, index) => (
-                <div key={post.id} className="relative pl-16">
-                  <div className="absolute left-0 top-4 w-12 text-right">
-                    <div className="text-[10px] font-bold uppercase text-muted-foreground">
-                      {post.scheduled_at ? format(parseISO(post.scheduled_at), "MMM", { locale: ptBR }) : '---'}
-                    </div>
-                    <div className="text-lg font-bold leading-none">
-                      {post.scheduled_at ? format(parseISO(post.scheduled_at), "dd") : '--'}
-                    </div>
-                  </div>
-                  <div className="absolute left-[43px] top-5 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background z-10" />
-                  <PostCard
-                    post={post}
-                    onEdit={handleEditPost}
-                    onDelete={handleDelete}
-                    onSendForApproval={handleSendForApproval}
-                    onRetry={handleRetryPost}
-                    onPublish={handlePublishPost}
-                    onClone={handleClonePost}
-                    onBoost={handleBoostPost}
-                  />
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {paginatedPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onEdit={handleEditPost}
+                      onDelete={handleDelete}
+                      onSendForApproval={handleSendForApproval}
+                      onRetry={handleRetryPost}
+                      onPublish={handlePublishPost}
+                      onClone={handleClonePost}
+                      onBoost={handleBoostPost}
+                    />
+                  ))}
                 </div>
-              ))
+
+                {/* Controles de Paginação */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-4 pt-4 pb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCurrentPage(prev => Math.max(1, prev - 1));
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      disabled={currentPage === 1}
+                      className="gap-2 rounded-xl"
+                    >
+                      <ChevronLeft className="h-4 w-4" /> Anterior
+                    </Button>
+                    <span className="text-sm font-medium text-muted-foreground bg-muted/30 px-4 py-1.5 rounded-full border border-border/50">
+                      Página <span className="text-foreground font-bold">{currentPage}</span> de <span className="text-foreground font-bold">{totalPages}</span>
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      disabled={currentPage === totalPages}
+                      className="gap-2 rounded-xl"
+                    >
+                      Próximo <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -487,6 +512,28 @@ export default function SocialMedia() {
         }}
         isConnecting={connectPlatform.isPending}
       />
+
+      <Dialog open={showDeleteSuccess} onOpenChange={setShowDeleteSuccess}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <div className="flex justify-center mb-4">
+              <div className="h-12 w-12 rounded-full bg-[hsl(var(--success)/0.2)] flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-[hsl(var(--success))]" />
+              </div>
+            </div>
+            <DialogTitle className="text-center">Postagem eliminada</DialogTitle>
+            <DialogDescription className="text-center">
+              A postagem foi removida com sucesso de todas as plataformas.
+              O calendário será atualizado em instantes.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button variant="outline" onClick={() => setShowDeleteSuccess(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

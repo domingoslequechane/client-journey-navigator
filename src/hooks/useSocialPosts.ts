@@ -190,12 +190,12 @@ export function useSocialPosts(filters?: PostFilters) {
 
   const deletePost = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('social_posts' as any)
-        .delete()
-        .eq('id', id);
+      const { data, error } = await supabase.functions.invoke('social-delete-post', {
+        body: { post_id: id }
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
@@ -272,9 +272,18 @@ export function useSocialPosts(filters?: PostFilters) {
   });
 
   const publishPost = useMutation({
-    mutationFn: async (params: { postId: string; publishNow: boolean; silent?: boolean }) => {
+    mutationFn: async (params: {
+      postId: string;
+      publishNow: boolean;
+      replaceLatePostId?: string;
+      silent?: boolean
+    }) => {
       const { data, error } = await supabase.functions.invoke('social-publish', {
-        body: { post_id: params.postId, publish_now: params.publishNow },
+        body: {
+          post_id: params.postId,
+          publish_now: params.publishNow,
+          replace_late_post_id: params.replaceLatePostId
+        },
       });
 
       if (error) throw error;

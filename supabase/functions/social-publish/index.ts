@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { post_id, publish_now } = body;
+    const { post_id, publish_now, replace_late_post_id } = body;
     if (!post_id) {
       return new Response(JSON.stringify({ error: "post_id is required" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -68,6 +68,25 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "LATE_API_KEY not configured in Supabase secrets" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Handle replacement: delete old posts from Late.dev if provided
+    if (replace_late_post_id && LATE_API_KEY) {
+      const idsToDelete = replace_late_post_id.split(',').filter(Boolean);
+      console.log(`[social-publish] Replacing post: Deleting ${idsToDelete.length} parts from Late.dev`);
+      for (const lateId of idsToDelete) {
+        try {
+          const lateRes = await fetch(`${LATE_API_BASE}/posts/${lateId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${LATE_API_KEY}` },
+          });
+          if (!lateRes.ok) {
+            console.warn(`[social-publish] Failed to delete old part ${lateId} (status ${lateRes.status})`);
+          }
+        } catch (err) {
+          console.error(`[social-publish] Network error deleting old part ${lateId}:`, err);
+        }
+      }
     }
 
     const { data: post, error: postError } = await supabase
