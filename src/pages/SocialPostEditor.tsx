@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { PostPreview } from '@/components/social-media/PostPreview';
 import { PlatformIcon } from '@/components/social-media/PlatformIcon';
 import { AICaptionModal } from '@/components/social-media/AICaptionModal';
+import { ConfirmActionModal } from '@/components/social-media/ConfirmActionModal';
 import { type SocialPlatform, type ContentType } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
@@ -43,7 +44,7 @@ const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 interface PostSchedule {
   id: string;
   platforms: SocialPlatform[];
-  contentType: any;
+  contentType: ContentType | ContentType[];
   date: string;
   time: string;
 }
@@ -120,7 +121,9 @@ export default function SocialPostEditor() {
   const [savingStatus, setSavingStatus] = useState('');
   const [resultModal, setResultModal] = useState<{ type: 'success' | 'error'; title: string; message: string } | null>(null);
   const [timeViolationModal, setTimeViolationModal] = useState(false);
+  const [violatingPostIndices, setViolatingPostIndices] = useState<number[]>([]);
   const [isLoadingPost, setIsLoadingPost] = useState(!!postId);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -166,7 +169,7 @@ export default function SocialPostEditor() {
         handleAddEmptyPost();
       }
     }
-  }, [postId, connectedAccounts.length]);
+  }, [postId, connectedAccounts.length, postItems.length]);
 
   const handleAddEmptyPost = () => {
     const newItem: PostItem = {
@@ -332,8 +335,8 @@ export default function SocialPostEditor() {
 
   const handleSaveAction = async (status: 'draft' | 'scheduled' | 'published') => {
     const invalidPosts = postItems.filter(item => item.selectedAccountIds.length === 0);
-    if (invalidPosts.length > 0) {
-      toast.error('Seleciona pelo menos 1 canal antes de publicar.');
+    if (status !== 'draft' && invalidPosts.length > 0) {
+      toast.error('Seleciona pelo menos 1 canal antes de publicar ou agendar.');
       return;
     }
 
@@ -343,16 +346,22 @@ export default function SocialPostEditor() {
     if (status === 'scheduled') {
       const now = new Date();
       const minTime = new Date(now.getTime() + 10 * 60 * 1000);
-      for (const item of postItems) {
-        for (const schedule of item.schedules) {
+      const violations: number[] = [];
+
+      postItems.forEach((item, index) => {
+        const hasViolation = item.schedules.some(schedule => {
           const scheduledAt = new Date(`${schedule.date}T${schedule.time}`);
-          if (scheduledAt < minTime) {
-            setIsSaving(false);
-            setSavingStatus('');
-            setTimeViolationModal(true);
-            return;
-          }
-        }
+          return scheduledAt < minTime;
+        });
+        if (hasViolation) violations.push(index + 1);
+      });
+
+      if (violations.length > 0) {
+        setIsSaving(false);
+        setSavingStatus('');
+        setViolatingPostIndices(violations);
+        setTimeViolationModal(true);
+        return;
       }
     }
     try {
@@ -363,9 +372,38 @@ export default function SocialPostEditor() {
       for (const item of postItems) {
         totalMediaFiles += item.files.length;
         let finalMediaUrls = item.mediaUrls.filter(url => !url.startsWith('blob:'));
-        if (item.files.length > 0) {
-          setSavingStatus(`A fazer upload de ${item.files.length} mídia${item.files.length > 1 ? 's' : ''}...`);
-          const uploadedUrls = await uploadFilesToLate(item.files);
+
+        // Auto-process files for Stories if needed
+        const needsStoryProcessing = item.schedules.some(s =>
+          (Array.isArray(s.contentType) && s.contentType.includes('stories')) ||
+          s.contentType === 'stories'
+        );
+
+        let filesToUpload = [...item.files];
+
+        if (needsStoryProcessing && filesToUpload.length > 0) {
+          setSavingStatus(`A otimizar ${filesToUpload.length} mídia${filesToUpload.length > 1 ? 's' : ''} para Story...`);
+          try {
+            const processedFiles = await Promise.all(
+              filesToUpload.map(async (file, idx) => {
+                if (file.type.startsWith('image/')) {
+                  const url = URL.createObjectURL(file);
+                  const resultFile = await __processImageForStoryHelper(url, file);
+                  URL.revokeObjectURL(url);
+                  return resultFile;
+                }
+                return file;
+              })
+            );
+            filesToUpload = processedFiles;
+          } catch (e) {
+            console.error("Auto processing story failed", e);
+          }
+        }
+
+        if (filesToUpload.length > 0) {
+          setSavingStatus(`A fazer upload de ${filesToUpload.length} mídia${filesToUpload.length > 1 ? 's' : ''}...`);
+          const uploadedUrls = await uploadFilesToLate(filesToUpload);
           finalMediaUrls = [...finalMediaUrls, ...uploadedUrls];
         }
 
@@ -375,6 +413,25 @@ export default function SocialPostEditor() {
             connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).map(a => a.platform)
           ));
           const targetPlatforms = globalPlatforms.filter(p => (schedule.platforms || []).includes(p));
+
+          // If saving as draft and no platforms selected, save a draft post directly
+          if (status === 'draft' && targetPlatforms.length === 0) {
+            const contentType = Array.isArray(schedule.contentType) ? schedule.contentType[0] : schedule.contentType;
+            const draftData = {
+              content: item.content,
+              media_urls: finalMediaUrls,
+              platforms: [] as string[],
+              content_type: contentType || 'feed',
+              scheduled_at: scheduledAt,
+              status: 'draft' as const,
+              client_id: clientId,
+            };
+            publishTasks.push(async () => {
+              await createPost.mutateAsync({ post: draftData as any, silent: true });
+            });
+            continue;
+          }
+
           if (targetPlatforms.length === 0) continue;
           targetPlatforms.forEach(p => allTargetPlatforms.add(p));
 
@@ -458,64 +515,68 @@ export default function SocialPostEditor() {
     setPostItems(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
   };
 
+  const __processImageForStoryHelper = async (url: string, file: File): Promise<File> => {
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+    });
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error("Canvas context not available");
+
+    // Story Aspect Ratio 9:16 (1080x1920 standard)
+    canvas.width = 1080;
+    canvas.height = 1920;
+
+    // 1. Draw blurred background
+    ctx.filter = 'blur(50px) brightness(0.7)';
+    const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+    const bgW = img.width * scale;
+    const bgH = img.height * scale;
+    const bgX = (canvas.width - bgW) / 2;
+    const bgY = (canvas.height - bgH) / 2;
+    ctx.drawImage(img, bgX - 100, bgY - 100, bgW + 200, bgH + 200);
+    ctx.filter = 'none';
+
+    // 2. Clear Glass Overlay
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, 'rgba(0,0,0,0.4)');
+    gradient.addColorStop(0.2, 'rgba(0,0,0,0)');
+    gradient.addColorStop(0.8, 'rgba(0,0,0,0)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 3. Draw main image (Contain fit)
+    const mainScale = Math.min(canvas.width / img.width, canvas.height / img.height) * 0.9;
+    const mainW = img.width * mainScale;
+    const mainH = img.height * mainScale;
+    const mainX = (canvas.width - mainW) / 2;
+    const mainY = (canvas.height - mainH) / 2;
+
+    // Background card for the main image
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetY = 20;
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.fillRect(mainX - 5, mainY - 5, mainW + 10, mainH + 10);
+
+    ctx.drawImage(img, mainX, mainY, mainW, mainH);
+
+    const processedBlob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+    if (!processedBlob) throw new Error("Could not generate blob");
+
+    return new File([processedBlob], `story_${file.name || 'image'}.jpg`, { type: 'image/jpeg' });
+  };
+
   const processImageForStory = async (url: string, file: File, itemId: string, idx: number) => {
     try {
       toast.loading('A processar imagem para Story...', { id: 'story-proc' });
-      const img = new window.Image();
-      img.crossOrigin = "anonymous";
-      img.src = url;
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-      });
-
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error("Canvas context not available");
-
-      // Story Aspect Ratio 9:16 (1080x1920 standard)
-      canvas.width = 1080;
-      canvas.height = 1920;
-
-      // 1. Draw blurred background
-      ctx.filter = 'blur(50px) brightness(0.7)';
-      const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-      const bgW = img.width * scale;
-      const bgH = img.height * scale;
-      const bgX = (canvas.width - bgW) / 2;
-      const bgY = (canvas.height - bgH) / 2;
-      ctx.drawImage(img, bgX - 100, bgY - 100, bgW + 200, bgH + 200);
-      ctx.filter = 'none';
-
-      // 2. Clear Glass Overlay
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, 'rgba(0,0,0,0.4)');
-      gradient.addColorStop(0.2, 'rgba(0,0,0,0)');
-      gradient.addColorStop(0.8, 'rgba(0,0,0,0)');
-      gradient.addColorStop(1, 'rgba(0,0,0,0.5)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // 3. Draw main image (Contain fit)
-      const mainScale = Math.min(canvas.width / img.width, canvas.height / img.height) * 0.9;
-      const mainW = img.width * mainScale;
-      const mainH = img.height * mainScale;
-      const mainX = (canvas.width - mainW) / 2;
-      const mainY = (canvas.height - mainH) / 2;
-
-      // Background card for the main image
-      ctx.shadowColor = 'rgba(0,0,0,0.4)';
-      ctx.shadowBlur = 60;
-      ctx.shadowOffsetY = 20;
-      ctx.fillStyle = 'rgba(0,0,0,0.1)';
-      ctx.fillRect(mainX - 5, mainY - 5, mainW + 10, mainH + 10);
-
-      ctx.drawImage(img, mainX, mainY, mainW, mainH);
-
-      const processedBlob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
-      if (!processedBlob) throw new Error("Could not generate blob");
-
-      const processedFile = new File([processedBlob], `story_${file.name || 'image'}.jpg`, { type: 'image/jpeg' });
+      const processedFile = await __processImageForStoryHelper(url, file);
       const processedUrl = URL.createObjectURL(processedFile);
 
       setPostItems(prev => prev.map(p => {
@@ -536,17 +597,34 @@ export default function SocialPostEditor() {
     }
   };
 
-  const handleDeletePostItem = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeletePostItem = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
     if (postItems.length === 1) {
       toast.error('Você deve ter pelo menos uma postagem.');
       return;
     }
-    const newItems = postItems.filter(p => p.id !== id);
-    setPostItems(newItems);
-    if (activeIndex >= newItems.length) {
-      setActiveIndex(newItems.length - 1);
+
+    // If id is provided but no confirmation yet, trigger modal
+    if (id && !postToDelete) {
+      setPostToDelete(id);
+      return;
     }
+
+    const targetId = id || postToDelete;
+    if (!targetId) return;
+
+    const newItems = postItems.filter(p => p.id !== targetId);
+    setPostItems(newItems);
+
+    const currentIndex = postItems.findIndex(p => p.id === targetId);
+    if (activeIndex >= newItems.length) {
+      setActiveIndex(Math.max(0, newItems.length - 1));
+    } else if (activeIndex === currentIndex) {
+      // Stay on the same relative index if possible
+    }
+
+    setPostToDelete(null);
   };
 
   const currentPlatforms = useMemo(() => {
@@ -645,7 +723,7 @@ export default function SocialPostEditor() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving || !hasAnyChannelSelected}>
+          <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving}>
             Salvar Rascunhos
           </Button>
           <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2">
@@ -688,16 +766,13 @@ export default function SocialPostEditor() {
                         <FileText className="h-5 w-5 text-muted-foreground/30" />
                       )}
                     </div>
-                    <div className="min-w-0 flex-1 py-0.5">
+                    <div className="min-w-0 flex-1 py-0.5 pr-2">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-bold truncate">Post #{index + 1}</p>
                         <span className="text-[9px] uppercase font-bold text-primary/60 bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/10">
                           {item.schedules[0]?.contentType === 'carousel' ? 'Carrossel' : 'Individual'}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate max-w-full">
-                        {item.content || 'Sem legenda...'}
-                      </p>
                       <div className="flex gap-1 mt-1">
                         {connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).slice(0, 3).map(a => (
                           <PlatformIcon key={a.id} platform={a.platform as SocialPlatform} size="xs" />
@@ -705,12 +780,14 @@ export default function SocialPostEditor() {
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => handleDeletePostItem(item.id, e)}
-                    className="absolute top-1 right-1 p-1 rounded-full bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-white"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+                  {postItems.length > 1 && (
+                    <button
+                      onClick={(e) => handleDeletePostItem(item.id, e)}
+                      className="absolute top-1 right-1 p-1 rounded-full bg-destructive/10 text-destructive transition-all hover:bg-destructive hover:text-white shadow-sm z-10"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -783,12 +860,12 @@ export default function SocialPostEditor() {
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                               {isStory && !isVideo && (
                                 <Button
+                                  variant="ghost"
                                   size="sm"
-                                  variant="secondary"
-                                  className="h-7 px-2 text-[10px] font-bold gap-1 shadow-lg border-white/20"
+                                  className="h-7 px-3 bg-black/60 text-white hover:bg-black/80 font-inter text-[11px] rounded-full backdrop-blur-md border border-white/20 shadow-md"
                                   onClick={() => processImageForStory(url, currentPostItem.files[i], currentPostItem.id, i)}
                                 >
-                                  <Sparkles className="h-3 w-3" /> Ajustar Story
+                                  Pré-visualizar Story
                                 </Button>
                               )}
 
@@ -1100,7 +1177,7 @@ export default function SocialPostEditor() {
         open={showAICaptionModal}
         onOpenChange={setShowAICaptionModal}
         platforms={currentPlatforms}
-        contentType={currentPostItem?.schedules[0]?.contentType || 'feed'}
+        contentType={Array.isArray(currentPostItem?.schedules[0]?.contentType) ? currentPostItem?.schedules[0]?.contentType[0] : (currentPostItem?.schedules[0]?.contentType || 'feed')}
         files={currentPostItem?.files || []}
         clientId={clientId}
         onCaptionGenerated={(c) => currentPostItem && updatePostItem(currentPostItem.id, { content: c })}
@@ -1117,6 +1194,18 @@ export default function SocialPostEditor() {
             <p className="text-sm text-muted-foreground leading-relaxed">
               Para garantir que as redes sociais processem corretamente a tua publicação, todos os agendamentos devem ser marcados com no mínimo <span className="font-bold text-foreground">10 minutos</span> de antecedência.
             </p>
+            {violatingPostIndices.length > 0 && (
+              <div className="bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+                <p className="text-xs font-bold text-destructive mb-2 uppercase">Posts que precisam de ajuste:</p>
+                <div className="flex flex-wrap gap-2">
+                  {violatingPostIndices.map(idx => (
+                    <span key={idx} className="bg-destructive text-white text-[10px] font-bold px-2 py-1 rounded-md">
+                      Post #{idx}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <p className="text-sm font-medium">Por favor, ajusta o horário do teu post.</p>
           </div>
           <div className="flex justify-end">
@@ -1124,6 +1213,17 @@ export default function SocialPostEditor() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmActionModal
+        open={!!postToDelete}
+        onOpenChange={(open) => !open && setPostToDelete(null)}
+        title="Eliminar Página?"
+        description="Tens a certeza que desejas eliminar esta página do teu lote? Esta ação não pode ser desfeita."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        onConfirm={() => postToDelete && handleDeletePostItem(postToDelete)}
+      />
     </div>
   );
 }

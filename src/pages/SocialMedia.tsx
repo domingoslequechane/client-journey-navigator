@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle, Lock } from 'lucide-react';
+import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle, Lock, FileText, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -255,21 +255,75 @@ export default function SocialMedia() {
       {activeTab === 'dashboard' && <SocialDashboard selectedClient={selectedClient} />}
 
       {activeTab === 'calendar' && hasClientSelected && (
-        <SocialCalendar
-          posts={clientPosts}
-          currentMonth={currentMonth}
-          onMonthChange={setCurrentMonth}
-          onCreatePost={handleCreatePost}
-          onEditPost={handleEditPost}
-          selectedClient={selectedClient}
-        />
+        <div className="space-y-4">
+          {/* Drafts Quick Access - also shown in Calendar */}
+          {draftCount > 0 && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-amber-500" />
+                  <p className="text-sm font-bold text-amber-600 dark:text-amber-400">Rascunhos por terminar</p>
+                  <span className="text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded-full">{draftCount}</span>
+                </div>
+                <button
+                  onClick={() => setActiveTab('posts')}
+                  className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline font-medium"
+                >
+                  Ver todos
+                </button>
+              </div>
+              <div className="space-y-2">
+                {clientPosts
+                  .filter(p => p.status === 'draft')
+                  .slice(0, 3)
+                  .map(draft => (
+                    <div key={draft.id} className="flex items-center justify-between rounded-lg bg-background/80 border border-border/50 px-3 py-2.5 gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {draft.media_urls?.[0] ? (
+                          <img src={draft.media_urls[0]} className="h-8 w-8 rounded object-cover shrink-0" />
+                        ) : (
+                          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+                            <FileText className="h-4 w-4 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <p className="text-sm text-muted-foreground truncate">
+                          {draft.content ? draft.content.slice(0, 50) + (draft.content.length > 50 ? '...' : '') : 'Sem legenda'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleEditPost(draft)}
+                        className="shrink-0 flex items-center gap-1.5 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        Editar
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+          <SocialCalendar
+            posts={clientPosts}
+            currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
+            onCreatePost={handleCreatePost}
+            onEditPost={handleEditPost}
+            selectedClient={selectedClient}
+          />
+        </div>
       )}
 
       {activeTab === 'posts' && hasClientSelected && (
         <div className="space-y-4">
           {/* Quick stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="rounded-lg border border-border bg-card p-4 text-center">
+            <div
+              className={cn(
+                "rounded-lg border bg-card p-4 text-center cursor-pointer transition-all hover:border-primary/50",
+                statusFilter === 'draft' ? "border-primary bg-primary/5" : "border-border"
+              )}
+              onClick={() => setStatusFilter(statusFilter === 'draft' ? 'all' : 'draft')}
+            >
               <p className="text-2xl font-bold">{draftCount}</p>
               <p className="text-xs text-muted-foreground">Rascunhos</p>
             </div>
@@ -286,6 +340,55 @@ export default function SocialMedia() {
               <p className="text-xs text-muted-foreground">Publicados</p>
             </div>
           </div>
+
+          {/* Drafts Quick Access - shown at top of Posts tab always */}
+          {draftCount > 0 && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-amber-500" />
+                  <p className="text-sm font-bold text-amber-600 dark:text-amber-400">Rascunhos por terminar</p>
+                  <span className="text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded-full">{draftCount}</span>
+                </div>
+                {statusFilter !== 'draft' && (
+                  <button
+                    onClick={() => setStatusFilter('draft')}
+                    className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline font-medium"
+                  >
+                    Ver todos
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                {clientPosts
+                  .filter(p => p.status === 'draft')
+                  .slice(0, 4)
+                  .map(draft => (
+                    <div key={draft.id} className="flex items-center justify-between rounded-lg bg-background/80 border border-border/50 px-3 py-2.5 gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {draft.media_urls?.[0] ? (
+                          <img src={draft.media_urls[0]} className="h-8 w-8 rounded object-cover shrink-0" />
+                        ) : (
+                          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+                            <FileText className="h-4 w-4 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <p className="text-sm text-muted-foreground truncate">
+                          {draft.content ? draft.content.slice(0, 60) + (draft.content.length > 60 ? '...' : '') : 'Sem legenda'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleEditPost(draft)}
+                        className="shrink-0 flex items-center gap-1.5 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        Editar
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
 
           {/* Filters */}
           <div className="flex flex-wrap gap-3">

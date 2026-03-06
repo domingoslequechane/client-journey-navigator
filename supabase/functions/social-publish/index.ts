@@ -152,11 +152,10 @@ Deno.serve(async (req) => {
           if (contentType === 'reel') {
             platformSpecificData.title = post.content?.split('\n')[0]?.substring(0, 100) || "New Reel";
           }
-          // Some setups use a specific pageId, if it's stored in the database as late_account_id
-          // Defaulting to sending pageId since FB sometimes requires it.
-          // In Late API, if there's no pageId specified, it posts to the default page.
-          // Adding it here using our a.late_account_id if we assume 1 account = 1 page.
-          platformSpecificData.pageId = a.page_id || a.late_account_id;
+          // Only set pageId if we have a specific facebook_page_id stored in the db
+          if (a.facebook_page_id) {
+            platformSpecificData.pageId = a.facebook_page_id;
+          }
         }
 
         return {

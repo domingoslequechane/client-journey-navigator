@@ -177,7 +177,7 @@ function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit, displayNam
         </p>
       </div>
 
-      <MediaDisplay url={mediaUrl} className="aspect-video bg-[#121212]" />
+      <MediaDisplay url={mediaUrl} className="aspect-square bg-[#121212]" />
 
       <div className="px-5 py-4 flex items-center justify-between border-t border-white/5 mt-2 font-sans font-semibold">
         <div className="flex items-center gap-2 text-white/60 text-[12px]"><ThumbsUp className="h-5 w-5" /> Curtir</div>

@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${LATE_API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ fileName, fileType }),
+      body: JSON.stringify({ filename: fileName, contentType: fileType }),
     });
 
     const lateData = await lateRes.json();
