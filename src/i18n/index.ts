@@ -66,11 +66,12 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
+    lng: localStorage.getItem('i18nextLng') || 'pt-BR',
     fallbackLng: 'pt-BR',
     defaultNS: 'common',
     ns: ['common', 'auth', 'dashboard', 'clients', 'settings', 'pipeline', 'ai', 'landing', 'team', 'notifications', 'support', 'finance'],
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['localStorage'],
       caches: ['localStorage'],
       lookupLocalStorage: 'i18nextLng',
     },
