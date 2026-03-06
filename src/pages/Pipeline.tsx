@@ -17,6 +17,11 @@ import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
 import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
+import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
+import { formatPhoneNumber } from '@/lib/phone-utils';
+
 
 const salesStageIcons: Record<string, typeof Search> = { prospecting: Search, qualification: Target, closing: FileCheck };
 const operationalStageIcons: Record<string, typeof Cog> = { production: Cog, campaigns: Megaphone, retention: Target, loyalty: Heart };

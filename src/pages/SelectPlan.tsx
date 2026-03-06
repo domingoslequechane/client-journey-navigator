@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { getPlanColors } from '@/lib/plan-colors';
+import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 
 import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
@@ -67,6 +68,7 @@ export default function SelectPlan() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -80,15 +82,17 @@ export default function SelectPlan() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('organization_id')
+          .select('organization_id, current_organization_id')
           .eq('id', user.id)
           .single();
 
-        if (profile?.organization_id) {
+        const orgId = profile?.current_organization_id || profile?.organization_id;
+
+        if (orgId) {
           const { data: subscription } = await supabase
             .from('subscriptions')
             .select('status')
-            .eq('organization_id', profile.organization_id)
+            .eq('organization_id', orgId)
             .maybeSingle();
 
           if (subscription?.status === 'active') {
@@ -96,12 +100,12 @@ export default function SelectPlan() {
             return;
           }
 
-          setOrganizationId(profile.organization_id);
+          setOrganizationId(orgId);
         } else {
-          const { data: slugData } = await supabase.rpc('generate_slug', { 
-            name: `temp-${user.id.substring(0, 8)}` 
+          const { data: slugData } = await supabase.rpc('generate_slug', {
+            name: `temp-${user.id.substring(0, 8)}`
           });
-          
+
           const { data: newOrg, error: orgError } = await supabase
             .from('organizations')
             .insert({
@@ -117,7 +121,7 @@ export default function SelectPlan() {
 
           await supabase
             .from('profiles')
-            .update({ organization_id: newOrg.id })
+            .update({ organization_id: newOrg.id, current_organization_id: newOrg.id })
             .eq('id', user.id);
 
           setOrganizationId(newOrg.id);
@@ -126,6 +130,28 @@ export default function SelectPlan() {
         console.error('Error checking user status:', error);
         toast.error('Erro ao verificar status do usuário');
       } finally {
+        // Also check if user is admin/owner
+        if (user && organizationId) {
+          const [{ data: orgData }, { data: membership }] = await Promise.all([
+            supabase
+              .from('organizations')
+              .select('owner_id')
+              .eq('id', organizationId)
+              .maybeSingle(),
+            supabase
+              .from('organization_members')
+              .select('role, privileges')
+              .eq('user_id', user.id)
+              .eq('organization_id', organizationId)
+              .maybeSingle()
+          ]);
+
+          setIsAdmin(
+            orgData?.owner_id === user.id ||
+            membership?.role === 'admin' ||
+            membership?.privileges?.includes('admin')
+          );
+        }
         setCheckingStatus(false);
       }
     };
@@ -145,7 +171,7 @@ export default function SelectPlan() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         toast.error('Sessão expirada. Faça login novamente.');
         navigate('/auth');
@@ -222,7 +248,7 @@ export default function SelectPlan() {
         </Button>
         <ThemeToggle />
       </div>
-      
+
       <div className="min-h-screen flex flex-col items-center justify-center p-4 py-12">
         <div className="text-center mb-8 max-w-2xl">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
@@ -233,94 +259,103 @@ export default function SelectPlan() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl w-full">
-          {plans.map((plan) => {
-            const colors = getPlanColors(plan.key);
-            const isLoading = loadingPlan === plan.key;
+        {isAdmin === false ? (
+          <Card className="max-w-2xl w-full bg-card/50 backdrop-blur-sm border-dashed">
+            <CardContent className="pt-6">
+              <SubscriptionRequired feature="o sistema Qualify" />
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl w-full">
+              {plans.map((plan) => {
+                const colors = getPlanColors(plan.key);
+                const isLoading = loadingPlan === plan.key;
 
-            return (
-              <Card 
-                key={plan.key}
-                className={`relative flex flex-col transition-all duration-300 hover:shadow-xl ${
-                  plan.popular ? 'ring-2 ring-primary shadow-lg scale-[1.02]' : ''
-                }`}
-              >
-                {plan.popular && (
-                  <Badge 
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 z-10"
-                    style={{ backgroundColor: colors.primary }}
+                return (
+                  <Card
+                    key={plan.key}
+                    className={`relative flex flex-col transition-all duration-300 hover:shadow-xl ${plan.popular ? 'ring-2 ring-primary shadow-lg scale-[1.02]' : ''
+                      }`}
                   >
-                    Mais Popular
-                  </Badge>
-                )}
-
-                <CardHeader className="text-center pb-2">
-                  <img 
-                    src={plan.image} 
-                    alt={plan.name} 
-                    className="w-16 h-16 mx-auto mb-3 object-contain"
-                  />
-                  <CardTitle className="text-xl" style={{ color: colors.primary }}>
-                    {plan.name}
-                  </CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                </CardHeader>
-
-                <CardContent className="flex-1 flex flex-col">
-                  <div className="text-center mb-4">
-                    <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-4xl font-bold" style={{ color: colors.primary }}>
-                        ${plan.price}
-                      </span>
-                      <span className="text-muted-foreground">{plan.period}</span>
-                    </div>
-                    <p className="text-sm text-primary font-medium mt-1">
-                      Cartão obrigatório
-                    </p>
-                  </div>
-
-                  <ul className="space-y-2 mb-6 flex-1">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm">
-                        <Check 
-                          className="h-4 w-4 mt-0.5 flex-shrink-0" 
-                          style={{ color: colors.primary }}
-                        />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Button
-                    className="w-full"
-                    style={{ 
-                      backgroundColor: colors.primary,
-                      color: 'white',
-                    }}
-                    onClick={() => handleSelectPlan(plan.key)}
-                    disabled={!!loadingPlan}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processando...
-                      </>
-                    ) : (
-                      <>
-                        Assinar Agora
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </>
+                    {plan.popular && (
+                      <Badge
+                        className="absolute -top-3 left-1/2 -translate-x-1/2 z-10"
+                        style={{ backgroundColor: colors.primary }}
+                      >
+                        Mais Popular
+                      </Badge>
                     )}
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-8 max-w-lg">
-          Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
-        </p>
+                    <CardHeader className="text-center pb-2">
+                      <img
+                        src={plan.image}
+                        alt={plan.name}
+                        className="w-16 h-16 mx-auto mb-3 object-contain"
+                      />
+                      <CardTitle className="text-xl" style={{ color: colors.primary }}>
+                        {plan.name}
+                      </CardTitle>
+                      <CardDescription>{plan.description}</CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="flex-1 flex flex-col">
+                      <div className="text-center mb-4">
+                        <div className="flex items-baseline justify-center gap-1">
+                          <span className="text-4xl font-bold" style={{ color: colors.primary }}>
+                            ${plan.price}
+                          </span>
+                          <span className="text-muted-foreground">{plan.period}</span>
+                        </div>
+                        <p className="text-sm text-primary font-medium mt-1">
+                          Cartão obrigatório
+                        </p>
+                      </div>
+
+                      <ul className="space-y-2 mb-6 flex-1">
+                        {plan.features.map((feature, index) => (
+                          <li key={index} className="flex items-start gap-2 text-sm">
+                            <Check
+                              className="h-4 w-4 mt-0.5 flex-shrink-0"
+                              style={{ color: colors.primary }}
+                            />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <Button
+                        className="w-full"
+                        style={{
+                          backgroundColor: colors.primary,
+                          color: 'white',
+                        }}
+                        onClick={() => handleSelectPlan(plan.key)}
+                        disabled={!!loadingPlan}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Processando...
+                          </>
+                        ) : (
+                          <>
+                            Assinar Agora
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <p className="text-center text-sm text-muted-foreground mt-8 max-w-lg">
+              Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
+            </p>
+          </>
+        )}
       </div>
     </PublicBackground>
   );

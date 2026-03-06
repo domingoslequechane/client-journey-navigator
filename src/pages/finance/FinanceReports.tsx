@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +21,7 @@ import {
   FinanceStatsCard,
   MonthlyEvolutionChart,
   ExpensesPieChart,
+  ContractedRevenueChart,
 } from '@/components/finance';
 
 export default function FinanceReports() {
@@ -26,14 +29,25 @@ export default function FinanceReports() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
 
-  const { 
-    monthlyData, 
-    incomeByCategory, 
-    expenseByCategory, 
-    totals, 
+  const {
+    monthlyData,
+    incomeByCategory,
+    expenseByCategory,
+    totals,
     loading,
-    exportToCSV 
+    exportToCSV
   } = useFinanceReports(year);
+  const [clients, setClients] = useState<Tables<'clients'>[]>([]);
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('*');
+      if (data) setClients(data);
+    };
+    fetchClients();
+  }, []);
 
   const formatCurrency = (value: number) => {
     return `${currencySymbol} ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -49,7 +63,7 @@ export default function FinanceReports() {
 
   if (loading) {
     return (
-    <AnimatedContainer animation="fade-in">
+      <AnimatedContainer animation="fade-in">
         <div className="space-y-6">
           <FinanceSidebar />
           <div className="grid gap-4 md:grid-cols-3">
@@ -116,7 +130,10 @@ export default function FinanceReports() {
         </div>
 
         {/* Evolution Chart */}
-        <MonthlyEvolutionChart data={monthlyData} title="Evolução Receitas vs Despesas" />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <MonthlyEvolutionChart data={monthlyData} title="Evolução Receitas vs Despesas" />
+          <ContractedRevenueChart clients={clients} currencySymbol={currencySymbol} />
+        </div>
 
         {/* Profit Chart */}
         <Card>
@@ -128,12 +145,12 @@ export default function FinanceReports() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fontSize: 12 }} 
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 12 }}
                     className="text-muted-foreground"
                   />
-                  <YAxis 
+                  <YAxis
                     tickFormatter={formatValue}
                     tick={{ fontSize: 12 }}
                     className="text-muted-foreground"
@@ -149,9 +166,9 @@ export default function FinanceReports() {
                       borderRadius: '8px',
                     }}
                   />
-                  <Bar 
-                    dataKey="profit" 
-                    fill="hsl(var(--primary))" 
+                  <Bar
+                    dataKey="profit"
+                    fill="hsl(var(--primary))"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>

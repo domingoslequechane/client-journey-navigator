@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, ArrowRight, Globe } from 'lucide-react';
+import { Building2, ArrowRight, Globe, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { COUNTRIES } from '@/lib/currencies';
 import { useDraft } from '@/hooks/useDraft';
 import { useState } from 'react';
+import { PublicBackground } from '@/components/layout/PublicBackground';
 
 interface OnboardingFormData {
   agencyName: string;
@@ -19,7 +20,7 @@ interface OnboardingFormData {
 }
 
 export default function Onboarding() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,11 +31,11 @@ export default function Onboarding() {
     setValue: setFormData,
     clearDraft,
   } = useDraft<OnboardingFormData>({
-  key: 'onboarding_form',
-  initialValue: { agencyName: '', selectedCountry: 'MZ' },
-  storage: 'local',
-  lazy: true,
-});
+    key: 'onboarding_form',
+    initialValue: { agencyName: '', selectedCountry: 'MZ' },
+    storage: 'local',
+    lazy: true,
+  });
 
   // Check if returning from successful payment
   useEffect(() => {
@@ -57,24 +58,25 @@ export default function Onboarding() {
     // Check if user already has organization setup
     const checkOrganization = async () => {
       if (!user) return;
-      
+
       try {
         const { data: profile } = await supabase
           .from('profiles')
           .select('organization_id')
           .eq('id', user.id)
           .single();
-        
+
         if (profile?.organization_id) {
-          // Check if org has a proper name
+          // Check if org has a proper name and if user is the owner
           const { data: org } = await supabase
             .from('organizations')
-            .select('onboarding_completed')
+            .select('onboarding_completed, owner_id')
             .eq('id', profile.organization_id)
             .single();
-          
-          // If onboarding was completed, redirect to dashboard
-          if (org?.onboarding_completed) {
+
+          // Only auto-redirect to dashboard if they are the owner and it's complete
+          // This allows collaborators to proceed to create their own agency if they wish
+          if (org?.onboarding_completed && org?.owner_id === user.id) {
             navigate('/app');
           }
         }
@@ -92,7 +94,7 @@ export default function Onboarding() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.agencyName.trim()) {
       toast.error('Por favor, insira o nome da sua agência');
       return;
@@ -117,20 +119,20 @@ export default function Onboarding() {
         throw new Error('Não foi possível obter seu e-mail do login. Tente novamente.');
       }
 
-      // Get user's profile to find organization_id (may not exist for first social login)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', sessionUser.id)
+      // Check if user already owns an organization
+      const { data: ownedOrg } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('owner_id', sessionUser.id)
         .maybeSingle();
 
       // Get country currency
       const country = COUNTRIES.find(c => c.code === formData.selectedCountry);
       const currency = country?.currency || 'MZN';
 
-      let organizationId = profile?.organization_id;
+      let organizationId = ownedOrg?.id;
 
-      // If user doesn't have an organization (e.g., social login), create one
+      // If user doesn't own an organization, create one
       if (!organizationId) {
         const { data: slugData } = await supabase.rpc('generate_slug', { name: formData.agencyName.trim() });
         const slug = slugData || `agency-${Date.now()}`;
@@ -161,6 +163,7 @@ export default function Onboarding() {
               full_name: (sessionUser.user_metadata as any)?.full_name ?? null,
               organization_id: organizationId,
               current_organization_id: organizationId,
+              account_type: 'owner',
             },
             { onConflict: 'id' }
           );
@@ -187,7 +190,7 @@ export default function Onboarding() {
 
         const { error } = await supabase
           .from('organizations')
-          .update({ 
+          .update({
             name: formData.agencyName.trim(),
             slug: slug || `agency-${Date.now()}`,
             currency: currency,
@@ -215,7 +218,10 @@ export default function Onboarding() {
         // Ensure current_organization_id is set
         await supabase
           .from('profiles')
-          .update({ current_organization_id: organizationId })
+          .update({
+            current_organization_id: organizationId,
+            account_type: 'owner'
+          })
           .eq('id', sessionUser.id);
       }
 
@@ -224,14 +230,14 @@ export default function Onboarding() {
 
       clearDraft();
       toast.success('Agência configurada com sucesso!');
-      
+
       // Check if user has active subscription, if not redirect to select-plan
       const { data: sub } = await supabase
         .from('subscriptions')
         .select('status')
         .eq('organization_id', organizationId!)
         .maybeSingle();
-      
+
       if (sub?.status === 'active' || sub?.status === 'trialing') {
         navigate('/app');
       } else {
@@ -256,78 +262,93 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-            <Building2 className="h-7 w-7 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Configure sua Agência</CardTitle>
-          <CardDescription>
-            Configure sua agência para começar a usar o Qualify
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="agencyName">Nome da Agência</Label>
-              <Input
-                id="agencyName"
-                type="text"
-                placeholder="Ex: Marketing Digital Pro"
-                value={formData.agencyName}
-                onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
-                disabled={isSubmitting}
-                maxLength={100}
-                required
-              />
-              <p className="text-sm text-muted-foreground">
-                Este será o nome exibido em toda a plataforma
-              </p>
-            </div>
+    <PublicBackground>
+      <div className="min-h-screen flex items-center justify-center p-4 relative">
+        <div className="absolute top-4 right-4 z-50">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 bg-background/50 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all shadow-sm"
+            onClick={() => signOut()}
+            disabled={isSubmitting}
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Sair</span>
+          </Button>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="country" className="flex items-center gap-2">
-                <Globe className="h-4 w-4" />
-                País
-              </Label>
-              <Select value={formData.selectedCountry} onValueChange={(value) => setFormData({ ...formData, selectedCountry: value })} disabled={isSubmitting}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o seu país" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((country) => (
-                    <SelectItem key={country.code} value={country.code}>
-                      {country.name} ({country.currencySymbol})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-muted-foreground">
-                A moeda será definida automaticamente com base no país selecionado
-              </p>
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <Building2 className="h-7 w-7 text-primary" />
             </div>
+            <CardTitle className="text-2xl">Configure sua Agência</CardTitle>
+            <CardDescription>
+              Configure sua agência para começar a usar o Qualify
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="agencyName">Nome da Agência</Label>
+                <Input
+                  id="agencyName"
+                  type="text"
+                  placeholder="Ex: Marketing Digital Pro"
+                  value={formData.agencyName}
+                  onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
+                  disabled={isSubmitting}
+                  maxLength={100}
+                  required
+                />
+                <p className="text-sm text-muted-foreground">
+                  Este será o nome exibido em toda a plataforma
+                </p>
+              </div>
 
-            <Button
-              type="submit" 
-              className="w-full" 
-              disabled={isSubmitting || !formData.agencyName.trim()}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-background mr-2"></div>
-                  Configurando...
-                </>
-              ) : (
-                <>
-                  Começar Agora
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+              <div className="space-y-2">
+                <Label htmlFor="country" className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  País
+                </Label>
+                <Select value={formData.selectedCountry} onValueChange={(value) => setFormData({ ...formData, selectedCountry: value })} disabled={isSubmitting}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o seu país" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country.code} value={country.code}>
+                        {country.name} ({country.currencySymbol})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  A moeda será definida automaticamente com base no país selecionado
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isSubmitting || !formData.agencyName.trim()}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-background mr-2"></div>
+                    Configurando...
+                  </>
+                ) : (
+                  <>
+                    Começar Agora
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </PublicBackground>
   );
 }

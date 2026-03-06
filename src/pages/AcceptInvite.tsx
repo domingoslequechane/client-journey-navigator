@@ -4,16 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Loader2, CheckCircle, XCircle, Building2, UserCheck, LogIn, UserPlus, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { PublicBackground } from '@/components/layout/PublicBackground';
-
-const ROLE_LABELS: Record<string, string> = {
-  sales: 'Vendas',
-  operations: 'Operações',
-  campaign_management: 'Gestão de Campanhas',
-  admin: 'Administrador',
-};
 
 interface InviteData {
   id: string;
@@ -26,6 +21,7 @@ interface InviteData {
   organizations: {
     name: string;
   };
+  privileges?: string[] | null;
 }
 
 export default function AcceptInvite() {
@@ -40,6 +36,11 @@ export default function AcceptInvite() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [accountExists, setAccountExists] = useState<boolean | null>(null);
+
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [signingUp, setSigningUp] = useState(false);
 
   useEffect(() => {
     checkAuthAndFetchInvite();
@@ -91,6 +92,10 @@ export default function AcceptInvite() {
         setLoading(false);
         return;
       }
+
+      // Check securely if the user already has an account
+      const { data: emailExists } = await supabase.rpc('check_invite_email_exists', { token });
+      setAccountExists(!!emailExists);
 
       setInvite(inviteData as InviteData);
     } catch (err) {
@@ -147,10 +152,74 @@ export default function AcceptInvite() {
     navigate('/auth?mode=login');
   };
 
-  const handleSignUp = () => {
-    // Store the current URL to redirect back after signup
-    sessionStorage.setItem('redirectAfterAuth', window.location.href);
-    navigate(`/auth?mode=signup&email=${encodeURIComponent(invite?.email || '')}`);
+  const handleInPlaceSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!invite?.email || !token) return;
+
+    if (password !== confirmPassword) {
+      toast({
+        title: 'Senhas não conferem',
+        description: 'As senhas digitadas não são iguais. Tente novamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: 'Senha muito curta',
+        description: 'A senha deve ter pelo menos 6 caracteres.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSigningUp(true);
+    try {
+      // Use Edge Function to create and auto-confirm user to bypass the email verification requirement
+      const { data: invokeData, error: invokeError } = await supabase.functions.invoke('signup-invited-user', {
+        body: { inviteToken: token, password }
+      });
+
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Erro ao criar a conta através do convite.');
+      }
+
+      if (invokeData?.error) {
+        throw new Error(invokeData.error);
+      }
+
+      // At this point, the account is created, confirmed, and the invite is accepted
+      // Log the user in automatically
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: invokeData.email,
+        password: password,
+      });
+
+      if (signInError) {
+        throw new Error('A conta foi criada, mas houve um erro ao fazer login automaticamente. Por favor, faça login manualmente.');
+      }
+
+      setSuccess(true);
+      toast({
+        title: 'Bem-vindo!',
+        description: 'Conta criada e convite aceito com sucesso.',
+      });
+
+      setTimeout(() => {
+        navigate('/app');
+      }, 2000);
+
+    } catch (err: any) {
+      console.error('Signup/Accept error:', err);
+      toast({
+        title: 'Erro',
+        description: err.message || 'Não foi possível completar o cadastro.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSigningUp(false);
+    }
   };
 
   if (loading) {
@@ -246,9 +315,9 @@ export default function AcceptInvite() {
                 <span className="font-medium">{invite?.email}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Função:</span>
-                <Badge variant="secondary">
-                  {ROLE_LABELS[invite?.role || ''] || invite?.role}
+                <span className="text-sm text-muted-foreground">Privilégio Principal:</span>
+                <Badge variant="secondary" className={invite?.privileges?.includes('admin') ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-800'}>
+                  {invite?.privileges?.includes('admin') ? 'Administrador' : 'Usuário Simples'}
                 </Badge>
               </div>
             </div>
@@ -272,16 +341,16 @@ export default function AcceptInvite() {
             {/* Action Buttons */}
             {isLoggedIn ? (
               emailMismatch ? (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
                 >
                   Fazer Logout
                 </Button>
               ) : (
-                <Button 
-                  className="w-full gap-2" 
+                <Button
+                  className="w-full gap-2"
                   onClick={handleAcceptInvite}
                   disabled={accepting}
                 >
@@ -301,17 +370,57 @@ export default function AcceptInvite() {
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-center text-muted-foreground">
-                  Faça login ou crie uma conta para aceitar o convite
+                  {accountExists
+                    ? 'Faça login com sua conta existente para aceitar o convite.'
+                    : 'Crie uma conta para aceitar o convite.'}
                 </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" onClick={handleLogin} className="gap-2">
-                    <LogIn className="h-4 w-4" />
-                    Entrar
-                  </Button>
-                  <Button onClick={handleSignUp} className="gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    Criar Conta
-                  </Button>
+                <div className="flex flex-col gap-3">
+                  {accountExists ? (
+                    <Button onClick={handleLogin} className="w-full gap-2">
+                      <LogIn className="h-4 w-4" />
+                      Entrar
+                    </Button>
+                  ) : (
+                    <form onSubmit={handleInPlaceSignUp} className="space-y-4 text-left mt-4 w-full">
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Crie uma senha</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Mínimo de 6 caracteres"
+                          required
+                          minLength={6}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirme a senha</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Repita a senha"
+                          required
+                          minLength={6}
+                        />
+                      </div>
+                      <Button type="submit" className="w-full gap-2" disabled={signingUp}>
+                        {signingUp ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Criando conta...
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4" />
+                            Criar Conta e Aceitar
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  )}
                 </div>
               </div>
             )}

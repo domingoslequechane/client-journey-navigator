@@ -13,6 +13,7 @@ type Client = Tables<'clients'>;
 interface HighlightClientCardProps {
   clients: Client[];
   currencySymbol: string;
+  showBudget?: boolean;
 }
 
 const QUALIFICATION_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -22,7 +23,7 @@ const QUALIFICATION_CONFIG: Record<string, { label: string; variant: 'default' |
   cold: { label: 'Frio', variant: 'outline' },
 };
 
-export function HighlightClientCard({ clients, currencySymbol }: HighlightClientCardProps) {
+export function HighlightClientCard({ clients, currencySymbol, showBudget = true }: HighlightClientCardProps) {
   const highlightClient = useMemo(() => {
     // Find the hottest lead that needs attention (prioritize by qualification and recency)
     const sortedClients = [...clients]
@@ -34,7 +35,7 @@ export function HighlightClientCard({ clients, currencySymbol }: HighlightClient
         if (aOrder !== bOrder) return aOrder - bOrder;
         return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
       });
-    
+
     return sortedClients[0] || null;
   }, [clients]);
 
@@ -56,9 +57,9 @@ export function HighlightClientCard({ clients, currencySymbol }: HighlightClient
   }
 
   const qualConfig = QUALIFICATION_CONFIG[highlightClient.qualification] || QUALIFICATION_CONFIG.cold;
-  const timeAgo = formatDistanceToNow(new Date(highlightClient.updated_at), { 
-    addSuffix: true, 
-    locale: ptBR 
+  const timeAgo = formatDistanceToNow(new Date(highlightClient.updated_at), {
+    addSuffix: true,
+    locale: ptBR
   });
 
   return (
@@ -88,10 +89,10 @@ export function HighlightClientCard({ clients, currencySymbol }: HighlightClient
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="flex items-center gap-4">
-            {highlightClient.monthly_budget && (
+            {showBudget && highlightClient.monthly_budget && (
               <div>
                 <p className="text-xs text-muted-foreground">Orçamento</p>
                 <p className="text-sm font-semibold text-primary">

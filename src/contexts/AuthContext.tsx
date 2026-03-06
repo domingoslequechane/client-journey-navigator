@@ -17,7 +17,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isNewLogin, setIsNewLogin] = useState(false);
+  const [isNewLogin, setIsNewLogin] = useState(() => {
+    return sessionStorage.getItem('is_new_login') === 'true';
+  });
   const loginRecordedRef = useRef<string | null>(null);
 
   const recordLogin = async (userId: string, provider: string = 'email') => {
@@ -38,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearNewLoginFlag = () => {
     setIsNewLogin(false);
+    sessionStorage.setItem('is_new_login', 'false');
   };
 
   useEffect(() => {
@@ -52,13 +55,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (event === 'SIGNED_IN' && session?.user) {
           const provider = session.user.app_metadata?.provider || 'email';
           recordLogin(session.user.id, provider);
-          setIsNewLogin(true);
+
+          // Only set isNewLogin if this specific session hasn't been processed yet
+          // This prevents redirection on page refresh
+          const lastSessionToken = sessionStorage.getItem('last_processed_session_token');
+          if (lastSessionToken !== session.access_token) {
+            setIsNewLogin(true);
+            sessionStorage.setItem('is_new_login', 'true');
+            sessionStorage.setItem('last_processed_session_token', session.access_token);
+          }
         }
 
         // Reset ref on sign out
         if (event === 'SIGNED_OUT') {
           loginRecordedRef.current = null;
           setIsNewLogin(false);
+          sessionStorage.removeItem('is_new_login');
+          sessionStorage.removeItem('last_processed_session_token');
         }
       }
     );

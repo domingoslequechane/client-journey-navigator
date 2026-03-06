@@ -116,7 +116,7 @@ export function useSubscription(): UseSubscriptionReturn {
   }, [user]);
 
   const planType = organization?.planType || 'free';
-  
+
   // Determine subscription status — access is gated by LemonSqueezy subscription only
   const isActive = subscription?.status === 'active';
   const isTrialing = subscription?.status === 'trialing';
@@ -124,15 +124,17 @@ export function useSubscription(): UseSubscriptionReturn {
   const isPastDue = subscription?.status === 'past_due';
   const isCancelled = subscription?.status === 'cancelled' || subscription?.status === 'expired';
   const cancelAtPeriodEnd = subscription?.cancelAtPeriodEnd || false;
-  
+
   // Trial days left from organization data (informational only)
   const trialDaysLeft = organization?.trialEndsAt
     ? Math.max(0, Math.ceil((new Date(organization.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
-  
+
   // Access requires an active or trialing subscription record from LemonSqueezy
+  // OR being within the initial trial window defined in the organization record
   const hasActiveSubscription = isActive || isTrialing;
-  const hasAccess = hasActiveSubscription;
+  const isWithinTrialPeriod = trialDaysLeft > 0;
+  const hasAccess = hasActiveSubscription || isWithinTrialPeriod;
 
   return {
     loading,

@@ -35,13 +35,35 @@ export function usePermissions() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
 
-            const { data } = await supabase
+            // First get the user's profile to find their current organization
+            const { data: profileData } = await supabase
                 .from('profiles')
-                .select('role, privileges')
+                .select('role, privileges, current_organization_id, last_notified_role, last_notified_privileges')
                 .eq('id', user.id)
                 .single();
 
-            return data as any;
+            if (!profileData) return null;
+
+            // If they have a current organization, fetch permissions from organization_members
+            if (profileData.current_organization_id) {
+                const { data: memberData } = await supabase
+                    .from('organization_members')
+                    .select('role, privileges')
+                    .eq('user_id', user.id)
+                    .eq('organization_id', profileData.current_organization_id)
+                    .maybeSingle();
+
+                if (memberData) {
+                    // Organization-specific permissions take precedence
+                    return {
+                        ...profileData,
+                        role: memberData.role,
+                        privileges: memberData.privileges
+                    };
+                }
+            }
+
+            return profileData;
         },
     });
 
@@ -96,6 +118,8 @@ export function usePermissions() {
             isAdmin,
             hasPrivilege,
             canAccessModule,
+            lastNotifiedRole: profile?.last_notified_role,
+            lastNotifiedPrivileges: profile?.last_notified_privileges || [],
         };
     }, [profile]);
 

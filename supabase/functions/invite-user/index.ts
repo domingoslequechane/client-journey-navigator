@@ -14,17 +14,9 @@ const corsHeaders = {
 const InviteRequestSchema = z.object({
   email: z.string().email("Email inválido").max(255, "Email muito longo"),
   fullName: z.string().min(2, "Nome muito curto").max(100, "Nome muito longo").trim(),
-  role: z.enum(["sales", "operations", "campaign_management", "admin"]).optional(),
   privileges: z.array(z.string()).min(1, "Selecione pelo menos um privilégio"),
   resend: z.boolean().optional(),
 });
-
-const ROLE_LABELS: Record<string, string> = {
-  sales: "Vendas",
-  operations: "Operações",
-  campaign_management: "Gestão de Campanhas",
-  admin: "Administrador",
-};
 
 const PRIVILEGE_LABELS: Record<string, string> = {
   sales: "Vendas (Pipeline)",
@@ -137,23 +129,35 @@ serve(async (req) => {
       );
     }
 
-    const { email, fullName, role = "operations", privileges = [], resend: isResend } = validationResult.data;
+    const { email, fullName, privileges = [], resend: isResend } = validationResult.data;
+    const role = privileges.includes('admin') ? 'admin' : 'sales';
 
-    console.log(`Admin ${user.id} ${isResend ? 'resending invite to' : 'inviting user'}: ${email}, ${fullName}, ${role}, privileges: ${privileges.join(', ')}`);
+    console.log(`Admin ${user.id} ${isResend ? 'resending invite to' : 'inviting user'}: ${email}, ${fullName}, role: ${role}, privileges: ${privileges.join(', ')}`);
 
     // Check if user is already an active member of this organization
-    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUserRecord = existingUser?.users?.find(u => u.email === email);
+    const { data: existingUser, error: listUsersError } = await supabaseAdmin.auth.admin.listUsers();
+
+    if (listUsersError) {
+      console.error("Error listing users:", listUsersError);
+    }
+
+    const existingUserRecord = existingUser?.users?.find(u => u.email.toLowerCase() === email.toLowerCase());
 
     if (existingUserRecord) {
-      const { data: existingMember } = await supabaseAdmin
+      console.log(`User already exists with ID: ${existingUserRecord.id}`);
+      const { data: existingMember, error: memberLookupError } = await supabaseAdmin
         .from("organization_members")
         .select("id, is_active")
         .eq("user_id", existingUserRecord.id)
         .eq("organization_id", adminOrgId)
-        .single();
+        .maybeSingle();
+
+      if (memberLookupError) {
+        console.error("Error looking up organization member:", memberLookupError);
+      }
 
       if (existingMember?.is_active && !isResend) {
+        console.log("User is already an active member of this organization");
         return new Response(
           JSON.stringify({ error: "Este usuário já faz parte desta organização" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -161,40 +165,50 @@ serve(async (req) => {
       }
     }
 
-    // Check for existing pending invite
-    const { data: existingInvite } = await supabaseAdmin
+    // Check for any existing non-accepted invite
+    const { data: existingInvite, error: inviteLookupError } = await supabaseAdmin
       .from("organization_invites")
       .select("id, status, invite_token")
       .eq("email", email.toLowerCase())
       .eq("organization_id", adminOrgId)
-      .eq("status", "pending")
+      .neq("status", "accepted")
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
+
+    if (inviteLookupError) {
+      console.error("Error looking up existing invite:", inviteLookupError);
+    }
 
     let inviteToken: string;
 
-    if (existingInvite && isResend) {
-      // Update existing invite with new expiration and token
+    if (existingInvite && (isResend || existingInvite.status !== 'pending')) {
+      // Update existing invite with new expiration and token, and reset status to pending
       inviteToken = crypto.randomUUID();
+      console.log(`Updating existing invite ID: ${existingInvite.id} (status: ${existingInvite.status}) with new token and resetting to pending`);
       const { error: updateError } = await supabaseAdmin
         .from("organization_invites")
         .update({
           invite_token: inviteToken,
+          status: "pending",
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
           full_name: fullName,
           role: role,
           privileges: privileges,
+          created_at: new Date().toISOString(), // Reset creation date for sorting
         })
         .eq("id", existingInvite.id);
 
       if (updateError) {
         console.error("Error updating invite:", updateError);
         return new Response(
-          JSON.stringify({ error: "Erro ao reenviar convite" }),
+          JSON.stringify({ error: "Erro ao reenviar convite", details: updateError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       console.log("Existing invite updated with new token");
     } else if (existingInvite && !isResend) {
+      console.log("Found existing pending invite, but not a resend request");
       return new Response(
         JSON.stringify({ error: "Já existe um convite pendente para este e-mail. Use a opção 'Reenviar Convite'." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -202,6 +216,7 @@ serve(async (req) => {
     } else {
       // Create new invite
       inviteToken = crypto.randomUUID();
+      console.log(`Creating new invite for ${email} in org ${adminOrgId}`);
       const { error: insertError } = await supabaseAdmin
         .from("organization_invites")
         .insert({
@@ -219,39 +234,21 @@ serve(async (req) => {
       if (insertError) {
         console.error("Error creating invite:", insertError);
         return new Response(
-          JSON.stringify({ error: "Erro ao criar convite" }),
+          JSON.stringify({ error: "Erro ao criar convite", details: insertError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      console.log("New invite created");
+      console.log("New invite created successfully");
     }
 
     // Create accept invite link
     const origin = req.headers.get("origin") || "https://qualify.onixagence.com";
     const acceptInviteLink = `${origin}/accept-invite?token=${inviteToken}`;
 
-    // If user doesn't exist, also generate Supabase invite link for account creation
-    let supabaseInviteLink: string | null = null;
-    if (!existingUserRecord) {
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'invite',
-        email: email,
-        options: {
-          data: {
-            full_name: fullName,
-            role: role,
-          },
-          redirectTo: acceptInviteLink,
-        },
-      });
-
-      if (linkError) {
-        console.error("Link generation error:", linkError);
-        // Continue without the Supabase link - user can create account manually
-      } else {
-        supabaseInviteLink = linkData.properties?.action_link || null;
-      }
-    }
+    // If user doesn't exist, we used to generate a Supabase invite link.
+    // However, we now have an in-place sign-up flow on the accept-invite page.
+    // So we ALWAYS use the custom accept-invite link, regardless of whether the user exists.
+    const supabaseInviteLink: string | null = null;
 
     // Send invite email
     try {
@@ -259,7 +256,6 @@ serve(async (req) => {
         fullName,
         inviterName,
         organizationName,
-        role,
         privileges,
         acceptInviteLink,
         supabaseInviteLink,
@@ -299,7 +295,6 @@ function generateInviteEmailHtml({
   fullName,
   inviterName,
   organizationName,
-  role,
   privileges,
   acceptInviteLink,
   supabaseInviteLink,
@@ -308,15 +303,13 @@ function generateInviteEmailHtml({
   fullName: string;
   inviterName: string;
   organizationName: string;
-  role: string;
   privileges: string[];
   acceptInviteLink: string;
   supabaseInviteLink: string | null;
   isExistingUser: boolean;
 }): string {
-  // For new users, use the Supabase invite link (which redirects to accept-invite after account creation)
-  // For existing users, use the direct accept-invite link
-  const primaryLink = isExistingUser ? acceptInviteLink : (supabaseInviteLink || acceptInviteLink);
+  // Since we implemented in-place signup, we always use the custom accept-invite link
+  const primaryLink = acceptInviteLink;
   const buttonText = isExistingUser ? "Aceitar Convite" : "Criar Conta e Aceitar";
 
   return `

@@ -23,15 +23,34 @@ export function useUserRole() {
       }
 
       try {
-        const { data, error } = await supabase
+        // First get the user's profile to know org and role
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('role, privileges')
+          .select('role, privileges, organization_id, current_organization_id')
           .eq('id', user.id)
           .single();
 
-        if (error) throw error;
-        setRole(data?.role as UserRole || 'sales');
-        setPrivileges((data?.privileges as string[]) || []);
+        if (profileError) throw profileError;
+
+        const effectiveOrgId = profileData?.current_organization_id || profileData?.organization_id;
+
+        // Fetch privileges from organization_members (this is where the real privileges are stored)
+        let memberPrivileges: string[] = (profileData?.privileges as string[]) || [];
+        if (effectiveOrgId) {
+          const { data: memberData } = await supabase
+            .from('organization_members')
+            .select('privileges, role')
+            .eq('user_id', user.id)
+            .eq('organization_id', effectiveOrgId)
+            .maybeSingle();
+
+          if (memberData?.privileges && (memberData.privileges as string[]).length > 0) {
+            memberPrivileges = memberData.privileges as string[];
+          }
+        }
+
+        setRole(profileData?.role as UserRole || 'sales');
+        setPrivileges(memberPrivileges);
       } catch (error) {
         console.error('Error fetching user profile:', error);
         setRole('sales');

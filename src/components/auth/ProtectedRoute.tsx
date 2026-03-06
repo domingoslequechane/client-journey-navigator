@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PublicBackground } from '@/components/layout/PublicBackground';
+import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProtectedRouteProps {
@@ -24,14 +26,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         setIsSystemAdmin(false);
         return;
       }
-      
+
       const { data } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'proprietor')
         .maybeSingle();
-      
+
       setIsSystemAdmin(!!data);
     };
 
@@ -91,19 +93,32 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
               .eq('id', user.id);
           }
 
-          setNeedsOrgSelection(false);
+          if (isNewLogin) {
+            setNeedsOrgSelection(true);
+          } else {
+            setNeedsOrgSelection(false);
+          }
           setNeedsOnboarding(false);
           return;
         }
 
-        // No organizations - needs onboarding
-        setNeedsOrgSelection(false);
-        setNeedsOnboarding(true);
+        if (isNewLogin) {
+          setNeedsOrgSelection(true);
+        } else {
+          setNeedsOnboarding(true);
+          setNeedsOrgSelection(false);
+        }
         return;
       }
 
-      if (orgs.length > 1 && (isNewLogin || !profile?.current_organization_id)) {
-        // Multiple orgs - force selection on new login or if none selected
+      // If it's a new login, always show the selection screen (so they can pick or create a new agency)
+      if (isNewLogin) {
+        setNeedsOrgSelection(true);
+        return;
+      }
+
+      if (orgs.length > 1 && !profile?.current_organization_id) {
+        // Multiple orgs - force selection if none selected
         setNeedsOrgSelection(true);
         return;
       }
@@ -151,7 +166,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         const [{ data: membership }, { data: orgData }] = await Promise.all([
           supabase
             .from('organization_members')
-            .select('role')
+            .select('role, privileges')
             .eq('user_id', user.id)
             .eq('organization_id', organization.id)
             .eq('is_active', true)
@@ -165,8 +180,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             .single(),
         ]);
 
-        const isAdminForOrg = orgData?.owner_id === user.id || membership?.role === 'admin';
-        setIsOrgAdmin(isAdminForOrg);
+        const isAdminForOrg =
+          orgData?.owner_id === user.id ||
+          membership?.role === 'admin' ||
+          membership?.privileges?.includes('admin');
+
+        setIsOrgAdmin(Boolean(isAdminForOrg));
 
         // Apenas admins/owners são obrigados a concluir a configuração da agência
         if (!isAdminForOrg) {
@@ -197,16 +216,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           .select('organization_id, current_organization_id')
           .eq('id', user?.id)
           .maybeSingle();
-        
+
         const orgId = profile?.current_organization_id || profile?.organization_id;
-        
+
         if (!orgId) {
           // Realmente não tem organização - precisa de onboarding
           setNeedsOnboarding(true);
         }
         // Se tem orgId, aguardar o useSubscription carregar a organization
       };
-      
+
       if (user) {
         checkIfTrulyNoOrg();
       }
@@ -274,13 +293,24 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     '/app/onboarding',
     '/app/select-organization',
   ];
-  
+
   const isAllowedWithoutSubscription = allowedPathsWithoutSubscription.some(
     path => location.pathname === path || location.pathname.startsWith(path + '/')
   );
 
   if (!hasAccess && !isAllowedWithoutSubscription) {
-    return <Navigate to="/select-plan" replace />;
+    if (isOrgAdmin || isSystemAdmin) {
+      return <Navigate to="/select-plan" replace />;
+    }
+
+    // For non-admins, show a clear message that the agency needs a subscription
+    return (
+      <PublicBackground>
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <SubscriptionRequired feature="o sistema Qualify" />
+        </div>
+      </PublicBackground>
+    );
   }
 
   // All checks passed - render children

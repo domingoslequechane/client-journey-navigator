@@ -10,3 +10,4 @@ export { MonthlyEvolutionChart } from './MonthlyEvolutionChart';
 export { ExpensesPieChart } from './ExpensesPieChart';
 export { MonthlyComparisonChart } from './MonthlyComparisonChart';
 export { QuickClientModal } from './QuickClientModal';
+export { ContractedRevenueChart } from './ContractedRevenueChart';

@@ -28,6 +28,7 @@ export default function SelectOrganization() {
   const [loading, setLoading] = useState(true);
   const [selecting, setSelecting] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -64,18 +65,23 @@ export default function SelectOrganization() {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        // No organizations - redirect to onboarding
-        navigate('/app/onboarding');
-        return;
+        // No organizations - still show the screen so they can click "Create New Agency"
+        setOrganizations([]);
+      } else {
+        setOrganizations(data);
       }
 
-      if (data.length === 1) {
-        // Only one organization - auto-select and redirect
-        await selectOrganization(data[0].organization_id);
-        return;
+      // Check if user is an owner via their profile account_type
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('account_type')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!profileError && profile?.account_type === 'owner') {
+        setIsOwner(true);
       }
 
-      setOrganizations(data);
     } catch (error) {
       console.error('Error fetching organizations:', error);
       toast({
@@ -144,7 +150,7 @@ export default function SelectOrganization() {
             </div>
             <CardTitle className="text-2xl">Selecione uma Agência</CardTitle>
             <CardDescription>
-              Você tem acesso a múltiplas agências. Escolha qual deseja acessar agora.
+              Escolha a agência que deseja acessar ou crie uma nova.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -174,7 +180,33 @@ export default function SelectOrganization() {
                 )}
               </Button>
             ))}
+
+            {!isOwner && (
+              <>
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">Ou</span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="default"
+                  className="w-full h-auto py-4 px-4 bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => {
+                    clearNewLoginFlag();
+                    navigate('/app/onboarding');
+                  }}
+                  disabled={selecting !== null || loggingOut}
+                >
+                  Criar Nova Agência
+                </Button>
+              </>
+            )}
           </CardContent>
+
           <CardFooter className="flex justify-center pt-4 border-t">
             <Button
               variant="ghost"

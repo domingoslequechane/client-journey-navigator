@@ -26,7 +26,7 @@ interface TeamMember {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
-  role: 'sales' | 'operations' | 'campaign_management' | 'admin';
+  role?: 'sales' | 'operations' | 'campaign_management' | 'admin' | string;
   created_at: string | null;
   email?: string | null;
   status: 'active' | 'pending' | 'suspended';
@@ -242,13 +242,13 @@ export default function Team() {
         id: invite.id,
         full_name: invite.full_name,
         avatar_url: null,
-        role: invite.role as any,
         created_at: invite.created_at,
         email: invite.email,
         status: 'pending' as const,
         type: 'invite' as const,
         inviteId: invite.id,
         privileges: invite.privileges,
+        body: { email: invite.email, fullName: invite.full_name, privileges: invite.privileges, resend: true },
       }));
 
       // Combine and sort: active first, then pending
@@ -281,11 +281,8 @@ export default function Team() {
 
     setInviting(true);
     try {
-      // Derive role from privileges: if 'admin' privilege is selected, role is 'admin', else 'operations'
-      const derivedRole = selectedPrivileges.includes('admin') ? 'admin' : 'operations';
-
       const response = await supabase.functions.invoke('invite-user', {
-        body: { email, fullName, role: derivedRole, privileges: selectedPrivileges },
+        body: { email, fullName, privileges: selectedPrivileges },
       });
 
       if (response.error) {
@@ -337,11 +334,13 @@ export default function Team() {
 
       // Also update organization_members
       if (currentUserOrgId) {
-        await supabase
+        const { error: orgMemberError } = await supabase
           .from('organization_members')
           .update({ role: role as any, privileges })
           .eq('user_id', memberId)
           .eq('organization_id', currentUserOrgId);
+
+        if (orgMemberError) throw orgMemberError;
       }
 
       toast({ title: 'Sucesso!', description: 'Privilégios alterados com sucesso' });
@@ -452,7 +451,8 @@ export default function Team() {
         body: {
           email: member.email,
           fullName: member.full_name || 'Colaborador',
-          role: member.role === 'admin' ? 'operations' : member.role,
+          role: member.role,
+          privileges: (member.privileges && member.privileges.length > 0) ? member.privileges : ['sales'],
           resend: true
         },
       });
@@ -604,7 +604,8 @@ export default function Team() {
                       <div key={privilege.id} className="flex items-start space-x-2 p-1.5 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-border/30">
                         <Checkbox
                           id={`privilege-${privilege.id}`}
-                          checked={selectedPrivileges.includes(privilege.id)}
+                          checked={selectedPrivileges.includes('admin') || selectedPrivileges.includes(privilege.id)}
+                          disabled={selectedPrivileges.includes('admin') && privilege.id !== 'admin'}
                           onCheckedChange={(checked) => {
                             if (checked) {
                               setSelectedPrivileges([...selectedPrivileges, privilege.id]);
@@ -680,7 +681,8 @@ export default function Team() {
                   <div key={`edit-${privilege.id}`} className="flex items-start space-x-2 p-1.5 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-border/30">
                     <Checkbox
                       id={`edit-privilege-${privilege.id}`}
-                      checked={selectedPrivileges.includes(privilege.id)}
+                      checked={selectedPrivileges.includes('admin') || selectedPrivileges.includes(privilege.id)}
+                      disabled={selectedPrivileges.includes('admin') && privilege.id !== 'admin'}
                       onCheckedChange={(checked) => {
                         if (checked) {
                           setSelectedPrivileges([...selectedPrivileges, privilege.id]);
@@ -872,8 +874,8 @@ export default function Team() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1.5">
-                        <Badge variant="secondary" className={`w-fit ${ROLE_COLORS[member.role] || ''}`}>
-                          {getRoleLabel(member.role)}
+                        <Badge variant="secondary" className={`w-fit ${member.privileges?.includes('admin') ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-800'}`}>
+                          {member.privileges?.includes('admin') ? 'Administrador' : 'Usuário Simples'}
                         </Badge>
                         {member.privileges && member.privileges.length > 0 && (
                           <div className="flex flex-wrap gap-1">
