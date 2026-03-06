@@ -9,27 +9,45 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Authentication required" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Validate JWT and get user identity
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const userId = claimsData.claims.sub;
+
+    // Get user's organization for scoping queries
+    const { data: profile } = await supabaseAuth.from('profiles').select('organization_id').eq('id', userId).single();
+    if (!profile?.organization_id) {
+      return new Response(JSON.stringify({ error: "No organization found" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const userOrgId = profile.organization_id;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     const { platforms, content_type, media_data, tone, length, topic, client_id } = await req.json();
 
-    // Buscar contexto do cliente se houver ID
+    // Fetch client context scoped to user's organization
     let clientContext = "";
     if (client_id) {
-      const { data: client } = await supabase
+      const { data: client } = await supabaseAuth
         .from('clients')
         .select('company_name, services, notes')
         .eq('id', client_id)
+        .eq('organization_id', userOrgId)
         .single();
       
       if (client) {
@@ -76,12 +94,11 @@ REGRAS OBRIGATÓRIAS:
 
     const userContent: any[] = [{ type: "text", text: prompt }];
     
-    // Adicionar dados da imagem (Base64) para análise visual
     if (media_data && media_data.length > 0) {
       for (const data of media_data.slice(0, 3)) {
         userContent.push({ 
           type: "image_url", 
-          image_url: { url: data } // data deve ser "data:image/jpeg;base64,..."
+          image_url: { url: data }
         });
       }
     }
@@ -101,7 +118,8 @@ REGRAS OBRIGATÓRIAS:
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`AI gateway error: ${response.status} - ${errorText}`);
+      console.error("[generate-social-caption] AI gateway error:", response.status);
+      throw new Error(`AI gateway error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -110,6 +128,6 @@ REGRAS OBRIGATÓRIAS:
     return new Response(JSON.stringify({ caption }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error: unknown) {
     console.error("[generate-social-caption] Error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Erro ao gerar legenda" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "Erro ao gerar legenda" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
