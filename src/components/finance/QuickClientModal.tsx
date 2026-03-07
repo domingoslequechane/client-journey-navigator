@@ -19,7 +19,7 @@
  import { Input } from '@/components/ui/input';
  import { Button } from '@/components/ui/button';
  import { supabase } from '@/integrations/supabase/client';
- import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+ import { useOrganization } from '@/hooks/useOrganization';
  import { toast } from 'sonner';
  
  const schema = z.object({
@@ -41,7 +41,7 @@
    onClientCreated,
  }: QuickClientModalProps) {
    const [loading, setLoading] = useState(false);
-   const { organizationId } = useOrganizationCurrency();
+   const { organizationId } = useOrganization();
  
    const form = useForm<z.infer<typeof schema>>({
      resolver: zodResolver(schema),

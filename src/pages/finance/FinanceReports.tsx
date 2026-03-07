@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useFinanceReports } from '@/hooks/finance';
 import {
   FinanceSidebar,
@@ -25,7 +25,7 @@ import {
 } from '@/components/finance';
 
 export default function FinanceReports() {
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol, organizationId } = useOrganization();
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
 
@@ -41,13 +41,15 @@ export default function FinanceReports() {
 
   useEffect(() => {
     const fetchClients = async () => {
+      if (!organizationId) return;
       const { data } = await supabase
         .from('clients')
-        .select('*');
+        .select('*')
+        .eq('organization_id', organizationId);
       if (data) setClients(data);
     };
     fetchClients();
-  }, []);
+  }, [organizationId]);
 
   const formatCurrency = (value: number) => {
     return `${currencySymbol} ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -82,7 +84,7 @@ export default function FinanceReports() {
       <div className="p-4 md:p-8 space-y-6">
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Relatórios</h1>
+            <h1 className="text-2xl font-bold">Resumo Financeiro</h1>
             <p className="text-muted-foreground">Análises financeiras detalhadas</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -186,3 +188,4 @@ export default function FinanceReports() {
     </AnimatedContainer>
   );
 }
+

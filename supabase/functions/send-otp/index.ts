@@ -29,16 +29,16 @@ const IP_WINDOW_MS = 60 * 1000;
 function checkIpRateLimit(ip: string): boolean {
   const now = Date.now();
   const record = ipRequestCounts.get(ip);
-  
+
   if (!record || now > record.resetAt) {
     ipRequestCounts.set(ip, { count: 1, resetAt: now + IP_WINDOW_MS });
     return true;
   }
-  
+
   if (record.count >= MAX_REQUESTS_PER_IP) {
     return false;
   }
-  
+
   record.count++;
   return true;
 }
@@ -71,9 +71,9 @@ const handler = async (req: Request): Promise<Response> => {
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.errors);
       return new Response(
-        JSON.stringify({ 
-          error: "Dados inválidos", 
-          details: validationResult.error.errors.map(e => e.message) 
+        JSON.stringify({
+          error: "Dados inválidos",
+          details: validationResult.error.errors.map(e => e.message)
         }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
@@ -130,7 +130,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: "Qualify <noreply@onixagence.com>",
+      from: "Qualify <noreply@qualify.marketing>",
       to: [email],
       subject: "Código de verificação - Qualify",
       html: `

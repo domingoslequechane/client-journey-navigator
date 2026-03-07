@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import type { FinanceGoal } from '@/types/finance';
 import { GOAL_TYPE_LABELS } from '@/types/finance';
 
@@ -29,7 +29,7 @@ export function GoalCard({
   onDelete,
   canManage = true,
 }: GoalCardProps) {
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol } = useOrganization();
   const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
   const isAchieved = goal.currentAmount >= goal.targetAmount;
 
@@ -132,3 +132,4 @@ export function GoalCard({
     </Card>
   );
 }
+

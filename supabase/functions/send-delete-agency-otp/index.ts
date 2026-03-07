@@ -41,7 +41,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Verify the user's token
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: "Token inválido" }),
@@ -51,7 +51,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const body = await req.json();
     const validationResult = RequestSchema.safeParse(body);
-    
+
     if (!validationResult.success) {
       return new Response(
         JSON.stringify({ error: "Dados inválidos" }),
@@ -120,7 +120,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: "Qualify <noreply@onixagence.com>",
+      from: "Qualify <noreply@qualify.marketing>",
       to: [email],
       subject: "Código de confirmação para apagar agência - Qualify",
       html: `

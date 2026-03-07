@@ -21,7 +21,7 @@ function SocialIconsCarousel({ blockId, socials, useOfficialColors, theme, onBlo
   const [startIndex, setStartIndex] = useState(0);
   const hasMore = socials.length > MAX_VISIBLE_ICONS;
   const visibleSocials = hasMore ? socials.slice(startIndex, startIndex + MAX_VISIBLE_ICONS) : socials;
-  
+
   const canGoNext = startIndex + MAX_VISIBLE_ICONS < socials.length;
   const canGoPrev = startIndex > 0;
 
@@ -50,7 +50,7 @@ function SocialIconsCarousel({ blockId, socials, useOfficialColors, theme, onBlo
             <ChevronLeft className="h-4 w-4" />
           </button>
         )}
-        
+
         <div className="flex gap-3">
           {visibleSocials.map((social, idx) => {
             const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
@@ -71,7 +71,7 @@ function SocialIconsCarousel({ blockId, socials, useOfficialColors, theme, onBlo
             );
           })}
         </div>
-        
+
         {hasMore && (
           <button
             onClick={handleNext}
@@ -83,7 +83,7 @@ function SocialIconsCarousel({ blockId, socials, useOfficialColors, theme, onBlo
           </button>
         )}
       </div>
-      
+
       {/* Indicator dots for pagination */}
       {hasMore && (
         <div className="flex justify-center gap-1 mt-2">
@@ -151,7 +151,7 @@ export default function LinkTreePublic() {
 
   const getButtonStyles = () => {
     const baseStyles = 'w-full p-4 text-center font-medium transition-all duration-200 hover:scale-[1.02]';
-    
+
     switch (theme.buttonRadius) {
       case 'pill':
         return `${baseStyles} rounded-full`;
@@ -213,26 +213,26 @@ export default function LinkTreePublic() {
       >
         {/* Fixed Background Image */}
         {theme.backgroundImage && (
-          <div 
+          <div
             className="fixed inset-0 bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url(${theme.backgroundImage})` }}
           />
         )}
-        
+
         {/* Overlay */}
         {theme.backgroundImage && (
           <div className="fixed inset-0 bg-black/40" />
         )}
-        
+
         {/* Content */}
         <div className="relative z-10 min-h-screen w-full flex items-center justify-center">
           <div className="w-full max-w-md px-4 py-12 space-y-6">
             {/* Profile Section */}
             <div className="text-center space-y-3">
               {/* Avatar com fallback - SEMPRE renderiza */}
-              <div 
+              <div
                 className="w-24 h-24 rounded-full mx-auto flex items-center justify-center border-4 overflow-hidden"
-                style={{ 
+                style={{
                   borderColor: theme.primaryColor,
                   backgroundColor: linkPage.logo_url ? 'transparent' : theme.primaryColor
                 }}
@@ -244,7 +244,7 @@ export default function LinkTreePublic() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span 
+                  <span
                     className="text-3xl font-bold"
                     style={{ color: theme.textColor }}
                   >
@@ -321,11 +321,11 @@ export default function LinkTreePublic() {
 
                   case 'video':
                     if (!block.content.videoUrl) return null;
-                    
+
                     let videoEmbedUrl = null;
                     const youtubeMatch = block.content.videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
                     const vimeoMatch = block.content.videoUrl.match(/vimeo\.com\/([0-9]{9,12})/);
-                    
+
                     if (youtubeMatch) {
                       videoEmbedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
                     } else if (vimeoMatch) {
@@ -347,7 +347,7 @@ export default function LinkTreePublic() {
                     const useOfficialColors = block.style?.useOfficialColors;
                     const socials = block.content.socials || [];
                     return (
-                      <SocialIconsCarousel 
+                      <SocialIconsCarousel
                         key={block.id}
                         blockId={block.id}
                         socials={socials}
@@ -419,7 +419,7 @@ export default function LinkTreePublic() {
             {/* Footer */}
             <div className="text-center pt-8">
               <a
-                href="https://qualify.onixagence.com"
+                href="https://qualify.marketing"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs opacity-50 hover:opacity-80 transition-opacity"

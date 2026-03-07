@@ -11,16 +11,17 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 import { useDraft } from '@/hooks/useDraft';
+import { useOrganization } from '@/hooks/useOrganization';
 import { ClientFormView, ClientFormData, initialFormData } from '@/components/clients/ClientFormView';
 
 export default function NewClient() {
   const navigate = useNavigate();
-  
+
   const { loading: planLoading, canAddClient, planType, usage, limits } = usePlanLimits();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
   const [saving, setSaving] = useState(false);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
-  
+  const { organizationId, currency: orgCurrency } = useOrganization();
+
   // Draft for new clients
   const {
     value: formData,
@@ -54,41 +55,17 @@ export default function NewClient() {
   }, [setFormData]);
 
   useEffect(() => {
-    loadOrganizationData();
-  }, []);
-
-  const loadOrganizationData = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, current_organization_id')
-      .eq('id', user.id)
-      .single();
-    
-    const orgId = profile?.current_organization_id || profile?.organization_id;
-    if (orgId) {
-      setOrganizationId(orgId);
-      
-      const { data: org } = await supabase
-        .from('organizations')
-        .select('currency')
-        .eq('id', orgId)
-        .single();
-      
-      // Set default currency if no draft was restored
-      if (org?.currency && !hasRestoredDraft) {
-        setFormData((prev) =>
-          prev.budgetCurrency === 'MZN' ? { ...prev, budgetCurrency: org.currency } : prev
-        );
-      }
+    // Set default currency if no draft was restored
+    if (orgCurrency && !hasRestoredDraft) {
+      setFormData((prev) =>
+        prev.budgetCurrency === 'MZN' ? { ...prev, budgetCurrency: orgCurrency } : prev
+      );
     }
-  };
+  }, [orgCurrency, hasRestoredDraft, setFormData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.companyName || !formData.contactName || !formData.phone) {
       toast({ title: 'Erro', description: 'Preencha os campos obrigatórios', variant: 'destructive' });
       return;
@@ -162,10 +139,10 @@ export default function NewClient() {
             <p className="text-sm md:text-base text-muted-foreground">Cadastre um novo lead ou cliente</p>
           </div>
         </AnimatedContainer>
-        <LimitReachedCard 
-          feature="clientes" 
-          current={usage.clientsCount} 
-          limit={limits.maxClients || 0} 
+        <LimitReachedCard
+          feature="clientes"
+          current={usage.clientsCount}
+          limit={limits.maxClients || 0}
           planType={planType}
         />
       </div>

@@ -20,7 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useQuickFinanceStats } from '@/hooks/finance';
 import { formatPhoneNumber } from '@/lib/phone-utils';
@@ -42,21 +42,23 @@ export default function Dashboard() {
   } = useUserRole();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol, organizationId, loading: orgLoading } = useOrganization();
   const financeStats = useQuickFinanceStats();
 
   useEffect(() => {
-    if (!roleLoading) {
+    if (!roleLoading && organizationId) {
       fetchData();
     }
-  }, [roleLoading]);
+  }, [roleLoading, organizationId]);
 
   const fetchData = async () => {
+    if (!organizationId) return;
     try {
       // Fetch clients
       const { data, error } = await supabase
         .from('clients')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -115,7 +117,7 @@ export default function Dashboard() {
       .reduce((sum, c) => sum + Number(c.monthly_budget || 0), 0);
   }, [clients]);
 
-  if (loading) {
+  if (loading || orgLoading) {
     return <DashboardSkeleton />;
   }
 
@@ -280,3 +282,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

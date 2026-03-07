@@ -4,29 +4,18 @@ import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/hooks/useOrganization';
 import { toast } from 'sonner';
 import type { StudioProject, StudioFlyer } from '@/types/studio';
 
 export function useStudioProjects() {
+  const { organizationId: orgId } = useOrganization();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const getOrganizationId = useCallback(async (): Promise<string | null> => {
-    if (!user) return null;
-    
-    const { data } = await supabase
-      .from('profiles')
-      .select('current_organization_id, organization_id')
-      .eq('id', user.id)
-      .single();
-    
-    return data?.current_organization_id || data?.organization_id || null;
-  }, [user]);
-
   const { data: projects, isLoading: projectsLoading, refetch: refetchProjects } = useQuery({
-    queryKey: ['studio-projects', user?.id],
+    queryKey: ['studio-projects', orgId],
     queryFn: async () => {
-      const orgId = await getOrganizationId();
       if (!orgId) return [];
 
       const { data, error } = await supabase
@@ -38,12 +27,11 @@ export function useStudioProjects() {
       if (error) throw error;
       return data as StudioProject[];
     },
-    enabled: !!user,
+    enabled: !!orgId,
   });
 
   const createProject = useMutation({
     mutationFn: async (project: Partial<StudioProject>) => {
-      const orgId = await getOrganizationId();
       if (!orgId || !user) throw new Error('No organization');
 
       const { data, error } = await supabase
@@ -71,7 +59,7 @@ export function useStudioProjects() {
       return data as StudioProject;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['studio-projects'] });
+      queryClient.invalidateQueries({ queryKey: ['studio-projects', orgId] });
       toast.success('Projeto criado com sucesso!');
     },
     onError: (error) => {
@@ -85,6 +73,7 @@ export function useStudioProjects() {
         .from('studio_projects')
         .update(updates)
         .eq('id', id)
+        .eq('organization_id', orgId)
         .select()
         .single();
 
@@ -106,7 +95,8 @@ export function useStudioProjects() {
       const { error } = await supabase
         .from('studio_projects')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', orgId);
 
       if (error) throw error;
     },
@@ -126,33 +116,34 @@ export function useStudioProjects() {
     createProject,
     updateProject,
     deleteProject,
-    getOrganizationId,
   };
 }
 
 export function useStudioProject(projectId: string | undefined) {
+  const { organizationId: orgId } = useOrganization();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: project, isLoading: projectLoading } = useQuery({
-    queryKey: ['studio-project', projectId],
+    queryKey: ['studio-project', orgId, projectId],
     queryFn: async () => {
-      if (!projectId) return null;
+      if (!projectId || !orgId) return null;
 
       const { data, error } = await supabase
         .from('studio_projects')
         .select('*')
         .eq('id', projectId)
+        .eq('organization_id', orgId)
         .single();
 
       if (error) throw error;
       return data as StudioProject;
     },
-    enabled: !!projectId && !!user,
+    enabled: !!projectId && !!orgId && !!user,
   });
 
   const { data: flyers, isLoading: flyersLoading, refetch: refetchFlyers } = useQuery({
-    queryKey: ['studio-flyers', projectId],
+    queryKey: ['studio-flyers', orgId, projectId],
     queryFn: async () => {
       if (!projectId) return [];
 
@@ -168,9 +159,9 @@ export function useStudioProject(projectId: string | undefined) {
     enabled: !!projectId && !!user,
   });
 
-  // Fetch daily generation count for the user
+  // Fetch daily generation count for the user in this organization
   const { data: dailyCount = 0, refetch: refetchDailyCount } = useQuery({
-    queryKey: ['studio-daily-count', user?.id],
+    queryKey: ['studio-daily-count', orgId, user?.id],
     queryFn: async () => {
       if (!user) return 0;
       const today = new Date().toISOString().split('T')[0];
@@ -179,7 +170,7 @@ export function useStudioProject(projectId: string | undefined) {
         .select('*', { count: 'exact', head: true })
         .eq('created_by', user.id)
         .gte('created_at', today);
-      
+
       if (error) throw error;
       return count || 0;
     },
@@ -188,17 +179,18 @@ export function useStudioProject(projectId: string | undefined) {
 
   // Fetch ratings for flyers
   const { data: ratingsData } = useQuery({
-    queryKey: ['studio-flyer-ratings', projectId, user?.id],
+    queryKey: ['studio-flyer-ratings', orgId, projectId, user?.id],
     queryFn: async () => {
       if (!projectId || !user) return {};
 
       const { data, error } = await supabase
         .from('studio_flyer_ratings')
         .select('flyer_id, rating, feedback')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('organization_id', orgId); // Added organization_id filter
 
       if (error) throw error;
-      
+
       const ratingsMap: Record<string, { rating: number; feedback: string | null }> = {};
       for (const r of data || []) {
         ratingsMap[r.flyer_id] = { rating: r.rating, feedback: r.feedback };
@@ -230,8 +222,8 @@ export function useStudioProject(projectId: string | undefined) {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['studio-flyers', projectId] });
-      queryClient.invalidateQueries({ queryKey: ['studio-daily-count', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['studio-flyers', orgId, projectId] });
+      queryClient.invalidateQueries({ queryKey: ['studio-daily-count', orgId, user?.id] });
     },
     onError: (error) => {
       toast.error('Erro na geração: ' + error.message);
@@ -243,7 +235,8 @@ export function useStudioProject(projectId: string | undefined) {
       const { error } = await supabase
         .from('studio_flyers')
         .delete()
-        .eq('id', flyerId);
+        .eq('id', flyerId)
+        .eq('organization_id', orgId);
 
       if (error) throw error;
     },

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import type { MonthlyData, CategoryData } from '@/types/finance';
 import { format, startOfYear, endOfYear } from 'date-fns';
 
@@ -10,7 +10,7 @@ export function useFinanceReports(year?: number) {
   const [expenseByCategory, setExpenseByCategory] = useState<CategoryData[]>([]);
   const [totals, setTotals] = useState({ income: 0, expense: 0, profit: 0 });
   const [loading, setLoading] = useState(true);
-  const { organizationId, currencySymbol } = useOrganizationCurrency();
+  const { organizationId, currencySymbol } = useOrganization();
 
   const currentYear = year || new Date().getFullYear();
 
@@ -167,3 +167,4 @@ export function useFinanceReports(year?: number) {
     refetch: fetchReportData,
   };
 }
+

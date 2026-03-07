@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useLocale } from '@/hooks/useLocale';
 import type { Transaction } from '@/types/finance';
 import { PAYMENT_METHOD_LABELS } from '@/types/finance';
@@ -20,7 +20,7 @@ export function TransactionCard({
   onEdit,
   canManage = true,
 }: TransactionCardProps) {
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol } = useOrganization();
   const { dateLocale } = useLocale();
   const isIncome = transaction.type === 'income';
 
@@ -110,3 +110,4 @@ export function TransactionCard({
     </Card>
   );
 }
+

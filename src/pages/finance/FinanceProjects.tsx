@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useFinanceProjects } from '@/hooks/finance';
 import {
@@ -34,7 +34,7 @@ import type { FinanceProject, ProjectFormData, ProjectFilters, ProjectStatus } f
 import { PROJECT_STATUS_LABELS } from '@/types/finance';
 
 export default function FinanceProjects() {
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol } = useOrganization();
   const { canManageFinance } = useUserRole();
 
   const [search, setSearch] = useState('');
@@ -206,3 +206,4 @@ export default function FinanceProjects() {
     </AnimatedContainer>
   );
 }
+

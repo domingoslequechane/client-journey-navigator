@@ -24,7 +24,7 @@ function SocialIconsCarousel({ socials, useOfficialColors, theme }: SocialIconsC
   const [startIndex, setStartIndex] = useState(0);
   const hasMore = socials.length > MAX_VISIBLE_ICONS;
   const visibleSocials = hasMore ? socials.slice(startIndex, startIndex + MAX_VISIBLE_ICONS) : socials;
-  
+
   const canGoNext = startIndex + MAX_VISIBLE_ICONS < socials.length;
   const canGoPrev = startIndex > 0;
 
@@ -53,7 +53,7 @@ function SocialIconsCarousel({ socials, useOfficialColors, theme }: SocialIconsC
             <ChevronLeft className="h-3 w-3" />
           </button>
         )}
-        
+
         <div className="flex gap-2 lg:gap-3">
           {visibleSocials.map((social, idx) => {
             const platform = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
@@ -76,7 +76,7 @@ function SocialIconsCarousel({ socials, useOfficialColors, theme }: SocialIconsC
             );
           })}
         </div>
-        
+
         {hasMore && (
           <button
             onClick={handleNext}
@@ -97,10 +97,10 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
   const blocks = (linkPage.blocks || []).filter(b => b.is_enabled);
 
   const getButtonStyle = (block?: LinkBlock) => {
-    const baseRadius = 
+    const baseRadius =
       theme.buttonRadius === 'pill' ? '9999px' :
-      theme.buttonRadius === 'rounded' ? '12px' :
-      theme.buttonRadius === 'soft' ? '8px' : '4px';
+        theme.buttonRadius === 'rounded' ? '12px' :
+          theme.buttonRadius === 'soft' ? '8px' : '4px';
 
     // Theme button style - cores coletivas apenas
     switch (theme.buttonStyle) {
@@ -145,7 +145,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
       <div className="relative w-full aspect-[280/580] bg-black rounded-[36px] lg:rounded-[40px] p-2 lg:p-3 shadow-2xl overflow-hidden">
         {/* Dynamic Island */}
         <div className="absolute top-3 lg:top-4 left-1/2 -translate-x-1/2 w-20 lg:w-24 h-5 lg:h-6 bg-black rounded-full z-10" />
-        
+
         {/* Screen */}
         <div
           className="w-full h-full rounded-[28px] lg:rounded-[32px] overflow-hidden relative"
@@ -156,39 +156,39 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
         >
           {/* Fixed Background Image */}
           {theme.backgroundImage && (
-            <div 
+            <div
               className="absolute inset-0 bg-cover bg-center bg-no-repeat"
               style={{ backgroundImage: `url(${theme.backgroundImage})` }}
             />
           )}
-          
+
           {/* Overlay for background image */}
           {theme.backgroundImage && (
             <div className="absolute inset-0 bg-black/30" />
           )}
-          
+
           <ScrollArea className="h-full relative z-10">
             <div className="p-3 lg:p-4 pt-8 lg:pt-10 pb-6 lg:pb-8 flex flex-col items-center min-h-full">
               {/* Profile */}
               <Avatar className="h-16 w-16 lg:h-20 lg:w-20 border-4 border-white/20 mb-2 lg:mb-3">
                 <AvatarImage src={linkPage.logo_url || undefined} />
-                <AvatarFallback 
+                <AvatarFallback
                   className="text-xl lg:text-2xl"
                   style={{ backgroundColor: theme.primaryColor, color: theme.textColor }}
                 >
                   {linkPage.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              
-              <h1 
+
+              <h1
                 className="font-bold text-base lg:text-lg mb-1 text-center truncate w-full max-w-full px-2 overflow-hidden"
                 style={{ color: theme.textColor }}
               >
                 {linkPage.name}
               </h1>
-              
+
               {linkPage.bio && (
-                <p 
+                <p
                   className="text-xs lg:text-sm text-center mb-3 lg:mb-4 px-3 lg:px-4 line-clamp-2 max-w-full overflow-hidden"
                   style={{ color: `${theme.textColor}cc` }}
                 >
@@ -196,7 +196,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                 </p>
               )}
 
-              <p 
+              <p
                 className="text-[10px] lg:text-xs mb-4 lg:mb-6 truncate w-full max-w-full text-center px-4 overflow-hidden"
                 style={{ color: `${theme.textColor}99` }}
               >
@@ -247,7 +247,7 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
                     const useOfficialColors = block.style?.useOfficialColors;
                     const socials = block.content.socials || [];
                     return (
-                      <SocialIconsCarousel 
+                      <SocialIconsCarousel
                         key={block.id}
                         socials={socials}
                         useOfficialColors={useOfficialColors}
@@ -294,8 +294,8 @@ export function PhonePreview({ linkPage }: PhonePreviewProps) {
 
               {/* Footer */}
               <div className="mt-auto pt-6 lg:pt-8">
-                <a 
-                  href="https://qualify.onixagence.com"
+                <a
+                  href="https://qualify.marketing"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[9px] lg:text-[10px] hover:underline"

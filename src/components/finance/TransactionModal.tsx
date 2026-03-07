@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/select';
 import { useFinanceCategories } from '@/hooks/finance/useFinanceCategories';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import type { Transaction, TransactionFormData, TransactionType, PaymentMethod } from '@/types/finance';
 import { PAYMENT_METHOD_LABELS } from '@/types/finance';
 import { Plus } from 'lucide-react';
@@ -70,7 +70,7 @@ export function TransactionModal({
   const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
   const [quickClientOpen, setQuickClientOpen] = useState(false);
   const { categories, getCategoriesByType } = useFinanceCategories();
-  const { organizationId } = useOrganizationCurrency();
+  const { organizationId } = useOrganization();
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -367,3 +367,4 @@ export function TransactionModal({
     </Dialog>
   );
 }
+

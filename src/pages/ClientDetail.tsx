@@ -10,14 +10,16 @@ import { AnimatedContainer } from '@/components/ui/animated-container';
 import { mapDbClientToUiClient } from '@/lib/client-utils';
 import { ClientDetailContent } from '@/components/clients/ClientDetailContent';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/hooks/useOrganization';
 
 // Function to fetch client data and checklist items
-const fetchClientData = async (clientId: string) => {
+const fetchClientData = async (clientId: string, organizationId: string) => {
   // 1. Fetch Client
   const { data: clientData, error: clientError } = await supabase
     .from('clients')
     .select('*')
     .eq('id', clientId)
+    .eq('organization_id', organizationId)
     .single();
 
   if (clientError) throw clientError;
@@ -49,10 +51,12 @@ export default function ClientDetail() {
     }
   };
 
+  const { organizationId } = useOrganization();
+
   const { data: client, isLoading, error, refetch } = useQuery<Client, Error>({
-    queryKey: ['client', clientId],
-    queryFn: () => fetchClientData(clientId!),
-    enabled: !!clientId,
+    queryKey: ['client', organizationId, clientId],
+    queryFn: () => fetchClientData(clientId!, organizationId!),
+    enabled: !!clientId && !!organizationId,
   });
 
   useEffect(() => {
@@ -80,7 +84,8 @@ export default function ClientDetail() {
       const { error: stageError } = await supabase
         .from('clients')
         .update({ current_stage: newDbStage as any })
-        .eq('id', updatedClient.id);
+        .eq('id', updatedClient.id)
+        .eq('organization_id', organizationId);
 
       if (stageError) {
         toast({ title: 'Erro ao atualizar fase', description: stageError.message, variant: 'destructive' });

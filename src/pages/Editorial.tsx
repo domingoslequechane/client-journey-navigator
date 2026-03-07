@@ -3,7 +3,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMon
 import { ptBR } from 'date-fns/locale';
 import { CalendarDays, Plus, ChevronLeft, ChevronRight, Sparkles, CheckCircle2, Clock, Circle, Pencil, Trash2, X, ListTodo, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEditorialTasks, type EditorialTask } from '@/hooks/useEditorialTasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +36,7 @@ const PLATFORMS = [
 const WEEK_DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 export default function Editorial() {
-  const { organizationId } = useOrganizationCurrency();
+  const { organizationId } = useOrganization();
   const { user } = useAuth();
 
   // Calendar state
@@ -710,3 +710,4 @@ export default function Editorial() {
     </div>
   );
 }
+

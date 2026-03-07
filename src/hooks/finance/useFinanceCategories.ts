@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { toast } from '@/hooks/use-toast';
 import type { FinanceCategory, CategoryFormData, TransactionType } from '@/types/finance';
 
 export function useFinanceCategories() {
   const [categories, setCategories] = useState<FinanceCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const { organizationId } = useOrganizationCurrency();
+  const { organizationId } = useOrganization();
 
   const fetchCategories = useCallback(async () => {
     if (!organizationId) return;
@@ -134,3 +134,4 @@ export function useFinanceCategories() {
     refetch: fetchCategories,
   };
 }
+

@@ -1,6 +1,6 @@
  import { useState, useEffect } from 'react';
  import { supabase } from '@/integrations/supabase/client';
- import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+ import { useOrganization } from '@/hooks/useOrganization';
  
  interface QuickFinanceStats {
    monthlyIncome: number;
@@ -16,7 +16,7 @@
      netBalance: 0,
    });
    const [loading, setLoading] = useState(true);
-   const { organizationId } = useOrganizationCurrency();
+   const { organizationId } = useOrganization();
  
    useEffect(() => {
      if (!organizationId) {

@@ -18,6 +18,7 @@ import { ConfirmActionModal } from '@/components/social-media/ConfirmActionModal
 import { type SocialPlatform, type ContentType } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
+import { useOrganization } from '@/hooks/useOrganization';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
@@ -128,6 +129,7 @@ export default function SocialPostEditor() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const clientId = searchParams.get('clientId');
+  const { organizationId } = useOrganization();
 
   const { createPost, updatePost, publishPost } = useSocialPosts();
   const { accounts } = useSocialAccounts(clientId);
@@ -153,12 +155,13 @@ export default function SocialPostEditor() {
   const currentPostItem = useMemo(() => postItems[activeIndex] || null, [postItems, activeIndex]);
 
   useEffect(() => {
-    if (postId) {
+    if (postId && organizationId) {
       const loadPost = async () => {
         const { data, error } = await supabase
           .from('social_posts')
           .select('*')
           .eq('id', postId)
+          .eq('organization_id', organizationId)
           .single();
 
         if (data) {
@@ -192,7 +195,7 @@ export default function SocialPostEditor() {
         handleAddEmptyPost();
       }
     }
-  }, [postId, connectedAccounts.length, postItems.length]);
+  }, [postId, organizationId, connectedAccounts.length, postItems.length]);
 
   const handleAddEmptyPost = () => {
     const newItem: PostItem = {
@@ -735,18 +738,21 @@ export default function SocialPostEditor() {
 
       {/* Full-screen publishing overlay */}
       {isSaving && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card px-10 py-10 shadow-2xl max-w-sm w-full text-center">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
+          <div className="flex flex-col items-center gap-6 rounded-2xl border border-primary/20 bg-card px-10 py-10 shadow-2xl max-w-sm w-full text-center animate-glow overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
             <div className="relative">
-              <div className="h-16 w-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Zap className="h-6 w-6 text-primary" />
+              <div className="h-20 w-20 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center animate-float">
+                <Zap className="h-8 w-8 text-primary shadow-lg" />
               </div>
             </div>
-            <div className="space-y-3 w-full">
-              <div className="space-y-1">
-                <p className="font-bold text-base">A processar...</p>
-                <p className="text-sm text-muted-foreground">{savingStatus || 'A preparar publicação...'}</p>
+            <div className="space-y-4 w-full relative z-10">
+              <div className="space-y-1.5">
+                <p className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                  {status === 'published' ? 'Publicando conteúdo...' : 'Preparando agendamento...'}
+                </p>
+                <p className="text-sm text-muted-foreground font-medium">{savingStatus || 'Garantindo que tudo esteja perfeito'}</p>
               </div>
 
               {uploadProgress > 0 && (

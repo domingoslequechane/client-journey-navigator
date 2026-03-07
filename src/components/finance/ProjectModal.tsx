@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import type { FinanceProject, ProjectFormData, ProjectStatus } from '@/types/finance';
 import { PROJECT_STATUS_LABELS } from '@/types/finance';
 
@@ -58,7 +58,7 @@ export function ProjectModal({
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
   const [clientSearch, setClientSearch] = useState('');
-  const { organizationId } = useOrganizationCurrency();
+  const { organizationId } = useOrganization();
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -288,3 +288,4 @@ export function ProjectModal({
     </Dialog>
   );
 }
+

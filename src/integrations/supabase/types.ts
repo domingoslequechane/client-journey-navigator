@@ -2413,6 +2413,7 @@ export type Database = {
         Returns: number
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_org_owner: { Args: { user_uuid: string; org_uuid: string }; Returns: boolean }
       remove_from_team: {
         Args: {
           member_user_id: string
@@ -2497,7 +2498,7 @@ export type Database = {
       | "past_due"
       | "cancelled"
       | "expired"
-      user_role: "sales" | "operations" | "campaign_management" | "admin"
+      user_role: "sales" | "operations" | "campaign_management" | "admin" | "owner"
     }
     CompositeTypes: {
       [_ in never]: never

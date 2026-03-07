@@ -14,36 +14,64 @@ import { Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export function AccessChangeNotification() {
-    const { role, privileges, lastNotifiedRole, lastNotifiedPrivileges, isLoading } = usePermissions();
+    const {
+        role,
+        privileges,
+        lastNotifiedRole,
+        lastNotifiedPrivileges,
+        isLoading,
+        isOwner,
+        organizationId
+    } = usePermissions();
     const [isOpen, setIsOpen] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
         if (isLoading) return;
 
-        // Check if anything changed since last notification
+        // Owners don't need access change notifications for themselves
+        if (isOwner) {
+            if (isOpen) setIsOpen(false);
+            return;
+        }
+
+        // Check if anything changed since last notification in DB
         const roleChanged = lastNotifiedRole !== role;
 
         // Simple array comparison for privileges
-        const privilegesChanged = JSON.stringify([...(lastNotifiedPrivileges || [])].sort()) !==
-            JSON.stringify([...(privileges || [])].sort());
+        const sortedPrivileges = [...(privileges || [])].sort();
+        const sortedLastPrivileges = [...(lastNotifiedPrivileges || [])].sort();
+
+        const privilegesChanged = JSON.stringify(sortedLastPrivileges) !== JSON.stringify(sortedPrivileges);
 
         if (roleChanged || privilegesChanged) {
-            setIsOpen(true);
+            // Even if DB says it's different, check localStorage to prevent 
+            // constant re-triggering when switching between agencies with different roles
+            const storageKey = `access_notified_${organizationId}_${role}_${JSON.stringify(sortedPrivileges)}`;
+            const hasBeenNotifiedLocally = localStorage.getItem(storageKey);
+
+            if (!hasBeenNotifiedLocally) {
+                setIsOpen(true);
+            }
         }
-    }, [role, privileges, lastNotifiedRole, lastNotifiedPrivileges, isLoading]);
+    }, [role, privileges, lastNotifiedRole, lastNotifiedPrivileges, isLoading, isOwner, organizationId]);
 
     const handleAcknowledge = async () => {
         setIsUpdating(true);
         try {
+            // Update localStorage first to suppress immediately on this device
+            const sortedPrivileges = [...(privileges || [])].sort();
+            const storageKey = `access_notified_${organizationId}_${role}_${JSON.stringify(sortedPrivileges)}`;
+            localStorage.setItem(storageKey, 'true');
+
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
             const { error } = await supabase
                 .from('profiles')
                 .update({
-                    last_notified_role: role,
-                    last_notified_privileges: privileges
+                    last_notified_role: role as any,
+                    last_notified_privileges: privileges as any
                 })
                 .eq('id', user.id);
 

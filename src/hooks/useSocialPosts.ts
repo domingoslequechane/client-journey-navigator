@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/hooks/useOrganization';
 import { toast } from '@/hooks/use-toast';
 import type { SocialPlatform, ContentType } from '@/lib/social-media-mock';
 
@@ -41,23 +42,13 @@ interface PostFilters {
 }
 
 export function useSocialPosts(filters?: PostFilters) {
+  const { organizationId: orgId } = useOrganization();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const getOrgId = async () => {
-    if (!user) return null;
-    const { data } = await supabase
-      .from('profiles')
-      .select('current_organization_id')
-      .eq('id', user.id)
-      .single();
-    return data?.current_organization_id ?? null;
-  };
-
   const postsQuery = useQuery({
-    queryKey: ['social-posts', user?.id, filters],
+    queryKey: ['social-posts', orgId, filters],
     queryFn: async () => {
-      const orgId = await getOrgId();
       if (!orgId) return [];
 
       // SECURITY: We explicitly list columns and EXCLUDE 'approval_token' from the general list
@@ -95,7 +86,7 @@ export function useSocialPosts(filters?: PostFilters) {
         client_name: row.clients?.company_name || null,
       })) as SocialPostRow[];
     },
-    enabled: !!user,
+    enabled: !!orgId,
   });
 
   const createPost = useMutation({
@@ -113,7 +104,6 @@ export function useSocialPosts(filters?: PostFilters) {
       };
       silent?: boolean;
     }) => {
-      const orgId = await getOrgId();
       if (!orgId || !user) throw new Error('Organização não encontrada');
 
       const { data, error } = await supabase
@@ -162,6 +152,7 @@ export function useSocialPosts(filters?: PostFilters) {
         .from('social_posts' as any)
         .update(cleanUpdates as any)
         .eq('id', params.post.id)
+        .eq('organization_id', orgId)
         .select()
         .single();
 
@@ -191,14 +182,14 @@ export function useSocialPosts(filters?: PostFilters) {
   const deletePost = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase.functions.invoke('social-delete-post', {
-        body: { post_id: id }
+        body: { post_id: id, organization_id: orgId }
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['social-posts', orgId] });
       toast({ title: 'Post excluído!' });
     },
     onError: (err: any) => {
@@ -208,7 +199,6 @@ export function useSocialPosts(filters?: PostFilters) {
 
   const deleteAllPosts = useMutation({
     mutationFn: async (clientId?: string) => {
-      const orgId = await getOrgId();
       if (!orgId) throw new Error('Organização não encontrada');
 
       let query = supabase
@@ -233,8 +223,8 @@ export function useSocialPosts(filters?: PostFilters) {
         .eq('period_start', monthStart);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
-      queryClient.invalidateQueries({ queryKey: ['usage-tracking'] });
+      queryClient.invalidateQueries({ queryKey: ['social-posts', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['usage-tracking', orgId] });
       toast({ title: 'Histórico e contagem resetados com sucesso!' });
     },
     onError: (err: any) => {
@@ -251,6 +241,7 @@ export function useSocialPosts(filters?: PostFilters) {
           approval_token: crypto.randomUUID(),
         } as any)
         .eq('id', id)
+        .eq('organization_id', orgId)
         .select('approval_token')
         .single();
 
@@ -258,7 +249,7 @@ export function useSocialPosts(filters?: PostFilters) {
       return data as unknown as { approval_token: string };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['social-posts', orgId] });
       const url = `${window.location.origin}/approve/${data.approval_token}`;
       navigator.clipboard.writeText(url).then(() => {
         toast({ title: 'Link de aprovação copiado!', description: 'Envie o link ao cliente para aprovação.' });
@@ -282,7 +273,8 @@ export function useSocialPosts(filters?: PostFilters) {
         body: {
           post_id: params.postId,
           publish_now: params.publishNow,
-          replace_late_post_id: params.replaceLatePostId
+          replace_late_post_id: params.replaceLatePostId,
+          organization_id: orgId
         },
       });
 
@@ -299,7 +291,7 @@ export function useSocialPosts(filters?: PostFilters) {
       }
     },
     onError: (err: any, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['social-posts', orgId] });
       console.error('Erro ao publicar/agendar post:', err);
 
       if (variables.silent) return;
@@ -332,7 +324,7 @@ export function useSocialPosts(filters?: PostFilters) {
     },
     onSuccess: (data) => {
       if (data?.synced > 0) {
-        queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+        queryClient.invalidateQueries({ queryKey: ['social-posts', orgId] });
         toast({ title: `${data.synced} post(s) atualizado(s)!` });
       }
     },

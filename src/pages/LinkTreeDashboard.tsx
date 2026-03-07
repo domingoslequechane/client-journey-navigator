@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,7 +41,7 @@ import { usePlanLimits } from '@/hooks/usePlanLimits';
 export default function LinkTreeDashboard() {
   const { t } = useTranslation('clients');
   const navigate = useNavigate();
-  const { organizationId } = useOrganizationCurrency();
+  const { organizationId } = useOrganization();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectClientOpen, setSelectClientOpen] = useState(false);
   const { limits, usage } = usePlanLimits();

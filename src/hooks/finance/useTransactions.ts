@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import type { Transaction, TransactionFormData, TransactionFilters, TransactionType, PaymentMethod } from '@/types/finance';
@@ -8,7 +8,7 @@ import type { Transaction, TransactionFormData, TransactionFilters, TransactionT
 export function useTransactions(filters?: TransactionFilters) {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const { organizationId } = useOrganizationCurrency();
+  const { organizationId } = useOrganization();
   const { user } = useAuth();
 
   const fetchTransactions = useCallback(async () => {
@@ -77,7 +77,7 @@ export function useTransactions(filters?: TransactionFilters) {
   // Filtro local para busca multi-campo
   const transactions = useMemo(() => {
     if (!filters?.search) return allTransactions;
-    
+
     const searchLower = filters.search.toLowerCase();
     return allTransactions.filter(t => {
       if (t.description.toLowerCase().includes(searchLower)) return true;
@@ -159,7 +159,8 @@ export function useTransactions(filters?: TransactionFilters) {
           payment_method: data.paymentMethod,
           notes: data.notes || null,
         })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 
@@ -178,7 +179,8 @@ export function useTransactions(filters?: TransactionFilters) {
       const { error } = await supabase
         .from('financial_transactions')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 
@@ -214,3 +216,4 @@ export function useTransactions(filters?: TransactionFilters) {
     refetch: fetchTransactions,
   };
 }
+

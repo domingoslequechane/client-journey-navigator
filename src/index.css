@@ -206,15 +206,15 @@ All colors MUST be HSL.
   html {
     font-size: 15px;
   }
-  
+
   h1 {
     font-size: 1.5rem;
   }
-  
+
   h2 {
     font-size: 1.25rem;
   }
-  
+
   h3 {
     font-size: 1.1rem;
   }
@@ -223,7 +223,7 @@ All colors MUST be HSL.
 /* Theme transition for smooth color changes */
 .theme-transitioning,
 .theme-transitioning * {
-  transition: 
+  transition:
     background-color 0.3s ease,
     border-color 0.3s ease,
     color 0.3s ease,
@@ -243,12 +243,58 @@ All colors MUST be HSL.
   }
 }
 
+/* AI Generation Animations - Smooth & Premium */
+@keyframes glow {
+
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1) saturate(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    filter: brightness(1.15) saturate(1.1);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animate-glow {
+  animation: glow 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
 /* Animation Keyframes */
 @keyframes fadeUp {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -259,6 +305,7 @@ All colors MUST be HSL.
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -269,6 +316,7 @@ All colors MUST be HSL.
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -280,6 +328,7 @@ All colors MUST be HSL.
     opacity: 0;
     transform: translateX(20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -291,6 +340,7 @@ All colors MUST be HSL.
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -334,21 +384,24 @@ All colors MUST be HSL.
   @apply absolute inset-0 opacity-0 cursor-pointer;
 }
 
-.phone-input-container .PhoneInputCountrySelect:focus + .PhoneInputCountryIcon--border {
+.phone-input-container .PhoneInputCountrySelect:focus+.PhoneInputCountryIcon--border {
   @apply ring-1 ring-ring;
 }
 
 /* Neon Border Animation for Active Plan */
 @keyframes neonPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 2px var(--neon-color),
-                0 0 5px var(--neon-color),
-                0 0 8px var(--neon-color);
+      0 0 5px var(--neon-color),
+      0 0 8px var(--neon-color);
   }
+
   50% {
     box-shadow: 0 0 5px var(--neon-color),
-                0 0 10px var(--neon-color),
-                0 0 15px var(--neon-color);
+      0 0 10px var(--neon-color),
+      0 0 15px var(--neon-color);
   }
 }
 
@@ -369,32 +422,39 @@ All colors MUST be HSL.
 }
 
 .neon-pulse {
-animation: neonPulse 2s ease-in-out infinite;
-border-width: 2px;
-border-style: solid;
-border-color: var(--neon-color);
+  animation: neonPulse 2s ease-in-out infinite;
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--neon-color);
 }
 
 @layer utilities {
-.scrollbar-none {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-.scrollbar-none::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
-}
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.2);
-  border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.4);
-}
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari and Opera */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
 }

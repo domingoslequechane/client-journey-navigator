@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/hooks/useOrganization';
 
-export type UserRole = 'admin' | 'sales' | 'operations' | 'campaign_management';
+export type UserRole = 'admin' | 'sales' | 'operations' | 'campaign_management' | 'owner';
 
 // Stages each role is responsible for
 const SALES_STAGES = ['prospeccao', 'reuniao', 'contratacao'];
@@ -11,8 +12,11 @@ const CAMPAIGN_STAGES = ['trafego', 'retencao', 'fidelizacao'];
 
 export function useUserRole() {
   const { user } = useAuth();
+  const { organizationId: effectiveOrgId } = useOrganization();
   const [role, setRole] = useState<UserRole | null>(null);
   const [privileges, setPrivileges] = useState<string[]>([]);
+  const [accountType, setAccountType] = useState<string>('user');
+  const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,34 +27,53 @@ export function useUserRole() {
       }
 
       try {
-        // First get the user's profile to know org and role
+        setLoading(true);
+        // First get the user's profile to know the default role
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('role, privileges, organization_id, current_organization_id')
+          .select('role, privileges, account_type')
           .eq('id', user.id)
           .single();
 
-        if (profileError) throw profileError;
+        if (profileError && profileError.code !== 'PGRST116') throw profileError;
 
-        const effectiveOrgId = profileData?.current_organization_id || profileData?.organization_id;
-
-        // Fetch privileges from organization_members (this is where the real privileges are stored)
+        // Fetch privileges from organization_members for the active organization
         let memberPrivileges: string[] = (profileData?.privileges as string[]) || [];
-        if (effectiveOrgId) {
-          const { data: memberData } = await supabase
-            .from('organization_members')
-            .select('privileges, role')
-            .eq('user_id', user.id)
-            .eq('organization_id', effectiveOrgId)
-            .maybeSingle();
+        let memberRole: string = profileData?.role || 'user';
+        // isOwner: only true if this user is the owner_id of the CURRENT org
+        let isOrgOwner = false;
 
-          if (memberData?.privileges && (memberData.privileges as string[]).length > 0) {
-            memberPrivileges = memberData.privileges as string[];
+        if (effectiveOrgId) {
+          const [{ data: memberData }, { data: orgData }] = await Promise.all([
+            supabase
+              .from('organization_members')
+              .select('privileges, role')
+              .eq('user_id', user.id)
+              .eq('organization_id', effectiveOrgId)
+              .maybeSingle(),
+            supabase
+              .from('organizations')
+              .select('owner_id')
+              .eq('id', effectiveOrgId)
+              .single()
+          ]);
+
+          isOrgOwner = orgData?.owner_id === user.id;
+
+          if (memberData) {
+            if (memberData.privileges && (memberData.privileges as string[]).length > 0) {
+              memberPrivileges = memberData.privileges as string[];
+            }
+            if (memberData.role) {
+              memberRole = memberData.role;
+            }
           }
         }
 
-        setRole(profileData?.role as UserRole || 'sales');
+        setRole(memberRole as UserRole);
         setPrivileges(memberPrivileges);
+        setAccountType(isOrgOwner ? 'owner' : 'collaborator');
+        setIsOwner(isOrgOwner);
       } catch (error) {
         console.error('Error fetching user profile:', error);
         setRole('sales');
@@ -61,10 +84,11 @@ export function useUserRole() {
     };
 
     fetchProfile();
-  }, [user]);
+  }, [user, effectiveOrgId]);
+
 
   const permissions = useMemo(() => {
-    const isAdmin = role === 'admin' || privileges.includes('admin');
+    const isAdmin = isOwner;
     const hasPrivilege = (p: string) => isAdmin || privileges.includes(p);
     // Finance access is ALWAYS explicit — never inherited from admin role
     const hasFinanceAccess = privileges.includes('finance');
@@ -109,7 +133,9 @@ export function useUserRole() {
   return {
     role,
     loading,
-    isAdmin: role === 'admin',
+    isAdmin: role === 'owner' || role === 'admin' || isOwner,
+    isOwner: role === 'owner' || isOwner,
+    accountType,
     isSales: role === 'sales',
     isOperations: role === 'operations',
     isCampaigns: role === 'campaign_management',

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw, Lock, Ban, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -21,12 +23,14 @@ import { z } from 'zod';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useOrganization } from '@/hooks/useOrganization';
 
 interface TeamMember {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
-  role?: 'sales' | 'operations' | 'campaign_management' | 'admin' | string;
+  role?: 'sales' | 'operations' | 'campaign_management' | 'admin' | 'owner' | string;
   created_at: string | null;
   email?: string | null;
   status: 'active' | 'pending' | 'suspended';
@@ -49,7 +53,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 };
 
 const PRIVILEGES = [
-  { id: 'admin', label: 'Administrador', description: 'Acesso total ao sistema, gerenciamento de equipe e configurações' },
   { id: 'sales', label: 'Vendas', description: 'Funil de vendas no Pipeline e edição de clientes' },
   { id: 'designer', label: 'Designer', description: 'Fluxo operacional no Pipeline (sem edição de clientes)' },
   { id: 'finance', label: 'Finanças', description: 'Gerenciamento financeiro da agência' },
@@ -76,23 +79,27 @@ const inviteSchema = z.object({
 });
 
 export default function Team() {
+  const { user: currentUser } = useAuth();
   const { t } = useTranslation('team');
   const { t: tCommon } = useTranslation('common');
   const { roleLabels, getRoleLabel } = useTranslatedLabels();
   const navigate = useNavigate();
   const { canInviteTeamMember, planType, usage, limits, loading: planLoading } = usePlanLimits();
+  const { isOwner: currentUserIsOwner, isLoading: permissionsLoading, canAccessModule } = usePermissions();
+  const canManageTeam = canAccessModule('team');
+  const { organizationId: currentUserOrgId } = useOrganization();
+
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgOwnerId, setOrgOwnerId] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [errors, setErrors] = useState<{ email?: string; fullName?: string }>({});
-  const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState<boolean | null>(null);
-  const [currentUserOrgId, setCurrentUserOrgId] = useState<string | null>(null);
-  const [isProprietor, setIsProprietor] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedPrivileges, setSelectedPrivileges] = useState<string[]>([]);
+  const [selectedRole, setSelectedRole] = useState<string>('user');
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
@@ -103,51 +110,20 @@ export default function Team() {
   const [inviteToCancel, setInviteToCancel] = useState<TeamMember | null>(null);
 
   useEffect(() => {
-    checkAdminStatus();
-  }, []);
-
-  useEffect(() => {
-    if (isCurrentUserAdmin === true && currentUserOrgId) {
-      fetchMembers();
-    } else if (isCurrentUserAdmin === false) {
-      navigate('/app');
-      toast({
-        title: 'Acesso negado',
-        description: 'Apenas administradores podem acessar esta página',
-        variant: 'destructive',
-      });
-    }
-  }, [isCurrentUserAdmin, currentUserOrgId, navigate]);
-
-  const checkAdminStatus = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setIsCurrentUserAdmin(false);
-        return;
+    if (!permissionsLoading) {
+      if (canManageTeam && currentUserOrgId) {
+        fetchMembers();
+      } else if (!canManageTeam) {
+        navigate('/app');
+        toast({
+          title: 'Acesso negado',
+          description: 'Você não tem acesso ao módulo de Equipe',
+          variant: 'destructive',
+        });
       }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, organization_id, current_organization_id')
-        .eq('id', user.id)
-        .single();
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'proprietor')
-        .maybeSingle();
-
-      setIsProprietor(roleData?.role === 'proprietor');
-      setCurrentUserOrgId(profile?.current_organization_id || profile?.organization_id || null);
-      setIsCurrentUserAdmin(profile?.role === 'admin' || roleData?.role === 'proprietor');
-    } catch (error) {
-      console.error('Error checking admin status:', error);
-      setIsCurrentUserAdmin(false);
     }
-  };
+  }, [canManageTeam, permissionsLoading, currentUserOrgId, navigate]);
+
 
   const fetchMembers = async () => {
     setLoading(true);
@@ -159,11 +135,24 @@ export default function Team() {
       }
 
       // Fetch active members from organization_members table
-      const { data: orgMembers, error: membersError } = (await supabase
-        .from('organization_members')
-        .select('user_id, role, privileges')
-        .eq('organization_id', currentUserOrgId)
-        .eq('is_active', true)) as any;
+      const [{ data: orgMembers, error: membersError }, { data: orgData }] = await Promise.all([
+        supabase
+          .from('organization_members')
+          .select('user_id, role, privileges')
+          .eq('organization_id', currentUserOrgId)
+          .eq('is_active', true) as any,
+        // Fetch org owner_id to identify owner in the list
+        supabase
+          .from('organizations')
+          .select('owner_id')
+          .eq('id', currentUserOrgId)
+          .maybeSingle()
+      ]);
+
+      // Store the owner ID so we can display correct badge
+      if (orgData?.owner_id) {
+        setOrgOwnerId(orgData.owner_id);
+      }
 
       if (membersError) {
         console.error('Error fetching organization members:', membersError);
@@ -204,25 +193,11 @@ export default function Team() {
         }
       }
 
-      // Fetch proprietor user IDs to filter them out
-      const { data: proprietorRoles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'proprietor');
-
-      const proprietorIds = new Set(proprietorRoles?.map(r => r.user_id) || []);
-
-      // Filter out proprietors unless the current user is a proprietor
-      const filteredProfiles = profiles.filter(profile => {
-        if (isProprietor) return true;
-        return !proprietorIds.has(profile.id);
-      });
-
       // Create a map of user_id to role from organization_members
       const memberDataMap = new Map(orgMembers?.map(m => [m.user_id, { role: m.role, privileges: m.privileges }]) || []);
 
       // Map active members
-      const activeMembers: TeamMember[] = filteredProfiles.map(member => {
+      const activeMembers: TeamMember[] = profiles.map(member => {
         const memberData = memberDataMap.get(member.id) as any;
         return {
           id: member.id,
@@ -316,10 +291,7 @@ export default function Team() {
 
   const handleChangeRole = async () => {
     if (!selectedMember) return;
-
-    // For execution, derive role from selected privileges
-    const derivedRole = selectedPrivileges.includes('admin') ? 'admin' : 'operations';
-    await executeRoleChange(selectedMember.id, derivedRole, selectedPrivileges);
+    await executeRoleChange(selectedMember.id, selectedRole, selectedPrivileges);
   };
 
   const executeRoleChange = async (memberId: string, role: string, privileges: string[] = []) => {
@@ -512,7 +484,7 @@ export default function Team() {
     }
   };
 
-  if (isCurrentUserAdmin === null) {
+  if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -520,7 +492,7 @@ export default function Team() {
     );
   }
 
-  if (!isCurrentUserAdmin) {
+  if (!canManageTeam) {
     return null;
   }
 
@@ -604,8 +576,7 @@ export default function Team() {
                       <div key={privilege.id} className="flex items-start space-x-2 p-1.5 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-border/30">
                         <Checkbox
                           id={`privilege-${privilege.id}`}
-                          checked={selectedPrivileges.includes('admin') || selectedPrivileges.includes(privilege.id)}
-                          disabled={selectedPrivileges.includes('admin') && privilege.id !== 'admin'}
+                          checked={selectedPrivileges.includes(privilege.id)}
                           onCheckedChange={(checked) => {
                             if (checked) {
                               setSelectedPrivileges([...selectedPrivileges, privilege.id]);
@@ -681,8 +652,7 @@ export default function Team() {
                   <div key={`edit-${privilege.id}`} className="flex items-start space-x-2 p-1.5 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-border/30">
                     <Checkbox
                       id={`edit-privilege-${privilege.id}`}
-                      checked={selectedPrivileges.includes('admin') || selectedPrivileges.includes(privilege.id)}
-                      disabled={selectedPrivileges.includes('admin') && privilege.id !== 'admin'}
+                      checked={selectedPrivileges.includes(privilege.id)}
                       onCheckedChange={(checked) => {
                         if (checked) {
                           setSelectedPrivileges([...selectedPrivileges, privilege.id]);
@@ -712,6 +682,20 @@ export default function Team() {
                 ))}
               </TooltipProvider>
             </div>
+            {/* Role selection - Only visible to owners to promote/demote others */}
+            {currentUserIsOwner && selectedMember?.id !== (supabase.auth.getUser() as any).data?.user?.id && (
+              <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">Papel de Fundador (Owner)</Label>
+                  <p className="text-xs text-muted-foreground">Concede acesso total e poder de gestão sobre a agência.</p>
+                </div>
+                <Switch
+                  checked={selectedRole === 'owner'}
+                  onCheckedChange={(checked) => setSelectedRole(checked ? 'owner' : 'user')}
+                />
+              </div>
+            )}
+
             <div className="flex items-center gap-2 px-1 pt-2">
               <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">Universal</Badge>
               <p className="text-[11px] text-muted-foreground italic">
@@ -874,14 +858,21 @@ export default function Team() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1.5">
-                        <Badge variant="secondary" className={`w-fit ${member.privileges?.includes('admin') ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-800'}`}>
-                          {member.privileges?.includes('admin') ? 'Administrador' : 'Usuário Simples'}
-                        </Badge>
-                        {member.privileges && member.privileges.length > 0 && (
+                        {/* Owner badge for org owner, Colaborador for everyone else */}
+                        {member.id === orgOwnerId || member.role === 'owner' ? (
+                          <Badge variant="secondary" className="w-fit bg-orange-100 text-orange-800 border border-orange-200">
+                            👑 Dono
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="w-fit bg-slate-100 text-slate-700">
+                            Colaborador
+                          </Badge>
+                        )}
+                        {member.id !== orgOwnerId && member.privileges && member.privileges.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {member.privileges.map(p => (
                               <Badge key={p} variant="outline" className="text-[10px] px-1 py-0 h-4 bg-muted/50">
-                                {PRIVILEGES.find(pr => pr.id === p)?.label || p}
+                                {PRIVILEGES.find(pr => pr.id === p)?.label || UNIVERSAL_PRIVILEGES.find(pr => pr.id === p)?.label || p}
                               </Badge>
                             ))}
                           </div>
@@ -932,15 +923,28 @@ export default function Team() {
                             </>
                           ) : (
                             <>
-                              <DropdownMenuItem onClick={() => {
-                                setSelectedMember(member);
-                                setSelectedPrivileges(member.privileges || []);
-                                setRoleDialogOpen(true);
-                              }}>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedMember(member);
+                                  setSelectedPrivileges(member.privileges || []);
+                                  setSelectedRole(member.role || 'user');
+                                  setRoleDialogOpen(true);
+                                }}
+                                disabled={
+                                  member.id === currentUser?.id ||
+                                  (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
+                                }
+                              >
                                 <Shield className="h-4 w-4 mr-2" />
                                 Alterar Privilégios
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleToggleSuspend(member)}>
+                              <DropdownMenuItem
+                                onClick={() => handleToggleSuspend(member)}
+                                disabled={
+                                  member.id === currentUser?.id ||
+                                  (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
+                                }
+                              >
                                 {member.status === 'suspended' ? (
                                   <>
                                     <UserCheck className="h-4 w-4 mr-2" />
@@ -957,6 +961,10 @@ export default function Team() {
                               <DropdownMenuItem
                                 onClick={() => openRemoveDialog(member)}
                                 className="text-destructive"
+                                disabled={
+                                  member.id === currentUser?.id ||
+                                  (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
+                                }
                               >
                                 <UserX className="h-4 w-4 mr-2" />
                                 Remover da Equipe
@@ -976,3 +984,4 @@ export default function Team() {
     </div>
   );
 }
+

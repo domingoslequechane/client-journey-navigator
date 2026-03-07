@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import type { FinanceProject, ProjectFormData, ProjectFilters, ProjectStatus } from '@/types/finance';
@@ -8,7 +8,7 @@ import type { FinanceProject, ProjectFormData, ProjectFilters, ProjectStatus } f
 export function useFinanceProjects(filters?: ProjectFilters) {
   const [projects, setProjects] = useState<FinanceProject[]>([]);
   const [loading, setLoading] = useState(true);
-  const { organizationId } = useOrganizationCurrency();
+  const { organizationId } = useOrganization();
   const { user } = useAuth();
 
   const fetchProjects = useCallback(async () => {
@@ -128,7 +128,8 @@ export function useFinanceProjects(filters?: ProjectFilters) {
           start_date: data.startDate,
           end_date: data.endDate || null,
         })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 
@@ -147,7 +148,8 @@ export function useFinanceProjects(filters?: ProjectFilters) {
       const { error } = await supabase
         .from('financial_projects')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 
@@ -177,3 +179,4 @@ export function useFinanceProjects(filters?: ProjectFilters) {
     refetch: fetchProjects,
   };
 }
+

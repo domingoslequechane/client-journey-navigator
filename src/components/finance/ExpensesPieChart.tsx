@@ -1,6 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import type { CategoryData } from '@/types/finance';
 
 interface ExpensesPieChartProps {
@@ -9,7 +9,7 @@ interface ExpensesPieChartProps {
 }
 
 export function ExpensesPieChart({ data, title = 'Despesas por Categoria' }: ExpensesPieChartProps) {
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol } = useOrganization();
 
   if (data.length === 0) {
     return (
@@ -75,3 +75,4 @@ export function ExpensesPieChart({ data, title = 'Despesas por Categoria' }: Exp
     </Card>
   );
 }
+

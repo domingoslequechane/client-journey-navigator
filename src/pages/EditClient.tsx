@@ -5,15 +5,16 @@ import { ServiceType } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientFormView, ClientFormData, initialFormData } from '@/components/clients/ClientFormView';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export default function EditClient() {
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
-  
+
   const [formData, setFormData] = useState<ClientFormData>(initialFormData);
   const [saving, setSaving] = useState(false);
   const [loadingClient, setLoadingClient] = useState(true);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const { organizationId } = useOrganization();
 
   // Update form data helpers - use functional updates to avoid stale state
   const updateField = useCallback(<K extends keyof ClientFormData>(field: K, value: ClientFormData[K]) => {
@@ -35,12 +36,12 @@ export default function EditClient() {
 
   // Load client data on mount
   useEffect(() => {
-    if (clientId) {
+    if (clientId && organizationId) {
       loadClientData(clientId);
-    } else {
+    } else if (!clientId) {
       navigate('/app/clients');
     }
-  }, [clientId, navigate]);
+  }, [clientId, organizationId, navigate]);
 
   const loadClientData = async (id: string) => {
     setLoadingClient(true);
@@ -49,6 +50,7 @@ export default function EditClient() {
         .from('clients')
         .select('*')
         .eq('id', id)
+        .eq('organization_id', organizationId)
         .single();
 
       if (error) throw error;
@@ -77,7 +79,6 @@ export default function EditClient() {
           budgetCurrency: 'MZN',
           trafficCurrency: 'USD',
         });
-        setOrganizationId(client.organization_id);
       }
     } catch (error) {
       console.error('Error loading client:', error);
@@ -90,7 +91,7 @@ export default function EditClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.companyName || !formData.contactName || !formData.phone) {
       toast({ title: 'Erro', description: 'Preencha os campos obrigatórios', variant: 'destructive' });
       return;
@@ -122,7 +123,8 @@ export default function EditClient() {
       const { error } = await supabase
         .from('clients')
         .update(clientData)
-        .eq('id', clientId);
+        .eq('id', clientId)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 

@@ -1,6 +1,6 @@
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import type { MonthlyData } from '@/types/finance';
 
 interface MonthlyComparisonChartProps {
@@ -9,7 +9,7 @@ interface MonthlyComparisonChartProps {
 }
 
 export function MonthlyComparisonChart({ data, title = 'Comparativo Mensal' }: MonthlyComparisonChartProps) {
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol } = useOrganization();
 
   const formatValue = (value: number) => {
     if (value >= 1000000) return `${currencySymbol} ${(value / 1000000).toFixed(1)}M`;
@@ -69,3 +69,4 @@ export function MonthlyComparisonChart({ data, title = 'Comparativo Mensal' }: M
     </Card>
   );
 }
+

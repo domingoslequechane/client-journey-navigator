@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { startOfWeek, endOfWeek, startOfDay, endOfDay, format } from 'date-fns';
@@ -36,7 +36,7 @@ export function useEditorialTasks(options: UseEditorialTasksOptions = {}) {
   const { periodFilter = 'week', clientFilter = null, statusFilter = null } = options;
   const [tasks, setTasks] = useState<EditorialTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const { organizationId } = useOrganizationCurrency();
+  const { organizationId } = useOrganization();
   const { user } = useAuth();
 
   const fetchTasks = useCallback(async () => {
@@ -143,7 +143,8 @@ export function useEditorialTasks(options: UseEditorialTasksOptions = {}) {
       const { error } = await (supabase as any)
         .from('editorial_tasks')
         .update(updates)
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 
@@ -163,7 +164,8 @@ export function useEditorialTasks(options: UseEditorialTasksOptions = {}) {
       const { error } = await (supabase as any)
         .from('editorial_tasks')
         .delete()
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 
@@ -187,3 +189,4 @@ export function useEditorialTasks(options: UseEditorialTasksOptions = {}) {
     refetch: fetchTasks,
   };
 }
+

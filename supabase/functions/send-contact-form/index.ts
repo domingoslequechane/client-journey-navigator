@@ -130,7 +130,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Link23 by Qualify <noreply@onixagence.com>",
+        from: "Link23 by Qualify <noreply@qualify.marketing>",
         to: [recipientEmail],
         subject: `Nova mensagem de contato - ${pageName}`,
         html: recipientEmailHtml,

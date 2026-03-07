@@ -69,6 +69,13 @@ serve(async (req) => {
       );
     }
 
+    // Get profile details for permission check
+    const { data: profileData } = await supabaseAdmin
+      .from("profiles")
+      .select("role, privileges, organization_id, current_organization_id, full_name, account_type")
+      .eq("id", user.id)
+      .single();
+
     // SECURITY: Verify proprietor privileges using user_roles table
     const { data: roleData } = await supabaseAdmin
       .from("user_roles")
@@ -77,17 +84,20 @@ serve(async (req) => {
       .eq("role", "proprietor")
       .maybeSingle();
 
-    // Also check profiles table for admin role (organization admin support)
-    const { data: profileData } = await supabaseAdmin
-      .from("profiles")
-      .select("role, organization_id, current_organization_id, full_name")
-      .eq("id", user.id)
-      .single();
-
-    const isAdmin = roleData?.role === "proprietor" || profileData?.role === "admin";
+    // isAdmin logic: 
+    // 1. role is 'admin' or 'owner' (from profiles)
+    // 2. account_type is 'owner' (from profiles)
+    // 3. has the 'team' privilege
+    // 4. has the 'proprietor' app_role (from user_roles)
+    const isAdmin =
+      roleData?.role === "proprietor" ||
+      profileData?.role === "admin" ||
+      profileData?.role === "owner" ||
+      profileData?.account_type === "owner" ||
+      (profileData?.privileges || []).includes("team");
 
     if (!isAdmin) {
-      console.error(`User ${user.id} attempted to invite without admin privileges`);
+      console.error(`User ${user.id} (${user.email}) attempted to invite without admin privileges. Role: ${profileData?.role}, AccountType: ${profileData?.account_type}, Privileges: ${profileData?.privileges?.join(', ')}`);
       return new Response(
         JSON.stringify({ error: "Apenas administradores podem convidar novos membros" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -242,7 +252,7 @@ serve(async (req) => {
     }
 
     // Create accept invite link
-    const origin = req.headers.get("origin") || "https://qualify.onixagence.com";
+    const origin = req.headers.get("origin") || "https://qualify.marketing";
     const acceptInviteLink = `${origin}/accept-invite?token=${inviteToken}`;
 
     // If user doesn't exist, we used to generate a Supabase invite link.
@@ -263,7 +273,7 @@ serve(async (req) => {
       });
 
       await resend.emails.send({
-        from: "Qualify <no-reply@onixagence.com>",
+        from: "Qualify <no-reply@qualify.marketing>",
         to: [email],
         subject: `${inviterName} convidou você para ${organizationName}`,
         html: emailHtml,
@@ -531,7 +541,7 @@ function generateInviteEmailHtml({
           </div>
         </div>
         <div class="footer">
-          <p>© ${new Date().getFullYear()} <a href="https://qualify.onixagence.com" class="footer-logo">Qualify</a> - <a href="https://onixagence.com" class="footer-link">Onix Agence</a></p>
+          <p>© ${new Date().getFullYear()} <a href="https://qualify.marketing" class="footer-logo">Qualify</a> - <a href="https://qualify.marketing" class="footer-link">Qualify Marketing</a></p>
         </div>
       </div>
     </body>

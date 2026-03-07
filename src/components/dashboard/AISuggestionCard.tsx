@@ -24,20 +24,21 @@ export function AISuggestionCard({ clients }: AISuggestionCardProps) {
 
   if (isLoading) {
     return (
-      <Card className="bg-card/80 backdrop-blur-sm border-border/50 bg-gradient-to-br from-primary/10 to-card/80">
+      <Card className="bg-card/80 backdrop-blur-sm border-border/50 bg-gradient-to-br from-primary/10 to-card/80 animate-glow overflow-hidden relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <Loader2 className="h-5 w-5 text-primary animate-spin" />
+            <div className="h-5 w-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
             <CardTitle className="text-base font-semibold">Analisando clientes...</CardTitle>
           </div>
           <CardDescription>IA processando dados</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-          <div className="flex items-center justify-between pt-2 border-t border-border">
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-8 w-28" />
+          <Skeleton className="h-4 w-full bg-primary/5" />
+          <Skeleton className="h-4 w-3/4 bg-primary/5" />
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+            <Skeleton className="h-8 w-24 bg-primary/5" />
+            <Skeleton className="h-8 w-28 bg-primary/5" />
           </div>
         </CardContent>
       </Card>
@@ -95,14 +96,13 @@ export function AISuggestionCard({ clients }: AISuggestionCardProps) {
         <p className="text-sm text-muted-foreground leading-relaxed">
           {suggestion.message}
         </p>
-        
+
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="flex items-center gap-2">
-            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-              suggestion.priority === 'high' ? 'bg-destructive/10 text-destructive' :
-              suggestion.priority === 'medium' ? 'bg-warning/10 text-warning' :
-              'bg-muted text-muted-foreground'
-            }`}>
+            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${suggestion.priority === 'high' ? 'bg-destructive/10 text-destructive' :
+                suggestion.priority === 'medium' ? 'bg-warning/10 text-warning' :
+                  'bg-muted text-muted-foreground'
+              }`}>
               <Icon className="h-4 w-4" />
             </div>
             <span className="text-xs text-muted-foreground capitalize">

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/hooks/useOrganization';
 import { toast } from '@/hooks/use-toast';
 import type { SocialPlatform } from '@/lib/social-media-mock';
 
@@ -25,29 +26,18 @@ export interface SocialMessage {
 }
 
 export function useSocialMessages(clientId?: string | null) {
-  const { user } = useAuth();
+  const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
 
-  const getOrgId = async () => {
-    if (!user) return null;
-    const { data } = await supabase
-      .from('profiles')
-      .select('current_organization_id')
-      .eq('id', user.id)
-      .single();
-    return data?.current_organization_id ?? null;
-  };
-
   const messagesQuery = useQuery({
-    queryKey: ['social-messages', user?.id, clientId],
+    queryKey: ['social-messages', organizationId, clientId],
     queryFn: async () => {
-      const orgId = await getOrgId();
-      if (!orgId) return [];
+      if (!organizationId) return [];
 
       let query = supabase
         .from('social_messages' as any)
         .select('*')
-        .eq('organization_id', orgId)
+        .eq('organization_id', organizationId)
         .order('received_at', { ascending: false });
 
       if (clientId) {
@@ -58,19 +48,18 @@ export function useSocialMessages(clientId?: string | null) {
       if (error) throw error;
       return (data || []) as unknown as SocialMessage[];
     },
-    enabled: !!user,
+    enabled: !!organizationId,
   });
 
   const unreadCountQuery = useQuery({
-    queryKey: ['social-messages-unread', user?.id, clientId],
+    queryKey: ['social-messages-unread', organizationId, clientId],
     queryFn: async () => {
-      const orgId = await getOrgId();
-      if (!orgId) return 0;
+      if (!organizationId) return 0;
 
       let query = supabase
         .from('social_messages' as any)
         .select('id', { count: 'exact', head: true })
-        .eq('organization_id', orgId)
+        .eq('organization_id', organizationId)
         .eq('is_read', false);
 
       if (clientId) {
@@ -81,7 +70,7 @@ export function useSocialMessages(clientId?: string | null) {
       if (error) throw error;
       return count || 0;
     },
-    enabled: !!user,
+    enabled: !!organizationId,
   });
 
   const markAsRead = useMutation({
@@ -89,7 +78,8 @@ export function useSocialMessages(clientId?: string | null) {
       const { error } = await supabase
         .from('social_messages' as any)
         .update({ is_read: true } as any)
-        .eq('id', messageId);
+        .eq('id', messageId)
+        .eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -102,7 +92,7 @@ export function useSocialMessages(clientId?: string | null) {
     mutationFn: async ({ messageId, replyContent }: { messageId: string; replyContent: string }) => {
       // Call edge function to send reply via Late.dev
       const { data, error } = await supabase.functions.invoke('social-reply-message', {
-        body: { message_id: messageId, reply_content: replyContent },
+        body: { message_id: messageId, reply_content: replyContent, organization_id: organizationId },
       });
 
       if (error) throw error;
@@ -121,7 +111,9 @@ export function useSocialMessages(clientId?: string | null) {
 
   const fetchMessages = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('social-fetch-messages');
+      const { data, error } = await supabase.functions.invoke('social-fetch-messages', {
+        body: { organization_id: organizationId }
+      });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;

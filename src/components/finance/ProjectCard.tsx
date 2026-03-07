@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import type { FinanceProject } from '@/types/finance';
 import { PROJECT_STATUS_LABELS } from '@/types/finance';
 
@@ -35,7 +35,7 @@ export function ProjectCard({
   onDelete,
   canManage = true,
 }: ProjectCardProps) {
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol } = useOrganization();
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -107,3 +107,4 @@ export function ProjectCard({
     </Card>
   );
 }
+

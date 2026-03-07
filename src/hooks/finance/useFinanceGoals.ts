@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { toast } from '@/hooks/use-toast';
 import type { FinanceGoal, GoalFormData, GoalType } from '@/types/finance';
 
 export function useFinanceGoals(year?: number) {
   const [goals, setGoals] = useState<FinanceGoal[]>([]);
   const [loading, setLoading] = useState(true);
-  const { organizationId } = useOrganizationCurrency();
+  const { organizationId } = useOrganization();
 
   const currentYear = year || new Date().getFullYear();
 
@@ -103,7 +103,8 @@ export function useFinanceGoals(year?: number) {
       const { error } = await supabase
         .from('financial_goals')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 
@@ -122,7 +123,8 @@ export function useFinanceGoals(year?: number) {
       const { error } = await supabase
         .from('financial_goals')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 
@@ -151,3 +153,4 @@ export function useFinanceGoals(year?: number) {
     refetch: fetchGoals,
   };
 }
+

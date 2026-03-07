@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useTransactions } from '@/hooks/finance';
 import {
@@ -17,7 +17,7 @@ import {
 import type { Transaction, TransactionFormData, TransactionFilters } from '@/types/finance';
 
 export default function FinanceTransactions() {
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol } = useOrganization();
   const { canManageFinance } = useUserRole();
 
   const [search, setSearch] = useState('');
@@ -156,3 +156,4 @@ export default function FinanceTransactions() {
     </AnimatedContainer>
   );
 }
+

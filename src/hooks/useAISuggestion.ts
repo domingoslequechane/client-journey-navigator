@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/hooks/useOrganization';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Client = Tables<'clients'>;
@@ -22,7 +23,6 @@ interface UseAISuggestionResult {
   lastUpdated: Date | null;
 }
 
-const CACHE_KEY = 'ai_suggestion_cache';
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 interface CachedSuggestion {
@@ -30,32 +30,36 @@ interface CachedSuggestion {
   timestamp: number;
 }
 
-function getCachedSuggestion(): AISuggestion | null {
+const getCacheKey = (orgId: string | null) => `ai_suggestion_cache_${orgId || 'no_org'}`;
+
+function getCachedSuggestion(orgId: string | null): AISuggestion | null {
   try {
-    const cached = localStorage.getItem(CACHE_KEY);
+    const key = getCacheKey(orgId);
+    const cached = localStorage.getItem(key);
     if (!cached) return null;
-    
+
     const parsed: CachedSuggestion = JSON.parse(cached);
     const now = Date.now();
-    
+
     if (now - parsed.timestamp < CACHE_DURATION_MS) {
       return parsed.suggestion;
     }
-    
-    localStorage.removeItem(CACHE_KEY);
+
+    localStorage.removeItem(key);
     return null;
   } catch {
     return null;
   }
 }
 
-function setCachedSuggestion(suggestion: AISuggestion): void {
+function setCachedSuggestion(orgId: string | null, suggestion: AISuggestion): void {
   try {
+    const key = getCacheKey(orgId);
     const cached: CachedSuggestion = {
       suggestion,
       timestamp: Date.now()
     };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cached));
+    localStorage.setItem(key, JSON.stringify(cached));
   } catch {
     // Ignore cache errors
   }
@@ -66,10 +70,11 @@ export function useAISuggestion(clients: Client[]): UseAISuggestionResult {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const { organizationId } = useOrganization();
 
   const fetchSuggestion = useCallback(async (forceRefresh = false) => {
     if (!forceRefresh) {
-      const cached = getCachedSuggestion();
+      const cached = getCachedSuggestion(organizationId);
       if (cached) {
         setSuggestion(cached);
         setLastUpdated(new Date());
@@ -90,8 +95,8 @@ export function useAISuggestion(clients: Client[]): UseAISuggestionResult {
         .filter(c => ['prospeccao', 'reuniao', 'contratacao'].includes(c.current_stage))
         .sort((a, b) => {
           const qualOrder = { hot: 0, qualified: 1, warm: 2, cold: 3 };
-          return (qualOrder[a.qualification as keyof typeof qualOrder] || 4) - 
-                 (qualOrder[b.qualification as keyof typeof qualOrder] || 4);
+          return (qualOrder[a.qualification as keyof typeof qualOrder] || 4) -
+            (qualOrder[b.qualification as keyof typeof qualOrder] || 4);
         })
         .slice(0, 10);
 
@@ -126,7 +131,7 @@ export function useAISuggestion(clients: Client[]): UseAISuggestionResult {
 
       if (data?.suggestion) {
         setSuggestion(data.suggestion);
-        setCachedSuggestion(data.suggestion);
+        setCachedSuggestion(organizationId, data.suggestion);
         setLastUpdated(new Date());
       } else if (data?.error) {
         throw new Error(data.error);

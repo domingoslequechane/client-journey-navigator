@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SalesFunnelSkeleton } from '@/components/ui/loading-skeleton';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -32,7 +32,7 @@ export default function Pipeline() {
   const { getTemperatureLabel, getSourceLabel, getStageLabel } = useTranslatedLabels();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { currencySymbol } = useOrganizationCurrency();
+  const { currencySymbol, organizationId } = useOrganization();
   const { user } = useAuth();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
   const { hasPrivilege } = usePermissions();
@@ -62,11 +62,14 @@ export default function Pipeline() {
 
   // Fetch clients from Supabase
   const { data: clients = [], isLoading } = useQuery({
-    queryKey: ['pipeline-clients', user?.id, currentTab],
+    queryKey: ['pipeline-clients', user?.id, currentTab, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
+        .eq('organization_id', organizationId)
         .in('current_stage', stageDbValues)
         .order('updated_at', { ascending: false });
 
@@ -85,7 +88,7 @@ export default function Pipeline() {
         return mapDbClientToUiClient(dbClient, clientChecklist);
       });
     },
-    enabled: !!user?.id
+    enabled: !!user?.id && !!organizationId
   });
 
   const getClientsByStage = (stageId: string) => clients.filter(client => client.stage === stageId);

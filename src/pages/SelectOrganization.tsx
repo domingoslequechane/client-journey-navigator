@@ -114,8 +114,8 @@ export default function SelectOrganization() {
       // Clear the new login flag so user won't be redirected back here
       clearNewLoginFlag();
 
-      // Navigate to dashboard
-      navigate('/app');
+      // Navigate to dashboard with full page reload to ensure clean workspace state
+      window.location.href = '/app';
     } catch (error) {
       console.error('Error selecting organization:', error);
       toast({

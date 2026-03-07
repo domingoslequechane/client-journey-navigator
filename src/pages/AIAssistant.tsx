@@ -12,7 +12,7 @@ import { ScrollToBottomButton } from '@/components/ai/ScrollToBottomButton';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationCurrency } from '@/hooks/useOrganizationCurrency';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useRateLimit } from '@/hooks/useRateLimit';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
@@ -47,13 +47,13 @@ const AI_SIDEBAR_COLLAPSED_KEY = 'qualify-ai-sidebar-collapsed';
 
 export default function AIAssistant() {
   const queryClient = useQueryClient();
-  const { currencySymbol, organizationId } = useOrganizationCurrency();
+  const { currencySymbol, organizationId } = useOrganization();
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const { canAccessAI, incrementUsage, usage, limits } = usePlanLimits();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
   const { isFavorited, toggleFavorite, isToggling } = useMessageFavorites(organizationId);
-  
+
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const { value: input, setValue: setInput } = useDraft({
@@ -62,7 +62,7 @@ export default function AIAssistant() {
     storage: 'session',
     debounceMs: 200,
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export default function AIAssistant() {
   const [showClientList, setShowClientList] = useState(true);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const sendingRef = useRef(false);
@@ -89,18 +89,20 @@ export default function AIAssistant() {
   }, [sidebarCollapsed]);
 
   const { data: clients = [], isLoading: loadingClients } = useQuery({
-    queryKey: ['clients-with-conversations'],
+    queryKey: ['clients-with-conversations', organizationId],
     queryFn: async () => {
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('updated_at', { ascending: false });
 
       if (clientsError) throw clientsError;
 
       const { data: conversations } = await supabase
         .from('ai_conversations')
-        .select('id, client_id');
+        .select('id, client_id')
+        .eq('organization_id', organizationId);
 
       return (clientsData || []).map(client => ({
         ...client,
@@ -111,7 +113,7 @@ export default function AIAssistant() {
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.contact_name.toLowerCase().includes(searchTerm.toLowerCase());
+      client.contact_name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStage = filterStage === 'all' || client.current_stage === filterStage;
     return matchesSearch && matchesStage;
   });
@@ -119,7 +121,7 @@ export default function AIAssistant() {
   const selectedClient = clients.find(c => c.id === selectedClientId);
 
   const { data: conversationMessages = [] } = useQuery({
-    queryKey: ['conversation-messages', selectedClient?.conversation_id],
+    queryKey: ['conversation-messages', organizationId, selectedClient?.conversation_id],
     queryFn: async () => {
       if (!selectedClient?.conversation_id) return [];
       const { data, error } = await supabase
@@ -173,9 +175,26 @@ export default function AIAssistant() {
   }, [messages, scrollToBottom]);
 
   const getOrCreateConversation = async (clientId: string): Promise<string> => {
-    const { data: existing } = await supabase.from('ai_conversations').select('id').eq('client_id', clientId).maybeSingle();
+    if (!organizationId) throw new Error('Organization ID required');
+
+    const { data: existing } = await supabase
+      .from('ai_conversations')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+
     if (existing) return existing.id;
-    const { data: newConv, error } = await supabase.from('ai_conversations').insert({ client_id: clientId }).select('id').single();
+
+    const { data: newConv, error } = await supabase
+      .from('ai_conversations')
+      .insert({
+        client_id: clientId,
+        organization_id: organizationId
+      })
+      .select('id')
+      .single();
+
     if (error) throw error;
     return newConv.id;
   };
@@ -210,7 +229,7 @@ export default function AIAssistant() {
     const apiMessages = messages
       .filter(m => m.id !== 'welcome')
       .map(m => ({ role: m.role, content: m.content }));
-    
+
     if (fileInfo?.type.startsWith('image/') && fileInfo.base64) {
       apiMessages.push({
         role: 'user',
@@ -237,7 +256,7 @@ export default function AIAssistant() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           messages: apiMessages,
           clientData: selectedClient
         }),
@@ -262,10 +281,10 @@ export default function AIAssistant() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        
+
         const chunk = decoder.decode(value);
         const lines = chunk.split("\n");
-        
+
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           const jsonStr = line.slice(6).trim();
@@ -320,7 +339,7 @@ export default function AIAssistant() {
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
+
       const { error } = await supabase.storage.from('chat-files').upload(fileName, file);
       if (error) throw error;
 
@@ -335,7 +354,7 @@ export default function AIAssistant() {
       });
 
       toast({ title: 'Arquivo anexado', description: file.name });
-      
+
       // Focus back on input after file upload
       setTimeout(() => {
         chatInputRef.current?.focus();
@@ -373,18 +392,18 @@ export default function AIAssistant() {
     const fileToSend = pendingFile;
     setInput('');
     setPendingFile(null);
-    
+
     // Focus immediately after clearing input for sending
     setTimeout(() => {
       chatInputRef.current?.focus();
     }, 0);
-    
+
     setIsLoading(true);
 
     await streamChat(messageText, fileToSend || undefined);
     await incrementUsage('ai_messages');
     setIsLoading(false);
-    
+
     setTimeout(() => { sendingRef.current = false; }, 500);
   };
 
@@ -444,11 +463,11 @@ export default function AIAssistant() {
           </div>
         ) : (
           <div className="flex flex-col bg-background h-full">
-            <ChatHeader 
-              client={selectedClient} 
-              isMobile={isMobile} 
-              onBack={handleBackToClientList} 
-              getStageLabel={getStageLabel} 
+            <ChatHeader
+              client={selectedClient}
+              isMobile={isMobile}
+              onBack={handleBackToClientList}
+              getStageLabel={getStageLabel}
             />
 
             <div className="flex-1 relative overflow-hidden min-h-0">
@@ -472,13 +491,13 @@ export default function AIAssistant() {
                       {isTyping && (
                         <div className="flex gap-2 md:gap-3 animate-fade-in">
                           <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
-                          <div className="bg-muted rounded-xl px-3 py-2.5 md:px-4 md:py-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">{pendingFile ? 'analisando arquivo' : 'digitando'}</span>
-                              <div className="flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" />
-                                <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          <div className="bg-muted rounded-xl px-3 py-2.5 md:px-4 md:py-3 animate-glow">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-muted-foreground font-medium">{pendingFile ? 'Analisando arquivo' : 'Garantindo precisão'}</span>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-duration:1s] [animation-delay:-0.3s]" />
+                                <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-duration:1s] [animation-delay:-0.15s]" />
+                                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-duration:1s]" />
                               </div>
                             </div>
                           </div>
@@ -494,7 +513,7 @@ export default function AIAssistant() {
 
             <FilePreview file={pendingFile} onRemove={() => setPendingFile(null)} />
 
-            <ChatInput 
+            <ChatInput
               ref={chatInputRef}
               input={input}
               setInput={setInput}
@@ -515,7 +534,7 @@ export default function AIAssistant() {
             {sidebarCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
           </Button>
         </div>
-        
+
         {!sidebarCollapsed && limits.maxAIMessagesPerMonth !== null && (
           <div className="p-4 border-b border-border">
             <div className="text-xs text-muted-foreground mb-2">Uso de IA este mês</div>
@@ -532,7 +551,7 @@ export default function AIAssistant() {
         )}
 
         {!sidebarCollapsed && (
-          <ClientSidebar 
+          <ClientSidebar
             clients={filteredClients}
             loadingClients={loadingClients}
             selectedClientId={selectedClientId}

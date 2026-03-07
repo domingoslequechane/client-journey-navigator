@@ -1,15 +1,15 @@
 const ALLOWED_ORIGINS = [
-  "https://qualify.onixagence.com",
+  "https://qualify.marketing",
   "https://qualify.lovable.app",
 ];
 
 export function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
-  
+
   // Permite origens oficiais ou subdomínios de preview comuns
   const isAllowed =
-    ALLOWED_ORIGINS.includes(origin) || 
-    origin.endsWith(".lovable.app") || 
+    ALLOWED_ORIGINS.includes(origin) ||
+    origin.endsWith(".lovable.app") ||
     origin.endsWith(".gpt-engineer.ai") ||
     origin.startsWith("http://localhost");
 

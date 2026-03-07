@@ -316,8 +316,8 @@ export default function AcceptInvite() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Privilégio Principal:</span>
-                <Badge variant="secondary" className={invite?.privileges?.includes('admin') ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-800'}>
-                  {invite?.privileges?.includes('admin') ? 'Administrador' : 'Usuário Simples'}
+                <Badge variant="secondary" className={(invite?.role === 'owner' || invite?.privileges?.includes('admin')) ? 'bg-orange-100 text-orange-800 border border-orange-200' : 'bg-slate-100 text-slate-800'}>
+                  {(invite?.role === 'owner' || invite?.privileges?.includes('admin')) ? '👑 Dono' : 'Colaborador'}
                 </Badge>
               </div>
             </div>

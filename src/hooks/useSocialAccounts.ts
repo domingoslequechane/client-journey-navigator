@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/hooks/useOrganization';
 import { toast } from '@/hooks/use-toast';
 import type { SocialPlatform } from '@/lib/social-media-mock';
 
@@ -26,24 +26,15 @@ export interface SocialAccount {
 type SocialAccountInsert = Omit<SocialAccount, 'id' | 'created_at' | 'updated_at'>;
 
 export function useSocialAccounts(clientId?: string | null) {
-  const { user } = useAuth();
+  const { organizationId: orgId } = useOrganization(); // Changed to use useOrganization
   const queryClient = useQueryClient();
 
-  const getOrgId = async () => {
-    if (!user) return null;
-    const { data } = await supabase
-      .from('profiles')
-      .select('current_organization_id')
-      .eq('id', user.id)
-      .single();
-    return data?.current_organization_id ?? null;
-  };
+  // Removed getOrgId function
 
   const accountsQuery = useQuery({
-    queryKey: ['social-accounts', user?.id, clientId],
+    queryKey: ['social-accounts', orgId, clientId], // Updated queryKey
     queryFn: async () => {
-      const orgId = await getOrgId();
-      if (!orgId) return [];
+      if (!orgId) return []; // Use orgId directly
 
       let query = supabase
         .from('social_accounts')
@@ -70,13 +61,12 @@ export function useSocialAccounts(clientId?: string | null) {
         social_disconnection_count: acc.clients?.social_disconnection_count || 0,
       })) as SocialAccount[];
     },
-    enabled: !!user,
+    enabled: !!orgId, // Changed from !!user to !!orgId
   });
 
   const createAccount = useMutation({
     mutationFn: async (account: Omit<SocialAccountInsert, 'organization_id'>) => {
-      const orgId = await getOrgId();
-      if (!orgId) throw new Error('Organização não encontrada');
+      if (!orgId) throw new Error('Organização não encontrada'); // Use orgId directly
 
       const { data, error } = await supabase
         .from('social_accounts')
@@ -104,6 +94,7 @@ export function useSocialAccounts(clientId?: string | null) {
         .from('social_accounts')
         .update(updates as any)
         .eq('id', id)
+        .eq('organization_id', orgId)
         .select()
         .single();
 
@@ -127,6 +118,7 @@ export function useSocialAccounts(clientId?: string | null) {
           )
         `)
         .eq('id', id)
+        .eq('organization_id', orgId)
         .single();
 
       if (fetchError || !accountData) throw new Error('Conta não encontrada');
@@ -171,7 +163,8 @@ export function useSocialAccounts(clientId?: string | null) {
       const { error: deleteError } = await supabase
         .from('social_accounts')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', orgId);
 
       if (deleteError) throw deleteError;
 

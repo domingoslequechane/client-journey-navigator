@@ -24,7 +24,7 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
     error,
     refetch,
   } = useQuery({
-    queryKey: ['link-page', clientId],
+    queryKey: ['link-page', organizationId, clientId],
     queryFn: async () => {
       if (!clientId) return null;
 
@@ -32,6 +32,7 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
         .from('link_pages')
         .select('*')
         .eq('client_id', clientId)
+        .eq('organization_id', organizationId)
         .maybeSingle();
 
       if (error) throw error;
@@ -50,13 +51,13 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
         const theme = (typeof data.theme === 'object' && data.theme !== null && !Array.isArray(data.theme))
           ? data.theme as unknown as LinkPageTheme
           : {
-              backgroundColor: '#1a1a2e',
-              primaryColor: '#a3e635',
-              textColor: '#ffffff',
-              fontFamily: 'Inter',
-              buttonStyle: 'outline' as const,
-              buttonRadius: 'pill' as const,
-            };
+            backgroundColor: '#1a1a2e',
+            primaryColor: '#a3e635',
+            textColor: '#ffffff',
+            fontFamily: 'Inter',
+            buttonStyle: 'outline' as const,
+            buttonRadius: 'pill' as const,
+          };
 
         return {
           ...data,
@@ -100,7 +101,7 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['link-page', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['link-page', organizationId, clientId] });
       toast({ title: 'Página criada!', description: 'Configure seus links.' });
     },
     onError: (error: Error) => {
@@ -126,6 +127,7 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
           custom_domain: updates.custom_domain,
         })
         .eq('id', linkPage.id)
+        .eq('organization_id', organizationId)
         .select()
         .single();
 
@@ -163,7 +165,7 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['link-page', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['link-page', organizationId, clientId] });
     },
     onError: (error: Error) => {
       console.error('Error adding block:', error);
@@ -184,6 +186,7 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
           sort_order: updates.sort_order,
         })
         .eq('id', id)
+        .eq('link_page_id', linkPage.id)
         .select()
         .single();
 
@@ -191,7 +194,7 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['link-page', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['link-page', organizationId, clientId] });
     },
     onError: (error: Error) => {
       console.error('Error updating block:', error);
@@ -205,12 +208,13 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
       const { error } = await supabase
         .from('link_blocks')
         .delete()
-        .eq('id', blockId);
+        .eq('id', blockId)
+        .eq('link_page_id', linkPage.id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['link-page', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['link-page', organizationId, clientId] });
     },
     onError: (error: Error) => {
       console.error('Error deleting block:', error);
@@ -231,13 +235,14 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
         const { error } = await supabase
           .from('link_blocks')
           .update({ sort_order: update.sort_order })
-          .eq('id', update.id);
+          .eq('id', update.id)
+          .eq('link_page_id', linkPage.id);
 
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['link-page', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['link-page', organizationId, clientId] });
     },
     onError: (error: Error) => {
       console.error('Error reordering blocks:', error);
@@ -266,9 +271,9 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
     mutationFn: async (blockId: string) => {
       const blockToDuplicate = linkPage?.blocks?.find(b => b.id === blockId);
       if (!blockToDuplicate || !linkPage?.id) throw new Error('Block not found');
-      
+
       const newSortOrder = linkPage.blocks?.length || 0;
-      
+
       const { data, error } = await supabase
         .from('link_blocks')
         .insert({
@@ -281,12 +286,12 @@ export function useLinkPage(clientId: string | null, organizationId: string | nu
         })
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['link-page', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['link-page', organizationId, clientId] });
       toast({ title: 'Bloco duplicado!' });
     },
     onError: (error: Error) => {
@@ -330,24 +335,24 @@ export function usePublicLinkPage(slug: string | undefined, orgSlug: string | un
         console.error('Error fetching public link page:', error);
         throw error;
       }
-      
+
       if (!data) return null;
 
       // Parse the JSONB response
       const pageData = data as Record<string, unknown>;
-      
+
       // Parse theme safely
       const rawTheme = pageData.theme;
       const theme = (typeof rawTheme === 'object' && rawTheme !== null && !Array.isArray(rawTheme))
         ? rawTheme as unknown as LinkPageTheme
         : {
-            backgroundColor: '#1a1a2e',
-            primaryColor: '#a3e635',
-            textColor: '#ffffff',
-            fontFamily: 'Inter',
-            buttonStyle: 'outline' as const,
-            buttonRadius: 'pill' as const,
-          };
+          backgroundColor: '#1a1a2e',
+          primaryColor: '#a3e635',
+          textColor: '#ffffff',
+          fontFamily: 'Inter',
+          buttonStyle: 'outline' as const,
+          buttonRadius: 'pill' as const,
+        };
 
       // Parse blocks array
       const rawBlocks = pageData.blocks;
@@ -356,7 +361,7 @@ export function usePublicLinkPage(slug: string | undefined, orgSlug: string | un
       return {
         id: pageData.id as string,
         // Internal IDs are now excluded from the RPC for security
-        client_id: '', 
+        client_id: '',
         organization_id: '',
         name: pageData.name as string,
         slug: pageData.slug as string,
@@ -375,9 +380,9 @@ export function usePublicLinkPage(slug: string | undefined, orgSlug: string | un
 }
 
 // Hook for link page analytics
-export function useLinkPageAnalytics(linkPageId: string | undefined) {
+export function useLinkPageAnalytics(linkPageId: string | undefined, organizationId?: string | null) {
   return useQuery({
-    queryKey: ['link-page-analytics', linkPageId],
+    queryKey: ['link-page-analytics', organizationId, linkPageId],
     queryFn: async () => {
       if (!linkPageId) return null;
 

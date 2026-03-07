@@ -30,6 +30,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
+import { useOrganization } from '@/hooks/useOrganization';
 
 type Client = Tables<'clients'>;
 
@@ -54,17 +55,22 @@ export default function Clients() {
   const { hasPrivilege } = usePermissions();
   const { canExportData, canAddClient, planType, usage, limits } = usePlanLimits();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
+  const { organizationId, loading: orgLoading } = useOrganization();
 
   useEffect(() => {
-    fetchClients();
-  }, []);
+    if (organizationId) {
+      fetchClients();
+    }
+  }, [organizationId]);
 
   const fetchClients = async () => {
+    if (!organizationId) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -98,7 +104,7 @@ export default function Clients() {
     return stageMap[dbStage] || dbStage;
   };
 
-  if (loading || subLoading) {
+  if (loading || subLoading || orgLoading) {
     return <ClientListSkeleton />;
   }
 

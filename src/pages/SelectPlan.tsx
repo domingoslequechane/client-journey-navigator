@@ -11,6 +11,7 @@ import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { getPlanColors } from '@/lib/plan-colors';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
+import { usePermissions } from '@/hooks/usePermissions';
 
 import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
@@ -65,10 +66,10 @@ const plans = [
 export default function SelectPlan() {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
+  const { isAdmin, isLoading: permissionsLoading } = usePermissions();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(true);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -130,36 +131,14 @@ export default function SelectPlan() {
         console.error('Error checking user status:', error);
         toast.error('Erro ao verificar status do usuário');
       } finally {
-        // Also check if user is admin/owner
-        if (user && organizationId) {
-          const [{ data: orgData }, { data: membership }] = await Promise.all([
-            supabase
-              .from('organizations')
-              .select('owner_id')
-              .eq('id', organizationId)
-              .maybeSingle(),
-            supabase
-              .from('organization_members')
-              .select('role, privileges')
-              .eq('user_id', user.id)
-              .eq('organization_id', organizationId)
-              .maybeSingle()
-          ]);
-
-          setIsAdmin(
-            orgData?.owner_id === user.id ||
-            membership?.role === 'admin' ||
-            membership?.privileges?.includes('admin')
-          );
-        }
         setCheckingStatus(false);
       }
     };
 
-    if (user) {
+    if (user && !permissionsLoading) {
       checkUserStatus();
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, permissionsLoading]);
 
   const handleSelectPlan = async (planKey: string) => {
     if (!organizationId || !user) {

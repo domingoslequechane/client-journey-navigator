@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export type PrivilegeKey =
-    | 'admin'
     | 'sales'
     | 'designer'
     | 'finance'
@@ -29,49 +29,85 @@ export const UNIVERSAL_PRIVILEGES: PrivilegeKey[] = [
 ];
 
 export function usePermissions() {
+    const { organizationId: orgId } = useOrganization();
     const { data: profile, isLoading } = useQuery({
-        queryKey: ['profile-permissions'],
+        queryKey: ['profile-permissions', orgId],
         queryFn: async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
 
-            // First get the user's profile to find their current organization
-            const { data: profileData } = await supabase
-                .from('profiles')
-                .select('role, privileges, current_organization_id, last_notified_role, last_notified_privileges')
-                .eq('id', user.id)
-                .single();
+            // Get profile and user roles in parallel
+            const [{ data: profileData }, { data: roleData }] = await Promise.all([
+                supabase
+                    .from('profiles')
+                    .select('role, privileges, current_organization_id, account_type, last_notified_role, last_notified_privileges')
+                    .eq('id', user.id)
+                    .single(),
+                supabase
+                    .from('user_roles')
+                    .select('role')
+                    .eq('user_id', user.id)
+                    .eq('role', 'proprietor')
+                    .maybeSingle()
+            ]);
 
             if (!profileData) return null;
 
-            // If they have a current organization, fetch permissions from organization_members
-            if (profileData.current_organization_id) {
-                const { data: memberData } = await supabase
-                    .from('organization_members')
-                    .select('role, privileges')
-                    .eq('user_id', user.id)
-                    .eq('organization_id', profileData.current_organization_id)
-                    .maybeSingle();
+            // If we have an organization ID, fetch org-specific permissions
+            if (orgId) {
+                const [{ data: memberData }, { data: isOrgOwnerResult }] = await Promise.all([
+                    supabase
+                        .from('organization_members')
+                        .select('role, privileges')
+                        .eq('user_id', user.id)
+                        .eq('organization_id', orgId)
+                        .maybeSingle(),
+                    // Use SECURITY DEFINER function to check ownership, bypassing RLS
+                    (supabase as any).rpc('is_org_owner', {
+                        user_uuid: user.id,
+                        org_uuid: orgId
+                    })
+                ]);
+
+                // isOrgOwner is reliably determined via the server-side function
+                const isOrgOwner = isOrgOwnerResult === true;
 
                 if (memberData) {
-                    // Organization-specific permissions take precedence
                     return {
                         ...profileData,
+                        is_proprietor: !!roleData,
+                        is_org_owner: isOrgOwner,
                         role: memberData.role,
                         privileges: memberData.privileges
                     };
                 }
+
+                return {
+                    ...profileData,
+                    is_proprietor: !!roleData,
+                    is_org_owner: isOrgOwner,
+                };
             }
 
-            return profileData;
+            return {
+                ...profileData,
+                is_proprietor: !!roleData,
+                is_org_owner: false,
+            };
         },
     });
 
     const permissions = useMemo(() => {
         const role = profile?.role || 'user';
         const privileges = (profile?.privileges as string[]) || [];
+        const isProprietor = (profile as any)?.is_proprietor || false;
+        // isOrgOwner is TRUE only when the current user is the owner_id of the CURRENT org
+        const isOrgOwner = (profile as any)?.is_org_owner || false;
 
-        const isAdmin = role === 'admin' || privileges.includes('admin');
+        // isAdmin: org owner (by owner_id), global proprietor, or 'owner' role
+        const isAdmin = isOrgOwner || isProprietor || role === 'owner';
+        // isOwner: same as isAdmin for organization context
+        const isOwner = isOrgOwner || isProprietor || role === 'owner';
 
         const hasPrivilege = (key: PrivilegeKey): boolean => {
             if (isAdmin) return true;
@@ -116,12 +152,15 @@ export function usePermissions() {
             role,
             privileges,
             isAdmin,
+            isOwner,
+            organizationId: orgId,
             hasPrivilege,
             canAccessModule,
             lastNotifiedRole: profile?.last_notified_role,
             lastNotifiedPrivileges: profile?.last_notified_privileges || [],
         };
-    }, [profile]);
+    }, [profile, orgId]);
+
 
     return {
         ...permissions,
