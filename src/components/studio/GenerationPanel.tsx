@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  Sparkles, Loader2, Wand2, Copy, Image as ImageIcon, 
+import {
+  Sparkles, Loader2, Wand2, Copy, Image as ImageIcon,
   Shield, Plus, X, Zap, ChevronDown, ChevronUp, Upload, Unlock, Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,15 +12,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { GenerationSteps } from '@/components/studio/GenerationSteps';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBackgroundRemoval } from '@/lib/ai/useBackgroundRemoval';
 import { toast } from 'sonner';
-import type { 
-  GenerationMode, 
-  GenerationSettings, 
+import type {
+  GenerationMode,
+  GenerationSettings,
   StudioProject,
   FlyerSize,
   FlyerMood,
@@ -37,11 +39,11 @@ interface GenerationPanelProps {
 }
 
 const MODE_OPTIONS: { value: GenerationMode; label: string; icon: typeof Wand2; description: string }[] = [
-  { value: 'original', label: 'Original', icon: Wand2, description: 'Design 100% original de alta fidelidade' },
-  { value: 'copy', label: 'Cópia', icon: Copy, description: 'Replicação precisa de layout e zonas' },
-  { value: 'inspiration', label: 'Inspiração', icon: ImageIcon, description: 'Inspirado em referências de elite' },
-  { value: 'product', label: 'Produto', icon: Shield, description: 'Preserva o produto exato da foto' },
-  { value: 'template', icon: Zap, label: 'Template', description: 'Usa layout aprovado com novo produto' },
+  { value: 'original', label: 'Original', icon: Wand2, description: 'IA decide livremente. Sem copiar refs.' },
+  { value: 'copy', label: 'Cópia', icon: Copy, description: 'Cópia EXATA do template. Só muda texto.' },
+  { value: 'inspiration', label: 'Inspiração', icon: ImageIcon, description: 'Mais próximo possível da referência.' },
+  { value: 'product', label: 'Produto', icon: Shield, description: 'Preserva o(s) produto(s) exatamente.' },
+  { value: 'template', icon: Zap, label: 'Template', description: 'Fiel ao layout, novo fundo e imagens.' },
 ];
 
 const SIZE_LIST: { value: FlyerSize; label: string; aspect: string; w: number; h: number }[] = [
@@ -93,7 +95,7 @@ export function GenerationPanel({
   className,
 }: GenerationPanelProps) {
   const { user } = useAuth();
-  
+
   // Load persisted settings for this project
   const loadPersistedSettings = useCallback((): Partial<PersistedSettings> => {
     try {
@@ -111,7 +113,7 @@ export function GenerationPanel({
   const [style, setStyle] = useState<'vivid' | 'natural'>(persisted.style || 'vivid');
   const [mode, setMode] = useState<GenerationMode>(persisted.mode || 'original');
   const [model, setModel] = useState<'gemini-flash' | 'gemini-pro'>(persisted.model || 'gemini-flash');
-  
+
   const [mood, setMood] = useState<FlyerMood | undefined>(persisted.mood);
   const [colors, setColors] = useState<FlyerColorScheme>(persisted.colors || 'Cores do Cliente');
   const [elements, setElements] = useState<FlyerElement | undefined>(persisted.elements);
@@ -119,14 +121,15 @@ export function GenerationPanel({
   const [productImage, setProductImage] = useState<string>(persisted.productImage || '');
   const [allowManipulation, setAllowManipulation] = useState(persisted.allowManipulation || false);
   const [uploadingProduct, setUploadingProduct] = useState(false);
-  
+  const { isReady: aiReady, isLoading: aiProcessing, progressStatus: aiStatus, removeBackground } = useBackgroundRemoval();
+
   const [showAdvanced, setShowAdvanced] = useState(persisted.showAdvanced || false);
   const productInputRef = useRef<HTMLInputElement>(null);
 
   const DAILY_LIMIT = 5;
   const EXEMPT_EMAILS = ["domingosf.lequechane@gmail.com"];
   const isExempt = user?.email && EXEMPT_EMAILS.includes(user.email);
-  
+
   const remainingGenerations = Math.max(0, DAILY_LIMIT - dailyCount);
   const limitReached = !isExempt && dailyCount >= DAILY_LIMIT;
 
@@ -174,12 +177,39 @@ export function GenerationPanel({
 
     setUploadingProduct(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      let finalFileToUpload = file;
+
+      // Auto-remove background if it's a product image
+      if (aiReady && (mode === 'product' || preserveProduct)) {
+        try {
+          // Convert file to base64
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+
+          toast.info('IA a extrair o produto (Recorte)...', { id: 'bg-rm' });
+          const transparentBase64 = await removeBackground(base64);
+          toast.success('Produto extraído com sucesso!', { id: 'bg-rm' });
+
+          // Convert back to File
+          const res = await fetch(transparentBase64);
+          const blob = await res.blob();
+          finalFileToUpload = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".png", { type: 'image/png' });
+        } catch (bgError) {
+          console.error("BG Removal failed, proceeding with original image:", bgError);
+          toast.error('Falha na extração por IA, enviando original.', { id: 'bg-rm' });
+        }
+      }
+
+      const fileExt = finalFileToUpload.name.split('.').pop();
       const fileName = `products/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('studio-assets')
-        .upload(fileName, file);
+        .upload(fileName, finalFileToUpload);
 
       if (uploadError) throw uploadError;
 
@@ -199,6 +229,7 @@ export function GenerationPanel({
 
   const canGenerate = (prompt.trim().length > 0 || autoCopy) && !isGenerating && !limitReached &&
     (!preserveProduct || productImage);
+
 
   return (
     <Card className={cn('', className)}>
@@ -278,7 +309,7 @@ export function GenerationPanel({
           <div className="flex items-center justify-between">
             <Label htmlFor="prompt">Descrição do Flyer</Label>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium text-muted-foreground">Copy por IA</span>
+              <span className="text-[10px] font-medium text-muted-foreground">Prompt Automático</span>
               <Switch
                 checked={autoCopy}
                 onCheckedChange={setAutoCopy}
@@ -290,13 +321,15 @@ export function GenerationPanel({
             id="prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder={autoCopy ? "Opcional: Dê uma direção para a IA (ex: Foco em preço baixo)" : "Ex: Promoção de Black Friday com 50% de desconto em todos os produtos..."}
+            placeholder={autoCopy
+              ? "Opcional: ex. 'Foco em promoção de final de semana'"
+              : "Ex: Promoção de Black Friday com 50% de desconto em todos os produtos..."}
             className="min-h-[100px] resize-none"
             disabled={limitReached}
           />
           {autoCopy && (
             <p className="text-[10px] text-primary font-medium animate-pulse">
-              ✨ A QIA criará uma copy persuasiva baseada no nicho e contexto do cliente.
+              ✨ A QIA vai gerar texto persuasivo com base no nicho, cliente e contexto do projeto.
             </p>
           )}
         </div>
@@ -310,7 +343,7 @@ export function GenerationPanel({
               const ratio = Math.max(option.w, option.h);
               const w = Math.round((option.w / ratio) * maxDim);
               const h = Math.round((option.h / ratio) * maxDim);
-              
+
               return (
                 <Tooltip key={option.value}>
                   <TooltipTrigger asChild>
@@ -483,8 +516,13 @@ export function GenerationPanel({
                   disabled={uploadingProduct || limitReached}
                   className="w-24 h-24 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors"
                 >
-                  {uploadingProduct ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  {uploadingProduct || aiProcessing ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <span className="text-[9px] text-primary text-center px-1 leading-tight">
+                        {aiProcessing ? aiStatus : 'Upload...'}
+                      </span>
+                    </>
                   ) : (
                     <>
                       <Upload className="h-5 w-5 text-muted-foreground" />
@@ -520,7 +558,7 @@ export function GenerationPanel({
               </div>
 
               <p className="text-[10px] text-muted-foreground">
-                {allowManipulation 
+                {allowManipulation
                   ? 'O produto será usado como base, mas a IA pode manipulá-lo criativamente'
                   : 'O produto será preservado 100% idêntico no flyer gerado'
                 }
@@ -596,6 +634,13 @@ export function GenerationPanel({
             </>
           )}
         </Button>
+
+        {/* Inline Progress Bar */}
+        {isGenerating && (
+          <div className="pt-4 border-t mt-4">
+            <GenerationSteps isGenerating={isGenerating} mode={mode} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

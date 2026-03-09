@@ -13,6 +13,7 @@ interface ImageUploaderProps {
   maxImages?: number;
   accept?: string;
   className?: string;
+  gridClassName?: string;
 }
 
 export function ImageUploader({
@@ -22,6 +23,7 @@ export function ImageUploader({
   maxImages = 5,
   accept = 'image/*',
   className,
+  gridClassName,
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -93,8 +95,8 @@ export function ImageUploader({
   return (
     <div className={cn('space-y-2', className)}>
       <Label>{label}</Label>
-      
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+
+      <div className={cn("grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2", gridClassName)}>
         {images.map((url, index) => (
           <div
             key={url}

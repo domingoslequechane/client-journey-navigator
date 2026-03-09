@@ -30,7 +30,7 @@ export default function NewStudioProject() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="w-full p-6">
       <ProjectForm
         project={isEditing ? project : null}
         onSubmit={handleSubmit}

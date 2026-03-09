@@ -48,6 +48,7 @@ export function useStudioProjects() {
           logo_images: project.logo_images,
           reference_images: project.reference_images,
           template_image: project.template_image,
+          template_definition: project.template_definition,
           client_id: (project as any).client_id || null,
           organization_id: orgId,
           created_by: user.id,

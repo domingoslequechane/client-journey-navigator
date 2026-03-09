@@ -175,6 +175,14 @@ function buildFinalChecklist(params: {
 
 function buildDesignBriefSection(brief: DesignBrief): string {
   let section = `\n\n=== ART DIRECTOR'S DESIGN BRIEF (follow this precisely) ===`;
+
+  // Product description always comes first — it's the most critical for fidelity
+  if ((brief as any).product_description) {
+    section += `\n\n⚠️ EXACT PRODUCT TO USE (NON-NEGOTIABLE):`;
+    section += `\n${(brief as any).product_description}`;
+    section += `\n=> The above product MUST appear as the hero element. Do NOT substitute it.`;
+  }
+
   section += `\nLAYOUT: ${brief.layout_description}`;
   section += `\nCOLOR PLAN: ${brief.color_plan}`;
   section += `\nTYPOGRAPHY: ${brief.typography_plan}`;
@@ -222,23 +230,29 @@ function buildOriginalPrompt(params: {
 }): string {
   const { prompt, sizeConfig, clientName, niche, mood, colors, elements,
     primaryColor, secondaryColor, fontFamily, aiInstructions,
-    aiRestrictions, aiMemoryContext, clientContext, hasLogos, designBrief, footerText } = params;
+    aiRestrictions, aiMemoryContext, clientContext, hasLogos, hasReferences, designBrief, footerText } = params;
 
-  let p = `SYSTEM — PHOTOSHOP MASTER / SENIOR ART DIRECTOR
-World-class Brazilian advertising agency. Output must be indistinguishable from professional hand-crafted design.
+  let p = `SYSTEM — SENIOR ART DIRECTOR / PHOTOSHOP MASTER
+World-class Brazilian advertising agency. Output must be indistinguishable from a professional campaign piece.
 
 CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})
-${clientName ? `BRAND: ${clientName}` : ''}${niche && NICHE_STYLE[niche] ? `\nINDUSTRY: ${NICHE_STYLE[niche]}` : ''}${mood ? `\nMOOD: ${mood}` : ''}${elements ? `\nHERO ELEMENT: ${elements}` : ''}
+${clientName ? `BRAND: ${clientName}` : ''}${niche && NICHE_STYLE[niche] ? `\nINDUSTRY: ${NICHE_STYLE[niche]}` : ''}${mood ? `\nMOOD: ${mood}` : ''}${elements ? `\nHERO ELEMENT: ${elements}` : ''}`;
 
-MASTER TECHNIQUES:
-① PRODUCT: Photorealistic 3D render. Studio 3-point lighting (key+fill+rim). Global Illumination. Sub-surface scattering. Material-accurate textures. Product as hero (55-70% visual weight).
-② COMPOSITION: Rule of thirds + golden ratio. Diagonal or Z-pattern layout. Foreground bokeh, midground hero, background depth.
-③ TYPOGRAPHY: 2 font families max. Bold headline, badge-style CTA. Professional tracking/leading. Text partially behind or overlapping shapes for depth.
-④ GEOMETRY: 3-5 geometric shapes interacting with product (circles, diagonal blocks, arcs). Multiply/Screen blending modes. Micro-elements: thin lines, dots, grain.
-⑤ COLOR: 3+ stop gradients. Color grading with complementary shadow casts. 4.5:1 contrast minimum on text.
-⑥ LIGHTING: 3-point product lighting + atmospheric background layer. Specular highlights, subtle lens flares, vignette edges.
+  if (hasReferences || hasLogos) {
+    p += `\n\n[CONTEXTO VISUAL DE REFERÊNCIA]: As imagens anexadas servem apenas como contexto bruto. VOCÊ TEM LIBERDADE TOTAL para ignorá-las e criar o cenário, os produtos e a composição do zero. Seja o mais inteligente e autônomo possível. Crie o melhor design original sem se prender a copiar a referência.`;
+  }
 
-PROHIBITIONS: No flat design, no AI artifacts, no stock-photo look, no cartoon products, no cluttered layouts, no unreadable text.`;
+  p += `
+
+MASTER DESIGN TECHNIQUES:
+① PRODUCT: Photorealistic studio render — 3-point lighting (key+fill+rim), Global Illumination, sub-surface scattering, material-accurate textures.
+② COMPOSITION: Rule of thirds + golden ratio. Diagonal or Z-pattern layout. Foreground bokeh, midground hero, background depth layers.
+③ TYPOGRAPHY: 2 font families max. Bold headline, badge-style CTA. Professional tracking/leading. Text layered with shapes for depth.
+④ GEOMETRY: 3-5 geometric shapes interacting with product (circles, diagonal blocks, arcs). Multiply/Screen blending. Micro grain/dots.
+⑤ COLOR: 3+ stop gradients. Color grading with complementary shadows. 4.5:1 minimum contrast on all text.
+⑥ LIGHTING: 3-point product lighting + atmospheric background. Specular highlights, subtle lens flares, edge vignette.
+
+HARD PROHIBITIONS: No flat design · No AI artifacts · No stock-photo look · No cartoon products · No cluttered layouts · No unreadable text · No invented products.`;
 
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
@@ -250,9 +264,10 @@ PROHIBITIONS: No flat design, no AI artifacts, no stock-photo look, no cartoon p
     p += `\nFOOTER (mandatory — exact text in styled footer bar at bottom): "${footerText}"`;
   }
 
-  p += `\n\nFLYER TEXT:\n${prompt}`;
+  p += `\n\nFLYER TEXT CONTENT (ONLY this text appears on the flyer):\n${prompt}`;
 
   p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
+
   return p;
 }
 
@@ -280,16 +295,19 @@ function buildCopyPrompt(params: {
 - Produto como ELEMENTO HERO, grande e proeminente
 - Tipografia limpa com fontes de impacto
 
-=== MODE: TEMPLATE REPLICATION ===
-A PRIMEIRA IMAGEM fornecida e o TEMPLATE que deve ser COPIADO.
+=== MODE: TEMPLATE EXATA CÓPIA ===
+A PRIMEIRA IMAGEM fornecida é o TEMPLATE APROVADO que deve ser COPIADO.
 
-COPIAR EXATAMENTE:
-- Layout e posicionamento de TODOS os elementos
-- Paleta de cores EXATA
-- Estilo e hierarquia tipografica
-- Estilo de fotografia 3D fotorrealista
-- Formas geometricas do fundo
-- Posicionamento do logo e informacoes de contato
+COPIAR EXATAMENTE TUDO (REPLICA PERFEITA):
+- O FUNDO E BACKGROUND (cores, formas, disposição)
+- O layout e posicionamento exato de TODOS os elementos
+- A disposição de todas as imagens que compõem o template
+- Posicionamento de logos e informações do rodapé
+
+A ÚNICA COISA QUE DEVE ALTERAR:
+1. As informações / Copy - Atualize textos conforme o novo pedido
+2. Cores - Somente altere cores se for EXPLICITAMENTE solicitado na prompt
+O resto DEVE ser uma réplica visual exata.
 
 === QUALITY REQUIREMENTS ===
 - Renders fotorrealistas (como fotografia profissional)
@@ -348,27 +366,19 @@ ELEMENTOS OBRIGATORIOS:
 5. ELEMENTOS DE REDES SOCIAIS - Icone WhatsApp, handle Instagram, telefones
 6. SELOS DE QUALIDADE - "Qualidade", estrelas, certificacoes
 
-=== MODE: CREATIVE INSPIRATION ===
-INSPIRE-SE APENAS NO MOOD/ESTILO:
-- O MOOD e ENERGIA geral da referencia
-- A DIRECAO DE ESTILO (ex: bold, elegante, industrial)
-- O NIVEL DE ESTETICA COMERCIAL (qualidade profissional)
-- Como produtos sao posicionados como elementos hero
+=== MODE: CREATIVE INSPIRATION (MÁXIMA APROXIMAÇÃO) ===
+O objetivo é criar um flyer inspirado nas referências enviadas. 
+ENTREGUE O MELHOR RESULTADO POSSÍVEL, O MAIS PRÓXIMO DA REFERÊNCIA!
 
 ╔══════════════════════════════════════════════╗
-║  CRITICAL: NAO COPIAR DAS IMAGENS DE REF    ║
+║  MANDATORY: SEJA FIEL À INSPIRAÇÃO           ║
 ╚══════════════════════════════════════════════╝
 
-NAO COPIAR:
-- Cores ou gradientes de fundo (criar COMPLETAMENTE NOVOS)
-- Padroes ou texturas de fundo (criar ORIGINAIS)
-- Imagens ou fotos de fundo (usar INTEIRAMENTE DIFERENTES)
-- Posicionamento exato de layout ou composicao
-- Paleta de cores da referencia
-
-A referencia e APENAS para entender o MOOD e DIRECAO DE ESTILO.
-Voce DEVE criar um design de fundo 100% ORIGINAL.
-REMINDER: The BACKGROUND must be 100% ORIGINAL.
+O QUE FAZER:
+- Estude a imagem de referência ou referências profundamente.
+- Recrie a mesma energia luminosa, iluminação e disposição da referência.
+- Mimetize as texturas de fundo, estilos geométricos e paleta de cores.
+- Faça o flyer parecer uma variação premium, super inteligente e profissional, mas incrivelmente próxima à estética original enviada.
 
 CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})`;
 
@@ -450,15 +460,15 @@ ACOES ESTRITAMENTE PROIBIDAS:
 - Remover ou adicionar partes
 
 PROCESSO:
-1. EXTRAIR o produto exato da imagem de referencia
-2. COLOCAR como elemento hero no flyer
-3. Produto deve ser PIXEL-PERFECT identico
-4. APENAS desenhar o FUNDO e LAYOUT ao redor
+1. EXTRAIR os produtos exatos da imagem de referência (pode haver mais de um).
+2. COLOCALOS como elementos hero no flyer.
+3. Os produtos devem ser PIXEL-PERFECT idênticos em detalhe, com os logos intactos.
+4. APENAS desenhar o FUNDO e LAYOUT ao redor.
 
-Pense nisso como uma operacao de RECORTE DE FOTO:
-- Recortar o produto da referencia
-- Colar em um novo fundo desenhado
-- Adicionar texto, cores, elementos decorativos AO REDOR
+Pense nisso como uma operação de RECORTE DE FOTO E MONTAGEM:
+- Recortar fielmente o(s) produto(s)
+- Organizar e colar num ambiente espetacular
+- Adicionar texto, fundo e elementos decorativos APROPRIADOS
 
 ⚠️ REQUISITO LEGAL CRITICO - CONDICAO DE FALHA:
 Se a imagem gerada nao usar o EXATO MESMO produto da
@@ -539,37 +549,24 @@ COPIAR PIXEL-PERFECT:
 □ Elementos decorativos (linhas, formas, icones)
 □ Hierarquia e posicionamento de texto
 
-O QUE SUBSTITUIR:
-□ Imagem do produto → Usar o NOVO produto fornecido
-□ Conteudo do texto → Usar o NOVO copy fornecido
-□ Detalhes especificos (watts, precos, specs) → Do novo copy
-□ Nome/titulo do produto → Do novo copy
+O QUE SUBSTITUIR (CRIAR NOVO):
+□ Fundo / Background → Pode e deve alterar o fundo/background para combinar com o tema
+□ Imagem do produto → Alterar imagens/produtos centrais se fornecidos novos
+□ Conteúdo do texto e copy → Alterar os dados textuais de acordo com o pedido
 
-PROCESSO DE REPLICACAO:
-1. ANALISAR a estrutura do template completamente
-2. IDENTIFICAR posicao de cada elemento visual
-3. RECRIAR a EXATA mesma estrutura de layout
-4. COLOCAR o novo produto na MESMA posicao do original
-5. COMBINAR cores pixel-por-pixel
-6. COMBINAR estilo tipografico exatamente
-7. MANTER todos os elementos decorativos nas mesmas posicoes
-8. APENAS mudar: imagem do produto + conteudo do texto
+O QUE MANTER FIEL (NÃO ALTERAR A DISPOSIÇÃO):
+□ Disposição, alinhamento e estrutura dos Logotipos
+□ Estrutura, cores e layout do RODAPÉ (footers / informações)
+□ Estrutura de grid principal (o esqueleto) do layout do template aprovado
 
-⚠️ O layout do template e LEGALMENTE APROVADO pelo cliente
-⚠️ Desvio da estrutura do template NAO e PERMITIDO
-⚠️ Esta e a identidade de marca estabelecida do cliente
-⚠️ Consistencia em todos os flyers e OBRIGATORIA
+PROCESSO DE REPLICACAO (ESTRUTURAL):
+1. IDENTIFICAR onde estão os logos, rodapés e blocos fundamentais de texto no Layout Aprovado
+2. RECRIAR/ATUALIZAR as imagens principais e o fundo para refletir a nova oferta/produto
+3. MANTER a ancoragem dos logotipos e rodapés sempre na mesma disposição original aprovada
+4. O flyer resultante será diferente no núcleo (fundo/imagens), mas usará a MESMA estruta corporativa.
 
 PROIBIDO:
-❌ Mover o logo para posicao diferente
-❌ Mudar o esquema de cores do fundo
-❌ Alterar o layout das formas geometricas
-❌ Modificar o grid de posicionamento de texto
-❌ Usar estilos tipograficos diferentes
-❌ Mudar a composicao geral
-❌ "Melhorar" ou "modernizar" o design
-❌ Adicionar elementos nao presentes no template
-❌ Remover elementos do template
+❌ Mudar a disposição estrutural de rodapés e logos.
 
 CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})`;
 
@@ -760,10 +757,11 @@ CONTEXT:
 ${config.aiInstructions ? `- Client creative orders: ${config.aiInstructions}` : ''}
 ${config.aiRestrictions ? `- Client restrictions: ${config.aiRestrictions}` : ''}
 
-${isCopyOrTemplate ? `TEMPLATE MODE — Analyze the reference as an EXACT TEMPLATE. Map every element position precisely: logo, headlines, product, footer, badges, etc. The designer must replicate this layout pixel-perfect.` : `INSPIRATION/ORIGINAL MODE — Analyze the references for elite quality benchmarks, lighting patterns, and sophisticated design cues to inspire a masterpiece.`}
+${isCopyOrTemplate ? `TEMPLATE MODE — Analyze the reference as an EXACT TEMPLATE. Map every element position precisely: logo, headlines, product, footer, badges, etc. The designer must replicate this layout pixel-perfect.` : `INSPIRATION/ORIGINAL MODE — Analyze the references for elite quality benchmarks, lighting patterns, and sophisticated design cues. CRITICAL: Identify and describe the EXACT products shown so the designer can preserve them faithfully.`}
 
 Respond with a JSON object using EXACTLY these keys (all values must be strings):
 {
+  "product_description": "CRITICAL — Describe the EXACT product(s) visible in the reference images. Include: product type, specific model/style visible, colors and finishes, materials (metal/plastic/wood etc), any visible branding or text on the product, size/proportion relative to the frame, exact shape and distinctive features. This description will be used to ensure the same product appears in the final flyer.",
   "layout_description": "Detailed grid and flow analysis. Where is the focal point? How does the eye travel? Describe the exact placement of the hero product, headlines, and CTA.",
   "color_plan": "Sophisticated color palette analysis. Identify primary, secondary, and accent hex codes. Describe how gradients and blending modes are used.",
   "typography_plan": "Exhaustive typography hierarchy. Identify font styles (Serif/Sans/Display), weights, relative sizes, tracking/leading, and creative text effects (shadows, outlines, overlays).",
@@ -776,7 +774,7 @@ Respond with a JSON object using EXACTLY these keys (all values must be strings)
   "quality_notes": "Identify the 'secret sauce' that makes these references look professional. Mention specific high-end techniques like caustic lights, sub-surface scattering, or advanced compositing."
 }
 
-IMPORTANT: Respond ONLY with the JSON object. Be extremely detailed and professional.`;
+IMPORTANT: Respond ONLY with the JSON object. The product_description field is MANDATORY and must be exhaustively detailed — the designer relies on it to reproduce the exact product.`;
   }
 
   const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
@@ -812,7 +810,7 @@ IMPORTANT: Respond ONLY with the JSON object. Be extremely detailed and professi
 
     const data = await response.json();
     const textContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    
+
     if (!textContent) {
       console.warn("Layer 1: No text response from model");
       return null;
@@ -862,7 +860,7 @@ IMPORTANT: Respond ONLY with the JSON object. Be extremely detailed and professi
 
     const elapsed = Date.now() - startTime;
     console.log(`Layer 1 (Art Director): Brief generated in ${elapsed}ms`);
-    
+
     return brief;
   } catch (e) {
     console.error("Layer 1 (Art Director) error:", e);
@@ -1001,7 +999,7 @@ Respond ONLY with the JSON object.`;
 
     const data = await response.json();
     const textContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    
+
     if (!textContent) {
       console.warn("Layer 3: No text response");
       return null;
@@ -1145,18 +1143,18 @@ async function callGeminiWithRetry(
   maxRetries: number = 3,
   isProductMode: boolean = false
 ): Promise<{ imageData: string; mimeType: string } | { error: string; status: number; response?: unknown }> {
-  
+
   const textParts = parts.filter(p => 'text' in p);
   const imageParts = parts.filter(p => 'inlineData' in p);
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const isRetry = attempt > 0;
-    
+
     let currentParts = parts;
     if (isRetry) {
       console.log(`Retry attempt ${attempt}: simplifying request...`);
       const textPart = textParts[0] as { text: string } | undefined;
-      
+
       if (textPart) {
         if (attempt === 1) {
           currentParts = parts;
@@ -1317,6 +1315,7 @@ serve(async (req) => {
       autoCopy = false,
       layoutReferences = [], additionalReferences = [],
       footerText = '',
+      action = 'generate-image' // New param to support Canvas Engine Hybrid Mode
     } = await req.json();
 
     if (!projectId) {
@@ -1358,7 +1357,7 @@ serve(async (req) => {
       }
 
       const planType = orgData?.plan_type || 'free';
-      
+
       // Define daily limits based on plan (from pricing page)
       const dailyLimits: Record<string, number> = {
         'free': 5,
@@ -1380,8 +1379,8 @@ serve(async (req) => {
       if (countError) {
         console.error("Error checking daily limit:", countError);
       } else if (dailyCount !== null && dailyCount >= userDailyLimit) {
-        return new Response(JSON.stringify({ 
-          error: `Limite diário atingido para o plano ${planType}. Você pode gerar até ${userDailyLimit} flyers por dia.` 
+        return new Response(JSON.stringify({
+          error: `Limite diário atingido para o plano ${planType}. Você pode gerar até ${userDailyLimit} flyers por dia.`
         }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1436,7 +1435,7 @@ serve(async (req) => {
 
     const sizeConfig = SIZE_CONFIG[size] || SIZE_CONFIG["1080x1080"];
     const finalMode = preserveProduct ? 'product' : mode;
-    const projectHasReferences = (project.reference_images && project.reference_images.length > 0) 
+    const projectHasReferences = (project.reference_images && project.reference_images.length > 0)
       || layoutReferences.length > 0 || additionalReferences.length > 0;
     const hasLogos = !!(project.logo_images && project.logo_images.length > 0);
 
@@ -1500,6 +1499,80 @@ serve(async (req) => {
         }
       );
     }
+
+    // --- HYBRID ENGINE: Copy Generation Only ---
+    if (action === 'generate-copy') {
+      const copyPrompt = `
+      You are an elite copywriter for an advertising agency.
+      Client: ${project.name}
+      Niche: ${niche || project.niche}
+      Theme/Idea: ${prompt}
+      
+      Generate highly persuasive, short advertising copy for a promotional flyer that will be used in a square layout.
+      
+      RETURN ONLY A VALID JSON OBJECT WITH THE EXACT FOLLOWING STRUCTURE (NO MARKDOWN WRAPPERS):
+      {
+        "headline": "Short, punchy title (max 4 words)",
+        "subheadline": "Persuasive subtext (max 10 words)",
+        "cta": "Call to action button text (max 3 words)",
+        "suggestedBackgroundColor": "A hex color code that fits the theme",
+        "suggestedTextColor": "A high contrast hex color against the background"
+      }
+      `;
+
+      try {
+        const response = await fetch(
+          `${GEMINI_API_BASE}/models/gemini-2.5-flash:generateContent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": GEMINI_API_KEY,
+            },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: copyPrompt }] }],
+              generationConfig: {
+                responseModalities: ["TEXT"],
+                responseMimeType: "application/json",
+                maxOutputTokens: 1024,
+              },
+              safetySettings: SAFETY_SETTINGS,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          return new Response(JSON.stringify({ error: "Failed to generate copy" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const data = await response.json();
+        const jsonString = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!jsonString) {
+          throw new Error("No response string");
+        }
+
+        const copyData = JSON.parse(jsonString);
+
+        return new Response(JSON.stringify({
+          success: true,
+          copy: copyData,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+
+      } catch (copyErr) {
+        console.error("Copy generation error:", copyErr);
+        return new Response(JSON.stringify({ error: "Error parsing AI copy" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+    // --- END HYBRID ENGINE COPY ---
 
     // Use suggested copy if user prompt is empty
     const finalPrompt = (prompt.trim() === "" && (designBrief as any)?.suggested_copy)

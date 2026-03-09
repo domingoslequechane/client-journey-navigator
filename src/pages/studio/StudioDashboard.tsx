@@ -26,7 +26,7 @@ export default function StudioDashboard() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -45,7 +45,7 @@ export default function StudioDashboard() {
             Gere flyers profissionais com inteligência artificial
           </p>
         </div>
-        
+
         <Button onClick={() => navigate('/app/studio/new')} className="gap-2">
           <Plus className="h-4 w-4" />
           Novo Projeto

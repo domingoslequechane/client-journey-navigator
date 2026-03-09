@@ -32,13 +32,14 @@ interface FlyerGalleryProps {
   loading?: boolean;
   onRate?: (flyerId: string, rating: number, feedback?: string) => void;
   onDelete?: (flyerId: string) => void;
+  onEdit?: (flyer: StudioFlyer) => void;
   ratings?: Record<string, { rating: number; feedback: string | null }>;
   className?: string;
 }
 
 const ITEMS_PER_PAGE = 9;
 
-export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, className }: FlyerGalleryProps) {
+export function FlyerGallery({ flyers, loading, onRate, onDelete, onEdit, ratings = {}, className }: FlyerGalleryProps) {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [deleteFlyer, setDeleteFlyer] = useState<StudioFlyer | null>(null);
   const [feedbackFlyer, setFeedbackFlyer] = useState<StudioFlyer | null>(null);
@@ -128,13 +129,13 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
     <>
       <div className={cn('space-y-4', className)}>
         {/* Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           {paginatedFlyers.map((flyer) => {
             const flyerRating = ratings[flyer.id];
-            
+
             return (
               <Card key={flyer.id} className="group overflow-hidden">
-                <div 
+                <div
                   className="relative aspect-square cursor-pointer"
                   onClick={() => openPreview(flyer)}
                 >
@@ -143,7 +144,7 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
                     alt={flyer.prompt}
                     className="w-full h-full object-cover"
                   />
-                  
+
                   {/* Hover overlay */}
                   <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4">
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -165,9 +166,20 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
                         size="icon"
                         variant="secondary"
                         onClick={() => openFeedback(flyer)}
+                        title="Avaliar"
                       >
                         <MessageSquare className="h-4 w-4" />
                       </Button>
+                      {onEdit && (
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => onEdit(flyer)}
+                          title="Editar no Canvas"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                        </Button>
+                      )}
                       {onDelete && (
                         <Button
                           size="icon"
@@ -284,7 +296,7 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
@@ -303,14 +315,14 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, ratings = {}, 
           <div className="space-y-4 py-4">
             {feedbackFlyer && (
               <div className="w-full aspect-video rounded-lg overflow-hidden border bg-muted">
-                <img 
-                  src={feedbackFlyer.image_url} 
-                  alt={feedbackFlyer.prompt} 
+                <img
+                  src={feedbackFlyer.image_url}
+                  alt={feedbackFlyer.prompt}
                   className="w-full h-full object-contain"
                 />
               </div>
             )}
-            
+
             <div className="flex justify-center">
               <StarRating
                 rating={feedbackRating}
