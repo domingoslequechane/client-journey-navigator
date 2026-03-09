@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth, getDay, startOfWeek, endOfWeek, addMonths, subMonths, isPast, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarDays, Plus, ChevronLeft, ChevronRight, Sparkles, CheckCircle2, Clock, Circle, Pencil, Trash2, X, ListTodo, Loader2 } from 'lucide-react';
+import { CalendarDays, Plus, ChevronLeft, ChevronRight, Sparkles, CheckCircle2, Clock, Circle, Pencil, Trash2, ListTodo, Loader2, ExternalLink, Image as ImageIcon, Calendar, User, Monitor, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+
+
 
 const STATUS_CONFIG: Record<string, { label: string; icon: typeof Circle; color: string }> = {
   pending: { label: 'Pendente', icon: Circle, color: 'text-muted-foreground' },
@@ -38,6 +41,7 @@ const WEEK_DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 export default function Editorial() {
   const { organizationId } = useOrganization();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -54,6 +58,10 @@ export default function Editorial() {
 
   // Day sheet state
   const [daySheetOpen, setDaySheetOpen] = useState(false);
+
+  // Task detail modal
+  const [detailTask, setDetailTask] = useState<EditorialTask | null>(null);
+  const [studioGenerating, setStudioGenerating] = useState(false);
 
   // AI generation modal
   const [aiModalStep, setAiModalStep] = useState<'client' | 'config' | null>(null);
@@ -180,6 +188,97 @@ export default function Editorial() {
   const handleStatusToggle = async (task: EditorialTask) => {
     const nextStatus = task.status === 'done' ? 'pending' : task.status === 'pending' ? 'in_progress' : 'done';
     await updateTask(task.id, { status: nextStatus });
+  };
+
+  const handleOpenInStudio = async (task: EditorialTask) => {
+    if (!organizationId) return;
+    setStudioGenerating(true);
+
+    try {
+      // 1. Find studio project linked to this client
+      const { data: projects } = await (supabase as any)
+        .from('studio_projects')
+        .select('id, name')
+        .eq('organization_id', organizationId)
+        .eq('client_id', task.client_id)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      let projectId: string | null = null;
+
+      if (projects && projects.length > 0) {
+        projectId = projects[0].id;
+      } else {
+        // No project for this client – redirect to studio dashboard with a hint
+        toast({
+          title: 'Projeto não encontrado',
+          description: 'Crie primeiro um projeto no Studio AI para este cliente.',
+          variant: 'destructive',
+        });
+        navigate('/app/studio');
+        return;
+      }
+
+      // 2. Generate QIA copy via Edge Function
+      let aiPrompt = '';
+      try {
+        const { data: copyData } = await supabase.functions.invoke('generate-studio-flyer', {
+          body: {
+            action: 'generate-copy',
+            projectId,
+            contentType: task.content_type,
+            platform: task.platform,
+            taskTitle: task.title,
+            taskDescription: task.description,
+            scheduledDate: task.scheduled_date,
+          },
+        });
+
+        if (copyData?.copy) {
+          const copy = copyData.copy;
+          aiPrompt = [
+            copy.headline,
+            copy.subheadline,
+            copy.cta,
+            task.description ? `Contexto: ${task.description}` : '',
+          ].filter(Boolean).join(' | ');
+        }
+      } catch (copyErr) {
+        console.error('QIA copy error:', copyErr);
+        // Fallback to task title as prompt
+        aiPrompt = `${task.title}${task.description ? ` — ${task.description}` : ''}`;
+      }
+
+      if (!aiPrompt) {
+        aiPrompt = `${task.title}${task.description ? ` — ${task.description}` : ''}`;
+      }
+
+      // 3. Navigate to Studio AI editor with pre-filled data
+      navigate(`/app/studio/${projectId}`, {
+        state: {
+          initialPrompt: aiPrompt,
+          fromEditorial: true,
+          taskTitle: task.title,
+          contentType: task.content_type,
+          platform: task.platform,
+        },
+      });
+
+      toast({
+        title: '✨ QIA gerou a copy!',
+        description: 'O prompt foi preenchido automaticamente no Studio AI.',
+      });
+
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao abrir Studio AI',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setStudioGenerating(false);
+      setDetailTask(null);
+    }
   };
 
   const handleDelete = async () => {
@@ -444,12 +543,14 @@ export default function Editorial() {
 
                   return (
                     <Card key={task.id} className={cn(
-                      "transition-colors",
+                      "transition-colors cursor-pointer hover:border-primary/50",
                       task.status === 'done' && "opacity-60"
-                    )}>
+                    )}
+                      onClick={() => setDetailTask(task)}
+                    >
                       <CardContent className="p-4 flex items-start gap-3">
                         <button
-                          onClick={() => handleStatusToggle(task)}
+                          onClick={(e) => { e.stopPropagation(); handleStatusToggle(task); }}
                           className={cn("mt-0.5 shrink-0", statusCfg.color)}
                         >
                           <StatusIcon className="h-5 w-5" />
@@ -464,10 +565,10 @@ export default function Editorial() {
                               {task.title}
                             </p>
                             <div className="flex items-center gap-1 shrink-0">
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditModal(task)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEditModal(task); }}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirmId(task.id)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(task.id); }}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -692,6 +793,127 @@ export default function Editorial() {
             </Button>
           </DialogFooter>
         </DialogContent>
+      </Dialog>
+
+      {/* Task Detail Modal */}
+      <Dialog open={!!detailTask} onOpenChange={(open) => !open && setDetailTask(null)}>
+        {detailTask && (() => {
+          const statusCfg = STATUS_CONFIG[detailTask.status] || STATUS_CONFIG.pending;
+          const StatusIcon = statusCfg.icon;
+          const dateLabel = (() => {
+            try { return format(parseISO(detailTask.scheduled_date), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR }); }
+            catch { return detailTask.scheduled_date; }
+          })();
+          return (
+            <DialogContent className="w-[calc(100%-2rem)] sm:max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
+              <DialogHeader className="px-5 pt-5 pb-4 shrink-0 border-b">
+                <DialogTitle className="flex items-center gap-2 pr-6">
+                  <StatusIcon className={cn("h-5 w-5 shrink-0", statusCfg.color)} />
+                  <span className="line-clamp-2 leading-snug">{detailTask.title}</span>
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                {/* Meta info grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4 shrink-0" />
+                    <span className="capitalize truncate">{dateLabel}{detailTask.scheduled_time ? ` • ${detailTask.scheduled_time}` : ''}</span>
+                  </div>
+                  {detailTask.clients && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <User className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{detailTask.clients.company_name}</span>
+                    </div>
+                  )}
+                  {detailTask.content_type && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <FileText className="h-4 w-4 shrink-0" />
+                      <span>{detailTask.content_type}</span>
+                    </div>
+                  )}
+                  {detailTask.platform && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Monitor className="h-4 w-4 shrink-0" />
+                      <span>{detailTask.platform}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Status badge */}
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant={detailTask.status === 'done' ? 'default' : 'secondary'}
+                    className={cn(
+                      "capitalize",
+                      detailTask.status === 'done' && "bg-green-500",
+                      detailTask.status === 'in_progress' && "bg-yellow-500 text-white border-0",
+                    )}
+                  >
+                    {statusCfg.label}
+                  </Badge>
+                </div>
+
+                {/* Description */}
+                {detailTask.description && (
+                  <div className="rounded-lg bg-muted/50 p-3">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">Descrição</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">{detailTask.description}</p>
+                  </div>
+                )}
+
+                {/* Notes */}
+                {detailTask.notes && (
+                  <div className="rounded-lg bg-muted/50 p-3">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">Notas</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">{detailTask.notes}</p>
+                  </div>
+                )}
+
+                {/* Studio AI CTA */}
+                <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-sm">Criar Flyer com Studio AI</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        A QIA vai gerar o texto do flyer baseado nesta tarefa e levar você directo ao Studio AI.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => handleOpenInStudio(detailTask)}
+                    disabled={studioGenerating}
+                  >
+                    {studioGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        QIA a gerar copy...
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="h-4 w-4" />
+                        Criar Flyer no Studio AI
+                        <ExternalLink className="h-3.5 w-3.5 ml-auto opacity-70" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <DialogFooter className="px-5 py-4 border-t shrink-0 gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setDetailTask(null); openEditModal(detailTask); }}>
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  Editar
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setDetailTask(null)}>
+                  Fechar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          );
+        })()}
       </Dialog>
 
       {/* Delete Confirmation */}

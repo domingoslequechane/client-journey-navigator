@@ -77,10 +77,10 @@ serve(async (req) => {
       });
     }
 
-    // SECURITY: Fetch client info and verify ownership
+    // SECURITY: Fetch full client profile and verify ownership
     const { data: client } = await supabase
       .from("clients")
-      .select("company_name, services, notes")
+      .select("company_name, services, notes, address, website, source, monthly_budget, email, phone")
       .eq("id", clientId)
       .eq("organization_id", userOrgId)
       .single();
@@ -99,31 +99,96 @@ serve(async (req) => {
       .eq("id", organizationId)
       .single();
 
+    // Fetch Studio AI project linked to this client for richer niche/description context
+    const { data: studioProjects } = await supabase
+      .from("studio_projects")
+      .select("niche, description, ai_instructions, ai_restrictions")
+      .eq("organization_id", organizationId)
+      .eq("client_id", clientId)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+
+    const studioProject = studioProjects?.[0] || null;
+
     const baseDate = startDate ? new Date(startDate) : new Date();
     const totalDays = weeks * 7;
 
-    const systemPrompt = `Você é um estrategista de marketing de conteúdo especializado em criação de linhas editoriais para redes sociais.
-Sua tarefa é gerar um calendário editorial detalhado e estratégico.
-Retorne APENAS um JSON válido, sem markdown, sem explicações extras.`;
+    // Build a rich business context from all available data sources
+    const servicesText = Array.isArray(client.services) && client.services.length > 0
+      ? client.services.join(", ")
+      : null;
 
-    const userPrompt = `Crie uma linha editorial para ${totalDays} dias (${weeks} semana(s)) para o cliente abaixo.
+    // Compose the business context block
+    const businessContextLines = [
+      studioProject?.niche ? `Nicho/Setor: ${studioProject.niche}` : null,
+      studioProject?.description ? `Descrição do negócio: ${studioProject.description}` : null,
+      servicesText ? `Produtos/Serviços que vende: ${servicesText}` : null,
+      client.notes ? `Notas sobre o cliente: ${client.notes}` : null,
+      studioProject?.ai_instructions ? `Instruções de comunicação: ${studioProject.ai_instructions}` : null,
+      studioProject?.ai_restrictions ? `O que evitar: ${studioProject.ai_restrictions}` : null,
+      client.address ? `Localização: ${client.address}` : null,
+      client.website ? `Website: ${client.website}` : null,
+    ].filter(Boolean);
 
-Cliente: ${client.company_name}
-Serviços: ${(client.services || []).join(", ") || "Não especificado"}
-Notas: ${client.notes || "Sem notas"}
-Agência: ${org?.name || ""}
-${org?.knowledge_base_text ? `Contexto da agência: ${org.knowledge_base_text}` : ""}
+    const businessContext = businessContextLines.length > 0
+      ? businessContextLines.join("\n")
+      : "Infira o sector de actividade pelo nome da empresa";
 
+    const systemPrompt = `Você é um estrategista sénior de marketing de conteúdo com 10+ anos de experiência em criação de linhas editoriais para redes sociais em diferentes sectores de negócio em Moçambique e África.
+
+REGRA ABSOLUTA E INVIOLÁVEL: Analise o perfil do cliente com atenção máxima. Todo o conteúdo que criar DEVE ser 100% relevante para o sector real de actividade desta empresa — os seus produtos, serviços e público-alvo concretos. É PROIBIDO criar conteúdo de outros sectores. Se a empresa vende materiais de construção, não pode criar posts sobre restaurantes. Se é clínica médica, não pode criar posts sobre moda.
+
+Retorne APENAS JSON válido, sem markdown, sem texto adicional.`;
+
+    const userPrompt = `Crie uma linha editorial estratégica e específica para este cliente.
+
+═══════════════════════════════════════════════
+PERFIL COMPLETO DO CLIENTE
+═══════════════════════════════════════════════
+Empresa: ${client.company_name}
+${businessContext}
+
+Agência: ${org?.name || "Não especificada"}
+${org?.knowledge_base_text ? `Conhecimento da agência: ${org.knowledge_base_text.substring(0, 400)}` : ""}
+
+═══════════════════════════════════════════════
+PROCESSO DE ANÁLISE OBRIGATÓRIO
+═══════════════════════════════════════════════
+
+PASSO 1 — ANÁLISE DO NEGÓCIO (faça isso mentalmente antes de criar qualquer conteúdo):
+Responda internamente:
+• Qual é o sector REAL desta empresa? (ex: comércio de materiais de construção e canalização, restauração, clínica, imobiliária, etc.)
+• O que exactamente esta empresa vende? (produtos físicos? serviços? ambos?)
+• Quem são os clientes desta empresa? (construtores, famílias, empresas, etc.)
+• Quais são as dores e motivações desse público?
+• Qual é o objectivo de marketing mais relevante? (vender produtos, gerar leads, construir autoridade, fidelizar clientes)
+
+PASSO 2 — ESTRATÉGIA DE CONTEÚDO:
+Distribua o conteúdo entre estes pilares:
+1. EDUCATIVO — ensinar sobre os produtos/serviços da empresa (ex: "como escolher o cano certo para sua canalização")
+2. PRODUTO EM DESTAQUE — mostrar e promover um produto/serviço específico com call-to-action de compra
+3. PROVA SOCIAL — depoimentos, obras realizadas, projectos entregues, clientes satisfeitos
+4. AUTORIDADE — dicas profissionais do sector, tendências, novidades do mercado
+5. ENGAJAMENTO — perguntas, enquetes, conteúdo que gera interacção
+6. PROMOCIONAL — ofertas, preços especiais, campanhas
+
+PASSO 3 — CRIAR ${totalDays} TAREFAS:
 Data de início: ${baseDate.toISOString().split("T")[0]}
+• Uma tarefa por dia, distribuídas estrategicamente
+• Fins de semana: conteúdo mais leve ou promocional
+• Início de semana: conteúdo educativo ou de autoridade
+• Títulos criativos e específicos (mencionar produtos/serviços reais desta empresa)
+• Descrições detalhadas com a mensagem principal e call-to-action
 
-Gere exatamente ${totalDays} tarefas, uma por dia, começando na data de início.
-
-Retorne APENAS este JSON:
+═══════════════════════════════════════════════
+FORMATO JSON OBRIGATÓRIO
+═══════════════════════════════════════════════
 {
+  "businessAnalysis": "Síntese em 2 frases do que este negócio faz, para quem e qual a estratégia adoptada",
   "tasks": [
     {
-      "title": "Título curto e objetivo da publicação",
-      "description": "Descrição detalhada do conteúdo a ser produzido",
+      "title": "Título criativo e específico para este negócio (máx 80 caracteres)",
+      "description": "Descrição estratégica: mensagem principal, abordagem, call-to-action e porquê esta publicação é relevante para este negócio",
       "scheduled_date": "YYYY-MM-DD",
       "content_type": "Post Feed|Story|Reels|Carrossel|Blog|Email|Vídeo|Newsletter",
       "platform": "Instagram|Facebook|LinkedIn|TikTok|YouTube|Twitter/X|Blog|Email|WhatsApp",
@@ -132,12 +197,7 @@ Retorne APENAS este JSON:
   ]
 }
 
-Regras:
-- Varie os tipos de conteúdo e plataformas ao longo dos dias
-- Títulos devem ser criativos e específicos para o negócio do cliente
-- Misture conteúdo educativo, promocional, engajamento e storytelling
-- Considere os dias da semana (fins de semana podem ter conteúdo mais leve)
-- Total obrigatório: exatamente ${totalDays} tarefas`;
+TOTAL OBRIGATÓRIO: exactamente ${totalDays} tarefas, começando em ${baseDate.toISOString().split("T")[0]}.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -151,7 +211,7 @@ Regras:
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.8,
+        temperature: 0.7,
       }),
     });
 
@@ -177,16 +237,16 @@ Regras:
     }
 
     const aiData = await response.json();
-    const content = aiData.choices?.[0]?.message?.content || "";
+    const rawContent = aiData.choices?.[0]?.message?.content || "";
 
     // Parse JSON from AI response
-    let parsed: { tasks: any[] };
+    let parsed: { businessAnalysis?: string; tasks: any[] };
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("No JSON found");
+      const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("No JSON found in AI response");
       parsed = JSON.parse(jsonMatch[0]);
     } catch (e) {
-      console.error("Parse error:", e, "Content:", content);
+      console.error("Parse error:", e, "Content:", rawContent);
       return new Response(JSON.stringify({ error: "Falha ao processar resposta da IA" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -231,6 +291,7 @@ Regras:
       success: true,
       count: insertedTasks?.length || 0,
       tasks: insertedTasks,
+      businessAnalysis: parsed.businessAnalysis || null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

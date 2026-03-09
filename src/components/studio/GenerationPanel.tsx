@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Sparkles, Loader2, Wand2, Copy, Image as ImageIcon,
   Shield, Plus, X, Zap, ChevronDown, ChevronUp, Upload, Unlock, Lock
@@ -106,8 +107,13 @@ export function GenerationPanel({
   }, [project.id]);
 
   const persisted = loadPersistedSettings();
+  const location = useLocation();
 
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(() => {
+    // Pre-fill from navigation state (e.g. coming from Editorial with QIA copy)
+    const state = location.state as any;
+    return state?.initialPrompt || '';
+  });
   const [autoCopy, setAutoCopy] = useState(false);
   const [size, setSize] = useState<FlyerSize>(persisted.size || '1080x1080');
   const [style, setStyle] = useState<'vivid' | 'natural'>(persisted.style || 'vivid');
@@ -386,32 +392,37 @@ export function GenerationPanel({
                   <button
                     onClick={() => setModel('gemini-flash')}
                     className={cn(
-                      'flex-1 flex items-center justify-center gap-1.5 p-2.5 rounded-lg border transition-all',
+                      'flex-1 flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg border transition-all',
                       model === 'gemini-flash'
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:border-primary/50'
                     )}
                   >
                     <Zap className={cn('h-5 w-5', model === 'gemini-flash' ? 'text-primary' : 'text-muted-foreground')} />
+                    <span className="text-[10px] uppercase font-bold tracking-tighter">Nano 2</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>Flash (Rápido)</TooltipContent>
+                <TooltipContent>Nano Banana 2 (Gemini 3.1 Flash)</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => setModel('gemini-pro')}
                     className={cn(
-                      'flex-1 flex items-center justify-center gap-1.5 p-2.5 rounded-lg border transition-all',
+                      'flex-1 flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg border transition-all relative',
                       model === 'gemini-pro'
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:border-primary/50'
                     )}
                   >
+                    {model === 'gemini-pro' && (
+                      <Badge className="absolute -top-2 -right-2 px-1 py-0 h-4 text-[8px] bg-primary text-white border-0">PRO</Badge>
+                    )}
                     <Sparkles className={cn('h-5 w-5', model === 'gemini-pro' ? 'text-primary' : 'text-muted-foreground')} />
+                    <span className="text-[10px] uppercase font-bold tracking-tighter">Nano Pro</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>Pro (Qualidade)</TooltipContent>
+                <TooltipContent>Nano Banana Pro (Gemini 3 Pro)</TooltipContent>
               </Tooltip>
             </div>
           </div>
