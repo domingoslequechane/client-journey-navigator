@@ -824,36 +824,63 @@ export default function SocialPostEditor() {
         </div>
       )}
       {/* Header Fixo */}
-      <header className="h-16 border-b bg-card px-6 flex items-center justify-between shrink-0 z-20">
-        <div className="flex items-center gap-4">
+      <header className="h-14 lg:h-16 border-b bg-card px-3 lg:px-6 flex items-center justify-between shrink-0 z-20">
+        <div className="flex items-center gap-2 lg:gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/app/social-media')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="font-bold text-lg">{postId ? 'Editar Publicação' : 'Nova Publicação'}</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+            <h1 className="font-bold text-sm lg:text-lg">{postId ? 'Editar Publicação' : 'Nova Publicação'}</h1>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold hidden sm:block">
               {postItems.length} {postItems.length === 1 ? 'Postagem' : 'Postagens em lote'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 lg:gap-3">
+          {/* Desktop buttons */}
           <Button
             variant="ghost"
             onClick={() => navigate('/app/social-media')}
             disabled={isSaving}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground hidden lg:inline-flex"
           >
             Cancelar
           </Button>
-          <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving}>
+          <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving} className="hidden lg:inline-flex">
             {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
           </Button>
-          <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2">
+          <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 hidden lg:inline-flex">
             <Calendar className="h-4 w-4" /> {postId ? 'Atualizar Agendamento' : 'Agendar Tudo'}
           </Button>
-          <Button onClick={() => handleSaveAction('published')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 shadow-lg shadow-primary/20 px-6">
-            <Zap className="h-4 w-4" /> {postId ? 'Atualizar e Publicar' : 'Publicar Agora'}
+
+          {/* Mobile dropdown for secondary actions */}
+          {isMobile && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-9 w-9">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleSaveAction('draft')} disabled={isSaving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected}>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {postId ? 'Atualizar Agendamento' : 'Agendar Tudo'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/app/social-media')}>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          <Button onClick={() => handleSaveAction('published')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 shadow-lg shadow-primary/20 px-4 lg:px-6">
+            <Zap className="h-4 w-4" /> <span className="hidden sm:inline">{postId ? 'Atualizar e Publicar' : 'Publicar Agora'}</span><span className="sm:hidden">Publicar</span>
           </Button>
         </div>
       </header>
