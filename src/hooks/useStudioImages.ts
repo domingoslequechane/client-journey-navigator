@@ -36,7 +36,7 @@ export function useStudioImages(toolId: string | undefined) {
         queryFn: async () => {
             if (!user) return 0;
             const today = new Date().toISOString().split('T')[0];
-            const { count, error } = await supabase
+            const { count, error } = await (supabase as any)
                 .from('studio_images')
                 .select('*', { count: 'exact', head: true })
                 .eq('created_by', user.id)
