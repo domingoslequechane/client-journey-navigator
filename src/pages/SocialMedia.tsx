@@ -214,27 +214,29 @@ export default function SocialMedia() {
         </div>
 
         {/* Global controls bar */}
-        <div className="flex items-center gap-3">
-          <ClientFilterSelect value={selectedClient} onChange={handleClientChange} className="min-w-0 flex-1 sm:flex-none sm:w-[240px]" />
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 shrink-0"
-            onClick={handleSync}
-            disabled={syncAccounts.isPending || syncPosts.isPending || !hasClientSelected}
-          >
-            <RefreshCw className={cn("h-4 w-4", (syncAccounts.isPending || syncPosts.isPending) && "animate-spin")} />
-            <span className="hidden sm:inline">Sincronizar</span>
-          </Button>
-          <Button
-            onClick={() => handleCreatePost()}
-            className="gap-2 shrink-0"
-            disabled={!hasClientSelected}
-            size="sm"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Novo Post</span>
-          </Button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <ClientFilterSelect value={selectedClient} onChange={handleClientChange} className="w-full sm:w-[240px]" />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none gap-2"
+              onClick={handleSync}
+              disabled={syncAccounts.isPending || syncPosts.isPending || !hasClientSelected}
+            >
+              <RefreshCw className={cn("h-4 w-4", (syncAccounts.isPending || syncPosts.isPending) && "animate-spin")} />
+              <span>Sincronizar</span>
+            </Button>
+            <Button
+              onClick={() => handleCreatePost()}
+              className="flex-1 sm:flex-none gap-2"
+              disabled={!hasClientSelected}
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Novo Post</span>
+            </Button>
+          </div>
         </div>
       </div>
 

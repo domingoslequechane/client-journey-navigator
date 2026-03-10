@@ -284,8 +284,12 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                             scale = 1 - (absOffset * 0.12);
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3;
-                                            const baseTranslate = selectedSize === '1920x1080' ? 420 : (selectedSize === '1080x1080' ? 360 : 260);
-                                            translateX = direction * (baseTranslate + absOffset * 85);
+                                            const isMobile = window.innerWidth < 768;
+                                            const baseTranslate = isMobile
+                                                ? (selectedSize === '1920x1080' ? 240 : (selectedSize === '1080x1080' ? 200 : 160))
+                                                : (selectedSize === '1920x1080' ? 420 : (selectedSize === '1080x1080' ? 360 : 260));
+                                            const stepTranslate = isMobile ? 40 : 85;
+                                            translateX = direction * (baseTranslate + absOffset * stepTranslate);
                                         }
 
                                         return (
@@ -350,8 +354,12 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                             scale = 1 - (absOffset * 0.12); // 0.88, 0.76, 0.64
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3; // Fade side images
-                                            const baseTranslate = selectedSize === '1920x1080' ? 420 : (selectedSize === '1080x1080' ? 360 : 260);
-                                            translateX = direction * (baseTranslate + absOffset * 85);
+                                            const isMobile = window.innerWidth < 768;
+                                            const baseTranslate = isMobile
+                                                ? (selectedSize === '1920x1080' ? 240 : (selectedSize === '1080x1080' ? 200 : 160))
+                                                : (selectedSize === '1920x1080' ? 420 : (selectedSize === '1080x1080' ? 360 : 260));
+                                            const stepTranslate = isMobile ? 40 : 85;
+                                            translateX = direction * (baseTranslate + absOffset * stepTranslate);
                                         }
 
                                         return (
@@ -473,7 +481,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                 <input
                                     type="text"
                                     placeholder="Adicionar detalhes..."
-                                    className="w-full bg-transparent border-none py-1 text-sm focus:ring-0 outline-none placeholder:text-slate-400 font-medium"
+                                    className="w-full bg-transparent border-none py-1 text-xs sm:text-sm focus:ring-0 outline-none placeholder:text-slate-400 font-medium"
                                     value={customPrompt}
                                     onChange={(e) => setCustomPrompt(e.target.value)}
                                 />
@@ -483,7 +491,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                             <div className="w-[1px] h-6 bg-slate-200 mx-1" />
 
                             {/* Compact Sizes - Geometric Shapes */}
-                            <div className="flex items-center gap-1.5 px-1">
+                            <div className="flex items-center gap-1 sm:gap-1.5 px-0.5 sm:px-1">
                                 {[
                                     { id: '1080x1080', label: '1:1', type: 'square' },
                                     { id: '1080x1920', label: '9:16', type: 'portrait' },
@@ -495,18 +503,18 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                         onClick={() => setSelectedSize(s.id)}
                                         title={s.label}
                                         className={cn(
-                                            "w-8 h-8 flex items-center justify-center rounded-lg transition-all border shrink-0",
+                                            "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg transition-all border shrink-0",
                                             selectedSize === s.id
                                                 ? "bg-[#FFB084] border-[#FFB084] shadow-sm scale-110"
                                                 : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600"
                                         )}
                                     >
                                         <div className={cn(
-                                            "border-2 rounded-[2px] transition-colors",
+                                            "border-[1.5px] sm:border-2 rounded-[2px] transition-colors",
                                             selectedSize === s.id ? "border-white" : "border-slate-400",
-                                            s.type === 'square' ? "w-4 h-4" :
-                                                s.type === 'portrait' ? "w-3.5 h-6" :
-                                                    s.type === 'landscape' ? "w-6 h-3.5" : "w-4 h-5"
+                                            s.type === 'square' ? "w-3 h-3 sm:w-4 sm:h-4" :
+                                                s.type === 'portrait' ? "w-2.5 h-4.5 sm:w-3.5 sm:h-6" :
+                                                    s.type === 'landscape' ? "w-4.5 h-2.5 sm:w-6 sm:h-3.5" : "w-3 h-4 sm:w-4 sm:h-5"
                                         )} />
                                     </button>
                                 ))}

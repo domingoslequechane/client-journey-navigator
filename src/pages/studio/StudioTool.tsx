@@ -102,9 +102,11 @@ export default function StudioTool() {
 
     return (
         <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-background">
-            <StudioQuickMenu currentToolId={tool.id} />
+            <div className="hidden md:block">
+                <StudioQuickMenu currentToolId={tool.id} />
+            </div>
             {/* ── Left Sidebar ── */}
-            <div className="w-[420px] border-r shrink-0 flex flex-col bg-muted/10">
+            <div className="hidden md:flex w-[420px] border-r shrink-0 flex-col bg-muted/10">
                 {/* Header */}
                 <div className="h-16 border-b bg-background flex items-center gap-3 px-4 shrink-0 shadow-sm">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/app/studio')} className="shrink-0 -ml-1">
@@ -186,7 +188,7 @@ export default function StudioTool() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <div className="grid grid-cols-3 xl:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                 {paginated.map((image) => (
                                     <Card key={image.id} className="group overflow-hidden">
                                         <div

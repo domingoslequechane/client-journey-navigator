@@ -96,7 +96,7 @@ export function StudioToolsHub({ className }: StudioToolsHubProps) {
                             <h2 className="text-sm font-semibold text-foreground">{group.label}</h2>
                             <span className="text-xs text-muted-foreground">({group.tools.length})</span>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {group.tools.map((tool) => (
                                 <ToolCard key={tool.id} tool={tool} />
                             ))}

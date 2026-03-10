@@ -266,7 +266,10 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                             scale = 1 - (absOffset * 0.12);
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3;
-                                            translateX = direction * (260 + absOffset * 85);
+                                            const isMobile = window.innerWidth < 768;
+                                            const baseTranslate = isMobile ? 200 : 260;
+                                            const stepTranslate = isMobile ? 40 : 85;
+                                            translateX = direction * (baseTranslate + absOffset * stepTranslate);
                                         }
 
                                         return (
@@ -330,7 +333,10 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                             scale = 1 - (absOffset * 0.12); // 0.88, 0.76, 0.64
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3; // Fade side images
-                                            translateX = direction * (260 + absOffset * 85);
+                                            const isMobile = window.innerWidth < 768;
+                                            const baseTranslate = isMobile ? 200 : 260;
+                                            const stepTranslate = isMobile ? 40 : 85;
+                                            translateX = direction * (baseTranslate + absOffset * stepTranslate);
                                         }
 
                                         // Render actual image card
@@ -426,12 +432,12 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                             <input {...getInputProps()} />
                             {previewUrl ? (
                                 <div className="flex items-center gap-4 w-full px-2">
-                                    <div className="w-12 h-12 rounded-lg overflow-hidden border bg-white shrink-0">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border bg-white shrink-0">
                                         <img src={previewUrl} alt="preview" className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-700 truncate">{selectedImage?.name}</p>
-                                        <p className="text-xs text-slate-400">Clique para alterar</p>
+                                        <p className="text-xs sm:text-sm font-medium text-slate-700 truncate">{selectedImage?.name}</p>
+                                        <p className="text-[10px] sm:text-xs text-slate-400">Clique para alterar</p>
                                     </div>
                                 </div>
                             ) : (
