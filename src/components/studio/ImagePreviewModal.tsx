@@ -22,6 +22,7 @@ export function ImagePreviewModal({
   open,
   onOpenChange,
   imageUrl,
+  title,
   prompt,
   allImages,
   currentIndex = 0,

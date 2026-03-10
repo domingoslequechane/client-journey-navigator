@@ -185,7 +185,7 @@ export function useStudioProject(projectId: string | undefined) {
     queryFn: async () => {
       if (!projectId || !user) return {};
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('studio_flyer_ratings')
         .select('flyer_id, rating, feedback')
         .eq('user_id', user.id)

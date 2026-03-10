@@ -43,7 +43,7 @@ export function RoleProtectedRoute({
   let hasAccess = true;
 
   if (allowedRoles && role) {
-    hasAccess = allowedRoles.includes(role);
+    hasAccess = allowedRoles.includes(role as any);
   }
 
   if (privilege && !hasPrivilege(privilege)) hasAccess = false;

@@ -105,7 +105,7 @@ export default function Academia() {
     queryKey: ['study-suggestions', profile?.id],
     enabled: !!profile?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('study_suggestions')
         .select('*')
         .eq('user_id', profile?.id)

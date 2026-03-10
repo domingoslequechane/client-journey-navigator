@@ -72,7 +72,7 @@ export function useStudioImages(toolId: string | undefined) {
 
     const deleteImage = useMutation({
         mutationFn: async (imageId: string) => {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('studio_images')
                 .delete()
                 .eq('id', imageId)
