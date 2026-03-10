@@ -17,7 +17,7 @@ export function useStudioImages(toolId: string | undefined) {
         queryFn: async () => {
             if (!orgId || !toolId) return [];
 
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('studio_images')
                 .select('*')
                 .eq('organization_id', orgId)
@@ -36,7 +36,7 @@ export function useStudioImages(toolId: string | undefined) {
         queryFn: async () => {
             if (!user) return 0;
             const today = new Date().toISOString().split('T')[0];
-            const { count, error } = await supabase
+            const { count, error } = await (supabase as any)
                 .from('studio_images')
                 .select('*', { count: 'exact', head: true })
                 .eq('created_by', user.id)
@@ -72,7 +72,7 @@ export function useStudioImages(toolId: string | undefined) {
 
     const deleteImage = useMutation({
         mutationFn: async (imageId: string) => {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('studio_images')
                 .delete()
                 .eq('id', imageId)

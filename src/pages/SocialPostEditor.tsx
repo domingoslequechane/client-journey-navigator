@@ -19,6 +19,7 @@ import { type SocialPlatform, type ContentType } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
@@ -27,7 +28,8 @@ import {
   Plus, Smartphone, MapPin,
   ArrowLeft, FileText, Trash2,
   CircleDashed, Film, Layers, Image,
-  LayoutGrid, RefreshCw, Wifi, Signal, Battery
+  LayoutGrid, RefreshCw, Wifi, Signal, Battery,
+  Eye, MoreVertical, Save
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -40,6 +42,12 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
@@ -130,6 +138,7 @@ export default function SocialPostEditor() {
   const navigate = useNavigate();
   const clientId = searchParams.get('clientId');
   const { organizationId } = useOrganization();
+  const isMobile = useIsMobile();
 
   const { createPost, updatePost, publishPost } = useSocialPosts();
   const { accounts } = useSocialAccounts(clientId);
@@ -148,6 +157,7 @@ export default function SocialPostEditor() {
   const [isLoadingPost, setIsLoadingPost] = useState(!!postId);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -814,43 +824,111 @@ export default function SocialPostEditor() {
         </div>
       )}
       {/* Header Fixo */}
-      <header className="h-16 border-b bg-card px-6 flex items-center justify-between shrink-0 z-20">
-        <div className="flex items-center gap-4">
+      <header className="h-14 lg:h-16 border-b bg-card px-3 lg:px-6 flex items-center justify-between shrink-0 z-20">
+        <div className="flex items-center gap-2 lg:gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/app/social-media')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="font-bold text-lg">{postId ? 'Editar Publicação' : 'Nova Publicação'}</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+            <h1 className="font-bold text-sm lg:text-lg">{postId ? 'Editar Publicação' : 'Nova Publicação'}</h1>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold hidden sm:block">
               {postItems.length} {postItems.length === 1 ? 'Postagem' : 'Postagens em lote'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 lg:gap-3">
+          {/* Desktop buttons */}
           <Button
             variant="ghost"
             onClick={() => navigate('/app/social-media')}
             disabled={isSaving}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground hidden lg:inline-flex"
           >
             Cancelar
           </Button>
-          <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving}>
+          <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving} className="hidden lg:inline-flex">
             {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
           </Button>
-          <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2">
+          <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 hidden lg:inline-flex">
             <Calendar className="h-4 w-4" /> {postId ? 'Atualizar Agendamento' : 'Agendar Tudo'}
           </Button>
-          <Button onClick={() => handleSaveAction('published')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 shadow-lg shadow-primary/20 px-6">
-            <Zap className="h-4 w-4" /> {postId ? 'Atualizar e Publicar' : 'Publicar Agora'}
+
+          {/* Mobile dropdown for secondary actions */}
+          {isMobile && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-9 w-9">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleSaveAction('draft')} disabled={isSaving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected}>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {postId ? 'Atualizar Agendamento' : 'Agendar Tudo'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/app/social-media')}>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          <Button onClick={() => handleSaveAction('published')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 shadow-lg shadow-primary/20 px-4 lg:px-6">
+            <Zap className="h-4 w-4" /> <span className="hidden sm:inline">{postId ? 'Atualizar e Publicar' : 'Publicar Agora'}</span><span className="sm:hidden">Publicar</span>
           </Button>
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden flex">
+      <main className="flex-1 overflow-hidden flex flex-col lg:flex-row">
 
-        <aside className="w-64 border-r bg-muted/10 flex flex-col shrink-0">
+        {/* Mobile horizontal page bar */}
+        {isMobile && (
+          <div className="border-b bg-muted/10 shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto no-scrollbar">
+            {postItems.map((item, index) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveIndex(index)}
+                className={cn(
+                  "relative shrink-0 h-12 w-12 rounded-lg border transition-all overflow-hidden",
+                  activeIndex === index
+                    ? "border-primary ring-2 ring-primary/30"
+                    : "border-border"
+                )}
+              >
+                {item.mediaUrls[0] ? (
+                  <MediaThumbnail url={item.mediaUrls[0]} isVideo={item.files[0]?.type.startsWith('video/')} />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <span className="text-[10px] font-bold text-muted-foreground">#{index + 1}</span>
+                  </div>
+                )}
+                {postItems.length > 1 && (
+                  <button
+                    onClick={(e) => handleDeletePostItem(item.id, e)}
+                    className="absolute -top-0.5 -right-0.5 p-0.5 rounded-full bg-destructive text-white z-10"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                )}
+              </button>
+            ))}
+            <button
+              onClick={handleAddEmptyPost}
+              className="shrink-0 h-12 w-12 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:bg-muted/50"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Desktop sidebar */}
+        <aside className="w-64 border-r bg-muted/10 flex-col shrink-0 hidden lg:flex">
           <div className="p-4 border-b border-border/50 bg-background flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Páginas</span>
             <Button variant="ghost" size="icon" className="h-6 w-6 text-foreground hover:bg-muted" onClick={handleAddEmptyPost}>
@@ -912,7 +990,7 @@ export default function SocialPostEditor() {
         {/* EDITOR CENTRAL */}
         <div className="flex-1 overflow-hidden flex flex-col bg-background">
           <ScrollArea className="flex-1">
-            <div className="p-6 md:p-10 max-w-3xl mx-auto w-full space-y-10">
+            <div className="p-4 md:p-10 max-w-3xl mx-auto w-full space-y-10">
 
               {currentPostItem && (
                 <AnimatedContainer animation="fade-in" key={currentPostItem.id} className="space-y-10">
@@ -1189,8 +1267,8 @@ export default function SocialPostEditor() {
           </ScrollArea>
         </div>
 
-        {/* PREVIEW LATERAL DIREITO */}
-        <aside className="w-[450px] flex flex-col bg-[#0f172a] border-l border-border/10 overflow-hidden shrink-0 shadow-2xl">
+        {/* PREVIEW LATERAL DIREITO - Desktop only */}
+        <aside className="w-[450px] flex-col bg-[#0f172a] border-l border-border/10 overflow-hidden shrink-0 shadow-2xl hidden lg:flex">
           <div className="p-4 border-b border-border/5 bg-background/5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2 text-primary">
               <Sparkles className="h-4 w-4" />
@@ -1227,17 +1305,13 @@ export default function SocialPostEditor() {
                     "w-full h-full shrink-0 flex items-center justify-center snap-center px-6 relative transition-all duration-700",
                     brandGradients[p] || "bg-slate-900"
                   )}>
-                    {/* Overlay to ensure card pop */}
                     <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]" />
-
-                    {/* Professional Card Preview - Removed smartphone screen & status bar */}
                     <div className="relative w-full max-w-[420px] animate-in fade-in zoom-in-95 duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                       {(() => {
                         const account = connectedAccounts.find(a =>
                           a.platform === p &&
                           currentPostItem?.selectedAccountIds.includes(a.id)
                         );
-
                         return (
                           <PostPreview
                             content={currentPostItem?.content || ''}
@@ -1265,7 +1339,60 @@ export default function SocialPostEditor() {
             )}
           </div>
         </aside>
+
+        {/* Mobile floating preview button */}
+        {isMobile && (
+          <Button
+            onClick={() => setShowMobilePreview(true)}
+            className="fixed bottom-6 right-6 z-30 rounded-full h-14 w-14 shadow-xl shadow-primary/30 p-0"
+          >
+            <Eye className="h-6 w-6" />
+          </Button>
+        )}
       </main>
+
+      {/* Mobile Preview Dialog */}
+      <Dialog open={showMobilePreview} onOpenChange={setShowMobilePreview}>
+        <DialogContent className="max-w-full w-full h-[90vh] p-0 overflow-hidden [&>button]:hidden">
+          <div className="flex flex-col h-full">
+            <div className="p-3 border-b flex items-center justify-between shrink-0 bg-card">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Preview</span>
+              <Button variant="ghost" size="icon" onClick={() => setShowMobilePreview(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-x-auto flex snap-x snap-mandatory bg-[#0f172a]" style={{ scrollbarWidth: 'none' }}>
+              {currentPlatforms.length > 0 ? (
+                currentPlatforms.map((p) => {
+                  const account = connectedAccounts.find(a =>
+                    a.platform === p && currentPostItem?.selectedAccountIds.includes(a.id)
+                  );
+                  return (
+                    <div key={p} className="w-full h-full shrink-0 flex items-center justify-center snap-center p-4">
+                      <div className="w-full max-w-sm">
+                        <PostPreview
+                          content={currentPostItem?.content || ''}
+                          mediaUrl={currentPostItem?.mediaUrls[0]}
+                          platform={p}
+                          contentType={currentPostItem?.schedules[0]?.contentType as ContentType}
+                          accountName={account?.account_name}
+                          accountUsername={account?.username}
+                          accountAvatarUrl={account?.avatar_url || undefined}
+                          isVideo={currentPostItem?.files[0]?.type.startsWith('video/')}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <p className="text-sm text-muted-foreground">Selecione canais para ver os previews</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* DIÁLOGOS AUXILIARES */}
       <Dialog open={showUploadChoice} onOpenChange={setShowUploadChoice}>

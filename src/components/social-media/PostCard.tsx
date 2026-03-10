@@ -32,7 +32,7 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
   return (
     <Card className="hover:border-primary/30 transition-colors">
       <CardContent className="p-4">
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           {mediaUrl && (
             <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 border bg-muted relative">
               {(mediaUrl.includes('video') || mediaUrl.endsWith('.mp4') || mediaUrl.endsWith('.mov') || mediaUrl.endsWith('.webm')) ? (
@@ -97,7 +97,7 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col gap-1 shrink-0">
+          <div className="flex flex-row sm:flex-col gap-1 shrink-0 self-start sm:self-auto">
             {!isPublished && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(post)} title="Editar">
                 <Pencil className="h-3.5 w-3.5" />

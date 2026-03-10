@@ -151,7 +151,7 @@ serve(async (req) => {
       console.error("Error listing users:", listUsersError);
     }
 
-    const existingUserRecord = existingUser?.users?.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const existingUserRecord = existingUser?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
 
     if (existingUserRecord) {
       console.log(`User already exists with ID: ${existingUserRecord.id}`);
