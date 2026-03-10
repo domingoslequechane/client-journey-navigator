@@ -19,6 +19,7 @@ import { type SocialPlatform, type ContentType } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
@@ -27,11 +28,26 @@ import {
   Plus, Smartphone, MapPin,
   ArrowLeft, FileText, Trash2,
   CircleDashed, Film, Layers, Image,
-  LayoutGrid, RefreshCw, Wifi, Signal, Battery
+  LayoutGrid, RefreshCw, Wifi, Signal, Battery,
+  Eye, MoreVertical, Save
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
