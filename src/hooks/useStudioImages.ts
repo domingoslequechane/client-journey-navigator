@@ -17,7 +17,7 @@ export function useStudioImages(toolId: string | undefined) {
         queryFn: async () => {
             if (!orgId || !toolId) return [];
 
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('studio_images')
                 .select('*')
                 .eq('organization_id', orgId)
