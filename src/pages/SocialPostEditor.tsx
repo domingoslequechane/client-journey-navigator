@@ -885,9 +885,50 @@ export default function SocialPostEditor() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden flex">
+      <main className="flex-1 overflow-hidden flex flex-col lg:flex-row">
 
-        <aside className="w-64 border-r bg-muted/10 flex flex-col shrink-0">
+        {/* Mobile horizontal page bar */}
+        {isMobile && (
+          <div className="border-b bg-muted/10 shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto no-scrollbar">
+            {postItems.map((item, index) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveIndex(index)}
+                className={cn(
+                  "relative shrink-0 h-12 w-12 rounded-lg border transition-all overflow-hidden",
+                  activeIndex === index
+                    ? "border-primary ring-2 ring-primary/30"
+                    : "border-border"
+                )}
+              >
+                {item.mediaUrls[0] ? (
+                  <MediaThumbnail url={item.mediaUrls[0]} isVideo={item.files[0]?.type.startsWith('video/')} />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <span className="text-[10px] font-bold text-muted-foreground">#{index + 1}</span>
+                  </div>
+                )}
+                {postItems.length > 1 && (
+                  <button
+                    onClick={(e) => handleDeletePostItem(item.id, e)}
+                    className="absolute -top-0.5 -right-0.5 p-0.5 rounded-full bg-destructive text-white z-10"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                )}
+              </button>
+            ))}
+            <button
+              onClick={handleAddEmptyPost}
+              className="shrink-0 h-12 w-12 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:bg-muted/50"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Desktop sidebar */}
+        <aside className="w-64 border-r bg-muted/10 flex-col shrink-0 hidden lg:flex">
           <div className="p-4 border-b border-border/50 bg-background flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Páginas</span>
             <Button variant="ghost" size="icon" className="h-6 w-6 text-foreground hover:bg-muted" onClick={handleAddEmptyPost}>
@@ -949,7 +990,7 @@ export default function SocialPostEditor() {
         {/* EDITOR CENTRAL */}
         <div className="flex-1 overflow-hidden flex flex-col bg-background">
           <ScrollArea className="flex-1">
-            <div className="p-6 md:p-10 max-w-3xl mx-auto w-full space-y-10">
+            <div className="p-4 md:p-10 max-w-3xl mx-auto w-full space-y-10">
 
               {currentPostItem && (
                 <AnimatedContainer animation="fade-in" key={currentPostItem.id} className="space-y-10">
