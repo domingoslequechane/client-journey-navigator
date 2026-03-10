@@ -97,7 +97,7 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col gap-1 shrink-0">
+          <div className="flex flex-row sm:flex-col gap-1 shrink-0 self-start sm:self-auto">
             {!isPublished && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(post)} title="Editar">
                 <Pencil className="h-3.5 w-3.5" />
