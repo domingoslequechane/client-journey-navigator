@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { X, Download, ZoomIn, ZoomOut, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Download, ZoomIn, ZoomOut, RotateCw, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -10,20 +10,23 @@ interface ImagePreviewModalProps {
   onOpenChange: (open: boolean) => void;
   imageUrl: string;
   title?: string;
+  prompt?: string;
   // Navigation support
-  allImages?: { url: string; title?: string }[];
+  allImages?: { url: string; title?: string; prompt?: string }[];
   currentIndex?: number;
   onNavigate?: (index: number) => void;
+  onReusePrompt?: (prompt: string) => void;
 }
 
 export function ImagePreviewModal({
   open,
   onOpenChange,
   imageUrl,
-  title,
+  prompt,
   allImages,
   currentIndex = 0,
   onNavigate,
+  onReusePrompt,
 }: ImagePreviewModalProps) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -68,7 +71,7 @@ export function ImagePreviewModal({
       // Use canvas approach for reliable cross-origin downloads
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      
+
       img.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = img.naturalWidth;
@@ -79,7 +82,7 @@ export function ImagePreviewModal({
           return;
         }
         ctx.drawImage(img, 0, 0);
-        
+
         canvas.toBlob((blob) => {
           if (!blob) {
             toast.error('Erro ao converter imagem');
@@ -88,7 +91,8 @@ export function ImagePreviewModal({
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          const fileName = (title || 'flyer').replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'flyer';
+          const rawFileName = (title || 'flyer').replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'flyer';
+          const fileName = rawFileName.length > 50 ? rawFileName.substring(0, 50).trim() : rawFileName;
           a.download = `${fileName}.png`;
           document.body.appendChild(a);
           a.click();
@@ -106,7 +110,9 @@ export function ImagePreviewModal({
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = `${(title || 'flyer').replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'flyer'}.png`;
+            const rawFileName = (title || 'flyer').replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'flyer';
+            const fileName = rawFileName.length > 50 ? rawFileName.substring(0, 50).trim() : rawFileName;
+            a.download = `${fileName}.png`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -156,6 +162,11 @@ export function ImagePreviewModal({
               <Button variant="ghost" size="icon" onClick={handleRotate}>
                 <RotateCw className="h-4 w-4" />
               </Button>
+              {onReusePrompt && (prompt || title) && (
+                <Button variant="ghost" size="icon" onClick={() => { onReusePrompt(prompt || title!); onOpenChange(false); }} title="Reutilizar Prompt">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              )}
               <Button variant="ghost" size="icon" onClick={handleDownload}>
                 <Download className="h-4 w-4" />
               </Button>

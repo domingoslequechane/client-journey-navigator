@@ -248,6 +248,22 @@ Evitar imagens genéricas sem contexto com o nicho.`;
       <div className="flex items-center gap-4">
         <Button
           type="button"
+          onClick={async () => {
+            try {
+              toast.info('Testando DB...');
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session) return toast.error('No auth');
+              const { data, error } = await supabase.from('studio_projects').update({ footer_text: 'TEST 123' }).eq('id', project?.id).select('footer_text');
+              if (error) throw error;
+              toast.success('Sucesso DB: ' + JSON.stringify(data));
+            } catch (e: any) {
+              toast.error('Erro DB: ' + e.message);
+            }
+          }}
+        >
+          Teste de DB Footer
+        </Button>
+        <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate('/app/studio')}

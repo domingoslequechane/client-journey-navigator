@@ -24,6 +24,7 @@ export default function StudioEditor() {
   } = useStudioProject(projectId);
   const { incrementUsage } = usePlanLimits();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [reusedPrompt, setReusedPrompt] = useState<string>('');
 
   const handleGenerate = async (settings: GenerationSettings) => {
     if (!project) return;
@@ -92,6 +93,8 @@ export default function StudioEditor() {
             dailyCount={dailyCount}
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
+            reusedPrompt={reusedPrompt}
+            onClearReusedPrompt={() => setReusedPrompt('')}
           />
         </div>
       </div>
@@ -139,6 +142,7 @@ export default function StudioEditor() {
               onRate={(id, rating, feedback) => rateFlyer.mutate({ flyerId: id, rating, feedback })}
               onDelete={(id) => deleteFlyer.mutate(id)}
               onEdit={() => { }}
+              onReusePrompt={(prompt) => setReusedPrompt(prompt)}
               ratings={ratings}
             />
           )}

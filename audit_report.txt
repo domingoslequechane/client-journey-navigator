@@ -1,0 +1,18 @@
+# npm audit report
+
+serialize-javascript  <=7.0.2
+Severity: high
+Serialize JavaScript is Vulnerable to RCE via RegExp.flags and Date.prototype.toISOString() - https://github.com/advisories/GHSA-5c6j-r48x-rmvq
+fix available via `npm audit fix`
+node_modules/serialize-javascript
+  @rollup/plugin-terser  0.2.0 - 0.4.4
+  Depends on vulnerable versions of serialize-javascript
+  node_modules/@rollup/plugin-terser
+    workbox-build  >=7.1.0
+    Depends on vulnerable versions of @rollup/plugin-terser
+    node_modules/workbox-build
+
+3 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix

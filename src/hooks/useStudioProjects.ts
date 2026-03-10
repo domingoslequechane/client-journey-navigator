@@ -45,6 +45,7 @@ export function useStudioProjects() {
           font_family: project.font_family,
           ai_instructions: project.ai_instructions,
           ai_restrictions: project.ai_restrictions,
+          footer_text: project.footer_text,
           logo_images: project.logo_images,
           reference_images: project.reference_images,
           template_image: project.template_image,

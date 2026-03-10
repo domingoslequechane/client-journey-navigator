@@ -36,6 +36,8 @@ interface GenerationPanelProps {
   onGenerate: (settings: GenerationSettings) => Promise<void>;
   isGenerating: boolean;
   dailyCount?: number;
+  reusedPrompt?: string;
+  onClearReusedPrompt?: () => void;
   className?: string;
 }
 
@@ -93,6 +95,8 @@ export function GenerationPanel({
   onGenerate,
   isGenerating,
   dailyCount = 0,
+  reusedPrompt,
+  onClearReusedPrompt,
   className,
 }: GenerationPanelProps) {
   const { user } = useAuth();
@@ -149,6 +153,14 @@ export function GenerationPanel({
       localStorage.setItem(getSettingsKey(project.id), JSON.stringify(settings));
     } catch { /* ignore full storage */ }
   }, [size, style, mode, model, mood, colors, elements, preserveProduct, productImage, allowManipulation, showAdvanced, project.id]);
+
+  useEffect(() => {
+    if (reusedPrompt) {
+      setPrompt(reusedPrompt);
+      onClearReusedPrompt?.();
+      toast.success('Prompt copiado para o painel de geração!');
+    }
+  }, [reusedPrompt, onClearReusedPrompt]);
 
   const handleGenerate = async () => {
     if ((!prompt.trim() && !autoCopy) || limitReached) return;

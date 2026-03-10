@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Eye, Trash2, Loader2, Star, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
+import { Download, Eye, Trash2, Loader2, Star, ChevronLeft, ChevronRight, MessageSquare, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,13 +33,14 @@ interface FlyerGalleryProps {
   onRate?: (flyerId: string, rating: number, feedback?: string) => void;
   onDelete?: (flyerId: string) => void;
   onEdit?: (flyer: StudioFlyer) => void;
+  onReusePrompt?: (prompt: string) => void;
   ratings?: Record<string, { rating: number; feedback: string | null }>;
   className?: string;
 }
 
-const ITEMS_PER_PAGE = 9;
+const ITEMS_PER_PAGE = 12;
 
-export function FlyerGallery({ flyers, loading, onRate, onDelete, onEdit, ratings = {}, className }: FlyerGalleryProps) {
+export function FlyerGallery({ flyers, loading, onRate, onDelete, onEdit, onReusePrompt, ratings = {}, className }: FlyerGalleryProps) {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [deleteFlyer, setDeleteFlyer] = useState<StudioFlyer | null>(null);
   const [feedbackFlyer, setFeedbackFlyer] = useState<StudioFlyer | null>(null);
@@ -56,7 +57,8 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, onEdit, rating
   // Build navigation data for all flyers (not just paginated)
   const allFlyerImages = flyers.map(f => ({
     url: f.image_url,
-    title: f.prompt,
+    title: f.title || `Flyer ${f.id.slice(0, 5)}`,
+    prompt: f.prompt,
   }));
 
   const handleDownload = async (flyer: StudioFlyer) => {
@@ -66,7 +68,10 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, onEdit, rating
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `flyer-${flyer.id.slice(0, 8)}.png`;
+      const fileName = (flyer.title || `flyer-${flyer.id.slice(0, 8)}`)
+        .replace(/[^a-zA-Z0-9\s-_]/g, '')
+        .trim() || 'flyer';
+      a.download = `${fileName}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -170,6 +175,16 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, onEdit, rating
                       >
                         <MessageSquare className="h-4 w-4" />
                       </Button>
+                      {onReusePrompt && flyer.prompt && (
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => onReusePrompt(flyer.prompt)}
+                          title="Reutilizar Prompt"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      )}
                       {onEdit && (
                         <Button
                           size="icon"
@@ -213,8 +228,8 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, onEdit, rating
                 </div>
 
                 <div className="p-2 border-t">
-                  <p className="text-xs text-muted-foreground truncate" title={flyer.prompt}>
-                    {flyer.prompt}
+                  <p className="text-xs font-medium truncate" title={flyer.title || flyer.prompt}>
+                    {flyer.title || flyer.prompt}
                   </p>
                   <div className="flex items-center justify-between mt-1">
                     <span className="text-[10px] text-muted-foreground">
@@ -278,10 +293,12 @@ export function FlyerGallery({ flyers, loading, onRate, onDelete, onEdit, rating
           open={previewIndex !== null}
           onOpenChange={(open) => !open && setPreviewIndex(null)}
           imageUrl={previewFlyer.image_url}
-          title={previewFlyer.prompt}
+          title={previewFlyer.title || `Flyer ${previewFlyer.id.slice(0, 5)}`}
+          prompt={previewFlyer.prompt}
           allImages={allFlyerImages}
           currentIndex={previewIndex!}
           onNavigate={(index) => setPreviewIndex(index)}
+          onReusePrompt={onReusePrompt}
         />
       )}
 

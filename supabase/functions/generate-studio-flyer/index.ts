@@ -10,9 +10,10 @@ const corsHeaders = {
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 const AI_MODELS = {
-  "gemini-flash": "gemini-2.5-flash-image",
-  "gemini-pro": "gemini-3-pro-image-preview",
-  "gemini-flash-text": "gemini-2.5-flash", // v2 - updated 2026-02-20
+  "gemini-flash": "gemini-3.1-flash-image-preview", // Nano Banana 2
+  "gemini-pro": "gemini-3-pro-image-preview",       // Nano Banana Pro
+  "gemini-flash-text": "gemini-3.1-flash-preview",   // Elite Reasoning v3
+  "gemini-pro-text": "gemini-3-pro-preview",        // Advanced Reasoning v3
 } as const;
 
 const SIZE_CONFIG: Record<string, { aspectRatio: string; orientation: string; width: number; height: number }> = {
@@ -232,41 +233,41 @@ function buildOriginalPrompt(params: {
     primaryColor, secondaryColor, fontFamily, aiInstructions,
     aiRestrictions, aiMemoryContext, clientContext, hasLogos, hasReferences, designBrief, footerText } = params;
 
-  let p = `SYSTEM — SENIOR ART DIRECTOR / PHOTOSHOP MASTER
-World-class Brazilian advertising agency. Output must be indistinguishable from a professional campaign piece.
+  let p = `Generate a world-class, premium advertising flyer.
+Visual Style: Ultra-photorealistic, 8k resolution, cinematic studio lighting, magazine cover quality, Brazilian ad agency style.
+Canvas: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio}).
 
-CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})
-${clientName ? `BRAND: ${clientName}` : ''}${niche && NICHE_STYLE[niche] ? `\nINDUSTRY: ${NICHE_STYLE[niche]}` : ''}${mood ? `\nMOOD: ${mood}` : ''}${elements ? `\nHERO ELEMENT: ${elements}` : ''}`;
+Key Visual Details to generate:
+- Background: Professional studio backdrop, deep rich gradients, structural geometric depth (subtle arcs, podiums, or clean intersecting layers).
+- Lighting: Global illumination, 3-point lighting setup, soft specular highlights, clean and realistic shadows.
+- Composition: The main subject must be massive and heroic. Stunning Z-pattern flow. Uncluttered.
+- Typography: Extremely bold, modern sans-serif. Perfect kerning. High contrast and highly readable. TEXT MUST BE WRITTEN EXACTLY AS REQUESTED.
+
+${clientName ? `Brand: ${clientName}\n` : ''}${niche && NICHE_STYLE[niche] ? `Industry: ${NICHE_STYLE[niche]}\n` : ''}${mood ? `Energy/Mood: ${mood}\n` : ''}${elements ? `Hero Subject: ${elements}\n` : ''}`;
 
   if (hasReferences || hasLogos) {
-    p += `\n\n[CONTEXTO VISUAL DE REFERÊNCIA]: As imagens anexadas servem apenas como contexto bruto. VOCÊ TEM LIBERDADE TOTAL para ignorá-las e criar o cenário, os produtos e a composição do zero. Seja o mais inteligente e autônomo possível. Crie o melhor design original sem se prender a copiar a referência.`;
+    p += `\n[Reference Integration]: The attached images dictate the lighting, color scheme, and texture vibe. Extract their essence (luxurious, dynamic, minimalist, etc.) and apply that visual language to this new flyer.\n`;
   }
-
-  p += `
-
-MASTER DESIGN TECHNIQUES:
-① PRODUCT: Photorealistic studio render — 3-point lighting (key+fill+rim), Global Illumination, sub-surface scattering, material-accurate textures.
-② COMPOSITION: Rule of thirds + golden ratio. Diagonal or Z-pattern layout. Foreground bokeh, midground hero, background depth layers.
-③ TYPOGRAPHY: 2 font families max. Bold headline, badge-style CTA. Professional tracking/leading. Text layered with shapes for depth.
-④ GEOMETRY: 3-5 geometric shapes interacting with product (circles, diagonal blocks, arcs). Multiply/Screen blending. Micro grain/dots.
-⑤ COLOR: 3+ stop gradients. Color grading with complementary shadows. 4.5:1 minimum contrast on all text.
-⑥ LIGHTING: 3-point product lighting + atmospheric background. Specular highlights, subtle lens flares, edge vignette.
-
-HARD PROHIBITIONS: No flat design · No AI artifacts · No stock-photo look · No cartoon products · No cluttered layouts · No unreadable text · No invented products.`;
 
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
-  if (clientContext) p += `\nBRAND CONTEXT: ${clientContext}`;
-  if (aiMemoryContext) p += `\nLEARNED PREFS: ${aiMemoryContext}`;
-  if (designBrief) p += buildDesignBriefSection(designBrief);
-
-  if (footerText) {
-    p += `\nFOOTER (mandatory — exact text in styled footer bar at bottom): "${footerText}"`;
+  if (designBrief) {
+    p += `\n\nExpert Guidance:
+- Layout & Symmetry: ${designBrief.layout_description}
+- Logo & Icon Placement: ${designBrief.logo_placement}
+- Geometric Alignment: ${designBrief.geometric_elements}
+- Lighting: ${designBrief.lighting_and_depth}
+- Secret Sauce: ${designBrief.quality_notes}
+- Color Strategy: ${designBrief.color_plan}`;
   }
 
-  p += `\n\nFLYER TEXT CONTENT (ONLY this text appears on the flyer):\n${prompt}`;
+  p += `\n\nEXACT TEXT TO RENDER ON THE FLYER (Do not invent text, write exactly this prominently):\n"${prompt}"`;
 
-  p += buildFinalChecklist({ hasLogos, primaryColor, secondaryColor, fontFamily, aiInstructions, colors });
+  if (footerText) {
+    p += `\n\nMANDATORY BOTTOM FOOTER BAR:\nCreate a distinct, structurally perfect footer zone at the very bottom.\n- Arrange these details symmetrically.\n- Add crisp, professional icons next to phone numbers and addresses.\n- Content to render in the footer:\n"${footerText}"`;
+  }
+
+  p += '\n\nEnsure no AI artifacts, no spelling mistakes. The final image must look like a real, published high-end commercial photo.';
 
   return p;
 }
@@ -282,55 +283,37 @@ function buildCopyPrompt(params: {
   secondaryColor?: string;
   fontFamily?: string;
   hasLogos?: boolean;
+  footerText?: string;
 }): string {
-  const { prompt, sizeConfig, niche, clientContext, designBrief, primaryColor, secondaryColor, fontFamily, hasLogos } = params;
+  const { prompt, sizeConfig, niche, designBrief, primaryColor, secondaryColor, fontFamily, hasLogos, footerText } = params;
 
-  let p = `You are a BRAZILIAN PROFESSIONAL GRAPHIC DESIGNER specializing in social media marketing flyers.
+  let p = `Generate an exact replica advertising flyer based strictly on the provided image template.
+Visual Style: Ultra-photorealistic, identical to the reference template's layout and energy.
+Canvas Dimensions: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio}).
 
-=== CRITICAL: BRAZILIAN COMMERCIAL FLYER STYLE ===
-- REAL 3D PRODUCT PHOTOGRAPHY ou renders fotorrealistas
-- Formas geometricas ousadas (circulos, retangulos arredondados)
-- Blocos de cores vibrantes e contrastantes
-- Estetica profissional brasileira de redes sociais
-- Produto como ELEMENTO HERO, grande e proeminente
-- Tipografia limpa com fontes de impacto
+CRITICAL REPLICATION RULES:
+- The FIRST attached image is the APPROVED TEMPLATE. You MUST COPY its layout, geometry, background flow, visual hierarchy, and object placement pixel-for-pixel.
+- Render the exact same background aesthetic (shapes, lines, lighting, shadows).
+- If a product or person is shown in the template, replace it with the subject of this new prompt, but place it in the EXACT SAME POSITION and SCALE.
+- Use the exact same typographic scale and text placement zones.
 
-=== MODE: TEMPLATE EXATA CÓPIA ===
-A PRIMEIRA IMAGEM fornecida é o TEMPLATE APROVADO que deve ser COPIADO.
+CHANGES ALLOWED:
+1. Replace the text in the template with the new text provided below.
+2. Update the primary/secondary colors only if explicitly defined below, otherwise keep the template colors.
 
-COPIAR EXATAMENTE TUDO (REPLICA PERFEITA):
-- O FUNDO E BACKGROUND (cores, formas, disposição)
-- O layout e posicionamento exato de TODOS os elementos
-- A disposição de todas as imagens que compõem o template
-- Posicionamento de logos e informações do rodapé
-
-A ÚNICA COISA QUE DEVE ALTERAR:
-1. As informações / Copy - Atualize textos conforme o novo pedido
-2. Cores - Somente altere cores se for EXPLICITAMENTE solicitado na prompt
-O resto DEVE ser uma réplica visual exata.
-
-=== QUALITY REQUIREMENTS ===
-- Renders fotorrealistas (como fotografia profissional)
-- Ultra-alta definicao 8K
-- Iluminacao de estudio nos produtos
-- Sombras e reflexos nitidos
-- Design comercial de qualidade de revista
-
-CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})`;
+${primaryColor ? `Enforced Primary Color: ${primaryColor}\n` : ''}${secondaryColor ? `Enforced Secondary Color: ${secondaryColor}\n` : ''}`;
 
   if (designBrief?.zone_map) {
-    p += `\n\n=== EXACT ELEMENT POSITIONS — Follow these coordinates as ABSOLUTE RULES ===\n${designBrief.zone_map}\n=== END POSITIONS ===`;
+    p += `\n\nAbsolute Layout Coordinates (Do not deviate):\n${designBrief.zone_map}`;
   }
 
-  if (niche && NICHE_STYLE[niche]) p += `\nIndustry context: ${NICHE_STYLE[niche]}`;
-  if (clientContext) p += `\nClient info: ${clientContext}`;
+  p += `\n\nEXACT TEXT TO RENDER ON THE FLYER (Replace template text with this):\n"${prompt}"`;
 
-  p += `\n\n════════════════════════════════════════════════════════════════
-FLYER TEXT CONTENT (ONLY this text should appear on the flyer):
-════════════════════════════════════════════════════════════════
-${prompt}
-════════════════════════════════════════════════════════════════`;
+  if (footerText) {
+    p += `\n\nMANDATORY BOTTOM FOOTER BAR:\nCreate a distinct, structurally perfect footer zone at the very bottom.\n- Arrange these details symmetrically.\n- Add crisp, professional icons next to phone numbers and addresses.\n- Content to render in the footer:\n"${footerText}"`;
+  }
 
+  p += '\nEnsure 100% spelling accuracy and flawless photorealistic rendering.';
   return p;
 }
 
@@ -351,55 +334,60 @@ function buildInspirationPrompt(params: {
   referenceCount: number;
   hasLogos?: boolean;
   designBrief?: DesignBrief | null;
+  footerText?: string;
+  hasApprovedLayout?: boolean;
 }): string {
   const { prompt, sizeConfig, clientName, niche, mood, colors,
     primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions,
-    aiMemoryContext, clientContext, referenceCount, hasLogos, designBrief } = params;
+    hasLogos, designBrief, footerText, hasApprovedLayout } = params;
 
-  let p = `You are a BRAZILIAN PROFESSIONAL GRAPHIC DESIGNER from a top Sao Paulo design agency.
+  let p = `Generate a premium, ultra-photorealistic commercial flyer heavily inspired by the attached reference images.
+Visual Style: 8k resolution, cinematic lighting, magazine editorial quality, high-end agency design.
+Canvas Dimensions: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio}).
 
-ELEMENTOS OBRIGATORIOS:
-1. RENDERS 3D FOTORREALISTAS - Produtos devem parecer fotografias reais
-2. FORMAS GEOMETRICAS OUSADAS - Blocos coloridos, circulos, retangulos arredondados
-3. COMBINACOES DE CORES VIBRANTES - Laranja/Cinza, Azul/Laranja, Vermelho/Preto
-4. TIPOGRAFIA PROFISSIONAL - Fontes bold de impacto, hierarquia clara
-5. ELEMENTOS DE REDES SOCIAIS - Icone WhatsApp, handle Instagram, telefones
-6. SELOS DE QUALIDADE - "Qualidade", estrelas, certificacoes
+MASTER INSTRUCTIONS:
+- The attached images are your VISUAL ANCHORS. Extract their mood, lighting setup (e.g., neon, soft daylight, dramatic shadows), background textures, and geometric style.
+- Create a new, brilliant composition that feels like it belongs in the exact same ad campaign as the references.
+- Render 3D/photorealistic central hero elements (do not use flat illustrations unless the reference is purely illustrative).
+- Ensure bold, striking typography that reads perfectly.
 
-=== MODE: CREATIVE INSPIRATION (MÁXIMA APROXIMAÇÃO) ===
-O objetivo é criar um flyer inspirado nas referências enviadas. 
-ENTREGUE O MELHOR RESULTADO POSSÍVEL, O MAIS PRÓXIMO DA REFERÊNCIA!
+${hasApprovedLayout ? `CRITICAL RULE: The first image is an APPROVED STRUCTURAL TEMPLATE. You MUST place the main subject, the headline, and the background elements in the EXACT SAME positions as this layout.` : ''}
 
-╔══════════════════════════════════════════════╗
-║  MANDATORY: SEJA FIEL À INSPIRAÇÃO           ║
-╚══════════════════════════════════════════════╝
-
-O QUE FAZER:
-- Estude a imagem de referência ou referências profundamente.
-- Recrie a mesma energia luminosa, iluminação e disposição da referência.
-- Mimetize as texturas de fundo, estilos geométricos e paleta de cores.
-- Faça o flyer parecer uma variação premium, super inteligente e profissional, mas incrivelmente próxima à estética original enviada.
-
-CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})`;
-
-  if (clientName) p += `\nBrand: ${clientName}`;
-  if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
-  if (mood) p += `\nMood: ${mood}`;
+${clientName ? `Brand: ${clientName}
+` : ''}${niche && NICHE_STYLE[niche] ? `Industry vibe: ${NICHE_STYLE[niche]}
+` : ''}${mood ? `Energy: ${mood}
+` : ''}`;
 
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
-  if (clientContext) p += `\nClient: ${clientContext}`;
-  if (aiMemoryContext) p += `\n\n=== LEARNED PREFERENCES ===\n${aiMemoryContext}`;
-
   if (designBrief) {
-    p += buildDesignBriefSection(designBrief);
+    p += `\n\nExtracted Reference DNA to apply:
+- MANDATORY LAYOUT: You MUST perfectly mirror the symmetry, spacing, and structural positioning of the reference layout. Place the logo exactly where specified. Align icons and text with absolute geometric precision.
+- Layout Flow: ${designBrief.layout_description}
+- Logo & Grid: ${designBrief.logo_placement}
+- Geometric Elements: ${designBrief.geometric_elements}
+- Typography Style: ${designBrief.typography_plan}
+- Color Harmony: ${designBrief.color_plan}
+- Lighting/Vibe: ${designBrief.lighting_and_depth}`;
   }
 
-  p += `\n\n════════════════════════════════════════════════════════════════
-FLYER TEXT CONTENT (ONLY this text should appear on the flyer):
-════════════════════════════════════════════════════════════════
-${prompt}
-════════════════════════════════════════════════════════════════`;
+  p += `
+
+EXACT TEXT TO RENDER ON THE FLYER:
+"${prompt}"`;
+
+  if (footerText) {
+    p += `
+
+MANDATORY BOTTOM FOOTER BAR:
+Create a distinct, structurally perfect footer zone at the very bottom.
+- Arrange these details symmetrically.
+- Add crisp, professional icons next to phone numbers and addresses.
+- Content to render in the footer:
+"${footerText}"`;
+  }
+
+  p += '\nOutput must be a masterfully lit, perfectly spelled, photorealistic image.';
 
   return p;
 }
@@ -420,87 +408,55 @@ function buildProductPreservationPrompt(params: {
   colors?: string;
   allowManipulation?: boolean;
   designBrief?: DesignBrief | null;
+  footerText?: string;
+  hasReferences?: boolean;
+  hasApprovedLayout?: boolean;
 }): string {
   const { prompt, sizeConfig, clientName, niche,
-    primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, aiMemoryContext, clientContext, hasLogos, colors, allowManipulation, designBrief } = params;
+    primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos, colors, allowManipulation, designBrief, footerText, hasReferences, hasApprovedLayout } = params;
 
-  let p = `SYSTEM / TRAINING INSTRUCTION (DO NOT IGNORE):
+  let p = `Generate a photorealistic advertising flyer featuring the EXACT product shown in the attached image.
+Canvas Dimensions: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio}).
 
-╔══════════════════════════════════════════════╗
-║  STRICT PRODUCT PRESERVATION MODE            ║
-║  LEGAL COMPLIANCE                            ║
-╚══════════════════════════════════════════════╝
+PRODUCT INTEGRATION RULES:
+${allowManipulation ? `ENHANCEMENT MODE: The attached product image is the core subject. You MUST feature this specific product, but you have full permission to enhance its lighting, correct reflections, improve its texture quality, and blend it seamlessly into a high-end, realistic studio environment. Make the product look like a million-dollar commercial photo.` : `STRICT PRESERVATION MODE: The attached product image MUST remain 100% physically identical. Do not alter its shape, branding, colors, or textures. It must look exactly like the input photo. Build a breathtaking, photorealistic studio environment and typography AROUND the product. Integrate it with perfect drop shadows and realistic ambient lighting from the new background.`}
 
-NAO PERMITIDO:
-- Redesenhar o produto
-- Recriar o produto
-- Reinterpretar o produto
-- Estilizar o produto
-- Melhorar o produto
-- Substituir o produto
-- Imaginar um novo produto
+${hasReferences ? `Background & Mood Inspiration: Look at the OTHER attached images (if any) as a moodboard for the background elements, lighting style, and color palette. Build the scene around the product using that vibe.` : ''}
 
-ATRIBUTOS QUE NAO PODEM SER ALTERADOS:
-- Forma, Tamanho, Proporcoes
-- Materiais, Cores, Texturas
-- Emissao de luz, Detalhes de design
-- Logos/rotulos no produto
-- Texto visivel no produto
-- Marcas, Numeros de modelo
-- Angulo do produto (manter similar)
+${hasApprovedLayout ? `CRITICAL RULE: The second attached image is an APPROVED STRUCTURAL TEMPLATE. You MUST place the preserved product in the EXACT same spatial zone and scale as the main subject in that template. Recreate the template's background layout structure.` : ''}
 
-ACOES ESTRITAMENTE PROIBIDAS:
-- Gerar produto "similar"
-- Criar nova versao do produto
-- Modernizar ou melhorar
-- Usar versoes genericas/stock
-- Criar interpretacoes 3D ou renders
-- Criar versoes ilustradas
-- Ajustar estetica do produto
-- Remover ou adicionar partes
-
-PROCESSO:
-1. EXTRAIR os produtos exatos da imagem de referência (pode haver mais de um).
-2. COLOCALOS como elementos hero no flyer.
-3. Os produtos devem ser PIXEL-PERFECT idênticos em detalhe, com os logos intactos.
-4. APENAS desenhar o FUNDO e LAYOUT ao redor.
-
-Pense nisso como uma operação de RECORTE DE FOTO E MONTAGEM:
-- Recortar fielmente o(s) produto(s)
-- Organizar e colar num ambiente espetacular
-- Adicionar texto, fundo e elementos decorativos APROPRIADOS
-
-⚠️ REQUISITO LEGAL CRITICO - CONDICAO DE FALHA:
-Se a imagem gerada nao usar o EXATO MESMO produto da
-referencia (incluindo TODOS os detalhes, proporcoes, cores,
-logos, rotulos e texturas), o resultado e LEGALMENTE INVALIDO.
-
-Isso e necessario para evitar PROCESSOS POR PUBLICIDADE FALSA.
-
-A imagem de referencia mostra o PRODUTO REAL que esta sendo vendido.
-Qualquer modificacao constitui PUBLICIDADE ENGANOSA que e
-ILEGAL na maioria dos paises.
-
-CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})`;
-
-  if (clientName) p += `\nBrand: ${clientName}`;
-  if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
+${clientName ? `
+Brand: ${clientName}` : ''}${niche && NICHE_STYLE[niche] ? `
+Industry: ${NICHE_STYLE[niche]}` : ''}`;
 
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
-  if (clientContext) p += `\nClient: ${clientContext}`;
-  if (aiMemoryContext) p += `\n\n=== LEARNED PREFERENCES ===\n${aiMemoryContext}`;
-
   if (designBrief) {
-    p += buildDesignBriefSection(designBrief);
+    p += `\n\nExtracted Focus:
+- MANDATORY LAYOUT: Align text, logos, and icons symmetrically around the product exactly as described.
+- Layout Flow: ${designBrief.layout_description}
+- Logo Placement: ${designBrief.logo_placement}
+- Geometric Elements: ${designBrief.geometric_elements}
+- Lighting: ${designBrief.lighting_and_depth}`;
   }
 
-  p += `\n\n════════════════════════════════════════════════════════════════
-FLYER TEXT CONTENT (ONLY this text should appear on the flyer):
-════════════════════════════════════════════════════════════════
-${prompt}
-════════════════════════════════════════════════════════════════`;
+  p += `
 
+EXACT TEXT TO RENDER ON THE FLYER:
+"${prompt}"`;
+
+  if (footerText) {
+    p += `
+
+MANDATORY BOTTOM FOOTER BAR:
+Create a distinct, structurally perfect footer zone at the very bottom.
+- Arrange these details symmetrically.
+- Add crisp, professional icons next to phone numbers and addresses.
+- Content to render in the footer:
+"${footerText}"`;
+  }
+
+  p += '\nOutput must be a masterfully lit, perfectly spelled, photorealistic image.';
   return p;
 }
 
@@ -520,73 +476,49 @@ function buildTemplateMemoryPrompt(params: {
   hasLogos?: boolean;
   colors?: string;
   designBrief?: DesignBrief | null;
+  footerText?: string;
 }): string {
-  const { prompt, sizeConfig, clientName, niche,
+  const { prompt, sizeConfig, clientName,
     primaryColor, secondaryColor, fontFamily,
-    aiInstructions, aiRestrictions, aiMemoryContext, clientContext, hasProductImage, hasLogos, colors, designBrief } = params;
+    aiInstructions, aiRestrictions, hasProductImage, hasLogos, colors, designBrief, footerText } = params;
 
-  let p = `SYSTEM / TRAINING INSTRUCTION (CRITICAL - DO NOT IGNORE):
+  let p = `Generate a photorealistic advertising flyer that perfectly replicates the structural template provided.
+Canvas Dimensions: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio}).
 
-╔══════════════════════════════════════════════╗
-║  STRICT TEMPLATE REPLICATION MODE            ║
-║  CLIENT: ${clientName || 'Approved Client'}                   ║
-║  APPROVED TEMPLATE - MANDATORY COMPLIANCE    ║
-╚══════════════════════════════════════════════╝
+STRICT TEMPLATE COMPLIANCE:
+- The FIRST attached image is the APPROVED TEMPLATE layout.
+- You MUST perfectly replicate the spatial arrangement, background geometry, typography hierarchy, and overall layout grid of this template.
+- ${hasProductImage ? 'Extract the product from the OTHER attached image and place it precisely where the hero element is in the template.' : 'Keep the structural layout identical but skin it with high-end photorealistic textures.'}
 
-A PRIMEIRA IMAGEM e o TEMPLATE OFICIAL APROVADO.
-Este template representa a identidade visual do cliente e foi
-APROVADO pela agencia. Voce DEVE segui-lo EXATAMENTE.
-
-COPIAR PIXEL-PERFECT:
-□ Posicao e tamanho do logo (EXATO mesmo canto/posicao)
-□ Estilo e posicao dos icones de redes sociais
-□ Tipografia do titulo (estilo, cor, tamanho, posicao)
-□ Paleta de cores (valores HEX EXATOS - nao desviar)
-□ Formas geometricas do fundo (circulos, retangulos, curvas)
-□ Estrutura do rodape com layout de contatos
-□ Grid de layout geral e espacamento
-□ Estilo visual e mood
-□ Elementos decorativos (linhas, formas, icones)
-□ Hierarquia e posicionamento de texto
-
-O QUE SUBSTITUIR (CRIAR NOVO):
-□ Fundo / Background → Pode e deve alterar o fundo/background para combinar com o tema
-□ Imagem do produto → Alterar imagens/produtos centrais se fornecidos novos
-□ Conteúdo do texto e copy → Alterar os dados textuais de acordo com o pedido
-
-O QUE MANTER FIEL (NÃO ALTERAR A DISPOSIÇÃO):
-□ Disposição, alinhamento e estrutura dos Logotipos
-□ Estrutura, cores e layout do RODAPÉ (footers / informações)
-□ Estrutura de grid principal (o esqueleto) do layout do template aprovado
-
-PROCESSO DE REPLICACAO (ESTRUTURAL):
-1. IDENTIFICAR onde estão os logos, rodapés e blocos fundamentais de texto no Layout Aprovado
-2. RECRIAR/ATUALIZAR as imagens principais e o fundo para refletir a nova oferta/produto
-3. MANTER a ancoragem dos logotipos e rodapés sempre na mesma disposição original aprovada
-4. O flyer resultante será diferente no núcleo (fundo/imagens), mas usará a MESMA estruta corporativa.
-
-PROIBIDO:
-❌ Mudar a disposição estrutural de rodapés e logos.
-
-CANVAS: ${sizeConfig.width}×${sizeConfig.height}px (${sizeConfig.aspectRatio})`;
-
-  if (niche && NICHE_STYLE[niche]) p += `\nIndustry: ${NICHE_STYLE[niche]}`;
+${clientName ? `Brand: ${clientName}
+` : ''}`;
 
   p += buildMandatoryBrandConfig({ colors, primaryColor, secondaryColor, fontFamily, aiInstructions, aiRestrictions, hasLogos });
 
-  if (clientContext) p += `\nClient info: ${clientContext}`;
-  if (aiMemoryContext) p += `\n\n=== LEARNED PREFERENCES ===\n${aiMemoryContext}`;
+  if (designBrief?.zone_map) {
+    p += `
 
-  if (designBrief) {
-    p += buildDesignBriefSection(designBrief);
+Absolute Layout Coordinates (Do not deviate):
+${designBrief.zone_map}`;
   }
 
-  p += `\n\n════════════════════════════════════════════════════════════════
-FLYER TEXT CONTENT (ONLY this text should appear on the flyer):
-════════════════════════════════════════════════════════════════
-${prompt}
-════════════════════════════════════════════════════════════════`;
+  p += `
 
+EXACT TEXT TO RENDER ON THE FLYER (Replacing template text):
+"${prompt}"`;
+
+  if (footerText) {
+    p += `
+
+MANDATORY BOTTOM FOOTER BAR:
+Create a distinct, structurally perfect footer zone at the very bottom.
+- Arrange these details symmetrically.
+- Add crisp, professional icons next to phone numbers and addresses.
+- Content to render in the footer:
+"${footerText}"`;
+  }
+
+  p += '\nOutput must be a masterfully lit, perfectly spelled, photorealistic image.';
   return p;
 }
 
@@ -599,6 +531,40 @@ function buildClientContext(client: Record<string, unknown> | null): string {
   }
   if (client.notes) parts.push(`Notes: ${String(client.notes).substring(0, 150)}`);
   return parts.join(' | ');
+}
+
+async function generateShortTitle(prompt: string, apiKey: string): Promise<string> {
+  try {
+    const response = await fetch(
+      `${GEMINI_API_BASE}/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `Based on this advertising flyer prompt, generate a SHORT (2-4 words) and unique title in Portuguese. 
+              Examples: "Som de Luxo", "Hambúrguer Artesanal", "Oferta de Natal".
+              Prompt: "${prompt ? prompt.substring(0, 500) : "Flyer de Marketing"}"
+              Respond ONLY with the title string.`
+            }]
+          }],
+          generationConfig: {
+            maxOutputTokens: 20,
+            temperature: 0.7,
+          }
+        }),
+      }
+    );
+
+    const data = await response.json();
+    const title = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().replace(/"/g, '') || "Flyer Gerado";
+    // Limit length to avoid issues
+    return title.substring(0, 50);
+  } catch (e) {
+    console.error("Error generating title:", e);
+    return "Flyer Gerado";
+  }
 }
 
 const SAFETY_SETTINGS = [
@@ -771,6 +737,7 @@ Respond with a JSON object using EXACTLY these keys (all values must be strings)
   "lighting_and_depth": "Analyze the lighting setup. Where is the key light? Are there rim lights or reflections? Describe the depth of field and layering strategy.",
   "visual_energy": "Describe the 'vibe' or 'mood'. Is it aggressive, elegant, tech-focused, or organic? How is this energy achieved through design?",
   ${isCopyOrTemplate ? `"template_layout": "EXACT pixel-level mapping of every element: logo at [position] sized [X%], headline at [position], product at [position], footer at bottom, badges at [position]",` : ''}
+  "footer_structure": "Carefully analyze the footer area. Is it a distinct bar? How are elements (logos, text, icons) arranged horizontally and symmetrically?",
   "quality_notes": "Identify the 'secret sauce' that makes these references look professional. Mention specific high-end techniques like caustic lights, sub-surface scattering, or advanced compositing."
 }
 
@@ -783,8 +750,10 @@ IMPORTANT: Respond ONLY with the JSON object. The product_description field is M
   ];
 
   try {
+    const modelForAnalysis = config.model === "gemini-pro" ? AI_MODELS["gemini-pro-text"] : AI_MODELS["gemini-flash-text"];
+
     const response = await fetch(
-      `${GEMINI_API_BASE}/models/${AI_MODELS["gemini-flash-text"]}:generateContent`,
+      `${GEMINI_API_BASE}/models/${modelForAnalysis}:generateContent`,
       {
         method: "POST",
         headers: {
@@ -795,7 +764,7 @@ IMPORTANT: Respond ONLY with the JSON object. The product_description field is M
           contents: [{ role: "user", parts }],
           generationConfig: {
             responseMimeType: "application/json",
-            maxOutputTokens: isCopyMode ? 4096 : 2048,
+            maxOutputTokens: isCopyMode ? 4096 : 3072,
           },
           safetySettings: SAFETY_SETTINGS,
         }),
@@ -832,7 +801,7 @@ IMPORTANT: Respond ONLY with the JSON object. The product_description field is M
       Respond ONLY with the suggested text.`;
 
       const copyResponse = await fetch(
-        `${GEMINI_API_BASE}/models/${AI_MODELS["gemini-flash-text"]}:generateContent`,
+        `${GEMINI_API_BASE}/models/${modelForAnalysis}:generateContent`,
         {
           method: "POST",
           headers: {
@@ -1159,16 +1128,17 @@ async function callGeminiWithRetry(
         if (attempt === 1) {
           currentParts = parts;
         } else {
+          const extractedTextMatch = textPart.text.match(/EXACT TEXT TO RENDER[^\n]*\n"([^"]+)"/);
+          const extractedText = extractedTextMatch ? extractedTextMatch[1] : textPart.text.substring(textPart.text.length - 100);
+
           if (isProductMode && imageParts.length > 0) {
-            const simplifiedText = `Create a professional commercial flyer featuring the EXACT product shown in the attached image.
-Keep the product 100% identical. Design only the background and text layout around it.
-Text content: ${textPart.text.match(/FLYER TEXT CONTENT[^\n]*\n([\s\S]*?)(?:\n\n|$)/)?.[1] || textPart.text.substring(textPart.text.length - 200)}`;
+            const simplifiedText = `A professional commercial flyer featuring the EXACT product shown in the attached image.
+Photorealistic, studio environment, beautiful lighting.
+Text to render: "${extractedText}"`;
             currentParts = [{ text: simplifiedText }, ...imageParts];
           } else {
-            const simplifiedText = textPart.text
-              .replace(/ESTUDO DAS CARACTERISTICAS[\s\S]*?PROIBIDO:[^\n]*\n/g,
-                'Create a professional, photorealistic commercial flyer. Premium agency quality. Bold geometric design with depth.\n')
-              .substring(0, 800);
+            const simplifiedText = `A professional commercial flyer, photorealistic, premium agency quality, cinematic lighting.
+Text to render: "${extractedText}"`;
             currentParts = [{ text: simplifiedText }];
           }
         }
@@ -1450,17 +1420,36 @@ serve(async (req) => {
     const allReferenceImages: string[] = [];
     if (finalMode === 'product' && productImage) {
       allReferenceImages.push(productImage);
+      if (project.template_image) {
+        allReferenceImages.push(project.template_image);
+      } else if (project.reference_images?.length > 0) {
+        allReferenceImages.push(...project.reference_images.slice(0, 2 - allReferenceImages.length));
+      }
     } else if (finalMode === 'template' && project.template_image) {
       allReferenceImages.push(project.template_image);
       if (productImage) allReferenceImages.push(productImage);
-    } else if (finalMode === 'copy' && layoutReferences.length > 0) {
-      allReferenceImages.push(layoutReferences[0]);
+    } else if (finalMode === 'copy' && project.template_image) {
+      allReferenceImages.push(project.template_image);
       if (productImage) allReferenceImages.push(productImage);
+    } else if (finalMode === 'copy') {
+      if (layoutReferences.length > 0) allReferenceImages.push(layoutReferences[0]);
+      if (productImage) allReferenceImages.push(productImage);
+    } else if (finalMode === 'inspiration') {
+      if (project.template_image) {
+        allReferenceImages.push(project.template_image);
+        if (productImage) allReferenceImages.push(productImage);
+      } else {
+        if (layoutReferences.length > 0) allReferenceImages.push(layoutReferences[0]);
+        if (additionalReferences.length > 0) allReferenceImages.push(additionalReferences[0]);
+        if (allReferenceImages.length < 2 && project.reference_images?.length > 0) {
+          allReferenceImages.push(...project.reference_images.slice(0, 2 - allReferenceImages.length));
+        }
+      }
     } else {
       if (layoutReferences.length > 0) allReferenceImages.push(layoutReferences[0]);
       if (additionalReferences.length > 0) allReferenceImages.push(additionalReferences[0]);
       if (allReferenceImages.length < 2 && project.reference_images?.length > 0) {
-        allReferenceImages.push(project.reference_images[0]);
+        allReferenceImages.push(...project.reference_images.slice(0, 2 - allReferenceImages.length));
       }
     }
 
@@ -1614,6 +1603,7 @@ serve(async (req) => {
           secondaryColor: project.secondary_color,
           fontFamily: project.font_family,
           hasLogos,
+          footerText: baseParams.footerText,
         });
         break;
       case 'inspiration': {
@@ -1624,6 +1614,7 @@ serve(async (req) => {
           mood,
           aiRestrictions: project.ai_restrictions,
           referenceCount: allRefs.length || 1,
+          hasApprovedLayout: !!project.template_image,
         });
         break;
       }
@@ -1633,6 +1624,8 @@ serve(async (req) => {
           prompt: finalPrompt,
           aiRestrictions: project.ai_restrictions,
           allowManipulation,
+          hasReferences: projectHasReferences || !!project.template_image,
+          hasApprovedLayout: !!project.template_image,
         });
         break;
       case 'original':
@@ -1748,6 +1741,8 @@ REGRAS CRITICAS:
       .from("studio-assets")
       .getPublicUrl(fileName);
 
+    const flyerTitle = await generateShortTitle(finalPrompt, GEMINI_API_KEY!);
+
     const { data: flyer, error: flyerError } = await supabase
       .from("studio_flyers")
       .insert({
@@ -1755,6 +1750,7 @@ REGRAS CRITICAS:
         organization_id: project.organization_id,
         created_by: userId,
         prompt: finalPrompt,
+        title: flyerTitle,
         image_url: publicUrl,
         size: size || "1080x1080",
         style: style || "vivid",

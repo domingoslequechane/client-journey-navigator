@@ -58,6 +58,7 @@ import Editorial from "./pages/Editorial";
 import SocialMedia from "./pages/SocialMedia";
 import SocialPostEditor from "./pages/SocialPostEditor";
 import SocialApproval from "./pages/SocialApproval";
+import StudioTool from "./pages/studio/StudioTool";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -168,6 +169,11 @@ const App = () => (
                     <Route path="studio/:projectId/edit" element={
                       <RoleProtectedRoute privilege="studio">
                         <NewStudioProject />
+                      </RoleProtectedRoute>
+                    } />
+                    <Route path="studio/tools/:toolId" element={
+                      <RoleProtectedRoute privilege="studio">
+                        <StudioTool />
                       </RoleProtectedRoute>
                     } />
                     <Route path="settings" element={
