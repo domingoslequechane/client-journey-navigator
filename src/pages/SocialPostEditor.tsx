@@ -1267,8 +1267,8 @@ export default function SocialPostEditor() {
           </ScrollArea>
         </div>
 
-        {/* PREVIEW LATERAL DIREITO */}
-        <aside className="w-[450px] flex flex-col bg-[#0f172a] border-l border-border/10 overflow-hidden shrink-0 shadow-2xl">
+        {/* PREVIEW LATERAL DIREITO - Desktop only */}
+        <aside className="w-[450px] flex-col bg-[#0f172a] border-l border-border/10 overflow-hidden shrink-0 shadow-2xl hidden lg:flex">
           <div className="p-4 border-b border-border/5 bg-background/5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2 text-primary">
               <Sparkles className="h-4 w-4" />
@@ -1305,17 +1305,13 @@ export default function SocialPostEditor() {
                     "w-full h-full shrink-0 flex items-center justify-center snap-center px-6 relative transition-all duration-700",
                     brandGradients[p] || "bg-slate-900"
                   )}>
-                    {/* Overlay to ensure card pop */}
                     <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]" />
-
-                    {/* Professional Card Preview - Removed smartphone screen & status bar */}
                     <div className="relative w-full max-w-[420px] animate-in fade-in zoom-in-95 duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                       {(() => {
                         const account = connectedAccounts.find(a =>
                           a.platform === p &&
                           currentPostItem?.selectedAccountIds.includes(a.id)
                         );
-
                         return (
                           <PostPreview
                             content={currentPostItem?.content || ''}
@@ -1343,7 +1339,60 @@ export default function SocialPostEditor() {
             )}
           </div>
         </aside>
+
+        {/* Mobile floating preview button */}
+        {isMobile && (
+          <Button
+            onClick={() => setShowMobilePreview(true)}
+            className="fixed bottom-6 right-6 z-30 rounded-full h-14 w-14 shadow-xl shadow-primary/30 p-0"
+          >
+            <Eye className="h-6 w-6" />
+          </Button>
+        )}
       </main>
+
+      {/* Mobile Preview Dialog */}
+      <Dialog open={showMobilePreview} onOpenChange={setShowMobilePreview}>
+        <DialogContent className="max-w-full w-full h-[90vh] p-0 overflow-hidden [&>button]:hidden">
+          <div className="flex flex-col h-full">
+            <div className="p-3 border-b flex items-center justify-between shrink-0 bg-card">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Preview</span>
+              <Button variant="ghost" size="icon" onClick={() => setShowMobilePreview(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-x-auto flex snap-x snap-mandatory bg-[#0f172a]" style={{ scrollbarWidth: 'none' }}>
+              {currentPlatforms.length > 0 ? (
+                currentPlatforms.map((p) => {
+                  const account = connectedAccounts.find(a =>
+                    a.platform === p && currentPostItem?.selectedAccountIds.includes(a.id)
+                  );
+                  return (
+                    <div key={p} className="w-full h-full shrink-0 flex items-center justify-center snap-center p-4">
+                      <div className="w-full max-w-sm">
+                        <PostPreview
+                          content={currentPostItem?.content || ''}
+                          mediaUrl={currentPostItem?.mediaUrls[0]}
+                          platform={p}
+                          contentType={currentPostItem?.schedules[0]?.contentType as ContentType}
+                          accountName={account?.account_name}
+                          accountUsername={account?.username}
+                          accountAvatarUrl={account?.avatar_url || undefined}
+                          isVideo={currentPostItem?.files[0]?.type.startsWith('video/')}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <p className="text-sm text-muted-foreground">Selecione canais para ver os previews</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* DIÁLOGOS AUXILIARES */}
       <Dialog open={showUploadChoice} onOpenChange={setShowUploadChoice}>
