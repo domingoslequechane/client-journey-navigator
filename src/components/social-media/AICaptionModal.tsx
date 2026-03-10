@@ -181,19 +181,19 @@ export function AICaptionModal({
           )}
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">Cancelar</Button>
           <Button
             variant="outline"
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="gap-2"
+            className="w-full sm:w-auto gap-2"
           >
             {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {generatedCaption ? 'Gerar novamente' : 'Gerar Legenda'}
           </Button>
           {generatedCaption && (
-            <Button onClick={handleUseCaption}>Usar Legenda</Button>
+            <Button onClick={handleUseCaption} className="w-full sm:w-auto">Usar Legenda</Button>
           )}
         </DialogFooter>
       </DialogContent>

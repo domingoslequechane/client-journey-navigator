@@ -18,10 +18,10 @@ import { type SocialPlatform, type ContentType } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { 
-  Upload, Calendar, Clock, Loader2, X, 
-  Image as ImageIcon, Zap, Sparkles, LayoutGrid, 
-  Layers, Plus, AlertCircle, 
+import {
+  Upload, Calendar, Clock, Loader2, X,
+  Image as ImageIcon, Zap, Sparkles, LayoutGrid,
+  Layers, Plus, AlertCircle,
   CheckCircle2, Smartphone, Type, Share2, MapPin, MessageSquare, Phone,
   CircleDashed, Film, ChevronDown
 } from 'lucide-react';
@@ -52,7 +52,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
   const [showUploadChoice, setShowUploadChoice] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedAccounts = accounts.filter(a => a.is_connected);
   const currentPostItem = useMemo(() => postItems[activeIndex] || null, [postItems, activeIndex]);
@@ -208,7 +208,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl h-[90vh] p-0 flex flex-col overflow-hidden">
+        <DialogContent className="max-w-[95vw] lg:max-w-6xl h-[95vh] lg:h-[90vh] p-0 flex flex-col overflow-hidden">
           {isSaving && (
             <div className="absolute inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -216,18 +216,18 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
             </div>
           )}
 
-          <div className="px-6 py-4 border-b bg-muted/5 flex items-center justify-between shrink-0">
-            <DialogTitle className="text-xl font-bold">
+          <div className="px-4 py-3 md:px-6 md:py-4 border-b bg-muted/5 flex items-center justify-between shrink-0">
+            <DialogTitle className="text-lg md:text-xl font-bold">
               {post ? 'Editar Publicação' : 'Nova Publicação'}
             </DialogTitle>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}><X className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-8 w-8"><X className="h-5 w-5" /></Button>
           </div>
 
           <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[1fr,400px]">
             <div className="flex flex-col h-full bg-background">
               <ScrollArea className="flex-1">
                 <div className="p-6 md:p-8 max-w-2xl mx-auto w-full space-y-10">
-                  
+
                   {/* SEÇÃO 1: CANAIS (Sempre visível) */}
                   <section className="space-y-4">
                     <div className="flex items-center gap-2 text-primary">
@@ -242,14 +242,14 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                         </div>
                       ) : (
                         connectedAccounts.map(acc => (
-                          <div 
-                            key={acc.id} 
+                          <div
+                            key={acc.id}
                             className={cn(
                               "flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer",
                               selectedAccountIds.includes(acc.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/20"
                             )}
                             onClick={() => {
-                              setSelectedAccountIds(prev => 
+                              setSelectedAccountIds(prev =>
                                 prev.includes(acc.id) ? prev.filter(id => id !== acc.id) : [...prev, acc.id]
                               );
                             }}
@@ -261,7 +261,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                                 <p className="text-[10px] text-muted-foreground truncate">@{acc.username}</p>
                               </div>
                             </div>
-                            <Checkbox checked={selectedAccountIds.includes(acc.id)} onCheckedChange={() => {}} />
+                            <Checkbox checked={selectedAccountIds.includes(acc.id)} onCheckedChange={() => { }} />
                           </div>
                         ))
                       )}
@@ -278,7 +278,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                       </div>
 
                       {postItems.length === 0 ? (
-                        <div 
+                        <div
                           className="border-2 border-dashed border-border rounded-2xl p-10 text-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
                           onClick={() => fileInputRef.current?.click()}
                         >
@@ -287,11 +287,11 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                           <p className="text-xs text-muted-foreground mt-1">Clique para selecionar arquivos do seu dispositivo</p>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                           {postItems.flatMap(item => item.mediaUrls).map((url, i) => (
                             <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-border group shadow-sm">
                               <img src={url} className="w-full h-full object-cover" />
-                              <button 
+                              <button
                                 onClick={() => {
                                   // Lógica simplificada para remover mídia
                                   const newItems = postItems.map(item => ({
@@ -307,7 +307,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                               </button>
                             </div>
                           ))}
-                          <button 
+                          <button
                             onClick={() => fileInputRef.current?.click()}
                             className="aspect-square rounded-xl border-2 border-dashed flex items-center justify-center hover:bg-muted/50 transition-colors"
                           >
@@ -331,11 +331,11 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                         {postItems.length > 1 && (
                           <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
                             {postItems.map((_, i) => (
-                              <Button 
-                                key={i} 
-                                variant={activeIndex === i ? "default" : "ghost"} 
-                                size="sm" 
-                                className="h-6 w-6 p-0 text-[10px]" 
+                              <Button
+                                key={i}
+                                variant={activeIndex === i ? "default" : "ghost"}
+                                size="sm"
+                                className="h-6 w-6 p-0 text-[10px]"
                                 onClick={() => setActiveIndex(i)}
                               >
                                 {i + 1}
@@ -350,8 +350,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <Label className="text-xs font-bold uppercase text-muted-foreground">Legenda do Post</Label>
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 className="gap-2 border-primary/30 text-primary hover:bg-primary/5 h-7 text-xs"
                                 onClick={() => setShowAICaptionModal(true)}
@@ -359,19 +359,19 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                                 <Sparkles className="h-3 w-3" /> Gerar com IA
                               </Button>
                             </div>
-                            <Textarea 
-                              value={currentPostItem.content} 
+                            <Textarea
+                              value={currentPostItem.content}
                               onChange={e => updatePostItem(currentPostItem.id, { content: e.target.value })}
                               placeholder="O que você quer dizer ao seu público?"
                               className="min-h-[120px] rounded-xl border-2 bg-background"
                             />
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label className="text-xs font-bold uppercase text-muted-foreground">Tipo</Label>
-                              <Select 
-                                value={currentPostItem.contentType} 
+                              <Select
+                                value={currentPostItem.contentType}
                                 onValueChange={(v: any) => updatePostItem(currentPostItem.id, { contentType: v })}
                               >
                                 <SelectTrigger className="h-10 rounded-xl border-2 bg-background">
@@ -389,8 +389,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                               <Label className="text-xs font-bold uppercase text-muted-foreground">Localização</Label>
                               <div className="relative">
                                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                                <Input 
-                                  value={currentPostItem.location} 
+                                <Input
+                                  value={currentPostItem.location}
                                   onChange={e => updatePostItem(currentPostItem.id, { location: e.target.value })}
                                   placeholder="Onde foi isso?"
                                   className="h-10 pl-9 rounded-xl border-2 bg-background"
@@ -402,8 +402,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                           <div className="space-y-3">
                             <Label className="text-xs font-bold uppercase text-muted-foreground">Chamada para Ação (CTA)</Label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <Select 
-                                value={currentPostItem.ctaType} 
+                              <Select
+                                value={currentPostItem.ctaType}
                                 onValueChange={(v: any) => updatePostItem(currentPostItem.id, { ctaType: v })}
                               >
                                 <SelectTrigger className="h-10 rounded-xl border-2 bg-background">
@@ -418,8 +418,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                               {currentPostItem.ctaType === 'whatsapp' && (
                                 <div className="relative">
                                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                                  <Input 
-                                    value={currentPostItem.ctaValue} 
+                                  <Input
+                                    value={currentPostItem.ctaValue}
                                     onChange={e => updatePostItem(currentPostItem.id, { ctaValue: e.target.value })}
                                     placeholder="Número com DDD"
                                     className="h-10 pl-9 rounded-xl border-2 bg-background"
@@ -429,23 +429,23 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label className="text-xs font-bold uppercase text-muted-foreground">Data</Label>
-                              <Input 
-                                type="date" 
-                                value={currentPostItem.scheduledAt} 
-                                onChange={e => updatePostItem(currentPostItem.id, { scheduledAt: e.target.value })} 
-                                className="h-10 rounded-xl border-2 bg-background" 
+                              <Input
+                                type="date"
+                                value={currentPostItem.scheduledAt}
+                                onChange={e => updatePostItem(currentPostItem.id, { scheduledAt: e.target.value })}
+                                className="h-10 rounded-xl border-2 bg-background"
                               />
                             </div>
                             <div className="space-y-2">
                               <Label className="text-xs font-bold uppercase text-muted-foreground">Hora</Label>
-                              <Input 
-                                type="time" 
-                                value={currentPostItem.scheduledTime} 
-                                onChange={e => updatePostItem(currentPostItem.id, { scheduledTime: e.target.value })} 
-                                className="h-10 rounded-xl border-2 bg-background" 
+                              <Input
+                                type="time"
+                                value={currentPostItem.scheduledTime}
+                                onChange={e => updatePostItem(currentPostItem.id, { scheduledTime: e.target.value })}
+                                className="h-10 rounded-xl border-2 bg-background"
                               />
                             </div>
                           </div>
@@ -456,17 +456,17 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                 </div>
               </ScrollArea>
 
-              <div className="p-6 border-t bg-muted/5 flex items-center justify-between shrink-0">
-                <div className="text-xs text-muted-foreground">
+              <div className="p-4 md:p-6 border-t bg-muted/5 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
+                <div className="text-[10px] md:text-xs text-muted-foreground order-2 sm:order-1 text-center sm:text-left">
                   {postItems.length > 0 ? `${postItems.length} post(s) configurado(s)` : 'Aguardando configuração'}
                 </div>
 
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={postItems.length === 0}>Salvar Rascunho</Button>
-                  <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={postItems.length === 0} className="gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto order-1 sm:order-2">
+                  <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={postItems.length === 0} className="w-full sm:w-auto text-xs h-9">Salvar Rascunho</Button>
+                  <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={postItems.length === 0} className="w-full sm:w-auto gap-2 text-xs h-9">
                     <Calendar className="h-4 w-4" /> Agendar
                   </Button>
-                  <Button onClick={() => handleSaveAction('published')} disabled={postItems.length === 0} className="gap-2 shadow-xl shadow-primary/20 px-8">
+                  <Button onClick={() => handleSaveAction('published')} disabled={postItems.length === 0} className="w-full sm:w-auto gap-2 shadow-xl shadow-primary/20 px-4 md:px-8 text-xs h-9">
                     <Zap className="h-4 w-4" /> Publicar Agora
                   </Button>
                 </div>
@@ -483,8 +483,8 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                 <div className="flex gap-1">
                   {selectedPlatforms.length > 0 ? (
                     selectedPlatforms.map(p => (
-                      <button 
-                        key={p} 
+                      <button
+                        key={p}
                         onClick={() => setPreviewPlatform(p)}
                         className={cn(
                           "p-1.5 rounded-md transition-all",
@@ -499,7 +499,7 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
                   )}
                 </div>
               </div>
-              
+
               <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
                 <div className="w-full max-w-[300px]">
                   <div className="shadow-2xl rounded-[2.5rem] overflow-hidden border-8 border-black bg-black">
