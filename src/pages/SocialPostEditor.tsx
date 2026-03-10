@@ -138,6 +138,7 @@ export default function SocialPostEditor() {
   const navigate = useNavigate();
   const clientId = searchParams.get('clientId');
   const { organizationId } = useOrganization();
+  const isMobile = useIsMobile();
 
   const { createPost, updatePost, publishPost } = useSocialPosts();
   const { accounts } = useSocialAccounts(clientId);
@@ -156,6 +157,7 @@ export default function SocialPostEditor() {
   const [isLoadingPost, setIsLoadingPost] = useState(!!postId);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
