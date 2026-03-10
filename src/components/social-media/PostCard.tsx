@@ -32,7 +32,7 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
   return (
     <Card className="hover:border-primary/30 transition-colors">
       <CardContent className="p-4">
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           {mediaUrl && (
             <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 border bg-muted relative">
               {(mediaUrl.includes('video') || mediaUrl.endsWith('.mp4') || mediaUrl.endsWith('.mov') || mediaUrl.endsWith('.webm')) ? (
