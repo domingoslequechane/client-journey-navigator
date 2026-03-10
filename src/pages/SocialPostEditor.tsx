@@ -48,14 +48,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
 
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
