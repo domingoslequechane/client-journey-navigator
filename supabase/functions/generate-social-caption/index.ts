@@ -111,34 +111,45 @@ REGRAS OBRIGATÓRIAS:
       }
     }
 
-    console.log("[generate-social-caption] Calling AI gateway...");
+    const aiModel = "google/gemini-2.0-flash";
+    console.log("[generate-social-caption] Calling AI gateway with model:", aiModel);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: aiModel,
         messages: [
           { role: "system", content: "Você é um especialista em copywriting para redes sociais. Crie posts de alta conversão." },
           { role: "user", content: userContent },
         ],
         temperature: 0.7,
-        max_tokens: 4096,
+        max_tokens: 2048,
       }),
     });
-
-    console.log("[generate-social-caption] AI gateway response status:", response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[generate-social-caption] AI gateway error:", response.status, errorText);
+
+      let errorMessage = `AI gateway error: ${response.status}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.error?.message || errorMessage;
+      } catch (e) {
+        // Not JSON
+      }
+
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "Payment required." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();

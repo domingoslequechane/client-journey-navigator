@@ -100,7 +100,7 @@ export function AICaptionModal({
       setGeneratedCaption(data.caption || '');
     } catch (err: any) {
       console.error('Error generating caption:', err);
-      setGeneratedCaption('Erro ao gerar legenda. Verifique sua conexão e tente novamente.');
+      setGeneratedCaption(`Erro ao gerar legenda: ${err.message || 'Verifique sua conexão e tente novamente.'}`);
     } finally {
       setIsGenerating(false);
     }
