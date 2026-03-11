@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
@@ -26,7 +26,6 @@ serve(async (req) => {
 
     const body = await req.json();
 
-    // Validate input
     const validationResult = SignupInviteSchema.safeParse(body);
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.errors);
@@ -41,7 +40,6 @@ serve(async (req) => {
 
     const { inviteToken, password } = validationResult.data;
 
-    // Fetch the invite securely using the admin client
     const { data: invite, error: inviteError } = await supabaseAdmin
       .from("organization_invites")
       .select("*, organizations(name)")
@@ -71,14 +69,13 @@ serve(async (req) => {
       );
     }
 
-    // Attempt to create the user directly confirmed via Admin API
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: invite.email,
       password: password,
       email_confirm: true,
       user_metadata: {
         full_name: invite.full_name,
-        role: "user", // The database trigger will map this to operations and insert profile
+        role: "user",
       }
     });
 
@@ -92,15 +89,12 @@ serve(async (req) => {
 
     const userId = authData.user.id;
 
-    // The user is created and confirmed. Now accept the invite:
-
-    // Add user to organization_members
     const { error: memberError } = await supabaseAdmin
       .from("organization_members")
       .upsert({
         user_id: userId,
         organization_id: invite.organization_id,
-        role: invite.role, // Legacy role, but just insert what's in the invite
+        role: invite.role,
         privileges: invite.privileges,
         is_active: true,
       }, {
@@ -115,13 +109,11 @@ serve(async (req) => {
       );
     }
 
-    // Update invite status
     await supabaseAdmin
       .from("organization_invites")
       .update({ status: "accepted", accepted_at: new Date().toISOString() })
       .eq("id", invite.id);
 
-    // Set as current organization in profile
     await supabaseAdmin
       .from("profiles")
       .update({ current_organization_id: invite.organization_id })
@@ -131,7 +123,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: "Conta criada e convite aceito com sucesso",
-        email: invite.email, // Return email so UI can do auth.signInWithPassword automatically
+        email: invite.email,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
