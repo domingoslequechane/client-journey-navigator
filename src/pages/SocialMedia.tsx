@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle, Lock, FileText, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle, Lock, FileText, Pencil, ChevronLeft, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -57,6 +57,25 @@ export default function SocialMedia() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [draftToDelete, setDraftToDelete] = useState<SocialPostRow | null>(null);
+
+  // Restore navigation state when returning from editor
+  useEffect(() => {
+    const saved = sessionStorage.getItem('social_nav_state');
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
+        if (state.activeTab) setActiveTab(state.activeTab as TabValue);
+        if (state.statusFilter) setStatusFilter(state.statusFilter);
+        if (state.platformFilter) setPlatformFilter(state.platformFilter);
+        if (state.searchQuery) setSearchQuery(state.searchQuery);
+        if (state.currentPage) setCurrentPage(state.currentPage);
+        if (state.currentMonth) setCurrentMonth(new Date(state.currentMonth));
+        // Clear after restoring so it doesn't persist forever
+        sessionStorage.removeItem('social_nav_state');
+      } catch { }
+    }
+  }, []);
   const ITEMS_PER_PAGE = 10;
 
   const { posts, isLoading, deletePost, sendForApproval, publishPost, syncPosts, refetch: refetchPosts } = useSocialPosts();
@@ -94,6 +113,9 @@ export default function SocialMedia() {
 
   const filteredPosts = useMemo(() => {
     return clientPosts.filter(post => {
+      // Hide sub-drafts of a batch
+      if (post.status === 'draft' && post.notes?.includes('"isHidden":true')) return false;
+
       if (searchQuery && !post.content.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (platformFilter !== 'all' && !post.platforms.includes(platformFilter as SocialPlatform)) return false;
       if (statusFilter !== 'all' && post.status !== statusFilter) return false;
@@ -115,11 +137,23 @@ export default function SocialMedia() {
     return filteredPosts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   }, [filteredPosts, currentPage]);
 
+  const saveNavState = () => {
+    sessionStorage.setItem('social_nav_state', JSON.stringify({
+      activeTab,
+      statusFilter,
+      platformFilter,
+      searchQuery,
+      currentPage,
+      currentMonth: currentMonth.toISOString(),
+    }));
+  };
+
   const handleCreatePost = (date?: string) => {
     if (connectedAccounts.length === 0) {
       setConnectGuardOpen(true);
       return;
     }
+    saveNavState();
     const params = new URLSearchParams();
     if (selectedClient !== 'all') params.set('clientId', selectedClient);
     if (date) params.set('date', date);
@@ -127,12 +161,35 @@ export default function SocialMedia() {
   };
 
   const handleEditPost = (post: SocialPostRow) => {
+    saveNavState();
     navigate(`/app/social-media/edit/${post.id}?clientId=${post.client_id}`);
   };
 
-  const handleDelete = (id: string) => {
-    deletePost.mutate(id, {
+  const handleDelete = async (postId: string) => {
+    // Check if it's part of a batch
+    const postToDelete = posts.find(p => p.id === postId);
+    const metaNotes = postToDelete?.notes;
+
+    if (metaNotes?.includes('BATCH_META:')) {
+      try {
+        const metaStr = metaNotes.substring(metaNotes.indexOf('BATCH_META:') + 11);
+        const meta = JSON.parse(metaStr);
+        if (meta.batchId) {
+          // Delete all siblings first
+          await supabase
+            .from('social_posts')
+            .delete()
+            .ilike('notes', `%${meta.batchId}%`)
+            .eq('organization_id', (postToDelete as any).organization_id);
+        }
+      } catch (e) {
+        console.error("Error deleting batch:", e);
+      }
+    }
+
+    deletePost.mutate(postId, {
       onSuccess: () => {
+        setDraftToDelete(null);
         setShowDeleteSuccess(true);
         setTimeout(() => {
           setShowDeleteSuccess(false);
@@ -155,6 +212,7 @@ export default function SocialMedia() {
   };
 
   const handleClonePost = (post: SocialPostRow) => {
+    saveNavState();
     const params = new URLSearchParams();
     params.set('clientId', post.client_id || '');
     params.set('cloneFrom', post.id);
@@ -172,7 +230,7 @@ export default function SocialMedia() {
   };
 
   // Stats from client-filtered posts
-  const draftCount = clientPosts.filter(p => p.status === 'draft').length;
+  const draftCount = clientPosts.filter(p => p.status === 'draft' && !p.notes?.includes('"isHidden":true')).length;
   const scheduledCount = clientPosts.filter(p => p.status === 'scheduled').length;
   const publishedCount = clientPosts.filter(p => p.status === 'published').length;
   const pendingCount = clientPosts.filter(p => p.status === 'pending_approval').length;
@@ -281,52 +339,6 @@ export default function SocialMedia() {
 
       {activeTab === 'calendar' && hasClientSelected && (
         <div className="space-y-4">
-          {/* Drafts Quick Access - also shown in Calendar */}
-          {draftCount > 0 && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-amber-500" />
-                  <p className="text-sm font-bold text-amber-600 dark:text-amber-400">Rascunhos por terminar</p>
-                  <span className="text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded-full">{draftCount}</span>
-                </div>
-                <button
-                  onClick={() => setActiveTab('posts')}
-                  className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline font-medium"
-                >
-                  Ver todos
-                </button>
-              </div>
-              <div className="space-y-2">
-                {clientPosts
-                  .filter(p => p.status === 'draft')
-                  .slice(0, 3)
-                  .map(draft => (
-                    <div key={draft.id} className="flex items-center justify-between rounded-lg bg-background/80 border border-border/50 px-3 py-2.5 gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {draft.media_urls?.[0] ? (
-                          <img src={draft.media_urls[0]} className="h-8 w-8 rounded object-cover shrink-0" />
-                        ) : (
-                          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
-                            <FileText className="h-4 w-4 text-muted-foreground/40" />
-                          </div>
-                        )}
-                        <p className="text-sm text-muted-foreground truncate">
-                          {draft.content ? draft.content.slice(0, 50) + (draft.content.length > 50 ? '...' : '') : 'Sem legenda'}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleEditPost(draft)}
-                        className="shrink-0 flex items-center gap-1.5 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors"
-                      >
-                        <Pencil className="h-3 w-3" />
-                        Editar
-                      </button>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
           <SocialCalendar
             posts={clientPosts}
             currentMonth={currentMonth}
@@ -361,7 +373,7 @@ export default function SocialMedia() {
               </div>
               <div className="space-y-2">
                 {clientPosts
-                  .filter(p => p.status === 'draft')
+                  .filter(p => p.status === 'draft' && !p.notes?.includes('"isHidden":true'))
                   .slice(0, 4)
                   .map(draft => (
                     <div key={draft.id} className="flex items-center justify-between rounded-lg bg-background/80 border border-border/50 px-3 py-2.5 gap-3">
@@ -377,13 +389,21 @@ export default function SocialMedia() {
                           {draft.content ? draft.content.slice(0, 60) + (draft.content.length > 60 ? '...' : '') : 'Sem legenda'}
                         </p>
                       </div>
-                      <button
-                        onClick={() => handleEditPost(draft)}
-                        className="shrink-0 flex items-center gap-1.5 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors"
-                      >
-                        <Pencil className="h-3 w-3" />
-                        Editar
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => setDraftToDelete(draft)}
+                          className="flex items-center gap-1.5 text-[11px] font-bold border border-destructive/40 text-destructive hover:bg-destructive/10 px-2.5 py-1.5 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => handleEditPost(draft)}
+                          className="flex items-center gap-1.5 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Editar
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>
@@ -514,6 +534,44 @@ export default function SocialMedia() {
         }}
         isConnecting={connectPlatform.isPending}
       />
+
+      {/* Confirm delete draft modal */}
+      <Dialog open={!!draftToDelete} onOpenChange={(v) => !v && setDraftToDelete(null)}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <div className="flex justify-center mb-4">
+              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+              </div>
+            </div>
+            <DialogTitle className="text-center">Eliminar rascunho?</DialogTitle>
+            <DialogDescription className="text-center">
+              {draftToDelete?.content
+                ? `"${draftToDelete.content.slice(0, 60)}${draftToDelete.content.length > 60 ? '...' : ''}"`
+                : 'Este rascunho sem legenda'}
+              {' '}será eliminado definitivamente. Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDraftToDelete(null)} disabled={deletePost.isPending}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => draftToDelete && handleDelete(draftToDelete.id)}
+              disabled={deletePost.isPending}
+              className="gap-2"
+            >
+              {deletePost.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              Eliminar definitivamente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showDeleteSuccess} onOpenChange={setShowDeleteSuccess}>
         <DialogContent className="sm:max-w-[400px]">

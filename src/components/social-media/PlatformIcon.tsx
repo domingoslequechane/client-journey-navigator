@@ -1,9 +1,9 @@
-import { FaInstagram, FaFacebookF, FaLinkedinIn, FaTiktok, FaYoutube, FaPinterestP, FaThreads } from 'react-icons/fa6';
+import { FaInstagram, FaFacebookF, FaLinkedinIn, FaTiktok, FaYoutube, FaPinterestP, FaThreads, FaCircleQuestion, FaGoogle, FaReddit, FaTelegram, FaSnapchat, FaCloud } from 'react-icons/fa6';
 import { FaXTwitter } from 'react-icons/fa6';
 import { type SocialPlatform } from '@/lib/social-media-mock';
 import { cn } from '@/lib/utils';
 
-const ICON_MAP: Record<SocialPlatform, React.ComponentType<{ className?: string }>> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   instagram: FaInstagram,
   facebook: FaFacebookF,
   linkedin: FaLinkedinIn,
@@ -12,9 +12,14 @@ const ICON_MAP: Record<SocialPlatform, React.ComponentType<{ className?: string 
   youtube: FaYoutube,
   pinterest: FaPinterestP,
   threads: FaThreads,
+  googlebusiness: FaGoogle,
+  reddit: FaReddit,
+  telegram: FaTelegram,
+  snapchat: FaSnapchat,
+  bluesky: FaCloud,
 };
 
-const COLOR_MAP: Record<SocialPlatform, string> = {
+const COLOR_MAP: Record<string, string> = {
   instagram: 'text-[hsl(330,70%,50%)]',
   facebook: 'text-[hsl(220,70%,50%)]',
   linkedin: 'text-[hsl(210,80%,40%)]',
@@ -23,9 +28,14 @@ const COLOR_MAP: Record<SocialPlatform, string> = {
   youtube: 'text-[hsl(0,80%,50%)]',
   pinterest: 'text-[hsl(350,80%,45%)]',
   threads: 'text-foreground',
+  googlebusiness: 'text-[hsl(210,100%,45%)]',
+  reddit: 'text-[hsl(15,100%,50%)]',
+  telegram: 'text-[hsl(200,80%,50%)]',
+  snapchat: 'text-[hsl(55,100%,50%)]',
+  bluesky: 'text-[hsl(200,90%,60%)]',
 };
 
-const BG_MAP: Record<SocialPlatform, string> = {
+const BG_MAP: Record<string, string> = {
   instagram: 'bg-gradient-to-br from-[hsl(280,70%,50%)] via-[hsl(330,80%,55%)] to-[hsl(30,90%,55%)]',
   facebook: 'bg-[hsl(220,70%,50%)]',
   linkedin: 'bg-[hsl(210,80%,40%)]',
@@ -34,10 +44,15 @@ const BG_MAP: Record<SocialPlatform, string> = {
   youtube: 'bg-[hsl(0,80%,50%)]',
   pinterest: 'bg-[hsl(350,80%,45%)]',
   threads: 'bg-foreground',
+  googlebusiness: 'bg-[hsl(210,100%,45%)]',
+  reddit: 'bg-[hsl(15,100%,50%)]',
+  telegram: 'bg-[hsl(200,80%,50%)]',
+  snapchat: 'bg-[hsl(55,100%,50%)]',
+  bluesky: 'bg-[hsl(200,90%,60%)]',
 };
 
 interface PlatformIconProps {
-  platform: SocialPlatform;
+  platform: SocialPlatform | string;
   className?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   variant?: 'icon' | 'badge' | 'circle';
@@ -65,14 +80,16 @@ const circleIconSizeClasses = {
 };
 
 export function PlatformIcon({ platform, className, size = 'md', variant = 'icon' }: PlatformIconProps) {
-  const Icon = ICON_MAP[platform];
+  const Icon = ICON_MAP[platform] || FaCircleQuestion;
+  const colorClass = COLOR_MAP[platform] || 'text-muted-foreground';
+  const bgClass = BG_MAP[platform] || 'bg-muted-foreground';
 
   if (variant === 'circle') {
     return (
       <div className={cn(
         "rounded-full flex items-center justify-center text-primary-foreground",
         circleSizeClasses[size],
-        BG_MAP[platform],
+        bgClass,
         className
       )}>
         <Icon className={circleIconSizeClasses[size]} />
@@ -84,7 +101,7 @@ export function PlatformIcon({ platform, className, size = 'md', variant = 'icon
     return (
       <div className={cn(
         "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium text-primary-foreground",
-        BG_MAP[platform],
+        bgClass,
         className
       )}>
         <Icon className="h-3 w-3" />
@@ -92,7 +109,8 @@ export function PlatformIcon({ platform, className, size = 'md', variant = 'icon
     );
   }
 
-  return <Icon className={cn(sizeClasses[size], COLOR_MAP[platform], className)} />;
+  return <Icon className={cn(sizeClasses[size], colorClass, className)} />;
 }
 
 export { ICON_MAP, COLOR_MAP, BG_MAP };
+

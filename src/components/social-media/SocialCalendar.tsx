@@ -30,6 +30,7 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
 
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
+      if (post.status === 'draft') return false; // Exclude drafts from calendar
       if (statusFilter !== 'all' && post.status !== statusFilter) return false;
       if (platformFilter !== 'all' && !post.platforms.includes(platformFilter as SocialPlatform)) return false;
       return true;
