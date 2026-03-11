@@ -28,11 +28,12 @@ serve(async (req) => {
     const userId = user.id;
 
     // Get user's organization for scoping queries
-    const { data: profile } = await supabaseAuth.from('profiles').select('organization_id').eq('id', userId).single();
-    if (!profile?.organization_id) {
+    const { data: profile } = await supabaseAuth.from('profiles').select('organization_id, current_organization_id').eq('id', userId).single();
+    const userOrgId = profile?.current_organization_id || profile?.organization_id;
+    if (!userOrgId) {
+      console.error("[generate-social-caption] No org found for user:", userId);
       return new Response(JSON.stringify({ error: "No organization found" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const userOrgId = profile.organization_id;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
