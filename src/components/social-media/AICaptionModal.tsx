@@ -49,12 +49,28 @@ export function AICaptionModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const fileToBase64 = (file: File): Promise<string> => {
+  const compressImage = (file: File, maxWidth = 800, quality = 0.6): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth) {
+          h = Math.round((h * maxWidth) / w);
+          w = maxWidth;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas not supported')); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')); };
+      img.src = url;
     });
   };
 
@@ -62,9 +78,9 @@ export function AICaptionModal({
     setIsGenerating(true);
     setGeneratedCaption('');
     try {
-      // Converter apenas imagens para base64 (Gemini Flash suporta imagens via API)
-      const imageFiles = files.filter(f => f.type.startsWith('image/')).slice(0, 3);
-      const mediaData = await Promise.all(imageFiles.map(fileToBase64));
+      // Compress images to avoid payload size issues
+      const imageFiles = files.filter(f => f.type.startsWith('image/')).slice(0, 2);
+      const mediaData = await Promise.all(imageFiles.map(f => compressImage(f)));
 
       const { data, error } = await supabase.functions.invoke('generate-social-caption', {
         body: {
