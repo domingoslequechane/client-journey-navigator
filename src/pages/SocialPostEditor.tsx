@@ -619,51 +619,67 @@ export default function SocialPostEditor() {
       for (let i = 0; i < postItems.length; i++) {
         const item = postItems[i];
         totalMediaFiles += item.files.length;
-        let finalMediaUrls = item.mediaUrls.filter(url => !url.startsWith('blob:'));
 
-        // Auto-process files for Stories if needed
-        const needsStoryProcessing = item.schedules.some(s =>
-          (Array.isArray(s.contentType) && s.contentType.includes('stories')) ||
-          s.contentType === 'stories'
-        );
+        // Filter out local blob URLs that haven't been uploaded yet
+        let originalRemoteUrls = item.mediaUrls.filter(url => !url.startsWith('blob:'));
 
-        let filesToUpload = [...item.files].filter((f): f is File => f != null);
+        // Upload original files (no story processing) — used for Feed, Reels, etc.
+        let originalFilesToUpload = [...item.files].filter((f): f is File => f != null);
+        let finalOriginalUrls = [...originalRemoteUrls];
 
-        if (needsStoryProcessing && filesToUpload.length > 0) {
-          const itemPlatforms = Array.from(new Set(
-            connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).map(a => PLATFORM_NAMES[a.platform] || a.platform)
-          )).join(', ');
-          setSavingStatus(`A otimizar mídias para Story no ${itemPlatforms || 'canais'}...`);
-          try {
-            const processedFiles = await Promise.all(
-              filesToUpload.map(async (file) => {
-                if (file != null && file.type.startsWith('image/')) {
-                  const url = URL.createObjectURL(file);
-                  const resultFile = await __processImageForStoryHelper(url, file);
-                  URL.revokeObjectURL(url);
-                  return resultFile;
-                }
-                return file;
-              })
-            );
-            filesToUpload = processedFiles;
-          } catch (e) {
-            console.error("Auto processing story failed", e);
-          }
-        }
-
-        if (filesToUpload.length > 0) {
+        if (originalFilesToUpload.length > 0) {
           const itemAccounts = connectedAccounts
             .filter(a => item.selectedAccountIds.includes(a.id))
             .map(a => a.account_name || a.username || PLATFORM_NAMES[a.platform] || a.platform)
             .join(', ');
-
           setSavingStatus(`A enviar mídias para: ${itemAccounts || 'seus canais'}...`);
           setUploadProgress(0);
-          const uploadedUrls = await uploadFilesToLate(filesToUpload, (p) => setUploadProgress(p));
-          finalMediaUrls = [...finalMediaUrls, ...uploadedUrls];
+          const uploadedUrls = await uploadFilesToLate(originalFilesToUpload, (p) => setUploadProgress(p));
+          finalOriginalUrls = [...finalOriginalUrls, ...uploadedUrls];
           setUploadProgress(0);
         }
+
+        // Story-processed URLs — computed lazily only when a story schedule is found
+        let storyProcessedUrls: string[] | null = null;
+
+        const getStoryUrls = async (): Promise<string[]> => {
+          // Return cached result if already processed
+          if (storyProcessedUrls !== null) return storyProcessedUrls;
+
+          const storyFilesToProcess = [...item.files].filter((f): f is File => f != null);
+          const storyRemoteUrls = item.mediaUrls.filter(url => !url.startsWith('blob:'));
+
+          if (storyFilesToProcess.length > 0) {
+            const itemPlatforms = Array.from(new Set(
+              connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).map(a => PLATFORM_NAMES[a.platform] || a.platform)
+            )).join(', ');
+            setSavingStatus(`A otimizar mídias para Story no ${itemPlatforms || 'canais'}...`);
+            try {
+              const processedFiles = await Promise.all(
+                storyFilesToProcess.map(async (file) => {
+                  if (file != null && file.type.startsWith('image/')) {
+                    const url = URL.createObjectURL(file);
+                    const resultFile = await __processImageForStoryHelper(url, file);
+                    URL.revokeObjectURL(url);
+                    return resultFile;
+                  }
+                  return file;
+                })
+              );
+              setUploadProgress(0);
+              const uploadedStoryUrls = await uploadFilesToLate(processedFiles, (p) => setUploadProgress(p));
+              setUploadProgress(0);
+              storyProcessedUrls = [...storyRemoteUrls, ...uploadedStoryUrls];
+            } catch (e) {
+              console.error("Auto processing story failed", e);
+              storyProcessedUrls = finalOriginalUrls; // fallback to original
+            }
+          } else {
+            // No local files to process — stories use original remote URLs as-is
+            storyProcessedUrls = finalOriginalUrls;
+          }
+          return storyProcessedUrls;
+        };
 
         // Track if we've already used the existing ID for this item's schedules
         let hasUsedOriginalId = false;
@@ -684,9 +700,18 @@ export default function SocialPostEditor() {
           const contentTypes = Array.isArray(schedule.contentType) ? schedule.contentType : [schedule.contentType];
 
           for (const type of contentTypes) {
+            // Determine which media URLs to use for this specific content type
+            // Stories: use story-formatted images (9:16 with blur bg)
+            // Feed/Reels/etc: ALWAYS use original unmodified images
+            const isStoriesType = type === 'stories';
+
+            const mediaUrlsForType = isStoriesType
+              ? await getStoryUrls()
+              : finalOriginalUrls;
+
             // Special handling for Stories with multiple media: split into individual posts
-            if (type === 'stories' && finalMediaUrls.length > 1) {
-              finalMediaUrls.forEach((url, urlIdx) => {
+            if (isStoriesType && mediaUrlsForType.length > 1) {
+              mediaUrlsForType.forEach((url, urlIdx) => {
                 const postData = {
                   content: item.content,
                   media_urls: [url],
@@ -747,7 +772,7 @@ export default function SocialPostEditor() {
             } else {
               const postData = {
                 content: item.content,
-                media_urls: finalMediaUrls,
+                media_urls: mediaUrlsForType,
                 platforms: targetPlatforms,
                 content_type: type,
                 location: item.location,
