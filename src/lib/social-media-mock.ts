@@ -2,7 +2,7 @@
 
 export type SocialPlatform = 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'twitter' | 'youtube' | 'pinterest' | 'threads';
 
-export type PostStatus = 'draft' | 'pending_approval' | 'approved' | 'scheduled' | 'published' | 'failed' | 'rejected';
+export type PostStatus = 'draft' | 'pending_approval' | 'approved' | 'scheduled' | 'published' | 'failed' | 'rejected' | 'local_editing';
 
 export type ContentType = 'feed' | 'stories' | 'reels' | 'carousel' | 'video' | 'text';
 
@@ -73,6 +73,7 @@ export const STATUS_CONFIG: Record<PostStatus, { label: string; variant: 'defaul
   published: { label: 'Publicado', variant: 'default', color: 'text-[hsl(var(--success))]' },
   failed: { label: 'Falhou', variant: 'destructive', color: 'text-destructive' },
   rejected: { label: 'Rejeitado', variant: 'destructive', color: 'text-destructive' },
+  local_editing: { label: 'A Editar', variant: 'outline', color: 'text-orange-500' },
 };
 
 export const CONTENT_TYPE_CONFIG: Record<ContentType, { label: string; icon: string; platforms: SocialPlatform[] }> = {

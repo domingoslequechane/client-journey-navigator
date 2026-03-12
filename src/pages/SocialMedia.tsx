@@ -14,6 +14,7 @@ import { SocialInbox } from '@/components/social-media/SocialInbox';
 import { ClientFilterSelect } from '@/components/social-media/ClientFilterSelect';
 import { ConnectAccountsGuardModal } from '@/components/social-media/ConnectAccountsGuardModal';
 import { ConnectPlatformModal } from '@/components/social-media/ConnectPlatformModal';
+import { ConfirmActionModal } from '@/components/social-media/ConfirmActionModal';
 import { type SocialPlatform, type PostStatus, PLATFORM_CONFIG, STATUS_CONFIG } from '@/lib/social-media-mock';
 import { useSocialPosts, type SocialPostRow } from '@/hooks/useSocialPosts';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
@@ -58,6 +59,24 @@ export default function SocialMedia() {
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [draftToDelete, setDraftToDelete] = useState<SocialPostRow | null>(null);
+  const [selectedPostIds, setSelectedPostIds] = useState<string[]>([]);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+  const handleSelectPost = (id: string, selected: boolean) => {
+    if (selected) {
+      setSelectedPostIds(prev => [...prev, id]);
+    } else {
+      setSelectedPostIds(prev => prev.filter(postId => postId !== id));
+    }
+  };
+
+  const handleSelectAll = (ids: string[], selected: boolean) => {
+    if (selected) {
+      setSelectedPostIds(ids);
+    } else {
+      setSelectedPostIds([]);
+    }
+  };
 
   // Restore navigation state when returning from editor
   useEffect(() => {
@@ -166,30 +185,25 @@ export default function SocialMedia() {
   };
 
   const handleDelete = async (postId: string) => {
-    // Check if it's part of a batch
     const postToDelete = posts.find(p => p.id === postId);
     const metaNotes = postToDelete?.notes;
+    let batchId: string | undefined;
 
-    if (metaNotes?.includes('BATCH_META:')) {
+    // Only use batch deletion for drafts (compact batches)
+    // For scheduled posts, we usually want to delete them individually
+    if (postToDelete?.status === 'draft' && metaNotes?.includes('BATCH_META:')) {
       try {
         const metaStr = metaNotes.substring(metaNotes.indexOf('BATCH_META:') + 11);
         const meta = JSON.parse(metaStr);
-        if (meta.batchId) {
-          // Delete all siblings first
-          await supabase
-            .from('social_posts')
-            .delete()
-            .ilike('notes', `%${meta.batchId}%`)
-            .eq('organization_id', (postToDelete as any).organization_id);
-        }
+        batchId = meta.batchId;
       } catch (e) {
-        console.error("Error deleting batch:", e);
+        console.error("Error parsing batch meta:", e);
       }
     }
 
-    deletePost.mutate(postId, {
+    setDraftToDelete(null);
+    deletePost.mutate({ id: postId, batchId }, {
       onSuccess: () => {
-        setDraftToDelete(null);
         setShowDeleteSuccess(true);
         setTimeout(() => {
           setShowDeleteSuccess(false);
@@ -221,6 +235,22 @@ export default function SocialMedia() {
 
   const handleBoostPost = (post: SocialPostRow) => {
     toast.info('Funcionalidade de impulsionamento em breve!');
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedPostIds.length === 0) return;
+
+    setShowBulkDeleteConfirm(false);
+    deletePost.mutate({ postIds: selectedPostIds }, {
+      onSuccess: () => {
+        setSelectedPostIds([]);
+        setShowDeleteSuccess(true);
+        setTimeout(() => {
+          setShowDeleteSuccess(false);
+          handleSync();
+        }, 2000);
+      }
+    });
   };
 
   const handleSync = () => {
@@ -445,6 +475,66 @@ export default function SocialMedia() {
             </Select>
           </div>
 
+          {/* Bulk Actions Bar */}
+          {filteredPosts.length > 0 && (
+            <div className={cn(
+              "flex items-center justify-between p-3 rounded-xl border transition-all duration-300",
+              selectedPostIds.length > 0 
+                ? "bg-primary/10 border-primary/30 shadow-sm" 
+                : "bg-muted/30 border-border/50"
+            )}>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => handleSelectAll(
+                    paginatedPosts.map(p => p.id), 
+                    selectedPostIds.length < paginatedPosts.length
+                  )}
+                  className="flex items-center gap-2 text-xs font-semibold hover:text-primary transition-colors"
+                >
+                  <div className={cn(
+                    "h-4 w-4 rounded border flex items-center justify-center transition-colors",
+                    selectedPostIds.length === paginatedPosts.length && paginatedPosts.length > 0
+                      ? "bg-primary border-primary text-primary-foreground" 
+                      : "bg-background border-slate-300"
+                  )}>
+                    {selectedPostIds.length === paginatedPosts.length && paginatedPosts.length > 0 && <CheckCircle2 className="h-3 w-3" />}
+                  </div>
+                  {selectedPostIds.length === paginatedPosts.length && paginatedPosts.length > 0 ? 'Desmarcar todos' : 'Selecionar nesta página'}
+                </button>
+                {selectedPostIds.length > 0 && (
+                  <>
+                    <div className="h-4 w-px bg-border/50 mx-1" />
+                    <span className="text-xs font-bold text-primary">
+                      {selectedPostIds.length} {selectedPostIds.length === 1 ? 'post selecionado' : 'posts selecionados'}
+                    </span>
+                  </>
+                )}
+              </div>
+              
+              {selectedPostIds.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="h-8 gap-2 rounded-lg text-xs font-bold"
+                    onClick={() => setShowBulkDeleteConfirm(true)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Eliminar Seleção
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 text-xs font-medium"
+                    onClick={() => setSelectedPostIds([])}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Posts list in Grid Layout */}
           <div className="space-y-8">
             {isLoading ? (
@@ -467,6 +557,8 @@ export default function SocialMedia() {
                       onPublish={handlePublishPost}
                       onClone={handleClonePost}
                       onBoost={handleBoostPost}
+                      isSelected={selectedPostIds.includes(post.id)}
+                      onSelect={handleSelectPost}
                     />
                   ))}
                 </div>
@@ -544,12 +636,26 @@ export default function SocialMedia() {
                 <AlertTriangle className="h-6 w-6 text-destructive" />
               </div>
             </div>
-            <DialogTitle className="text-center">Eliminar rascunho?</DialogTitle>
+            <DialogTitle className="text-center">
+              {draftToDelete?.notes?.includes('BATCH_META:') ? 'Eliminar lote de posts?' : 'Eliminar postagem?'}
+            </DialogTitle>
             <DialogDescription className="text-center">
-              {draftToDelete?.content
-                ? `"${draftToDelete.content.slice(0, 60)}${draftToDelete.content.length > 60 ? '...' : ''}"`
-                : 'Este rascunho sem legenda'}
-              {' '}será eliminado definitivamente. Esta ação não pode ser desfeita.
+              {draftToDelete?.notes?.includes('BATCH_META:') ? (
+                <>
+                  Esta postagem faz parte de um agendamento em lote. 
+                  <span className="block mt-2 font-bold text-destructive">
+                    Pelo menos 3 posts relacionados (Facebook, Instagram, etc) serão eliminados simultaneamente do Late.dev e da nossa aplicação.
+                  </span>
+                </>
+              ) : (
+                <>
+                  {draftToDelete?.content
+                    ? `"${draftToDelete.content.slice(0, 60)}${draftToDelete.content.length > 60 ? '...' : ''}"`
+                    : 'Esta postagem'}
+                  {' '}será eliminada definitivamente do Late.dev e da nossa aplicação.
+                </>
+              )}
+              <span className="block mt-2 text-xs opacity-70">Esta ação não pode ser desfeita.</span>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -567,9 +673,35 @@ export default function SocialMedia() {
               ) : (
                 <Trash2 className="h-4 w-4" />
               )}
-              Eliminar definitivamente
+              {draftToDelete?.notes?.includes('BATCH_META:') ? 'Eliminar lote completo' : 'Eliminar definitivamente'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmActionModal
+        open={showBulkDeleteConfirm}
+        onOpenChange={setShowBulkDeleteConfirm}
+        title="Eliminar posts selecionados?"
+        description={`Tens a certeza que desejas eliminar os ${selectedPostIds.length} posts selecionados? Esta ação não pode ser desfeita e removerá os posts tanto da aplicação quanto do Late.dev.`}
+        confirmLabel="Eliminar Tudo"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        onConfirm={handleBulkDelete}
+      />
+
+      <Dialog open={deletePost.isPending} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <div className="flex justify-center mb-4">
+              <RefreshCw className="h-12 w-12 animate-spin text-primary" />
+            </div>
+            <DialogTitle className="text-center">A eliminar postagem...</DialogTitle>
+            <DialogDescription className="text-center">
+              Por favor aguarde enquanto processamos a remoção tanto na aplicação quanto no Late.dev.
+              Isto pode levar alguns segundos.
+            </DialogDescription>
+          </DialogHeader>
         </DialogContent>
       </Dialog>
 

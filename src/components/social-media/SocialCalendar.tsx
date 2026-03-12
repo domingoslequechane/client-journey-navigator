@@ -30,7 +30,9 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
 
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
-      if (post.status === 'draft') return false; // Exclude drafts from calendar
+      // Show posts if they have a scheduled date, even if drafts
+      if (post.status === 'draft' && !post.scheduled_at) return false; 
+      if (post.status === 'local_editing') return true; // Always show posts being edited
       if (statusFilter !== 'all' && post.status !== statusFilter) return false;
       if (platformFilter !== 'all' && !post.platforms.includes(platformFilter as SocialPlatform)) return false;
       return true;
@@ -180,6 +182,9 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
                             {post.status === 'published' && <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))]" />}
                             {post.status === 'scheduled' && <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--info))]" />}
                             {post.status === 'pending_approval' && <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--warning))]" />}
+                            {(post.status === 'draft' || post.status === 'local_editing') && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_5px_rgba(249,115,22,0.5)] animate-pulse" />
+                            )}
                           </div>
                         ))}
                         {dayPosts.length > 3 && (

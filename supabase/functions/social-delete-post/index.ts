@@ -29,60 +29,105 @@ Deno.serve(async (req) => {
         }
 
         const body = await req.json();
-        const { post_id } = body;
+        const { post_id, batch_id, post_ids } = body;
 
-        if (!post_id) {
-            return new Response(JSON.stringify({ error: "post_id is required" }), {
-                status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-
-        // Get the post to find late_post_id
-        const { data: post, error: postError } = await supabase
-            .from("social_posts")
-            .select("late_post_id, organization_id")
-            .eq("id", post_id)
-            .single();
-
-        if (postError || !post) {
-            return new Response(JSON.stringify({ error: "Post not found" }), {
+        if (!post_id && !batch_id && (!post_ids || !Array.isArray(post_ids))) {
+            return new Response(JSON.stringify({ error: "post_id, batch_id or post_ids array is required" }), {
                 status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
 
         const LATE_API_KEY = Deno.env.get("LATE_API_KEY");
-        if (post.late_post_id && LATE_API_KEY) {
-            const ids = post.late_post_id.split(',').filter(Boolean);
-            console.log(`[social-delete-post] Deleting ${ids.length} parts from Late.dev for post ${post_id}`);
+        let postsToDelete: any[] = [];
 
-            for (const lateId of ids) {
-                try {
-                    const lateRes = await fetch(`${LATE_API_BASE}/posts/${lateId}`, {
-                        method: "DELETE",
-                        headers: { Authorization: `Bearer ${LATE_API_KEY}` },
-                    });
+        if (batch_id) {
+            // Find all posts in the batch
+            console.log(`[social-delete-post] Deleting entire batch: ${batch_id}`);
+            const { data: siblings, error: siblingsError } = await supabase
+                .from("social_posts")
+                .select("id, late_post_id")
+                .ilike("notes", `%${batch_id}%`);
 
-                    if (!lateRes.ok) {
-                        const errorData = await lateRes.json().catch(() => ({}));
-                        console.error(`[social-delete-post] Failed to delete ${lateId} from Late.dev:`, errorData);
-                    } else {
-                        console.log(`[social-delete-post] Deleted ${lateId} from Late.dev`);
+            if (siblingsError) throw siblingsError;
+            postsToDelete = siblings || [];
+        } else if (post_ids && Array.isArray(post_ids)) {
+            // Bulk delete multiple IDs
+            console.log(`[social-delete-post] Deleting ${post_ids.length} specific posts`);
+            const { data: posts, error: postsError } = await supabase
+                .from("social_posts")
+                .select("id, late_post_id")
+                .in("id", post_ids);
+            
+            if (postsError) throw postsError;
+            postsToDelete = posts || [];
+        } else {
+            // Get single post
+            const { data: post, error: postError } = await supabase
+                .from("social_posts")
+                .select("id, late_post_id")
+                .eq("id", post_id)
+                .single();
+
+            if (postError || !post) {
+                return new Response(JSON.stringify({ error: "Post not found" }), {
+                    status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            }
+            postsToDelete = [post];
+        }
+
+        // Delete from Late.dev in parallel to avoid timeouts
+        if (LATE_API_KEY) {
+            const deletePromises = postsToDelete.flatMap(post => {
+                if (!post.late_post_id) return [];
+                const ids = post.late_post_id.split(',').filter(Boolean);
+                return ids.map(async (lateId) => {
+                    try {
+                        console.log(`[social-delete-post] Deleting ${lateId} from Late.dev for post ${post.id}`);
+                        const lateRes = await fetch(`${LATE_API_BASE}/posts/${lateId}`, {
+                            method: "DELETE",
+                            headers: { Authorization: `Bearer ${LATE_API_KEY}` },
+                        });
+
+                        if (!lateRes.ok) {
+                            const errorText = await lateRes.text();
+                            console.error(`[social-delete-post] Failed to delete ${lateId} (status ${lateRes.status}):`, errorText);
+                        } else {
+                            console.log(`[social-delete-post] Deleted ${lateId} from Late.dev`);
+                        }
+                    } catch (err) {
+                        console.error(`[social-delete-post] Network error deleting ${lateId}:`, err);
                     }
-                } catch (err) {
-                    console.error(`[social-delete-post] Network error deleting ${lateId}:`, err);
-                }
+                });
+            });
+
+            if (deletePromises.length > 0) {
+                await Promise.all(deletePromises);
             }
         }
 
         // Finally delete from Supabase
-        const { error: deleteError } = await supabase
-            .from("social_posts")
-            .delete()
-            .eq("id", post_id);
+        if (batch_id) {
+            const { error: deleteError } = await supabase
+                .from("social_posts")
+                .delete()
+                .ilike("notes", `%${batch_id}%`);
+            if (deleteError) throw deleteError;
+        } else if (post_ids && Array.isArray(post_ids)) {
+            const { error: deleteError } = await supabase
+                .from("social_posts")
+                .delete()
+                .in("id", post_ids);
+            if (deleteError) throw deleteError;
+        } else {
+            const { error: deleteError } = await supabase
+                .from("social_posts")
+                .delete()
+                .eq("id", post_id);
+            if (deleteError) throw deleteError;
+        }
 
-        if (deleteError) throw deleteError;
-
-        return new Response(JSON.stringify({ success: true }), {
+        return new Response(JSON.stringify({ success: true, count: postsToDelete.length }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     } catch (err: unknown) {

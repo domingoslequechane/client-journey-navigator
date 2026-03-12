@@ -186,7 +186,7 @@ export default function SocialPostEditor() {
   const { organizationId } = useOrganization();
   const isMobile = useIsMobile();
 
-  const { createPost, updatePost, publishPost, posts } = useSocialPosts(clientId ? { clientId } : undefined);
+  const { createPost, updatePost, publishPost, deletePost, posts } = useSocialPosts(clientId ? { clientId } : undefined);
   const { accounts = [] } = useSocialAccounts(clientId);
 
   const [postItems, setPostItems] = useState<PostItem[]>([]);
@@ -197,6 +197,8 @@ export default function SocialPostEditor() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [savingStatus, setSavingStatus] = useState('');
+  const [savingTitle, setSavingTitle] = useState('A publicar...');
+  const [isEditingCompactDraft, setIsEditingCompactDraft] = useState(false);
   const [resultModal, setResultModal] = useState<{ type: 'success' | 'error'; title: string; message: string } | null>(null);
   const [timeViolationModal, setTimeViolationModal] = useState(false);
   const [violatingPostIndices, setViolatingPostIndices] = useState<number[]>([]);
@@ -206,6 +208,7 @@ export default function SocialPostEditor() {
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
+  const [initialStatus, setInitialStatus] = useState<'draft' | 'scheduled' | 'published' | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -215,6 +218,52 @@ export default function SocialPostEditor() {
   const initialPostAddedRef = useRef(false);
   const connectedAccounts = (accounts || []).filter(a => a.is_connected);
   const currentPostItem = useMemo(() => postItems[activeIndex] || null, [postItems, activeIndex]);
+
+  // Memoize local posts in SocialPostRow format for the calendar
+  const localPostsForCalendar = useMemo(() => {
+    const rows: any[] = [];
+    postItems.forEach((item, itemIdx) => {
+      item.schedules.forEach((schedule, scheduleIdx) => {
+        // Only show if it has a valid date/time and some platform/account selected
+        if (schedule.date && schedule.time && item.selectedAccountIds.length > 0) {
+          const dateStr = `${schedule.date}T${schedule.time}`;
+          const dateObj = new Date(dateStr);
+          
+          if (isNaN(dateObj.getTime())) return;
+          
+          const scheduledAt = dateObj.toISOString();
+          const targetPlatforms = Array.from(new Set(
+            connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).map(a => a.platform)
+          )).filter(p => (schedule.platforms || []).includes(p));
+
+          if (targetPlatforms.length > 0) {
+            rows.push({
+              id: `local_edit_${item.id}_${schedule.id}`,
+              content: item.content || `Post #${itemIdx + 1}`,
+              media_urls: item.mediaUrls,
+              platforms: targetPlatforms,
+              content_type: Array.isArray(schedule.contentType) ? schedule.contentType[0] : schedule.contentType,
+              scheduled_at: scheduledAt,
+              status: 'local_editing',
+              organization_id: organizationId || '',
+              client_id: clientId,
+              client_name: 'Novo Post (Lote)',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          }
+        }
+      });
+    });
+    return rows;
+  }, [postItems, connectedAccounts, organizationId, clientId]);
+
+  const allPostsForCalendar = useMemo(() => {
+    // Current post being edited might already exist in 'posts' from DB if it's an edit
+    // Filter out the DB version if we have a local version with the same ID
+    const dbPostsFiltered = posts.filter(p => !postItems.some(item => item.id === p.id));
+    return [...dbPostsFiltered, ...localPostsForCalendar];
+  }, [posts, localPostsForCalendar, postItems]);
 
   // ─── Effect: Load existing post OR initialise blank post ───────────────────
   // IMPORTANT: postItems.length is intentionally NOT in the dependency array for
@@ -248,11 +297,13 @@ export default function SocialPostEditor() {
           .single();
 
         if (primaryPost) {
+          setInitialStatus(primaryPost.status as any);
           const meta = deserializeMetadata(primaryPost.notes);
           let allPosts: any[] = [primaryPost];
 
           if (meta?.isCompact) {
             // New logic: all data is in this single record
+            setIsEditingCompactDraft(true);
             const items = (meta.data as any[]).map(d => ({
               ...d,
               // Restore files array structure (empty since uploaded)
@@ -324,7 +375,7 @@ export default function SocialPostEditor() {
 
   const handleAddEmptyPost = () => {
     const newItem: PostItem = {
-      id: crypto.randomUUID(),
+      id: `new-${crypto.randomUUID()}`,
       content: '',
       files: [],
       mediaUrls: [],
@@ -520,7 +571,9 @@ export default function SocialPostEditor() {
     }
 
     setIsSaving(true);
-    setSavingStatus('A preparar publicação...');
+    const isUpdating = postId && !postId.startsWith('new-') && postId.length > 20;
+    setSavingTitle(isUpdating ? 'A atualizar...' : status === 'published' ? 'A publicar...' : status === 'scheduled' ? 'A agendar...' : 'A guardar...');
+    setSavingStatus(isUpdating ? 'A preparar atualização...' : 'A preparar publicação...');
     // Validate: all schedules must be >= 10 min in the future (only for scheduled posts)
     if (status === 'scheduled') {
       const now = new Date();
@@ -548,6 +601,7 @@ export default function SocialPostEditor() {
       const allTargetPlatforms = new Set<string>();
       let totalMediaFiles = 0;
       let batchIdToUse = currentBatchId;
+      let originalPostIdWasUpdated = false;
 
       if (status === 'draft' && !batchIdToUse && postItems.length > 1) {
         batchIdToUse = crypto.randomUUID();
@@ -568,7 +622,10 @@ export default function SocialPostEditor() {
         let filesToUpload = [...item.files].filter((f): f is File => f != null);
 
         if (needsStoryProcessing && filesToUpload.length > 0) {
-          setSavingStatus(`A otimizar ${filesToUpload.length} mídia${filesToUpload.length > 1 ? 's' : ''} para Story...`);
+          const itemPlatforms = Array.from(new Set(
+            connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).map(a => PLATFORM_NAMES[a.platform] || a.platform)
+          )).join(', ');
+          setSavingStatus(`A otimizar mídias para Story no ${itemPlatforms || 'canais'}...`);
           try {
             const processedFiles = await Promise.all(
               filesToUpload.map(async (file) => {
@@ -588,16 +645,25 @@ export default function SocialPostEditor() {
         }
 
         if (filesToUpload.length > 0) {
-          setSavingStatus(`A fazer upload de ${filesToUpload.length} mídia${filesToUpload.length > 1 ? 's' : ''}...`);
+          const itemAccounts = connectedAccounts
+            .filter(a => item.selectedAccountIds.includes(a.id))
+            .map(a => a.account_name || a.username || PLATFORM_NAMES[a.platform] || a.platform)
+            .join(', ');
+          
+          setSavingStatus(`A enviar mídias para: ${itemAccounts || 'seus canais'}...`);
           setUploadProgress(0);
           const uploadedUrls = await uploadFilesToLate(filesToUpload, (p) => setUploadProgress(p));
           finalMediaUrls = [...finalMediaUrls, ...uploadedUrls];
           setUploadProgress(0);
         }
 
+        // Track if we've already used the existing ID for this item's schedules
+        let hasUsedOriginalId = false;
+
         for (const schedule of item.schedules) {
           if (status === 'draft') continue; // We handle drafts compactly below the loops
 
+          if (!schedule.date || !schedule.time) continue;
           const scheduledAt = new Date(`${schedule.date}T${schedule.time}`).toISOString();
           const globalPlatforms = Array.from(new Set(
             connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).map(a => a.platform)
@@ -608,29 +674,51 @@ export default function SocialPostEditor() {
           targetPlatforms.forEach(p => allTargetPlatforms.add(p));
 
           const contentTypes = Array.isArray(schedule.contentType) ? schedule.contentType : [schedule.contentType];
+          
           for (const type of contentTypes) {
             // Special handling for Stories with multiple media: split into individual posts
             if (type === 'stories' && finalMediaUrls.length > 1) {
               finalMediaUrls.forEach((url, urlIdx) => {
                 const postData = {
                   content: item.content,
-                  media_urls: [url], // Single URL per slide
+                  media_urls: [url], 
                   platforms: targetPlatforms,
                   content_type: type,
                   location: item.location,
                   scheduled_at: scheduledAt,
                   status,
                   client_id: clientId,
-                  notes: null // Clear batch metadata if scheduled/published
+                  notes: null 
                 };
                 const capturedPostData = postData;
+                const innerHasUsedId = hasUsedOriginalId;
+
+                const isRealDbId = item.id && !item.id.startsWith('new-') && (
+                  item.id === postId || posts.some(p => p.id === item.id)
+                );
+
+                const shouldTryUpdate = urlIdx === 0 && !innerHasUsedId && isRealDbId;
+                if (shouldTryUpdate) {
+                  hasUsedOriginalId = true;
+                  if (item.id === postId) originalPostIdWasUpdated = true;
+                }
+
                 publishTasks.push(async () => {
                   let result;
-                  if (urlIdx === 0 && item.id && !item.id.startsWith('new-') && item.id.length > 20) {
+                  if (shouldTryUpdate) {
                     result = await updatePost.mutateAsync({
                       post: { ...capturedPostData, id: item.id } as any,
                       silent: true
                     });
+                    
+                    // Fallback: If update returned nothing, it means the ID didn't exist in DB
+                    if (!result.data) {
+                      console.warn("Update failed (non-existent ID), falling back to create", item.id);
+                      result = await createPost.mutateAsync({
+                        post: capturedPostData as any,
+                        silent: true
+                      });
+                    }
                   } else {
                     result = await createPost.mutateAsync({
                       post: capturedPostData as any,
@@ -642,7 +730,7 @@ export default function SocialPostEditor() {
                     await publishPost.mutateAsync({
                       postId: (result as any).data.id,
                       publishNow: status === 'published',
-                      replaceLatePostId: urlIdx === 0 ? item.latePostId : undefined,
+                      replaceLatePostId: shouldTryUpdate ? item.latePostId : undefined,
                       silent: true
                     });
                   }
@@ -661,14 +749,33 @@ export default function SocialPostEditor() {
                 notes: null
               };
               const capturedPostData = postData;
-              const currentItem = item;
+              const innerHasUsedId = hasUsedOriginalId;
+              
+              const isRealDbId = item.id && !item.id.startsWith('new-') && (
+                item.id === postId || posts.some(p => p.id === item.id)
+              );
+
+              const shouldTryUpdate = !innerHasUsedId && isRealDbId;
+              if (shouldTryUpdate) {
+                hasUsedOriginalId = true;
+                if (item.id === postId) originalPostIdWasUpdated = true;
+              }
+
               publishTasks.push(async () => {
                 let result;
-                if (currentItem.id && !currentItem.id.startsWith('new-') && currentItem.id.length > 20) {
+                if (shouldTryUpdate) {
                   result = await updatePost.mutateAsync({
-                    post: { ...capturedPostData, id: currentItem.id } as any,
+                    post: { ...capturedPostData, id: item.id } as any,
                     silent: true
                   });
+
+                  if (!result.data) {
+                    console.warn("Update failed (non-existent ID), falling back to create", item.id);
+                    result = await createPost.mutateAsync({
+                      post: capturedPostData as any,
+                      silent: true
+                    });
+                  }
                 } else {
                   result = await createPost.mutateAsync({
                     post: capturedPostData as any,
@@ -680,7 +787,7 @@ export default function SocialPostEditor() {
                   await publishPost.mutateAsync({
                     postId: (result as any).data.id,
                     publishNow: status === 'published',
-                    replaceLatePostId: currentItem.latePostId,
+                    replaceLatePostId: shouldTryUpdate ? item.latePostId : undefined,
                     silent: true
                   });
                 }
@@ -725,30 +832,51 @@ export default function SocialPostEditor() {
 
 
         if (publishTasks.length > 0) {
-          const platformLabel = Array.from(allTargetPlatforms)
-            .map(p => PLATFORM_NAMES[p] || p)
-            .join(', ');
-          if (status === 'published') {
-            setSavingStatus(`A publicar no ${platformLabel || 'canais'}...`);
+          const targetAccountNames = Array.from(new Set(
+            connectedAccounts
+              .filter(a => postItems.some(item => item.selectedAccountIds.includes(a.id)))
+              .map(a => a.account_name || a.username || PLATFORM_NAMES[a.platform] || a.platform)
+          )).join(', ');
+            
+          const isUpdating = postItems.some(item => item.id && !item.id.startsWith('new-') && item.id.length > 20);
+
+          if (isUpdating) {
+            setSavingStatus(`A sincronizar alterações com: ${targetAccountNames || 'canais'}...`);
+          } else if (status === 'published') {
+            setSavingStatus(`A publicar agora em: ${targetAccountNames || 'canais'}...`);
           } else if (status === 'scheduled') {
-            setSavingStatus(`A agendar no ${platformLabel || 'canais'}...`);
+            setSavingStatus(`A agendar para: ${targetAccountNames || 'canais'}...`);
           } else {
             setSavingStatus('A guardar rascunhos...');
           }
           await Promise.all(publishTasks.map(fn => fn()));
+
+          // Cleanup: If we just scheduled/published a COMPACT DRAFT, the original container record 
+          // (postId) should be deleted since its contents were individual records now.
+          if (status !== 'draft' && postId && isEditingCompactDraft && !originalPostIdWasUpdated) {
+            setSavingStatus('A limpar postagem original...');
+            console.log("Cleaning up compact draft container:", postId);
+            await deletePost.mutateAsync({ id: postId });
+          }
         } else if (status !== 'draft') {
           // Validation: If no platforms were selected for any schedule, warn the user
           throw new Error("Nenhum canal selecionado para os horários agendados.");
         }
 
+        const isUpdating = postItems.some(item => item.id && !item.id.startsWith('new-') && item.id.length > 20);
+        
+        const successMsg = isUpdating
+          ? 'As tuas alterações foram guardadas com sucesso! ✨'
+          : status === 'published'
+            ? 'A tua publicação já está no ar! 🎉'
+            : status === 'scheduled'
+              ? 'Publicação agendada com sucesso!'
+              : 'Rascunho guardado com sucesso.';
+              
+        const successTitle = isUpdating ? 'Atualizado!' : status === 'published' ? 'Publicado!' : status === 'scheduled' ? 'Agendado!' : 'Guardado!';
         setIsSaving(false);
         setSavingStatus('');
-        const successMsg = status === 'published'
-          ? 'A tua publicação já está no ar! 🎉'
-          : status === 'scheduled'
-            ? 'Publicação agendada com sucesso!'
-            : 'Rascunho guardado.';
-        setResultModal({ type: 'success', title: status === 'published' ? 'Publicado!' : status === 'scheduled' ? 'Agendado!' : 'Guardado!', message: successMsg });
+        setResultModal({ type: 'success', title: successTitle, message: successMsg });
         setTimeout(() => navigate(-1), 2500);
       } catch (err: any) {
         console.error("Save error:", err);
@@ -904,7 +1032,7 @@ export default function SocialPostEditor() {
               <div className="space-y-4 w-full relative z-10">
                 <div className="space-y-1.5">
                   <p className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-                    A publicar...
+                    {savingTitle}
                   </p>
                   <p className="text-sm text-muted-foreground font-medium">{savingStatus || 'Garantindo que tudo esteja perfeito'}</p>
                 </div>
@@ -1004,7 +1132,7 @@ export default function SocialPostEditor() {
               {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
             </Button>
             <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 hidden lg:inline-flex">
-              <Calendar className="h-4 w-4" /> {postId ? 'Atualizar Agendamento' : 'Agendar Tudo'}
+              <Calendar className="h-4 w-4" /> {(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}
             </Button>
 
             {/* Mobile dropdown for secondary actions */}
@@ -1022,7 +1150,7 @@ export default function SocialPostEditor() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected}>
                     <Calendar className="h-4 w-4 mr-2" />
-                    {postId ? 'Atualizar Agendamento' : 'Agendar Tudo'}
+                    {(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate(-1)}>
                     <X className="h-4 w-4 mr-2" />
@@ -1257,32 +1385,22 @@ export default function SocialPostEditor() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="gap-2 border-primary/30 text-primary hover:bg-primary/10 transition-colors h-8"
+                              className="gap-2 border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/60 transition-all h-8 relative overflow-hidden group"
                               onClick={() => setShowAICaptionModal(true)}
                             >
-                              <Sparkles className="h-4 w-4" /> Gerar com QIA
+                              <span className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-violet-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <Sparkles className="h-3.5 w-3.5 relative z-10 group-hover:animate-pulse" />
+                              <span className="relative z-10 font-semibold text-xs">Gerar com IA</span>
                             </Button>
                           </div>
                           <Textarea
                             value={currentPostItem.content}
                             onChange={e => updatePostItem(currentPostItem.id, { content: e.target.value })}
-                            placeholder="O que você quer dizer ao seu público?"
+                            placeholder="O que você quer dizer ao seu público? Ou clique em 'Gerar com IA' para criar automaticamente."
                             className="min-h-[150px] rounded-xl border bg-background text-base resize-none"
                           />
                         </div>
 
-                        <div className="space-y-3">
-                          <Label className="text-sm font-bold">Localização</Label>
-                          <div className="relative">
-                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              value={currentPostItem.location}
-                              onChange={e => updatePostItem(currentPostItem.id, { location: e.target.value })}
-                              placeholder="Onde foi isso?"
-                              className="h-11 pl-11 rounded-xl border bg-background text-sm"
-                            />
-                          </div>
-                        </div>
                       </div>
                     </section>
 
@@ -1575,7 +1693,8 @@ export default function SocialPostEditor() {
           onOpenChange={setShowAICaptionModal}
           platforms={currentPlatforms}
           contentType={Array.isArray(currentPostItem?.schedules[0]?.contentType) ? currentPostItem?.schedules[0]?.contentType[0] : (currentPostItem?.schedules[0]?.contentType || 'feed')}
-          files={currentPostItem?.files || []}
+          files={currentPostItem?.files.filter((f): f is File => f != null) || []}
+          mediaUrls={currentPostItem?.mediaUrls || []}
           clientId={clientId}
           onCaptionGenerated={(c) => currentPostItem && updatePostItem(currentPostItem.id, { content: c })}
         />
@@ -1624,9 +1743,19 @@ export default function SocialPostEditor() {
         <CalendarModal
           open={isCalendarOpen}
           onOpenChange={setIsCalendarOpen}
-          posts={posts}
+          posts={allPostsForCalendar}
           selectedClient={clientId}
           onEditPost={(post) => {
+            if (post.status === 'local_editing' && post.id.startsWith('local_edit_')) {
+              const parts = post.id.split('_');
+              const itemId = parts[2]; // local_edit_{id}_{scheduleId}
+              const idx = postItems.findIndex(p => p.id === itemId);
+              if (idx !== -1) {
+                setActiveIndex(idx);
+                setIsCalendarOpen(false);
+                return;
+              }
+            }
             if (post.id === postId) {
               setIsCalendarOpen(false);
               return;

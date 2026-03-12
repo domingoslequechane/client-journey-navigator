@@ -5,7 +5,7 @@ import { useOrganization } from '@/hooks/useOrganization';
 import { toast } from '@/hooks/use-toast';
 import type { SocialPlatform, ContentType } from '@/lib/social-media-mock';
 
-export type SocialPostStatus = 'draft' | 'pending_approval' | 'approved' | 'scheduled' | 'published' | 'failed' | 'rejected';
+export type SocialPostStatus = 'draft' | 'pending_approval' | 'approved' | 'scheduled' | 'published' | 'failed' | 'rejected' | 'local_editing';
 
 export interface SocialPostRow {
   id: string;
@@ -117,7 +117,7 @@ export function useSocialPosts(filters?: PostFilters) {
           status: params.post.status || 'draft',
         } as any)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return { data: data as unknown as SocialPostRow, silent: params.silent };
@@ -154,7 +154,7 @@ export function useSocialPosts(filters?: PostFilters) {
         .eq('id', params.post.id)
         .eq('organization_id', orgId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return { data: data as unknown as SocialPostRow, silent: params.silent };
@@ -180,17 +180,23 @@ export function useSocialPosts(filters?: PostFilters) {
   });
 
   const deletePost = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (params: { id?: string, batchId?: string, postIds?: string[] }) => {
       const { data, error } = await supabase.functions.invoke('social-delete-post', {
-        body: { post_id: id, organization_id: orgId }
+        body: { 
+          post_id: params.id, 
+          batch_id: params.batchId,
+          post_ids: params.postIds,
+          organization_id: orgId 
+        }
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['social-posts', orgId] });
-      toast({ title: 'Post excluído!' });
+      toast({ title: data?.count > 1 ? `${data.count} posts excluídos!` : 'Post excluído!' });
     },
     onError: (err: any) => {
       toast({ title: 'Erro ao excluir post', description: err.message, variant: 'destructive' });

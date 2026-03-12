@@ -3,13 +3,32 @@ import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 const LATE_API_BASE = "https://getlate.dev/api/v1";
 
-const getPlatformContentType = (platform: string, internalContentType: string): string => {
+const getPlatformContentType = (platform: string, internalContentType: string, mediaUrls: string[] = []): string => {
+  // Stories
   if (internalContentType === 'stories') return 'story';
+
+  // Reels
   if (internalContentType === 'reels') {
     if (platform === 'facebook') return 'reel';
-    if (platform === 'instagram') return 'reels';
+    return 'reels'; // instagram and others
   }
-  return internalContentType || 'feed';
+
+  // Carousel
+  if (internalContentType === 'carousel') return 'carousel';
+
+  // Feed: Late.dev requires 'image' or 'video' (not 'feed')
+  if (internalContentType === 'feed' || !internalContentType) {
+    const hasVideo = mediaUrls.some(url =>
+      /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video')
+    );
+    return hasVideo ? 'video' : 'image';
+  }
+
+  // Fallback: try to detect from media
+  const hasVideo = mediaUrls.some(url =>
+    /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video')
+  );
+  return hasVideo ? 'video' : 'image';
 };
 
 Deno.serve(async (req) => {
@@ -52,8 +71,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: profile } = await supabase
-      .from("profiles").select("current_organization_id").eq("id", user.id).single();
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles").select("current_organization_id").eq("id", user.id).maybeSingle();
+
+    if (profileError) {
+      console.error("[social-publish] Profile fetch error:", profileError);
+      return new Response(JSON.stringify({ error: `Erro ao buscar perfil: ${profileError.message}` }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!profile?.current_organization_id) {
       return new Response(JSON.stringify({ error: "No organization found" }), {
@@ -90,7 +116,14 @@ Deno.serve(async (req) => {
     }
 
     const { data: post, error: postError } = await supabase
-      .from("social_posts").select("*").eq("id", post_id).eq("organization_id", orgId).single();
+      .from("social_posts").select("*").eq("id", post_id).eq("organization_id", orgId).maybeSingle();
+
+    if (postError) {
+      console.error("[social-publish] Post fetch error:", postError);
+      return new Response(JSON.stringify({ error: `Erro ao buscar postagem: ${postError.message}` }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (postError || !post) {
       return new Response(JSON.stringify({ error: "Post not found" }), {
@@ -123,7 +156,7 @@ Deno.serve(async (req) => {
       .filter((a: any) => a.late_account_id)
       .map((a: any) => {
         const platform = a.platform;
-        const contentType = getPlatformContentType(platform, post.content_type);
+        const contentType = getPlatformContentType(platform, post.content_type, post.media_urls || []);
 
         const platformSpecificData: any = { contentType };
 
@@ -199,12 +232,14 @@ Deno.serve(async (req) => {
     if (publish_now) {
       latePayload.publishNow = true;
     } else if (post.scheduled_at) {
-      // Parse ISO string and remove the Z/milliseconds to match YYYY-MM-DDTHH:mm:ss in UTC
+      // Parse ISO string and remove the Z/milliseconds for Late API format
       const d = new Date(post.scheduled_at);
-      latePayload.scheduledFor = d.toISOString().split('.')[0];
+      latePayload.scheduledFor = d.toISOString().split('.')[0]; 
     } else {
       latePayload.publishNow = true;
     }
+
+    console.log(`[social-publish] Final Late.dev Payload:`, JSON.stringify(latePayload));
 
     const isMultiStory = post.content_type === 'stories' && post.media_urls && post.media_urls.length > 1;
     const mediaToProcess = isMultiStory
@@ -225,6 +260,7 @@ Deno.serve(async (req) => {
       }
 
       console.log(`[social-publish] Publishing ${isMultiStory ? 'story slide' : 'post'} to Late.dev`);
+      console.log(`[social-publish] Payload:`, JSON.stringify(currentLatePayload));
 
       const lateRes = await fetch(`${LATE_API_BASE}/posts`, {
         method: "POST",
@@ -232,12 +268,14 @@ Deno.serve(async (req) => {
         body: JSON.stringify(currentLatePayload),
       });
 
+      const lateText = await lateRes.text();
       let lateData: any = {};
       try {
-        const lateText = await lateRes.text();
         lateData = lateText ? JSON.parse(lateText) : {};
+        console.log(`[social-publish] Late.dev response (Status ${lateRes.status}):`, lateText);
       } catch {
-        lateData = { error: `Late.dev returned status ${lateRes.status}` };
+        console.warn(`[social-publish] Late.dev response not JSON (Status ${lateRes.status}):`, lateText);
+        lateData = { error: `Late.dev returned status ${lateRes.status}`, raw: lateText };
       }
 
       if (!lateRes.ok) {
@@ -245,7 +283,14 @@ Deno.serve(async (req) => {
         lastError = lateData;
         if (!isMultiStory) break; // If not multi-story, stop on first error
       } else {
-        results.push(lateData.post?._id || lateData._id);
+        const resultId = lateData.post?._id || lateData._id || (lateData.data?.post?._id);
+        if (resultId) {
+          results.push(resultId);
+        } else {
+          console.error("[social-publish] Late.dev returned 200 OK but NO ID found in response:", lateData);
+          lastError = { error: "No post ID returned from Late.dev", details: lateData };
+          if (!isMultiStory) break;
+        }
       }
     }
 

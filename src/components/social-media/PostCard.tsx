@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, Pencil, Trash2, Eye, Heart, MessageCircle, Share2, MousePointer, Bookmark, Send, RefreshCw, Zap, Copy, TrendingUp } from 'lucide-react';
+import { Clock, Pencil, Trash2, Eye, Heart, MessageCircle, Share2, MousePointer, Bookmark, Send, RefreshCw, Zap, Copy, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { STATUS_CONFIG, CONTENT_TYPE_CONFIG, type PostStatus, type ContentType } from '@/lib/social-media-mock';
 import { PlatformIcon } from './PlatformIcon';
 import { ConfirmActionModal } from './ConfirmActionModal';
+import { cn } from '@/lib/utils';
 import type { SocialPostRow } from '@/hooks/useSocialPosts';
 
 interface PostCardProps {
@@ -19,9 +20,11 @@ interface PostCardProps {
   onPublish?: (postId: string, publishNow: boolean) => void;
   onClone?: (post: SocialPostRow) => void;
   onBoost?: (post: SocialPostRow) => void;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
 }
 
-export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, onPublish, onClone, onBoost }: PostCardProps) {
+export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, onPublish, onClone, onBoost, isSelected, onSelect }: PostCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const statusCfg = STATUS_CONFIG[post.status as PostStatus] || STATUS_CONFIG.draft;
   const contentTypeCfg = CONTENT_TYPE_CONFIG[post.content_type as ContentType] || CONTENT_TYPE_CONFIG.feed;
@@ -30,9 +33,31 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
   const isPublished = post.status === 'published';
 
   return (
-    <Card className="hover:border-primary/30 transition-colors">
+    <Card className={cn(
+      "hover:border-primary/30 transition-all relative group",
+      isSelected && "border-primary bg-primary/5 ring-1 ring-primary/20"
+    )}>
       <CardContent className="p-4">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <div className="flex flex-row items-center gap-3 sm:gap-4">
+          {onSelect && (
+            <div 
+              className="cursor-pointer px-1 shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(post.id, !isSelected);
+              }}
+            >
+              <div className={cn(
+                "h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 shadow-sm",
+                isSelected 
+                  ? "bg-primary border-primary text-primary-foreground scale-110" 
+                  : "bg-background border-slate-300 hover:border-primary hover:bg-slate-50"
+              )}>
+                {isSelected && <CheckCircle2 className="h-4 w-4" />}
+              </div>
+            </div>
+          )}
+
           {mediaUrl && (
             <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 border bg-muted relative">
               {(mediaUrl.includes('video') || mediaUrl.endsWith('.mp4') || mediaUrl.endsWith('.mov') || mediaUrl.endsWith('.webm')) ? (
@@ -57,7 +82,6 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
               )}
               <Badge variant="outline" className="text-[10px]">{contentTypeCfg.label}</Badge>
               <Badge variant={statusCfg.variant} className="text-[10px]">{statusCfg.label}</Badge>
-
             </div>
 
             <p className="text-sm line-clamp-2">{post.content}</p>
@@ -96,43 +120,45 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-row sm:flex-col gap-1 shrink-0 self-start sm:self-auto">
-            {!isPublished && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(post)} title="Editar">
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {post.status === 'draft' && onSendForApproval && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--warning))]" onClick={() => onSendForApproval(post.id)} title="Enviar para aprovação">
-                <Send className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {post.status === 'draft' && onPublish && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--success))]" onClick={() => onPublish(post.id, true)} title="Publicar agora">
-                <Zap className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {post.status === 'failed' && onRetry && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--warning))]" onClick={() => onRetry(post.id)} title="Tentar novamente">
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {onClone && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onClone(post)} title="Clonar post">
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {onBoost && isPublished && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => onBoost(post)} title="Impulsionar">
-                <TrendingUp className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {!isPublished && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setConfirmDelete(true)} title="Excluir">
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            )}
+          <div className="flex flex-row items-center gap-4 shrink-0">
+            {/* Actions */}
+            <div className="flex flex-row sm:flex-col gap-1 shrink-0">
+              {!isPublished && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(post)} title="Editar">
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {post.status === 'draft' && onSendForApproval && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--warning))]" onClick={() => onSendForApproval(post.id)} title="Enviar para aprovação">
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {post.status === 'draft' && onPublish && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--success))]" onClick={() => onPublish(post.id, true)} title="Publicar agora">
+                  <Zap className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {post.status === 'failed' && onRetry && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-[hsl(var(--warning))]" onClick={() => onRetry(post.id)} title="Tentar novamente">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {onClone && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onClone(post)} title="Clonar post">
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {onBoost && isPublished && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => onBoost(post)} title="Impulsionar">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {!isPublished && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setConfirmDelete(true)} title="Excluir">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>
@@ -140,8 +166,11 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
       <ConfirmActionModal
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title="Excluir post"
-        description="Tem certeza que deseja excluir este post? Esta ação não pode ser desfeita."
+        title={post.notes?.includes('BATCH_META:') && post.status === 'draft' ? "Excluir lote de posts" : "Excluir post"}
+        description={post.notes?.includes('BATCH_META:') && post.status === 'draft' 
+          ? "Esta postagem faz parte de um agendamento em lote. Tem certeza que deseja excluir o LOTE COMPLETO? Esta ação não pode ser desfeita."
+          : "Tem certeza que deseja excluir este post? Esta ação não pode ser desfeita."
+        }
         confirmLabel="Excluir"
         variant="destructive"
         onConfirm={() => {
