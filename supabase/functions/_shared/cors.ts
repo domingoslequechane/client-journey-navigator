@@ -1,6 +1,6 @@
 const ALLOWED_ORIGINS = [
   "https://qualify.marketing",
-  "https://qualify.lovable.app",
+  "https://qualify.onixagence.com",
 ];
 
 export function getCorsHeaders(req: Request) {
@@ -11,6 +11,7 @@ export function getCorsHeaders(req: Request) {
     ALLOWED_ORIGINS.includes(origin) ||
     origin.endsWith(".lovable.app") ||
     origin.endsWith(".gpt-engineer.ai") ||
+    origin.endsWith(".onixagence.com") ||
     origin.startsWith("http://localhost");
 
   return {
