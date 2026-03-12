@@ -34,7 +34,7 @@ interface AISuggestion {
   action: string;
 }
 
-function extractJsonFromResponse(content: string, clients: Array<{id: string; company: string}>): AISuggestion {
+function extractJsonFromResponse(content: string, clients: Array<{ id: string; company: string }>): AISuggestion {
   const cleanedVariants = [
     content,
     // Strip markdown code blocks
@@ -52,7 +52,7 @@ function extractJsonFromResponse(content: string, clients: Array<{id: string; co
     const jsonMatch = variant.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       let candidate = jsonMatch[0];
-      
+
       // Clean control chars and trailing commas
       candidate = candidate
         .replace(/[\x00-\x1F\x7F]/g, ' ')
@@ -65,12 +65,12 @@ function extractJsonFromResponse(content: string, clients: Array<{id: string; co
       } catch {
         // Try to repair by balancing braces/brackets and closing open strings
         let repaired = candidate;
-        
+
         // Close any unclosed string values by finding last unmatched quote
         let inString = false;
         let lastQuotePos = -1;
         for (let i = 0; i < repaired.length; i++) {
-          if (repaired[i] === '"' && (i === 0 || repaired[i-1] !== '\\')) {
+          if (repaired[i] === '"' && (i === 0 || repaired[i - 1] !== '\\')) {
             inString = !inString;
             lastQuotePos = i;
           }
@@ -196,7 +196,7 @@ Responda APENAS com um JSON válido no formato:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-1.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

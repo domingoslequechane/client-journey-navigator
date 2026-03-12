@@ -46,9 +46,9 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "API key not configured" }), {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "Chave API do Gemini não configurada" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
@@ -170,14 +170,15 @@ REGRAS:
     ];
 
     const startTimeAI = Date.now();
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Using Google's OpenAI-compatible endpoint for direct access with a Gemini API Key
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`, {
       method: "POST",
       headers: {
-        "Authorization": "Bearer " + LOVABLE_API_KEY,
+        "Authorization": `Bearer ${GEMINI_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         messages,
         temperature: 0.8,
         max_tokens: 1000,
