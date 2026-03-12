@@ -109,12 +109,13 @@ CONTEXTO ADICIONAL: ${topic || "Nenhum detalhe adicional"}
 
 REGRAS:
 1. Escreva APENAS o conteúdo da legenda.
-2. Formate o texto com quebras de linha e parágrafos para facilitar a leitura.
-3. PROIBIDO: Usar TÍTULOS, Headlines, ou rótulos como "Legenda:", "Opção 1:".
-4. Proibido palavras como "marketing", "algoritmo", "engajamento", "redes sociais".
-5. Escreva de forma orgânica e humana.
-6. Inclua uma linha em branco antes das hashtags.
-7. Coloque no máximo 5 hashtags relevantes de forma organizada.`;
+2. Use EMOJIS relevantes para tornar a leitura mais dinâmica, amigável e menos cansativa, adaptando ao objetivo e tom de voz.
+3. Formate o texto com quebras de linha e parágrafos para facilitar a leitura.
+4. PROIBIDO: Usar TÍTULOS, Headlines, ou rótulos como "Legenda:", "Opção 1:".
+5. Proibido palavras como "marketing", "algoritmo", "engajamento", "redes sociais".
+6. Escreva de forma orgânica e humana.
+7. Inclua uma linha em branco antes das hashtags.
+8. Coloque no máximo 5 hashtags relevantes de forma organizada.`;
 
     // Build message - pass images as direct URLs or base64
     const userContent: any[] = [{ type: "text", text: prompt }];
