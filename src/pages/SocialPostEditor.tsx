@@ -646,39 +646,43 @@ export default function SocialPostEditor() {
           // Return cached result if already processed
           if (storyProcessedUrls !== null) return storyProcessedUrls;
 
-          const storyFilesToProcess = [...item.files].filter((f): f is File => f != null);
-          const storyRemoteUrls = item.mediaUrls.filter(url => !url.startsWith('blob:'));
+          const mediaItems = item.mediaUrls.map((url, idx) => ({
+            url,
+            file: url.startsWith('blob:') ? item.files[idx] : null,
+            name: url.startsWith('blob:') ? (item.files[idx]?.name || `img_${idx}`) : (url.split('/').pop()?.split('?')[0] || `img_${idx}`)
+          }));
 
-          if (storyFilesToProcess.length > 0) {
-            const itemPlatforms = Array.from(new Set(
-              connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).map(a => PLATFORM_NAMES[a.platform] || a.platform)
-            )).join(', ');
-            setSavingStatus(`A otimizar mídias para Story no ${itemPlatforms || 'canais'}...`);
-            try {
-              const processedFiles = await Promise.all(
-                storyFilesToProcess.map(async (file) => {
-                  if (file != null && file.type.startsWith('image/')) {
-                    const url = URL.createObjectURL(file);
-                    const resultFile = await __processImageForStoryHelper(url, file);
-                    URL.revokeObjectURL(url);
-                    return resultFile;
-                  }
-                  return file;
-                })
-              );
-              setUploadProgress(0);
-              const uploadedStoryUrls = await uploadFilesToLate(processedFiles, (p) => setUploadProgress(p));
-              setUploadProgress(0);
-              storyProcessedUrls = [...storyRemoteUrls, ...uploadedStoryUrls];
-            } catch (e) {
-              console.error("Auto processing story failed", e);
-              storyProcessedUrls = finalOriginalUrls; // fallback to original
+          const results = [...item.mediaUrls];
+          const imagesToProcess: { file: File, index: number }[] = [];
+
+          for (let i = 0; i < mediaItems.length; i++) {
+            const m = mediaItems[i];
+            const isVideo = m.name.match(/\.(mp4|mov|avi|webm|m4v)$/i) || m.url.includes('video');
+
+            if (!isVideo) {
+              try {
+                const processedFile = await __processImageForStoryHelper(m.url, m.file || new File([], m.name));
+                imagesToProcess.push({ file: processedFile, index: i });
+              } catch (e) {
+                console.warn("Failed to process image for story:", m.url, e);
+              }
             }
-          } else {
-            // No local files to process — stories use original remote URLs as-is
-            storyProcessedUrls = finalOriginalUrls;
           }
-          return storyProcessedUrls;
+
+          if (imagesToProcess.length > 0) {
+            setSavingStatus(`A otimizar mídias para Story...`);
+            setUploadProgress(0);
+            const uploadedUrls = await uploadFilesToLate(imagesToProcess.map(x => x.file), (p) => setUploadProgress(p));
+            setUploadProgress(0);
+
+            // Put the new URLs back in the original positions
+            imagesToProcess.forEach((item, idx) => {
+              results[item.index] = uploadedUrls[idx];
+            });
+          }
+
+          storyProcessedUrls = results;
+          return results;
         };
 
         // Track if we've already used the existing ID for this item's schedules
