@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/hooks/useOrganization';
 import { toast } from '@/hooks/use-toast';
+import { translateSocialError } from '@/lib/social-error-helper';
 import type { SocialPlatform, ContentType } from '@/lib/social-media-mock';
 
 export type SocialPostStatus = 'draft' | 'pending_approval' | 'approved' | 'scheduled' | 'published' | 'failed' | 'rejected' | 'local_editing';
@@ -131,14 +132,7 @@ export function useSocialPosts(filters?: PostFilters) {
     onError: (err: any, variables) => {
       console.error('Erro ao criar post:', err);
       if (variables.silent) return;
-
-      let message = 'Ocorreu um erro inesperado ao criar o post.';
-      if (err.message?.includes('schema cache')) {
-        message = 'Erro de sincronização com o banco de dados. Por favor, recarregue a página.';
-      } else if (err.message) {
-        message = err.message;
-      }
-      toast({ title: 'Erro ao criar post', description: message, variant: 'destructive' });
+      toast({ title: 'Não foi possível criar a publicação', description: translateSocialError(err), variant: 'destructive' });
     },
   });
 
@@ -168,25 +162,18 @@ export function useSocialPosts(filters?: PostFilters) {
     onError: (err: any, variables) => {
       console.error('Erro ao atualizar post:', err);
       if (variables.silent) return;
-
-      let message = 'Não foi possível salvar as alterações do post.';
-      if (err.message?.includes('schema cache')) {
-        message = 'Erro de sincronização. Por favor, recarregue a página.';
-      } else if (err.message) {
-        message = err.message;
-      }
-      toast({ title: 'Erro ao atualizar post', description: message, variant: 'destructive' });
+      toast({ title: 'Não foi possível guardar as alterações', description: translateSocialError(err), variant: 'destructive' });
     },
   });
 
   const deletePost = useMutation({
     mutationFn: async (params: { id?: string, batchId?: string, postIds?: string[] }) => {
       const { data, error } = await supabase.functions.invoke('social-delete-post', {
-        body: { 
-          post_id: params.id, 
+        body: {
+          post_id: params.id,
           batch_id: params.batchId,
           post_ids: params.postIds,
-          organization_id: orgId 
+          organization_id: orgId
         }
       });
 
@@ -199,7 +186,7 @@ export function useSocialPosts(filters?: PostFilters) {
       toast({ title: data?.count > 1 ? `${data.count} posts excluídos!` : 'Post excluído!' });
     },
     onError: (err: any) => {
-      toast({ title: 'Erro ao excluir post', description: err.message, variant: 'destructive' });
+      toast({ title: 'Não foi possível eliminar a publicação', description: translateSocialError(err), variant: 'destructive' });
     },
   });
 
@@ -302,16 +289,9 @@ export function useSocialPosts(filters?: PostFilters) {
 
       if (variables.silent) return;
 
-      let message = 'Não conseguimos processar o agendamento agora. Verifique sua conexão e tente novamente.';
-      if (err instanceof Error && err.message) {
-        message = err.message;
-      } else if (typeof err === 'string') {
-        message = err;
-      }
-
       toast({
         title: 'Erro no agendamento',
-        description: message,
+        description: translateSocialError(err),
         variant: 'destructive'
       });
     },

@@ -479,14 +479,14 @@ export default function SocialMedia() {
           {filteredPosts.length > 0 && (
             <div className={cn(
               "flex items-center justify-between p-3 rounded-xl border transition-all duration-300",
-              selectedPostIds.length > 0 
-                ? "bg-primary/10 border-primary/30 shadow-sm" 
+              selectedPostIds.length > 0
+                ? "bg-primary/10 border-primary/30 shadow-sm"
                 : "bg-muted/30 border-border/50"
             )}>
               <div className="flex items-center gap-3">
-                <button 
+                <button
                   onClick={() => handleSelectAll(
-                    paginatedPosts.map(p => p.id), 
+                    paginatedPosts.map(p => p.id),
                     selectedPostIds.length < paginatedPosts.length
                   )}
                   className="flex items-center gap-2 text-xs font-semibold hover:text-primary transition-colors"
@@ -494,7 +494,7 @@ export default function SocialMedia() {
                   <div className={cn(
                     "h-4 w-4 rounded border flex items-center justify-center transition-colors",
                     selectedPostIds.length === paginatedPosts.length && paginatedPosts.length > 0
-                      ? "bg-primary border-primary text-primary-foreground" 
+                      ? "bg-primary border-primary text-primary-foreground"
                       : "bg-background border-slate-300"
                   )}>
                     {selectedPostIds.length === paginatedPosts.length && paginatedPosts.length > 0 && <CheckCircle2 className="h-3 w-3" />}
@@ -510,21 +510,21 @@ export default function SocialMedia() {
                   </>
                 )}
               </div>
-              
+
               {selectedPostIds.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
+                  <Button
+                    variant="destructive"
+                    size="sm"
                     className="h-8 gap-2 rounded-lg text-xs font-bold"
                     onClick={() => setShowBulkDeleteConfirm(true)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     Eliminar Seleção
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="h-8 text-xs font-medium"
                     onClick={() => setSelectedPostIds([])}
                   >
@@ -642,9 +642,9 @@ export default function SocialMedia() {
             <DialogDescription className="text-center">
               {draftToDelete?.notes?.includes('BATCH_META:') ? (
                 <>
-                  Esta postagem faz parte de um agendamento em lote. 
+                  Esta postagem faz parte de um agendamento em lote.
                   <span className="block mt-2 font-bold text-destructive">
-                    Pelo menos 3 posts relacionados (Facebook, Instagram, etc) serão eliminados simultaneamente do Late.dev e da nossa aplicação.
+                    Pelo menos 3 posts relacionados (Facebook, Instagram, etc) serão eliminados simultaneamente do servidor e da nossa aplicação.
                   </span>
                 </>
               ) : (
@@ -652,7 +652,7 @@ export default function SocialMedia() {
                   {draftToDelete?.content
                     ? `"${draftToDelete.content.slice(0, 60)}${draftToDelete.content.length > 60 ? '...' : ''}"`
                     : 'Esta postagem'}
-                  {' '}será eliminada definitivamente do Late.dev e da nossa aplicação.
+                  {' '}será eliminada definitivamente da nossa aplicação e das plataformas conectadas.
                 </>
               )}
               <span className="block mt-2 text-xs opacity-70">Esta ação não pode ser desfeita.</span>
@@ -683,14 +683,14 @@ export default function SocialMedia() {
         open={showBulkDeleteConfirm}
         onOpenChange={setShowBulkDeleteConfirm}
         title="Eliminar posts selecionados?"
-        description={`Tens a certeza que desejas eliminar os ${selectedPostIds.length} posts selecionados? Esta ação não pode ser desfeita e removerá os posts tanto da aplicação quanto do Late.dev.`}
+        description={`Tens a certeza que desejas eliminar os ${selectedPostIds.length} posts selecionados? Esta ação não pode ser desfeita e removerá os posts tanto da aplicação quanto dos servidores das redes sociais.`}
         confirmLabel="Eliminar Tudo"
         cancelLabel="Cancelar"
         variant="destructive"
         onConfirm={handleBulkDelete}
       />
 
-      <Dialog open={deletePost.isPending} onOpenChange={() => {}}>
+      <Dialog open={deletePost.isPending} onOpenChange={() => { }}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <div className="flex justify-center mb-4">
@@ -698,7 +698,7 @@ export default function SocialMedia() {
             </div>
             <DialogTitle className="text-center">A eliminar postagem...</DialogTitle>
             <DialogDescription className="text-center">
-              Por favor aguarde enquanto processamos a remoção tanto na aplicação quanto no Late.dev.
+              Por favor aguarde enquanto processamos a remoção tanto na aplicação quanto nas redes sociais associadas.
               Isto pode levar alguns segundos.
             </DialogDescription>
           </DialogHeader>

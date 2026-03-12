@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Loader2, Copy, Check } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, Loader2, Copy, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SocialPlatform, ContentType } from '@/lib/social-media-mock';
+import { useAICaption } from '@/hooks/useAICaption';
 
 interface AICaptionModalProps {
   open: boolean;
@@ -57,90 +58,30 @@ export function AICaptionModal({
   const [objective, setObjective] = useState('venda');
   const [topic, setTopic] = useState('');
   const [generatedCaption, setGeneratedCaption] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const compressMedia = (source: File | string, maxWidth = 800, quality = 0.6): Promise<string | null> => {
-    return new Promise((resolve) => {
-      const img = new window.Image();
-      const isFile = source instanceof File;
-      const url = isFile ? URL.createObjectURL(source) : (source as string);
-      
-      img.crossOrigin = "anonymous"; 
-      img.onload = () => {
-        if (isFile) URL.revokeObjectURL(url);
-        try {
-          const canvas = document.createElement('canvas');
-          let w = img.width;
-          let h = img.height;
-          if (w > maxWidth) {
-            h = Math.round((h * maxWidth) / w);
-            w = maxWidth;
-          }
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) { resolve(null); return; }
-          ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        } catch (e) {
-          console.error("Canvas error:", e);
-          resolve(null);
-        }
-      };
-      img.onerror = () => { 
-        console.error("Image load error for URL:", url);
-        if (isFile) URL.revokeObjectURL(url);
-        resolve(null); 
-      };
-      img.src = url;
-    });
-  };
+  const { isGenerating, error, generateCaption } = useAICaption();
 
   const handleGenerate = async () => {
-    setIsGenerating(true);
-    setGeneratedCaption('');
-    try {
-      // Gather base64 versions of local File objects (for newly uploaded, not-yet-sent images)
-      const sources: File[] = files.filter(f => f && f.type.startsWith('image/'));
-      const mediaData: string[] = [];
+    const caption = await generateCaption({
+      platforms,
+      contentType,
+      tone,
+      length,
+      objective,
+      topic,
+      clientId,
+      files,
+      mediaUrls
+    });
 
-      if (sources.length > 0) {
-        const compressed = await Promise.all(sources.slice(0, 2).map(f => compressMedia(f)));
-        compressed.forEach(d => { if (d) mediaData.push(d); });
-      }
-
-      // Always pass the remote URLs so the server can fetch them if no local base64 available
-      const remoteUrls = mediaUrls.filter(url => {
-        const isVideo = url.includes('video') || /\.(mp4|mov|avi|webm|m4v)$/i.test(url);
-        return !isVideo;
-      });
-
-      const { data, error } = await supabase.functions.invoke('generate-social-caption', {
-        body: {
-          platforms,
-          content_type: contentType,
-          media_data: mediaData,      // base64 from local Files (may be empty)
-          media_urls: remoteUrls,     // remote URLs for server-side fetching
-          tone,
-          length,
-          objective,
-          topic: topic.trim() || undefined,
-          client_id: clientId,
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      setGeneratedCaption(data.caption || '');
-    } catch (err: any) {
-      console.error('Error generating caption:', err);
-      setGeneratedCaption(`Erro ao gerar legenda: ${err.message || 'Verifique sua conexão e tente novamente.'}`);
-    } finally {
-      setIsGenerating(false);
+    if (caption) {
+      setGeneratedCaption(caption);
     }
   };
+
+  const errorMessage = error ? `Erro ao gerar legenda: ${error}` : null;
+
 
   const handleUseCaption = () => {
     onCaptionGenerated(generatedCaption);
@@ -155,21 +96,30 @@ export function AICaptionModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Build preview URLs to show which images will be analyzed
+  // Build preview URLs de-duplicated
   const previewImages = useMemo(() => {
     const results: string[] = [];
-    // Local files take priority
+    const blobUrls = new Set<string>();
+
+    // Add local files and track their blob URLs
     files.forEach(f => {
-      if (f && f.type.startsWith('image/')) results.push(URL.createObjectURL(f));
+      if (f && f.type.startsWith('image/')) {
+        const url = URL.createObjectURL(f);
+        results.push(url);
+        blobUrls.add(url);
+      }
     });
-    // Then remote URLs
-    if (results.length === 0) {
-      mediaUrls.forEach(url => {
-        const isVideo = /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video');
-        if (!isVideo) results.push(url);
-      });
-    }
-    return results.slice(0, 3);
+
+    // Add remote URLs only if they are not blob URLs (which are duplicates of files)
+    mediaUrls.forEach(url => {
+      const isVideo = /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video');
+      const isBlob = url.startsWith('blob:');
+      if (!isVideo && !isBlob) {
+        results.push(url);
+      }
+    });
+
+    return results.slice(0, 10);
   }, [files, mediaUrls]);
 
   return (
@@ -182,7 +132,14 @@ export function AICaptionModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+
+          {error && (
+            <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-destructive text-xs flex items-center gap-2">
+              <X className="h-4 w-4" />
+              {error}
+            </div>
+          )}
 
           {/* Visual preview of images being analyzed */}
           {previewImages.length > 0 ? (
@@ -191,25 +148,30 @@ export function AICaptionModal({
                 <Sparkles className="h-3 w-3 text-primary" />
                 Imagens a analisar
               </Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                 {previewImages.map((url, i) => (
-                  <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-primary/20 bg-muted flex-shrink-0">
+                  <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden border border-primary/20 bg-muted flex-shrink-0">
                     <img src={url} alt="" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    {previewImages.length > 1 && (
+                      <Badge variant="secondary" className="absolute top-1 right-1 h-4 px-1 text-[8px]">
+                        #{i + 1}
+                      </Badge>
+                    )}
                   </div>
                 ))}
-                <div className="flex-1 flex items-center">
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    A IA vai analisar {previewImages.length === 1 ? 'esta imagem' : `estas ${previewImages.length} imagens`} e criar uma legenda personalizada para o seu conteúdo.
-                  </p>
-                </div>
               </div>
+              <p className="text-[10px] text-muted-foreground italic">
+                {previewImages.length === 1
+                  ? 'A IA vai analisar esta imagem.'
+                  : `A IA vai analisar estas ${previewImages.length} imagens em conjunto (Carrossel).`}
+              </p>
             </div>
           ) : (
             <div className="flex items-center gap-3 p-3 rounded-lg border border-dashed border-border bg-muted/30">
               <Sparkles className="h-4 w-4 text-muted-foreground shrink-0" />
               <p className="text-xs text-muted-foreground">
-                Sem imagens detetadas. A legenda será gerada com base no contexto do cliente e nas opções abaixo.
+                Sem imagens detetadas. A legenda será gerada com base no contexto.
               </p>
             </div>
           )}

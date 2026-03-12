@@ -98,68 +98,77 @@ serve(async (req) => {
     const hasMedia = (media_data?.length > 0) || (media_urls?.length > 0);
 
     const prompt = `Você é o proprietário da marca "${clientData?.company_name || orgName}".
-${hasMedia ? 'Analise a imagem fornecida e crie uma legenda baseada no que vê.' : 'Crie uma legenda comercial para a marca.'}
+${hasMedia ? 'Analise a mídia fornecida e crie uma legenda baseada no que vê.' : 'Crie uma legenda comercial para a marca.'}
 
 ${clientContext}
 
 OBJETIVO DA POSTAGEM: ${objective || "venda"}
 TONALIDADE: ${toneDesc}
 TAMANHO: ${lengthDesc}
-CONTEXTO ADICIONAL: ${topic || "Descrever o produto/serviço"}
+CONTEXTO ADICIONAL: ${topic || "Nenhum detalhe adicional"}
 
 REGRAS:
-1. Fale apenas do que está na imagem e do negócio do cliente
-2. Proibido: "redes sociais", "marketing", "algoritmo", "engajamento"
-3. Escreva como uma pessoa real vendendo para outra pessoa real
-4. Se houver preços, nomes ou contatos na imagem, inclua-os
+1. Escreva APENAS o conteúdo da legenda.
+2. Formate o texto com quebras de linha e parágrafos para facilitar a leitura.
+3. PROIBIDO: Usar TÍTULOS, Headlines, ou rótulos como "Legenda:", "Opção 1:".
+4. Proibido palavras como "marketing", "algoritmo", "engajamento", "redes sociais".
+5. Escreva de forma orgânica e humana.
+6. Inclua uma linha em branco antes das hashtags.
+7. Coloque no máximo 5 hashtags relevantes de forma organizada.`;
 
-ESTRUTURA OBRIGATÓRIA:
-1️⃣ LEGENDA PRINCIPAL: (máx. 150 caracteres)
-2️⃣ VARIAÇÕES: Duas alternativas curtas
-3️⃣ STORIES: Uma frase curta
-4️⃣ HASHTAGS: 3-5 relevantes
-
-Responda APENAS os blocos numerados.`;
-
-    // Build message - pass image as direct URL (GPT-4o Vision can read public URLs directly)
+    // Build message - pass images as direct URLs or base64
     const userContent: any[] = [{ type: "text", text: prompt }];
-
-    // Priority 1: base64 from freshly uploaded local files (small, already compressed by client)
     let imageAdded = false;
+    let imageCount = 0;
+
+    // Priority 1: base64 from freshly uploaded local files
     if (media_data && Array.isArray(media_data)) {
-      for (const data of media_data.slice(0, 1)) {
+      for (const data of media_data) {
         if (typeof data === 'string' && data.startsWith('data:image')) {
           userContent.push({ type: "image_url", image_url: { url: data, detail: "low" } });
           imageAdded = true;
-          console.log("[generate-social-caption] Added base64 image from client");
-          break;
+          imageCount++;
         }
       }
     }
 
-    // Priority 2: direct remote URLs (GPT-4o fetches them directly - no base64 conversion needed)
-    if (!imageAdded && media_urls && Array.isArray(media_urls)) {
+    // Priority 2: direct remote URLs
+    if (media_urls && Array.isArray(media_urls)) {
       const imageUrls = (media_urls as string[]).filter(
         (url: string) => !(/\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video'))
       );
-      if (imageUrls.length > 0) {
-        const imageUrl = imageUrls[0];
+      for (const imageUrl of imageUrls) {
         userContent.push({ type: "image_url", image_url: { url: imageUrl, detail: "low" } });
         imageAdded = true;
-        console.log(`[generate-social-caption] Added direct URL image: ${imageUrl.substring(0, 80)}`);
+        imageCount++;
       }
     }
 
-    console.log(`[generate-social-caption] Image added: ${imageAdded}, calling GPT-4o Vision`);
+    if (imageCount > 1) {
+      userContent.push({
+        type: "text",
+        text: `\nOBSERVAÇÃO IMPORTANTE: Este post contém ${imageCount} imagens (Carrossel). Analise-as como um conjunto e use termos no PLURAL quando se referir ao conteúdo visual (ex: "estas fotos", "estas dicas"). Crie uma legenda que conecte todos os slides de forma estratégica.`
+      });
+    } else if (imageCount === 1) {
+      userContent.push({
+        type: "text",
+        text: `\nOBSERVAÇÃO: Este post possui apenas 1 imagem. Use termos no SINGULAR (ex: "esta foto", "esta dica") e foque no detalhe desta única mídia.`
+      });
+    }
+
+    console.log(`[generate-social-caption] Call: images=${imageCount}, calling GPT-4o`);
 
     const messages = [
       {
         role: "system",
-        content: "Você é um redator comercial experiente. SEMPRE gere uma legenda baseada na imagem e no contexto do cliente. Nunca recuse. Nunca peça mais informações."
+        content: `Você é um redator comercial experiente e estrategista de redes sociais para a marca "${orgName}". 
+        Sua missão é criar legendas que convertem e engajam. Sempre gere uma legenda baseada na imagem e no contexto.
+        Adapte sua linguagem (singular/plural) ao número de imagens detectadas.`
       },
       { role: "user", content: userContent }
     ];
 
+    const startTimeAI = Date.now();
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -167,33 +176,42 @@ Responda APENAS os blocos numerados.`;
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o",
+        model: "google/gemini-2.5-flash",
         messages,
-        temperature: 0.7,
-        max_tokens: 800,
+        temperature: 0.8,
+        max_tokens: 1000,
       }),
     });
 
     const aiText = await aiResponse.text();
-    console.log(`[generate-social-caption] AI response: status=${aiResponse.status}, body_length=${aiText.length}`);
+    const durationAI = Date.now() - startTimeAI;
+    console.log(`[generate-social-caption] AI response received in ${durationAI}ms. Status: ${aiResponse.status}`);
 
     if (!aiResponse.ok) {
-      console.error("[generate-social-caption] AI gateway error:", aiText.substring(0, 500));
-      // Return 200 with error field so the client shows a useful message
-      return new Response(JSON.stringify({ error: `Erro da IA (${aiResponse.status}): verifique os logs da função` }), {
+      console.error("[generate-social-caption] AI gateway error:", aiText.substring(0, 1000));
+      return new Response(JSON.stringify({
+        error: "A IA encontrou um problema temporário.",
+        details: aiText.substring(0, 200),
+        status: aiResponse.status
+      }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
     let aiData: any = {};
-    try { aiData = JSON.parse(aiText); } catch (e) {
+    try {
+      aiData = JSON.parse(aiText);
+    } catch (e) {
       console.error("[generate-social-caption] Failed to parse AI response:", e);
+      return new Response(JSON.stringify({ error: "Resposta inválida da IA. Tente novamente." }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     const caption = aiData.choices?.[0]?.message?.content || "";
     if (!caption) {
-      console.error("[generate-social-caption] No caption in response:", JSON.stringify(aiData).substring(0, 300));
-      return new Response(JSON.stringify({ error: "A IA não retornou conteúdo. Tente novamente." }), {
+      console.error("[generate-social-caption] Empty content in AI response");
+      return new Response(JSON.stringify({ error: "A IA não conseguiu gerar o conteúdo. Tente mudar o tópico ou a imagem." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
@@ -204,8 +222,8 @@ Responda APENAS os blocos numerados.`;
     });
 
   } catch (error: unknown) {
-    console.error("[generate-social-caption] Unhandled error:", error);
-    const msg = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("[generate-social-caption] CRITICAL ERROR:", error);
+    const msg = error instanceof Error ? error.message : "Erro interno desconhecido";
     return new Response(JSON.stringify({ error: msg }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
