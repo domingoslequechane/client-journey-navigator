@@ -12,6 +12,7 @@ export function getCorsHeaders(req: Request) {
     origin.endsWith(".lovable.app") ||
     origin.endsWith(".gpt-engineer.ai") ||
     origin.endsWith(".onixagence.com") ||
+    origin.endsWith(".vercel.app") ||
     origin.startsWith("http://localhost");
 
   return {
