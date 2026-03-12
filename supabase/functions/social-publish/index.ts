@@ -4,31 +4,46 @@ import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 const LATE_API_BASE = "https://getlate.dev/api/v1";
 
 const getPlatformContentType = (platform: string, internalContentType: string, mediaUrls: string[] = []): string => {
-  // Stories
-  if (internalContentType === 'stories') return 'story';
-
-  // Reels
-  if (internalContentType === 'reels') {
-    if (platform === 'facebook') return 'reel';
-    return 'reels'; // instagram and others
-  }
-
-  // Carousel
-  if (internalContentType === 'carousel') return 'carousel';
-
-  // Feed: Late.dev requires 'image' or 'video' (not 'feed')
-  if (internalContentType === 'feed' || !internalContentType) {
-    const hasVideo = mediaUrls.some(url =>
-      /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video')
-    );
-    return hasVideo ? 'video' : 'image';
-  }
-
-  // Fallback: try to detect from media
-  const hasVideo = mediaUrls.some(url =>
+  const isVideo = mediaUrls.some(url =>
     /\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video')
   );
-  return hasVideo ? 'video' : 'image';
+
+  // 1. Stories
+  if (internalContentType === 'stories') {
+    if (platform === 'facebook' || platform === 'instagram') return 'story';
+    // Fallback for others - most don't support stories via API
+    return isVideo ? 'video' : 'image';
+  }
+
+  // 2. Reels / Shorts / TikTok
+  if (internalContentType === 'reels') {
+    if (platform === 'facebook') return 'reel';
+    if (platform === 'youtube' || platform === 'tiktok' || platform === 'instagram') return 'reels';
+    return isVideo ? 'video' : 'image';
+  }
+
+  // 3. Carousel
+  if (internalContentType === 'carousel') return 'carousel';
+
+  // 4. Feed/default
+  return isVideo ? 'video' : 'image';
+};
+
+const isPlatformCompatible = (platform: string, contentType: string): boolean => {
+  const compatibility: Record<string, string[]> = {
+    instagram: ['feed', 'stories', 'reels', 'carousel', 'image', 'video'],
+    facebook: ['feed', 'stories', 'reels', 'carousel', 'image', 'video', 'reel'],
+    tiktok: ['reels', 'video'],
+    youtube: ['reels', 'video'],
+    linkedin: ['feed', 'carousel', 'image', 'video'],
+    twitter: ['feed', 'image', 'video'],
+    googlebusiness: ['feed', 'image'],
+    pinterest: ['feed', 'carousel', 'image'],
+    threads: ['feed', 'image', 'video']
+  };
+
+  const allowed = compatibility[platform] || ['feed', 'image', 'video'];
+  return allowed.includes(contentType);
 };
 
 Deno.serve(async (req) => {
@@ -153,7 +168,11 @@ Deno.serve(async (req) => {
     }
 
     const platforms = accounts
-      .filter((a: any) => a.late_account_id)
+      .filter((a: any) => {
+        if (!a.late_account_id) return false;
+        // Check compatibility
+        return isPlatformCompatible(a.platform, post.content_type);
+      })
       .map((a: any) => {
         const platform = a.platform;
         const contentType = getPlatformContentType(platform, post.content_type, post.media_urls || []);
@@ -234,7 +253,7 @@ Deno.serve(async (req) => {
     } else if (post.scheduled_at) {
       // Parse ISO string and remove the Z/milliseconds for Late API format
       const d = new Date(post.scheduled_at);
-      latePayload.scheduledFor = d.toISOString().split('.')[0]; 
+      latePayload.scheduledFor = d.toISOString().split('.')[0];
     } else {
       latePayload.publishNow = true;
     }

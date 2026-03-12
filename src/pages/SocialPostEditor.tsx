@@ -709,6 +709,25 @@ export default function SocialPostEditor() {
             // Feed/Reels/etc: ALWAYS use original unmodified images
             const isStoriesType = type === 'stories';
 
+            // Filter targetPlatforms by compatibility with this specific type
+            const compatibleTargetPlatforms = targetPlatforms.filter(p => {
+              const compatibility: Record<string, string[]> = {
+                instagram: ['feed', 'stories', 'reels', 'carousel'],
+                facebook: ['feed', 'stories', 'reels', 'carousel'],
+                tiktok: ['reels'],
+                youtube: ['reels'],
+                linkedin: ['feed', 'carousel'],
+                twitter: ['feed'],
+                googlebusiness: ['feed'],
+                pinterest: ['feed', 'carousel'],
+                threads: ['feed']
+              };
+              const allowed = compatibility[p] || ['feed'];
+              return allowed.includes(type);
+            });
+
+            if (compatibleTargetPlatforms.length === 0) continue;
+
             const mediaUrlsForType = isStoriesType
               ? await getStoryUrls()
               : finalOriginalUrls;
@@ -719,7 +738,7 @@ export default function SocialPostEditor() {
                 const postData = {
                   content: item.content,
                   media_urls: [url],
-                  platforms: targetPlatforms,
+                  platforms: compatibleTargetPlatforms,
                   content_type: type,
                   location: item.location,
                   scheduled_at: scheduledAt,
@@ -777,7 +796,7 @@ export default function SocialPostEditor() {
               const postData = {
                 content: item.content,
                 media_urls: mediaUrlsForType,
-                platforms: targetPlatforms,
+                platforms: compatibleTargetPlatforms,
                 content_type: type,
                 location: item.location,
                 scheduled_at: scheduledAt,
@@ -929,61 +948,86 @@ export default function SocialPostEditor() {
   };
 
   const __processImageForStoryHelper = async (url: string, file: File): Promise<File> => {
+    let activeUrl = url;
+    let isProxied = false;
+
+    // For remote URLs (Supabase storage), try to fetch as blob first to mitigate canvas CORS issues
+    if (url.startsWith('http')) {
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const blob = await res.blob();
+          activeUrl = URL.createObjectURL(blob);
+          isProxied = true;
+        }
+      } catch (e) {
+        console.warn("CORS proxy fetch failed, using direct URL", e);
+      }
+    }
+
     const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.src = url;
+    if (url.startsWith('http')) img.crossOrigin = "anonymous";
+    img.src = activeUrl;
+
     await new Promise((resolve, reject) => {
       img.onload = resolve;
-      img.onerror = reject;
+      img.onerror = (e) => {
+        console.error("Image load error for Story processing", e);
+        reject(new Error("Não foi possível carregar a imagem para processar o Story."));
+      };
     });
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error("Canvas context not available");
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error("Canvas context not available");
 
-    // Story Aspect Ratio 9:16 (1080x1920 standard)
-    canvas.width = 1080;
-    canvas.height = 1920;
+      // Story Aspect Ratio 9:16 (1080x1920 standard)
+      canvas.width = 1080;
+      canvas.height = 1920;
 
-    // 1. Draw blurred background
-    ctx.filter = 'blur(50px) brightness(0.7)';
-    const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-    const bgW = img.width * scale;
-    const bgH = img.height * scale;
-    const bgX = (canvas.width - bgW) / 2;
-    const bgY = (canvas.height - bgH) / 2;
-    ctx.drawImage(img, bgX - 100, bgY - 100, bgW + 200, bgH + 200);
-    ctx.filter = 'none';
+      // 1. Draw blurred background
+      ctx.filter = 'blur(50px) brightness(0.7)';
+      const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+      const bgW = img.width * scale;
+      const bgH = img.height * scale;
+      const bgX = (canvas.width - bgW) / 2;
+      const bgY = (canvas.height - bgH) / 2;
+      ctx.drawImage(img, bgX - 100, bgY - 100, bgW + 200, bgH + 200);
+      ctx.filter = 'none';
 
-    // 2. Clear Glass Overlay
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, 'rgba(0,0,0,0.4)');
-    gradient.addColorStop(0.2, 'rgba(0,0,0,0)');
-    gradient.addColorStop(0.8, 'rgba(0,0,0,0)');
-    gradient.addColorStop(1, 'rgba(0,0,0,0.5)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // 2. Clear Glass Overlay
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, 'rgba(0,0,0,0.4)');
+      gradient.addColorStop(0.2, 'rgba(0,0,0,0)');
+      gradient.addColorStop(0.8, 'rgba(0,0,0,0)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0.5)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 3. Draw main image (Contain fit)
-    const mainScale = Math.min(canvas.width / img.width, canvas.height / img.height) * 0.9;
-    const mainW = img.width * mainScale;
-    const mainH = img.height * mainScale;
-    const mainX = (canvas.width - mainW) / 2;
-    const mainY = (canvas.height - mainH) / 2;
+      // 3. Draw main image (Contain fit)
+      const mainScale = Math.min(canvas.width / img.width, canvas.height / img.height) * 0.9;
+      const mainW = img.width * mainScale;
+      const mainH = img.height * mainScale;
+      const mainX = (canvas.width - mainW) / 2;
+      const mainY = (canvas.height - mainH) / 2;
 
-    // Background card for the main image
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 60;
-    ctx.shadowOffsetY = 20;
-    ctx.fillStyle = 'rgba(0,0,0,0.1)';
-    ctx.fillRect(mainX - 5, mainY - 5, mainW + 10, mainH + 10);
+      // Background shadow for the main image
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 60;
+      ctx.shadowOffsetY = 20;
+      ctx.fillStyle = 'rgba(0,0,0,0.1)';
+      ctx.fillRect(mainX - 5, mainY - 5, mainW + 10, mainH + 10);
 
-    ctx.drawImage(img, mainX, mainY, mainW, mainH);
+      ctx.drawImage(img, mainX, mainY, mainW, mainH);
 
-    const processedBlob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
-    if (!processedBlob) throw new Error("Could not generate blob");
+      const processedBlob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+      if (!processedBlob) throw new Error("Could not generate blob");
 
-    return new File([processedBlob], `story_${file.name || 'image'}.jpg`, { type: 'image/jpeg' });
+      return new File([processedBlob], `story_${file.name || 'image'}.jpg`, { type: 'image/jpeg' });
+    } finally {
+      if (isProxied) URL.revokeObjectURL(activeUrl);
+    }
   };
 
   const processImageForStory = async (url: string, file: File, itemId: string, idx: number) => {
