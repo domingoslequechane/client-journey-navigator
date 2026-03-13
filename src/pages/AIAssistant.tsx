@@ -491,15 +491,10 @@ export default function AIAssistant() {
                       {isTyping && (
                         <div className="flex gap-2 md:gap-3 animate-fade-in">
                           <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
-                          <div className="bg-muted rounded-xl px-3 py-2.5 md:px-4 md:py-3 animate-glow">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm text-muted-foreground font-medium">{pendingFile ? 'Analisando arquivo' : 'Garantindo precisão'}</span>
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-duration:1s] [animation-delay:-0.3s]" />
-                                <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-duration:1s] [animation-delay:-0.15s]" />
-                                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-duration:1s]" />
-                              </div>
-                            </div>
+                          <div className="bg-muted/50 rounded-xl px-4 py-3 border border-border/50">
+                            <span className="text-sm text-muted-foreground font-medium italic animate-pulse">
+                              Estou a pensar...
+                            </span>
                           </div>
                         </div>
                       )}

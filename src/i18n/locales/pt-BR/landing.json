@@ -111,19 +111,19 @@
       "name": "Bússola",
       "subtitle": "Para o Autônomo",
       "tagline": "Saia do papel e comece a se organizar.",
-      "features": ["3 clientes ativos", "Funil ilimitado", "90 msgs IA", "Academia básica"]
+      "features": ["3 clientes ativos", "Funil ilimitado", "90 msgs IA", "Academia de Marketing básica"]
     },
     "starter": {
       "name": "Lança",
       "subtitle": "Para a Pequena Agência",
       "tagline": "Profissionalize sua prospecção e fechamento.",
-      "features": ["5 clientes ativos", "Contratos e faturas", "500 msgs IA", "Academia completa"]
+      "features": ["5 clientes ativos", "Contratos e faturas", "500 msgs IA", "Academia de Marketing completa"]
     },
     "pro": {
       "name": "Arco",
       "subtitle": "Para a Agência em Crescimento",
       "tagline": "Automação total para quem não quer parar.",
-      "features": ["15 clientes ativos", "Todos os documentos", "1200 msgs IA", "Academia + IA"]
+      "features": ["15 clientes ativos", "Todos os documentos", "1200 msgs IA", "Academia de Marketing + IA"]
     },
     "agency": {
       "name": "Catapulta",
@@ -191,7 +191,7 @@
       "description": "Gere contratos, orçamentos e faturas com um clique. Profissionalismo instantâneo."
     },
     "academy": {
-      "title": "Mentoria de Gestão",
+      "title": "Academia de Marketing",
       "description": "Aprenda as estratégias de gestão que as maiores agências do país utilizam."
     }
   },

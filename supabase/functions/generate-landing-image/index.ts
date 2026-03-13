@@ -41,7 +41,7 @@ serve(async (req) => {
     }
 
     const { section } = await req.json();
-    
+
     if (!section || !sectionPrompts[section]) {
       return new Response(
         JSON.stringify({ error: 'Invalid section. Use: problema, custo, solucao, esperanca' }),
@@ -49,48 +49,48 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     console.log(`Generating image for section: ${section}`);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
+    const geminiUrl = `${GEMINI_API_BASE}/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+    const response = await fetch(geminiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
+        contents: [
           {
             role: "user",
-            content: sectionPrompts[section]
+            parts: [{ text: sectionPrompts[section] }]
           }
         ],
-        modalities: ["image", "text"]
+        generationConfig: {
+          responseModalities: ["IMAGE", "TEXT"],
+          imageGenerationConfig: {
+            aspectRatio: "16:9"
+          }
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      
+      console.error("Gemini API error:", response.status, errorText);
+
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required. Please add funds to your workspace." }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
+
       return new Response(
         JSON.stringify({ error: "Failed to generate image" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -98,15 +98,29 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    let base64Data = null;
+    if (data && data.candidates && data.candidates.length > 0) {
+      const candidateParts = data.candidates[0].content?.parts || [];
+      for (const part of candidateParts) {
+        if (part.inlineData) {
+          base64Data = part.inlineData.data;
+          break;
+        } else if (part.inline_data) {
+          base64Data = part.inline_data.data;
+          break;
+        }
+      }
+    }
 
-    if (!imageUrl) {
+    if (!base64Data) {
       console.error("No image in response:", JSON.stringify(data));
       return new Response(
         JSON.stringify({ error: "No image generated" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const imageUrl = `data:image/png;base64,${base64Data}`;
 
     console.log(`Successfully generated image for section: ${section}`);
 
@@ -118,8 +132,8 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error generating image:", error);
     return new Response(
-      JSON.stringify({ error: "An unexpected error occurred" }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: "Ocorreu um erro inesperado ao gerar a imagem.", details: error instanceof Error ? error.message : "Erro desconhecido" }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

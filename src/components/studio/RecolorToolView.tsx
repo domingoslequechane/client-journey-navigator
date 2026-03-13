@@ -217,18 +217,18 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
     const showResult = images.length > 0 || isGenerating;
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] bg-white relative overflow-hidden">
+        <div className="flex h-full bg-background relative overflow-hidden">
             <StudioQuickMenu currentToolId={tool.id} />
             <div className="flex-1 flex flex-col relative overflow-hidden">
                 {/* Top Bar for Navigation */}
-                <div className="flex-none p-6 pb-0 flex items-start gap-6 z-20">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/app/studio')} className="shrink-0 rounded-full bg-white shadow-sm hover:bg-muted border h-10 w-10">
+                <div className="flex-none p-4 pb-0 flex items-start gap-6 z-20">
+                    <Button variant="ghost" size="icon" onClick={() => navigate('/app/studio')} className="shrink-0 rounded-full bg-background dark:bg-card shadow-sm hover:bg-muted border h-10 w-10 text-foreground">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+                <div className="flex-1 flex flex-col items-center justify-center p-6 pb-32 relative overflow-y-auto">
                     <div className="max-w-xl w-full flex flex-col items-center gap-6">
 
                         {showResult ? (
@@ -238,15 +238,15 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-full h-12 w-12 z-[60]"
+                                    className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground hover:bg-muted/50 rounded-full h-10 w-10 md:h-12 md:w-12 z-[60]"
                                     onClick={handlePrev}
                                     disabled={activeIndex <= 0}
                                 >
-                                    <ChevronLeft className="h-8 w-8" />
+                                    <ChevronLeft className="h-6 w-6 md:h-8 md:w-8" />
                                 </Button>
-
+                                
                                 {/* Images Container (3D Slider) */}
-                                <div className="relative w-full max-w-7xl h-[500px] md:h-[650px] flex items-center justify-center perspective-[1200px] mt-4">
+                                <div className="relative w-full max-w-7xl h-[340px] md:h-[550px] flex items-center justify-center perspective-[1200px] mt-2">
 
                                     {/* GENERATING CARD */}
                                     {isGenerating && (() => {
@@ -266,9 +266,9 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                             scale = 1 - (absOffset * 0.12);
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3;
-                                            const isMobile = window.innerWidth < 768;
-                                            const baseTranslate = isMobile ? 200 : 260;
-                                            const stepTranslate = isMobile ? 40 : 85;
+                                            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+                                            const baseTranslate = isMobile ? 140 : 260;
+                                            const stepTranslate = isMobile ? 30 : 85;
                                             translateX = direction * (baseTranslate + absOffset * stepTranslate);
                                         }
 
@@ -277,8 +277,8 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                                 key="generating-card"
                                                 onClick={() => { if (offset !== 0) setActiveIndex(logicalIndex); }}
                                                 className={cn(
-                                                    "absolute top-0 bottom-0 my-auto w-[360px] h-[500px] md:w-[480px] md:h-[650px] transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-[#F4F4F5] flex flex-col items-center justify-center",
-                                                    offset === 0 ? "shadow-[0_0px_50px_rgba(0,0,0,0.15)] ring-1 ring-black/5 cursor-default" : "shadow-xl cursor-pointer"
+                                                    "absolute top-0 bottom-0 my-auto w-[280px] h-[380px] md:w-[480px] md:h-[650px] transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col items-center justify-center",
+                                                    offset === 0 ? "shadow-[0_0px_50px_rgba(0,0,0,0.25)] ring-1 ring-primary/20 cursor-default" : "shadow-xl cursor-pointer"
                                                 )}
                                                 style={{
                                                     transform: `translateX(${translateX}px) scale(${scale})`,
@@ -303,11 +303,11 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                                     <div className="absolute flex flex-col items-center gap-4">
                                                         <div className="relative">
                                                             <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
-                                                            <div className="relative bg-white p-4 rounded-full shadow-xl">
+                                                            <div className="relative bg-background border p-4 rounded-full shadow-xl">
                                                                 <Loader2 className="h-8 w-8 text-primary animate-spin" />
                                                             </div>
                                                         </div>
-                                                        <span className="font-medium text-primary bg-white/90 px-4 py-1.5 rounded-full shadow-sm text-sm">
+                                                        <span className="font-medium text-primary bg-background/80 border px-4 py-1.5 rounded-full shadow-sm text-sm backdrop-blur-sm">
                                                             Aplicando cor mágica...
                                                         </span>
                                                     </div>
@@ -333,9 +333,9 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                             scale = 1 - (absOffset * 0.12); // 0.88, 0.76, 0.64
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3; // Fade side images
-                                            const isMobile = window.innerWidth < 768;
-                                            const baseTranslate = isMobile ? 200 : 260;
-                                            const stepTranslate = isMobile ? 40 : 85;
+                                            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+                                            const baseTranslate = isMobile ? 140 : 260;
+                                            const stepTranslate = isMobile ? 30 : 85;
                                             translateX = direction * (baseTranslate + absOffset * stepTranslate);
                                         }
 
@@ -349,8 +349,8 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                                     else setMaximizedImage(img);
                                                 }}
                                                 className={cn(
-                                                    "absolute top-0 bottom-0 my-auto w-[360px] h-[500px] md:w-[480px] md:h-[650px] transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-[#F4F4F5] flex flex-col",
-                                                    offset === 0 ? "shadow-[0_0px_50px_rgba(0,0,0,0.15)] ring-1 ring-black/5 cursor-zoom-in" : "shadow-xl cursor-pointer"
+                                                    "absolute top-0 bottom-0 my-auto w-[250px] h-[340px] md:w-[410px] md:h-[550px] transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col",
+                                                    offset === 0 ? "shadow-[0_0px_60px_rgba(0,0,0,0.3)] ring-1 ring-primary/20 cursor-zoom-in" : "shadow-xl cursor-pointer"
                                                 )}
                                                 style={{
                                                     transform: `translateX(${translateX}px) scale(${scale})`,
@@ -361,9 +361,9 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                                 }}
                                             >
                                                 {offset !== 0 && (
-                                                    <div className="absolute inset-0 bg-[#F4F4F5] pointer-events-none z-10" style={{ opacity: overlayOpacity }} />
+                                                    <div className="absolute inset-0 bg-background/60 pointer-events-none z-10 backdrop-blur-[2px]" style={{ opacity: overlayOpacity }} />
                                                 )}
-                                                <img src={img.image_url} alt="Result" className="w-full h-full object-contain mix-blend-multiply" />
+                                                <img src={img.image_url} alt="Result" className="w-full h-full object-contain" />
 
                                                 {/* Actions overlay for central image */}
                                                 {offset === 0 && (
@@ -371,7 +371,7 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                                         <Button size="sm" onClick={(e) => { e.stopPropagation(); handleRecolorGenerated(img); }} className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-lg text-sm flex-1 font-medium transform transition-transform hover:scale-105">
                                                             <Upload className="h-4 w-4 mr-2" /> Recolorir
                                                         </Button>
-                                                        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(img) }} className="h-10 px-3 rounded-xl shadow-lg border-0 bg-white/90 hover:bg-white text-slate-800 transform transition-transform hover:scale-105">
+                                                        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(img) }} className="h-10 px-3 rounded-xl shadow-lg border-0 bg-background/90 dark:bg-card/90 hover:bg-background dark:hover:bg-card text-foreground transform transition-transform hover:scale-105">
                                                             <Download className="h-4 w-4" />
                                                         </Button>
                                                         <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(img) }} className="h-10 w-10 rounded-xl shadow-lg shrink-0 transform transition-transform hover:scale-105">
@@ -388,22 +388,22 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-full h-12 w-12 z-[60]"
+                                    className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground hover:bg-muted/50 rounded-full h-10 w-10 md:h-12 md:w-12 z-[60]"
                                     onClick={handleNext}
                                     disabled={activeIndex >= logicalImagesCount - 1}
                                 >
-                                    <ChevronRight className="h-8 w-8" />
+                                    <ChevronRight className="h-6 w-6 md:h-8 md:w-8" />
                                 </Button>
 
-                                <div className="mt-8 z-[60]">
-                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-white shadow-sm border-slate-200 text-slate-600 hover:text-primary transition-colors">
-                                        Recolora outra imagem
+                                <div className="mt-4 z-[60]">
+                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-background dark:bg-card shadow-sm border-slate-200 dark:border-slate-800 text-foreground hover:text-primary transition-colors">
+                                        Recolorar outra Imagem
                                     </Button>
                                 </div>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
-                                <p className="text-xl font-medium text-slate-800 tracking-tight text-center">
+                                <p className="text-xl font-medium text-foreground tracking-tight text-center">
                                     Mude a cor do seu produto. Aplique em todo o item ou <br /> apenas numa parte específica.
                                 </p>
                                 <img
@@ -417,27 +417,27 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                 </div>
 
                 {/* Bottom Floating Control Panel */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg z-20 px-4">
-                    <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 p-2 overflow-hidden flex flex-col gap-2 transition-all duration-300 hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)]">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-full max-w-lg z-20 px-4">
+                    <div className="bg-background dark:bg-card rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-border p-1.5 overflow-hidden flex flex-col gap-1 transition-all duration-300 hover:shadow-[0_8px_40px_rgb(0,0,0,0.25)]">
 
                         {/* Upload Dropzone Area */}
                         <div
                             {...getRootProps()}
                             className={cn(
-                                "group cursor-pointer border border-dashed rounded-xl p-4 flex flex-col items-center justify-center transition-all min-h-[80px]",
-                                isDragActive ? "border-primary bg-primary/5" : "border-slate-200 hover:border-primary/50 hover:bg-slate-50",
-                                previewUrl && !isDragActive ? "bg-slate-50/50" : ""
+                                "group cursor-pointer border border-dashed rounded-xl p-2 flex flex-col items-center justify-center transition-all min-h-[60px] md:min-h-[70px]",
+                                isDragActive ? "border-primary bg-primary/5" : "border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-muted",
+                                previewUrl && !isDragActive ? "bg-muted/50" : ""
                             )}
                         >
                             <input {...getInputProps()} />
                             {previewUrl ? (
                                 <div className="flex items-center gap-4 w-full px-2">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border bg-white shrink-0">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border bg-background dark:bg-card shrink-0">
                                         <img src={previewUrl} alt="preview" className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs sm:text-sm font-medium text-slate-700 truncate">{selectedImage?.name}</p>
-                                        <p className="text-[10px] sm:text-xs text-slate-400">Clique para alterar</p>
+                                        <p className="text-xs sm:text-sm font-medium text-foreground truncate">{selectedImage?.name}</p>
+                                        <p className="text-[10px] sm:text-xs text-muted-foreground">Clique para alterar</p>
                                     </div>
                                 </div>
                             ) : (
@@ -449,9 +449,9 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                         </div>
 
                         {/* Color Picker & Submit Bar */}
-                        <div className="flex items-center justify-between px-3 py-2 bg-slate-50/50 rounded-xl">
+                        <div className="flex items-center justify-between px-3 py-2 bg-muted/30 rounded-xl border border-border/50">
                             <div className="flex items-center gap-3">
-                                <div className="relative w-8 h-8 rounded-full overflow-hidden shadow-sm border border-slate-200 cursor-pointer hover:scale-105 transition-transform">
+                                <div className="relative w-8 h-8 rounded-full overflow-hidden shadow-sm border border-border cursor-pointer hover:scale-105 transition-transform">
                                     <input
                                         type="color"
                                         value={hexColor}
@@ -460,8 +460,8 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                     />
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{hexColor}</span>
-                                    <span className="text-[10px] text-slate-400 font-medium">Original</span>
+                                    <span className="text-xs font-bold text-foreground uppercase tracking-wider">{hexColor}</span>
+                                    <span className="text-[10px] text-muted-foreground font-medium">Original</span>
                                 </div>
                             </div>
 
@@ -533,7 +533,7 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                             <Button size="lg" onClick={(e) => { e.stopPropagation(); setMaximizedImage(null); handleRecolorGenerated(maximizedImage); }} className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-xl font-medium transform transition-transform hover:scale-105">
                                 <Upload className="h-5 w-5 mr-2" /> Recolorir
                             </Button>
-                            <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(maximizedImage) }} className="h-12 px-6 rounded-xl shadow-xl border-0 bg-white/95 hover:bg-white text-slate-900 transform transition-transform hover:scale-105 font-medium">
+                            <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(maximizedImage) }} className="h-12 px-6 rounded-xl shadow-xl border border-border bg-background/95 dark:bg-card/95 hover:bg-background dark:hover:bg-card text-foreground transform transition-transform hover:scale-105 font-medium">
                                 <Download className="h-5 w-5 mr-2" /> Transferir
                             </Button>
                             <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(maximizedImage); setMaximizedImage(null); }} className="h-12 w-12 rounded-xl shadow-xl shrink-0 transform transition-transform hover:scale-105">

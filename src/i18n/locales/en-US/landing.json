@@ -111,19 +111,19 @@
       "name": "Compass",
       "subtitle": "For the Solopreneur",
       "tagline": "Get off paper and start organizing.",
-      "features": ["3 active clients", "Unlimited funnel", "90 AI messages", "Basic Academy"]
+      "features": ["3 active clients", "Unlimited funnel", "90 AI messages", "Basic Academia de Marketing"]
     },
     "starter": {
       "name": "Lance",
       "subtitle": "For the Small Agency",
       "tagline": "Professionalize your prospecting and closing.",
-      "features": ["5 active clients", "Contracts & invoices", "500 AI messages", "Full Academy"]
+      "features": ["5 active clients", "Contracts & invoices", "500 AI messages", "Full Academia de Marketing"]
     },
     "pro": {
       "name": "Bow",
       "subtitle": "For the Growing Agency",
       "tagline": "Total automation for those who won't stop.",
-      "features": ["15 active clients", "All documents", "1200 AI messages", "Academy + AI"]
+      "features": ["15 active clients", "All documents", "1200 AI messages", "Academia de Marketing + AI"]
     },
     "agency": {
       "name": "Catapult",
@@ -191,7 +191,7 @@
       "description": "Generate contracts, quotes, and invoices with one click. Instant professionalism."
     },
     "academy": {
-      "title": "Management Mentorship",
+      "title": "Academia de Marketing",
       "description": "Learn the management strategies that the largest agencies in the country use."
     }
   },

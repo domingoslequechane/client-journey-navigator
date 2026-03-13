@@ -189,34 +189,33 @@ Responda APENAS com um JSON válido no formato:
 
     console.log('Calling Google Gemini API with', clientsData.length, 'clients');
 
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${geminiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gemini-1.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 1024,
-        response_format: { type: 'json_object' },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+          response_mime_type: "application/json",
+        },
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Google Gemini API error:', response.status, errorText);
-      throw new Error(`Google Gemini API error: ${response.status}`);
+      throw new Error(`Google Gemini API error: ${response.status} - ${errorText.substring(0, 100)}`);
     }
 
     const data = await response.json();
-    const content = data.choices[0]?.message?.content;
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!content) {
+      console.error('Gemini full response:', JSON.stringify(data));
       throw new Error('No content in Gemini response');
     }
 
@@ -234,7 +233,7 @@ Responda APENAS com um JSON válido no formato:
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage, suggestion: null }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

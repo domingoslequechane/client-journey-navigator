@@ -315,12 +315,12 @@ export interface ToolGenerationSettings {
 
 export const STUDIO_TOOL_CATEGORIES: { id: StudioToolCategory; label: string; emoji: string }[] = [
   { id: 'create_image', label: 'Criar Imagens com IA', emoji: '🎨' },
-  { id: 'editing', label: 'Todas as Ferramentas', emoji: '🛠️' },
+  // { id: 'editing', label: 'Todas as Ferramentas', emoji: '🛠️' },
 ];
 
 export const STUDIO_TOOLS: StudioTool[] = [
   // ── Criar Imagens com IA ────────────────────────────────────────────────
-  {
+  /* {
     id: 'flyer',
     label: 'Flyer',
     description: 'Crie flyers promocionais para o seu negócio',
@@ -330,10 +330,10 @@ export const STUDIO_TOOLS: StudioTool[] = [
     gradientFrom: '#6366f1',
     gradientTo: '#8b5cf6',
     previewImage: '/inspiration/flyer_preview_landscape.png',
-  },
+  }, */
   {
     id: 'recolor',
-    label: 'Recolor',
+    label: 'Recolorar',
     description: 'Recolora produtos ou imagens com novas paletas',
     category: 'create_image',
     emoji: '🎨',
@@ -357,7 +357,7 @@ export const STUDIO_TOOLS: StudioTool[] = [
     gradientTo: '#3b82f6',
     previewImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800&ar=16:9&crop=entropy',
   },
-  {
+  /* {
     id: 'virtual-model',
     label: 'Modelo Virtual',
     description: 'Vista roupas num modelo virtual profissional',
@@ -369,7 +369,7 @@ export const STUDIO_TOOLS: StudioTool[] = [
     gradientFrom: '#ec4899',
     gradientTo: '#8b5cf6',
     previewImage: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800&ar=16:9&crop=entropy',
-  },
+  }, */
   {
     id: 'product-staging',
     label: 'Cenário de Produto',
@@ -383,10 +383,10 @@ export const STUDIO_TOOLS: StudioTool[] = [
     gradientTo: '#059669',
     previewImage: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=800&ar=16:9&crop=entropy',
   },
-  {
+  /* {
     id: 'edit-with-ai',
     label: 'Editar com IA',
-    description: 'Edite qualquer imagem com instruções em texto',
+    description: 'Edite qualquer imagem com instructions em texto',
     category: 'create_image',
     emoji: '🖊️',
     requiresInputImage: true,
@@ -478,10 +478,10 @@ export const STUDIO_TOOLS: StudioTool[] = [
     gradientFrom: '#ca8a04',
     gradientTo: '#b45309',
     previewImage: '/inspiration/product_packaging_preview_landscape.png',
-  },
+  }, */
 
   // ── Ferramentas de Edição ───────────────────────────────────────────────
-  {
+  /* {
     id: 'ai-backgrounds',
     label: 'Fundos com IA',
     description: 'Substitua fundos de imagens por cenários IA',
@@ -569,7 +569,7 @@ export const STUDIO_TOOLS: StudioTool[] = [
     gradientFrom: '#db2777',
     gradientTo: '#be185d',
     previewImage: 'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&q=80&w=800&ar=16:9&crop=entropy',
-  },
+  }, */
 ];
 
 export const INSPIRATION_FLYERS: InspirationFlyer[] = [

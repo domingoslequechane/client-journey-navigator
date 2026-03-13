@@ -101,7 +101,7 @@ export default function StudioTool() {
     };
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-background">
+        <div className="flex h-full overflow-hidden bg-background">
             <div className="hidden md:block">
                 <StudioQuickMenu currentToolId={tool.id} />
             </div>

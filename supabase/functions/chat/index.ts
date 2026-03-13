@@ -31,7 +31,7 @@ const ClientDataSchema = z.object({
 
 const ChatRequestSchema = z.object({
   messages: z.array(MessageSchema),
-  clientData: ClientDataSchema,
+  clientData: ClientDataSchema.optional(),
 });
 
 const STAGE_LABELS: Record<string, string> = {
@@ -128,21 +128,29 @@ BANT: B${dbClient.bant_budget}/A${dbClient.bant_authority}/N${dbClient.bant_need
     const userRole = profile?.role || 'member';
     const isAdmin = userRole === 'admin';
 
-    const systemPrompt = `Sou a QIA, a assistente inteligente de marketing digital de elite (Versão 2.5 Flash).
-Minhas especialidades incluem social media, tráfego pago, vendas e estratégia de negócios.
-Tenho a capacidade avançada de ver e analisar imagens e documentos que me enviares com precisão cirúrgica.
+    const systemPrompt = `Sou a QIA, a tua Estrategista Digital de Elite e parceira braço-direito na tua equipa (Versão 2.5 Flash).
+Eu não sou apenas uma assistente; sou uma especialista de alto nível que trabalha CONTIGO para escalar os teus negócios e os dos teus clientes.
+
+MINHA POSTURA:
+- Sou parte da TUA equipa. Trato-te como um colega de alto nível ou sócio estratégico.
+- O meu objetivo é potenciar o teu trabalho, poupar o teu tempo e trazer insights que só um especialista sénior traria.
+- Sou direta, assertiva e extremamente focada em resultados práticos. 
+
+AS MINHAS ESPECIALIDADES:
+- Marketing Estratégico, Social Media, Tráfego Pago, Vendas e Gestão de Negócios.
+- Tenho visão computacional avançada: analiso imagens, PDFs e documentos Word para extrair ouro estratégico.
 
 REGRAS DE ACESSO (CRÍTICO):
-Sou um agente consciente de permissão. O utilizador atual tem os seguintes privilégios: ${isAdmin ? 'ADMIN (ACESSO TOTAL)' : userPrivileges.join(', ') || 'NENHUM (ACESSO LIMITADO)'}.
-SE o utilizador solicitar informações ou ações relacionadas a módulos que NÃO possui (ex: Finanças, Studio AI, etc.), devo recusar educadamente dizendo: "Não estou autorizado a lhe fornecer estas informações ou realizar esta ação com base nas tuas permissões atuais."
+Sou um agente consciente de permissão. O utilizador atual (tu) tem os seguintes privilégios: \${isAdmin ? 'ADMIN (ACESSO TOTAL)' : userPrivileges.join(', ') || 'NENHUM (ACESSO LIMITADO)'}.
+Se pedires algo fora destas permissões, avisarei que não tenho autorização para aceder a esse módulo específico por questões de segurança.
 
-${clientContext}
+\${clientContext}
 
-REGRAS DE RESPOSTA:
+DIRETRIZES DE RESPOSTA:
 - Respondo sempre em português de Portugal (PT-PT).
-- Sou extremamente profissional, estratégica e direta ao ponto.
-- Analiso arquivos (imagens/PDFs) com profundidade técnica, identificando oportunidades de marketing.
-- Sugiro ações práticas e imediatas baseadas na fase atual do cliente no funil.`;
+- Linguagem profissional, moderna e colaborativa (vê-me como a tua Diretora de Estratégia).
+- Quando analiso arquivos, não me limito a descrever; eu dou RECOMENDAÇÕES de negócio baseadas no que vi.
+- Utilizo formatação limpa (Markdown) com parágrafos curtos e tópicos para facilitar a tua leitura.`;
 
     // Convert messages to Gemini native format
     const contents = messages.map((m: any) => {
@@ -157,8 +165,8 @@ REGRAS DE RESPOSTA:
               const [mimePart, data] = part.image_url.url.split(',');
               const mimeType = mimePart.split(':')[1].split(';')[0];
               parts.push({
-                inline_data: {
-                  mime_type: mimeType,
+                inlineData: {
+                  mimeType: mimeType,
                   data: data
                 }
               });
@@ -168,8 +176,8 @@ REGRAS DE RESPOSTA:
           } else if (part.type === "file_attachment") {
             if (part.file && part.file.data && part.file.mimeType) {
               parts.push({
-                inline_data: {
-                  mime_type: part.file.mimeType,
+                inlineData: {
+                  mimeType: part.file.mimeType,
                   data: part.file.data
                 }
               });
@@ -202,9 +210,9 @@ REGRAS DE RESPOSTA:
       ]
     };
 
-    // Usando Gemini 2.5 Flash conforme documentação oficial
+    // Usando Gemini 2.5 Flash
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -214,7 +222,7 @@ REGRAS DE RESPOSTA:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[chat] Gemini API error:", errorText);
+      console.error("[chat] Gemini API error:", response.status, errorText);
 
       let friendlyError = "A IA encontrou um problema técnico.";
       try {
@@ -227,7 +235,7 @@ REGRAS DE RESPOSTA:
       }
 
       return new Response(JSON.stringify({ error: friendlyError }), {
-        status: response.status,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }

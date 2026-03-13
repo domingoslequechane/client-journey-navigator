@@ -36,11 +36,11 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
 
     const getCardSize = (size: string) => {
         switch (size) {
-            case '1080x1080': return "w-[320px] h-[320px] md:w-[580px] md:h-[580px]";
-            case '1080x1920': return "w-[240px] h-[426px] md:w-[380px] md:h-[675px]";
-            case '1920x1080': return "w-[340px] h-[191px] md:w-[680px] md:h-[382px]";
-            case '1080x1350': return "w-[280px] h-[350px] md:w-[480px] md:h-[600px]";
-            default: return "w-[320px] h-[450px] md:w-[450px] md:h-[600px]";
+            case '1080x1080': return "w-[280px] h-[280px] md:w-[520px] md:h-[520px]";
+            case '1080x1920': return "w-[200px] h-[355px] md:w-[320px] md:h-[570px]";
+            case '1920x1080': return "w-[300px] h-[168px] md:w-[620px] md:h-[348px]";
+            case '1080x1350': return "w-[240px] h-[300px] md:w-[420px] md:h-[520px]";
+            default: return "w-[280px] h-[380px] md:w-[400px] md:h-[550px]";
         }
     };
 
@@ -170,9 +170,21 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
         setIsGenerating(true);
         try {
             const base64 = await fileToBase64(selectedImage);
-            const finalPrompt = customPrompt.trim()
-                ? `${customPrompt}. Professional studio product background, high-end commercial photography, soft studio lighting, clean minimalist environment, 8k resolution, highly detailed`
-                : "Professional studio product background, high-end commercial photography, soft studio lighting, clean minimalist environment, 8k resolution, highly detailed";
+            
+            const aspectRatioMap: Record<string, string> = {
+                "1080x1080": "1:1",
+                "1080x1920": "9:16",
+                "1920x1080": "16:9",
+                "1080x1350": "4:5",
+                "1280x720": "16:9"
+            };
+            const ratio = aspectRatioMap[selectedSize] || "1:1";
+            
+            const userPrompt = customPrompt.trim()
+                ? `${customPrompt.trim()} gerado no tamanho exato (${ratio})`
+                : `Gerar cena no tamanho exato (${ratio})`;
+                
+            const finalPrompt = `${userPrompt}. Professional studio product background, high-end commercial photography, soft studio lighting, clean minimalist environment, 8k resolution, highly detailed`;
 
             const result = await generateImage.mutateAsync({
                 toolId: tool.id,
@@ -235,18 +247,18 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
     const showResult = images.length > 0 || isGenerating;
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] bg-white relative overflow-hidden">
+        <div className="flex h-full bg-background relative overflow-hidden">
             <StudioQuickMenu currentToolId={tool.id} />
             <div className="flex-1 flex flex-col relative overflow-hidden">
                 {/* Top Bar for Navigation */}
-                <div className="flex-none p-6 pb-0 flex items-start gap-6 z-20">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/app/studio')} className="shrink-0 rounded-full bg-white shadow-sm hover:bg-muted border h-10 w-10">
+                <div className="flex-none p-4 pb-0 flex items-start gap-6 z-20">
+                    <Button variant="ghost" size="icon" onClick={() => navigate('/app/studio')} className="shrink-0 rounded-full bg-background dark:bg-card shadow-sm hover:bg-muted border h-10 w-10 text-foreground">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+                <div className="flex-1 flex flex-col items-center justify-center p-6 pb-32 relative overflow-y-auto">
                     <div className="max-w-xl w-full flex flex-col items-center gap-6">
 
                         {showResult ? (
@@ -256,15 +268,15 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-full h-12 w-12 z-[60]"
+                                    className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground hover:bg-muted/50 rounded-full h-10 w-10 md:h-12 md:w-12 z-[60]"
                                     onClick={handlePrev}
                                     disabled={activeIndex <= 0}
                                 >
-                                    <ChevronLeft className="h-8 w-8" />
+                                    <ChevronLeft className="h-6 w-6 md:h-8 md:w-8" />
                                 </Button>
 
                                 {/* Images Container (3D Slider) */}
-                                <div className="relative w-full max-w-7xl h-[450px] md:h-[700px] flex items-center justify-center perspective-[1200px] mt-4">
+                                <div className="relative w-full max-w-7xl h-[340px] md:h-[550px] flex items-center justify-center perspective-[1200px] mt-2 group">
 
                                     {/* GENERATING CARD */}
                                     {isGenerating && (() => {
@@ -284,11 +296,11 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                             scale = 1 - (absOffset * 0.12);
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3;
-                                            const isMobile = window.innerWidth < 768;
+                                            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
                                             const baseTranslate = isMobile
-                                                ? (selectedSize === '1920x1080' ? 240 : (selectedSize === '1080x1080' ? 200 : 160))
+                                                ? (selectedSize === '1920x1080' ? 200 : (selectedSize === '1080x1080' ? 140 : 100))
                                                 : (selectedSize === '1920x1080' ? 420 : (selectedSize === '1080x1080' ? 360 : 260));
-                                            const stepTranslate = isMobile ? 40 : 85;
+                                            const stepTranslate = isMobile ? 30 : 85;
                                             translateX = direction * (baseTranslate + absOffset * stepTranslate);
                                         }
 
@@ -297,9 +309,9 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                                 key="generating-card"
                                                 onClick={() => { if (offset !== 0) setActiveIndex(logicalIndex); }}
                                                 className={cn(
-                                                    "absolute top-0 bottom-0 my-auto transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-[#F4F4F5] flex flex-col items-center justify-center",
+                                                    "absolute top-0 bottom-0 my-auto transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col items-center justify-center",
                                                     getCardSize(selectedSize),
-                                                    offset === 0 ? "shadow-[0_0px_50px_rgba(0,0,0,0.15)] ring-1 ring-black/5 cursor-default" : "shadow-xl cursor-pointer"
+                                                    offset === 0 ? "shadow-[0_0px_50px_rgba(0,0,0,0.25)] ring-1 ring-primary/20 cursor-default" : "shadow-xl cursor-pointer"
                                                 )}
                                                 style={{
                                                     transform: `translateX(${translateX}px) scale(${scale})`,
@@ -324,11 +336,11 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                                     <div className="absolute flex flex-col items-center gap-4">
                                                         <div className="relative">
                                                             <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
-                                                            <div className="relative bg-white p-4 rounded-full shadow-xl">
+                                                            <div className="relative bg-background border p-4 rounded-full shadow-xl">
                                                                 <Loader2 className="h-8 w-8 text-primary animate-spin" />
                                                             </div>
                                                         </div>
-                                                        <span className="font-medium text-primary bg-white/90 px-4 py-1.5 rounded-full shadow-sm text-sm">
+                                                        <span className="font-medium text-primary bg-background/80 border px-4 py-1.5 rounded-full shadow-sm text-sm backdrop-blur-sm">
                                                             A embelezar produto...
                                                         </span>
                                                     </div>
@@ -354,11 +366,11 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                             scale = 1 - (absOffset * 0.12); // 0.88, 0.76, 0.64
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3; // Fade side images
-                                            const isMobile = window.innerWidth < 768;
+                                            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
                                             const baseTranslate = isMobile
-                                                ? (selectedSize === '1920x1080' ? 240 : (selectedSize === '1080x1080' ? 200 : 160))
+                                                ? (selectedSize === '1920x1080' ? 200 : (selectedSize === '1080x1080' ? 140 : 100))
                                                 : (selectedSize === '1920x1080' ? 420 : (selectedSize === '1080x1080' ? 360 : 260));
-                                            const stepTranslate = isMobile ? 40 : 85;
+                                            const stepTranslate = isMobile ? 30 : 85;
                                             translateX = direction * (baseTranslate + absOffset * stepTranslate);
                                         }
 
@@ -370,9 +382,9 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                                     else setMaximizedImage(img);
                                                 }}
                                                 className={cn(
-                                                    "absolute top-0 bottom-0 my-auto transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-[#F4F4F5] flex flex-col",
-                                                    getCardSize(selectedSize),
-                                                    offset === 0 ? "shadow-[0_0px_50px_rgba(0,0,0,0.15)] ring-1 ring-black/5 cursor-zoom-in" : "shadow-xl cursor-pointer"
+                                                    "absolute top-0 bottom-0 my-auto transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col",
+                                                    getCardSize(img.size || selectedSize),
+                                                    offset === 0 ? "shadow-[0_0px_60px_rgba(0,0,0,0.3)] ring-1 ring-primary/20 cursor-zoom-in" : "shadow-xl cursor-pointer"
                                                 )}
                                                 style={{
                                                     transform: `translateX(${translateX}px) scale(${scale})`,
@@ -383,7 +395,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                                 }}
                                             >
                                                 {offset !== 0 && (
-                                                    <div className="absolute inset-0 bg-[#F4F4F5] pointer-events-none z-10" style={{ opacity: overlayOpacity }} />
+                                                    <div className="absolute inset-0 bg-background/60 pointer-events-none z-10 backdrop-blur-[2px]" style={{ opacity: overlayOpacity }} />
                                                 )}
                                                 <img src={img.image_url} alt="Result" className="w-full h-full object-contain" />
 
@@ -393,7 +405,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                                         <Button size="sm" onClick={(e) => { e.stopPropagation(); handleBeautifyGenerated(img); }} className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-lg text-sm flex-1 font-medium transform transition-transform hover:scale-105">
                                                             <Upload className="h-4 w-4 mr-2" /> Embelezar
                                                         </Button>
-                                                        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(img) }} className="h-10 px-3 rounded-xl shadow-lg border-0 bg-white/90 hover:bg-white text-slate-800 transform transition-transform hover:scale-105">
+                                                        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(img) }} className="h-10 px-3 rounded-xl shadow-lg border-0 bg-background/90 dark:bg-card/90 hover:bg-background dark:hover:bg-card text-foreground transform transition-transform hover:scale-105">
                                                             <Download className="h-4 w-4" />
                                                         </Button>
                                                         <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(img) }} className="h-10 w-10 rounded-xl shadow-lg shrink-0 transform transition-transform hover:scale-105">
@@ -410,15 +422,15 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-full h-12 w-12 z-[60]"
+                                    className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground hover:bg-muted/50 rounded-full h-10 w-10 md:h-12 md:w-12 z-[60]"
                                     onClick={handleNext}
                                     disabled={activeIndex >= logicalImagesCount - 1}
                                 >
-                                    <ChevronRight className="h-8 w-8" />
+                                    <ChevronRight className="h-6 w-6 md:h-8 md:w-8" />
                                 </Button>
 
-                                <div className="mt-8 z-[60]">
-                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-white shadow-sm border-slate-200 text-slate-600 hover:text-primary transition-colors">
+                                <div className="mt-4 z-[60]">
+                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-background shadow-sm border-slate-200 text-slate-600 hover:text-primary transition-colors">
                                         Embeleze outra imagem
                                     </Button>
                                 </div>
@@ -426,11 +438,11 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                         ) : (
                             <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
                                 <div className="relative flex items-center justify-center">
-                                    <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-100 rotate-[-8deg] translate-x-12 z-10 w-[200px] aspect-square flex items-center justify-center overflow-hidden">
+                                    <div className="bg-background dark:bg-card p-6 rounded-2xl shadow-xl border border-border rotate-[-8deg] translate-x-12 z-10 w-[200px] aspect-square flex items-center justify-center overflow-hidden">
                                         <img src="/inspiration/beautify_placeholder_before.png" alt="Before" className="w-full h-full object-contain opacity-40" onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724%27 height=%2724%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27%3E%3Crect width=%2718%27 height=%2718%27 x=%273%27 y=%273%27 rx=%272%27/%3E%3C/svg%3E'; }} />
                                     </div>
-                                    <ArrowRight className="h-8 w-8 text-slate-300 z-20 mx-4" />
-                                    <div className="bg-white p-6 rounded-2xl shadow-2xl border border-slate-100 rotate-[8deg] -translate-x-12 z-10 w-[200px] aspect-square flex items-center justify-center overflow-hidden">
+                                    <ArrowRight className="h-8 w-8 text-primary/40 z-20 mx-4" />
+                                    <div className="bg-background dark:bg-card p-6 rounded-2xl shadow-2xl border border-border rotate-[8deg] -translate-x-12 z-10 w-[200px] aspect-square flex items-center justify-center overflow-hidden">
                                         <img src="/inspiration/beautify_placeholder_after.png" alt="After" className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724%27 height=%2724%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27%3E%3Crect width=%2718%27 height=%2718%27 x=%273%27 y=%273%27 rx=%272%27/%3E%3C/svg%3E'; }} />
                                     </div>
                                 </div>
@@ -443,27 +455,27 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                 </div>
 
                 {/* Unified Bottom Control Panel - Recolor Style Match */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg z-20 px-4">
-                    <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 p-2 overflow-hidden flex flex-col gap-2 transition-all duration-300 hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)]">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-full max-w-lg z-20 px-4">
+                    <div className="bg-background dark:bg-card rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] border border-border p-1.5 overflow-hidden flex flex-col gap-1 transition-all duration-300 hover:shadow-[0_8px_40px_rgba(0,0,0,0.25)]">
 
                         {/* Top Area: Large Upload Zone (Reference Image Style) */}
                         <div
                             {...getRootProps()}
                             className={cn(
-                                "group cursor-pointer border border-dashed rounded-xl p-4 flex flex-col items-center justify-center transition-all min-h-[100px]",
-                                isDragActive ? "border-primary bg-primary/5" : "border-slate-200 hover:border-primary/50 hover:bg-slate-50",
-                                previewUrl && !isDragActive ? "bg-slate-50/50" : ""
+                                "group cursor-pointer border border-dashed rounded-xl p-2 flex flex-col items-center justify-center transition-all min-h-[60px] md:min-h-[70px]",
+                                isDragActive ? "border-primary bg-primary/5" : "border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-muted",
+                                previewUrl && !isDragActive ? "bg-muted/50" : ""
                             )}
                         >
                             <input {...getInputProps()} />
                             {previewUrl ? (
                                 <div className="flex items-center gap-4 w-full px-2">
-                                    <div className="w-16 h-16 rounded-lg overflow-hidden border bg-white shadow-sm shrink-0">
+                                    <div className="w-16 h-16 rounded-lg overflow-hidden border bg-background dark:bg-card shadow-sm shrink-0">
                                         <img src={previewUrl} alt="preview" className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-slate-700 truncate">Imagem Base</p>
-                                        <p className="text-xs text-slate-400">Clique para alterar</p>
+                                        <p className="text-sm font-bold text-foreground truncate">Imagem Base</p>
+                                        <p className="text-xs text-muted-foreground">Clique para alterar</p>
                                     </div>
                                 </div>
                             ) : (
@@ -475,13 +487,13 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                         </div>
 
                         {/* Bottom Area: Prompt, Sizes & Action */}
-                        <div className="flex items-center gap-2 px-3 py-2 bg-slate-50/50 rounded-xl border border-slate-100/50">
+                        <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-xl border border-border/50">
                             {/* Prompt Input */}
                             <div className="flex-1 flex items-center min-w-0">
                                 <input
                                     type="text"
                                     placeholder="Adicionar detalhes..."
-                                    className="w-full bg-transparent border-none py-1 text-xs sm:text-sm focus:ring-0 outline-none placeholder:text-slate-400 font-medium"
+                                    className="w-full bg-transparent border-none py-1 text-xs sm:text-sm focus:ring-0 outline-none placeholder:text-muted-foreground font-medium text-foreground"
                                     value={customPrompt}
                                     onChange={(e) => setCustomPrompt(e.target.value)}
                                 />
@@ -506,7 +518,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                             "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg transition-all border shrink-0",
                                             selectedSize === s.id
                                                 ? "bg-[#FFB084] border-[#FFB084] shadow-sm scale-110"
-                                                : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600"
+                                                : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
                                         )}
                                     >
                                         <div className={cn(
@@ -595,8 +607,8 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                             <Button size="lg" onClick={(e) => { e.stopPropagation(); setMaximizedImage(null); handleBeautifyGenerated(maximizedImage); }} className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-xl font-medium transform transition-transform hover:scale-105">
                                 <Upload className="h-5 w-5 mr-2" /> Embelezar
                             </Button>
-                            <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(maximizedImage) }} className="h-12 px-6 rounded-xl shadow-xl border-0 bg-white/95 hover:bg-white text-slate-900 transform transition-transform hover:scale-105 font-medium">
-                                <Download className="h-5 w-5 mr-2" /> Transferir
+                            <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(maximizedImage) }} className="h-12 px-6 rounded-xl shadow-xl border border-border bg-background/95 dark:bg-card/95 hover:bg-background dark:hover:bg-card text-foreground transform transition-transform hover:scale-105 font-medium">
+                                <Download className="h-5 w-5 mr-4" /> Transferir
                             </Button>
                             <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(maximizedImage); setMaximizedImage(null); }} className="h-12 w-12 rounded-xl shadow-xl shrink-0 transform transition-transform hover:scale-105">
                                 <Trash2 className="h-5 w-5" />

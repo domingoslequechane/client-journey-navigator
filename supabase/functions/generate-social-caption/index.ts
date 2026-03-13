@@ -16,7 +16,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
@@ -29,7 +29,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
@@ -42,7 +42,7 @@ serve(async (req) => {
     const userOrgId = profile?.current_organization_id || profile?.organization_id;
     if (!userOrgId) {
       return new Response(JSON.stringify({ error: "No organization found" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
@@ -80,119 +80,131 @@ serve(async (req) => {
     }
 
     const toneMap: Record<string, string> = {
-      direto: "Direto e objetivo, sem rodeios",
-      casual: "Casual e descontraído, linguagem informal",
-      persuasivo: "Persuasivo e convincente, com call-to-action forte",
-      alegre: "Alegre e animado, com energia positiva",
-      amigavel: "Amigável e acolhedor, próximo do público",
+      direto: "Profissional, direto ao ponto e focado em benefícios",
+      casual: "Moderno, leve e conectivo, mas sem perder a autoridade",
+      persuasivo: "Focado em conversão, usando gatilhos mentais e urgência",
+      alegre: "Enthusiástico, vibrante e inspirador",
+      amigavel: "Acolhedor, focado em comunidade e relacionamento",
     };
 
     const lengthMap: Record<string, string> = {
-      curta: "CURTA: Máximo 150 caracteres. Seja extremamente conciso.",
-      media: "MÉDIA: Entre 150-400 caracteres. Desenvolva a ideia de forma moderada.",
-      longa: "LONGA: Entre 400-800 caracteres. Desenvolva bem o assunto com detalhes.",
+      curta: "AIDA ULTRA-CONCISO: OBRIGATÓRIO máximo 150 caracteres TOTAIS. Se passar de 150, você falhou. Estrutura: Gancho + Benefício + CTA + 2 hashtags.",
+      media: "AIDA Estruturado: Entre 150-400 caracteres.",
+      longa: "Storytelling/Educativo: 400-800 caracteres.",
     };
 
     const toneDesc = toneMap[tone] || toneMap.direto;
     const lengthDesc = lengthMap[length] || lengthMap.media;
-    const hasMedia = (media_data?.length > 0) || (media_urls?.length > 0);
 
-    const prompt = `Você é o proprietário da marca "${clientData?.company_name || orgName}".
-${hasMedia ? 'Analise a mídia fornecida e crie uma legenda baseada no que vê.' : 'Crie uma legenda comercial para a marca.'}
-
-${clientContext}
-
-OBJETIVO DA POSTAGEM: ${objective || "venda"}
-TONALIDADE: ${toneDesc}
-TAMANHO: ${lengthDesc}
-CONTEXTO ADICIONAL: ${topic || "Nenhum detalhe adicional"}
-
-REGRAS:
-1. Escreva APENAS o conteúdo da legenda.
-2. Use EMOJIS relevantes para tornar a leitura mais dinâmica, amigável e menos cansativa, adaptando ao objetivo e tom de voz.
-3. Formate o texto com quebras de linha e parágrafos para facilitar a leitura.
-4. PROIBIDO: Usar TÍTULOS, Headlines, ou rótulos como "Legenda:", "Opção 1:".
-5. Proibido palavras como "marketing", "algoritmo", "engajamento", "redes sociais".
-6. Escreva de forma orgânica e humana.
-7. Inclua uma linha em branco antes das hashtags.
-8. Coloque no máximo 5 hashtags relevantes de forma organizada.`;
-
-    // Build message - pass images as direct URLs or base64
-    const userContent: any[] = [{ type: "text", text: prompt }];
-    let imageAdded = false;
+    // --- BUILD MULTIMODAL CONTENT ---
+    const userContent: any[] = [];
     let imageCount = 0;
 
-    // Priority 1: base64 from freshly uploaded local files
+    // Helper functions
+    const getBase64FromDataUrl = (dataUrl: string) => {
+      const parts = dataUrl.split(',');
+      return parts.length > 1 ? parts[1] : parts[0];
+    };
+
+    const getMimeTypeFromDataUrl = (dataUrl: string) => {
+      const match = dataUrl.match(/^data:([^;]+);/);
+      return match ? match[1] : 'image/jpeg';
+    };
+
+    // 1. IMAGES FIRST (Critical for Gemini Vision)
     if (media_data && Array.isArray(media_data)) {
       for (const data of media_data) {
         if (typeof data === 'string' && data.startsWith('data:image')) {
-          userContent.push({ type: "image_url", image_url: { url: data, detail: "low" } });
-          imageAdded = true;
+          userContent.push({
+            inlineData: {
+              mimeType: getMimeTypeFromDataUrl(data),
+              data: getBase64FromDataUrl(data)
+            }
+          });
           imageCount++;
         }
       }
     }
 
-    // Priority 2: direct remote URLs
     if (media_urls && Array.isArray(media_urls)) {
       const imageUrls = (media_urls as string[]).filter(
         (url: string) => !(/\.(mp4|mov|avi|webm|m4v)$/i.test(url) || url.includes('video'))
       );
       for (const imageUrl of imageUrls) {
-        userContent.push({ type: "image_url", image_url: { url: imageUrl, detail: "low" } });
-        imageAdded = true;
-        imageCount++;
+        try {
+          const resp = await fetch(imageUrl);
+          if (resp.ok) {
+            const blob = await resp.blob();
+            const buffer = await blob.arrayBuffer();
+            const base64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+            userContent.push({
+              inlineData: {
+                mimeType: blob.type || 'image/jpeg',
+                data: base64
+              }
+            });
+            imageCount++;
+          }
+        } catch (e) {
+          console.error(`Failed to fetch image from URL: ${imageUrl}`, e);
+        }
       }
     }
 
-    if (imageCount > 1) {
-      userContent.push({
-        type: "text",
-        text: `\nOBSERVAÇÃO IMPORTANTE: Este post contém ${imageCount} imagens (Carrossel). Analise-as como um conjunto e use termos no PLURAL quando se referir ao conteúdo visual (ex: "estas fotos", "estas dicas"). Crie uma legenda que conecte todos os slides de forma estratégica.`
-      });
-    } else if (imageCount === 1) {
-      userContent.push({
-        type: "text",
-        text: `\nOBSERVAÇÃO: Este post possui apenas 1 imagem. Use termos no SINGULAR (ex: "esta foto", "esta dica") e foque no detalhe desta única mídia.`
-      });
-    }
+    // 2. TEXT INSTRUCTIONS AFTER IMAGES
+    const instructions = `Você é um Redator Publicitário Humano e Criativo, agindo em nome da marca "${clientData?.company_name || orgName}".
+Sua tarefa é criar uma legenda que soe natural, autêntica e altamente profissional, baseada no que você vê nas imagens acima.
 
-    console.log(`[generate-social-caption] Call: images=${imageCount}, calling GPT-4o`);
+${clientContext}
 
-    const messages = [
-      {
-        role: "system",
-        content: `Você é um redator comercial experiente e estrategista de redes sociais para a marca "${orgName}". 
-        Sua missão é criar legendas que convertem e engajam. Sempre gere uma legenda baseada na imagem e no contexto.
-        Adapte sua linguagem (singular/plural) ao número de imagens detectadas.`
-      },
-      { role: "user", content: userContent }
-    ];
+OBJETIVO: ${objective || "envolvimento e venda"}
+ESTRUTURA: AIDA (Atenção, Interesse, Desejo, Ação)
+TONALIDADE: ${toneDesc}
+TAMANHO DO TEXTO: ${lengthDesc}
+CONTEXTO EXTRA: ${topic || "Nenhum"}
+
+DIRETRIZES DE FORMATAÇÃO E HUMANIZAÇÃO:
+1. TEXTO RESPIRÁVEL (MUITO IMPORTANTE): Evite blocos de texto compactos. Use quebras de linha frequentes. Sempre que terminar uma frase forte ou usar pontuações como "!", "..." ou ",", avalie pular para a linha de baixo para dar ritmo à leitura.
+2. GANCHO DE IMPACTO: A primeira linha deve ser curta e poderosa.
+3. EMOJIS E ÍCONES: Use emojis para tornar a leitura menos cansativa. Use ícones (ex: ✅, 📍, 🚀, 💎) para listar benefícios ou destacar pontos importantes. O texto deve ser visualmente convidativo.
+4. FUJA DO CLICHÊ DE IA: Comece direto no assunto com uma frase real e humana.
+5. CONTEXTO VISUAL: Mencione detalhes reais que aparecem na imagem para provar que você está realmente "vendo" o conteúdo.
+6. CTA NATURAL: Use chamadas amigáveis como "Fala com a gente no Direct" ou "Confira os detalhes no link da bio".
+7. HASHTAGS: Coloque-as agrupadas ao final, após algumas quebras de linha.
+
+IMPORTANTE: O texto deve ser uma peça de comunicação pronta para postar, com uma estética limpa, moderna e fácil de ler no scroll rápido.`;
+
+    userContent.push({ text: instructions });
 
     const startTimeAI = Date.now();
-    // Using Google's OpenAI-compatible endpoint for direct access with a Gemini API Key
-    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`, {
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${GEMINI_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gemini-1.5-flash",
-        messages,
-        temperature: 0.8,
-        max_tokens: 1000,
+        contents: [{ role: 'user', parts: userContent }],
+        system_instruction: {
+          parts: [{
+            text: `Você é um Copywriter Humano de Elite. Seu estilo de escrita é orgânico, magnético e foge totalmente de padrões robóticos de IA. Você prioriza a clareza, a emoção e a conexão real com o público. Nunca deixe textos incompletos.`
+          }]
+        },
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 4096,
+        },
       }),
     });
 
-    const aiText = await aiResponse.text();
+    const aiData = await aiResponse.json();
     const durationAI = Date.now() - startTimeAI;
     console.log(`[generate-social-caption] AI response received in ${durationAI}ms. Status: ${aiResponse.status}`);
 
     if (!aiResponse.ok) {
-      console.error("[generate-social-caption] AI gateway error:", aiText.substring(0, 1000));
+      const aiText = JSON.stringify(aiData);
+      console.error("[generate-social-caption] AI error:", aiText.substring(0, 1000));
       return new Response(JSON.stringify({
-        error: "A IA encontrou um problema temporário.",
+        error: "A IA encontrou um problema técnico ao gerar a legenda.",
         details: aiText.substring(0, 200),
         status: aiResponse.status
       }), {
@@ -200,20 +212,10 @@ REGRAS:
       });
     }
 
-    let aiData: any = {};
-    try {
-      aiData = JSON.parse(aiText);
-    } catch (e) {
-      console.error("[generate-social-caption] Failed to parse AI response:", e);
-      return new Response(JSON.stringify({ error: "Resposta inválida da IA. Tente novamente." }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    const caption = aiData.choices?.[0]?.message?.content || "";
+    const caption = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
     if (!caption) {
       console.error("[generate-social-caption] Empty content in AI response");
-      return new Response(JSON.stringify({ error: "A IA não conseguiu gerar o conteúdo. Tente mudar o tópico ou a imagem." }), {
+      return new Response(JSON.stringify({ error: "A IA não conseguiu gerar o conteúdo. Verifique se a imagem é válida." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }

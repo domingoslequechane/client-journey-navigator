@@ -10,10 +10,12 @@ const corsHeaders = {
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 const AI_MODELS = {
-  "gemini-flash": "gemini-3.1-flash-image-preview", // Nano Banana 2
-  "gemini-pro": "gemini-3-pro-image-preview",       // Nano Banana Pro
-  "gemini-flash-text": "gemini-3.1-flash-preview",   // Elite Reasoning v3
-  "gemini-pro-text": "gemini-3-pro-preview",        // Advanced Reasoning v3
+  // Image generation — only gemini-2.5-flash supports responseModalities: ["IMAGE"]
+  "gemini-flash": "gemini-2.5-flash",
+  "gemini-pro":   "gemini-2.5-flash",
+  // Text / analysis models
+  "gemini-flash-text": "gemini-2.5-flash",
+  "gemini-pro-text":   "gemini-2.5-flash",
 } as const;
 
 const SIZE_CONFIG: Record<string, { aspectRatio: string; orientation: string; width: number; height: number }> = {
@@ -268,6 +270,16 @@ ${clientName ? `Brand: ${clientName}\n` : ''}${niche && NICHE_STYLE[niche] ? `In
   }
 
   p += '\n\nEnsure no AI artifacts, no spelling mistakes. The final image must look like a real, published high-end commercial photo.';
+  
+  p += `
+
+=========================================
+EXTREME MANDATORY CONSTRAINT:
+YOU MUST OUTPUT THIS POSTER/FLYER ENTIRELY IN EXACTLY THE **${sizeConfig.aspectRatio}** ASPECT RATIO (${sizeConfig.orientation}).
+IF REFERENCE IMAGES ARE IN A DIFFERENT PROPORTION, IGNORE THEIR PROPORTION AND ONLY KEEP THEIR STYLE OR CONTENT. 
+IF YOU RETURN A SQUARE IMAGE WHEN 16:9 OR 9:16 IS REQUESTED, THE SYSTEM WILL REJECT IT.
+CROP, OUTPAINT, OR COMPOSE THE CANVAS EXACTLY TO **${sizeConfig.aspectRatio}**.
+=========================================`;
 
   return p;
 }
@@ -753,12 +765,11 @@ IMPORTANT: Respond ONLY with the JSON object. The product_description field is M
     const modelForAnalysis = config.model === "gemini-pro" ? AI_MODELS["gemini-pro-text"] : AI_MODELS["gemini-flash-text"];
 
     const response = await fetch(
-      `${GEMINI_API_BASE}/models/${modelForAnalysis}:generateContent`,
+      `${GEMINI_API_BASE}/models/${modelForAnalysis}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
           contents: [{ role: "user", parts }],
@@ -801,12 +812,11 @@ IMPORTANT: Respond ONLY with the JSON object. The product_description field is M
       Respond ONLY with the suggested text.`;
 
       const copyResponse = await fetch(
-        `${GEMINI_API_BASE}/models/${modelForAnalysis}:generateContent`,
+        `${GEMINI_API_BASE}/models/${modelForAnalysis}:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-goog-api-key": apiKey,
           },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: copyPrompt }, ...imageParts] }],
@@ -942,12 +952,11 @@ Respond ONLY with the JSON object.`;
 
   try {
     const response = await fetch(
-      `${GEMINI_API_BASE}/models/${AI_MODELS["gemini-flash-text"]}:generateContent`,
+      `${GEMINI_API_BASE}/models/${AI_MODELS["gemini-flash-text"]}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
           contents: [{ role: "user", parts }],
@@ -1001,6 +1010,7 @@ async function refineFlyer(
     secondaryColor?: string;
     hasLogos: boolean;
     mode: string;
+    aspectRatio?: string;
   }
 ): Promise<{ imageData: string; mimeType: string } | null> {
   console.log("=== LAYER 4: RETOUCHER — Refining flyer ===");
@@ -1053,18 +1063,20 @@ Output: The refined, high-fidelity flyer image. Same dimensions.`;
 
   try {
     const response = await fetch(
-      `${GEMINI_API_BASE}/models/${AI_MODELS["gemini-pro"]}:generateContent`,
+      `${GEMINI_API_BASE}/models/${AI_MODELS["gemini-pro"]}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
           contents: [{ role: "user", parts }],
           generationConfig: {
             responseModalities: ["TEXT", "IMAGE"],
             maxOutputTokens: 8192,
+            imageGenerationConfig: {
+              aspectRatio: config.aspectRatio || "1:1"
+            }
           },
           safetySettings: SAFETY_SETTINGS,
         }),
@@ -1110,7 +1122,8 @@ async function callGeminiWithRetry(
   parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>,
   apiKey: string,
   maxRetries: number = 3,
-  isProductMode: boolean = false
+  isProductMode: boolean = false,
+  aspectRatio: string = "1:1"
 ): Promise<{ imageData: string; mimeType: string } | { error: string; status: number; response?: unknown }> {
 
   const textParts = parts.filter(p => 'text' in p);
@@ -1147,18 +1160,20 @@ Text to render: "${extractedText}"`;
 
     try {
       const response = await fetch(
-        `${GEMINI_API_BASE}/models/${model}:generateContent`,
+        `${GEMINI_API_BASE}/models/${model}:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-goog-api-key": apiKey,
           },
           body: JSON.stringify({
             contents: [{ role: "user", parts: currentParts }],
             generationConfig: {
               responseModalities: ["TEXT", "IMAGE"],
               maxOutputTokens: 8192,
+              imageGenerationConfig: {
+                aspectRatio: aspectRatio
+              }
             },
             safetySettings: SAFETY_SETTINGS,
           }),
@@ -1511,12 +1526,11 @@ serve(async (req) => {
 
       try {
         const response = await fetch(
-          `${GEMINI_API_BASE}/models/gemini-2.5-flash:generateContent`,
+          `${GEMINI_API_BASE}/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "x-goog-api-key": GEMINI_API_KEY,
             },
             body: JSON.stringify({
               contents: [{ role: "user", parts: [{ text: copyPrompt }] }],
@@ -1531,8 +1545,9 @@ serve(async (req) => {
         );
 
         if (!response.ok) {
-          return new Response(JSON.stringify({ error: "Failed to generate copy" }), {
-            status: 500,
+          const errData = await response.json().catch(() => ({}));
+          return new Response(JSON.stringify({ error: "Failed to generate copy", details: errData }), {
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
@@ -1661,7 +1676,7 @@ REGRAS CRITICAS:
       ...validImageParts,
     ];
 
-    const generationResult = await callGeminiWithRetry(selectedModel, generationParts, GEMINI_API_KEY, 2, finalMode === 'product');
+    const generationResult = await callGeminiWithRetry(selectedModel, generationParts, GEMINI_API_KEY, 2, finalMode === 'product', sizeConfig.aspectRatio);
 
     if ('error' in generationResult) {
       return new Response(JSON.stringify({
@@ -1709,6 +1724,7 @@ REGRAS CRITICAS:
             secondaryColor: project.secondary_color,
             hasLogos,
             mode: finalMode,
+            aspectRatio: sizeConfig.aspectRatio
           }
         );
 
@@ -1777,10 +1793,12 @@ REGRAS CRITICAS:
     });
 
   } catch (error) {
+    console.error("Critical error in generate-studio-flyer:", error);
     return new Response(JSON.stringify({
       error: error instanceof Error ? error.message : "Unknown error",
+      details: "Houve um erro técnico. Verifique os logs do servidor."
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

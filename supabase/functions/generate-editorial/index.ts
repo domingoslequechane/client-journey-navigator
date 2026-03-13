@@ -16,7 +16,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -31,7 +31,7 @@ serve(async (req) => {
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -47,7 +47,7 @@ serve(async (req) => {
 
     if (!userOrgId) {
       return new Response(JSON.stringify({ error: "User organization not found" }), {
-        status: 403,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -55,7 +55,7 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -72,7 +72,7 @@ serve(async (req) => {
 
     if (!clientId || !organizationId) {
       return new Response(JSON.stringify({ error: "clientId and organizationId are required" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -87,7 +87,7 @@ serve(async (req) => {
 
     if (!client) {
       return new Response(JSON.stringify({ error: "Client not found or access denied" }), {
-        status: 404,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -199,65 +199,70 @@ FORMATO JSON OBRIGATÓRIO
 
 TOTAL OBRIGATÓRIO: exactamente ${totalDays} tarefas, começando em ${baseDate.toISOString().split("T")[0]}.`;
 
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${GEMINI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gemini-1.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 1024,
-        response_format: { type: 'json_object' },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 4096,
+          response_mime_type: "application/json",
+        },
       }),
     });
 
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de uso da IA atingido. Tente novamente em breve." }), {
-          status: 429,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes. Adicione créditos ao workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+
       const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
-      return new Response(JSON.stringify({ error: "Erro ao chamar IA" }), {
-        status: 500,
+      console.error("Gemini API Error:", response.status, errText);
+      return new Response(JSON.stringify({ 
+        error: `Erro ao chamar IA: ${response.status}`,
+        details: errText.substring(0, 200)
+      }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const aiData = await response.json();
-    const rawContent = aiData.choices?.[0]?.message?.content || "";
+    const rawContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     // Parse JSON from AI response
     let parsed: { businessAnalysis?: string; tasks: any[] };
     try {
-      const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("No JSON found in AI response");
-      parsed = JSON.parse(jsonMatch[0]);
+      // More robust JSON extraction
+      const startIdx = rawContent.indexOf('{');
+      const endIdx = rawContent.lastIndexOf('}');
+      if (startIdx === -1 || endIdx === -1) {
+        throw new Error("No JSON found in AI response");
+      }
+      const jsonStr = rawContent.substring(startIdx, endIdx + 1);
+      parsed = JSON.parse(jsonStr);
     } catch (e) {
       console.error("Parse error:", e, "Content:", rawContent);
-      return new Response(JSON.stringify({ error: "Falha ao processar resposta da IA" }), {
-        status: 500,
+      return new Response(JSON.stringify({ 
+        error: "Falha ao processar comercial da IA",
+        details: "A IA retornou um formato inesperado. Tente novamente.",
+        debug: rawContent.substring(0, 100)
+      }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (!parsed.tasks || !Array.isArray(parsed.tasks)) {
       return new Response(JSON.stringify({ error: "Resposta inválida da IA" }), {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -284,7 +289,7 @@ TOTAL OBRIGATÓRIO: exactamente ${totalDays} tarefas, começando em ${baseDate.t
     if (insertError) {
       console.error("Insert error:", insertError);
       return new Response(JSON.stringify({ error: "Erro ao salvar tarefas: " + insertError.message }), {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -300,8 +305,8 @@ TOTAL OBRIGATÓRIO: exactamente ${totalDays} tarefas, começando em ${baseDate.t
 
   } catch (error: any) {
     console.error("generate-editorial error:", error);
-    return new Response(JSON.stringify({ error: error.message || "Erro interno" }), {
-      status: 500,
+    return new Response(JSON.stringify({ error: error.message || "Erro interno", details: "Este erro pode ocorrer devido a falhas na IA ou falta de chaves API no Supabase." }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

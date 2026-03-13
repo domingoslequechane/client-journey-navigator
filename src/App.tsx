@@ -60,7 +60,6 @@ import SocialMedia from "./pages/SocialMedia";
 import SocialPostEditor from "./pages/SocialPostEditor";
 import SocialApproval from "./pages/SocialApproval";
 import StudioTool from "./pages/studio/StudioTool";
-import AICreator from "./pages/AICreator";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -225,11 +224,6 @@ const App = () => (
                       <Route path="social-media" element={
                         <RoleProtectedRoute privilege="social_media">
                           <SocialMedia />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="ai-legendador" element={
-                        <RoleProtectedRoute privilege="social_media">
-                          <AICreator />
                         </RoleProtectedRoute>
                       } />
                       <Route path="social-media/new" element={

@@ -53,34 +53,36 @@ export function StudioToolsHub({ className }: StudioToolsHubProps) {
                 </div>
 
                 {/* Category tabs */}
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        onClick={() => setActiveCategory('all')}
-                        className={cn(
-                            'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border',
-                            activeCategory === 'all'
-                                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                : 'bg-background border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
-                        )}
-                    >
-                        Todas
-                    </button>
-                    {STUDIO_TOOL_CATEGORIES.map((cat) => (
+                {STUDIO_TOOL_CATEGORIES.length > 1 && (
+                    <div className="flex flex-wrap gap-2">
                         <button
-                            key={cat.id}
-                            onClick={() => setActiveCategory(cat.id)}
+                            onClick={() => setActiveCategory('all')}
                             className={cn(
-                                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border flex items-center gap-1.5',
-                                activeCategory === cat.id
+                                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border',
+                                activeCategory === 'all'
                                     ? 'bg-primary text-primary-foreground border-primary shadow-sm'
                                     : 'bg-background border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
                             )}
                         >
-                            <span>{cat.emoji}</span>
-                            {cat.label}
+                            Todas
                         </button>
-                    ))}
-                </div>
+                        {STUDIO_TOOL_CATEGORIES.map((cat) => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setActiveCategory(cat.id)}
+                                className={cn(
+                                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border flex items-center gap-1.5',
+                                    activeCategory === cat.id
+                                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                                        : 'bg-background border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                                )}
+                            >
+                                <span>{cat.emoji}</span>
+                                {cat.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Tool groups */}

@@ -17,7 +17,7 @@ export function StudioQuickMenu({ currentToolId }: StudioQuickMenuProps) {
 
     return (
         <TooltipProvider delayDuration={0}>
-            <div className="hidden lg:flex w-[240px] h-full bg-[#fcfcfd] border-r flex-col py-4 px-3 gap-2.5 z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)] overflow-y-auto no-scrollbar shrink-0">
+            <div className="hidden lg:flex w-[240px] h-full bg-background border-r flex-col py-4 px-3 gap-2.5 z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)] overflow-y-auto no-scrollbar shrink-0">
                 <div className="px-2 mb-2">
                     <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Studio Tools</h2>
                 </div>
@@ -30,7 +30,7 @@ export function StudioQuickMenu({ currentToolId }: StudioQuickMenuProps) {
                             key={tool.id}
                             onClick={() => navigate(`/app/studio/tools/${tool.id}`)}
                             className={cn(
-                                "group relative w-full h-[72px] rounded-xl overflow-hidden text-left transition-all duration-300 transform",
+                                "group relative w-full h-[56px] rounded-xl overflow-hidden text-left transition-all duration-300 transform",
                                 isActive
                                     ? "ring-2 ring-primary ring-offset-1 scale-[1.02] shadow-lg shadow-primary/10"
                                     : "hover:scale-[1.01] hover:shadow-md grayscale-[0.3] hover:grayscale-0"
