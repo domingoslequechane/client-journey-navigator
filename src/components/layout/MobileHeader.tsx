@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from 'next-themes';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
 import {
   LayoutDashboard,
   Kanban,
@@ -29,7 +30,9 @@ import {
   Share2,
   PenTool,
   Menu,
-  ChevronRight
+  ChevronRight,
+  Rocket,
+  Headset
 } from 'lucide-react';
 import {
   Sheet,
@@ -50,6 +53,9 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
+import { useHeader } from '@/contexts/HeaderContext';
+import { ArrowLeft } from 'lucide-react';
+
 export function MobileHeader() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -57,6 +63,8 @@ export function MobileHeader() {
   const { canSeeSalesFunnel, canSeeOperationalFlow, canSeeClients, canSeeTeam, isAdmin, canManageFinance } = useUserRole();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { planType, organization } = useSubscription();
+  const { backAction, customTitle, customIcon, rightAction } = useHeader();
   const [open, setOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
@@ -74,44 +82,60 @@ export function MobileHeader() {
 
   // Main navigation items for the menu
   const menuItems = useMemo(() => {
-    const mainItems = [
-      { name: t('navigation.home'), href: '/app', icon: LayoutDashboard, show: true },
+    const mainItems: Array<{ name: string; href: string; icon: any; show: boolean; isQia?: boolean }> = [
+      { name: 'Dashboard', href: '/app', icon: LayoutDashboard, show: true },
+      { name: 'Pipeline', href: '/app/pipeline', icon: Kanban, show: true },
+      { name: 'Finanças', href: '/app/finance', icon: Wallet, show: true },
     ];
 
-    if (canSeeSalesFunnel || canSeeOperationalFlow) {
-      mainItems.push({ name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, show: true });
-    }
+    mainItems.push({ name: t('navigation.link23'), href: '/app/link-trees', icon: Link2, show: true });
+    mainItems.push({ name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, show: true });
+    mainItems.push({ name: t('navigation.socialMedia'), href: '/app/social-media', icon: Share2, show: true });
 
-    if (canManageFinance) {
-      mainItems.push({ name: t('navigation.finance', 'Finanças'), href: '/app/finance', icon: Wallet, show: true });
-    }
+    mainItems.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: Bot, show: true, isQia: true });
+    mainItems.push({ name: t('navigation.studio'), href: '/app/studio', icon: PenTool, show: true });
+    mainItems.push({ name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true });
 
-    mainItems.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: Bot, show: true });
-
-    const moreItems = [];
     if (canSeeClients) {
-      moreItems.push({ name: t('navigation.clients'), href: '/app/clients', icon: Building2, show: true });
+      mainItems.push({ name: t('navigation.clients'), href: '/app/clients', icon: Building2, show: true });
     }
-    moreItems.push({ name: t('navigation.link23'), href: '/app/link-trees', icon: Link2, show: true });
-    moreItems.push({ name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, show: true });
-    moreItems.push({ name: t('navigation.socialMedia'), href: '/app/social-media', icon: Share2, show: true });
-    moreItems.push({ name: t('navigation.studio'), href: '/app/studio', icon: PenTool, show: true });
-    moreItems.push({ name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true });
-    moreItems.push({ name: t('navigation.notifications'), href: '/app/notifications', icon: Bell, show: true });
-    moreItems.push({ name: t('navigation.support'), href: '/app/support', icon: MessageSquare, show: true });
 
     if (canSeeTeam) {
-      moreItems.push({ name: t('navigation.team'), href: '/app/team', icon: Users, show: true });
+      mainItems.push({ name: t('navigation.team'), href: '/app/team', icon: Users, show: true });
     }
 
-    const adminItems = [];
+    return mainItems;
+  }, [canSeeSalesFunnel, canSeeOperationalFlow, canManageFinance, canSeeClients, canSeeTeam, t]);
+
+  const bottomItems = useMemo(() => {
+    const items: Array<{ name: string; href: string; icon: any; show: boolean; className?: string }> = [
+      { name: t('navigation.support'), href: '/app/support', icon: Headset, show: true },
+      { name: t('navigation.notifications'), href: '/app/notifications', icon: Bell, show: true },
+    ];
+
     if (isAdmin) {
-      adminItems.push({ name: t('navigation.settings'), href: '/app/settings', icon: Settings, show: true });
-      adminItems.push({ name: t('navigation.subscription'), href: '/app/subscription', icon: CreditCard, show: true });
+      items.push({ name: t('navigation.settings'), href: '/app/settings', icon: Settings, show: true });
     }
 
-    return { mainItems, moreItems, adminItems };
-  }, [canSeeSalesFunnel, canSeeOperationalFlow, canManageFinance, canSeeClients, canSeeTeam, isAdmin, t]);
+    // Plan name mapping
+    const planNames: Record<string, string> = {
+      starter: 'Lança',
+      pro: 'Arco',
+      agency: 'Catapulta',
+      free: 'Free'
+    };
+    const planName = planNames[planType || 'free'] || 'Free';
+
+    items.push({ 
+      name: `Plano ${planName}`, 
+      href: '/app/subscription', 
+      icon: Rocket, 
+      show: true,
+      className: "text-[#F97316]" // Orange text for the plan
+    });
+
+    return items;
+  }, [isAdmin, planType, t]);
 
   const handleNavigate = (href: string) => {
     setOpen(false);
@@ -138,55 +162,70 @@ export function MobileHeader() {
     navigate('/app/select-organization');
   };
 
-  // Get active page title
-  const activePageTitle = useMemo(() => {
+  // Get active page title and icon
+  const activePageInfo = useMemo(() => {
     const path = location.pathname;
     
-    // Exact matches first
-    if (path === '/app') return t('navigation.home');
-    if (path === '/app/pipeline') return t('navigation.pipeline');
-    if (path === '/app/finance') return t('navigation.finance', 'Finanças');
-    if (path === '/app/ai-assistant') return t('navigation.qia');
-    if (path === '/app/clients') return t('navigation.clients');
-    if (path.startsWith('/app/clients/')) return t('navigation.clients');
-    if (path === '/app/social-media') return t('navigation.socialMedia');
-    if (path === '/app/editorial') return t('navigation.editorial');
-    if (path === '/app/link-trees') return t('navigation.link23');
-    if (path === '/app/studio') return t('navigation.studio');
-    if (path === '/app/academia') return t('navigation.academy');
-    if (path === '/app/team') return t('navigation.team');
-    if (path === '/app/settings') return t('navigation.settings');
-    if (path === '/app/subscription') return t('navigation.subscription');
-    if (path === '/app/notifications') return t('navigation.notifications');
-    if (path === '/app/support') return t('navigation.support');
-    
-    return 'Qualify'; // Fallback
-  }, [location.pathname, t]);
+    const getBaseInfo = () => {
+      if (path === '/app') return { title: 'Dashboard', icon: LayoutDashboard };
+      if (path.startsWith('/app/pipeline')) return { title: 'Pipeline', icon: Kanban };
+      if (path.startsWith('/app/finance')) return { title: 'Finanças', icon: Wallet };
+      if (path.startsWith('/app/ai-assistant')) return { title: t('navigation.qia'), icon: Bot };
+      if (path.startsWith('/app/clients')) return { title: t('navigation.clients'), icon: Building2 };
+      if (path.startsWith('/app/social-media')) return { title: t('navigation.socialMedia'), icon: Share2 };
+      if (path.startsWith('/app/editorial')) return { title: t('navigation.editorial'), icon: CalendarDays };
+      if (path.startsWith('/app/link-trees')) return { title: t('navigation.link23'), icon: Link2 };
+      if (path.startsWith('/app/studio')) return { title: t('navigation.studio'), icon: PenTool };
+      if (path.startsWith('/app/academia')) return { title: t('navigation.academy'), icon: GraduationCap };
+      if (path.startsWith('/app/team')) return { title: t('navigation.team'), icon: Users };
+      if (path.startsWith('/app/settings')) return { title: t('navigation.settings'), icon: Settings };
+      if (path.startsWith('/app/subscription')) return { title: t('navigation.subscription'), icon: CreditCard };
+      if (path.startsWith('/app/notifications')) return { title: t('navigation.notifications'), icon: Bell };
+      if (path.startsWith('/app/support')) return { title: t('navigation.support'), icon: Headset };
+      return { title: 'Qualify', icon: null };
+    };
+
+    const base = getBaseInfo();
+    return {
+      title: customTitle || base.title,
+      icon: customIcon || base.icon
+    };
+  }, [location.pathname, t, customTitle, customIcon]);
 
   return (
     <>
       <header className="sticky top-0 left-0 right-0 z-[100] bg-background/95 backdrop-blur-sm border-b border-border h-16 flex items-center justify-between px-4 md:hidden">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <Link to="/app" className="shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">Q</span>
-            </div>
-          </Link>
-          <h1 className="font-bold text-lg truncate animate-in fade-in slide-in-from-left-2 duration-300">
-            {activePageTitle}
+        <div className="flex items-center gap-2 overflow-hidden">
+          {backAction && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={backAction}
+              className="shrink-0 -ml-2"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+          )}
+          {activePageInfo.icon && (
+            <activePageInfo.icon className={cn("h-5 w-5 text-primary shrink-0 animate-in fade-in scale-in duration-500", backAction && "ml-1")} />
+          )}
+          <h1 className="font-bold text-2xl truncate animate-in fade-in slide-in-from-left-2 duration-300">
+            {activePageInfo.title}
           </h1>
         </div>
 
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[85%] sm:w-[350px] p-0 flex flex-col h-full bg-background border-l">
-            <SheetHeader className="p-4 border-b shrink-0 text-left bg-muted/30">
-              <SheetTitle className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+        <div className="flex items-center gap-1.5 shrink-0">
+          {rightAction && <div className="animate-in fade-in zoom-in duration-300">{rightAction}</div>}
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[85%] sm:w-[350px] p-0 flex flex-col h-full bg-background border-l">
+              <SheetHeader className="p-4 border-b shrink-0 text-left bg-muted/30">
+                <SheetTitle className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                   <span className="text-primary-foreground font-bold text-lg">Q</span>
                 </div>
                 Qualify
@@ -197,22 +236,28 @@ export function MobileHeader() {
               <div className="space-y-6 pb-20">
                 {/* Main Menu */}
                 <div className="space-y-1">
-                  {menuItems.mainItems.map((item) => {
+                  {menuItems.map((item) => {
                     const isActive = location.pathname === item.href;
+                    const isQia = (item as any).isQia;
+                    
                     return (
                       <button
                         key={item.name}
                         onClick={() => handleNavigate(item.href)}
                         className={cn(
                           "w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all active:scale-[0.98]",
-                          isActive ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                          isActive 
+                            ? isQia 
+                              ? "bg-[#F97316] text-white shadow-lg shadow-orange-500/20" 
+                              : "bg-primary/10 text-primary" 
+                            : "hover:bg-muted text-foreground/80 hover:text-foreground"
                         )}
                       >
                         <div className="flex items-center gap-3">
-                          <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
-                          <span className="font-semibold">{item.name}</span>
+                          <item.icon className={cn("h-5 w-5", isActive ? (isQia ? "text-white" : "text-primary") : "text-muted-foreground")} />
+                          <span className={cn("font-semibold", isActive ? "font-bold" : "")}>{item.name}</span>
                         </div>
-                        <ChevronRight className="h-4 w-4 opacity-50" />
+                        {isQia && isActive && <div className="h-2 w-2 rounded-full bg-white animate-pulse" />}
                       </button>
                     );
                   })}
@@ -220,9 +265,20 @@ export function MobileHeader() {
 
                 <Separator className="mx-2 opacity-50" />
 
-                {/* More Items */}
+                {/* Bottom Menu */}
                 <div className="space-y-1">
-                  {menuItems.moreItems.map((item) => {
+                  {/* Theme Switcher as an Item */}
+                  <button
+                    onClick={handleToggleTheme}
+                    className="w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all hover:bg-muted text-foreground/80 hover:text-foreground group"
+                  >
+                    <div className="flex items-center gap-3 text-sm">
+                      {theme === 'dark' ? <Sun className="h-4 w-4 text-yellow-500" /> : <Moon className="h-4 w-4 text-blue-500" />}
+                      <span className="font-medium uppercase tracking-wider text-[10px] opacity-70">Tema</span>
+                    </div>
+                  </button>
+
+                  {bottomItems.map((item) => {
                     const isActive = location.pathname === item.href;
                     return (
                       <button
@@ -230,75 +286,42 @@ export function MobileHeader() {
                         onClick={() => handleNavigate(item.href)}
                         className={cn(
                           "w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all active:scale-[0.98]",
-                          isActive ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                          isActive ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground/80 hover:text-foreground",
+                          (item as any).className
                         )}
                       >
                         <div className="flex items-center gap-3 text-sm">
-                          <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
+                          <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground", (item as any).className)} />
                           <span className="font-medium">{item.name}</span>
                         </div>
-                        <ChevronRight className="h-3 w-3 opacity-30" />
                       </button>
                     );
                   })}
                 </div>
-
-                {menuItems.adminItems.length > 0 && (
-                  <>
-                    <Separator className="mx-2 opacity-50" />
-                    <div className="space-y-1">
-                      {menuItems.adminItems.map((item) => {
-                        const isActive = location.pathname === item.href;
-                        return (
-                          <button
-                            key={item.name}
-                            onClick={() => handleNavigate(item.href)}
-                            className={cn(
-                              "w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all active:scale-[0.98]",
-                              isActive ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
-                            )}
-                          >
-                            <div className="flex items-center gap-3 text-sm">
-                              <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
-                              <span className="font-medium">{item.name}</span>
-                            </div>
-                            <ChevronRight className="h-3 w-3 opacity-30" />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
               </div>
             </ScrollArea>
 
             {/* Footer Actions */}
-            <div className="p-4 border-t bg-muted/10 shrink-0 space-y-3">
-              <Button
-                variant="outline"
-                className="w-full h-12 justify-center gap-3 rounded-xl border-border bg-background"
-                onClick={handleToggleTheme}
-              >
-                {theme === 'dark' ? <Sun className="h-5 w-5 text-yellow-500" /> : <Moon className="h-5 w-5 text-blue-500" />}
-                <span className="font-bold tracking-tight uppercase">
-                  {theme === 'dark' ? t('theme.light') : t('theme.dark')}
-                </span>
-              </Button>
+            <div className="p-4 border-t bg-muted/10 shrink-0 space-y-4">
+              <div className="px-3">
+                <p className="text-[11px] text-muted-foreground font-medium truncate">
+                  {user?.email}
+                </p>
+              </div>
 
               <Button
                 variant="ghost"
-                className="w-full h-12 justify-start gap-4 px-4 text-destructive hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all"
+                className="w-full h-10 justify-start gap-4 px-3 text-foreground/80 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all group"
                 onClick={handleOpenLogoutDialog}
               >
-                <div className="p-1.5 rounded-lg bg-destructive/10 group-hover:bg-destructive/20 transition-colors">
-                  <LogOut className="h-5 w-5" />
-                </div>
-                <span className="font-bold">{t('navigation.logout')}</span>
+                <LogOut className="h-5 w-5 text-muted-foreground group-hover:text-destructive" />
+                <span className="font-bold text-sm">{t('navigation.logout')}</span>
               </Button>
             </div>
           </SheetContent>
         </Sheet>
-      </header>
+      </div>
+    </header>
 
       {/* Logout Confirmation Dialog */}
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>

@@ -275,12 +275,14 @@ export interface InspirationFlyer {
 
 export type StudioToolCategory = 'create_image' | 'editing';
 
+import { LucideIcon, Palette, Sparkles, Image, Paintbrush, Box, Layers, Wand2 } from 'lucide-react';
+
 export interface StudioTool {
   id: string;
   label: string;
   description: string;
   category: StudioToolCategory;
-  emoji: string;
+  icon: LucideIcon;
   requiresInputImage?: boolean;
   inputLabel?: string;
   promptPlaceholder: string;
@@ -313,9 +315,9 @@ export interface ToolGenerationSettings {
   inputImage?: string;
 }
 
-export const STUDIO_TOOL_CATEGORIES: { id: StudioToolCategory; label: string; emoji: string }[] = [
-  { id: 'create_image', label: 'Criar Imagens com IA', emoji: '🎨' },
-  // { id: 'editing', label: 'Todas as Ferramentas', emoji: '🛠️' },
+export const STUDIO_TOOL_CATEGORIES: { id: StudioToolCategory; label: string; icon: LucideIcon }[] = [
+  { id: 'create_image', label: 'Criar Imagens com IA', icon: Palette },
+  // { id: 'editing', label: 'Todas as Ferramentas', icon: Layers },
 ];
 
 export const STUDIO_TOOLS: StudioTool[] = [
@@ -336,7 +338,7 @@ export const STUDIO_TOOLS: StudioTool[] = [
     label: 'Recolorar',
     description: 'Recolora produtos ou imagens com novas paletas',
     category: 'create_image',
-    emoji: '🎨',
+    icon: Paintbrush,
     requiresInputImage: true,
     inputLabel: 'Imagem a recolorir',
     promptPlaceholder: 'Ex: Mudar para tons azul navy com acabamento metálico...',
@@ -349,7 +351,7 @@ export const STUDIO_TOOLS: StudioTool[] = [
     label: 'Embelezar Produto',
     description: 'Embeleze fotos de produtos com fundo premium',
     category: 'create_image',
-    emoji: '✨',
+    icon: Sparkles,
     requiresInputImage: true,
     inputLabel: 'Foto do produto',
     promptPlaceholder: 'Ex: Fundo de estúdio branco minimalista com sombra suave...',
@@ -375,7 +377,7 @@ export const STUDIO_TOOLS: StudioTool[] = [
     label: 'Cenário de Produto',
     description: 'Coloque produtos em ambientes realistas',
     category: 'create_image',
-    emoji: '🛋️',
+    icon: Image,
     requiresInputImage: true,
     inputLabel: 'Foto do produto',
     promptPlaceholder: 'Ex: Sala de estar moderna com luz natural do fim do dia...',

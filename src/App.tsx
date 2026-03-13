@@ -61,6 +61,8 @@ import SocialPostEditor from "./pages/SocialPostEditor";
 import SocialApproval from "./pages/SocialApproval";
 import StudioTool from "./pages/studio/StudioTool";
 
+import { HeaderProvider } from "@/contexts/HeaderContext";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -86,13 +88,14 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <ScrollToTop />
-          <AuthProvider>
-            <PlanThemeProvider>
-              <OrganizationProvider>
-                <InstallPromptBanner />
-                <ErrorBoundary>
-                  <Routes>
+          <HeaderProvider>
+            <ScrollToTop />
+            <AuthProvider>
+              <PlanThemeProvider>
+                <OrganizationProvider>
+                  <InstallPromptBanner />
+                  <ErrorBoundary>
+                    <Routes>
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/demo/*" element={<Demo />} />
                     <Route path="/pricing" element={<Pricing />} />
@@ -260,6 +263,7 @@ const App = () => (
               </OrganizationProvider>
             </PlanThemeProvider>
           </AuthProvider>
+          </HeaderProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

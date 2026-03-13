@@ -228,9 +228,9 @@ export default function LinkTreeDashboard() {
   }
 
   return (
-    <AnimatedContainer animation="fade-in" className="p-6 space-y-6">
+    <AnimatedContainer animation="fade-in" className="p-4 md:p-6 pt-2 md:pt-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="hidden md:flex items-center gap-3 mb-6">
         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
           <Link2 className="h-5 w-5 text-primary" />
         </div>
@@ -251,7 +251,8 @@ export default function LinkTreeDashboard() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      <div className="space-y-6">
+        {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         <Card>
           <CardContent className="p-3 sm:p-4 flex items-center gap-3">
@@ -482,6 +483,7 @@ export default function LinkTreeDashboard() {
           </div>
         </Card>
       )}
+      </div>
     </AnimatedContainer>
   );
 }

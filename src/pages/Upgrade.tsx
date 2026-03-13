@@ -14,6 +14,9 @@ import {
   Users, FileText, Bot, Briefcase, Crown, Sparkles, ShieldAlert 
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useHeader } from '@/contexts/HeaderContext';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
@@ -167,6 +170,17 @@ export default function Upgrade() {
   const { isAdmin, loading: roleLoading } = useUserRole();
   const [creatingCheckout, setCreatingCheckout] = useState<PlanType | null>(null);
   const [changingPlan, setChangingPlan] = useState<PlanType | null>(null);
+  const { setBackAction, setCustomTitle } = useHeader();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setCustomTitle('Upgrade');
+    setBackAction(() => () => navigate('/app'));
+    return () => {
+      setCustomTitle(null);
+      setBackAction(null);
+    };
+  }, [setCustomTitle, setBackAction, navigate]);
 
   const handleSubscribe = async (planType: PlanType) => {
     if (!organization?.id || !user?.email) {
@@ -272,7 +286,7 @@ export default function Upgrade() {
     return (
       <div className="min-h-screen bg-background py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-8">
-          <Link to="/app" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link to="/app" className="hidden md:inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Voltar ao Dashboard
           </Link>
@@ -319,7 +333,7 @@ export default function Upgrade() {
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="text-center space-y-4">
+        <div className="hidden md:block text-center space-y-4">
           <Link to="/app" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
             <ArrowLeft className="h-4 w-4" />
             Voltar ao Dashboard

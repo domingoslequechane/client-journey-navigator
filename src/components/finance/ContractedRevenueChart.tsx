@@ -73,25 +73,25 @@ export function ContractedRevenueChart({ clients, currencySymbol }: ContractedRe
         : currentMonthRevenue > 0 ? 100 : 0;
 
     return (
-        <Card className="border-border">
-            <CardHeader className="pb-2">
+        <Card className="border-border overflow-hidden">
+            <CardHeader className="pb-2 px-4 sm:px-6">
                 <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle className="text-base font-semibold">Histórico de Receita Contratada</CardTitle>
-                        <CardDescription>Evolução mensal baseada nos orçamentos dos clientes ativos</CardDescription>
+                    <div className="min-w-0 flex-1 pr-2">
+                        <CardTitle className="text-base font-semibold truncate">Histórico de Receita Contratada</CardTitle>
+                        <CardDescription className="line-clamp-1">Evolução mensal</CardDescription>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-1.5 text-sm shrink-0">
                         <TrendingUp className="h-4 w-4 text-success" />
                         <span className="text-success font-medium">+{growthPercent}%</span>
                     </div>
                 </div>
-                <div className="text-2xl font-bold text-primary">
+                <div className="text-2xl font-bold text-primary mt-1">
                     {currencySymbol} {totalRevenue.toLocaleString()}
                 </div>
             </CardHeader>
-            <CardContent className="pt-0">
-                <ChartContainer config={chartConfig} className="h-[240px] w-full">
-                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <CardContent className="pt-0 px-1 sm:px-6">
+                <ChartContainer config={chartConfig} className="h-[240px] w-full min-w-0">
+                    <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                         <defs>
                             <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />

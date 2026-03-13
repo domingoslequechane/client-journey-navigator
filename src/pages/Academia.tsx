@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,6 +32,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { useHeader } from '@/contexts/HeaderContext';
 
 interface StudySuggestion {
   id: string;
@@ -78,6 +79,7 @@ export default function Academia() {
   const [selectedSuggestion, setSelectedSuggestion] = useState<StudySuggestion | null>(null);
   const [newDifficulty, setNewDifficulty] = useState('');
   const [isUpdatingDifficulties, setIsUpdatingDifficulties] = useState(false);
+  const { setBackAction, setCustomTitle, setCustomIcon, setRightAction } = useHeader();
 
   // Fetch user profile for difficulties and privileges
   const { data: profile, refetch: refetchProfile } = useQuery({
@@ -360,6 +362,38 @@ Level: [level]
     }
   };
 
+  // Sync header with context
+  useEffect(() => {
+    setCustomTitle(t('title'));
+    setCustomIcon(GraduationCap);
+    
+    const generateButton = (
+      <Button
+        onClick={generateStudySuggestions}
+        disabled={isGenerating}
+        size="sm"
+        className="gap-2 bg-gradient-to-r from-primary to-chart-5 hover:opacity-90 transition-opacity"
+      >
+        {isGenerating ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Sparkles className="h-4 w-4" />
+        )}
+        <span className="hidden sm:inline">
+          {isGenerating ? t('actions.generating') : t('actions.generate')}
+        </span>
+      </Button>
+    );
+
+    setRightAction(generateButton);
+
+    return () => {
+      setCustomTitle(null);
+      setCustomIcon(null);
+      setRightAction(null);
+    };
+  }, [t, isGenerating]);
+
   const toggleSuggestionCompletion = async (suggestion: StudySuggestion) => {
     try {
       const { error } = await (supabase as any)
@@ -473,8 +507,8 @@ Level: [level]
   };
 
   return (
-    <div className="p-4 md:p-8 h-full flex flex-col overflow-auto">
-      <AnimatedContainer animation="fade-up" className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+    <div className="p-4 md:p-8 pt-2 md:pt-8 h-full flex flex-col overflow-auto">
+      <AnimatedContainer animation="fade-up" className="hidden md:flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
             <GraduationCap className="h-7 w-7 md:h-8 md:w-8 text-primary" />

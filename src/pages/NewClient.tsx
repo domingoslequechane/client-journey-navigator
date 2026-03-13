@@ -13,9 +13,11 @@ import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequ
 import { useDraft } from '@/hooks/useDraft';
 import { useOrganization } from '@/hooks/useOrganization';
 import { ClientFormView, ClientFormData, initialFormData } from '@/components/clients/ClientFormView';
+import { useHeader } from '@/contexts/HeaderContext';
 
 export default function NewClient() {
   const navigate = useNavigate();
+  const { setBackAction, setCustomTitle } = useHeader();
 
   const { loading: planLoading, canAddClient, planType, usage, limits } = usePlanLimits();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
@@ -62,6 +64,13 @@ export default function NewClient() {
       );
     }
   }, [orgCurrency, hasRestoredDraft, setFormData]);
+
+  useEffect(() => {
+    if (!canAddClient && !planLoading && !subLoading && hasActiveSubscription) {
+      setCustomTitle('Novo Cliente');
+      setBackAction(() => () => navigate('/app/clients'));
+    }
+  }, [canAddClient, planLoading, subLoading, hasActiveSubscription, setCustomTitle, setBackAction, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +139,7 @@ export default function NewClient() {
   if (!canAddClient) {
     return (
       <div className="p-4 md:p-8 max-w-4xl mx-auto">
-        <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+        <AnimatedContainer animation="fade-up" className="hidden md:flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
           <Link to="/app/clients">
             <Button variant="ghost" size="icon" className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
           </Link>

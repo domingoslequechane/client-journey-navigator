@@ -381,7 +381,7 @@ export default function SupportFeedback() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <AnimatedContainer animation="fade-up">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-2xl md:text-3xl font-bold">Suporte e Feedback</h1>
           <p className="text-muted-foreground">Precisa de ajuda ou tem sugestões? Estamos aqui para você.</p>
         </div>

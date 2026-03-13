@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
+import { useHeader } from '@/contexts/HeaderContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
   Select,
@@ -210,6 +211,55 @@ export default function SocialPostEditor() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [initialStatus, setInitialStatus] = useState<'draft' | 'scheduled' | 'published' | null>(null);
+  const { setCustomTitle, setBackAction, setRightAction } = useHeader();
+
+  const hasAnyChannelSelected = useMemo(() => postItems.some(p => p.selectedAccountIds.length > 0), [postItems]);
+
+  useEffect(() => {
+    if (isMobile) {
+      setCustomTitle(postId ? 'Editar Publicação' : 'Nova Publicação');
+      setBackAction(() => () => navigate(-1));
+      setRightAction(
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleSaveAction('draft')} disabled={isSaving}>
+                <Save className="h-4 w-4 mr-2" />
+                {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected}>
+                <Calendar className="h-4 w-4 mr-2" />
+                {(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(-1)}>
+                <X className="h-4 w-4 mr-2" />
+                Cancelar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button 
+            onClick={() => handleSaveAction('published')} 
+            disabled={isSaving || !hasAnyChannelSelected} 
+            size="sm"
+            className="gap-2 bg-[#F97316] hover:bg-[#F97316]/90 border-0 shadow-sm"
+          >
+            <Zap className="h-4 w-4" />
+            <span className="text-xs font-bold">Publicar</span>
+          </Button>
+        </div>
+      );
+    } else {
+      setCustomTitle(null);
+      setBackAction(null);
+      setRightAction(null);
+    }
+  }, [isMobile, postId, isSaving, hasAnyChannelSelected, postItems.length, initialStatus]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -782,7 +832,7 @@ export default function SocialPostEditor() {
                     });
                   }
 
-                  if (status !== 'draft' && (result as any)?.data?.id) {
+                  if ((result as any)?.data?.id) {
                     await publishPost.mutateAsync({
                       postId: (result as any).data.id,
                       publishNow: status === 'published',
@@ -839,7 +889,7 @@ export default function SocialPostEditor() {
                   });
                 }
 
-                if (status !== 'draft' && (result as any)?.data?.id) {
+                if ((result as any)?.data?.id) {
                   await publishPost.mutateAsync({
                     postId: (result as any).data.id,
                     publishNow: status === 'published',
@@ -1091,7 +1141,7 @@ export default function SocialPostEditor() {
       .map(a => a.platform as SocialPlatform)));
   }, [currentPostItem, connectedAccounts]);
 
-  const hasAnyChannelSelected = postItems.some(item => item.selectedAccountIds.length > 0);
+
 
   if (isLoadingPost) {
     return <div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -1177,8 +1227,8 @@ export default function SocialPostEditor() {
           </div>
         </div>
       )}
-      {/* Header Fixo */}
-      <header className="h-14 lg:h-16 border-b bg-card px-3 lg:px-6 flex items-center justify-between shrink-0 z-20">
+      {/* Header Fixo - OCULTADO EM MOBILE (USANDO SYSTEM HEADER) */}
+      <header className="h-14 lg:h-16 border-b bg-card px-3 lg:px-6 hidden lg:flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-2 lg:gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
@@ -1252,7 +1302,7 @@ export default function SocialPostEditor() {
 
         {/* Mobile horizontal page bar */}
         {isMobile && (
-          <div className="border-b bg-muted/10 shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto no-scrollbar">
+          <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur-sm shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto no-scrollbar">
             {postItems.map((item, index) => (
               <button
                 key={item.id}

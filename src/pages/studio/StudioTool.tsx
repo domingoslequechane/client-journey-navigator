@@ -18,6 +18,9 @@ import { BeautifyToolView } from '@/components/studio/BeautifyToolView';
 import { ProductStagingToolView } from '@/components/studio/ProductStagingToolView';
 import { cn } from '@/lib/utils';
 import { StudioQuickMenu } from '@/components/studio/StudioQuickMenu';
+import { useHeader } from '@/contexts/HeaderContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useEffect } from 'react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -42,6 +45,21 @@ export default function StudioTool() {
     const [previewImage, setPreviewImage] = useState<StudioImage | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<StudioImage | null>(null);
     const [currentPage, setCurrentPage] = useState(0);
+    const { setCustomTitle, setCustomIcon, setBackAction } = useHeader();
+    const isMobile = useIsMobile();
+
+    useEffect(() => {
+        if (isMobile && tool) {
+            setCustomTitle(tool.label);
+            setCustomIcon(tool.icon);
+            setBackAction(() => () => navigate('/app/studio'));
+        }
+        return () => {
+            setCustomTitle(null);
+            setCustomIcon(null);
+            setBackAction(null);
+        };
+    }, [isMobile, tool, setCustomTitle, setCustomIcon, setBackAction, navigate]);
 
     const totalPages = Math.ceil(images.length / ITEMS_PER_PAGE);
     const paginated = images.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
@@ -101,22 +119,22 @@ export default function StudioTool() {
     };
 
     return (
-        <div className="flex h-full overflow-hidden bg-background">
+        <div className="flex flex-col md:flex-row h-full overflow-hidden bg-background">
             <div className="hidden md:block">
                 <StudioQuickMenu currentToolId={tool.id} />
             </div>
             {/* ── Left Sidebar ── */}
-            <div className="hidden md:flex w-[420px] border-r shrink-0 flex-col bg-muted/10">
+            <div className="hidden md:flex w-[420px] border-r shrink-0 flex-col bg-muted/10 h-full overflow-hidden">
                 {/* Header */}
                 <div className="h-16 border-b bg-background flex items-center gap-3 px-4 shrink-0 shadow-sm">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/app/studio')} className="shrink-0 -ml-1">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm"
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
                         style={{ background: `linear-gradient(135deg, ${tool.gradientFrom}, ${tool.gradientTo})` }}
                     >
-                        {tool.emoji}
+                        {tool.icon && <tool.icon className="h-5 w-5 text-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
                         <h1 className="text-sm font-bold truncate leading-none">{tool.label}</h1>
@@ -136,9 +154,9 @@ export default function StudioTool() {
             </div>
 
             {/* ── Main Area ── */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Right header */}
-                <div className="h-16 border-b bg-background flex items-center justify-between px-6 shrink-0 shadow-sm">
+            <div className="flex-1 flex flex-col overflow-hidden h-full">
+                {/* Right header - Hidden on mobile */}
+                <div className="hidden md:flex h-16 border-b bg-background items-center justify-between px-6 shrink-0 shadow-sm">
                     <div className="flex items-center gap-2">
                         <ImageIcon className="h-4 w-4 text-primary" />
                         <span className="text-sm font-semibold">Imagens Geradas</span>
@@ -149,7 +167,7 @@ export default function StudioTool() {
                 </div>
 
                 {/* Gallery */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -172,10 +190,10 @@ export default function StudioTool() {
                             ) : (
                                 <>
                                     <div
-                                        className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl shadow-xl"
+                                        className="w-24 h-24 rounded-3xl flex items-center justify-center shadow-xl"
                                         style={{ background: `linear-gradient(135deg, ${tool.gradientFrom}22, ${tool.gradientTo}33)`, border: `1px solid ${tool.gradientFrom}40` }}
                                     >
-                                        {tool.emoji}
+                                        {tool.icon && <tool.icon className="h-12 w-12 text-primary" />}
                                     </div>
                                     <p className="font-semibold tracking-tight text-xl text-foreground">{tool.label}</p>
                                 </>

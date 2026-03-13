@@ -17,24 +17,28 @@ export function ToolCard({ tool, className }: ToolCardProps) {
             className={cn(
                 'group relative flex flex-col justify-end items-start p-5 rounded-2xl border bg-card overflow-hidden',
                 'hover:border-primary/50 hover:shadow-xl transition-all duration-300 text-left min-h-[160px]',
-                'hover:-translate-y-1 active:translate-y-0',
+                'hover:-translate-y-1 active:translate-y-0 transform-gpu',
                 className
             )}
+            style={{ isolation: 'isolate', WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
         >
             {/* Background Image / Gradient Fallback */}
             {tool.previewImage ? (
                 <>
                     <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                         style={{ backgroundImage: `url(${tool.previewImage})` }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                 </>
             ) : (
-                <div
-                    className="absolute inset-0 opacity-10 transition-transform duration-700 group-hover:scale-105"
-                    style={{ background: `linear-gradient(135deg, ${tool.gradientFrom}, ${tool.gradientTo})` }}
-                />
+                <div className="absolute inset-0 flex items-center justify-center p-8">
+                    <div
+                        className="absolute inset-0 opacity-10 transition-transform duration-500 group-hover:scale-110"
+                        style={{ background: `linear-gradient(135deg, ${tool.gradientFrom}, ${tool.gradientTo})` }}
+                    />
+                    <tool.icon className="h-16 w-16 opacity-20 group-hover:opacity-30 group-hover:scale-110 transition-all duration-500 text-foreground" />
+                </div>
             )}
 
             {/* Content Container (Layer on top of background) */}

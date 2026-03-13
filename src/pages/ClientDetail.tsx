@@ -11,6 +11,7 @@ import { mapDbClientToUiClient } from '@/lib/client-utils';
 import { ClientDetailContent } from '@/components/clients/ClientDetailContent';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useHeader } from '@/contexts/HeaderContext';
 
 // Function to fetch client data and checklist items
 const fetchClientData = async (clientId: string, organizationId: string) => {
@@ -41,6 +42,8 @@ export default function ClientDetail() {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { setBackAction, setCustomTitle } = useHeader();
+  const { organizationId } = useOrganization();
 
   // Handle back navigation - go to previous page or fallback to clients
   const handleBack = () => {
@@ -50,8 +53,6 @@ export default function ClientDetail() {
       navigate('/app/clients');
     }
   };
-
-  const { organizationId } = useOrganization();
 
   const { data: client, isLoading, error, refetch } = useQuery<Client, Error>({
     queryKey: ['client', organizationId, clientId],
@@ -64,6 +65,17 @@ export default function ClientDetail() {
       toast({ title: 'Erro ao carregar cliente', description: error.message, variant: 'destructive' });
     }
   }, [error]);
+
+  useEffect(() => {
+    if (client) {
+      setCustomTitle(client.companyName);
+      setBackAction(() => handleBack);
+    }
+    return () => {
+      setCustomTitle(null);
+      setBackAction(null);
+    };
+  }, [client, setCustomTitle, setBackAction]);
 
   const handleUpdateClient = async (updatedClient: Client) => {
     // This function handles updates to the DB (stage and checklist items)
@@ -167,7 +179,7 @@ export default function ClientDetail() {
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto">
-      <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+      <AnimatedContainer animation="fade-up" className="hidden md:flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
         <Button variant="ghost" size="icon" onClick={handleBack} className="shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </Button>

@@ -9,9 +9,9 @@ export default function StudioDashboard() {
   const { limits, usage } = usePlanLimits();
 
   return (
-    <div className="w-full p-6 space-y-6">
+    <div className="w-full p-4 md:p-6 pt-2 md:pt-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-2">

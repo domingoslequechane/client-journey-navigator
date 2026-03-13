@@ -15,6 +15,7 @@ import ptBRTeam from './locales/pt-BR/team.json';
 import ptBRNotifications from './locales/pt-BR/notifications.json';
 import ptBRSupport from './locales/pt-BR/support.json';
 import ptBRFinance from './locales/pt-BR/finance.json';
+import ptBRAcademia from './locales/pt-BR/academia.json';
 
 // en-US translations
 import enUSCommon from './locales/en-US/common.json';
@@ -29,6 +30,7 @@ import enUSTeam from './locales/en-US/team.json';
 import enUSNotifications from './locales/en-US/notifications.json';
 import enUSSupport from './locales/en-US/support.json';
 import enUSFinance from './locales/en-US/finance.json';
+import enUSAcademia from './locales/en-US/academia.json';
 
 const resources = {
   'pt-BR': {
@@ -44,6 +46,7 @@ const resources = {
     notifications: ptBRNotifications,
     support: ptBRSupport,
     finance: ptBRFinance,
+    academia: ptBRAcademia,
   },
   'en-US': {
     common: enUSCommon,
@@ -58,6 +61,7 @@ const resources = {
     notifications: enUSNotifications,
     support: enUSSupport,
     finance: enUSFinance,
+    academia: enUSAcademia,
   },
 };
 
@@ -68,7 +72,7 @@ i18n
     lng: 'pt-BR',
     fallbackLng: 'pt-BR',
     defaultNS: 'common',
-    ns: ['common', 'auth', 'dashboard', 'clients', 'settings', 'pipeline', 'ai', 'landing', 'team', 'notifications', 'support', 'finance'],
+    ns: ['common', 'auth', 'dashboard', 'clients', 'settings', 'pipeline', 'ai', 'landing', 'team', 'notifications', 'support', 'finance', 'academia'],
     interpolation: {
       escapeValue: false,
     },

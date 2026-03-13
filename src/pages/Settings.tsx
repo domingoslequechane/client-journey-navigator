@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHeader } from '@/contexts/HeaderContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { DocumentTemplatesTab } from '@/components/settings/DocumentTemplatesTab';
 import { InvoiceTemplateSettings } from '@/components/settings/InvoiceTemplateSettings';
@@ -59,6 +60,7 @@ export default function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'profile' | 'agency' | 'knowledge' | 'documents'>('profile');
+  const { setBackAction } = useHeader();
 
   const [settings, setSettings] = useState<AgencySettings>({
     id: '',
@@ -412,6 +414,11 @@ export default function Settings() {
     }
   };
 
+  useEffect(() => {
+    setBackAction(() => handleBack);
+    return () => setBackAction(null);
+  }, [setBackAction]);
+
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
       admin: 'Administrador',
@@ -459,7 +466,7 @@ export default function Settings() {
   return (
     <div className="h-full flex flex-col">
       {/* Fixed Header */}
-      <div className="shrink-0 p-4 md:px-8 md:pt-8 md:pb-4 bg-background sticky top-0 z-10 border-b border-border md:border-b-0">
+      <div className="shrink-0 p-4 md:px-8 md:pt-8 md:pb-4 bg-background sticky top-0 z-10 border-b border-border md:border-b-0 hidden md:block">
         <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 max-w-4xl mx-auto">
           <Button variant="ghost" size="icon" onClick={handleBack} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
@@ -472,7 +479,7 @@ export default function Settings() {
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-auto p-4 md:px-8 md:pb-8">
+      <div className="flex-1 overflow-auto p-4 md:px-8 md:pb-8 pt-6 md:pt-4">
         <div className="max-w-4xl mx-auto">
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">

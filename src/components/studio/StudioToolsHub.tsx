@@ -77,28 +77,26 @@ export function StudioToolsHub({ className }: StudioToolsHubProps) {
                                         : 'bg-background border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
                                 )}
                             >
-                                <span>{cat.emoji}</span>
                                 {cat.label}
                             </button>
                         ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Tool groups */}
-            {filtered.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    <p className="text-sm">Nenhuma ferramenta encontrada para "{search}"</p>
                 </div>
-            ) : (
-                groups.map((group) => (
-                    <section key={group.id}>
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="text-lg">{group.emoji}</span>
-                            <h2 className="text-sm font-semibold text-foreground">{group.label}</h2>
-                            <span className="text-xs text-muted-foreground">({group.tools.length})</span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            )}
+        </div>
+
+        {/* Tool groups */}
+        {filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+                <p className="text-sm">Nenhuma ferramenta encontrada para "{search}"</p>
+            </div>
+        ) : (
+            groups.map((group) => (
+                <section key={group.id}>
+                    <div className="flex items-center gap-2 mb-3">
+                        <h2 className="text-sm font-semibold text-foreground">{group.label}</h2>
+                        <span className="text-xs text-muted-foreground">({group.tools.length})</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {group.tools.map((tool) => (
                                 <ToolCard key={tool.id} tool={tool} />
                             ))}

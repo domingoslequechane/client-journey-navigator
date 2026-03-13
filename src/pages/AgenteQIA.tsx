@@ -22,6 +22,7 @@ import { useMessageFavorites } from '@/hooks/useMessageFavorites';
 import { useDraft } from '@/hooks/useDraft';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHeader } from '@/contexts/HeaderContext';
 
 // Modular Components
 import { Message, ClientWithConversation, PendingFile } from '@/components/ai/types';
@@ -63,6 +64,7 @@ export default function AgenteQIA() {
   const { canAccessAI, incrementUsage, usage, limits } = usePlanLimits();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
   const { isFavorited, toggleFavorite, isToggling } = useMessageFavorites(organizationId);
+  const { setBackAction, setCustomTitle, setCustomIcon } = useHeader();
 
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -456,6 +458,18 @@ export default function AgenteQIA() {
     }, 400);
   };
 
+  useEffect(() => {
+    if (isMobile && selectedClientId && selectedClient) {
+      setCustomTitle(selectedClient.company_name);
+      setCustomIcon(Bot);
+      setBackAction(() => handleBackToClientList);
+    } else {
+      setCustomTitle(null);
+      setCustomIcon(null);
+      setBackAction(null);
+    }
+  }, [isMobile, selectedClientId, selectedClient, setCustomTitle, setCustomIcon, setBackAction]);
+
   if (subLoading) return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   if (!hasActiveSubscription) return <SubscriptionRequired feature="o Qualify IA" />;
 
@@ -464,7 +478,7 @@ export default function AgenteQIA() {
       {/* Mobile Client List View */}
       {isMobile && !selectedClientId && (
         <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
-          <div className="h-14 px-4 border-b border-border flex items-center justify-between shrink-0">
+          <div className="hidden h-14 px-4 border-b border-border flex items-center justify-between shrink-0">
             <h2 className="font-semibold flex items-center gap-2">
               <Bot className="h-4 w-4 text-primary" />
               {t('navigation.qia', 'Agente QIA', { ns: 'common' })}
@@ -500,12 +514,14 @@ export default function AgenteQIA() {
             </div>
           ) : (
           <div className="flex flex-col bg-background h-full">
-            <ChatHeader
-              client={selectedClient}
-              isMobile={isMobile}
-              onBack={handleBackToClientList}
-              getStageLabel={getStageLabel}
-            />
+            <div className="hidden md:block">
+              <ChatHeader
+                client={selectedClient}
+                isMobile={isMobile}
+                onBack={handleBackToClientList}
+                getStageLabel={getStageLabel}
+              />
+            </div>
 
             <div className="flex-1 relative overflow-hidden min-h-0">
               <ScrollArea className="h-full p-3 md:p-4" onScrollCapture={handleScroll}>

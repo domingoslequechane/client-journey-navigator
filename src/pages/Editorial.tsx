@@ -336,7 +336,7 @@ export default function Editorial() {
     <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <CalendarDays className="h-6 w-6 text-primary" />
             Linha Editorial

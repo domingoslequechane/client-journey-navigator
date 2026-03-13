@@ -12,6 +12,9 @@ import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SERVICE_LABELS, SOURCE_LABELS, ServiceType } from '@/types';
 import { CURRENCIES } from '@/lib/currencies';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useHeader } from '@/contexts/HeaderContext';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export interface ClientFormData {
   companyName: string;
@@ -74,9 +77,21 @@ export function ClientFormView({
   hasRestoredDraft,
   onDiscardDraft,
 }: ClientFormViewProps) {
+  const { setBackAction, setCustomTitle } = useHeader();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setCustomTitle(isEditMode ? 'Editar Cliente' : 'Novo Cliente');
+    setBackAction(() => () => navigate(backLink));
+    return () => {
+      setCustomTitle(null);
+      setBackAction(null);
+    };
+  }, [isEditMode, setCustomTitle, setBackAction, backLink, navigate]);
+
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto">
-      <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+      <AnimatedContainer animation="fade-up" className="hidden md:flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
         <Link to={backLink}>
           <Button variant="ghost" size="icon" className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
         </Link>

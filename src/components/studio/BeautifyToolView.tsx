@@ -8,6 +8,8 @@ import type { StudioTool, StudioImage } from '@/types/studio';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { StudioQuickMenu } from './StudioQuickMenu';
+import { useHeader } from '@/contexts/HeaderContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -25,6 +27,8 @@ interface BeautifyToolViewProps {
 
 export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
+    const { setCustomTitle, setCustomIcon, setBackAction } = useHeader();
     const { images, generateImage, deleteImage, dailyCount } = useStudioImages(tool.id);
 
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -33,6 +37,19 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
     const [isComposing, setIsComposing] = useState(false);
     const [selectedSize, setSelectedSize] = useState('1080x1080');
     const [customPrompt, setCustomPrompt] = useState('');
+
+    useEffect(() => {
+        if (isMobile) {
+            setCustomTitle(tool.label);
+            setCustomIcon(tool.icon);
+            setBackAction(() => () => navigate('/app/studio'));
+        }
+        return () => {
+            setCustomTitle(null);
+            setCustomIcon(null);
+            setBackAction(null);
+        };
+    }, [isMobile, tool, setCustomTitle, setCustomIcon, setBackAction, navigate]);
 
     const getCardSize = (size: string) => {
         switch (size) {
@@ -258,18 +275,20 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
     const showResult = images.length > 0 || isGenerating;
 
     return (
-        <div className="flex h-full bg-background relative overflow-hidden overflow-x-hidden">
-            <StudioQuickMenu currentToolId={tool.id} />
-            <div className="flex-1 flex flex-col relative overflow-hidden">
-                {/* Top Bar for Navigation */}
-                <div className="flex-none p-4 pb-0 flex items-start gap-6 z-20">
+        <div className="flex h-full bg-background relative overflow-hidden w-full">
+            <div className="hidden md:block">
+                <StudioQuickMenu currentToolId={tool.id} />
+            </div>
+            <div className="flex-1 flex flex-col relative overflow-hidden w-full">
+                {/* Top Bar for Navigation - Hidden on mobile as we use main header */}
+                <div className="hidden md:flex flex-none p-4 pb-0 items-start gap-6 z-20">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/app/studio')} className="shrink-0 rounded-full bg-background dark:bg-card shadow-sm hover:bg-muted border h-10 w-10 text-foreground">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col items-center justify-start p-6 pt-2 pb-40 relative overflow-y-auto">
+                <div className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 pt-2 pb-40 relative overflow-y-auto overflow-x-hidden w-full">
                     <div className="max-w-xl w-full flex flex-col items-center gap-6">
 
                         {showResult ? (
@@ -303,13 +322,10 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                         let overlayOpacity = 0;
                                         let translateX = 0;
 
-                                        if (offset !== 0) {
-                                            scale = 1 - (absOffset * 0.12);
-                                            zIndex = 40 - absOffset;
-                                            overlayOpacity = absOffset * 0.3;
-                                            const W = getCardWidth(selectedSize);
-                                            translateX = direction * W * [0, 0.45, 0.65, 0.78][absOffset];
-                                        }
+                                                                                        const baseTranslate = isMobile ? 50 : 260;
+                                            const stepTranslate = isMobile ? 20 : 85;
+                                            translateX = direction * (baseTranslate + (absOffset - 1) * stepTranslate);
+                                            if (offset === 0) translateX = 0;
 
                                         return (
                                             <div
@@ -373,8 +389,9 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                             scale = 1 - (absOffset * 0.12); // 0.88, 0.76, 0.64
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3; // Fade side images
-                                            const W = getCardWidth(img.size || selectedSize);
-                                            translateX = direction * W * [0, 0.45, 0.65, 0.78][absOffset];
+                                            const baseTranslate = isMobile ? 50 : 260;
+                                            const stepTranslate = isMobile ? 20 : 85;
+                                            translateX = direction * (baseTranslate + (absOffset - 1) * stepTranslate);
                                         }
 
                                         return (
@@ -458,7 +475,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                 </div>
 
                 {/* Unified Bottom Control Panel - Recolor Style Match */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-full max-w-lg z-20 px-4">
+                <div className="absolute bottom-4 left-0 right-0 z-20 px-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg">
                     <div className="bg-background dark:bg-card rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] border border-border p-1.5 overflow-hidden flex flex-col gap-1 transition-all duration-300 hover:shadow-[0_8px_40px_rgba(0,0,0,0.25)]">
 
                         {/* Top Area: Large Upload Zone (Reference Image Style) */}

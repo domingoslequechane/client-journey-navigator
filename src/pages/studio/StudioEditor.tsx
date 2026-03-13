@@ -9,8 +9,11 @@ import { GenerationPanel } from '@/components/studio/GenerationPanel';
 import { FlyerGallery } from '@/components/studio/FlyerGallery';
 import { useStudioProject } from '@/hooks/useStudioProjects';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { useHeader } from '@/contexts/HeaderContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import type { GenerationSettings } from '@/types/studio';
+import { useEffect } from 'react';
 
 export default function StudioEditor() {
   const { projectId } = useParams();
@@ -23,8 +26,21 @@ export default function StudioEditor() {
     dailyCount,
   } = useStudioProject(projectId);
   const { incrementUsage } = usePlanLimits();
+  const { setCustomTitle, setBackAction } = useHeader();
+  const isMobile = useIsMobile();
   const [isGenerating, setIsGenerating] = useState(false);
   const [reusedPrompt, setReusedPrompt] = useState<string>('');
+
+  useEffect(() => {
+    if (isMobile && project) {
+      setCustomTitle(project.name);
+      setBackAction(() => () => navigate('/app/studio'));
+    }
+    return () => {
+      setCustomTitle(null);
+      setBackAction(null);
+    };
+  }, [isMobile, project, setCustomTitle, setBackAction, navigate]);
 
   const handleGenerate = async (settings: GenerationSettings) => {
     if (!project) return;
@@ -63,13 +79,13 @@ export default function StudioEditor() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-background">
+    <div className="flex flex-col md:flex-row h-full md:h-[calc(100vh-4rem)] overflow-hidden bg-background">
 
       {/* ── Left Sidebar ── */}
-      <div className="w-[480px] border-r shrink-0 flex flex-col bg-muted/10">
+      <div className="w-full md:w-[480px] border-r shrink-0 flex flex-col bg-muted/10 h-full overflow-hidden">
 
         {/* Left header — same height as right header */}
-        <div className="h-16 border-b bg-background flex items-center gap-2 px-4 shrink-0 shadow-sm">
+        <div className="hidden md:flex h-16 border-b bg-background items-center gap-2 px-4 shrink-0 shadow-sm">
           <Button variant="ghost" size="icon" onClick={() => navigate('/app/studio')} className="shrink-0 -ml-1">
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -87,7 +103,7 @@ export default function StudioEditor() {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4">
           <GenerationPanel
             project={project}
             dailyCount={dailyCount}
@@ -100,10 +116,10 @@ export default function StudioEditor() {
       </div>
 
       {/* ── Main Area ── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden h-full">
 
         {/* Right header — same height as left header */}
-        <div className="h-16 border-b bg-background flex items-center justify-between px-6 shrink-0 shadow-sm">
+        <div className="h-14 md:h-16 border-b bg-background flex items-center justify-between px-4 md:px-6 shrink-0 shadow-sm">
           <div className="flex items-center gap-2">
             <ImageIcon className="h-4 w-4 text-primary" />
             <span className="text-sm font-semibold">Flyers Gerados</span>
@@ -112,26 +128,26 @@ export default function StudioEditor() {
             )}
           </div>
           <div className="flex gap-2">
-            <div className="w-5 h-5 rounded-full border shadow-inner" style={{ backgroundColor: project.primary_color }} title="Cor Primária" />
-            <div className="w-5 h-5 rounded-full border shadow-inner" style={{ backgroundColor: project.secondary_color }} title="Cor Secundária" />
+            <div className="w-4 h-4 md:w-5 md:h-5 rounded-full border shadow-inner" style={{ backgroundColor: project.primary_color }} title="Cor Primária" />
+            <div className="w-4 h-4 md:w-5 md:h-5 rounded-full border shadow-inner" style={{ backgroundColor: project.secondary_color }} title="Cor Secundária" />
           </div>
         </div>
 
         {/* Gallery */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-32">
           {flyersLoading ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : flyers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+            <div className="flex flex-col items-center justify-center h-full py-12 gap-4 text-center">
               <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
                 <ImageIcon className="h-8 w-8 text-muted-foreground" />
               </div>
               <div>
                 <p className="font-semibold text-foreground">Nenhum flyer gerado ainda</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Configure o projeto e clique em "Gerar Flyer com IA" para começar.
+                <p className="text-sm text-muted-foreground mt-1 px-4">
+                  Configure o projeto e clique em "Gerar Flyer com IA" no painel acima para começar.
                 </p>
               </div>
             </div>

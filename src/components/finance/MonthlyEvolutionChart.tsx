@@ -18,14 +18,14 @@ export function MonthlyEvolutionChart({ data, title = 'Evolução Mensal' }: Mon
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
+    <Card className="overflow-hidden border-border transition-colors">
+      <CardHeader className="px-4 py-4 sm:px-6">
+        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-[300px]">
+      <CardContent className="px-2 pb-4 sm:px-6 sm:pb-6">
+        <div className="h-[300px] w-full min-w-0">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <AreaChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3} />

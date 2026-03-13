@@ -81,9 +81,9 @@ export default function FinanceReports() {
 
   return (
     <AnimatedContainer animation="fade-in">
-      <div className="p-4 md:p-8 space-y-6">
+      <div className="p-4 md:p-8 pt-2 md:pt-8 space-y-6">
         <div className="flex flex-col gap-4">
-          <div>
+          <div className="hidden md:block">
             <h1 className="text-2xl font-bold">Resumo Financeiro</h1>
             <p className="text-muted-foreground">Análises financeiras detalhadas</p>
           </div>
@@ -142,8 +142,8 @@ export default function FinanceReports() {
           <CardHeader>
             <CardTitle className="text-lg">Lucro Mensal</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
+          <CardContent className="px-2 sm:px-6">
+            <div className="h-[300px] w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

@@ -7,12 +7,14 @@ import { AnimatedContainer } from '@/components/ui/animated-container';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useHeader } from '@/contexts/HeaderContext';
 
 export default function Subscription() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { organization, refetch } = useSubscription();
   const [syncing, setSyncing] = useState(false);
+  const { setBackAction } = useHeader();
 
   const syncSubscription = async () => {
     if (!organization?.id) return;
@@ -70,14 +72,19 @@ export default function Subscription() {
     }
   }, [searchParams, organization?.id]);
 
+  useEffect(() => {
+    setBackAction(() => () => navigate(-1));
+    return () => setBackAction(null);
+  }, [setBackAction, navigate]);
+
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
       <AnimatedContainer animation="fade-up" className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0 md:flex hidden">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
+          <div className="hidden md:block">
             <h1 className="text-2xl md:text-3xl font-bold">Assinatura</h1>
             <p className="text-sm text-muted-foreground mt-1">Gerencie sua assinatura do Qualify</p>
           </div>

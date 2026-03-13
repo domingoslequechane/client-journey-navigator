@@ -8,6 +8,8 @@ import type { StudioTool, StudioImage } from '@/types/studio';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { StudioQuickMenu } from './StudioQuickMenu';
+import { useHeader } from '@/contexts/HeaderContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -25,6 +27,8 @@ interface RecolorToolViewProps {
 
 export function RecolorToolView({ tool }: RecolorToolViewProps) {
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
+    const { setCustomTitle, setCustomIcon, setBackAction } = useHeader();
     const { images, generateImage, deleteImage, dailyCount } = useStudioImages(tool.id);
 
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -36,6 +40,19 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
     // Slider state
     const [activeIndex, setActiveIndex] = useState(0);
     const [maximizedImage, setMaximizedImage] = useState<StudioImage | null>(null);
+
+    useEffect(() => {
+        if (isMobile) {
+            setCustomTitle(tool.label);
+            setCustomIcon(tool.icon);
+            setBackAction(() => () => navigate('/app/studio'));
+        }
+        return () => {
+            setCustomTitle(null);
+            setCustomIcon(null);
+            setBackAction(null);
+        };
+    }, [isMobile, tool, setCustomTitle, setCustomIcon, setBackAction, navigate]);
 
     // Keep activeIndex within bounds when images change
     useEffect(() => {
@@ -217,18 +234,20 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
     const showResult = images.length > 0 || isGenerating;
 
     return (
-        <div className="flex h-full bg-background relative overflow-hidden">
-            <StudioQuickMenu currentToolId={tool.id} />
-            <div className="flex-1 flex flex-col relative overflow-hidden">
-                {/* Top Bar for Navigation */}
-                <div className="flex-none p-4 pb-0 flex items-start gap-6 z-20">
+        <div className="flex h-full bg-background relative overflow-hidden w-full">
+            <div className="hidden md:block">
+                <StudioQuickMenu currentToolId={tool.id} />
+            </div>
+            <div className="flex-1 flex flex-col relative overflow-hidden w-full">
+                {/* Top Bar for Navigation - Hidden on mobile as we use the main header */}
+                <div className="hidden md:flex flex-none p-4 pb-0 items-start gap-6 z-20">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/app/studio')} className="shrink-0 rounded-full bg-background dark:bg-card shadow-sm hover:bg-muted border h-10 w-10 text-foreground">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col items-center justify-center p-6 pb-32 relative overflow-y-auto">
+                <div className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 pb-32 relative overflow-y-auto overflow-x-hidden w-full">
                     <div className="max-w-xl w-full flex flex-col items-center gap-6">
 
                         {showResult ? (
@@ -266,10 +285,10 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                             scale = 1 - (absOffset * 0.12);
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3;
-                                            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-                                            const baseTranslate = isMobile ? 140 : 260;
-                                            const stepTranslate = isMobile ? 30 : 85;
-                                            translateX = direction * (baseTranslate + absOffset * stepTranslate);
+                                            const baseTranslate = isMobile ? 50 : 260;
+                                            const stepTranslate = isMobile ? 20 : 85;
+                                            translateX = direction * (baseTranslate + (absOffset - 1) * stepTranslate);
+                                            if (offset === 0) translateX = 0;
                                         }
 
                                         return (
@@ -333,10 +352,10 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                             scale = 1 - (absOffset * 0.12); // 0.88, 0.76, 0.64
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3; // Fade side images
-                                            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-                                            const baseTranslate = isMobile ? 140 : 260;
-                                            const stepTranslate = isMobile ? 30 : 85;
-                                            translateX = direction * (baseTranslate + absOffset * stepTranslate);
+                                            const baseTranslate = isMobile ? 50 : 260;
+                                            const stepTranslate = isMobile ? 20 : 85;
+                                            translateX = direction * (baseTranslate + (absOffset - 1) * stepTranslate);
+                                            if (offset === 0) translateX = 0;
                                         }
 
                                         // Render actual image card
@@ -349,7 +368,7 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                                     else setMaximizedImage(img);
                                                 }}
                                                 className={cn(
-                                                    "absolute top-0 bottom-0 my-auto w-[250px] h-[340px] md:w-[410px] md:h-[550px] transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col",
+                                                    "absolute top-0 bottom-0 my-auto w-[230px] h-[310px] md:w-[410px] md:h-[550px] transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col",
                                                     offset === 0 ? "shadow-[0_0px_60px_rgba(0,0,0,0.3)] ring-1 ring-primary/20 cursor-zoom-in" : "shadow-xl cursor-pointer"
                                                 )}
                                                 style={{
@@ -417,7 +436,7 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                 </div>
 
                 {/* Bottom Floating Control Panel */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-full max-w-lg z-20 px-4">
+                <div className="absolute bottom-4 left-0 right-0 z-20 px-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg">
                     <div className="bg-background dark:bg-card rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-border p-1.5 overflow-hidden flex flex-col gap-1 transition-all duration-300 hover:shadow-[0_8px_40px_rgb(0,0,0,0.25)]">
 
                         {/* Upload Dropzone Area */}

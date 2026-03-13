@@ -122,14 +122,14 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8 pt-0 md:pt-8">
       {/* Onboarding Tutorial */}
       <OnboardingTutorial />
 
       {/* Free Plan Banner */}
       <FreePlanBanner />
 
-      <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8" data-tutorial="dashboard">
+      <AnimatedContainer animation="fade-up" delay={0} className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8" data-tutorial="dashboard">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">{t('title')}</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">

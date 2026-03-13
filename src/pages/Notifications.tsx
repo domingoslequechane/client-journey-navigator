@@ -124,7 +124,7 @@ export default function Notifications() {
     <div className="p-4 md:p-6 space-y-6">
       <AnimatedContainer animation="fade-up">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="hidden md:block">
             <h1 className="text-2xl md:text-3xl font-bold">Notificações</h1>
             <p className="text-muted-foreground">Avisos e comunicados do sistema</p>
           </div>

@@ -508,7 +508,7 @@ export default function Team() {
         />
       )}
       <AnimatedContainer animation="fade-up" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             {t('title', 'Equipe')}
             {limits.maxTeamMembers !== null && (

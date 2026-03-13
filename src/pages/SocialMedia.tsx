@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useHeader } from '@/contexts/HeaderContext';
 import { CheckCircle2 } from 'lucide-react';
 
 type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'inbox' | 'reports';
@@ -108,12 +109,33 @@ export default function SocialMedia() {
   const connectedAccounts = accounts.filter(a => a.is_connected);
   const hasClientSelected = selectedClient !== 'all';
 
+  const { setRightAction } = useHeader();
+
   // Sync posts on mount
   useEffect(() => {
     if (hasClientSelected) {
       syncPosts.mutate();
     }
   }, [selectedClient]);
+
+  // Set header action on mobile
+  useEffect(() => {
+    if (hasClientSelected) {
+      setRightAction(
+        <Button
+          onClick={() => handleCreatePost()}
+          size="sm"
+          className="h-9 px-3 gap-2 bg-[#F97316] hover:bg-[#F97316]/90 border-0 shadow-sm animate-in zoom-in duration-300"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="text-xs font-bold">Novo Post</span>
+        </Button>
+      );
+    } else {
+      setRightAction(null);
+    }
+    return () => setRightAction(null);
+  }, [hasClientSelected]);
 
   // Refresh data when tab changes
   useEffect(() => {
@@ -268,11 +290,11 @@ export default function SocialMedia() {
   const socialUsagePercent = limits.maxSocialAccounts ? (usage.socialAccountsCount / limits.maxSocialAccounts) * 100 : 0;
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6 p-4 md:p-6 pt-6 md:pt-6">
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+          <div className="hidden md:block">
             <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <Share2 className="h-6 w-6 text-primary" />
@@ -317,7 +339,7 @@ export default function SocialMedia() {
             </Button>
             <Button
               onClick={() => handleCreatePost()}
-              className="flex-1 sm:flex-none gap-2"
+              className="flex-1 sm:flex-none gap-2 hidden sm:flex"
               disabled={!hasClientSelected}
               size="sm"
             >
