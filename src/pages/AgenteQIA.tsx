@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { Sparkles, Loader2, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Bot, Loader2, PanelRightClose, PanelRightOpen, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
@@ -32,21 +33,30 @@ import { ClientSidebar } from '@/components/ai/ClientSidebar';
 import QIAAvatar from '@/components/ai/QIAAvatar';
 
 const CHAT_URL = `https://hrarkpjuchrbffnrhzcy.supabase.co/functions/v1/chat`;
-
-const STAGE_OPTIONS = [
-  { value: 'all', label: 'Todas as fases' },
-  { value: 'prospeccao', label: 'Prospecção' },
-  { value: 'reuniao', label: 'Reunião' },
-  { value: 'contratacao', label: 'Contratação' },
-  { value: 'producao', label: 'Produção' },
-  { value: 'trafego', label: 'Tráfego' },
-  { value: 'retencao', label: 'Retenção' },
-];
-
 const AI_SIDEBAR_COLLAPSED_KEY = 'qualify-ai-sidebar-collapsed';
 
-export default function AIAssistant() {
+export default function AgenteQIA() {
+  const { t } = useTranslation(['ai', 'common']);
   const queryClient = useQueryClient();
+
+  const STAGE_OPTIONS = useMemo(() => [
+    { value: 'all', label: t('allStages', 'Todas as fases', { ns: 'ai' }) },
+    { value: 'prospeccao', label: t('stages.prospecting', 'Prospecção', { ns: 'ai' }) },
+    { value: 'reuniao', label: t('stages.meeting', 'Reunião', { ns: 'ai' }) },
+    { value: 'contratacao', label: t('stages.contracting', 'Contratação', { ns: 'ai' }) },
+    { value: 'producao', label: t('stages.production', 'Produção', { ns: 'ai' }) },
+    { value: 'trafego', label: t('stages.traffic', 'Tráfego', { ns: 'ai' }) },
+    { value: 'retencao', label: t('stages.retention', 'Retenção', { ns: 'ai' }) },
+  ], [t]);
+
+  const STAGE_LABELS: Record<string, string> = {
+    prospeccao: t('stages.prospecting', 'Prospecção', { ns: 'ai' }),
+    reuniao: t('stages.meeting', 'Reunião', { ns: 'ai' }),
+    contratacao: t('stages.contracting', 'Contratação', { ns: 'ai' }),
+    producao: t('stages.production', 'Produção', { ns: 'ai' }),
+    trafego: t('stages.traffic', 'Tráfego', { ns: 'ai' }),
+    retencao: t('stages.retention', 'Retenção', { ns: 'ai' })
+  };
   const { currencySymbol, organizationId } = useOrganization();
   const { user } = useAuth();
   const isMobile = useIsMobile();
@@ -143,7 +153,10 @@ export default function AIAssistant() {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Olá! Sou a **QIA**, a tua assistente inteligente. Estou aqui para ajudar com o cliente **${selectedClient.company_name}**.\n\nComo posso auxiliar hoje?`,
+        content: t('welcomeMessage', `Olá! Sou o **Agente QIA**, o teu assistente inteligente. Estou aqui para ajudar com o cliente **${selectedClient.company_name}**.\n\nComo posso auxiliar hoje?`, { 
+          ns: 'ai',
+          clientName: selectedClient.company_name 
+        }),
         created_at: new Date().toISOString()
       }]);
     }
@@ -407,29 +420,25 @@ export default function AIAssistant() {
     setTimeout(() => { sendingRef.current = false; }, 500);
   };
 
-  const handleBackToClientList = () => {
-    setSelectedClientId(null);
-    if (isMobile) setShowClientList(true);
-  };
-
   const copyToClipboard = async (messageId: string, content: string) => {
     try {
       const plainText = content.replace(/<[^>]*>/g, '');
       await navigator.clipboard.writeText(plainText);
       setCopiedMessageId(messageId);
-      toast({ title: 'Copiado!' });
+      toast({ title: t('messages.copiedToClipboard', 'Copiado!', { ns: 'common' }) });
       setTimeout(() => setCopiedMessageId(null), 2000);
     } catch {
-      toast({ title: 'Erro ao copiar', variant: 'destructive' });
+      toast({ title: t('messages.errorOccurred', 'Erro ao copiar', { ns: 'common' }), variant: 'destructive' });
     }
   };
 
   const getStageLabel = (stage: string) => {
-    const labels: Record<string, string> = {
-      prospeccao: 'Prospecção', reuniao: 'Reunião', contratacao: 'Fechamento',
-      producao: 'Configuração', trafego: 'Produção', retencao: 'Campanhas'
-    };
-    return labels[stage] || stage;
+    return STAGE_LABELS[stage] || stage;
+  };
+
+  const handleBackToClientList = () => {
+    setSelectedClientId(null);
+    setShowClientList(true);
   };
 
   const handleSelectClient = (clientId: string) => {
@@ -451,17 +460,45 @@ export default function AIAssistant() {
   if (!hasActiveSubscription) return <SubscriptionRequired feature="o Qualify IA" />;
 
   return (
-    <AnimatedContainer animation="fade-in" className="flex h-full">
-      <div className="flex-1 flex flex-col">
-        {!selectedClientId ? (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <AnimatedContainer animation="scale-in" className="text-center">
-              <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary/50" />
-              <h3 className="text-lg font-medium">QIA</h3>
-              <p className="text-sm mt-1">Selecione um cliente para iniciar uma conversa</p>
-            </AnimatedContainer>
+    <AnimatedContainer animation="fade-in" className="flex h-full overflow-hidden">
+      {/* Mobile Client List View */}
+      {isMobile && !selectedClientId && (
+        <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
+          <div className="h-14 px-4 border-b border-border flex items-center justify-between shrink-0">
+            <h2 className="font-semibold flex items-center gap-2">
+              <Bot className="h-4 w-4 text-primary" />
+              {t('navigation.qia', 'Agente QIA', { ns: 'common' })}
+            </h2>
           </div>
-        ) : (
+          <div className="flex-1 overflow-hidden">
+            <ClientSidebar
+              clients={filteredClients}
+              loadingClients={loadingClients}
+              selectedClientId={selectedClientId}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              filterStage={filterStage}
+              setFilterStage={setFilterStage}
+              onSelectClient={handleSelectClient}
+              getStageLabel={getStageLabel}
+              stageOptions={STAGE_OPTIONS}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Main Chat Area */}
+      {(!isMobile || selectedClientId) && (
+        <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden relative">
+          {!selectedClientId ? (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <AnimatedContainer animation="scale-in" className="text-center">
+                <Bot className="h-12 w-12 mx-auto mb-4 text-primary/50" />
+                <h3 className="text-lg font-medium">{t('navigation.qia', 'Agente QIA', { ns: 'common' })}</h3>
+                <p className="text-sm mt-1">{t('selectClientPrompt', 'Selecione um cliente para iniciar uma conversa', { ns: 'ai' })}</p>
+              </AnimatedContainer>
+            </div>
+          ) : (
           <div className="flex flex-col bg-background h-full">
             <ChatHeader
               client={selectedClient}
@@ -493,7 +530,7 @@ export default function AIAssistant() {
                           <QIAAvatar size={isMobile ? 28 : 32} className="shrink-0" />
                           <div className="bg-muted/50 rounded-xl px-4 py-3 border border-border/50">
                             <span className="text-sm text-muted-foreground font-medium italic animate-pulse">
-                              Estou a pensar...
+                              {t('thinking', 'Estou a pensar...', { ns: 'ai' })}
                             </span>
                           </div>
                         </div>
@@ -521,18 +558,21 @@ export default function AIAssistant() {
           </div>
         )}
       </div>
+      )}
 
-      <div className={cn("border-l border-border bg-muted/30 flex flex-col transition-all duration-300", sidebarCollapsed ? "w-16" : "w-80")}>
-        <div className="h-16 px-4 border-b border-border flex items-center justify-between">
-          {!sidebarCollapsed && <h2 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" />Conversas</h2>}
-          <Button variant="ghost" size="icon" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className={sidebarCollapsed ? "mx-auto" : ""}>
-            {sidebarCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
-          </Button>
-        </div>
+      {/* Desktop Sidebar */}
+      {!isMobile && (
+        <div className={cn("border-l border-border bg-muted/30 flex flex-col transition-all duration-300", sidebarCollapsed ? "w-16" : "w-80")}>
+          <div className="h-16 px-4 border-b border-border flex items-center justify-between">
+            {!sidebarCollapsed && <h2 className="font-semibold flex items-center gap-2"><Bot className="h-4 w-4 text-primary" />{t('conversations', 'Conversas', { ns: 'ai' })}</h2>}
+            <Button variant="ghost" size="icon" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className={sidebarCollapsed ? "mx-auto" : ""}>
+              {sidebarCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+            </Button>
+          </div>
 
         {!sidebarCollapsed && limits.maxAIMessagesPerMonth !== null && (
           <div className="p-4 border-b border-border">
-            <div className="text-xs text-muted-foreground mb-2">Uso de IA este mês</div>
+            <div className="text-xs text-muted-foreground mb-2">{t('aiUsageThisMonth', 'Uso de IA este mês', { ns: 'ai' })}</div>
             <div className="flex items-center gap-3">
               <Progress
                 value={(usage.aiMessagesThisMonth / (limits.maxAIMessagesPerMonth || 1)) * 100}
@@ -545,21 +585,21 @@ export default function AIAssistant() {
           </div>
         )}
 
-        {!sidebarCollapsed && (
-          <ClientSidebar
-            clients={filteredClients}
-            loadingClients={loadingClients}
-            selectedClientId={selectedClientId}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            filterStage={filterStage}
-            setFilterStage={setFilterStage}
-            onSelectClient={handleSelectClient}
-            getStageLabel={getStageLabel}
-            stageOptions={STAGE_OPTIONS}
-          />
-        )}
+        <ClientSidebar
+          clients={filteredClients}
+          loadingClients={loadingClients}
+          selectedClientId={selectedClientId}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          filterStage={filterStage}
+          setFilterStage={setFilterStage}
+          onSelectClient={handleSelectClient}
+          getStageLabel={getStageLabel}
+          stageOptions={STAGE_OPTIONS}
+          collapsed={sidebarCollapsed}
+        />
       </div>
+      )}
     </AnimatedContainer>
   );
 }

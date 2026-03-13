@@ -44,6 +44,17 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
         }
     };
 
+    const getCardWidth = (size: string) => {
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        switch (size) {
+            case '1080x1080': return isMobile ? 280 : 520;
+            case '1080x1920': return isMobile ? 200 : 320;
+            case '1920x1080': return isMobile ? 300 : 620;
+            case '1080x1350': return isMobile ? 240 : 420;
+            default: return isMobile ? 280 : 400;
+        }
+    };
+
     // Slider state
     const [activeIndex, setActiveIndex] = useState(0);
     const [maximizedImage, setMaximizedImage] = useState<StudioImage | null>(null);
@@ -247,7 +258,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
     const showResult = images.length > 0 || isGenerating;
 
     return (
-        <div className="flex h-full bg-background relative overflow-hidden">
+        <div className="flex h-full bg-background relative overflow-hidden overflow-x-hidden">
             <StudioQuickMenu currentToolId={tool.id} />
             <div className="flex-1 flex flex-col relative overflow-hidden">
                 {/* Top Bar for Navigation */}
@@ -258,7 +269,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col items-center justify-center p-6 pb-32 relative overflow-y-auto">
+                <div className="flex-1 flex flex-col items-center justify-start p-6 pt-2 pb-40 relative overflow-y-auto">
                     <div className="max-w-xl w-full flex flex-col items-center gap-6">
 
                         {showResult ? (
@@ -276,7 +287,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                 </Button>
 
                                 {/* Images Container (3D Slider) */}
-                                <div className="relative w-full max-w-7xl h-[340px] md:h-[550px] flex items-center justify-center perspective-[1200px] mt-2 group">
+                                <div className="relative w-full h-[340px] md:h-[550px] flex items-center justify-center perspective-[1200px] mt-2 group">
 
                                     {/* GENERATING CARD */}
                                     {isGenerating && (() => {
@@ -296,12 +307,8 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                             scale = 1 - (absOffset * 0.12);
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3;
-                                            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-                                            const baseTranslate = isMobile
-                                                ? (selectedSize === '1920x1080' ? 200 : (selectedSize === '1080x1080' ? 140 : 100))
-                                                : (selectedSize === '1920x1080' ? 420 : (selectedSize === '1080x1080' ? 360 : 260));
-                                            const stepTranslate = isMobile ? 30 : 85;
-                                            translateX = direction * (baseTranslate + absOffset * stepTranslate);
+                                            const W = getCardWidth(selectedSize);
+                                            translateX = direction * W * [0, 0.45, 0.65, 0.78][absOffset];
                                         }
 
                                         return (
@@ -366,12 +373,8 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                             scale = 1 - (absOffset * 0.12); // 0.88, 0.76, 0.64
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3; // Fade side images
-                                            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-                                            const baseTranslate = isMobile
-                                                ? (selectedSize === '1920x1080' ? 200 : (selectedSize === '1080x1080' ? 140 : 100))
-                                                : (selectedSize === '1920x1080' ? 420 : (selectedSize === '1080x1080' ? 360 : 260));
-                                            const stepTranslate = isMobile ? 30 : 85;
-                                            translateX = direction * (baseTranslate + absOffset * stepTranslate);
+                                            const W = getCardWidth(img.size || selectedSize);
+                                            translateX = direction * W * [0, 0.45, 0.65, 0.78][absOffset];
                                         }
 
                                         return (
@@ -429,8 +432,8 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                     <ChevronRight className="h-6 w-6 md:h-8 md:w-8" />
                                 </Button>
 
-                                <div className="mt-4 z-[60]">
-                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-background shadow-sm border-slate-200 text-slate-600 hover:text-primary transition-colors">
+                                <div className="absolute bottom-[-90px] z-[60]">
+                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-background shadow-sm border-primary text-primary hover:bg-primary/10 transition-colors">
                                         Embeleze outra imagem
                                     </Button>
                                 </div>
@@ -481,7 +484,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                             ) : (
                                 <div className="flex items-center gap-3 text-slate-500 group-hover:text-primary transition-colors">
                                     <Upload className="h-5 w-5" />
-                                    <span className="text-sm font-medium">Drop a file or <span className="text-[#FFB084] font-semibold">select an image</span></span>
+                                    <span className="text-sm font-medium">Drop a file or <span className="text-primary font-semibold">select an image</span></span>
                                 </div>
                             )}
                         </div>
@@ -517,7 +520,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                         className={cn(
                                             "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg transition-all border shrink-0",
                                             selectedSize === s.id
-                                                ? "bg-[#FFB084] border-[#FFB084] shadow-sm scale-110"
+                                                ? "bg-primary border-primary shadow-sm scale-110"
                                                 : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
                                         )}
                                     >
@@ -538,7 +541,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                 disabled={!selectedImage || isGenerating}
                                 className={cn(
                                     "rounded-full h-10 w-10 p-0 shrink-0 transition-all duration-300 shadow-md",
-                                    "bg-[#FFB084] hover:bg-[#FF9E66] text-white border-0",
+                                    "bg-primary hover:bg-primary/90 text-white border-0",
                                     "flex items-center justify-center",
                                     "transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50"
                                 )}

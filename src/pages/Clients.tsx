@@ -242,9 +242,9 @@ export default function Clients() {
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-xs text-muted-foreground">BANT: {bantScore}/40</span>
+                  <span className="text-xs text-muted-foreground">{t('table.bantScore')}: {bantScore}/40</span>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(client.created_at).toLocaleDateString()}
+                    {new Date(client.created_at).toLocaleDateString(tCommon('locale', 'pt-BR'))}
                   </span>
                 </div>
               </div>
@@ -318,7 +318,7 @@ export default function Clients() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {new Date(client.created_at).toLocaleDateString()}
+                      {new Date(client.created_at).toLocaleDateString(tCommon('locale', 'pt-BR'))}
                     </td>
                   </tr>
                 );

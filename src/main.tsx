@@ -1,4 +1,10 @@
 import { createRoot } from "react-dom/client";
+
+// Redirect logic for domain transition
+if (typeof window !== 'undefined' && window.location.hostname === 'qualify.onixagence.com') {
+  window.location.replace(`https://qualify.marketing${window.location.pathname}${window.location.search}`);
+}
+
 import App from "./App.tsx";
 import "./index.css";
 import "./i18n";

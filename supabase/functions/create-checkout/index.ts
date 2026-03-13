@@ -154,7 +154,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const origin = req.headers.get("origin") || "https://qualify.onixagence.com";
+    const origin = req.headers.get("origin") || "https://qualify.marketing";
     const redirectUrl = `${origin}/app/onboarding?success=true`;
 
     console.log("Creating checkout", {

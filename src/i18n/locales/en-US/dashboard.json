@@ -74,5 +74,18 @@
     "salesFunnelDesc": "Visual kanban of the client journey",
     "operationalFlow": "Operational Flow",
     "operationalFlowDesc": "Track clients in production"
+  },
+  "financeOverview": {
+    "title": "Financial Summary of the Month",
+    "viewDetails": "View details",
+    "income": "Income",
+    "expenses": "Expenses",
+    "balance": "Balance",
+    "thisMonth": "This month",
+    "net": "Net"
+  },
+  "focusedGrowth": {
+    "title": "Focused Growth",
+    "description": "Keep converting leads to increase your agency results."
   }
 }

@@ -1,0 +1,78 @@
+{
+  "title": "Academia de Marketing",
+  "subtitle": "Estudos personalizados baseados no seu perfil e desafios",
+  "actions": {
+    "generate": "Gerar Novas Sugestões",
+    "generating": "Gerando..."
+  },
+  "difficulties": {
+    "title": "Minhas Dificuldades",
+    "subtitle": "Diga à QIA no que você precisa melhorar",
+    "placeholder": "Ex: Gestão de tráfego, Vendas...",
+    "empty": "Nenhuma dificuldade adicionada. Adicione uma para sugestões mais precisas.",
+    "alreadyExists": "Esta dificuldade já foi adicionada.",
+    "added": "Dificuldade adicionada",
+    "addedDesc": "O perfil foi atualizado.",
+    "removed": "Dificuldade removida",
+    "removedDesc": "O perfil foi atualizado."
+  },
+  "focus": {
+    "title": "Configurar Foco",
+    "subtitle": "Seu contexto atual de acesso",
+    "areas": "Áreas de Atuação",
+    "hint": "* A IA gera estudos baseados nestas áreas e nas dificuldades que você cadastrar.",
+    "collaborator": "Colaborador"
+  },
+  "stats": {
+    "topicsCount": "Tópicos sugeridos especialmente para você"
+  },
+  "generating": {
+    "title": "Criando sua trilha de conhecimento...",
+    "subtitle": "Analisando seu perfil para identificar os melhores temas para você"
+  },
+  "history": {
+    "title": "Histórico de Sugestões",
+    "count": "{{count}} sugestões de estudo",
+    "all": "Todas as sugestões de estudo geradas anteriormente",
+    "showing": "Mostrando {{start}} a {{end}} de {{total}}",
+    "prev": "Anterior",
+    "next": "Próximo",
+    "empty": "Nenhuma sugestão de estudo ainda",
+    "emptyDesc": "Clique em \"Gerar Novas Sugestões\" para começar"
+  },
+  "suggestion": {
+    "markCompleted": "Marcar como concluído",
+    "markPending": "Marcar como não concluído",
+    "completed": "Concluído",
+    "ai": "IA",
+    "progress": "Progresso",
+    "budget": "Orçamento"
+  },
+  "messages": {
+    "saved": "Sugestões salvas!",
+    "savedDesc": "{{count}} novas sugestões de estudo foram adicionadas.",
+    "generated": "Sugestões geradas",
+    "generatedDesc": "As sugestões foram geradas mas não puderam ser salvas automaticamente.",
+    "error": "Erro",
+    "errorLoad": "Não foi possível carregar as sugestões",
+    "errorGenerate": "Não foi possível gerar sugestões de estudo",
+    "errorStatus": "Não foi possível atualizar o status do estudo",
+    "errorDelete": "Não foi possível remover a sugestão",
+    "studyCompleted": "Estudo concluído",
+    "studyCompletedDesc": "O tópico \"{{title}}\" foi marcado como concluído.",
+    "studyReopened": "Estudo reaberto",
+    "studyReopenedDesc": "O tópico \"{{title}}\" foi marcado como reaberto.",
+    "deleted": "Sugestão removida",
+    "deletedDesc": "A sugestão de estudo foi removida do histórico.",
+    "authError": "Você precisa estar logado para gerar sugestões",
+    "orgError": "Organização não encontrada",
+    "limitError": "Limite de requisições excedido. Tente novamente em alguns minutos.",
+    "creditError": "Créditos insuficientes. Adicione créditos à sua conta.",
+    "failGenerate": "Falha ao gerar sugestões"
+  },
+  "difficulties_labels": {
+    "beginner": "Iniciante",
+    "intermediate": "Intermediário",
+    "advanced": "Avançado"
+  }
+}

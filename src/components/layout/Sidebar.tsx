@@ -14,7 +14,8 @@ import {
   Building2,
   Kanban,
   Sparkles,
-  Workflow,
+  Bot,
+  PenTool,
   UsersRound,
   LogOut,
   GraduationCap,
@@ -138,12 +139,12 @@ export function Sidebar() {
     const allItems = [
       { name: t('navigation.dashboard'), href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true, locked: false, requiredPlan: '' },
       { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canAccessModule('pipeline'), locked: false, requiredPlan: '' },
-      { name: 'Finanças', href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canAccessModule('finances'), locked: !canAccessFinance, requiredPlan: 'Lança' },
-      { name: 'Link23', href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: canAccessModule('link23'), locked: !canAccessLinkTree, requiredPlan: 'Lança' },
-      { name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: canAccessModule('editorial'), locked: !canAccessEditorial, requiredPlan: 'Lança' },
-      { name: 'Social Media', href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: canAccessModule('social'), locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
-      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, tutorialId: 'sidebar-ai', show: canAccessModule('qia'), locked: false, requiredPlan: '' },
-      { name: 'Studio AI', href: '/app/studio', icon: Workflow, tutorialId: 'sidebar-studio', show: canAccessModule('studio'), locked: !canAccessStudio, requiredPlan: 'Lança', beta: true },
+      { name: t('navigation.finance'), href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canAccessModule('finances'), locked: !canAccessFinance, requiredPlan: 'Lança' },
+      { name: t('navigation.link23'), href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: canAccessModule('link23'), locked: !canAccessLinkTree, requiredPlan: 'Lança' },
+      { name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: canAccessModule('editorial'), locked: !canAccessEditorial, requiredPlan: 'Lança' },
+      { name: t('navigation.socialMedia'), href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: canAccessModule('social'), locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
+      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Bot, tutorialId: 'sidebar-ai', show: canAccessModule('qia'), locked: false, requiredPlan: '' },
+      { name: t('navigation.studio'), href: '/app/studio', icon: PenTool, tutorialId: 'sidebar-studio', show: canAccessModule('studio'), locked: !canAccessStudio, requiredPlan: 'Lança' },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: canAccessModule('academy'), locked: false, requiredPlan: '' },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canAccessModule('clients'), locked: false, requiredPlan: '' },
       { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canAccessModule('team'), locked: false, requiredPlan: '' },
@@ -222,19 +223,7 @@ export function Sidebar() {
       >
         <item.icon className="h-5 w-5 shrink-0" />
         {!collapsed && (
-          <div className="flex flex-1 items-center justify-between">
-            <span>{item.name}</span>
-            {item.beta && (
-              <span className={cn(
-                "ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-semibold border transition-colors animate-pulse",
-                isActive
-                  ? "bg-white/20 text-white border-white/30"
-                  : "bg-indigo-500/10 text-indigo-500 border-indigo-500/20"
-              )}>
-                Beta
-              </span>
-            )}
-          </div>
+          <span>{item.name}</span>
         )}
       </Link>
     );
@@ -327,20 +316,11 @@ export function Sidebar() {
                 </TooltipTrigger>
                 <TooltipContent side="right">{t('theme.toggleTheme')}</TooltipContent>
               </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex justify-center">
-                    <LanguageSelector />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">{t('language.select')}</TooltipContent>
-              </Tooltip>
             </div>
           ) : (
             <div className="flex items-center justify-between px-2 py-2">
               <div className="flex items-center gap-1">
                 <ThemeToggle />
-                <LanguageSelector />
               </div>
               <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{t('theme.toggle')}</span>
             </div>

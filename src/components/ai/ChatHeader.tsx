@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ClientWithConversation } from './types';
 
@@ -27,7 +27,7 @@ export const ChatHeader = ({ client, isMobile, onBack, getStageLabel }: ChatHead
       )}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="h-9 w-9 md:h-10 md:w-10 rounded-xl bg-gradient-to-r from-primary to-chart-5 flex items-center justify-center shrink-0">
-          <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
+          <Bot className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
         </div>
         <div className="min-w-0">
           <h1 className="font-semibold text-sm md:text-base truncate">{client?.company_name}</h1>

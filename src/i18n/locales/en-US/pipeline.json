@@ -79,5 +79,8 @@
   "messages": {
     "clientMoved": "Client moved to {{stage}}",
     "stageUpdated": "Stage updated successfully"
+  },
+  "stats": {
+    "activeClients": "Active Clients"
   }
 }

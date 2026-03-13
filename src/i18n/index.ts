@@ -1,6 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+
 
 // pt-BR translations
 import ptBRCommon from './locales/pt-BR/common.json';
@@ -62,19 +62,13 @@ const resources = {
 };
 
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
-    lng: localStorage.getItem('i18nextLng') || 'pt-BR',
+    lng: 'pt-BR',
     fallbackLng: 'pt-BR',
     defaultNS: 'common',
     ns: ['common', 'auth', 'dashboard', 'clients', 'settings', 'pipeline', 'ai', 'landing', 'team', 'notifications', 'support', 'finance'],
-    detection: {
-      order: ['localStorage'],
-      caches: ['localStorage'],
-      lookupLocalStorage: 'i18nextLng',
-    },
     interpolation: {
       escapeValue: false,
     },

@@ -9,7 +9,7 @@
     "operationalFlow": "Fluxo Operacional",
      "pipeline": "Pipeline",
     "clients": "Clientes",
-    "qia": "QIA",
+    "qia": "Agente QIA",
     "academy": "Academia de Marketing",
     "team": "Equipe",
     "settings": "Configurações",
@@ -23,7 +23,12 @@
     "funnel": "Funil",
     "flow": "Fluxo",
     "more": "Mais",
-    "menu": "Menu"
+    "menu": "Menu",
+    "finance": "Finanças",
+    "link23": "Link23",
+    "editorial": "Linha Editorial",
+    "socialMedia": "Social Media",
+    "studio": "Studio Criativo"
   },
   "actions": {
     "save": "Salvar",
@@ -105,7 +110,8 @@
     "noItems": "Nenhum item",
     "emptyState": "Ainda não há nada aqui",
     "connectionError": "Erro de conexão",
-    "sessionExpired": "Sessão expirada"
+    "sessionExpired": "Sessão expirada",
+    "irreversible": "Esta ação não pode ser desfeita."
   },
   "time": {
     "today": "Hoje",

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 
 interface RoleProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: ('admin' | 'sales' | 'operations' | 'campaign_management')[];
+  allowedRoles?: ('admin' | 'sales' | 'operations' | 'campaign_management' | 'owner')[];
   privilege?: PrivilegeKey;
   requireClients?: boolean;
   requireTeam?: boolean;

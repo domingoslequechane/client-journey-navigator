@@ -119,7 +119,7 @@ export default function Pipeline() {
             {tCommon('navigation.pipeline')}
             {limits.maxClients !== null && (
               <Badge variant="outline" className="font-mono">
-                Clientes Ativos: {usage.clientsCount}/{limits.maxClients}
+                {t('stats.activeClients')}: {usage.clientsCount}/{limits.maxClients}
               </Badge>
             )}
           </h1>

@@ -44,6 +44,17 @@ export function ProductStagingToolView({ tool }: ProductStagingToolViewProps) {
         }
     };
 
+    const getCardWidth = (size: string) => {
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        switch (size) {
+            case '1080x1080': return isMobile ? 280 : 520;
+            case '1080x1920': return isMobile ? 200 : 320;
+            case '1920x1080': return isMobile ? 300 : 620;
+            case '1080x1350': return isMobile ? 240 : 420;
+            default: return isMobile ? 280 : 450;
+        }
+    };
+
     const [activeIndex, setActiveIndex] = useState(0);
     const [maximizedImage, setMaximizedImage] = useState<StudioImage | null>(null);
 
@@ -239,7 +250,7 @@ export function ProductStagingToolView({ tool }: ProductStagingToolViewProps) {
     const showResult = images.length > 0 || isGenerating;
 
     return (
-        <div className="flex h-full bg-background relative overflow-hidden">
+        <div className="flex h-full bg-background relative overflow-hidden overflow-x-hidden">
             <StudioQuickMenu currentToolId={tool.id} />
             <div className="flex-1 flex flex-col relative overflow-hidden">
                 <div className="flex-none p-4 pb-0 flex items-start gap-6 z-20">
@@ -248,7 +259,7 @@ export function ProductStagingToolView({ tool }: ProductStagingToolViewProps) {
                     </Button>
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center p-6 pb-32 relative overflow-y-auto">
+                <div className="flex-1 flex flex-col items-center justify-start p-6 pt-2 pb-40 relative overflow-y-auto">
                     <div className="max-w-xl w-full flex flex-col items-center gap-6">
 
                         {showResult ? (
@@ -263,7 +274,7 @@ export function ProductStagingToolView({ tool }: ProductStagingToolViewProps) {
                                     <ChevronLeft className="h-6 w-6 md:h-8 md:w-8" />
                                 </Button>
                                 
-                                <div className="relative w-full max-w-7xl h-[340px] md:h-[550px] flex items-center justify-center perspective-[1200px] mt-2 group">
+                                <div className="relative w-full h-[340px] md:h-[550px] flex items-center justify-center perspective-[1200px] mt-2 group">
 
                                     {isGenerating && (() => {
                                         const logicalIndex = 0;
@@ -282,8 +293,8 @@ export function ProductStagingToolView({ tool }: ProductStagingToolViewProps) {
                                             scale = 1 - (absOffset * 0.12);
                                             zIndex = 40 - absOffset;
                                             overlayOpacity = absOffset * 0.3;
-                                            const baseTranslate = selectedSize === '1920x1080' ? 420 : (selectedSize === '1080x1080' ? 360 : 260);
-                                            translateX = direction * (baseTranslate + absOffset * 85);
+                                            const W = getCardWidth(selectedSize);
+                                            translateX = direction * W * [0, 0.45, 0.65, 0.78][absOffset];
                                         }
 
                                         return (
@@ -349,12 +360,8 @@ export function ProductStagingToolView({ tool }: ProductStagingToolViewProps) {
                                             overlayOpacity = absOffset * 0.3;
                                             const activeImg = images[activeIndex];
                                             const activeSize = activeImg?.size || selectedSize;
-                                            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-                                            const baseTranslate = isMobile
-                                                ? (activeSize === '1920x1080' ? 200 : (activeSize === '1080x1080' ? 140 : 100))
-                                                : (activeSize === '1920x1080' ? 420 : (activeSize === '1080x1080' ? 360 : 260));
-                                            const stepTranslate = isMobile ? 30 : 85;
-                                            translateX = direction * (baseTranslate + absOffset * stepTranslate);
+                                            const W = getCardWidth(activeSize);
+                                            translateX = direction * W * [0, 0.45, 0.65, 0.78][absOffset];
                                         }
 
                                         return (
@@ -410,8 +417,8 @@ export function ProductStagingToolView({ tool }: ProductStagingToolViewProps) {
                                     <ChevronRight className="h-6 w-6 md:h-8 md:w-8" />
                                 </Button>
 
-                                <div className="mt-4 z-[60]">
-                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-background dark:bg-card shadow-sm border-slate-200 dark:border-slate-800 text-foreground hover:text-primary transition-colors">
+                                <div className="absolute bottom-[-90px] z-[60]">
+                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-background dark:bg-card shadow-sm border-primary text-primary hover:bg-primary/10 transition-colors">
                                         Criar outro cenário
                                     </Button>
                                 </div>
@@ -495,7 +502,7 @@ export function ProductStagingToolView({ tool }: ProductStagingToolViewProps) {
                                         className={cn(
                                             "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg transition-all border shrink-0",
                                             selectedSize === s.id
-                                                ? "bg-[#FFB084] border-[#FFB084] shadow-sm scale-110"
+                                                ? "bg-primary border-primary shadow-sm scale-110"
                                                 : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
                                         )}
                                     >

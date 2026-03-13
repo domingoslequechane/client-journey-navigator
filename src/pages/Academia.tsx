@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,28 +57,21 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   avançado: 'bg-red-100 text-red-800',
 };
 
-const DIFFICULTY_LABELS: Record<string, string> = {
-  beginner: 'Iniciante',
-  intermediate: 'Intermediário',
-  advanced: 'Avançado',
-  iniciante: 'Iniciante',
-  intermediário: 'Intermediário',
-  avançado: 'Avançado',
-};
-
-const PRIVILEGE_LABELS: Record<string, string> = {
-  admin: 'Administrador',
-  sales: 'Vendas',
-  operations: 'Operações',
-  clients: 'Clientes',
-  campaign_management: 'Gestão de Campanhas',
-  finance: 'Financeiro',
-  academy: 'Academia de Marketing',
-  team: 'Equipe',
-  studio: 'Designer',
+const PRIVILEGE_MAP: Record<string, string> = {
+  admin: 'navigation.settings',
+  sales: 'navigation.salesFunnel',
+  operations: 'navigation.operationalFlow',
+  clients: 'navigation.clients',
+  campaign_management: 'navigation.pipeline',
+  finance: 'navigation.finance',
+  academy: 'navigation.academy',
+  team: 'navigation.team',
+  studio: 'navigation.studio',
 };
 
 export default function Academia() {
+  const { t, i18n } = useTranslation('academia');
+  const { t: tCommon } = useTranslation('common');
   const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestionToDelete, setSuggestionToDelete] = useState<StudySuggestion | null>(null);
@@ -130,7 +126,7 @@ export default function Academia() {
     startIndex,
     endIndex,
     totalItems,
-  } = usePagination({ data: suggestions, itemsPerPage: 10 });
+  } = usePagination<StudySuggestion>({ data: suggestions, itemsPerPage: 10 });
 
   const parseSuggestions = (content: string) => {
     const suggestions = [];
@@ -212,20 +208,12 @@ export default function Academia() {
         throw new Error("Organização não encontrada");
       }
 
-      const userPrivileges = profile?.privileges?.map((p: string) => PRIVILEGE_LABELS[p] || p).join(', ') || 'Nenhum';
-      const userDifficulties = profile?.difficulties?.join(', ') || 'Nenhuma informada pelo usuário';
+      const userPrivileges = profile?.privileges?.map((p: string) => tCommon(PRIVILEGE_MAP[p] || p)).join(', ') || tCommon('status.none');
+      const userDifficulties = profile?.difficulties?.join(', ') || t('difficulties.empty');
 
-      const resp = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: "user",
-              content: `Como assistente de marketing especializado (QIA), analise o perfil do colaborador abaixo e gere 5 sugestões de estudo prioritárias e personalizadas.
+      const isEnglish = i18n.language.startsWith('en');
+
+      const ptPrompt = `Como assistente de marketing especializado (QIA), analise o perfil do colaborador abaixo e gere 5 sugestões de estudo prioritárias e personalizadas.
 
 Perfil do Colaborador:
 - Privilégios/Áreas de Atuação: ${userPrivileges}
@@ -251,7 +239,47 @@ Descrição: [Descrição detalhada]
 Categoria: [categoria]
 Nível: [nível]
 
-(Continue para as 5 sugestões)`
+(Continue para as 5 sugestões)`;
+
+      const enPrompt = `As a specialized marketing assistant (QIA), analyze the employee profile below and generate 5 priority and personalized study suggestions.
+
+Employee Profile:
+- Privileges/Areas of Action: ${userPrivileges}
+- Current Difficulties: ${userDifficulties}
+${suggestions.filter(s => s.completed).length > 0 ? `- ALREADY COMPLETED studies (do not repeat these themes): ${suggestions.filter(s => s.completed).map(s => s.title).join(', ')}` : ''}
+${suggestions.filter(s => !s.completed).length > 0 ? `- Previously Suggested Studies: ${suggestions.filter(s => !s.completed).map(s => s.title).join(', ')}` : ''}
+
+PROACTIVE INTELLIGENCE RULES:
+1. If specific difficulties were listed, set them as top priority.
+2. IF the user has NOT provided specific difficulties, you must be smart enough to IDENTIFY BOTTLENECKS and potential bottlenecks based on their areas of activity (${userPrivileges}). 
+3. Identify what this profile needs to master to be an elite professional in their role, focusing on productivity, market trends, and process optimization.
+4. AVOID repeating themes that have already been suggested or completed. If it is necessary to touch on a similar theme, ensure it is a DEEPENING (Higher level).
+
+For each suggestion, provide in the EXACT format below:
+
+Suggestion 1: [Title here]
+Description: [Detailed description of why mastering this theme will remove a bottleneck or improve efficiency]
+Category: [sales/marketing/service/technical/management]
+Level: [beginner/intermediate/advanced]
+
+Suggestion 2: [Title here]
+Description: [Detailed description]
+Category: [category]
+Level: [level]
+
+(Continue for the 5 suggestions)`;
+
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "user",
+              content: isEnglish ? enPrompt : ptPrompt
             }
           ]
         }),
@@ -313,14 +341,20 @@ Nível: [nível]
         if (error) throw error;
 
         await refetch();
-        toast({ title: 'Sugestões salvas!', description: `${parsedSuggestions.length} novas sugestões de estudo foram adicionadas.` });
+        toast({ title: t('messages.saved'), description: t('messages.savedDesc', { count: parsedSuggestions.length }) });
       } else {
-        toast({ title: 'Sugestões geradas', description: 'As sugestões foram geradas mas não puderam ser salvas automaticamente.' });
+        toast({ title: t('messages.generated'), description: t('messages.generatedDesc') });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating suggestions:', error);
-      toast({ title: 'Erro', description: 'Não foi possível gerar sugestões de estudo', variant: 'destructive' });
+      let errorMsg = t('messages.errorGenerate');
+      if (error.message.includes('logado')) errorMsg = t('messages.authError');
+      if (error.message.includes('Organização')) errorMsg = t('messages.orgError');
+      if (error.message.includes('Limite')) errorMsg = t('messages.limitError');
+      if (error.message.includes('Créditos')) errorMsg = t('messages.creditError');
+      
+      toast({ title: t('messages.error'), description: errorMsg, variant: 'destructive' });
     } finally {
       setIsGenerating(false);
     }
@@ -337,10 +371,14 @@ Nível: [nível]
 
       await refetch();
       
-      const action = !suggestion.completed ? 'concluído' : 'reaberto';
+      const action = !suggestion.completed ? t('messages.studyCompleted') : t('messages.studyReopened');
+      const actionDesc = !suggestion.completed 
+        ? t('messages.studyCompletedDesc', { title: suggestion.title }) 
+        : t('messages.studyReopenedDesc', { title: suggestion.title });
+        
       toast({ 
-        title: `Estudo ${action}`, 
-        description: `O tópico "${suggestion.title}" foi marcado como ${action}.` 
+        title: action, 
+        description: actionDesc 
       });
 
       if (selectedSuggestion?.id === suggestion.id) {
@@ -348,7 +386,7 @@ Nível: [nível]
       }
     } catch (error) {
       console.error('Error toggling completion:', error);
-      toast({ title: 'Erro', description: 'Não foi possível atualizar o status do estudo', variant: 'destructive' });
+      toast({ title: t('messages.error'), description: t('messages.errorStatus'), variant: 'destructive' });
     }
   };
 
@@ -359,7 +397,7 @@ Nível: [nível]
     try {
       const currentDifficulties = profile.difficulties || [];
       if (currentDifficulties.includes(newDifficulty.trim())) {
-        toast({ title: 'Aviso', description: 'Esta dificuldade já foi adicionada.' });
+        toast({ title: t('messages.error'), description: t('difficulties.alreadyExists') });
         return;
       }
 
@@ -374,10 +412,10 @@ Nível: [nível]
 
       await refetchProfile();
       setNewDifficulty('');
-      toast({ title: 'Dificuldade adicionada', description: 'O perfil foi atualizado.' });
+      toast({ title: t('difficulties.added'), description: t('difficulties.addedDesc') });
     } catch (error) {
       console.error('Error adding difficulty:', error);
-      toast({ title: 'Erro', description: 'Não foi possível adicionar a dificuldade', variant: 'destructive' });
+      toast({ title: t('messages.error'), description: t('messages.errorStatus'), variant: 'destructive' });
     } finally {
       setIsUpdatingDifficulties(false);
     }
@@ -398,10 +436,10 @@ Nível: [nível]
       if (error) throw error;
 
       await refetchProfile();
-      toast({ title: 'Dificuldade removida', description: 'O perfil foi atualizado.' });
+      toast({ title: t('difficulties.removed'), description: t('difficulties.removedDesc') });
     } catch (error) {
       console.error('Error removing difficulty:', error);
-      toast({ title: 'Erro', description: 'Não foi possível remover a dificuldade', variant: 'destructive' });
+      toast({ title: t('messages.error'), description: t('messages.errorStatus'), variant: 'destructive' });
     } finally {
       setIsUpdatingDifficulties(false);
     }
@@ -417,17 +455,17 @@ Nível: [nível]
       if (error) throw error;
 
       await refetch();
-      toast({ title: 'Sugestão removida', description: 'A sugestão de estudo foi removida do histórico.' });
+      toast({ title: t('messages.deleted'), description: t('messages.deletedDesc') });
     } catch (error) {
       console.error('Error deleting suggestion:', error);
-      toast({ title: 'Erro', description: 'Não foi possível remover a sugestão', variant: 'destructive' });
+      toast({ title: t('messages.error'), description: t('messages.errorDelete'), variant: 'destructive' });
     } finally {
       setSuggestionToDelete(null);
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
+    return new Date(dateString).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -440,10 +478,10 @@ Nível: [nível]
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
             <GraduationCap className="h-7 w-7 md:h-8 md:w-8 text-primary" />
-            Academia de Marketing
+            {t('title')}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">
-            Estudos personalizados baseados no seu perfil e desafios
+            {t('subtitle')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -455,12 +493,12 @@ Nível: [nível]
             {isGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Gerando...
+                {t('actions.generating')}
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                <span>Novas Sugestões</span>
+                <span>{t('actions.generate')}</span>
               </>
             )}
           </Button>
@@ -476,16 +514,16 @@ Nível: [nível]
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BrainCircuit className="h-5 w-5 text-primary" />
-                  Minhas Dificuldades
+                  {t('difficulties.title')}
                 </CardTitle>
                 <CardDescription>
-                  Diga à QIA no que você precisa melhorar
+                  {t('difficulties.subtitle')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Ex: Gestão de tráfego, Vendas..."
+                    placeholder={t('difficulties.placeholder')}
                     value={newDifficulty}
                     onChange={(e) => setNewDifficulty(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addDifficulty()}
@@ -517,7 +555,7 @@ Nível: [nível]
                     ))
                   ) : (
                     <p className="text-xs text-muted-foreground italic">
-                      Nenhuma dificuldade adicionada. Adicione uma para sugestões mais precisas.
+                      {t('difficulties.empty')}
                     </p>
                   )}
                 </div>
@@ -531,28 +569,28 @@ Nível: [nível]
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-chart-5" />
-                  Configurar Foco
+                  {t('focus.title')}
                 </CardTitle>
                 <CardDescription>
-                  Seu contexto atual de acesso
+                  {t('focus.subtitle')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Áreas de Atuação</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('focus.areas')}</Label>
                   <div className="flex flex-wrap gap-2">
                     {profile?.privileges && profile.privileges.length > 0 ? (
                       profile.privileges.map((p: string) => (
                         <Badge key={p} variant="outline" className="bg-primary/5 border-primary/20">
-                          {PRIVILEGE_LABELS[p] || p}
+                          {tCommon(PRIVILEGE_MAP[p] || p)}
                         </Badge>
                       ))
                     ) : (
-                      <Badge variant="outline">Colaborador</Badge>
+                      <Badge variant="outline">{t('focus.collaborator')}</Badge>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground pt-2">
-                    * A IA gera estudos baseados nestas áreas e nas dificuldades que você cadastrar.
+                    {t('focus.hint')}
                   </p>
                 </div>
               </CardContent>
@@ -565,16 +603,16 @@ Nível: [nível]
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <GraduationCap className="h-5 w-5 text-chart-2" />
-                  Academia de Marketing
+                  {t('title')}
                 </CardTitle>
                 <CardDescription>
-                  Seus tópicos de estudo salvos
+                  {t('history.all')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
                   <div className="text-3xl font-bold">{suggestions.length}</div>
-                  <div className="text-sm text-muted-foreground">Tópicos sugeridos<br />especialmente para você</div>
+                  <div className="text-sm text-muted-foreground">{t('stats.topicsCount')}</div>
                 </div>
               </CardContent>
             </Card>
@@ -595,7 +633,7 @@ Nível: [nível]
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-                        Criando sua trilha de conhecimento...
+                        {t('generating.title')}
                       </h3>
                       <div className="flex items-center gap-3 mt-2">
                         <div className="flex gap-1">
@@ -604,7 +642,7 @@ Nível: [nível]
                           <div className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" />
                         </div>
                         <p className="text-sm text-muted-foreground font-medium">
-                          Analisando seu perfil para identificar os melhores temas para você
+                          {t('generating.subtitle')}
                         </p>
                       </div>
                     </div>
@@ -622,16 +660,16 @@ Nível: [nível]
                   <div>
                     <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                       <BookOpen className="h-5 w-5" />
-                      Histórico de Sugestões
+                      {t('history.title')}
                     </CardTitle>
                     <CardDescription className="text-sm">
-                      {totalItems > 0 ? `${totalItems} sugestões de estudo` : 'Todas as sugestões de estudo geradas anteriormente'}
+                      {totalItems > 0 ? t('history.count', { count: totalItems }) : t('history.all')}
                     </CardDescription>
                   </div>
                   {totalPages > 1 && (
                     <div className="flex flex-col md:flex-row items-center gap-4">
                       <span className="text-sm text-muted-foreground order-2 md:order-1">
-                        Mostrando <span className="font-medium text-foreground">{startIndex}</span> a <span className="font-medium text-foreground">{endIndex}</span> de <span className="font-medium text-foreground">{totalItems}</span>
+                        {t('history.showing', { start: startIndex, end: endIndex, total: totalItems })}
                       </span>
 
                       <div className="flex items-center gap-1 order-1 md:order-2">
@@ -643,7 +681,7 @@ Nível: [nível]
                           disabled={isFirstPage}
                         >
                           <ChevronLeft className="h-4 w-4" />
-                          <span className="hidden sm:inline">Anterior</span>
+                          <span className="hidden sm:inline">{t('history.prev')}</span>
                         </Button>
 
                         <div className="flex items-center gap-1">
@@ -677,7 +715,7 @@ Nível: [nível]
                           onClick={nextPage}
                           disabled={isLastPage}
                         >
-                          <span className="hidden sm:inline">Próximo</span>
+                          <span className="hidden sm:inline">{t('history.next')}</span>
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>
@@ -693,8 +731,8 @@ Nível: [nível]
                 ) : suggestions.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Nenhuma sugestão de estudo ainda</p>
-                    <p className="text-sm mt-1">Clique em "Gerar Novas Sugestões" para começar</p>
+                    <p>{t('history.empty')}</p>
+                    <p className="text-sm mt-1">{t('history.emptyDesc')}</p>
                   </div>
                 ) : (
                   <div className="flex flex-col h-full">
@@ -720,7 +758,7 @@ Nível: [nível]
                                       e.stopPropagation();
                                       toggleSuggestionCompletion(suggestion);
                                     }}
-                                    title={suggestion.completed ? "Marcar como não concluído" : "Marcar como concluído"}
+                                    title={suggestion.completed ? t('suggestion.markPending') : t('suggestion.markCompleted')}
                                   >
                                     {suggestion.completed ? (
                                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check-circle-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
@@ -752,18 +790,18 @@ Nível: [nível]
                                 </Badge>
                                 {suggestion.difficulty_level && (
                                   <Badge className={`text-[10px] uppercase font-bold tracking-wider py-0 px-2 h-5 ${DIFFICULTY_COLORS[suggestion.difficulty_level] || 'bg-muted text-muted-foreground'}`}>
-                                    {DIFFICULTY_LABELS[suggestion.difficulty_level] || suggestion.difficulty_level}
+                                    {t(`difficulties_labels.${suggestion.difficulty_level}`, { defaultValue: suggestion.difficulty_level })}
                                   </Badge>
                                 )}
                                 {suggestion.ai_generated && (
                                   <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider py-0 px-2 h-5 gap-1 bg-chart-5/10 text-chart-5 border-chart-5/20">
                                     <Sparkles className="h-2.5 w-2.5" />
-                                    IA
+                                    {t('suggestion.ai')}
                                   </Badge>
                                 )}
                                 {suggestion.completed && (
                                   <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider py-0 px-2 h-5 gap-1 bg-green-500/10 text-green-500 border-green-500/20">
-                                    Concluído
+                                    {t('suggestion.completed')}
                                   </Badge>
                                 )}
                                 <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto font-medium">
@@ -789,7 +827,7 @@ Nível: [nível]
                             disabled={isFirstPage}
                           >
                             <ChevronLeft className="h-4 w-4" />
-                            <span>Anterior</span>
+                            <span>{t('history.prev')}</span>
                           </Button>
 
                           <div className="flex items-center gap-1 mx-2">
@@ -814,7 +852,7 @@ Nível: [nível]
                             onClick={nextPage}
                             disabled={isLastPage}
                           >
-                            <span>Próximo</span>
+                            <span>{t('history.next')}</span>
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                         </div>
@@ -836,12 +874,12 @@ Nível: [nível]
               {selectedSuggestion?.ai_generated && (
                 <Badge variant="secondary" className="gap-1">
                   <Sparkles className="h-3 w-3" />
-                  Gerado por IA
+                  {t('suggestion.ai')}
                 </Badge>
               )}
               {selectedSuggestion?.difficulty_level && (
                 <Badge className={DIFFICULTY_COLORS[selectedSuggestion.difficulty_level] || 'bg-muted text-muted-foreground'}>
-                  {DIFFICULTY_LABELS[selectedSuggestion.difficulty_level] || selectedSuggestion.difficulty_level}
+                  {t(`difficulties_labels.${selectedSuggestion.difficulty_level}`, { defaultValue: selectedSuggestion.difficulty_level })}
                 </Badge>
               )}
               <Badge variant="outline">
@@ -849,7 +887,7 @@ Nível: [nível]
               </Badge>
               {selectedSuggestion?.completed && (
                 <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                  Concluído
+                  {t('suggestion.completed')}
                 </Badge>
               )}
             </div>
@@ -884,12 +922,12 @@ Nível: [nível]
               {selectedSuggestion?.completed ? (
                 <>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check-circle-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
-                  Concluído
+                  {t('suggestion.completed')}
                 </>
               ) : (
                 <>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle"><circle cx="12" cy="12" r="10"/></svg>
-                  Marcar como concluído
+                  {t('suggestion.markCompleted')}
                 </>
               )}
             </Button>
@@ -903,7 +941,7 @@ Nível: [nível]
               className="gap-2"
             >
               <Trash2 className="h-4 w-4" />
-              Remover
+              {tCommon('actions.delete')}
             </Button>
           </div>
         </DialogContent>
@@ -913,18 +951,18 @@ Nível: [nível]
       <AlertDialog open={!!suggestionToDelete} onOpenChange={() => setSuggestionToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover sugestão de estudo?</AlertDialogTitle>
+            <AlertDialogTitle>{t('messages.deleted')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover a sugestão "{suggestionToDelete?.title}"? Esta ação não pode ser desfeita.
+              {t('messages.confirmDelete')} "{suggestionToDelete?.title}"? {tCommon('messages.irreversible')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon('actions.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => suggestionToDelete && deleteSuggestion(suggestionToDelete.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Remover
+              {tCommon('actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

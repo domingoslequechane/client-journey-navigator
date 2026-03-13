@@ -74,5 +74,18 @@
     "salesFunnelDesc": "Kanban visual da jornada do cliente",
     "operationalFlow": "Fluxo Operacional",
     "operationalFlowDesc": "Acompanhe clientes em produção"
+  },
+  "financeOverview": {
+    "title": "Resumo Financeiro do Mês",
+    "viewDetails": "Ver detalhes",
+    "income": "Receitas",
+    "expenses": "Despesas",
+    "balance": "Saldo",
+    "thisMonth": "Este mês",
+    "net": "Líquido"
+  },
+  "focusedGrowth": {
+    "title": "Crescimento Focado",
+    "description": "Continue convertendo leads para aumentar os resultados da sua agência."
   }
 }

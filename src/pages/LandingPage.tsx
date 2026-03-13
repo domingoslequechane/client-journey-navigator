@@ -52,7 +52,7 @@ import {
 import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration';
 import { useEffect, useState, useRef } from 'react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { LanguageSelector } from '@/components/ui/language-selector';
+
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 // Plan images
@@ -214,7 +214,7 @@ export default function LandingPage() {
             <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{t('header.faq')}</a>
           </nav>
           <div className="flex items-center gap-2">
-            <LanguageSelector />
+
             <ThemeToggle />
             {canInstall && !isInstalled && (
               <Button 

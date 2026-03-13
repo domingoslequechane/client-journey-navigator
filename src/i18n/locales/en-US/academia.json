@@ -1,0 +1,78 @@
+{
+  "title": "Marketing Academy",
+  "subtitle": "Personalized studies based on your profile and challenges",
+  "actions": {
+    "generate": "Generate New Suggestions",
+    "generating": "Generating..."
+  },
+  "difficulties": {
+    "title": "My Difficulties",
+    "subtitle": "Tell QIA what you need to improve",
+    "placeholder": "E.g.: Traffic Management, Sales...",
+    "empty": "No difficulties added. Add one for more precise suggestions.",
+    "alreadyExists": "This difficulty has already been added.",
+    "added": "Difficulty added",
+    "addedDesc": "The profile has been updated.",
+    "removed": "Difficulty removed",
+    "removedDesc": "The profile has been updated."
+  },
+  "focus": {
+    "title": "Configure Focus",
+    "subtitle": "Your current access context",
+    "areas": "Areas of Action",
+    "hint": "* AI generates studies based on these areas and the difficulties you register.",
+    "collaborator": "Collaborator"
+  },
+  "stats": {
+    "topicsCount": "Study topics suggested especially for you"
+  },
+  "generating": {
+    "title": "Creating your knowledge path...",
+    "subtitle": "Analyzing your profile to identify the best themes for you"
+  },
+  "history": {
+    "title": "Suggestion History",
+    "count": "{{count}} study suggestions",
+    "all": "All study suggestions generated previously",
+    "showing": "Showing {{start}} to {{end}} of {{total}}",
+    "prev": "Previous",
+    "next": "Next",
+    "empty": "No study suggestions yet",
+    "emptyDesc": "Click \"Generate New Suggestions\" to start"
+  },
+  "suggestion": {
+    "markCompleted": "Mark as completed",
+    "markPending": "Mark as not completed",
+    "completed": "Completed",
+    "ai": "AI",
+    "progress": "Progress",
+    "budget": "Budget"
+  },
+  "messages": {
+    "saved": "Suggestions saved!",
+    "savedDesc": "{{count}} new study suggestions were added.",
+    "generated": "Suggestions generated",
+    "generatedDesc": "The suggestions were generated but could not be saved automatically.",
+    "error": "Error",
+    "errorLoad": "Could not load suggestions",
+    "errorGenerate": "Could not generate study suggestions",
+    "errorStatus": "Could not update study status",
+    "errorDelete": "Could not remove suggestion",
+    "studyCompleted": "Study completed",
+    "studyCompletedDesc": "The topic \"{{title}}\" was marked as completed.",
+    "studyReopened": "Study reopened",
+    "studyReopenedDesc": "The topic \"{{title}}\" was marked as reopened.",
+    "deleted": "Suggestion removed",
+    "deletedDesc": "The study suggestion was removed from the history.",
+    "authError": "You must be logged in to generate suggestions",
+    "orgError": "Organization not found",
+    "limitError": "Request limit exceeded. Try again in a few minutes.",
+    "creditError": "Insufficient credits. Add credits to your account.",
+    "failGenerate": "Failed to generate suggestions"
+  },
+  "difficulties_labels": {
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  }
+}

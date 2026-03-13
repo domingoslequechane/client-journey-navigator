@@ -46,30 +46,30 @@ const ROLE_COLORS: Record<string, string> = {
   admin: 'bg-red-100 text-red-800',
 };
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  active: { label: 'Ativo', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  pending: { label: 'Convite Pendente', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-  suspended: { label: 'Suspenso', color: 'bg-red-100 text-red-800', icon: XCircle },
+const STATUS_CONFIG: Record<string, { labelKey: string; color: string; icon: any }> = {
+  active: { labelKey: 'status.active', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+  pending: { labelKey: 'status.pending', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+  suspended: { labelKey: 'status.suspended', color: 'bg-red-100 text-red-800', icon: XCircle },
 };
 
 const PRIVILEGES = [
-  { id: 'sales', label: 'Vendas', description: 'Funil de vendas no Pipeline e edição de clientes' },
-  { id: 'designer', label: 'Designer', description: 'Fluxo operacional no Pipeline (sem edição de clientes)' },
-  { id: 'finance', label: 'Finanças', description: 'Gerenciamento financeiro da agência' },
-  { id: 'link23', label: 'Link 23', description: 'Gerenciamento de árvores de links' },
-  { id: 'editorial', label: 'Linha Editorial', description: 'Gerenciamento da linha editorial' },
-  { id: 'social_media', label: 'Social Media', description: 'Gerenciamento de redes sociais sem restrições' },
-  { id: 'studio', label: 'Studio AI', description: 'Geração de imagens e créditos de IA' },
-  { id: 'clients', label: 'Clientes', description: 'Gerenciamento de usuários das empresas' },
-  { id: 'team', label: 'Equipa', description: 'Gerenciamento de membros da equipe da agência' },
+  { id: 'sales', labelKey: 'navigation.sales', descriptionKey: 'roles.sales.description' },
+  { id: 'designer', labelKey: 'navigation.operations', descriptionKey: 'roles.operations.description' },
+  { id: 'finance', labelKey: 'navigation.finance', descriptionKey: 'finance.title' },
+  { id: 'link23', labelKey: 'navigation.link23', descriptionKey: 'navigation.link23' },
+  { id: 'editorial', labelKey: 'navigation.editorial', descriptionKey: 'navigation.editorial' },
+  { id: 'social_media', labelKey: 'navigation.socialMedia', descriptionKey: 'navigation.socialMedia' },
+  { id: 'studio', labelKey: 'navigation.studio', descriptionKey: 'navigation.studio' },
+  { id: 'clients', labelKey: 'navigation.clients', descriptionKey: 'navigation.clients' },
+  { id: 'team', labelKey: 'navigation.team', descriptionKey: 'navigation.team' },
 ] as const;
 
 const UNIVERSAL_PRIVILEGES = [
-  { id: 'qia', label: 'QIA' },
-  { id: 'academy', label: 'Academia' },
-  { id: 'support', label: 'Suporte e Feedback' },
-  { id: 'notifications', label: 'Notificações' },
-  { id: 'settings', label: 'Configurações' },
+  { id: 'qia', labelKey: 'navigation.qia' },
+  { id: 'academy', labelKey: 'navigation.academy' },
+  { id: 'support', labelKey: 'navigation.support' },
+  { id: 'notifications', labelKey: 'navigation.notifications' },
+  { id: 'settings', labelKey: 'navigation.settings' },
 ];
 
 const inviteSchema = z.object({
@@ -116,8 +116,8 @@ export default function Team() {
       } else if (!canManageTeam) {
         navigate('/app');
         toast({
-          title: 'Acesso negado',
-          description: 'Você não tem acesso ao módulo de Equipe',
+          title: t('messages.accessDenied', 'Acesso negado'),
+          description: t('messages.noTeamAccess', 'Você não tem acesso ao módulo de Equipe'),
           variant: 'destructive',
         });
       }
@@ -231,7 +231,7 @@ export default function Team() {
       setMembers(allMembers);
     } catch (error) {
       console.error('Error fetching members:', error);
-      toast({ title: 'Erro', description: 'Não foi possível carregar a equipe', variant: 'destructive' });
+      toast({ title: t('messages.error', 'Erro'), description: t('messages.loadError', 'Não foi possível carregar a equipe'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -510,14 +510,14 @@ export default function Team() {
       <AnimatedContainer animation="fade-up" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            Equipe
+            {t('title', 'Equipe')}
             {limits.maxTeamMembers !== null && (
               <Badge variant="outline" className="font-mono">
                 {usage.teamMembersCount}/{limits.maxTeamMembers}
               </Badge>
             )}
           </h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">Gerencie os membros da sua equipe</p>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">{t('subtitle', 'Gerencie os membros da sua equipe')}</p>
         </div>
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <DialogTrigger asChild>
@@ -528,42 +528,42 @@ export default function Team() {
               {!canInviteTeamMember ? (
                 <>
                   <Lock className="h-4 w-4" />
-                  <span className="hidden sm:inline">Limite Atingido</span>
-                  <span className="sm:hidden">Limite</span>
+                  <span className="hidden sm:inline">{t('limits.reached', 'Limite Atingido')}</span>
+                  <span className="sm:hidden">{t('limits.reached', 'Limite')}</span>
                 </>
               ) : (
                 <>
                   <UserPlus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Adicionar Membro</span>
-                  <span className="sm:hidden">Adicionar</span>
+                  <span className="hidden sm:inline">{t('invite.title', 'Adicionar Membro')}</span>
+                  <span className="sm:hidden">{t('invite.title', 'Adicionar')}</span>
                 </>
               )}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Convidar Novo Membro</DialogTitle>
+              <DialogTitle>{t('invite.title', 'Convidar Novo Membro')}</DialogTitle>
               <DialogDescription>
-                Envie um convite por e-mail para adicionar um novo membro à equipe.
+                {t('invite.description', 'Envie um convite por e-mail para adicionar um novo membro à equipe.')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="invite-name">Nome Completo</Label>
+                <Label htmlFor="invite-name">{t('invite.fullName', 'Nome Completo')}</Label>
                 <Input
                   id="invite-name"
-                  placeholder="Nome do colaborador"
+                  placeholder={t('invite.fullNamePlaceholder', 'Nome do colaborador')}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
                 {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="invite-email">E-mail</Label>
+                <Label htmlFor="invite-email">{t('invite.email', 'E-mail')}</Label>
                 <Input
                   id="invite-email"
                   type="email"
-                  placeholder="email@exemplo.com"
+                  placeholder={t('invite.emailPlaceholder', 'email@exemplo.com')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -591,13 +591,13 @@ export default function Team() {
                             htmlFor={`privilege-${privilege.id}`}
                             className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
                           >
-                            {privilege.label}
+                            {tCommon(privilege.labelKey)}
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary transition-colors" />
                               </TooltipTrigger>
                               <TooltipContent side="right" className="max-w-[220px]">
-                                <p className="text-xs">{privilege.description}</p>
+                                <p className="text-xs">{privilege.descriptionKey.includes('.') ? t(privilege.descriptionKey) : tCommon(privilege.descriptionKey)}</p>
                               </TooltipContent>
                             </Tooltip>
                           </label>
@@ -616,18 +616,18 @@ export default function Team() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setInviteOpen(false)}>
-                Cancelar
+                {tCommon('actions.cancel', 'Cancelar')}
               </Button>
               <Button onClick={handleInvite} disabled={inviting} className="gap-2">
                 {inviting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Enviando...
+                    {t('invite.sending', 'Enviando...')}
                   </>
                 ) : (
                   <>
                     <Mail className="h-4 w-4" />
-                    Enviar Convite
+                    {t('invite.send', 'Enviar Convite')}
                   </>
                 )}
               </Button>
@@ -667,13 +667,13 @@ export default function Team() {
                         htmlFor={`edit-privilege-${privilege.id}`}
                         className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
                       >
-                        {privilege.label}
+                        {tCommon(privilege.labelKey)}
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Info className="h-3.5 w-3.5 text-muted-foreground" />
                           </TooltipTrigger>
                           <TooltipContent side="right">
-                            <p className="text-xs">{privilege.description}</p>
+                            <p className="text-xs">{privilege.descriptionKey.includes('.') ? t(privilege.descriptionKey) : tCommon(privilege.descriptionKey)}</p>
                           </TooltipContent>
                         </Tooltip>
                       </label>
@@ -810,176 +810,178 @@ export default function Team() {
       </AlertDialog>
 
       <AnimatedContainer animation="fade-up" delay={0.1} className="bg-card border border-border rounded-xl">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Membro</TableHead>
-              <TableHead className="hidden md:table-cell">E-mail</TableHead>
-              <TableHead>Função</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden sm:table-cell">Desde</TableHead>
-              <TableHead className="w-[50px]">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                </TableCell>
+                <TableHead>{t('member.name', 'Membro')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('member.email', 'E-mail')}</TableHead>
+                <TableHead>{t('member.roleLabel', 'Função')}</TableHead>
+                <TableHead>{t('member.statusLabel', 'Status')}</TableHead>
+                <TableHead className="hidden sm:table-cell">Desde</TableHead>
+                <TableHead className="w-[50px]">{t('member.actionsLabel', 'Ações')}</TableHead>
               </TableRow>
-            ) : members.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Nenhum membro da equipe encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              members.map(member => {
-                const StatusIcon = STATUS_CONFIG[member.status].icon;
-                const isPending = member.type === 'invite';
-                return (
-                  <TableRow key={member.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>
-                            {member.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{member.full_name || 'Aguardando...'}</span>
-                          <span className="text-xs text-muted-foreground md:hidden">{member.email || '-'}</span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {member.email || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1.5">
-                        {/* Owner badge for org owner, Colaborador for everyone else */}
-                        {member.id === orgOwnerId || member.role === 'owner' ? (
-                          <Badge variant="secondary" className="w-fit bg-orange-100 text-orange-800 border border-orange-200">
-                            👑 Dono
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="w-fit bg-slate-100 text-slate-700">
-                            Colaborador
-                          </Badge>
-                        )}
-                        {member.id !== orgOwnerId && member.privileges && member.privileges.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {member.privileges.map(p => (
-                              <Badge key={p} variant="outline" className="text-[10px] px-1 py-0 h-4 bg-muted/50">
-                                {PRIVILEGES.find(pr => pr.id === p)?.label || UNIVERSAL_PRIVILEGES.find(pr => pr.id === p)?.label || p}
-                              </Badge>
-                            ))}
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ) : members.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    {t('empty.title', 'Nenhum membro da equipe encontrado.')}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                members.map(member => {
+                  const StatusIcon = STATUS_CONFIG[member.status].icon;
+                  const isPending = member.type === 'invite';
+                  return (
+                    <TableRow key={member.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              {member.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{member.full_name || t('member.pending', 'Aguardando...')}</span>
+                            <span className="text-xs text-muted-foreground md:hidden">{member.email || '-'}</span>
                           </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={`gap-1 ${STATUS_CONFIG[member.status].color}`}>
-                        <StatusIcon className="h-3 w-3" />
-                        {STATUS_CONFIG[member.status].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-muted-foreground">
-                      {member.created_at
-                        ? new Date(member.created_at).toLocaleDateString('pt-BR')
-                        : '-'
-                      }
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" disabled={actionLoading === member.id}>
-                            {actionLoading === member.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <MoreHorizontal className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {isPending ? (
-                            <>
-                              <DropdownMenuItem onClick={() => handleResendInvite(member)}>
-                                <RefreshCw className="h-4 w-4 mr-2" />
-                                Reenviar Convite
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setInviteToCancel(member);
-                                  setCancelInviteDialogOpen(true);
-                                }}
-                                className="text-destructive"
-                              >
-                                <Ban className="h-4 w-4 mr-2" />
-                                Cancelar Convite
-                              </DropdownMenuItem>
-                            </>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">
+                        {member.email || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1.5">
+                          {/* Owner badge for org owner, Colaborador for everyone else */}
+                          {member.id === orgOwnerId || member.role === 'owner' ? (
+                            <Badge variant="secondary" className="w-fit bg-orange-100 text-orange-800 border border-orange-200">
+                              👑 {t('member.owner', 'Dono')}
+                            </Badge>
                           ) : (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedMember(member);
-                                  setSelectedPrivileges(member.privileges || []);
-                                  setSelectedRole(member.role || 'user');
-                                  setRoleDialogOpen(true);
-                                }}
-                                disabled={
-                                  member.id === currentUser?.id ||
-                                  (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
-                                }
-                              >
-                                <Shield className="h-4 w-4 mr-2" />
-                                Alterar Privilégios
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleToggleSuspend(member)}
-                                disabled={
-                                  member.id === currentUser?.id ||
-                                  (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
-                                }
-                              >
-                                {member.status === 'suspended' ? (
-                                  <>
-                                    <UserCheck className="h-4 w-4 mr-2" />
-                                    Ativar
-                                  </>
-                                ) : (
-                                  <>
-                                    <UserX className="h-4 w-4 mr-2" />
-                                    Suspender
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => openRemoveDialog(member)}
-                                className="text-destructive"
-                                disabled={
-                                  member.id === currentUser?.id ||
-                                  (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
-                                }
-                              >
-                                <UserX className="h-4 w-4 mr-2" />
-                                Remover da Equipe
-                              </DropdownMenuItem>
-                            </>
+                            <Badge variant="secondary" className="w-fit bg-slate-100 text-slate-700">
+                              {getRoleLabel(member.role || 'user')}
+                            </Badge>
                           )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                          {member.id !== orgOwnerId && member.privileges && member.privileges.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {member.privileges.map(p => (
+                                <Badge key={p} variant="outline" className="text-[10px] px-1 py-0 h-4 bg-muted/50">
+                                  {tCommon(PRIVILEGES.find(pr => pr.id === p)?.labelKey || UNIVERSAL_PRIVILEGES.find(pr => pr.id === p)?.labelKey || p)}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={`gap-1 ${STATUS_CONFIG[member.status].color}`}>
+                          <StatusIcon className="h-3 w-3" />
+                          {t(STATUS_CONFIG[member.status].labelKey)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground">
+                        {member.created_at
+                          ? new Date(member.created_at).toLocaleDateString(t('locale', 'pt-BR'))
+                          : '-'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" disabled={actionLoading === member.id}>
+                              {actionLoading === member.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <MoreHorizontal className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {isPending ? (
+                              <>
+                                <DropdownMenuItem onClick={() => handleResendInvite(member)}>
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  {t('actions.resendInvite', 'Reenviar Convite')}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setInviteToCancel(member);
+                                    setCancelInviteDialogOpen(true);
+                                  }}
+                                  className="text-destructive"
+                                >
+                                  <Ban className="h-4 w-4 mr-2" />
+                                  {t('actions.cancelInvite', 'Cancelar Convite')}
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedMember(member);
+                                    setSelectedPrivileges(member.privileges || []);
+                                    setSelectedRole(member.role || 'user');
+                                    setRoleDialogOpen(true);
+                                  }}
+                                  disabled={
+                                    member.id === currentUser?.id ||
+                                    (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
+                                  }
+                                >
+                                  <Shield className="h-4 w-4 mr-2" />
+                                  {t('actions.changeRole', 'Alterar Privilégios')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleToggleSuspend(member)}
+                                  disabled={
+                                    member.id === currentUser?.id ||
+                                    (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
+                                  }
+                                >
+                                  {member.status === 'suspended' ? (
+                                    <>
+                                      <UserCheck className="h-4 w-4 mr-2" />
+                                      {t('actions.activate', 'Ativar')}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserX className="h-4 w-4 mr-2" />
+                                      {t('actions.suspend', 'Suspender')}
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => openRemoveDialog(member)}
+                                  className="text-destructive"
+                                  disabled={
+                                    member.id === currentUser?.id ||
+                                    (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
+                                  }
+                                >
+                                  <UserX className="h-4 w-4 mr-2" />
+                                  {t('actions.remove', 'Remover da Equipe')}
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </AnimatedContainer>
     </div>
   );

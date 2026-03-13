@@ -146,32 +146,32 @@ export default function Dashboard() {
       {canManageFinance && (
         <AnimatedContainer animation="fade-up" delay={0.05} className="mb-6 md:mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">{t('financeOverview.title', 'Resumo Financeiro do Mês')}</h2>
+            <h2 className="text-lg font-semibold">{t('financeOverview.title')}</h2>
             <Link to="/app/finance">
               <Button variant="ghost" size="sm" className="h-8">
-                {t('financeOverview.viewDetails', 'Ver detalhes')} <ArrowRight className="h-4 w-4 ml-1" />
+                {t('financeOverview.viewDetails')} <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatsCard
-              title={t('financeOverview.income', 'Receitas')}
+              title={t('financeOverview.income')}
               value={`${currencySymbol} ${financeStats.monthlyIncome.toLocaleString()}`}
-              description={t('financeOverview.thisMonth', 'Este mês')}
+              description={t('financeOverview.thisMonth')}
               icon={TrendingUp}
               variant="success"
             />
             <StatsCard
-              title={t('financeOverview.expenses', 'Despesas')}
+              title={t('financeOverview.expenses')}
               value={`${currencySymbol} ${financeStats.monthlyExpenses.toLocaleString()}`}
-              description={t('financeOverview.thisMonth', 'Este mês')}
+              description={t('financeOverview.thisMonth')}
               icon={TrendingDown}
               variant="warning"
             />
             <StatsCard
-              title={t('financeOverview.balance', 'Saldo')}
+              title={t('financeOverview.balance')}
               value={`${currencySymbol} ${financeStats.netBalance.toLocaleString()}`}
-              description={t('financeOverview.net', 'Líquido')}
+              description={t('financeOverview.net')}
               icon={Wallet}
               variant={financeStats.netBalance >= 0 ? 'success' : 'warning'}
             />
@@ -203,9 +203,9 @@ export default function Dashboard() {
         ) : (
           <AnimatedContainer animation="fade-up" delay={0.1}>
             <StatsCard
-              title={t('stats.activeClients', 'Clientes Ativos')}
+              title={t('stats.activeClients')}
               value={activeClients}
-              description={t('stats.activeClientsDesc', 'Sem contar os pausados')}
+              description={t('stats.activeClientsDesc')}
               icon={TrendingUp}
               variant="success"
             />
@@ -273,8 +273,8 @@ export default function Dashboard() {
           ) : (
             <Card className="bg-card/80 backdrop-blur-sm border-border/50 flex flex-col items-center justify-center p-6 text-center h-full">
               <TrendingUp className="h-10 w-10 text-primary mb-4" />
-              <h3 className="font-semibold mb-1">Crescimento Focado</h3>
-              <p className="text-sm text-muted-foreground">Continue convertendo leads para aumentar os resultados da sua agência.</p>
+              <h3 className="font-semibold mb-1">{t('focusedGrowth.title')}</h3>
+              <p className="text-sm text-muted-foreground">{t('focusedGrowth.description')}</p>
             </Card>
           )}
         </AnimatedContainer>

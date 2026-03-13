@@ -13,7 +13,7 @@ import {
   LayoutDashboard,
   Kanban,
   Sparkles,
-  MoreHorizontal,
+  Bot,
   GraduationCap,
   Users,
   MessageSquare,
@@ -30,7 +30,9 @@ import {
   Wallet,
   Building2,
   Share2,
-  Workflow
+  PenTool,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import {
   Drawer,
@@ -94,7 +96,7 @@ export function MobileNav() {
     }
 
     // AI Assistant for everyone
-    items.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: Sparkles, show: true });
+    items.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: Bot, show: true });
 
     return items;
   }, [canSeeSalesFunnel, canSeeOperationalFlow, canManageFinance, t]);
@@ -109,16 +111,16 @@ export function MobileNav() {
     }
 
     // Add Link23 to more menu
-    items.push({ name: 'Link23', href: '/app/link-trees', icon: Link2, show: true });
+    items.push({ name: t('navigation.link23'), href: '/app/link-trees', icon: Link2, show: true });
 
     // Add Editorial Calendar to more menu
-    items.push({ name: 'Linha Editorial', href: '/app/editorial', icon: CalendarDays, show: true });
+    items.push({ name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, show: true });
 
     // Add Social Media to more menu
-    items.push({ name: 'Social Media', href: '/app/social-media', icon: Share2, show: true });
+    items.push({ name: t('navigation.socialMedia'), href: '/app/social-media', icon: Share2, show: true });
 
-    // Add Studio AI to more menu
-    items.push({ name: 'Studio AI', href: '/app/studio', icon: Workflow, show: true, badge: 'Beta' });
+    // Add Studio Criativo to more menu
+    items.push({ name: t('navigation.studio'), href: '/app/studio', icon: PenTool, show: true });
 
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },
@@ -176,7 +178,8 @@ export function MobileNav() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: 'hsl(var(--background) / 0.95)'
+          backgroundColor: 'hsl(var(--background) / 0.95)',
+          zIndex: 1000 // Ensure it's above drawer overlay
         }}
       >
         <div className="flex items-center justify-around py-2">
@@ -206,25 +209,37 @@ export function MobileNav() {
             onClick={() => setMoreOpen(true)}
             className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[64px] text-muted-foreground"
           >
-            <MoreHorizontal className="h-5 w-5" />
+            {moreOpen ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
             <span className="text-[10px] font-medium">{t('navigation.more')}</span>
           </button>
         </div>
       </nav>
 
-      {/* More Drawer */}
-      <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
-        <DrawerContent className="max-h-[85vh]">
-          <DrawerHeader className="flex items-center justify-between">
-            <DrawerTitle>{t('navigation.menu')}</DrawerTitle>
-            <DrawerClose asChild>
-              <button className="p-2 rounded-lg hover:bg-muted">
-                <X className="h-5 w-5" />
-              </button>
-            </DrawerClose>
-          </DrawerHeader>
+      {/* More Menu Panel (Above bottom bar) */}
+      <div 
+        className={cn(
+          "fixed left-0 right-0 z-[998] bg-background/98 backdrop-blur-md border-t border-border shadow-2xl md:hidden transition-all duration-300 ease-in-out",
+          moreOpen 
+            ? "bottom-[calc(60px+env(safe-area-inset-bottom))] opacity-100 translate-y-0" 
+            : "bottom-[-100%] opacity-0 translate-y-20 pointer-events-none"
+        )}
+        style={{ 
+          maxHeight: 'calc(80vh - 60px)',
+          borderRadius: '20px 20px 0 0'
+        }}
+      >
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex items-center justify-between border-b px-4 py-3 shrink-0">
+            <h2 className="font-semibold">{t('navigation.menu')}</h2>
+            <button 
+              onClick={() => setMoreOpen(false)}
+              className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
           
-          <div className="px-4 pb-8 space-y-2">
+          <div className="flex-1 overflow-y-auto px-4 pb-8 pt-2 space-y-2 custom-scrollbar">
             {/* Navigation items */}
             {moreItems.filter(item => item.show).map((item) => {
               const isActive = location.pathname === item.href;
@@ -233,16 +248,21 @@ export function MobileNav() {
                   key={item.name}
                   onClick={() => handleNavigate(item.href)}
                   className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left',
+                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all active:scale-[0.98] text-left',
                     isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'hover:bg-muted text-foreground'
+                      ? 'bg-primary/10 text-primary border border-primary/10'
+                      : 'hover:bg-muted text-foreground border border-transparent'
                   )}
                 >
-                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  <div className={cn(
+                    "p-2 rounded-lg",
+                    isActive ? "bg-primary/20" : "bg-muted"
+                  )}>
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                  </div>
                   <span className="font-medium flex-1">{item.name}</span>
                   {item.badge && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 uppercase font-semibold">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 uppercase font-bold tracking-wider">
                       {item.badge}
                     </span>
                   )}
@@ -251,34 +271,42 @@ export function MobileNav() {
             })}
 
             {/* Divider */}
-            <div className="h-px bg-border my-4" />
+            <div className="h-px bg-border my-4 mx-2" />
 
-            {/* Language selector */}
-            <div className="flex items-center gap-3 px-4 py-3">
-              <LanguageSelector />
-              <span className="font-medium text-foreground">{t('language.select')}</span>
+            {/* Settings & System */}
+            <div className="grid grid-cols-1 gap-2 pb-4">
+              <button
+                onClick={handleToggleTheme}
+                className="p-4 rounded-xl bg-muted/50 border border-border flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+              >
+                {theme === 'dark' ? <Sun className="h-5 w-5 text-yellow-500" /> : <Moon className="h-5 w-5 text-blue-500" />}
+                <span className="text-sm font-medium text-foreground uppercase tracking-wider">
+                  {theme === 'dark' ? t('theme.light') : t('theme.dark')}
+                </span>
+              </button>
             </div>
-
-            {/* Theme toggle */}
-            <button
-              onClick={handleToggleTheme}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-muted text-foreground text-left"
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              <span className="font-medium">{theme === 'dark' ? t('theme.light') : t('theme.dark')}</span>
-            </button>
 
             {/* Logout */}
             <button
               onClick={handleOpenLogoutDialog}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-destructive/10 text-destructive text-left"
+              className="w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all hover:bg-destructive/10 text-destructive text-left group"
             >
-              <LogOut className="h-5 w-5" />
-              <span className="font-medium">{t('navigation.logout')}</span>
+              <div className="p-2 rounded-lg bg-destructive/10 group-hover:bg-destructive/20 transition-colors">
+                <LogOut className="h-5 w-5" />
+              </div>
+              <span className="font-semibold">{t('navigation.logout')}</span>
             </button>
           </div>
-        </DrawerContent>
-      </Drawer>
+        </div>
+      </div>
+
+      {/* Non-blocking Backdrop for the More menu */}
+      {moreOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[997] md:hidden transition-opacity duration-300"
+          onClick={() => setMoreOpen(false)}
+        />
+      )}
 
       {/* Logout Confirmation Dialog */}
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>

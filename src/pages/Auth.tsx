@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { ArrowLeft } from 'lucide-react';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { LanguageSelector } from '@/components/ui/language-selector';
+
 
 // Modular Components
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -284,7 +284,6 @@ export default function Auth() {
     return (
       <PublicBackground>
         <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-          <LanguageSelector />
           <ThemeToggle />
         </div>
         <div className="min-h-screen flex items-center justify-center p-4">
@@ -305,7 +304,6 @@ export default function Auth() {
   return (
     <PublicBackground>
       <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-        <LanguageSelector />
         <ThemeToggle />
       </div>
       <div className="min-h-screen flex items-center justify-center p-4">

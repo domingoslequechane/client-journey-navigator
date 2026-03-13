@@ -31,7 +31,7 @@ import EditClient from "./pages/EditClient";
 import ClientDetail from "./pages/ClientDetail";
 import Academia from "./pages/Academia";
 import Team from "./pages/Team";
-import AIAssistant from "./pages/AIAssistant";
+import AgenteQIA from "./pages/AgenteQIA";
 import LinkTreeEditor from "./pages/LinkTreeEditor";
 import LinkTreeDashboard from "./pages/LinkTreeDashboard";
 import StudioDashboard from "./pages/studio/StudioDashboard";
@@ -127,12 +127,12 @@ const App = () => (
                       } />
                       <Route path="clients/:clientId" element={<ClientDetail />} />
                       <Route path="clients/edit/:clientId" element={
-                        <RoleProtectedRoute allowedRoles={['admin', 'sales']}>
+                        <RoleProtectedRoute allowedRoles={['admin', 'sales', 'owner']}>
                           <EditClient />
                         </RoleProtectedRoute>
                       } />
                       <Route path="new-client" element={
-                        <RoleProtectedRoute allowedRoles={['admin', 'sales']}>
+                        <RoleProtectedRoute allowedRoles={['admin', 'sales', 'owner']}>
                           <NewClient />
                         </RoleProtectedRoute>
                       } />
@@ -142,7 +142,7 @@ const App = () => (
                           <Team />
                         </RoleProtectedRoute>
                       } />
-                      <Route path="ai-assistant" element={<AIAssistant />} />
+                      <Route path="ai-assistant" element={<AgenteQIA />} />
                       <Route path="link-trees" element={
                         <RoleProtectedRoute privilege="link23">
                           <LinkTreeDashboard />

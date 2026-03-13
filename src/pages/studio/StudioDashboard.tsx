@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { PenTool } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { StudioToolsHub } from '@/components/studio/StudioToolsHub';
@@ -15,8 +15,8 @@ export default function StudioDashboard() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-8 w-8 text-primary" />
-              Studio AI
+              <PenTool className="h-8 w-8 text-primary" />
+              Studio Criativo
             </div>
             {limits.dailyStudioLimit !== null && (usage.studioGenerationsToday || 0) < limits.dailyStudioLimit && (
               <Badge variant="secondary" className="font-mono bg-primary/10 text-primary border-primary/20">

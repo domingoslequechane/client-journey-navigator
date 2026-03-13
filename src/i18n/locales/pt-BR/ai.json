@@ -20,7 +20,11 @@
     "welcomeWithClient": "Olá! Vejo que você está trabalhando com {{clientName}}. Como posso ajudar?",
     "error": "Desculpe, ocorreu um erro. Tente novamente.",
     "rateLimited": "Você atingiu o limite de mensagens. Aguarde um momento.",
-    "noCredits": "Você não tem créditos de IA disponíveis."
+    "noCredits": "Você não tem créditos de IA disponíveis.",
+    "welcomeMessage": "Olá! Sou o **Agente QIA**, o teu assistente inteligente. Estou aqui para ajudar com o cliente **{{clientName}}**.\n\nComo posso auxiliar hoje?",
+    "selectClientPrompt": "Selecione um cliente para iniciar uma conversa",
+    "conversations": "Conversas",
+    "aiUsageThisMonth": "Uso de IA este mês"
   },
   "suggestions": {
     "title": "Sugestões",
@@ -48,6 +52,14 @@
     "copy": "Copiar resposta",
     "regenerate": "Regenerar resposta",
     "feedback": "Enviar feedback"
+  },
+  "stages": {
+    "prospecting": "Prospecção",
+    "meeting": "Reunião",
+    "contracting": "Contratação",
+    "production": "Produção",
+    "traffic": "Tráfego",
+    "retention": "Retenção"
   },
   "stageOptions": {
     "all": "Todas as fases",
