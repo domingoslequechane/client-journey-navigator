@@ -79,6 +79,11 @@ export function MobileNav() {
     checkMultipleOrgs();
   }, [user]);
 
+  // Auto-close more menu when navigating
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [location.pathname]);
+
   // Build main navigation based on role permissions
   const navigation = useMemo(() => {
     const items = [
@@ -169,17 +174,16 @@ export function MobileNav() {
     <>
       <nav 
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-[999] bg-background/95 backdrop-blur-sm border-t border-border shadow-lg md:hidden safe-area-bottom",
-          "transition-transform duration-200",
+          "fixed bottom-0 left-0 right-0 md:hidden transition-transform duration-200",
           isKeyboardVisible && "translate-y-full"
         )}
         style={{ 
-          position: 'fixed', 
-          bottom: 0,
-          left: 0,
-          right: 0,
+          zIndex: 1000,
+          paddingBottom: 'env(safe-area-inset-bottom)',
           backgroundColor: 'hsl(var(--background) / 0.95)',
-          zIndex: 1000 // Ensure it's above drawer overlay
+          backdropFilter: 'blur(10px)',
+          borderTop: '1px solid hsl(var(--border) / 0.5)',
+          boxShadow: '0 -2px 10px rgba(0,0,0,0.1)'
         }}
       >
         <div className="flex items-center justify-around py-2">
@@ -215,31 +219,31 @@ export function MobileNav() {
         </div>
       </nav>
 
-      {/* More Menu Panel (Above bottom bar) */}
+      {/* More Menu Panel (Visual background and content) */}
       <div 
         className={cn(
-          "fixed left-0 right-0 z-[998] bg-background/98 backdrop-blur-md border-t border-border shadow-2xl md:hidden transition-all duration-300 ease-in-out",
+          "fixed inset-x-0 z-[998] bg-background border-t border-border shadow-2xl md:hidden transition-all duration-300 ease-in-out",
           moreOpen 
-            ? "bottom-[calc(60px+env(safe-area-inset-bottom))] opacity-100 translate-y-0" 
-            : "bottom-[-100%] opacity-0 translate-y-20 pointer-events-none"
+            ? "bottom-0 translate-y-0" 
+            : "translate-y-full pointer-events-none"
         )}
         style={{ 
-          maxHeight: 'calc(80vh - 60px)',
-          borderRadius: '20px 20px 0 0'
+          maxHeight: 'calc(100vh - 80px)',
+          borderRadius: '24px 24px 0 0'
         }}
       >
         <div className="flex flex-col h-full overflow-hidden">
           <div className="flex items-center justify-between border-b px-4 py-3 shrink-0">
-            <h2 className="font-semibold">{t('navigation.menu')}</h2>
+            <h2 className="font-semibold text-lg">{t('navigation.menu')}</h2>
             <button 
               onClick={() => setMoreOpen(false)}
               className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
             >
-              <X className="h-5 w-5" />
+              <X className="h-6 w-6" />
             </button>
           </div>
           
-          <div className="flex-1 overflow-y-auto px-4 pb-8 pt-2 space-y-2 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto px-4 pt-4 pb-[calc(88px+env(safe-area-inset-bottom))] space-y-2 custom-scrollbar">
             {/* Navigation items */}
             {moreItems.filter(item => item.show).map((item) => {
               const isActive = location.pathname === item.href;
