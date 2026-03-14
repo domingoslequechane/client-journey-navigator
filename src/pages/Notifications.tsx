@@ -122,10 +122,13 @@ export default function Notifications() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <AnimatedContainer animation="fade-up">
+      <AnimatedContainer animation="fade-up" className="mb-4">
         <div className="flex items-center justify-between">
           <div className="hidden md:block">
-            <h1 className="text-2xl md:text-3xl font-bold">Notificações</h1>
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+              <Bell className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+              Notificações
+            </h1>
             <p className="text-muted-foreground">Avisos e comunicados do sistema</p>
           </div>
           {unreadCount > 0 && (

@@ -1,5 +1,6 @@
 import { Area, AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrendingUp } from 'lucide-react';
 import { useOrganization } from '@/hooks/useOrganization';
 import type { MonthlyData } from '@/types/finance';
 
@@ -20,7 +21,10 @@ export function MonthlyEvolutionChart({ data, title = 'Evolução Mensal' }: Mon
   return (
     <Card className="overflow-hidden border-border transition-colors">
       <CardHeader className="px-4 py-4 sm:px-6">
-        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-primary" />
+          {title}
+        </CardTitle>
       </CardHeader>
       <CardContent className="px-2 pb-4 sm:px-6 sm:pb-6">
         <div className="h-[300px] w-full min-w-0">

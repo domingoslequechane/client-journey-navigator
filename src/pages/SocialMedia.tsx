@@ -290,7 +290,7 @@ export default function SocialMedia() {
   const socialUsagePercent = limits.maxSocialAccounts ? (usage.socialAccountsCount / limits.maxSocialAccounts) * 100 : 0;
 
   return (
-    <div className="space-y-6 p-4 md:p-6 pt-6 md:pt-6">
+    <div className="space-y-6 p-4 md:p-6 pt-6 md:pt-6 pb-12">
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

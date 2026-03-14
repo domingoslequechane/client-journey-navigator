@@ -14,7 +14,7 @@ import { OnboardingTutorial } from '@/components/onboarding/OnboardingTutorial';
 import { DashboardSkeleton } from '@/components/ui/loading-skeleton';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SALES_FUNNEL_STAGES, OPERATIONAL_FLOW_STAGES, ALL_STAGES } from '@/types';
-import { Users, TrendingUp, TrendingDown, Award, ArrowRight, DollarSign, Flame, Wallet } from 'lucide-react';
+import { Users, TrendingUp, TrendingDown, Award, ArrowRight, DollarSign, Flame, Wallet, LayoutDashboard, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -129,9 +129,12 @@ export default function Dashboard() {
       {/* Free Plan Banner */}
       <FreePlanBanner />
 
-      <AnimatedContainer animation="fade-up" delay={0} className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8" data-tutorial="dashboard">
+      <AnimatedContainer animation="fade-up" delay={0} className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-10" data-tutorial="dashboard">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">{t('title')}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <LayoutDashboard className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+            {t('title')}
+          </h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">
             {canSeeSales && canSeeOperations
               ? t('subtitle.full')
@@ -146,7 +149,10 @@ export default function Dashboard() {
       {canManageFinance && (
         <AnimatedContainer animation="fade-up" delay={0.05} className="mb-6 md:mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">{t('financeOverview.title')}</h2>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              {t('financeOverview.title')}
+            </h2>
             <Link to="/app/finance">
               <Button variant="ghost" size="sm" className="h-8">
                 {t('financeOverview.viewDetails')} <ArrowRight className="h-4 w-4 ml-1" />
@@ -180,13 +186,13 @@ export default function Dashboard() {
       )}
 
       {/* Stats Cards - Show relevant stats based on role */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
         <AnimatedContainer animation="fade-up" delay={0.05}>
           <StatsCard
             title={t('stats.totalClients')}
             value={totalClients}
             description={t('stats.totalClientsDesc')}
-            icon={Users}
+            icon={Building2}
             variant="info"
           />
         </AnimatedContainer>
@@ -196,7 +202,7 @@ export default function Dashboard() {
               title={t('stats.expectedRevenue')}
               value={`${currencySymbol} ${fixedRevenue.toLocaleString()}`}
               description={t('stats.expectedRevenueDesc')}
-              icon={DollarSign}
+              icon={Wallet}
               variant="success"
             />
           </AnimatedContainer>

@@ -19,7 +19,8 @@ import {
   Mail,
   Filter,
   Download,
-  Lock
+  Lock,
+  Users
 } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { useClientExport } from '@/hooks/useClientExport';
@@ -112,10 +113,11 @@ export default function Clients() {
   const isReadOnly = !hasActiveSubscription;
 
   return (
-    <div className="p-4 md:p-8 pt-0 md:pt-8">
+    <div className="p-4 md:p-8">
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="hidden md:block">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 flex-wrap">
+            <Building2 className="h-7 w-7 md:h-8 md:w-8 text-primary" />
             {t('title')}
             {limits.maxClients !== null && (
               <Badge variant="outline" className="font-mono">

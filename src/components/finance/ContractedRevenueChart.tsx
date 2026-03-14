@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Area, AreaChart, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, History } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Client = Tables<'clients'>;
@@ -77,7 +77,10 @@ export function ContractedRevenueChart({ clients, currencySymbol }: ContractedRe
             <CardHeader className="pb-2 px-4 sm:px-6">
                 <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1 pr-2">
-                        <CardTitle className="text-base font-semibold truncate">Histórico de Receita Contratada</CardTitle>
+                        <CardTitle className="text-base font-semibold truncate flex items-center gap-2">
+                            <History className="h-4 w-4 text-primary" />
+                            Histórico de Receita Contratada
+                        </CardTitle>
                         <CardDescription className="line-clamp-1">Evolução mensal</CardDescription>
                     </div>
                     <div className="flex items-center gap-1.5 text-sm shrink-0">

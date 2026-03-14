@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone, AlertTriangle, Sparkles, CreditCard, Plus, X } from 'lucide-react';
+import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone, AlertTriangle, Sparkles, CreditCard, Plus, X, Settings as SettingsIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -472,14 +472,17 @@ export default function Settings() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="min-w-0">
-            <h1 className="text-xl md:text-3xl font-bold">Configurações</h1>
+            <h1 className="text-xl md:text-3xl font-bold flex items-center gap-2">
+              <SettingsIcon className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+              Configurações
+            </h1>
             <p className="text-sm md:text-base text-muted-foreground">Gerencie as configurações do sistema</p>
           </div>
         </AnimatedContainer>
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-auto p-4 md:px-8 md:pb-8 pt-6 md:pt-4">
+      <div className="flex-1 overflow-auto p-4 md:px-8 md:pb-8 pt-0 md:pt-4">
         <div className="max-w-4xl mx-auto">
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">

@@ -25,6 +25,8 @@ const chartConfig = STAGE_CONFIG.reduce((acc, stage) => {
   return acc;
 }, {} as ChartConfig);
 
+import { Kanban } from 'lucide-react';
+
 export function FunnelChart({ clients }: FunnelChartProps) {
   const chartData = useMemo(() => {
     // Exclui clientes pausados/suspensos da contagem
@@ -39,7 +41,10 @@ export function FunnelChart({ clients }: FunnelChartProps) {
   return (
     <Card className="border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">Funil de Clientes</CardTitle>
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Kanban className="h-4 w-4 text-primary" />
+          Funil de Clientes
+        </CardTitle>
         <CardDescription>Distribuição por etapa da jornada</CardDescription>
       </CardHeader>
       <CardContent className="pt-0">

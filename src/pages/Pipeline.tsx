@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SALES_FUNNEL_STAGES, OPERATIONAL_FLOW_STAGES, Client } from '@/types';
 import { mapDbClientToUiClient } from '@/lib/client-utils';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, Target, FileCheck, Phone, Cog, Megaphone, Heart } from 'lucide-react';
+import { Plus, Search, Target, FileCheck, Phone, Cog, Megaphone, Heart, GitBranch, Kanban } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -112,10 +112,11 @@ export default function Pipeline() {
   const stageIcons = currentTab === 'sales' ? salesStageIcons : operationalStageIcons;
 
   return (
-    <div className="p-4 md:p-8 pt-0 md:pt-8 h-full flex flex-col">
+    <div className="p-4 md:p-8 h-full flex flex-col">
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="hidden md:block">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 flex-wrap">
+            <Kanban className="h-7 w-7 md:h-8 md:w-8 text-primary" />
             {tCommon('navigation.pipeline')}
             {limits.maxClients !== null && (
               <Badge variant="outline" className="font-mono">

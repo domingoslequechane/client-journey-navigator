@@ -77,7 +77,10 @@ export function RevenueChart({ clients, currencySymbol }: RevenueChartProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base font-semibold">Histórico de Receita</CardTitle>
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Histórico de Receita
+            </CardTitle>
             <CardDescription>Evolução mensal</CardDescription>
           </div>
           <div className="flex items-center gap-2 text-sm">

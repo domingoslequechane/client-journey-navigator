@@ -230,25 +230,21 @@ export default function LinkTreeDashboard() {
   return (
     <AnimatedContainer animation="fade-in" className="p-4 md:p-6 pt-2 md:pt-6">
       {/* Header */}
-      <div className="hidden md:flex items-center gap-3 mb-6">
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Link2 className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              Link23
-            </div>
-            {limits.maxLinkPages !== null && (
-              <Badge variant="outline" className="font-mono">
-                Páginas: {usage.linkPagesCount}/{limits.maxLinkPages}
-              </Badge>
-            )}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Crie e gerencie páginas de links para seus clientes
-          </p>
-        </div>
+      <div className="hidden md:block mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Link2 className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+            Link23
+          </div>
+          {limits.maxLinkPages !== null && (
+            <Badge variant="outline" className="font-mono">
+              Páginas: {usage.linkPagesCount}/{limits.maxLinkPages}
+            </Badge>
+          )}
+        </h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Crie e gerencie páginas de links para seus clientes
+        </p>
       </div>
 
       <div className="space-y-6">

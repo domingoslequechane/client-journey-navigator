@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, Sparkles, CreditCard } from 'lucide-react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SubscriptionTab } from '@/components/subscription/SubscriptionTab';
@@ -85,7 +85,10 @@ export default function Subscription() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="hidden md:block">
-            <h1 className="text-2xl md:text-3xl font-bold">Assinatura</h1>
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+              <CreditCard className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+              Assinatura
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">Gerencie sua assinatura do Qualify</p>
           </div>
         </div>

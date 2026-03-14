@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tag, CreditCard } from 'lucide-react';
 import { useOrganization } from '@/hooks/useOrganization';
 import type { CategoryData } from '@/types/finance';
 
@@ -10,12 +11,16 @@ interface ExpensesPieChartProps {
 
 export function ExpensesPieChart({ data, title = 'Despesas por Categoria' }: ExpensesPieChartProps) {
   const { currencySymbol } = useOrganization();
+  const Icon = title.toLowerCase().includes('receita') ? CreditCard : Tag;
 
   if (data.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">{title}</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Icon className="h-5 w-5 text-primary" />
+            {title}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] flex items-center justify-center text-muted-foreground">
@@ -29,7 +34,10 @@ export function ExpensesPieChart({ data, title = 'Despesas por Categoria' }: Exp
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Icon className="h-5 w-5 text-primary" />
+          {title}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Download, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, Wallet, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -84,7 +84,10 @@ export default function FinanceReports() {
       <div className="p-4 md:p-8 pt-2 md:pt-8 space-y-6">
         <div className="flex flex-col gap-4">
           <div className="hidden md:block">
-            <h1 className="text-2xl font-bold">Resumo Financeiro</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Wallet className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+              Resumo Financeiro
+            </h1>
             <p className="text-muted-foreground">Análises financeiras detalhadas</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -140,7 +143,10 @@ export default function FinanceReports() {
         {/* Profit Chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Lucro Mensal</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Lucro Mensal
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-2 sm:px-6">
             <div className="h-[300px] w-full min-w-0">

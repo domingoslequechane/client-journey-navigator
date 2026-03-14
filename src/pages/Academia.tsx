@@ -507,8 +507,8 @@ Level: [level]
   };
 
   return (
-    <div className="p-4 md:p-8 pt-2 md:pt-8 h-full flex flex-col overflow-auto">
-      <AnimatedContainer animation="fade-up" className="hidden md:flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+    <div className="p-4 md:p-8 pt-0 md:pt-6 h-full flex flex-col overflow-auto">
+      <AnimatedContainer animation="fade-up" className="hidden md:flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
             <GraduationCap className="h-7 w-7 md:h-8 md:w-8 text-primary" />
@@ -539,7 +539,7 @@ Level: [level]
         </div>
       </AnimatedContainer>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 flex-1 min-h-0">
         {/* Left Column - User Context & Status */}
         <div className="lg:col-span-3 flex flex-col gap-6">
           {/* Difficulties Section */}

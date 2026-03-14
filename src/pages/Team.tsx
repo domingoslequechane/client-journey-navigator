@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw, Lock, Ban, Info } from 'lucide-react';
+import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw, Lock, Ban, Info, Users, UsersRound } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { z } from 'zod';
@@ -497,7 +497,7 @@ export default function Team() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
+    <div className="p-4 md:p-8 pt-0 md:pt-8 space-y-6">
       {!canInviteTeamMember && limits.maxTeamMembers !== null && (
         <LimitReachedCard
           feature="membros da equipe"
@@ -510,6 +510,7 @@ export default function Team() {
       <AnimatedContainer animation="fade-up" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="hidden md:block">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <UsersRound className="h-7 w-7 md:h-8 md:w-8 text-primary" />
             {t('title', 'Equipe')}
             {limits.maxTeamMembers !== null && (
               <Badge variant="outline" className="font-mono">

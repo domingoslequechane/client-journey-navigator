@@ -3,6 +3,7 @@ import { Pie, PieChart, Cell, Legend } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Tables } from '@/integrations/supabase/types';
+import { PieChart as LucidePieChart, Target } from 'lucide-react';
 
 type Client = Tables<'clients'>;
 
@@ -48,7 +49,10 @@ export function SourcePieChart({ clients }: SourcePieChartProps) {
     return (
       <Card className="border-border">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">Fontes de Leads</CardTitle>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <LucidePieChart className="h-4 w-4 text-primary" />
+            Fontes de Leads
+          </CardTitle>
           <CardDescription>De onde vêm seus clientes</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-[180px]">
@@ -61,7 +65,10 @@ export function SourcePieChart({ clients }: SourcePieChartProps) {
   return (
     <Card className="border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">Fontes de Leads</CardTitle>
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Target className="h-4 w-4 text-primary" />
+          Fontes de Leads
+        </CardTitle>
         <CardDescription>De onde vêm seus clientes</CardDescription>
       </CardHeader>
       <CardContent className="pt-0">

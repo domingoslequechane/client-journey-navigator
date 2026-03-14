@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { MessageSquare, Send, X, RotateCcw, MessageSquareHeart, Loader2, HeadphonesIcon, ArrowLeft, Plus } from 'lucide-react';
+import { MessageSquare, Send, X, RotateCcw, MessageSquareHeart, Loader2, HeadphonesIcon, ArrowLeft, Plus, LifeBuoy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -382,7 +382,10 @@ export default function SupportFeedback() {
     <div className="p-4 md:p-6 space-y-6">
       <AnimatedContainer animation="fade-up">
         <div className="hidden md:block">
-          <h1 className="text-2xl md:text-3xl font-bold">Suporte e Feedback</h1>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <LifeBuoy className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+            Suporte e Feedback
+          </h1>
           <p className="text-muted-foreground">Precisa de ajuda ou tem sugestões? Estamos aqui para você.</p>
         </div>
       </AnimatedContainer>
@@ -390,7 +393,7 @@ export default function SupportFeedback() {
       <Tabs defaultValue="support" className="space-y-4">
         <TabsList className="w-full md:w-auto grid grid-cols-2 md:flex">
           <TabsTrigger value="support" className="relative flex-1 md:flex-initial">
-            <HeadphonesIcon className="h-4 w-4 mr-2" />
+            <LifeBuoy className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Suporte Técnico</span>
             <span className="sm:hidden">Suporte</span>
             {openTickets.length > 0 && (
