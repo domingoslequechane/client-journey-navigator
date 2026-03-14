@@ -10,12 +10,12 @@ const corsHeaders = {
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 const AI_MODELS = {
-  // Image generation — only gemini-2.5-flash supports responseModalities: ["IMAGE"]
-  "gemini-flash": "gemini-2.5-flash",
-  "gemini-pro":   "gemini-2.5-flash",
+  // Image generation
+  "gemini-flash": "gemini-2.0-flash",
+  "gemini-pro":   "gemini-3-pro-image-preview",
   // Text / analysis models
-  "gemini-flash-text": "gemini-2.5-flash",
-  "gemini-pro-text":   "gemini-2.5-flash",
+  "gemini-flash-text": "gemini-2.0-flash",
+  "gemini-pro-text":   "gemini-2.0-flash",
 } as const;
 
 const SIZE_CONFIG: Record<string, { aspectRatio: string; orientation: string; width: number; height: number }> = {
@@ -1074,7 +1074,7 @@ Output: The refined, high-fidelity flyer image. Same dimensions.`;
           generationConfig: {
             responseModalities: ["TEXT", "IMAGE"],
             maxOutputTokens: 8192,
-            imageGenerationConfig: {
+            imageConfig: {
               aspectRatio: config.aspectRatio || "1:1"
             }
           },
@@ -1099,9 +1099,9 @@ Output: The refined, high-fidelity flyer image. Same dimensions.`;
     const responseParts = data?.candidates?.[0]?.content?.parts;
     if (Array.isArray(responseParts)) {
       for (const part of responseParts) {
-        const inline = part?.inlineData ?? part?.inline_data;
-        if (inline?.data && (inline?.mimeType || inline?.mime_type)) {
-          const mimeType = inline?.mimeType ?? inline?.mime_type;
+        const inline = part?.inlineData;
+        if (inline?.data && inline?.mimeType) {
+          const mimeType = inline?.mimeType;
           const elapsed = Date.now() - startTime;
           console.log(`Layer 4 (Retoucher): Refinement complete in ${elapsed}ms`);
           return { imageData: inline.data, mimeType };
@@ -1171,7 +1171,7 @@ Text to render: "${extractedText}"`;
             generationConfig: {
               responseModalities: ["TEXT", "IMAGE"],
               maxOutputTokens: 8192,
-              imageGenerationConfig: {
+              imageConfig: {
                 aspectRatio: aspectRatio
               }
             },
@@ -1214,9 +1214,9 @@ Text to render: "${extractedText}"`;
       const responseParts = data?.candidates?.[0]?.content?.parts;
       if (Array.isArray(responseParts)) {
         for (const part of responseParts) {
-          const inline = part?.inlineData ?? part?.inline_data;
-          if (inline?.data && (inline?.mimeType || inline?.mime_type)) {
-            const mimeType = inline?.mimeType ?? inline?.mime_type;
+          const inline = part?.inlineData;
+          if (inline?.data && inline?.mimeType) {
+            const mimeType = inline?.mimeType;
             return { imageData: inline.data, mimeType };
           }
         }

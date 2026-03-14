@@ -189,7 +189,7 @@ Responda APENAS com um JSON válido no formato:
 
     console.log('Calling Google Gemini API with', clientsData.length, 'clients');
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${geminiApiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -200,7 +200,7 @@ Responda APENAS com um JSON válido no formato:
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 1024,
-          response_mime_type: "application/json",
+          responseMimeType: "application/json",
         },
       }),
     });

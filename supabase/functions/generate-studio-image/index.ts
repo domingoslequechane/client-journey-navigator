@@ -10,8 +10,8 @@ const corsHeaders = {
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 const AI_MODELS = {
-    "gemini-flash": "gemini-2.5-flash",
-    "gemini-pro":   "gemini-2.5-flash", 
+    "gemini-flash": "gemini-2.0-flash",
+    "gemini-pro":   "gemini-3-pro-image-preview", 
 } as const;
 
 async function fetchImageAsBase64(url: string): Promise<string | null> {
@@ -178,7 +178,7 @@ CROP, OUTPAINT, OR FILL THE BACKGROUND AS NECESSARY TO ACHIEVE EXACTLY A ${curre
                     contents: [{ role: "user", parts }],
                     generationConfig: {
                         responseModalities: ["IMAGE", "TEXT"],
-                        imageGenerationConfig: {
+                        imageConfig: {
                             aspectRatio: currentAspectRatio
                         }
                     }

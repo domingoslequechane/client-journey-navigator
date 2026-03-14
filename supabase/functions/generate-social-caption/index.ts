@@ -177,7 +177,7 @@ IMPORTANTE: O texto deve ser uma peça de comunicação pronta para postar, com 
     userContent.push({ text: instructions });
 
     const startTimeAI = Date.now();
-    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${GEMINI_API_KEY}`, {
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

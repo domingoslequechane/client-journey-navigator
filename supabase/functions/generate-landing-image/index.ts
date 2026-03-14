@@ -57,7 +57,7 @@ serve(async (req) => {
     console.log(`Generating image for section: ${section}`);
 
     const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
-    const geminiUrl = `${GEMINI_API_BASE}/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const geminiUrl = `${GEMINI_API_BASE}/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     const response = await fetch(geminiUrl, {
       method: "POST",
@@ -73,7 +73,7 @@ serve(async (req) => {
         ],
         generationConfig: {
           responseModalities: ["IMAGE", "TEXT"],
-          imageGenerationConfig: {
+          imageConfig: {
             aspectRatio: "16:9"
           }
         }
