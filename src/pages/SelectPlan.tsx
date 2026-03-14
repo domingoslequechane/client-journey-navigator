@@ -96,7 +96,7 @@ export default function SelectPlan() {
             .eq('organization_id', orgId)
             .maybeSingle();
 
-          if (subscription?.status === 'active') {
+          if (subscription?.status === 'active' || subscription?.status === 'trialing') {
             navigate('/app');
             return;
           }
