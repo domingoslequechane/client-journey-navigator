@@ -154,13 +154,14 @@ export function SettingsTab({ linkPage, updateLinkPage, organizationId }: Settin
 
             <div>
               <Label>Seu domínio</Label>
-              <div className="flex gap-2 mt-1">
+              <div className="flex flex-col sm:flex-row gap-2 mt-1">
                 <Input
                   value={customDomain}
                   onChange={(e) => setCustomDomain(e.target.value)}
                   placeholder="meusite.com.br"
+                  className="flex-1"
                 />
-                <Button onClick={handleSaveDomain}>Salvar</Button>
+                <Button onClick={handleSaveDomain} className="w-full sm:w-auto">Salvar</Button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Em breve: Configure um CNAME apontando para qualify.lovable.app

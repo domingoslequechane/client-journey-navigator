@@ -507,7 +507,7 @@ Level: [level]
   };
 
   return (
-    <div className="p-4 md:p-8 pt-0 md:pt-6 h-full flex flex-col overflow-auto">
+    <div className="p-4 md:p-8 pt-4 md:pt-6 h-full flex flex-col overflow-auto">
       <AnimatedContainer animation="fade-up" className="hidden md:flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">

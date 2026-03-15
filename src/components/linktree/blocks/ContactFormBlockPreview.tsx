@@ -5,6 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Send, Check, Loader2, AlertCircle } from 'lucide-react';
 import type { LinkBlock, LinkPageTheme } from '@/types/linktree';
 import { supabase } from '@/integrations/supabase/client';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ContactFormBlockPreviewProps {
   block: LinkBlock;
@@ -144,12 +146,14 @@ export function ContactFormBlockPreview({
       )}
       
       {formConfig.description && (
-        <p 
-          className="text-sm text-center mb-4 opacity-80"
+        <div 
+          className="text-sm text-center mb-4 opacity-80 prose prose-sm prose-invert max-w-full"
           style={{ color: theme.textColor }}
         >
-          {formConfig.description}
-        </p>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {formConfig.description}
+          </ReactMarkdown>
+        </div>
       )}
 
       {errorMessage && (

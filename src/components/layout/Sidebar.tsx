@@ -35,8 +35,10 @@ import {
   Wallet,
   Share2,
   Lock,
-  Wand2
+  Wand2,
+  Download
 } from 'lucide-react';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -75,6 +77,7 @@ export function Sidebar() {
     canAccessEditorial,
     canAccessSocialMedia,
   } = usePlanLimits();
+  const { canInstall, install } = usePWAInstall();
 
   const currentPlan = PLAN_CONFIG[planType] || PLAN_CONFIG.free;
   const PlanIcon = currentPlan.icon;
@@ -447,6 +450,33 @@ export function Sidebar() {
                 </div>
                 <span>{t('plans.plan')} {t(currentPlan.name)}</span>
               </Link>
+            )
+          )}
+
+          {canInstall && (
+            collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={install}
+                    className="w-full flex justify-center py-2.5 rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <Download className="h-5 w-5 animate-bounce" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Instalar Aplicação</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Button
+                variant="ghost"
+                onClick={install}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-primary hover:bg-primary/10 transition-all active:scale-95"
+              >
+                <Download className="h-5 w-5 animate-bounce" />
+                <span>Instalar Aplicação</span>
+              </Button>
             )
           )}
 

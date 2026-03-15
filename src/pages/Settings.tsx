@@ -482,7 +482,7 @@ export default function Settings() {
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-auto p-4 md:px-8 md:pb-8 pt-0 md:pt-4">
+      <div className="flex-1 overflow-auto p-4 md:px-8 md:pb-8 pt-4 md:pt-4">
         <div className="max-w-4xl mx-auto">
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">

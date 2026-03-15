@@ -122,7 +122,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 md:p-8 pt-0 md:pt-8">
+    <div className="p-4 md:p-8 pt-4 md:pt-8">
       {/* Onboarding Tutorial */}
       <OnboardingTutorial />
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { useHeader } from '@/contexts/HeaderContext';
 
 export default function LinkTreeDashboard() {
   const { t } = useTranslation('clients');
@@ -45,6 +46,18 @@ export default function LinkTreeDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectClientOpen, setSelectClientOpen] = useState(false);
   const { limits, usage } = usePlanLimits();
+  const { setCustomTitle, setCustomIcon } = useHeader();
+
+  // Update header title
+  useEffect(() => {
+    setCustomTitle('Link23');
+    setCustomIcon(Link2);
+    return () => {
+      setCustomTitle(null);
+      setCustomIcon(null);
+    };
+  }, [setCustomTitle, setCustomIcon]);
+
   // Fetch organization slug
   const { data: organization } = useQuery({
     queryKey: ['organization-slug', organizationId],
@@ -228,7 +241,7 @@ export default function LinkTreeDashboard() {
   }
 
   return (
-    <AnimatedContainer animation="fade-in" className="p-4 md:p-6 pt-2 md:pt-6">
+    <AnimatedContainer animation="fade-in" className="p-4 md:p-6 pt-4 md:pt-6">
       {/* Header */}
       <div className="hidden md:block mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">

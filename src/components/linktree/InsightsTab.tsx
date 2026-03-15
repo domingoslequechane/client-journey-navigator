@@ -26,9 +26,9 @@ export function InsightsTab({ linkPage }: InsightsTabProps) {
     <ScrollArea className="h-full">
       <div className="p-4 max-w-2xl mx-auto space-y-6">
         {/* Overview Cards */}
-        <Card className="p-6">
-          <h3 className="font-semibold mb-4">Visão Geral</h3>
-          <div className="grid grid-cols-3 gap-4">
+        <Card className="p-4 sm:p-6">
+          <h3 className="font-semibold mb-4 text-sm sm:text-base">Visão Geral</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="text-center p-4 bg-muted/50 rounded-lg">
               <Eye className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
               <p className="text-2xl font-bold">{analytics?.totalViews.toLocaleString() || 0}</p>

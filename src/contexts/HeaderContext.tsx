@@ -21,13 +21,6 @@ export function HeaderProvider({ children }: { children: React.ReactNode }) {
   const [rightAction, setRightAction] = useState<React.ReactNode | null>(null);
   const location = useLocation();
 
-  // Reset custom header state on navigation
-  useEffect(() => {
-    setBackAction(null);
-    setCustomTitle(null);
-    setCustomIcon(null);
-    setRightAction(null);
-  }, [location.pathname]);
 
   return (
     <HeaderContext.Provider value={{ 

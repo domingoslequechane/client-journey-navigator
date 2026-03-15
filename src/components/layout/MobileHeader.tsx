@@ -32,8 +32,10 @@ import {
   Menu,
   ChevronRight,
   Rocket,
-  Headset
+  Headset,
+  Download
 } from 'lucide-react';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 import {
   Sheet,
   SheetContent,
@@ -68,6 +70,7 @@ export function MobileHeader() {
   const [open, setOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
+  const { canInstall, install } = usePWAInstall();
 
   useEffect(() => {
     const checkMultipleOrgs = async () => {
@@ -194,7 +197,7 @@ export function MobileHeader() {
 
   return (
     <>
-      <header className="sticky top-0 left-0 right-0 z-[100] bg-background/95 backdrop-blur-sm border-b border-border h-16 flex items-center justify-between px-4 md:hidden">
+      <header className="sticky top-0 left-0 right-0 z-[100] bg-background/95 backdrop-blur-sm border-b border-border h-14 flex items-center justify-between px-4 md:hidden">
         <div className="flex items-center gap-2 overflow-hidden">
           {backAction && (
             <Button 
@@ -297,6 +300,19 @@ export function MobileHeader() {
                       </button>
                     );
                   })}
+
+                  {canInstall && (
+                    <button
+                      onClick={install}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all active:scale-[0.98] hover:bg-primary/10 text-primary group"
+                    >
+                      <div className="flex items-center gap-3 text-sm">
+                        <Download className="h-4 w-4 text-primary animate-bounce" />
+                        <span className="font-bold">Instalar Aplicação</span>
+                      </div>
+                      <ChevronRight className="h-3 w-3 opacity-50" />
+                    </button>
+                  )}
                 </div>
               </div>
             </ScrollArea>

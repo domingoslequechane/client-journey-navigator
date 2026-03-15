@@ -15,6 +15,7 @@ import { DesignTab } from '@/components/linktree/DesignTab';
 import { InsightsTab } from '@/components/linktree/InsightsTab';
 import { SettingsTab } from '@/components/linktree/SettingsTab';
 import { LinkTreePreview } from '@/components/linktree/LinkTreePreview';
+import { useHeader } from '@/contexts/HeaderContext';
 import type { LinkPage } from '@/types/linktree';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +31,7 @@ export default function LinkTreeEditor() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { organizationId, loading: orgLoading } = useOrganization();
+  const { setCustomTitle, setCustomIcon, setBackAction } = useHeader();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'links');
   const [showPreview, setShowPreview] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -115,6 +117,25 @@ export default function LinkTreeEditor() {
       setHasUnsavedChanges(currentState !== lastSavedState.current);
     }
   }, [localLinkPage]);
+
+  // Update header title
+  useEffect(() => {
+    // Only set if we have the client name, otherwise it might flicker from 'Link23'
+    if (client?.company_name) {
+      setCustomTitle(client.company_name);
+    } else {
+      setCustomTitle('Link23');
+    }
+    
+    setCustomIcon(Link2);
+    setBackAction(() => () => navigate(-1));
+    
+    return () => {
+      setCustomTitle(null);
+      setCustomIcon(null);
+      setBackAction(null);
+    };
+  }, [client?.company_name, setCustomTitle, setCustomIcon, setBackAction, navigate]);
 
   // Add to history on changes
   const addToHistory = useCallback((newState: LinkPage) => {
@@ -278,65 +299,62 @@ export default function LinkTreeEditor() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Header - Responsive with wrap on mobile */}
-      <div className="flex flex-wrap items-center gap-2 px-3 py-3 border-b bg-background shrink-0">
-        {/* Row 1: Back + Title */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4" />
+      {/* Editor Toolbar - Optimized for single line on mobile */}
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-background shrink-0 min-h-[52px]">
+        {/* Undo/Redo - Left side */}
+        <div className="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleUndo}
+            disabled={!canUndo}
+            className="h-8 w-8"
+            title="Desfazer"
+          >
+            <Undo2 className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="font-semibold truncate">{localLinkPage.name}</h1>
-            <span className="text-xs text-muted-foreground flex-shrink-0">@{localLinkPage.slug}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRedo}
+            disabled={!canRedo}
+            className="h-8 w-8"
+            title="Refazer"
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
+          
+          <div className="w-[1px] h-4 bg-border mx-1 hidden sm:block" />
+          
+          {/* Status Indicator */}
+          <div className="flex items-center gap-1.5 px-1">
+            {isUpdating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+            ) : hasUnsavedChanges ? (
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 bg-amber-500 rounded-full animate-pulse" />
+                <span className="text-[10px] uppercase font-bold text-amber-600 hidden sm:inline">Alterações</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 focus-visible:outline-none">
+                <Check className="h-3.5 w-3.5 text-green-500" />
+                <span className="text-[10px] uppercase font-bold text-green-600 hidden sm:inline">Salvo</span>
+              </div>
+            )}
           </div>
         </div>
         
-        {/* Row 2 on mobile: All actions */}
-        <div className="flex items-center gap-1 flex-wrap justify-end">
-          {/* Undo/Redo */}
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleUndo}
-              disabled={!canUndo}
-              className="h-8 w-8"
-              title="Desfazer (Ctrl+Z)"
-            >
-              <Undo2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRedo}
-              disabled={!canRedo}
-              className="h-8 w-8"
-              title="Refazer (Ctrl+Y)"
-            >
-              <Redo2 className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Save Status */}
-          <div className="flex items-center gap-1 px-1">
-            {isUpdating ? (
-              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-            ) : hasUnsavedChanges ? (
-              <span className="h-1.5 w-1.5 bg-amber-500 rounded-full animate-pulse" />
-            ) : (
-              <Check className="h-3 w-3 text-green-500" />
-            )}
-          </div>
-
-          {/* Mobile Preview Toggle */}
+        {/* Actions - Right side */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Preview Toggle for Mobile */}
           {isMobile && (
             <Button
-              variant="outline"
+              variant={showPreview ? "secondary" : "outline"}
               size="icon"
               onClick={() => setShowPreview(!showPreview)}
               className="h-8 w-8"
             >
-              {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              <Eye className="h-4 w-4" />
             </Button>
           )}
 
@@ -346,35 +364,36 @@ export default function LinkTreeEditor() {
             size="sm"
             onClick={handleSave}
             disabled={isUpdating || !hasUnsavedChanges}
-            className="gap-1 h-8 px-2"
+            className="h-8 px-2 sm:px-3 text-xs sm:text-sm font-bold gap-1.5"
           >
-            <Save className="h-4 w-4" />
+            <Save className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Salvar</span>
           </Button>
 
-          {/* Publish Button with smart state */}
+          {/* Publish Button */}
           <Button
             variant={publishButtonState.variant === 'success' ? 'secondary' : publishButtonState.variant === 'warning' ? 'outline' : 'default'}
             size="sm"
             onClick={handlePublish}
             disabled={isUpdating}
             className={cn(
-              'gap-1 h-8 px-2',
-              publishButtonState.variant === 'success' && 'bg-green-600 hover:bg-green-700 text-white',
-              publishButtonState.variant === 'warning' && 'border-amber-500 text-amber-600 hover:bg-amber-50'
+              'h-8 px-2 sm:px-3 text-xs sm:text-sm font-bold gap-1.5',
+              publishButtonState.variant === 'success' && 'bg-green-600 hover:bg-green-700 text-white border-none',
+              publishButtonState.variant === 'warning' && 'border-amber-500 text-amber-600 bg-amber-50/50'
             )}
           >
-            <publishButtonState.icon className="h-4 w-4" />
-            <span className="hidden sm:inline">{publishButtonState.text}</span>
+            <publishButtonState.icon className="h-3.5 w-3.5" />
+            <span className="">{publishButtonState.text}</span>
           </Button>
 
-          {/* External Link */}
-          {localLinkPage.is_published && (
+          {/* Public Link */}
+          {localLinkPage.slug && (
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
               onClick={() => window.open(publicUrl, '_blank')}
+              title="Abrir página pública"
             >
               <ExternalLink className="h-4 w-4" />
             </Button>
@@ -395,8 +414,8 @@ export default function LinkTreeEditor() {
             onValueChange={setActiveTab}
             className="flex flex-col h-full"
           >
-            <div className="border-b px-4 shrink-0 bg-muted/30">
-              <TabsList className="h-12 bg-transparent p-0 gap-4">
+            <div className="border-b px-2 sm:px-4 shrink-0 bg-muted/30 overflow-x-auto scrollbar-none">
+              <TabsList className="h-12 bg-transparent p-0 gap-2 sm:gap-4 flex-nowrap min-w-max">
                 <TabsTrigger
                   value="links"
                   className="gap-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
@@ -428,7 +447,7 @@ export default function LinkTreeEditor() {
               </TabsList>
             </div>
 
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-hidden">
               <TabsContent value="links" className="h-full m-0">
                 <LinksTab
                   linkPage={localLinkPage}

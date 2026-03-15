@@ -497,7 +497,7 @@ export default function Team() {
   }
 
   return (
-    <div className="p-4 md:p-8 pt-0 md:pt-8 space-y-6">
+    <div className="p-4 md:p-8 pt-4 md:pt-8 space-y-6">
       {!canInviteTeamMember && limits.maxTeamMembers !== null && (
         <LimitReachedCard
           feature="membros da equipe"

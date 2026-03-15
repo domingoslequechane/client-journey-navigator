@@ -75,6 +75,33 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
     // Slider state
     const [activeIndex, setActiveIndex] = useState(0);
     const [maximizedImage, setMaximizedImage] = useState<StudioImage | null>(null);
+    const [navDirection, setNavDirection] = useState<'next' | 'prev'>('next');
+    const touchStartX = useRef<number | null>(null);
+    const touchEndX = useRef<number | null>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartX.current = e.targetTouches[0].clientX;
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        touchEndX.current = e.targetTouches[0].clientX;
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStartX.current || !touchEndX.current) return;
+        const distance = touchStartX.current - touchEndX.current;
+        const isLeftSwipe = distance > 50;
+        const isRightSwipe = distance < -50;
+
+        if (isLeftSwipe) {
+            handleNext();
+        } else if (isRightSwipe) {
+            handlePrev();
+        }
+
+        touchStartX.current = null;
+        touchEndX.current = null;
+    };
 
     // Keep activeIndex within bounds when images change
     useEffect(() => {
@@ -275,7 +302,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
     const showResult = images.length > 0 || isGenerating;
 
     return (
-        <div className="flex h-full bg-background relative overflow-hidden w-full">
+        <div className="flex h-full md:h-screen bg-background relative overflow-hidden w-full">
             <div className="hidden md:block">
                 <StudioQuickMenu currentToolId={tool.id} />
             </div>
@@ -288,7 +315,7 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 pt-2 pb-40 relative overflow-y-auto overflow-x-hidden w-full">
+                <div className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 pt-8 md:pt-12 pb-32 md:pb-56 sm:pb-20 relative w-full">
                     <div className="max-w-xl w-full flex flex-col items-center gap-6">
 
                         {showResult ? (
@@ -306,7 +333,24 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                 </Button>
 
                                 {/* Images Container (3D Slider) */}
-                                <div className="relative w-full h-[340px] md:h-[550px] flex items-center justify-center perspective-[1200px] mt-2 group">
+                                <div 
+                                    className="relative w-full h-[340px] md:h-[550px] flex items-center justify-center perspective-[1200px] mt-2 group"
+                                    onTouchStart={handleTouchStart}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={() => {
+                                        if (!touchStartX.current || !touchEndX.current) return;
+                                        const distance = touchStartX.current - touchEndX.current;
+                                        const isLeftSwipe = distance > 50;
+                                        const isRightSwipe = distance < -50;
+                                        if (isLeftSwipe && activeIndex < logicalImagesCount - 1) {
+                                            handleNext();
+                                        } else if (isRightSwipe && activeIndex > 0) {
+                                            handlePrev();
+                                        }
+                                        touchStartX.current = null;
+                                        touchEndX.current = null;
+                                    }}
+                                >
 
                                     {/* GENERATING CARD */}
                                     {isGenerating && (() => {
@@ -449,9 +493,9 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                                     <ChevronRight className="h-6 w-6 md:h-8 md:w-8" />
                                 </Button>
 
-                                <div className="absolute bottom-[-90px] z-[60]">
-                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-background shadow-sm border-primary text-primary hover:bg-primary/10 transition-colors">
-                                        Embeleze outra imagem
+                                <div className="mt-8 md:mt-12 z-[60]">
+                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-background dark:bg-card shadow-sm border-primary text-primary hover:bg-primary/10 transition-colors font-medium">
+                                        Embelezar outra imagem
                                     </Button>
                                 </div>
                             </div>
@@ -474,8 +518,8 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                     </div>
                 </div>
 
-                {/* Unified Bottom Control Panel - Recolor Style Match */}
-                <div className="absolute bottom-4 left-0 right-0 z-20 px-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg">
+                {/* Bottom Control Panel */}
+                <div className="fixed bottom-4 left-4 right-4 z-20 md:absolute md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg md:px-0">
                     <div className="bg-background dark:bg-card rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] border border-border p-1.5 overflow-hidden flex flex-col gap-1 transition-all duration-300 hover:shadow-[0_8px_40px_rgba(0,0,0,0.25)]">
 
                         {/* Top Area: Large Upload Zone (Reference Image Style) */}
@@ -595,42 +639,77 @@ export function BeautifyToolView({ tool }: BeautifyToolViewProps) {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white hover:bg-white/10 rounded-full h-14 w-14 z-[110]"
-                            onClick={(e) => { e.stopPropagation(); setMaximizedImage(images[images.findIndex(img => img.id === maximizedImage.id) - 1]); }}
+                            className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white hover:bg-white/10 rounded-full h-12 w-12 md:h-14 md:w-14 z-[110]"
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setNavDirection('prev');
+                                setMaximizedImage(images[images.findIndex(img => img.id === maximizedImage.id) - 1]); 
+                            }}
                         >
-                            <ChevronLeft className="h-10 w-10" />
+                            <ChevronLeft className="h-8 w-8 md:h-10 md:w-10" />
                         </Button>
                     )}
 
-                    <img
-                        src={maximizedImage.image_url}
-                        alt="Maximized Result"
-                        className="w-full h-full object-contain cursor-zoom-out z-[105]"
-                        onClick={(e) => { e.stopPropagation(); setMaximizedImage(null); }}
-                    />
+                    <div 
+                        key={`${maximizedImage.id}-${navDirection}`}
+                        className={cn(
+                            "w-full h-full flex items-center justify-center p-4 md:p-8 touch-pan-y animate-in fade-in duration-300 ease-out",
+                            navDirection === 'next' ? "slide-in-from-right-12" : "slide-in-from-left-12"
+                        )}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={() => {
+                            if (!touchStartX.current || !touchEndX.current) return;
+                            const distance = touchStartX.current - touchEndX.current;
+                            const isLeftSwipe = distance > 50;
+                            const isRightSwipe = distance < -50;
+                            const currentIndex = images.findIndex(img => img.id === maximizedImage.id);
+
+                            if (isLeftSwipe && currentIndex < images.length - 1) {
+                                setNavDirection('next');
+                                setMaximizedImage(images[currentIndex + 1]);
+                            } else if (isRightSwipe && currentIndex > 0) {
+                                setNavDirection('prev');
+                                setMaximizedImage(images[currentIndex - 1]);
+                            }
+                            touchStartX.current = null;
+                            touchEndX.current = null;
+                        }}
+                    >
+                        <img
+                            src={maximizedImage.image_url}
+                            alt="Maximized Result"
+                            className="w-full h-full object-contain cursor-zoom-out z-[105]"
+                            onClick={(e) => { e.stopPropagation(); setMaximizedImage(null); }}
+                        />
+                    </div>
 
                     {/* Navigation Next */}
                     {images.findIndex(img => img.id === maximizedImage.id) < images.length - 1 && (
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white hover:bg-white/10 rounded-full h-14 w-14 z-[110]"
-                            onClick={(e) => { e.stopPropagation(); setMaximizedImage(images[images.findIndex(img => img.id === maximizedImage.id) + 1]); }}
+                            className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white hover:bg-white/10 rounded-full h-12 w-12 md:h-14 md:w-14 z-[110]"
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setNavDirection('next');
+                                setMaximizedImage(images[images.findIndex(img => img.id === maximizedImage.id) + 1]); 
+                            }}
                         >
-                            <ChevronRight className="h-10 w-10" />
+                            <ChevronRight className="h-8 w-8 md:h-10 md:w-10" />
                         </Button>
                     )}
 
                     {/* Action buttons inside lightbox */}
-                    <div className="absolute inset-x-0 bottom-0 p-8 md:p-12 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-end justify-center gap-4 z-[110] pointer-events-none">
+                    <div className="absolute inset-x-0 bottom-8 md:bottom-12 flex justify-center px-6 z-[110] pointer-events-none">
                         <div className="pointer-events-auto flex items-center gap-4 animate-in slide-in-from-bottom-8 duration-500">
-                            <Button size="lg" onClick={(e) => { e.stopPropagation(); setMaximizedImage(null); handleBeautifyGenerated(maximizedImage); }} className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-xl font-medium transform transition-transform hover:scale-105">
-                                <Upload className="h-5 w-5 mr-2" /> Embelezar
+                            <Button size="lg" onClick={(e) => { e.stopPropagation(); setMaximizedImage(null); handleBeautifyGenerated(maximizedImage); }} className="h-12 px-6 rounded-2xl bg-primary hover:bg-primary/90 text-white shadow-xl font-bold transition-all active:scale-95">
+                                <Upload className="h-4 w-4 mr-2" /> Embelezar
                             </Button>
-                            <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(maximizedImage) }} className="h-12 px-6 rounded-xl shadow-xl border border-border bg-background/95 dark:bg-card/95 hover:bg-background dark:hover:bg-card text-foreground transform transition-transform hover:scale-105 font-medium">
-                                <Download className="h-5 w-5 mr-4" /> Transferir
+                            <Button size="icon" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(maximizedImage) }} className="h-12 w-12 rounded-2xl shadow-xl border border-border bg-background/95 dark:bg-card/95 hover:bg-background dark:hover:bg-card text-foreground transition-all active:scale-95">
+                                <Download className="h-5 w-5" />
                             </Button>
-                            <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(maximizedImage); setMaximizedImage(null); }} className="h-12 w-12 rounded-xl shadow-xl shrink-0 transform transition-transform hover:scale-105">
+                            <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(maximizedImage); setMaximizedImage(null); }} className="h-12 w-12 rounded-2xl shadow-xl transition-all active:scale-95">
                                 <Trash2 className="h-5 w-5" />
                             </Button>
                         </div>

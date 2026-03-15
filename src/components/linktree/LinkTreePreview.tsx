@@ -13,10 +13,16 @@ import {
   Github,
   MessageSquare,
   Send,
-  ExternalLink
+  ExternalLink,
+  Video
 } from 'lucide-react';
 import { GOOGLE_FONTS } from '@/types/linktree';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { LinkPage, LinkBlock } from '@/types/linktree';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { CarouselBlockPreview } from './blocks/CarouselBlockPreview';
+import { ContactFormBlockPreview } from './blocks/ContactFormBlockPreview';
 
 interface LinkTreePreviewProps {
   linkPage: LinkPage | null;
@@ -182,12 +188,14 @@ export function LinkTreePreview({ linkPage }: LinkTreePreviewProps) {
                 </h1>
                 
                 {linkPage.bio && (
-                  <p 
-                    className="text-xs lg:text-sm text-center mb-2 px-3 lg:px-4 leading-relaxed line-clamp-2 max-w-full overflow-hidden"
+                  <div 
+                    className="text-xs lg:text-sm text-center mb-2 px-3 lg:px-4 leading-relaxed max-w-full overflow-hidden prose prose-sm prose-invert"
                     style={{ color: `${theme.textColor}cc` }}
                   >
-                    {linkPage.bio}
-                  </p>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {linkPage.bio}
+                    </ReactMarkdown>
+                  </div>
                 )}
 
                 <p 
@@ -218,13 +226,15 @@ export function LinkTreePreview({ linkPage }: LinkTreePreviewProps) {
 
                     if (block.type === 'text') {
                       return (
-                        <p
+                        <div
                           key={block.id}
-                          className="text-center text-xs lg:text-sm px-2 py-1 lg:py-2 break-words overflow-hidden"
+                          className="text-center text-xs lg:text-sm px-2 py-1 lg:py-2 break-words overflow-hidden prose prose-sm prose-invert"
                           style={{ color: theme.textColor }}
                         >
-                          {block.content.text}
-                        </p>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {block.content.text || ''}
+                          </ReactMarkdown>
+                        </div>
                       );
                     }
 
@@ -267,11 +277,82 @@ export function LinkTreePreview({ linkPage }: LinkTreePreviewProps) {
 
                     if (block.type === 'image' && block.content.imageUrl) {
                       return (
-                        <img
+                        <div key={block.id} className="w-full">
+                          <img
+                            src={block.content.imageUrl}
+                            alt=""
+                            className="w-full rounded-lg lg:rounded-xl"
+                          />
+                          {block.content.title && (
+                            <div className="mt-2 text-center text-[10px] lg:text-xs opacity-70 prose prose-sm prose-invert max-w-full">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {block.content.title}
+                              </ReactMarkdown>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (block.type === 'video' && block.content.videoUrl) {
+                      const youtubeMatch = block.content.videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                      const vimeoMatch = block.content.videoUrl.match(/vimeo\.com\/([0-9]{9,12})/);
+                      let embedUrl = null;
+                      
+                      if (youtubeMatch) embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+                      else if (vimeoMatch) embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+
+                      return (
+                        <div key={block.id} className="w-full">
+                          {embedUrl ? (
+                            <div className="aspect-video rounded-lg lg:rounded-xl overflow-hidden">
+                              <iframe
+                                src={embedUrl}
+                                className="w-full h-full"
+                                allowFullScreen
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              />
+                            </div>
+                          ) : (
+                            <a 
+                              href={block.content.videoUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg text-xs"
+                            >
+                              <Video className="h-4 w-4" />
+                              Ver Vídeo
+                            </a>
+                          )}
+                          {block.content.title && (
+                            <div className="mt-2 text-center text-[10px] lg:text-xs opacity-70 prose prose-sm prose-invert max-w-full">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {block.content.title}
+                              </ReactMarkdown>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (block.type === 'carousel') {
+                      return (
+                        <CarouselBlockPreview
                           key={block.id}
-                          src={block.content.imageUrl}
-                          alt=""
-                          className="w-full rounded-lg lg:rounded-xl"
+                          block={block}
+                          theme={theme}
+                        />
+                      );
+                    }
+
+                    if (block.type === 'contact-form') {
+                      return (
+                        <ContactFormBlockPreview
+                          key={block.id}
+                          block={block}
+                          theme={theme}
+                          isPreview={true}
+                          linkPageName={linkPage.name}
                         />
                       );
                     }

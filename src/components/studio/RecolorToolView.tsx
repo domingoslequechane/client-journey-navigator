@@ -36,10 +36,59 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
     const [hexColor, setHexColor] = useState<string>('#4D30E3');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isComposing, setIsComposing] = useState(false);
+    const [selectedSize, setSelectedSize] = useState('1080x1080');
+
+    const getCardSize = (size: string) => {
+        switch (size) {
+            case '1080x1080': return "w-[280px] h-[280px] md:w-[520px] md:h-[520px]";
+            case '1080x1920': return "w-[200px] h-[355px] md:w-[320px] md:h-[570px]";
+            case '1920x1080': return "w-[300px] h-[168px] md:w-[620px] md:h-[348px]";
+            case '1080x1350': return "w-[240px] h-[300px] md:w-[420px] md:h-[520px]";
+            default: return "w-[280px] h-[350px] md:w-[450px] md:h-[580px]";
+        }
+    };
+
+    const getCardWidth = (size: string) => {
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        switch (size) {
+            case '1080x1080': return isMobile ? 280 : 520;
+            case '1080x1920': return isMobile ? 200 : 320;
+            case '1920x1080': return isMobile ? 300 : 620;
+            case '1080x1350': return isMobile ? 240 : 420;
+            default: return isMobile ? 280 : 450;
+        }
+    };
 
     // Slider state
     const [activeIndex, setActiveIndex] = useState(0);
     const [maximizedImage, setMaximizedImage] = useState<StudioImage | null>(null);
+    const [navDirection, setNavDirection] = useState<'next' | 'prev'>('next');
+    const touchStartX = useRef<number | null>(null);
+    const touchEndX = useRef<number | null>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartX.current = e.targetTouches[0].clientX;
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        touchEndX.current = e.targetTouches[0].clientX;
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStartX.current || !touchEndX.current) return;
+        const distance = touchStartX.current - touchEndX.current;
+        const isLeftSwipe = distance > 50;
+        const isRightSwipe = distance < -50;
+
+        if (isLeftSwipe) {
+            handleNext();
+        } else if (isRightSwipe) {
+            handlePrev();
+        }
+
+        touchStartX.current = null;
+        touchEndX.current = null;
+    };
 
     useEffect(() => {
         if (isMobile) {
@@ -234,7 +283,7 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
     const showResult = images.length > 0 || isGenerating;
 
     return (
-        <div className="flex h-full bg-background relative overflow-hidden w-full">
+        <div className="flex h-full md:h-screen bg-background relative overflow-hidden w-full">
             <div className="hidden md:block">
                 <StudioQuickMenu currentToolId={tool.id} />
             </div>
@@ -247,7 +296,7 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 pb-32 relative overflow-y-auto overflow-x-hidden w-full">
+                <div className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 pt-8 md:pt-12 pb-32 md:pb-56 sm:pb-20 relative w-full">
                     <div className="max-w-xl w-full flex flex-col items-center gap-6">
 
                         {showResult ? (
@@ -265,7 +314,24 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                 </Button>
                                 
                                 {/* Images Container (3D Slider) */}
-                                <div className="relative w-full max-w-7xl h-[340px] md:h-[550px] flex items-center justify-center perspective-[1200px] mt-2">
+                                <div 
+                                    className="relative w-full max-w-7xl h-[340px] md:h-[550px] flex items-center justify-center perspective-[1200px] mt-2"
+                                    onTouchStart={handleTouchStart}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={() => {
+                                        if (!touchStartX.current || !touchEndX.current) return;
+                                        const distance = touchStartX.current - touchEndX.current;
+                                        const isLeftSwipe = distance > 50;
+                                        const isRightSwipe = distance < -50;
+                                        if (isLeftSwipe && activeIndex < (isGenerating ? images.length : images.length - 1)) {
+                                            handleNext();
+                                        } else if (isRightSwipe && activeIndex > 0) {
+                                            handlePrev();
+                                        }
+                                        touchStartX.current = null;
+                                        touchEndX.current = null;
+                                    }}
+                                >
 
                                     {/* GENERATING CARD */}
                                     {isGenerating && (() => {
@@ -296,7 +362,8 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                                 key="generating-card"
                                                 onClick={() => { if (offset !== 0) setActiveIndex(logicalIndex); }}
                                                 className={cn(
-                                                    "absolute top-0 bottom-0 my-auto w-[280px] h-[380px] md:w-[480px] md:h-[650px] transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col items-center justify-center",
+                                                    "absolute top-0 bottom-0 my-auto transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col items-center justify-center",
+                                                    getCardSize(selectedSize),
                                                     offset === 0 ? "shadow-[0_0px_50px_rgba(0,0,0,0.25)] ring-1 ring-primary/20 cursor-default" : "shadow-xl cursor-pointer"
                                                 )}
                                                 style={{
@@ -368,7 +435,8 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                                     else setMaximizedImage(img);
                                                 }}
                                                 className={cn(
-                                                    "absolute top-0 bottom-0 my-auto w-[230px] h-[310px] md:w-[410px] md:h-[550px] transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col",
+                                                    "absolute top-0 bottom-0 my-auto transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col",
+                                                    getCardSize(img.size || selectedSize),
                                                     offset === 0 ? "shadow-[0_0px_60px_rgba(0,0,0,0.3)] ring-1 ring-primary/20 cursor-zoom-in" : "shadow-xl cursor-pointer"
                                                 )}
                                                 style={{
@@ -414,8 +482,8 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                     <ChevronRight className="h-6 w-6 md:h-8 md:w-8" />
                                 </Button>
 
-                                <div className="mt-4 z-[60]">
-                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-background dark:bg-card shadow-sm border-slate-200 dark:border-slate-800 text-foreground hover:text-primary transition-colors">
+                                <div className="mt-8 md:mt-12 z-[60]">
+                                    <Button variant="outline" onClick={() => { setSelectedImage(null); setPreviewUrl(null); setIsComposing(true); }} className="rounded-full px-8 h-10 bg-background dark:bg-card shadow-sm border-primary text-primary hover:bg-primary/10 transition-colors font-medium">
                                         Recolorar outra Imagem
                                     </Button>
                                 </div>
@@ -436,7 +504,7 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                 </div>
 
                 {/* Bottom Floating Control Panel */}
-                <div className="absolute bottom-4 left-0 right-0 z-20 px-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg">
+                <div className="fixed bottom-4 left-4 right-4 z-20 md:absolute md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg md:px-0">
                     <div className="bg-background dark:bg-card rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-border p-1.5 overflow-hidden flex flex-col gap-1 transition-all duration-300 hover:shadow-[0_8px_40px_rgb(0,0,0,0.25)]">
 
                         {/* Upload Dropzone Area */}
@@ -488,7 +556,7 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                 onClick={handleGenerate}
                                 disabled={!selectedImage || isGenerating}
                                 size="icon"
-                                className="rounded-full h-10 w-10 bg-[#4D30E3] hover:bg-[#3d26b5] shadow-md shadow-[#4D30E3]/20 disabled:opacity-50 transition-all hover:-translate-y-0.5"
+                                className="rounded-xl h-10 w-10 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 disabled:opacity-50 transition-all hover:-translate-y-0.5"
                             >
                                 {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-5 w-5" />}
                             </Button>
@@ -520,42 +588,77 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white hover:bg-white/10 rounded-full h-14 w-14 z-[110]"
-                            onClick={(e) => { e.stopPropagation(); setMaximizedImage(images[images.findIndex(img => img.id === maximizedImage.id) - 1]); }}
+                            className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white hover:bg-white/10 rounded-full h-12 w-12 md:h-14 md:w-14 z-[110]"
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setNavDirection('prev');
+                                setMaximizedImage(images[images.findIndex(img => img.id === maximizedImage.id) - 1]); 
+                            }}
                         >
-                            <ChevronLeft className="h-10 w-10" />
+                            <ChevronLeft className="h-8 w-8 md:h-10 md:w-10" />
                         </Button>
                     )}
 
-                    <img
-                        src={maximizedImage.image_url}
-                        alt="Maximized Result"
-                        className="w-full h-full object-contain cursor-zoom-out z-[105]"
-                        onClick={(e) => { e.stopPropagation(); setMaximizedImage(null); }}
-                    />
+                    <div 
+                        key={`${maximizedImage.id}-${navDirection}`}
+                        className={cn(
+                            "w-full h-full flex items-center justify-center p-4 md:p-8 touch-pan-y animate-in fade-in duration-300 ease-out",
+                            navDirection === 'next' ? "slide-in-from-right-12" : "slide-in-from-left-12"
+                        )}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={() => {
+                            if (!touchStartX.current || !touchEndX.current) return;
+                            const distance = touchStartX.current - touchEndX.current;
+                            const isLeftSwipe = distance > 50;
+                            const isRightSwipe = distance < -50;
+                            const currentIndex = images.findIndex(img => img.id === maximizedImage.id);
+
+                            if (isLeftSwipe && currentIndex < images.length - 1) {
+                                setNavDirection('next');
+                                setMaximizedImage(images[currentIndex + 1]);
+                            } else if (isRightSwipe && currentIndex > 0) {
+                                setNavDirection('prev');
+                                setMaximizedImage(images[currentIndex - 1]);
+                            }
+                            touchStartX.current = null;
+                            touchEndX.current = null;
+                        }}
+                    >
+                        <img
+                            src={maximizedImage.image_url}
+                            alt="Maximized Result"
+                            className="w-full h-full object-contain cursor-zoom-out z-[105]"
+                            onClick={(e) => { e.stopPropagation(); setMaximizedImage(null); }}
+                        />
+                    </div>
 
                     {/* Navigation Next */}
                     {images.findIndex(img => img.id === maximizedImage.id) < images.length - 1 && (
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white hover:bg-white/10 rounded-full h-14 w-14 z-[110]"
-                            onClick={(e) => { e.stopPropagation(); setMaximizedImage(images[images.findIndex(img => img.id === maximizedImage.id) + 1]); }}
+                            className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white hover:bg-white/10 rounded-full h-12 w-12 md:h-14 md:w-14 z-[110]"
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setNavDirection('next');
+                                setMaximizedImage(images[images.findIndex(img => img.id === maximizedImage.id) + 1]); 
+                            }}
                         >
-                            <ChevronRight className="h-10 w-10" />
+                            <ChevronRight className="h-8 w-8 md:h-10 md:w-10" />
                         </Button>
                     )}
 
                     {/* Action buttons inside lightbox */}
-                    <div className="absolute inset-x-0 bottom-0 p-8 md:p-12 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-end justify-center gap-4 z-[110] pointer-events-none">
+                    <div className="absolute inset-x-0 bottom-8 md:bottom-12 flex justify-center px-6 z-[110] pointer-events-none">
                         <div className="pointer-events-auto flex items-center gap-4 animate-in slide-in-from-bottom-8 duration-500">
-                            <Button size="lg" onClick={(e) => { e.stopPropagation(); setMaximizedImage(null); handleRecolorGenerated(maximizedImage); }} className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-xl font-medium transform transition-transform hover:scale-105">
-                                <Upload className="h-5 w-5 mr-2" /> Recolorir
+                            <Button size="lg" onClick={(e) => { e.stopPropagation(); setMaximizedImage(null); handleRecolorGenerated(maximizedImage); }} className="h-12 px-6 rounded-2xl bg-primary hover:bg-primary/90 text-white shadow-xl font-bold transition-all active:scale-95">
+                                <Upload className="h-4 w-4 mr-2" /> Recolorir
                             </Button>
-                            <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(maximizedImage) }} className="h-12 px-6 rounded-xl shadow-xl border border-border bg-background/95 dark:bg-card/95 hover:bg-background dark:hover:bg-card text-foreground transform transition-transform hover:scale-105 font-medium">
-                                <Download className="h-5 w-5 mr-2" /> Transferir
+                            <Button size="icon" variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownload(maximizedImage) }} className="h-12 w-12 rounded-2xl shadow-xl border border-border bg-background/95 dark:bg-card/95 hover:bg-background dark:hover:bg-card text-foreground transition-all active:scale-95">
+                                <Download className="h-5 w-5" />
                             </Button>
-                            <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(maximizedImage); setMaximizedImage(null); }} className="h-12 w-12 rounded-xl shadow-xl shrink-0 transform transition-transform hover:scale-105">
+                            <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(maximizedImage); setMaximizedImage(null); }} className="h-12 w-12 rounded-2xl shadow-xl transition-all active:scale-95">
                                 <Trash2 className="h-5 w-5" />
                             </Button>
                         </div>

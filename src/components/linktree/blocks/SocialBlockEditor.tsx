@@ -42,6 +42,11 @@ interface SocialItem {
   url: string;
 }
 
+const truncateText = (text: string, limit: number = 25) => {
+  if (!text) return text;
+  return text.length > limit ? text.substring(0, limit) + '...' : text;
+};
+
 export function SocialBlockEditor({
   block,
   isEditing,
@@ -92,8 +97,7 @@ export function SocialBlockEditor({
 
   return (
     <Card className={`p-2 sm:p-3 ${isEditing ? 'ring-2 ring-primary' : ''}`}>
-      <div className="flex items-center gap-2">
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
+      <div className="flex items-center gap-1 sm:gap-2">
         <div className="flex-1 min-w-0">
           {isEditing ? (
             <div className="space-y-3">
@@ -206,17 +210,17 @@ export function SocialBlockEditor({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <Share2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm truncate">
-                Ícones Sociais ({socialCount} {socialCount === 1 ? 'rede' : 'redes'})
+              <span className="text-sm truncate flex-1">
+                {truncateText(`Ícones Sociais (${socialCount} ${socialCount === 1 ? 'rede' : 'redes'})`)}
               </span>
             </div>
           )}
         </div>
         {!isEditing && (
           <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-            <Switch checked={block.is_enabled} onCheckedChange={onToggleEnabled} className="scale-90 sm:scale-100" />
+            <Switch checked={block.is_enabled} onCheckedChange={onToggleEnabled} className="scale-75 sm:scale-90" />
             <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={onEdit}>
               <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
