@@ -38,9 +38,9 @@ export function StudioBanner() {
         <div className="flex-1 relative group w-full max-w-[550px]">
           <div className="absolute -inset-1 bg-gradient-to-r from-primary to-orange-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
           <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl transition-transform duration-500 group-hover:-translate-y-2">
-            <div className="aspect-video w-full bg-slate-200">
+            <div className="aspect-video w-full">
               <img 
-                src="/assets/studio/banner_screenshot.png" 
+                src="/assets/studio/banner_mockup.png" 
                 alt="Design com IA" 
                 className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105" 
               />
