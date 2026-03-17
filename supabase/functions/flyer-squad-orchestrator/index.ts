@@ -135,13 +135,13 @@ serve(async (req) => {
               4. Ordene ao Designer: TODA tipografia do flyer usa EXCLUSIVAMENTE a fonte Google "${primaryFont}".
               5. Proíba texto falso (lorem ipsum, gibberish, placas com letras distorcidas). Apenas os textos fornecidos.
               ${approvedTemplateImage ? `
-              🚨 MODO TEMPLATE APROVADO (DNA DO RODAPÉ):
-              O rodapé deve ser uma cópia matemática da imagem [TEMPLATE APROVADO]:
-              1. ESTRUTURA DE 2 NÍVEIS:
-                 - NÍVEL 1 (TOPO): Uma pílula branca (white stadium/pill) contendo apenas o ícone de telemóvel e o Número.
-                 - NÍVEL 2 (BASE): Abaixo da pílula, o ícone de localização (pin) e o Endereço em texto flutuante (sem fundo branco).
-              2. CORES: Texto e ícone dentro da pílula são AZUIS. Texto do endereço é BRANCO.
-              3. INTEGRAÇÃO: Sombra de contacto realística no produto e Bokeh no fundo.
+              🚨 MODO TEMPLATE APROVADO (LIFESTYLE EM CONTEXTO):
+              O cenário deve retratar o uso REAL e PRÁTICO do produto (Lifestyle In-Use):
+              1. CENÁRIO REALISTA: Se o produto é um chuveiro ou válvula, o fundo DEVE ser uma casa de banho premium moderna. O produto deve parecer estar instalado ou pronto a usar no seu ambiente natural.
+              2. DINAMISMO: O cenário deve mostrar a aplicação real (ex: uma torneira instalada numa pia de mármore, um portátil numa secretária de escritório real).
+              3. ARQUITETURA DO RODAPÉ:
+                 - NÍVEL 1 (TOPO): Pílula branca (pill) com Ícone Telemóvel + Número (Cores: Azul).
+                 - NÍVEL 2 (BASE): Abaixo da pílula, Ícone Pin + Endereço (Cor: Branco flutuante).
               ` : ''}
 
               Retorne APENAS JSON válido (sem markdown, sem texto extra):
@@ -245,13 +245,14 @@ serve(async (req) => {
 
             const templateOverride = approvedTemplateImage ? `
                 ╔══════════════════════════════════════════════╗
-                ║   🚨 MODO TEMPLATE APROVADO (DNA DO RODAPÉ) 🚨║
+                ║   🚨 MODO LIFESTYLE EM USO (OBLIGATÓRIO) 🚨  ║
                 ╚══════════════════════════════════════════════╝
-                O rodapé (footer) é a parte mais crítica. Você DEVE seguir esta arquitetura:
-                1. NÍVEL SUPERIOR: Crie um retângulo branco com cantos totalmente arredondados (PILL/STADIUM). Dentro dele, coloque o ícone de telemóvel e o NÚMERO DE TELEFONE. Use as cores azuis do logo para o conteúdo interno.
-                2. NÍVEL INFERIOR: Abaixo do retângulo, coloque o ÍCONE DE PONTO (pin) e o ENDEREÇO. Este texto deve ser BRANCO e flutuante (sem caixa branca atrás).
-                3. PRODUTO: Aplique Sombras de Contacto (Ambient Occlusion) onde o produto toca as superfícies.
-                4. ACABAMENTO: Fundo com efeito Bokeh (desfoque profissional) e ZERO contornos brancos (halos) no recorte do produto.
+                A imagem [TEMPLATE APROVADO] dita o contexto. Você DEVE:
+                1. RETRATAR O USO REAL: O cenário de fundo deve ser o ambiente funcional do produto (ex: Banheiro de luxo para metais sanitários). O produto deve parecer fisicamente INSTALADO e integrado ao ambiente, não apenas flutuando na frente de uma foto.
+                2. DNA DO RODAPÉ:
+                   - Topo: Stadium/Pill branco com [Ícone Celular] + [Número] (em Azul).
+                   - Base: [Ícone Pin] + [Endereço] (Texto Branco flutuante).
+                3. ACABAMENTO: Fundo com Bokeh fotográfico e Sombras de Contato perfeitas (AO).
             ` : '';
 
             let orientationInstruction = "QUADRADO (canvas 1080x1080 — igual em largura e altura)";
