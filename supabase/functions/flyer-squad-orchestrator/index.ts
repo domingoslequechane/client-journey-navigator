@@ -128,22 +128,19 @@ serve(async (req) => {
 
               BRIEFING: "${briefing}"
 
-              🚨 DIRETIVA DE DETALHE ABSURDO (NÍVEL DIRETOR DE ARTE SENIOR):
-              1. ANÁLISE DE LUZ: Identifique a direção da luz no [TEMPLATE APROVADO]. Ordene ao Designer que aplique EXATAMENTE a mesma iluminação (luz direta, preenchimento e rim light) no novo produto.
-              2. GRID E ESPAÇAMENTO: O Designer deve respeitar os "respiros" (white space) do template. Nada de texto encostado às bordas ou ao produto.
-              3. MICRO-COMPONENTES:
-                 - Ícones: Devem ter a mesma espessura de linha (stroke weight) em todo o flyer.
-                 - Rodapé: A "Pílula" (pill) do telemóvel deve ter os cantos perfeitamente matemáticos.
-              4. LIFESTYLE HIPER-REALISTA: O fundo não é uma "foto de banco". Deve ser um cenário de alto padrão onde o produto pareça ter sido fotografado por um profissional (Shadows, Reflections, Depth of Field).
-              5. VETO A HALLUCINAÇÕES: Proibido inventar sombras "drop shadow" flutuantes. Use apenas Sombras de Contacto (Grounded Shadows).
-              6. FONTE: Exclusividade absoluta da "${primaryFont}".
+              🚨 DIRETIVA DE DETALHE ABSURDO E IDENTIDADE IMUTÁVEL:
+              1. 🛡️ LOGOTIPOS IMUTÁVEIS: Todos os logotipos fornecidos em [LOGOTIPO DA MARCA] são ativos ESTÁTICOS e INTOCÁVEIS. 
+                 - PROIBIDO: Mudar a fonte, alterar a proporção, redesenhar o símbolo ou decompor o logo.
+                 - PERMITIDO: Apenas ajuste de cor (ex: branco sobre fundo escuro) se for estritamente necessário para leitura. Use-o como um "Static Asset" sagrado.
+              2. ANÁLISE DE LUZ: Identifique a direção da luz no [TEMPLATE APROVADO] e replique-a no produto.
+              3. GRID E ESPAÇAMENTO: O Designer deve respeitar os "respiros" (white space) do template.
+              4. MICRO-COMPONENTES: Ícones com mesma espessura de linha e Pílulas matemáticas.
+              5. LIFESTYLE HIPER-REALISTA: Cenário Lifestyle realístico com Sombras de Contacto (AO).
               ${approvedTemplateImage ? `
               🚨 MODO CLONAGEM MOLECULAR (TEMPLATE APROVADO):
-              Ignore a criatividade livre. O seu único trabalho é a SUBSTITUIÇÃO CIRÚRGICA DE 4 PASSOS:
-              - Passo 1: Mantenha a arquitetura do rodapé (Pílula Topo + Endereço Base) intocável.
-              - Passo 2: Troque o produto integrando-o fisicamente ao novo ambiente.
-              - Passo 3: Use os novos textos com ícones gráficos reais (Checkmarks/Dots), nunca caracteres de teclado.
-              - Passo 4: Gere o fundo Depicting a real-world application with Bokeh.
+              - Passo 1: LOGOTIPO IDÊNTICO. O logo deve estar na mesma posição e escala do template aprovado, sem alteração de forma.
+              - Passo 2: Rodapé (Pílula Topo + Endereço Base) intocável.
+              - Passo 3: Substituição cirúrgica do produto e fundo.
               ` : ''}
 
               Retorne APENAS JSON válido (sem markdown, sem texto extra):
@@ -248,14 +245,11 @@ serve(async (req) => {
                 ║   🚨 MODO DETALHE ABSURDO (CGI & RETOUCH) 🚨 ║
                 ╚══════════════════════════════════════════════╝
                 Você é um Mestre Retocador Digital. O seu nível de detalhe deve ser doentio:
-                1. FISICA DO PRODUTO: Analise o material do produto (ex: Chrome/Metal). Ele DEVE refletir sutilmente as cores do novo cenário criado. Aplique Sombras de Contacto (AO) escuras onde o metal toca a superfície e sombras suaves de preenchimento.
-                2. INTEGRAÇÃO DE BORDAS: Elimine qualquer halo ou serrilhado. O produto deve estar "fundido" ao fundo de forma orgânica.
-                3. DNA DO RODAPÉ (MATEMÁTICO): 
-                   - O recipiente branco deve ser um "Stadium Shape" perfeito. 
-                   - Ícone de Telemóvel e Pin de Localização devem ter o mesmo estilo minimalista (line icons). 
-                   - Respeite o alinhamento vertical exato: Pílula em cima, Endereço centrado em baixo.
-                4. TIPOGRAFIA FLUTUANTE: Use apenas gradientes sutis para garantir a leitura. Veto total a caixas sólidas atrás do texto principal.
-                5. CENÁRIO (STAGING): O cenário de fundo deve ser um ambiente de luxo "Lifestyle" que faça sentido para o produto, com profundidade de campo (Bokeh) ultrarrealista.
+                1. 🛡️ LOGOTIPOS SAGRADOS (IMUTÁVEIS): Use a imagem de [LOGOTIPO DA MARCA] como uma peça gráfica ESTÁTICA. NÃO tente redesenhar, não mude a fonte e não altere a disposição dos elementos do logo. Ele deve ser uma cópia fiel, apenas permitindo mudar para a cor necessária (ex: branco).
+                2. FISICA DO PRODUTO: Analise o material. Aplique Reflexos e Sombras de Contacto (AO) realistas.
+                3. INTEGRAÇÃO DE BORDAS: Elimine qualquer halo. Produto organicamente fundido ao fundo.
+                4. DNA DO RODAPÉ (MATEMÁTICO): Pílula branca topo | Endereço flutuante base. Centrados e perfeitos.
+                5. CENÁRIO (STAGING): Ambiente de luxo "Lifestyle In-Use" com Bokeh profissional.
             ` : '';
 
             let orientationInstruction = "QUADRADO (canvas 1080x1080 — igual em largura e altura)";
