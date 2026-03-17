@@ -42,6 +42,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { cn } from '@/lib/utils';
 import { StudioQuickMenu } from './StudioQuickMenu';
 import { toast } from 'sonner';
@@ -137,6 +138,8 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
   const [aspectRatio, setAspectRatio] = useState<string>('square');
   const [productImages, setProductImages] = useState<string[]>([]);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [approvedTemplateImage, setApprovedTemplateImage] = useState<string | null>(null);
+  const [allowImageManipulation, setAllowImageManipulation] = useState<boolean>(true);
   const [briefing, setBriefing] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<number>(-1);
@@ -153,6 +156,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
 
   const productInputRef = useRef<HTMLInputElement>(null);
   const referenceInputRef = useRef<HTMLInputElement>(null);
+  const approvedTemplateInputRef = useRef<HTMLInputElement>(null);
   const isInitialLoad = useRef(true);
 
   // Fetch Project context
@@ -184,9 +188,11 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
       if (settings.refMode) setRefMode(settings.refMode);
       if (settings.aspectRatio) setAspectRatio(settings.aspectRatio);
       if (settings.briefing) setBriefing(settings.briefing);
+      if (settings.hasOwnProperty('allowImageManipulation')) setAllowImageManipulation(settings.allowImageManipulation);
       if (settings.productImages) setProductImages(settings.productImages);
       else if (settings.productImage) setProductImages([settings.productImage]);
       if (settings.referenceImage) setReferenceImage(settings.referenceImage);
+      if (settings.approvedTemplateImage) setApprovedTemplateImage(settings.approvedTemplateImage);
       isInitialLoad.current = false;
     } else if (!loadingProject && !project?.settings) {
       isInitialLoad.current = false;
@@ -313,7 +319,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'product' | 'reference') => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'product' | 'reference' | 'approvedTemplate') => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
@@ -325,6 +331,16 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         const optimized = await resizeImage(base64);
         setReferenceImage(optimized);
         saveSettings({ referenceImage: optimized });
+      };
+      reader.readAsDataURL(file);
+    } else if (type === 'approvedTemplate') {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = async (prev) => {
+        const base64 = prev.target?.result as string;
+        const optimized = await resizeImage(base64);
+        setApprovedTemplateImage(optimized);
+        saveSettings({ approvedTemplateImage: optimized });
       };
       reader.readAsDataURL(file);
     } else {
@@ -421,7 +437,9 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
             agent: agent.id,
             productImages,
             referenceImage,
+            approvedTemplateImage,
             refMode,
+            allowImageManipulation,
             briefing,
             organizationId: orgId,
             projectId: projectId,
@@ -713,16 +731,30 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           />
         </div>
 
-        {/* Visual Elements */}
         <div className="space-y-3">
-           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-            5. Elementos Visuais
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+              5. Elementos Visuais (Max 4)
+            </h3>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => {
+              const val = !allowImageManipulation;
+              setAllowImageManipulation(val);
+              saveSettings({ allowImageManipulation: val });
+            }}>
+              <span className="text-[10px] text-muted-foreground font-medium select-none">Permitir manipulação pelas IA</span>
+              <Switch 
+                checked={allowImageManipulation}
+                onCheckedChange={(val) => {
+                  setAllowImageManipulation(val);
+                  saveSettings({ allowImageManipulation: val });
+                }}
+                className="scale-75 origin-right"
+              />
+            </div>
+          </div>
 
-          <div className="space-y-2">
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Produtos / Telas (Máx 4)</h3>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2">
               {[0, 1, 2, 3].map((index) => (
                 <div 
                   key={index}
@@ -766,8 +798,17 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
             />
           </div>
 
+        {/* Reference Image */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+              6. Referência
+            </h3>
+            <span className="text-[10px] text-muted-foreground font-medium">Opcional</span>
+          </div>
+
           <div className="space-y-2">
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Referência</h3>
              <div 
               className={cn(
                 "relative aspect-square rounded-2xl border-2 border-dashed transition-all group flex flex-col items-center justify-center gap-2 overflow-hidden",
@@ -819,6 +860,48 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                 </div>
               )}
               <input type="file" ref={referenceInputRef} hidden accept="image/*" onChange={(e) => handleFileSelect(e, 'reference')} />
+            </div>
+          </div>
+        </div>
+
+        {/* Approved Template Image */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+              7. Template Aprovado
+            </h3>
+            <span className="text-[10px] text-muted-foreground font-medium">Opcional</span>
+          </div>
+
+          <div className="space-y-2">
+             <div 
+              className={cn(
+                "relative aspect-square rounded-2xl border-2 border-dashed transition-all group flex flex-col items-center justify-center gap-2 overflow-hidden",
+                approvedTemplateImage ? "border-solid border-primary/30 bg-muted/20" : "hover:border-primary/40 hover:bg-primary/5 border-primary/20"
+              )}
+            >
+              {approvedTemplateImage ? (
+                <div className="w-full h-full cursor-pointer" onClick={() => approvedTemplateInputRef.current?.click()}>
+                  <img src={approvedTemplateImage} className="w-full h-full object-cover" alt="Approved Template" />
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="bg-background/80 backdrop-blur-md p-2 rounded-full shadow-lg">
+                        <Plus className="h-5 w-5 text-primary" />
+                      </div>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); setApprovedTemplateImage(null); saveSettings({ approvedTemplateImage: null }); }} className="absolute bottom-3 right-3 bg-destructive text-white rounded-full p-1.5 shadow-xl border border-white/20 active:scale-90 transition-transform z-20">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 cursor-pointer w-full h-full justify-center" onClick={() => approvedTemplateInputRef.current?.click()}>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform">
+                    <Plus className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors text-center px-4">Template Opcional</span>
+                </div>
+              )}
+              <input type="file" ref={approvedTemplateInputRef} hidden accept="image/*" onChange={(e) => handleFileSelect(e, 'approvedTemplate')} />
             </div>
           </div>
         </div>

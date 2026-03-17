@@ -57,7 +57,7 @@ serve(async (req) => {
     if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
     try {
-        const { agent, productImage, productImages, referenceImage, briefing, context = {}, organizationId } = await req.json();
+        const { agent, productImage, productImages, referenceImage, approvedTemplateImage, briefing, allowImageManipulation, context = {}, organizationId } = await req.json();
 
         if (!agent) throw new Error("Missing agent parameter");
 
@@ -70,11 +70,12 @@ serve(async (req) => {
 
         // Helpers de imagem
         const toBase64 = async (img: string) => img.startsWith('data:') ? img.split(',')[1] : await fetchImageAsBase64(img);
-        const addImage = async (parts: any[], url: string, mime = "image/png") => {
+        const addImage = async (parts: any[], url: string, mime = "image/png", label?: string) => {
             if (!url) return;
             const b64 = await toBase64(url);
             if (b64) {
                 const detectedMime = url.includes('.jpg') || url.includes('.jpeg') ? 'image/jpeg' : mime;
+                if (label) parts.push({ text: `\n=== ${label} ===\n` });
                 parts.push({ inlineData: { mimeType: detectedMime, data: b64 } });
             }
         };
@@ -95,13 +96,14 @@ serve(async (req) => {
         // ──────────────────────────────────────────────────────────────
         if (agent === 'orchestrator') {
             const parts = [];
-            if (referenceImage) await addImage(parts, referenceImage);
-            if (context.project?.logoUrl) await addImage(parts, context.project.logoUrl);
+            if (approvedTemplateImage) await addImage(parts, approvedTemplateImage, "image/png", "TEMPLATE APROVADO");
+            if (referenceImage) await addImage(parts, referenceImage, "image/png", "IMAGEM DE REFERÊNCIA");
+            if (context.project?.logoUrl) await addImage(parts, context.project.logoUrl, "image/png", "LOGOTIPO DA MARCA");
 
             // Add product images for the Orchestrator to see what it's dealing with
             const allProductImages = productImages || (productImage ? [productImage] : []);
-            for (const img of allProductImages) {
-                await addImage(parts, img);
+            for (let i = 0; i < allProductImages.length; i++) {
+                await addImage(parts, allProductImages[i], "image/png", `PRODUTO / TELA ${i + 1}`);
             }
 
             parts.push({ text: `
@@ -132,6 +134,14 @@ serve(async (req) => {
               3. O design deve respirar (espaço negativo generoso). Texto sempre no espaço vazio, NUNCA sobre rostos/produtos.
               4. Ordene ao Designer: TODA tipografia do flyer usa EXCLUSIVAMENTE a fonte Google "${primaryFont}".
               5. Proíba texto falso (lorem ipsum, gibberish, placas com letras distorcidas). Apenas os textos fornecidos.
+              ${approvedTemplateImage ? `
+              🚨 MODO TEMPLATE APROVADO:
+              Você recebeu a imagem [TEMPLATE APROVADO]. A sua "layout_strategy" e a "creative_direction" DEVEM ordenar ao designer uma SUBSTITUIÇÃO ESTRITA DE 4 PASSOS:
+              1. MANTER TUDO: O rodapé, o logotipo, a disposição das caixas de texto e o formato geral DEVEM ficar EXATAMENTE iguais ao template original.
+              2. TROCAR PRODUTO: Substituir o produto central usando as imagens fornecidas em [PRODUTO / TELA].
+              3. TROCAR TEXTO: Apenas trocar as palavras do Título (Headline) e Descrição (Body).
+              4. TROCAR FUNDO (CENÁRIO): Como o produto muda, ordene ao designer que recrie o "fundo/ambiente" (cenário/"product staging") para que faça sentido com o novo produto, mas mantendo o estilo de luz.
+              ` : ''}
 
               Retorne APENAS JSON válido (sem markdown, sem texto extra):
               {
@@ -150,8 +160,15 @@ serve(async (req) => {
         // ──────────────────────────────────────────────────────────────
         else if (agent === 'copywriter') {
             const parts = [];
-            // Copywriter vê apenas o logo (não a imagem de referência para não contaminar marca)
-            if (context.project?.logoUrl) await addImage(parts, context.project.logoUrl);
+            if (approvedTemplateImage) await addImage(parts, approvedTemplateImage, "image/png", "TEMPLATE APROVADO");
+            // Copywriter vê o logo também
+            if (context.project?.logoUrl) await addImage(parts, context.project.logoUrl, "image/png", "LOGOTIPO DA MARCA");
+
+            // Add product images so copywriter knows what is being promoted
+            const allProductImages = productImages || (productImage ? [productImage] : []);
+            for (let i = 0; i < allProductImages.length; i++) {
+                await addImage(parts, allProductImages[i], "image/png", `PRODUTO / TELA ${i + 1}`);
+            }
 
             parts.push({ text: `
               Você é um Copywriter de elite especializado em Marketing de Alta Conversão.
@@ -180,6 +197,13 @@ serve(async (req) => {
               1. "footer" DEVE conter os contatos reais (telefone, site, endereço). É essencial para clínicas, imobiliárias, etc.
               2. Mantenha os textos do flyer curtos e legíveis (headline: máx 7 palavras).
               3. NÃO use marcas, nomes ou @handles da imagem de referência. Apenas o cliente informado.
+              ${approvedTemplateImage ? `
+              🚨 MODO TEMPLATE APROVADO (CRÍTICO - CLONAGEM ESTRUTURAL):
+              Você DEVE usar a imagem [TEMPLATE APROVADO] como um mapa rígido.
+              1. ESTRUTURA DO COPY: Leia os textos do template. Extraia o exato "tipo" de mensagem (promoção, benefício principal, CTA curto) e escreva um copy equivalente para o novo produto fornecido. Não invente blocos de texto que não existam no template.
+              2. RODAPÉ e CONTACTOS: LEIA visualmente onde e como os contactos aparecem no template (ex: Ícone de Telefone + Número | Ícone de Site + Site). Você DEVE reproduzir ESSE EXATO FORMATO no campo "footer", apenas substituindo pelos NOVOS contactos oficiais: ${JSON.stringify(context.project?.contactInfo || {})}. Se a forma no template for mais curta ou incluir ícones/barras, imite fielmente!
+              3. LEGENDA DA REDE SOCIAL (social_caption): Leia a intenção original do flyer aprovado e a intenção da audiência original para escrever a nova legenda.
+              ` : ''}
 
               Retorne APENAS JSON válido:
               {
@@ -204,18 +228,31 @@ serve(async (req) => {
             
             // Handle multiple product images
             const allProductImages = productImages || (productImage ? [productImage] : []);
-            for (const img of allProductImages) {
-                await addImage(parts, img);
+            for (let i = 0; i < allProductImages.length; i++) {
+                await addImage(parts, allProductImages[i], "image/png", `PRODUTO / TELA ${i + 1}`);
             }
             
-            if (referenceImage) await addImage(parts, referenceImage);
-            if (context.project?.logoUrl) await addImage(parts, context.project.logoUrl);
+            if (approvedTemplateImage) await addImage(parts, approvedTemplateImage, "image/png", "TEMPLATE APROVADO");
+            if (referenceImage) await addImage(parts, referenceImage, "image/png", "IMAGEM DE REFERÊNCIA");
+            if (context.project?.logoUrl) await addImage(parts, context.project.logoUrl, "image/png", "LOGOTIPO DA MARCA");
 
             const refMode = context.project?.referenceMode || 'similar';
 
             const reviewerFeedback = context.reviewer_feedback
                 ? `\n\n⚠️ CORREÇÕES OBRIGATÓRIAS (o revisor reprovou o design anterior — CORRIJA AGORA):\n${context.reviewer_feedback}\n`
                 : '';
+
+            const templateOverride = approvedTemplateImage ? `
+                ╔══════════════════════════════════════════════╗
+                ║   🚨 MODO TEMPLATE APROVADO (CRÍTICO) 🚨     ║
+                ╚══════════════════════════════════════════════╝
+                A imagem marcada como [TEMPLATE APROVADO] é a base absoluta do layout. Você DEVE:
+                1. REPLICAR CADA ELEMENTO VISUAL do cenário. Se a imagem mostra uma pessoa segurando um portátil, desenhe uma pessoa segurando um portátil. Se é uma mesa, desenhe a mesma mesa no mesmo ângulo.
+                2. SUBSTITUIR a tela original pelas imagens de [PRODUTO / TELA]. Aplique as regras de "Product Staging" (perspectiva perfeita, sombreado).
+                3. REPLICAR OS TEXTOS nos exatos locais e com as mesmas formas e cores do template, atualizando apenas as palavras para o novo "CONTEÚDO TEXTUAL".
+                4. RODAPÉ e CONTACTOS: O layout do rodapé (os boxes, os ícones, o fundo do footer, endereços) DEVE SER CLONADO VISUALMENTE! É uma parte crítica! Exiba claramente no ecrã a cópia enviada em "RODAPÉ/FOOTER", copiando visualmente as fontes, os fundos, logotipos do template.
+                ISSO É UM REQUIREMENTO ABSOLUTO. A imagem final deve parecer uma versão idêntica do Template Aprovado, só mudando o ecrã e as palavras do texto.
+            ` : '';
 
             let orientationInstruction = "QUADRADO (canvas 1080x1080 — igual em largura e altura)";
             if (ratio === "9:16") orientationInstruction = "VERTICAL STORY (canvas 1080x1920 — MUITO MAIS ALTO que largo)";
@@ -226,6 +263,7 @@ serve(async (req) => {
                 Você é o Designer Gráfico Sênior mais premiado da agência.
                 Sua tarefa: criar arte fotorrealista ultra-premium no formato ${ratio}.
                 ${reviewerFeedback}
+                ${templateOverride}
 
                 ╔══════════════════════════════════════════════╗
                 ║           IDENTIDADE DO CLIENTE              ║
@@ -264,7 +302,9 @@ serve(async (req) => {
                 4. 🔤 TIPOGRAFIA (CRÍTICO): A FONTE OBRIGATÓRIA É "${primaryFont}". Renderize H1, subtítulos e CTA com o estilo visual desta Google Font.
                 5. 📍 RODAPÉ OBRIGATÓRIO: O texto "${context.copywriter?.footer}" DEVE estar no rodapé da arte, legível e organizado.
                 6. 🖼️ LOGO OBRIGATÓRIO: Use a última imagem fornecida como logo da marca. Ajuste cor se necessário (branco/preto para contraste).
-                7. 🧩 COMPOSIÇÃO DE ELEMENTOS (IMPORTANTE): Foram fornecidas uma ou mais imagens de produtos/telas. Você DEVE incorporá-las de forma harmoniosa na arte. Se houver múltiplas imagens, pode usá-las em colagem ou como elementos flutuantes.
+                ${allowImageManipulation === false 
+                    ? '7. 🚷 PROIBIDO MANIPULAR O PRODUTO (CRÍTICO): As imagens fornecidas de produtos/telas DEVEM aparecer EM DESTAQUE NA FRENTE DO FLYER, MAS EXATAMENTE COMO SÃO. Não deforme, não mude a cor, tamanho, nem aplique filtros destruidores. Elas são a atração principal.'
+                    : '7. 🧩 INTEGRAÇÃO CENÁRIO/LIFESTYLE: Foram fornecidas imagens de produtos/telas. Você DEVE criar uma cena estilo "Product Staging" realista. Integre perfeitamente este produto a um ambiente impressionante. Combine as luzes, adicione reflexos e sombras precisos. O produto deve parecer que pertence fisicamente ao ambiente criado.'}
                 8. 📐 FORMATO OBRIGATÓRIO: ${orientationInstruction}
                 9. ✂️ APAGUE qualquer texto, @ ou logo da IMAGEM DE REFERÊNCIA.
                 10. MODO [${refMode.toUpperCase()}]:
