@@ -61,7 +61,6 @@ export default function Editorial() {
 
   // Task detail modal
   const [detailTask, setDetailTask] = useState<EditorialTask | null>(null);
-  const [studioGenerating, setStudioGenerating] = useState(false);
 
   // AI generation modal
   const [aiModalStep, setAiModalStep] = useState<'client' | 'config' | null>(null);
@@ -190,96 +189,7 @@ export default function Editorial() {
     await updateTask(task.id, { status: nextStatus });
   };
 
-  const handleOpenInStudio = async (task: EditorialTask) => {
-    if (!organizationId) return;
-    setStudioGenerating(true);
 
-    try {
-      // 1. Find studio project linked to this client
-      const { data: projects } = await (supabase as any)
-        .from('studio_projects')
-        .select('id, name')
-        .eq('organization_id', organizationId)
-        .eq('client_id', task.client_id)
-        .order('updated_at', { ascending: false })
-        .limit(1);
-
-      let projectId: string | null = null;
-
-      if (projects && projects.length > 0) {
-        projectId = projects[0].id;
-      } else {
-        // No project for this client – redirect to studio dashboard with a hint
-        toast({
-          title: 'Projeto não encontrado',
-          description: 'Crie primeiro um projeto no Studio AI para este cliente.',
-          variant: 'destructive',
-        });
-        navigate('/app/studio');
-        return;
-      }
-
-      // 2. Generate QIA copy via Edge Function
-      let aiPrompt = '';
-      try {
-        const { data: copyData } = await supabase.functions.invoke('generate-studio-flyer', {
-          body: {
-            action: 'generate-copy',
-            projectId,
-            contentType: task.content_type,
-            platform: task.platform,
-            taskTitle: task.title,
-            taskDescription: task.description,
-            scheduledDate: task.scheduled_date,
-          },
-        });
-
-        if (copyData?.copy) {
-          const copy = copyData.copy;
-          aiPrompt = [
-            copy.headline,
-            copy.subheadline,
-            copy.cta,
-            task.description ? `Contexto: ${task.description}` : '',
-          ].filter(Boolean).join(' | ');
-        }
-      } catch (copyErr) {
-        console.error('QIA copy error:', copyErr);
-        // Fallback to task title as prompt
-        aiPrompt = `${task.title}${task.description ? ` — ${task.description}` : ''}`;
-      }
-
-      if (!aiPrompt) {
-        aiPrompt = `${task.title}${task.description ? ` — ${task.description}` : ''}`;
-      }
-
-      // 3. Navigate to Studio AI editor with pre-filled data
-      navigate(`/app/studio/${projectId}`, {
-        state: {
-          initialPrompt: aiPrompt,
-          fromEditorial: true,
-          taskTitle: task.title,
-          contentType: task.content_type,
-          platform: task.platform,
-        },
-      });
-
-      toast({
-        title: '✨ QIA gerou a copy!',
-        description: 'O prompt foi preenchido automaticamente no Studio AI.',
-      });
-
-    } catch (err: any) {
-      toast({
-        title: 'Erro ao abrir Studio AI',
-        description: err.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setStudioGenerating(false);
-      setDetailTask(null);
-    }
-  };
 
   const handleDelete = async () => {
     if (deleteConfirmId) {
@@ -870,36 +780,7 @@ export default function Editorial() {
                   </div>
                 )}
 
-                {/* Studio AI CTA */}
-                <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-4 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-sm">Criar Flyer com Studio AI</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        A QIA vai gerar o texto do flyer baseado nesta tarefa e levar você directo ao Studio AI.
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full gap-2"
-                    onClick={() => handleOpenInStudio(detailTask)}
-                    disabled={studioGenerating}
-                  >
-                    {studioGenerating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        QIA a gerar copy...
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="h-4 w-4" />
-                        Criar Flyer no Studio AI
-                        <ExternalLink className="h-3.5 w-3.5 ml-auto opacity-70" />
-                      </>
-                    )}
-                  </Button>
-                </div>
+
               </div>
 
               <DialogFooter className="px-5 py-4 border-t shrink-0 gap-2">

@@ -34,7 +34,6 @@ interface Usage {
   teamMembersCount: number;
   contractTemplatesCount: number;
   studioGenerationsThisMonth: number;
-  studioGenerationsToday: number;
   socialAccountsCount: number;
   socialPostsThisMonth: number;
   linkPagesCount: number;
@@ -67,7 +66,6 @@ const DEFAULT_USAGE: Usage = {
   teamMembersCount: 0,
   contractTemplatesCount: 0,
   studioGenerationsThisMonth: 0,
-  studioGenerationsToday: 0,
   socialAccountsCount: 0,
   socialPostsThisMonth: 0,
   linkPagesCount: 0,
@@ -180,7 +178,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
       const [
         clientsResult, teamResult, contractsUsage, aiUsage,
         templatesResult, studioUsage, socialAccountsResult,
-        socialPostsUsage, linkPagesResult, studioDailyUsageResult,
+        socialPostsUsage, linkPagesResult,
       ] = await Promise.all([
         supabase.from('clients').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).in('current_stage', OPERATIONAL_STAGES),
         supabase.from('organization_members').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('is_active', true),
@@ -191,7 +189,6 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         supabase.from('social_accounts').select('client_id').eq('organization_id', orgId).eq('is_connected', true).not('client_id', 'is', null),
         supabase.from('usage_tracking').select('usage_count').eq('organization_id', orgId).eq('feature_type', 'social_posts').gte('period_start', monthStart).maybeSingle(),
         supabase.from('link_pages').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
-        supabase.from('studio_flyers').select('id', { count: 'exact', head: true }).eq('created_by', user.id).gte('created_at', todayStart),
       ]);
 
       const uniqueSocialClientsCount = new Set(socialAccountsResult.data?.map(a => a.client_id)).size;
@@ -203,7 +200,6 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         aiMessagesThisMonth: aiUsage.data?.usage_count || 0,
         contractTemplatesCount: templatesResult.count || 0,
         studioGenerationsThisMonth: studioUsage.data?.usage_count || 0,
-        studioGenerationsToday: studioDailyUsageResult.count || 0,
         socialAccountsCount: uniqueSocialClientsCount,
         socialPostsThisMonth: socialPostsUsage.data?.usage_count || 0,
         linkPagesCount: linkPagesResult.count || 0,
@@ -263,7 +259,6 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     canAddSocialAccount: canUnlimited(limits.maxSocialAccounts, usage.socialAccountsCount),
     canPublishSocialPost: canUnlimited(limits.maxSocialPostsPerMonth, usage.socialPostsThisMonth),
     canAddLinkPage: canUnlimited(limits.maxLinkPages, usage.linkPagesCount),
-    canGenerateFlyer: usage.studioGenerationsToday < limits.dailyStudioLimit,
     remainingClients: remaining(limits.maxClients, usage.clientsCount),
     remainingContracts: remaining(limits.maxContractsPerMonth, usage.contractsThisMonth),
     remainingAIMessages: remaining(limits.maxAIMessagesPerMonth, usage.aiMessagesThisMonth),
@@ -298,7 +293,6 @@ export interface UsePlanLimitsReturn {
   canAddSocialAccount: boolean;
   canPublishSocialPost: boolean;
   canAddLinkPage: boolean;
-  canGenerateFlyer: boolean;
   remainingClients: number | null;
   remainingContracts: number | null;
   remainingAIMessages: number | null;

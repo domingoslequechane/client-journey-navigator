@@ -2125,6 +2125,7 @@ export type Database = {
           primary_color: string | null
           reference_images: string[] | null
           secondary_color: string | null
+          settings: Json | null
           template_image: string | null
           updated_at: string
         }
@@ -2145,6 +2146,7 @@ export type Database = {
           primary_color?: string | null
           reference_images?: string[] | null
           secondary_color?: string | null
+          settings?: Json | null
           template_image?: string | null
           updated_at?: string
         }
@@ -2165,6 +2167,7 @@ export type Database = {
           primary_color?: string | null
           reference_images?: string[] | null
           secondary_color?: string | null
+          settings?: Json | null
           template_image?: string | null
           updated_at?: string
         }

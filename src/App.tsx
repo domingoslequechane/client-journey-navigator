@@ -35,8 +35,6 @@ import AgenteQIA from "./pages/AgenteQIA";
 import LinkTreeEditor from "./pages/LinkTreeEditor";
 import LinkTreeDashboard from "./pages/LinkTreeDashboard";
 import StudioDashboard from "./pages/studio/StudioDashboard";
-import StudioEditor from "./pages/studio/StudioEditor";
-import NewStudioProject from "./pages/studio/NewStudioProject";
 import Settings from "./pages/Settings";
 import Upgrade from "./pages/Upgrade";
 import Pricing from "./pages/Pricing";
@@ -161,19 +159,9 @@ const App = () => (
                           <StudioDashboard />
                         </RoleProtectedRoute>
                       } />
-                      <Route path="studio/new" element={
+                      <Route path="studio" element={
                         <RoleProtectedRoute privilege="studio">
-                          <NewStudioProject />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="studio/:projectId" element={
-                        <RoleProtectedRoute privilege="studio">
-                          <StudioEditor />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="studio/:projectId/edit" element={
-                        <RoleProtectedRoute privilege="studio">
-                          <NewStudioProject />
+                          <StudioDashboard />
                         </RoleProtectedRoute>
                       } />
                       <Route path="studio/tools/:toolId" element={

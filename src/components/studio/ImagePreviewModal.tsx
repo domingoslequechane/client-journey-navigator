@@ -92,7 +92,7 @@ export function ImagePreviewModal({
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          const rawFileName = (title || 'flyer').replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'flyer';
+          const rawFileName = (title || 'image').replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'image';
           const fileName = rawFileName.length > 50 ? rawFileName.substring(0, 50).trim() : rawFileName;
           a.download = `${fileName}.png`;
           document.body.appendChild(a);
@@ -111,7 +111,7 @@ export function ImagePreviewModal({
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
-            const rawFileName = (title || 'flyer').replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'flyer';
+            const rawFileName = (title || 'image').replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'image';
             const fileName = rawFileName.length > 50 ? rawFileName.substring(0, 50).trim() : rawFileName;
             a.download = `${fileName}.png`;
             document.body.appendChild(a);

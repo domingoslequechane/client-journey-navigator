@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { StudioTool, ToolGenerationSettings, FlyerSize } from '@/types/studio';
+import type { StudioTool, ToolGenerationSettings, StudioImageSize } from '@/types/studio';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ToolGenerationPanelProps {
@@ -23,7 +23,7 @@ interface ToolGenerationPanelProps {
     dailyCount?: number;
 }
 
-const SIZE_LIST: { value: FlyerSize; label: string; aspect: string; w: number; h: number }[] = [
+const SIZE_LIST: { value: StudioImageSize; label: string; aspect: string; w: number; h: number }[] = [
     { value: '1080x1080', label: 'Post', aspect: '1:1', w: 1, h: 1 },
     { value: '1080x1920', label: 'Stories', aspect: '9:16', w: 9, h: 16 },
     { value: '1920x1080', label: 'Banner', aspect: '16:9', w: 16, h: 9 },
@@ -45,7 +45,7 @@ export function ToolGenerationPanel({
     const limitReached = !isExempt && dailyCount >= DAILY_LIMIT;
 
     const [prompt, setPrompt] = useState('');
-    const [size, setSize] = useState<FlyerSize>('1080x1080');
+    const [size, setSize] = useState<StudioImageSize>('1080x1080');
     const [style, setStyle] = useState<'vivid' | 'natural'>('vivid');
     const [model, setModel] = useState<'gemini-flash' | 'gemini-pro'>('gemini-flash');
     const [inputImage, setInputImage] = useState<string>('');

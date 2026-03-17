@@ -3,7 +3,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Upload, Plus, X, Search } from 'lucide-react';
-import { INSPIRATION_FLYERS, InspirationFlyer } from '@/types/studio';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -89,10 +88,8 @@ export function VisualInspirationGrid({
         }
     };
 
-    // Separa as imagens entre as que vêm da galeria estática vs uploads do usuário
-    const customUploadedImages = selectedImages.filter(
-        selectedUrl => !INSPIRATION_FLYERS.some(flyer => flyer.url === selectedUrl)
-    );
+    // For now, all selected images are treated as user uploads since global inspirations were removed
+    const customUploadedImages = selectedImages;
 
     return (
         <div className="space-y-4">
@@ -156,57 +153,6 @@ export function VisualInspirationGrid({
                     </Card>
                 ))}
 
-                {/* Imagens de Inspiração Globais */}
-                {INSPIRATION_FLYERS.map((flyer) => {
-                    const isSelected = selectedImages.includes(flyer.url);
-
-                    return (
-                        <Card
-                            key={flyer.id}
-                            className={cn(
-                                "overflow-hidden cursor-pointer transition-all hover:border-primary/50 group relative aspect-[4/5]",
-                                isSelected ? "border-primary ring-2 ring-primary" : "border-border"
-                            )}
-                            onClick={() => toggleImageSelection(flyer.url)}
-                        >
-                            <div
-                                className="h-full w-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                                style={{ backgroundImage: `url(${flyer.url})` }}
-                            />
-                            {isSelected && (
-                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10 transition-opacity">
-                                    <CheckCircle2 className="h-8 w-8 text-white drop-shadow-md" />
-                                </div>
-                            )}
-                            {!isSelected && (
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors z-10 flex items-center justify-center">
-                                    <div className="bg-white/80 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity transform scale-75 group-hover:scale-100">
-                                        <Plus className="h-5 w-5 text-gray-800" />
-                                    </div>
-                                </div>
-                            )}
-                            <div className="absolute top-2 right-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setPreviewImage(flyer.url);
-                                    }}
-                                    className="bg-black/50 hover:bg-black/70 rounded-full p-1.5 text-white transition-colors shadow-sm"
-                                >
-                                    <Search className="h-3.5 w-3.5" />
-                                </button>
-                            </div>
-                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 pt-6 z-20 pointer-events-none">
-                                <div className="flex flex-col gap-0.5 items-start">
-                                    <Badge variant="secondary" className="bg-white/20 text-white border-none text-[8px] h-3 px-1 backdrop-blur-sm">
-                                        {flyer.category}
-                                    </Badge>
-                                    <span className="text-white text-[9px] font-medium drop-shadow-sm leading-tight line-clamp-2">{flyer.alt}</span>
-                                </div>
-                            </div>
-                        </Card>
-                    );
-                })}
             </div>
             <p className="text-xs text-muted-foreground flex justify-between items-center px-1">
                 <span>Selecione da galeria ou faça upload das que você mais gosta.</span>

@@ -16,6 +16,9 @@ import { ptBR } from 'date-fns/locale';
 import { RecolorToolView } from '@/components/studio/RecolorToolView';
 import { BeautifyToolView } from '@/components/studio/BeautifyToolView';
 import { ProductStagingToolView } from '@/components/studio/ProductStagingToolView';
+import { FlyerSquadView } from '@/components/studio/FlyerSquadView';
+import { FlyerProjectHub } from '@/components/studio/FlyerProjectHub';
+import { FlyerProjectOnboarding } from '@/components/studio/FlyerProjectOnboarding';
 import { cn } from '@/lib/utils';
 import { StudioQuickMenu } from '@/components/studio/StudioQuickMenu';
 import { useHeader } from '@/contexts/HeaderContext';
@@ -45,6 +48,9 @@ export default function StudioTool() {
     const [previewImage, setPreviewImage] = useState<StudioImage | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<StudioImage | null>(null);
     const [currentPage, setCurrentPage] = useState(0);
+    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+    const [editProjectId, setEditProjectId] = useState<string | null>(null);
+    const [isOnboarding, setIsOnboarding] = useState(false);
     const { setCustomTitle, setCustomIcon, setBackAction } = useHeader();
     const isMobile = useIsMobile();
 
@@ -83,6 +89,43 @@ export default function StudioTool() {
 
     if (tool.id === 'product-staging') {
         return <ProductStagingToolView tool={tool} />;
+    }
+
+    if (tool.id === 'flyer') {
+        if (isOnboarding || editProjectId) {
+            return (
+                <FlyerProjectOnboarding 
+                    projectId={editProjectId || undefined}
+                    onComplete={(p) => {
+                        setSelectedProjectId(p.id);
+                        setIsOnboarding(false);
+                        setEditProjectId(null);
+                    }}
+                    onCancel={() => {
+                        setIsOnboarding(false);
+                        setEditProjectId(null);
+                    }}
+                />
+            );
+        }
+
+        if (selectedProjectId) {
+            return (
+                <FlyerSquadView 
+                    tool={tool} 
+                    projectId={selectedProjectId} 
+                    onBackToHub={() => setSelectedProjectId(null)}
+                />
+            );
+        }
+
+        return (
+            <FlyerProjectHub 
+                onCreateNew={() => setIsOnboarding(true)}
+                onSelectProject={(id) => setSelectedProjectId(id)}
+                onEditProject={(id) => setEditProjectId(id)}
+            />
+        );
     }
 
     const handleGenerate = async (settings: ToolGenerationSettings) => {
