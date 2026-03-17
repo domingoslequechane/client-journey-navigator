@@ -135,14 +135,12 @@ serve(async (req) => {
               4. Ordene ao Designer: TODA tipografia do flyer usa EXCLUSIVAMENTE a fonte Google "${primaryFont}".
               5. Proíba texto falso (lorem ipsum, gibberish, placas com letras distorcidas). Apenas os textos fornecidos.
               ${approvedTemplateImage ? `
-              🚨 MODO TEMPLATE APROVADO (ACABAMENTO PREMIUM):
-              Você recebeu a imagem [TEMPLATE APROVADO]. A sua "layout_strategy" e a "creative_direction" DEVEM ordenar ao designer uma SUBSTITUIÇÃO DE 4 PASSOS com refinamento profissional:
-              1. MANTER TUDO: O rodapé, o logotipo e o formato DEVEM ser idênticos.
-              2. TROCAR PRODUTO: Use o produto fornecido com "Perfect Perspective".
-              3. TROCAR TEXTO: Apenas trocar as palavras.
-              4. TROCAR FUNDO (CENÁRIO BOKEH): Gere um novo ambiente fotorrealista com DESFOQUE DE FUNDO (shallow depth of field) para destacar o produto.
-              
-              VETO CRÍTICO: PROIBIDO criar caixas sólidas e opacas de cores vibrantes para o texto se o template não as tiver. O texto deve "flutuar" elegantemente sobre o fundo.
+              🚨 MODO TEMPLATE APROVADO (SOFISTICAÇÃO MÁXIMA):
+              Você tem o mapa da perfeição em [TEMPLATE APROVADO]. Ordene ao designer:
+              1. ZERO CAIXAS: Proibido criar blocos de fundo para o texto que não existam no template. Use "Floating Typography".
+              2. CONTACT PILLS: No rodapé, reproduza as "Pílulas" de contacto (botões brancos arredondados com ícones finos) exatamente como no template.
+              3. INTEGRAÇÃO ORGÂNICA: O produto não pode ter "brilho" ou "halo" nas bordas. Ele deve estar fundido ao cenário com Sombras de Contato (AO).
+              4. GRADIENTE DE LEITURA: Se o fundo atrapalhar o texto, use um "Black/Blue Gradient Overlay" suave (vignette), NUNCA uma caixa sólida.
               ` : ''}
 
               Retorne APENAS JSON válido (sem markdown, sem texto extra):
@@ -200,12 +198,11 @@ serve(async (req) => {
               2. Mantenha os textos do flyer curtos e legíveis (headline: máx 7 palavras).
               3. NÃO use marcas, nomes ou @handles da imagem de referência. Apenas o cliente informado.
               ${approvedTemplateImage ? `
-              🚨 MODO TEMPLATE APROVADO (CRÍTICO - SUBSTITUIÇÃO ESTRITA):
-              Mantenha a alma do template. Você só tem permissão para:
-              1. headline: Escreva o novo NOME DO PRODUTO/SERVIÇO com o mesmo impacto do título do template.
-              2. body: Escreva a nova DESCRIÇÃO DO PRODUTO com a mesma estrutura de blocos do template.
-              3. footer: Mantenha a mesma estrutura visual de contactos, apenas injetando os novos dados oficiais: ${JSON.stringify(context.project?.contactInfo || {})}.
-              4. social_caption: Siga o padrão da marca, mas inspire-se no contexto da campanha original do template.
+              🚨 MODO TEMPLATE APROVADO (CLONAGEM PROFISSIONAL):
+              Mantenha o tom de elite. 
+              1. headline: Curto e impactante.
+              2. body: Use bullet points elegantes com o símbolo (i) se presente no template.
+              3. footer/cta: NÃO invente novos botões. Use o formato do template (ex: botões brancos para telefone/morada).
               ` : ''}
 
               Retorne APENAS JSON válido:
@@ -310,11 +307,12 @@ serve(async (req) => {
                     : '7. 🧩 INTEGRAÇÃO CENÁRIO/LIFESTYLE: Foram fornecidas imagens de produtos/telas. Você DEVE criar uma cena estilo "Product Staging" realista. Integre perfeitamente este produto a um ambiente impressionante. Combine as luzes, adicione reflexos e sombras precisos. O produto deve parecer que pertence fisicamente ao ambiente criado.'}
                 8. 📐 FORMATO OBRIGATÓRIO: ${orientationInstruction}
                 9. ✂️ APAGUE qualquer texto, @ ou logo da IMAGEM DE REFERÊNCIA.
-                10. 🎨 ACABAMENTO DE DESIGNER HUMANO:
-                    - Use tipografia "Floating" (texto sem caixas de fundo pesadas) para um look moderno.
-                    - Aplique desfoque (Blur/Bokeh) no cenário de fundo para criar profundidade de campo.
-                    - Sombras de contato devem ser suaves e realistas (não apenas uma mancha preta).
-                    - A tipografia de apoio (descrições) deve ser elegante e leve, nunca pesada/grosseira.
+                10. 🎨 REGRAS DE OURO PARA DESIGN PROFISSIONAL:
+                    - SEM CAIXAS PESADAS: O texto deve flutuar. Se precisar de contraste, use um gradiente suave de preto ou azul no fundo.
+                    - SEM "HALOS": O recorte do produto deve ser cirúrgico. Sem brilho branco ou bordas serrilhadas.
+                    - SOMBRAS DE CONTATO (AO): Em vez de sombras "drop shadow" genéricas, use sombras suaves e escuras apenas onde o objeto toca o ecrã/chão.
+                    - BOKEH REALISTA: O fundo deve parecer uma fotografia profissional com profundidade de campo (bokeh).
+                    - CONTACT PILLS: Renderize os botões de contacto exatamente como o template (retângulos brancos perfeitamente arredondados com ícones finos e texto escuro).
                 11. MODO [${refMode.toUpperCase()}]:
                    - SIMILAR: Reproduza a estrutura exata da referência, mas com acabamento luxuoso e cores do novo cliente.
                    - INSPIRED: Use apenas a aura de estilo. Layout original e moderno.
