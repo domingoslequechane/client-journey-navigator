@@ -135,12 +135,14 @@ serve(async (req) => {
               4. Ordene ao Designer: TODA tipografia do flyer usa EXCLUSIVAMENTE a fonte Google "${primaryFont}".
               5. Proíba texto falso (lorem ipsum, gibberish, placas com letras distorcidas). Apenas os textos fornecidos.
               ${approvedTemplateImage ? `
-              🚨 MODO TEMPLATE APROVADO (SOFISTICAÇÃO MÁXIMA):
-              Você tem o mapa da perfeição em [TEMPLATE APROVADO]. Ordene ao designer:
-              1. ZERO CAIXAS: Proibido criar blocos de fundo para o texto que não existam no template. Use "Floating Typography".
-              2. CONTACT PILLS: No rodapé, reproduza as "Pílulas" de contacto (botões brancos arredondados com ícones finos) exatamente como no template.
-              3. INTEGRAÇÃO ORGÂNICA: O produto não pode ter "brilho" ou "halo" nas bordas. Ele deve estar fundido ao cenário com Sombras de Contato (AO).
-              4. GRADIENTE DE LEITURA: Se o fundo atrapalhar o texto, use um "Black/Blue Gradient Overlay" suave (vignette), NUNCA uma caixa sólida.
+              🚨 MODO TEMPLATE APROVADO (DNA ESTRUTURAL):
+              Você tem a regra de ouro em [TEMPLATE APROVADO]. A "layout_strategy" deve ser:
+              1. FOOTER ESTÁTICO: O rodapé DEVE ser uma única pílula branca (white pill container) horizontal na base.
+                 - Conteúdo: [Ícone Telemóvel] + [Número] | [Ícone Mapa] [Endereço].
+                 - O separador "|" é obrigatório se o template o usar.
+              2. TEXTO FLUTUANTE: Proibido caixas ou logos de fundo no corpo do texto.
+              3. INTEGRAÇÃO: O produto deve ter sombras de contacto (AO) para não parecer flutuar.
+              4. FONTE: Use o peso light/regular da fonte "${primaryFont}" para o endereço.
               ` : ''}
 
               Retorne APENAS JSON válido (sem markdown, sem texto extra):
@@ -244,14 +246,14 @@ serve(async (req) => {
 
             const templateOverride = approvedTemplateImage ? `
                 ╔══════════════════════════════════════════════╗
-                ║   🚨 MODO TEMPLATE APROVADO (PREMIUM) 🚨     ║
+                ║   🚨 MODO TEMPLATE APROVADO (DNA FIXO) 🚨    ║
                 ╚══════════════════════════════════════════════╝
-                A imagem marcada como [TEMPLATE APROVADO] é a sua bíblia de layout. Execute a SUBSTITUIÇÃO ESTRITA:
-                1. REPLICAR ESTRUTURA: Mantenha o rodapé, logotipos e fontes.
-                2. INSERIR PRODUTO: Use as novas imagens de [PRODUTO / TELA]. Aplique "Ambient Occlusion" e sombras de contato realistas.
-                3. IMPRIMIR TEXTOS: Use os novos textos de H1 e Corpo. 🚫 VETO: Se o template usa texto flutuante, NÃO crie caixas coloridas sólidas atrás do texto.
-                4. NOVO CENÁRIO (STAGING + BOKEH): Gere um cenário fotorrealista com "Background Blur" (desfoque de lente) para que o produto salte para a frente.
-                NÃO use cores vibrantes demais que distraiam do produto principal.
+                A imagem [TEMPLATE APROVADO] define o DNA visual. Você NÃO PODE alterar a estrutura do rodapé:
+                1. O RODAPÉ (FOOTER): Deve ser obrigatoriamente um ÚNICO retângulo branco com cantos 100% arredondados (Stadium/Pill-shape).
+                2. ÍCONES: Desenhe um ícone de telefone elegante antes do número e um ícone de localização (pin) antes do endereço.
+                3. SEPARADOR: Use uma barra vertical "|" para separar o contacto do endereço dentro da pílula branca.
+                4. SOMBRAS: Aplique sombras de contacto realistas (AO) no produto. Proibido halos brancos em volta do recorte.
+                5. CENÁRIO: Gere um fundo com desfoque de lente (bokeh) para profundidade profissional.
             ` : '';
 
             let orientationInstruction = "QUADRADO (canvas 1080x1080 — igual em largura e altura)";
