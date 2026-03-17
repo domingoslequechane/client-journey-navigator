@@ -8,7 +8,7 @@ export function StudioBanner() {
   return (
     <div className="relative overflow-hidden rounded-3xl transition-colors duration-300 shadow-xl
       bg-gradient-to-br from-white to-slate-50 border border-slate-200 mb-8
-      dark:bg-card dark:border-slate-800">
+      dark:bg-[#1a1a1a] dark:border-slate-800">
       
       {/* Dynamic Background Accents */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,165,0,0.05),transparent_50%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(255,165,0,0.1),transparent_50%)]" />
@@ -43,7 +43,7 @@ export function StudioBanner() {
         
         <div className="flex-1 relative group w-full max-w-[650px]">
           <div className="absolute -inset-1 bg-gradient-to-r from-primary to-orange-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
-          <div className="relative rounded-2xl overflow-hidden border border-white/20 dark:border-slate-800 shadow-2xl transition-all duration-500">
+          <div className="relative rounded-2xl overflow-hidden border border-white/20 dark:border-slate-800 transition-all duration-500">
             <div className="aspect-video w-full bg-slate-100 dark:bg-slate-800">
               <img 
                 src="/assets/studio/banner_mockup.png" 
