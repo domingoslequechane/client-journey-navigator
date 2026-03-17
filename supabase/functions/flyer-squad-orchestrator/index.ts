@@ -198,11 +198,12 @@ serve(async (req) => {
               2. Mantenha os textos do flyer curtos e legíveis (headline: máx 7 palavras).
               3. NÃO use marcas, nomes ou @handles da imagem de referência. Apenas o cliente informado.
               ${approvedTemplateImage ? `
-              🚨 MODO TEMPLATE APROVADO (CRÍTICO - CLONAGEM ESTRUTURAL):
-              Você DEVE usar a imagem [TEMPLATE APROVADO] como um mapa rígido.
-              1. ESTRUTURA DO COPY: Leia os textos do template. Extraia o exato "tipo" de mensagem (promoção, benefício principal, CTA curto) e escreva um copy equivalente para o novo produto fornecido. Não invente blocos de texto que não existam no template.
-              2. RODAPÉ e CONTACTOS: LEIA visualmente onde e como os contactos aparecem no template (ex: Ícone de Telefone + Número | Ícone de Site + Site). Você DEVE reproduzir ESSE EXATO FORMATO no campo "footer", apenas substituindo pelos NOVOS contactos oficiais: ${JSON.stringify(context.project?.contactInfo || {})}. Se a forma no template for mais curta ou incluir ícones/barras, imite fielmente!
-              3. LEGENDA DA REDE SOCIAL (social_caption): Leia a intenção original do flyer aprovado e a intenção da audiência original para escrever a nova legenda.
+              🚨 MODO TEMPLATE APROVADO (CRÍTICO - SUBSTITUIÇÃO ESTRITA):
+              Mantenha a alma do template. Você só tem permissão para:
+              1. headline: Escreva o novo NOME DO PRODUTO/SERVIÇO com o mesmo impacto do título do template.
+              2. body: Escreva a nova DESCRIÇÃO DO PRODUTO com a mesma estrutura de blocos do template.
+              3. footer: Mantenha a mesma estrutura visual de contactos, apenas injetando os novos dados oficiais: ${JSON.stringify(context.project?.contactInfo || {})}.
+              4. social_caption: Siga o padrão da marca, mas inspire-se no contexto da campanha original do template.
               ` : ''}
 
               Retorne APENAS JSON válido:
@@ -246,12 +247,12 @@ serve(async (req) => {
                 ╔══════════════════════════════════════════════╗
                 ║   🚨 MODO TEMPLATE APROVADO (CRÍTICO) 🚨     ║
                 ╚══════════════════════════════════════════════╝
-                A imagem marcada como [TEMPLATE APROVADO] é a base absoluta do layout. Você DEVE:
-                1. REPLICAR CADA ELEMENTO VISUAL do cenário. Se a imagem mostra uma pessoa segurando um portátil, desenhe uma pessoa segurando um portátil. Se é uma mesa, desenhe a mesma mesa no mesmo ângulo.
-                2. SUBSTITUIR a tela original pelas imagens de [PRODUTO / TELA]. Aplique as regras de "Product Staging" (perspectiva perfeita, sombreado).
-                3. REPLICAR OS TEXTOS nos exatos locais e com as mesmas formas e cores do template, atualizando apenas as palavras para o novo "CONTEÚDO TEXTUAL".
-                4. RODAPÉ e CONTACTOS: O layout do rodapé (os boxes, os ícones, o fundo do footer, endereços) DEVE SER CLONADO VISUALMENTE! É uma parte crítica! Exiba claramente no ecrã a cópia enviada em "RODAPÉ/FOOTER", copiando visualmente as fontes, os fundos, logotipos do template.
-                ISSO É UM REQUIREMENTO ABSOLUTO. A imagem final deve parecer uma versão idêntica do Template Aprovado, só mudando o ecrã e as palavras do texto.
+                A imagem marcada como [TEMPLATE APROVADO] é a sua bíblia de layout. Execute a SUBSTITUIÇÃO DE 4 PASSOS:
+                1. REPLICAR ESTRUTURA: Mantenha o rodapé, logotipos de fundo, fontes e a disposição das caixas de texto exatamente como no template.
+                2. INSERIR PRODUTO: Coloque as novas imagens de [PRODUTO / TELA] no local principal.
+                3. IMPRIMIR TEXTOS: Use os novos textos de H1 (Título) e Corpo (Descrição) nos locais originais.
+                4. GERAR NOVO CENÁRIO (STAGING): Apague o fundo/ambiente original do template e crie um NOVO cenário fotorrealista ("product staging") que combine com o novo produto, mantendo a harmonia de cores do template.
+                NÃO mude o posicionamento do logo ou do rodapé.
             ` : '';
 
             let orientationInstruction = "QUADRADO (canvas 1080x1080 — igual em largura e altura)";
