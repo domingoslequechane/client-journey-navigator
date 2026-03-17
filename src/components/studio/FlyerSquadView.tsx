@@ -42,6 +42,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from '@/lib/utils';
 import { StudioQuickMenu } from './StudioQuickMenu';
@@ -152,7 +153,26 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isSpecialistMode, setIsSpecialistMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('flyer_specialist_mode');
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
   const ITEMS_PER_PAGE = 9;
+
+  useEffect(() => {
+    localStorage.setItem('flyer_specialist_mode', JSON.stringify(isSpecialistMode));
+  }, [isSpecialistMode]);
+
+  const playCompletionSound = () => {
+    if (isSpecialistMode) {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(e => console.error("Error playing sound:", e));
+    }
+  };
 
   const productInputRef = useRef<HTMLInputElement>(null);
   const referenceInputRef = useRef<HTMLInputElement>(null);
@@ -524,6 +544,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         if (insertError) throw insertError;
         
         await refetchHistory();
+        playCompletionSound();
       }
 
       toast.success('Flyer gerado com sucesso! 🚀');
@@ -952,29 +973,45 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           </div>
           
           <div className="flex items-center gap-3">
-             <Badge variant="outline" className="bg-primary/5 text-[10px] text-primary border-primary/10 px-2 py-0.5 font-bold uppercase tracking-tight">
-              Motor Especialista
-            </Badge>
-
-            {activeTab === 'history' && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                disabled={isRefreshingHistory}
-                className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                onClick={() => {
-                  setCurrentPage(1);
-                  refetchHistory();
-                  toast.promise(refetchHistory(), {
-                    loading: 'Atualizando histórico...',
-                    success: 'Histórico atualizado!',
-                    error: 'Falha ao atualizar'
-                  });
-                }}
-              >
-                <RotateCcw className={cn("h-4 w-4", isRefreshingHistory && "animate-spin")} />
-              </Button>
-            )}
+            <div className="flex items-center gap-2 bg-primary/5 px-4 py-1.5 rounded-full border border-primary/10 shrink-0 shadow-sm">
+               {activeTab === 'create' ? (
+                 <div className="flex items-center gap-2">
+                   <Switch 
+                     id="specialist-mode-toggle"
+                     checked={isSpecialistMode}
+                     onCheckedChange={setIsSpecialistMode}
+                     className="scale-75"
+                   />
+                   <span className="text-[9px] font-bold text-primary/60 uppercase tracking-tighter">Habilitar Alerta</span>
+                 </div>
+               ) : (
+                 <Button 
+                   variant="ghost" 
+                   size="sm" 
+                   disabled={isRefreshingHistory}
+                   className="h-7 px-2 -ml-1 gap-1.5 rounded-lg text-primary hover:text-primary transition-colors disabled:opacity-50 hover:bg-primary/10"
+                   onClick={() => {
+                     setCurrentPage(1);
+                     refetchHistory();
+                     toast.promise(refetchHistory(), {
+                       loading: 'Atualizando histórico...',
+                       success: 'Histórico atualizado!',
+                       error: 'Falha ao atualizar'
+                     });
+                   }}
+                 >
+                   <RotateCcw className={cn("h-3.5 w-3.5", isRefreshingHistory && "animate-spin")} />
+                   <span className="text-[9px] font-bold uppercase tracking-tighter">Sincronizar</span>
+                 </Button>
+               )}
+               <div className="w-px h-3 bg-primary/20 mx-1" />
+               <Label 
+                 htmlFor={activeTab === 'create' ? "specialist-mode-toggle" : undefined} 
+                 className="text-[10px] font-black uppercase tracking-tight cursor-pointer whitespace-nowrap text-primary"
+               >
+                 Motor Especialista
+               </Label>
+            </div>
           </div>
         </div>
 

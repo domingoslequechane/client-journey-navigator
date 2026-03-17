@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { ToolGenerationPanel } from '@/components/studio/ToolGenerationPanel';
 import { STUDIO_TOOLS } from '@/types/studio';
 import { useStudioImages } from '@/hooks/useStudioImages';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { ToolGenerationSettings, StudioImage } from '@/types/studio';
 import { formatDistanceToNow } from 'date-fns';
@@ -43,6 +44,7 @@ export default function StudioTool() {
     const tool = STUDIO_TOOLS.find((t) => t.id === toolId);
 
     // Pass tools to standard hooks
+    const queryClient = useQueryClient();
     const { images, isLoading, generateImage, deleteImage, dailyCount } = useStudioImages(toolId);
     const [isGenerating, setIsGenerating] = useState(false);
     const [previewImage, setPreviewImage] = useState<StudioImage | null>(null);
@@ -97,6 +99,7 @@ export default function StudioTool() {
                 <FlyerProjectOnboarding 
                     projectId={editProjectId || undefined}
                     onComplete={(p) => {
+                        queryClient.invalidateQueries({ queryKey: ['studio-project', p.id] });
                         setSelectedProjectId(p.id);
                         setIsOnboarding(false);
                         setEditProjectId(null);

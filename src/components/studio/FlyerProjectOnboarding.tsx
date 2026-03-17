@@ -101,7 +101,7 @@ export function FlyerProjectOnboarding({ onComplete, onCancel, projectId }: Flye
         logoUrl: project.logo_images?.[0] || '',
         websiteUrl: settings.website_url || '',
         captionInstructions: settings.caption_instructions || '',
-        primaryFont: settings.primary_font || ''
+        primaryFont: settings.primary_font || project.font_family || 'Montserrat'
       });
     }
   }, [project]);

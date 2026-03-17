@@ -9,9 +9,9 @@ const corsHeaders = {
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-// Modelos separados: texto (rápido, barato) vs imagem (premium Nano Banana Pro)
-const MODEL_TEXT  = "gemini-2.5-flash";
-const MODEL_IMAGE = "gemini-3-pro-image-preview";
+// Modelos Pro: Texto (estável) vs Imagem (experimental Pro)
+const MODEL_TEXT  = "gemini-1.5-pro";
+const MODEL_IMAGE = "gemini-2.0-pro-exp-02-05";
 
 async function fetchImageAsBase64(url: string): Promise<string | null> {
     try {
@@ -128,26 +128,21 @@ serve(async (req) => {
 
               BRIEFING: "${briefing}"
 
-              🚨 DIRETIVA DE DETALHE ABSURDO E IDENTIDADE IMUTÁVEL:
-              1. 🛡️ LOGOTIPOS IMUTÁVEIS: Todos os logotipos fornecidos em [LOGOTIPO DA MARCA] são ativos ESTÁTICOS e INTOCÁVEIS. 
-                 - PROIBIDO: Mudar a fonte, alterar a proporção, redesenhar o símbolo ou decompor o logo.
-                 - PERMITIDO: Apenas ajuste de cor (ex: branco sobre fundo escuro) se for estritamente necessário para leitura. Use-o como um "Static Asset" sagrado.
-              2. ANÁLISE DE LUZ: Identifique a direção da luz no [TEMPLATE APROVADO] e replique-a no produto.
-              3. GRID E ESPAÇAMENTO: O Designer deve respeitar os "respiros" (white space) do template.
-              4. MICRO-COMPONENTES: Ícones com mesma espessura de linha e Pílulas matemáticas.
-              5. LIFESTYLE HIPER-REALISTA: Cenário Lifestyle realístico com Sombras de Contacto (AO).
-              ${approvedTemplateImage ? `
-              🚨 MODO CLONAGEM MOLECULAR (TEMPLATE APROVADO):
-              - Passo 1: LOGOTIPO IDÊNTICO. O logo deve estar na mesma posição e escala do template aprovado, sem alteração de forma.
-              - Passo 2: Rodapé (Pílula Topo + Endereço Base) intocável.
-              - Passo 3: Substituição cirúrgica do produto e fundo.
-              ` : ''}
+              🚨 POLÍTICA DE ZERO NEGOCIAÇÃO (TEMPLATE APROVADO):
+              Se existir um [TEMPLATE APROVADO], sua missão é comandar uma RÉPLICA CIRÚRGICA.
+              1. 🛡️ LOGOTIPOS IMUTÁVEIS: Posição e escala idênticas ao template. 
+              2. ESTRUTURA TAXATIVA: Onde cada elemento senta é indiscutível. O "Nome do Produto" deve estar no mesmo local exato.
+              3. DNA DO RODAPÉ (TÉCNICA PREMIUM): 
+                 - Ícones: Retângulos ligeiramente arredondados (squircular), nunca círculos perfeitos.
+                 - Typografia DDD: O "+258" (DDD) deve ser menor e alinhado ao topo em relação ao resto do número.
+              4. BREVIDADE ABSOLUTA: Descrição deve ser curta e direta.
+              5. INTEGRAÇÃO DE CENÁRIO: O produto deve parecer que nasceu no ambiente (sombras e brilhos reais).
 
-              Retorne APENAS JSON válido (sem markdown, sem texto extra):
+              Retorne APENAS JSON válido:
               {
-                "creative_direction": "Estilo visual, contraste, regras anti-alucinação e obrigatoriedade da fonte ${primaryFont}",
-                "copy_direction": "Mensagem central, tom de voz e gatilho emocional para o copywriter",
-                "layout_strategy": "Hierarquia de elementos: onde vai o logo, título, CTA, footer — garantindo que CAIXAS DE TEXTO nunca cubram a imagem principal"
+                "creative_direction": "Estilo visual e comando de RÉPLICA ABSOLUTA do DNA do Template Aprovado. Exija ícones 'squircular' e DDD top-aligned.",
+                "copy_direction": "Headline curta. Descrição ultra-breve para manter o design limpo.",
+                "layout_strategy": "Hierarquia idêntica ao template. ZERO SOBREPOSIÇÃO no produto principal."
               }
             `});
             const data = await callGemini(parts, MODEL_TEXT, false);
@@ -161,7 +156,6 @@ serve(async (req) => {
         else if (agent === 'copywriter') {
             const parts = [];
             if (approvedTemplateImage) await addImage(parts, approvedTemplateImage, "image/png", "TEMPLATE APROVADO");
-            // Copywriter vê o logo também
             if (context.project?.logoUrl) await addImage(parts, context.project.logoUrl, "image/png", "LOGOTIPO DA MARCA");
 
             // Add product images so copywriter knows what is being promoted
@@ -171,46 +165,26 @@ serve(async (req) => {
             }
 
             parts.push({ text: `
-              Você é um Copywriter de elite especializado em Marketing de Alta Conversão.
+              Você é um Copywriter de elite. 
+              Sua função é fornecer o texto necessário para preencher o design com precisão.
 
-              MARCA DO CLIENTE:
-              - Empresa: "${context.project?.clientName}"
-              - Nicho: "${context.project?.niche}"
-              - Descrição da Marca: "${context.project?.description || 'Não fornecida'}"
-              - Objetivo da Campanha: "${context.project?.objective}"
-              - Tom de Voz: "${context.project?.tone}"
-              - Site da Marca: "${context.project?.websiteUrl || 'Não fornecido'}"
+              🚨 REGRA DE OURO (EXTREMA BREVIDADE):
+              A descrição ("body") deve ser extremamente curta (máximo 12 palavras) para não poluir o layout premium.
 
-              CONTATOS OFICIAIS (para o rodapé do flyer — use exatamente estes):
-              ${JSON.stringify(context.project?.contactInfo || {})}
-
-              ══════════════════════════════════════════════
-              PADRÃO DE LEGENDAS DA MARCA (REGRA CRÍTICA):
-              "${captionInstructions}"
-              O campo "social_caption" DEVE seguir RIGOROSAMENTE este padrão.
-              ══════════════════════════════════════════════
+              REGRAS TIPOGRÁFICAS PARA O FOOTER:
+              - No telefone, instrua que o DDD (+258) deve ser formatado visualmente menor e alinhado ao topo.
 
               BRIEFING: "${briefing}"
               DIREÇÃO DO ORQUESTRADOR: "${context.orchestrator?.copy_direction}"
 
-              REGRAS:
-              1. PROIBIDO incluir caracteres como "(i)", "•" ou "-" dentro do texto retornado. Envie apenas o texto limpo.
-              2. "footer" DEVE conter os contatos reais (telefone, site, endereço).
-              3. Mantenha os textos do flyer curtos e legíveis (headline: máx 7 palavras).
-              4. NÃO use marcas, nomes ou @handles da imagem de referência.
-              ${approvedTemplateImage ? `
-              🚨 MODO TEMPLATE APROVADO:
-              Mantenha o tom de elite. Envie apenas as frases dos benefícios em "body". O Designer se encarregará de colocar os ícones visuais adequados.
-              ` : ''}
-
               Retorne APENAS JSON válido:
               {
-                "headline": "Título impactante (máx 7 palavras)",
-                "subheadline": "Frase de apoio (máx 10 palavras)",
-                "body": "Descrição curta ou bullet points",
-                "cta": "Chamada para ação (máx 4 palavras)",
-                "footer": "Site, telefone e endereço reais do cliente",
-                "social_caption": "Legenda COMPLETA para redes sociais seguindo o PADRÃO DE LEGENDAS DA MARCA acima"
+                "headline": "Nome/Título do Produto (curto)",
+                "subheadline": "Frase de apoio",
+                "body": "Descrição ultra-breve",
+                "cta": "Texto do botão (se existir)",
+                "footer": "Contatos (especifique o DDD menor e no topo no prompt do designer)",
+                "social_caption": "Legenda curta e elegante"
               }
             `});
             const data = await callGemini(parts, MODEL_TEXT, false);
@@ -224,7 +198,6 @@ serve(async (req) => {
         else if (agent === 'designer') {
             const parts = [];
             
-            // Handle multiple product images
             const allProductImages = productImages || (productImage ? [productImage] : []);
             for (let i = 0; i < allProductImages.length; i++) {
                 await addImage(parts, allProductImages[i], "image/png", `PRODUTO / TELA ${i + 1}`);
@@ -237,85 +210,41 @@ serve(async (req) => {
             const refMode = context.project?.referenceMode || 'similar';
 
             const reviewerFeedback = context.reviewer_feedback
-                ? `\n\n⚠️ CORREÇÕES OBRIGATÓRIAS (o revisor reprovou o design anterior — CORRIJA AGORA):\n${context.reviewer_feedback}\n`
+                ? `\n\n⚠️ CORREÇÕES OBRIGATÓRIAS:\n${context.reviewer_feedback}\n`
                 : '';
 
             const templateOverride = approvedTemplateImage ? `
                 ╔══════════════════════════════════════════════╗
-                ║   🚨 MODO DETALHE ABSURDO (CGI & RETOUCH) 🚨 ║
+                ║   🚨 MODO RÉPLICA TAXATIVA (COPY & PASTE)   🚨 ║
                 ╚══════════════════════════════════════════════╝
-                Você é um Mestre Retocador Digital. O seu nível de detalhe deve ser doentio:
-                1. 🛡️ LOGOTIPOS SAGRADOS (IMUTÁVEIS): Use a imagem de [LOGOTIPO DA MARCA] como uma peça gráfica ESTÁTICA. NÃO tente redesenhar, não mude a fonte e não altere a disposição dos elementos do logo. Ele deve ser uma cópia fiel, apenas permitindo mudar para a cor necessária (ex: branco).
-                2. FISICA DO PRODUTO: Analise o material. Aplique Reflexos e Sombras de Contacto (AO) realistas.
-                3. INTEGRAÇÃO DE BORDAS: Elimine qualquer halo. Produto organicamente fundido ao fundo.
-                4. DNA DO RODAPÉ (MATEMÁTICO): Pílula branca topo | Endereço flutuante base. Centrados e perfeitos.
-                5. CENÁRIO (STAGING): Ambiente de luxo "Lifestyle In-Use" com Bokeh profissional.
+                Você é um Mestre Designer focado em PRECISÃO CIRÚRGICA. 
+                1. LOCALIZAÇÃO DOS ELEMENTOS: O "Nome do Produto" e a "Descrição" devem estar EXATAMENTE no mesmo local que no template aprovado.
+                2. ÍCONES (SQUIRCULAR): Os ícones no rodapé NÃO são círculos. Eles são retângulos com bordas ligeiramente arredondadas.
+                3. TÉCNICA DDD PREMIM: No rodapé, o código de país (+258) deve ser renderizado menor e alinhado ao topo da linha de texto, para um look elegante.
+                4. ZERO SOBREPOSIÇÃO: É terminantemente proibido colocar qualquer texto ou elemento gráfico sobre o produto principal. O produto deve estar totalmente visível.
+                5. INTEGRAÇÃO REALISTA: Use técnicas de CGI para que o produto pareça estar fisicamente no cenário (brilhos refletidos do ambiente, sombras de contato precisas).
             ` : '';
 
-            let orientationInstruction = "QUADRADO (canvas 1080x1080 — igual em largura e altura)";
-            if (ratio === "9:16") orientationInstruction = "VERTICAL STORY (canvas 1080x1920 — MUITO MAIS ALTO que largo)";
-            else if (ratio === "16:9") orientationInstruction = "HORIZONTAL BANNER (canvas 1920x1080 — MUITO MAIS LARGO que alto)";
-            else if (ratio === "4:5") orientationInstruction = "RETRATO (canvas 1080x1350 — mais alto que largo)";
+            let orientationInstruction = "QUADRADO (1080x1080)";
+            if (ratio === "9:16") orientationInstruction = "VERTICAL (9:16)";
+            else if (ratio === "16:9") orientationInstruction = "HORIZONTAL (16:9)";
 
             const fullPrompt = `
-                Você é o Designer Gráfico Sênior mais premiado da agência.
-                Sua tarefa: criar arte fotorrealista ultra-premium no formato ${ratio}.
+                Você é um Mestre Designer e sua missão é a EXATIDÃO ABSOLUTA.
                 ${reviewerFeedback}
                 ${templateOverride}
 
-                ╔══════════════════════════════════════════════╗
-                ║           IDENTIDADE DO CLIENTE              ║
-                ╚══════════════════════════════════════════════╝
-                - Marca: ${context.project?.clientName}
-                - Nicho: ${context.project?.niche}
-                - Cores Oficiais: ${context.project?.primaryColor} (primária) e ${context.project?.secondaryColor} (secundária)
-                - Logotipo Oficial: Última imagem fornecida (incorpore no topo ou rodapé com destaque)
-                - Tipografia Principal Oficial (GOOGLE FONT): "${primaryFont}"
-                  → TODA tipografia do flyer DEVE usar visualmente esta fonte: "${primaryFont}"
-                  → H1, subtítulo, CTA — tudo com o estilo tipográfico de "${primaryFont}"
+                CONTEÚDO TEXTUAL OBRIGATÓRIO (MANTENHA CURTO):
+                H1 (Nome do Produto): "${context.copywriter?.headline}"
+                Body (Descrição): "${context.copywriter?.body}"
+                Footer (DDD menor/topo): "${context.copywriter?.footer}"
 
-                ╔══════════════════════════════════════════════╗
-                ║     CONTEÚDO TEXTUAL — IMPRIMA EXATAMENTE   ║
-                ╚══════════════════════════════════════════════╝
-                H1 (Título): "${context.copywriter?.headline}"
-                Sub: "${context.copywriter?.subheadline}"
-                Corpo: "${context.copywriter?.body}"
-                CTA (Botão): "${context.copywriter?.cta}"
-                RODAPÉ/FOOTER: "${context.copywriter?.footer}"
-
-                ╔══════════════════════════════════════════════╗
-                ║       DIREÇÃO CRIATIVA DO ORQUESTRADOR       ║
-                ╚══════════════════════════════════════════════╝
-                ${context.orchestrator?.creative_direction}
-
-                ESTRATÉGIA DE LAYOUT:
-                ${context.orchestrator?.layout_strategy}
-
-                ╔══════════════════════════════════════════════╗
-                ║         REGRAS ABSOLUTAS DE DESIGN           ║
-                ╚══════════════════════════════════════════════╝
-                1. 🚫 ZERO TEXTO FALSO: Os ÚNICOS textos visíveis na arte são os do "CONTEÚDO TEXTUAL" acima. Nada de letras em placas, telas de apps ou fundos.
-                2. 🚫 ZERO MOCKUPS DEFORMADOS: Não gere celulares flutuantes com interfaces de app falsas. Prefira fotos reais de ambiente ou pessoas naturais.
-                3. 🛡️ PROTEJA ROSTOS/PRODUTO: Caixas de texto NUNCA cobrem rostos ou o produto principal. Use espaço negativo ou "lower thirds".
-                4. 🔤 TIPOGRAFIA (CRÍTICO): A FONTE OBRIGATÓRIA É "${primaryFont}". Renderize H1, subtítulos e CTA com o estilo visual desta Google Font.
-                5. 📍 RODAPÉ OBRIGATÓRIO: O texto "${context.copywriter?.footer}" DEVE estar no rodapé da arte, legível e organizado.
-                6. 🖼️ LOGO OBRIGATÓRIO: Use a última imagem fornecida como logo da marca. Ajuste cor se necessário (branco/preto para contraste).
-                ${allowImageManipulation === false 
-                    ? '7. 🚷 PROIBIDO MANIPULAR O PRODUTO (CRÍTICO): As imagens fornecidas de produtos/telas DEVEM aparecer EM DESTAQUE NA FRENTE DO FLYER, MAS EXATAMENTE COMO SÃO. Não deforme, não mude a cor, tamanho, nem aplique filtros destruidores. Elas são a atração principal.'
-                    : '7. 🧩 INTEGRAÇÃO CENÁRIO/LIFESTYLE: Foram fornecidas imagens de produtos/telas. Você DEVE criar uma cena estilo "Product Staging" realista. Integre perfeitamente este produto a um ambiente impressionante. Combine as luzes, adicione reflexos e sombras precisos. O produto deve parecer que pertence fisicamente ao ambiente criado.'}
-                8. 📐 FORMATO OBRIGATÓRIO: ${orientationInstruction}
-                9. ✂️ APAGUE qualquer texto, @ ou logo da IMAGEM DE REFERÊNCIA.
-                10. 🎨 REGRAS DE OURO PARA DESIGN PROFISSIONAL:
-                    - 🚫 ZERO CARACTERES TEXTUAIS EM LISTAS: É terminantemente proibido desenhar "(i)", "(1)" ou "-". Em vez disso, desenhe ELEMENTOS GRÁFICOS reais como círculos coloridos, checkmarks estilizados ou ícones minimalistas.
-                    - SEM CAIXAS PESADAS: O texto deve flutuar em gradientes suaves.
-                    - SEM "HALOS": Recorte do produto orgânico e sem brilho branco.
-                    - SOMBRAS DE CONTATO (AO): Realistas e suaves.
-                    - BOKEH REALISTA: Fundo com desfoque fotográfico.
-                    - CONTACT PILLS: Pílula branca (telefone) + Texto branco (endereço) conforme o template.
-                11. MODO [${refMode.toUpperCase()}]:
-                   - SIMILAR: Reproduza a estrutura exata da referência, com acabamento de luxo e cores do novo cliente.
-                   - INSPIRED: Use apenas a aura de estilo. Layout original e moderno.
-                   - NEW: Ignore completamente a referência. Crie um design 2025 focado em conversão.
+                DIRETRIZES TÉCNICAS:
+                - Tipografia: "${primaryFont}" (respeite pesos e cores do template).
+                - Ícones: Bordas ligeiramente arredondadas (estilo iOS/squircular).
+                - Integração: O produto deve estar ENCAIXADO no cenário, sem parecer colado.
+                - 🚫 ZERO TEXTO FALSO.
+                - 🚫 ZERO SOBREPOSIÇÃO NO PRODUTO.
             `;
 
             parts.push({ text: fullPrompt });
@@ -350,27 +279,24 @@ serve(async (req) => {
         // ──────────────────────────────────────────────────────────────
         else if (agent === 'reviewer') {
             const parts = [];
-            await addImage(parts, context.designer.imageUrl);
-            if (context.project?.logoUrl) await addImage(parts, context.project.logoUrl);
+            await addImage(parts, context.designer.imageUrl, "image/png", "FLYER GERADO");
+            if (approvedTemplateImage) await addImage(parts, approvedTemplateImage, "image/png", "TEMPLATE APROVADO");
 
             parts.push({ text: `
               Você é o Diretor de Arte (QA rigoroso).
-              Analise a 1ª imagem (flyer gerado) vs a 2ª (logo do cliente).
+              Avalie se o FLYER GERADO é uma RÉPLICA FIEL do TEMPLATE APROVADO.
 
-              LISTA DE VERIFICAÇÃO:
-              1. Texto falso: Tem "lorem ipsum", palavras distorcidas ou dashboard sem sentido? → REJEITAR
-              2. Obstrução: Caixa de texto opaca cobre rosto ou produto principal gravemente? → REJEITAR
-              3. Rodapé ausente: O texto "${context.copywriter?.footer}" não aparece legível na base do flyer? → REJEITAR
-              4. Logo ausente: O logo do cliente (2ª imagem) não aparece no flyer? → REJEITAR
-              5. Contaminação: Aparece nome, @ ou logo de outra marca que não "${context.project?.clientName}"? → REJEITAR
+              CONDIÇÕES DE REPROVAÇÃO (CRÍTICO):
+              1. SOBREPOSIÇÃO: O produto está coberto por algum texto ou ícone? → REPROVAR.
+              2. ÍCONES: Os ícones no rodapé são círculos em vez de retângulos arredondados? → REPROVAR.
+              3. BREVIDADE: A descrição está muito longa e polui o design? → REPROVAR.
+              4. LOCALIZAÇÃO: O nome do produto ou logo mudaram de lugar? → REPROVAR.
+              5. TYPO DDD: O DDD (+258) não está menor ou alinhado ao topo? → REPORVAR.
 
-              Seja severo. Rejeite qualquer grau de "linguagem alienígena" visível na imagem.
-
-              Retorne APENAS JSON válido:
+              Retorne JSON:
               {
                 "status": "approved" ou "rejected",
-                "score": (1 a 10),
-                "feedback": "'Aprovado' ou descreva O ERRO EXATO para o designer corrigir"
+                "feedback": "Descreva o erro exato de layout ou tipografia"
               }
             `});
             const data = await callGemini(parts, MODEL_TEXT, false);
