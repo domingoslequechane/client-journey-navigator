@@ -41,8 +41,7 @@ export function StudioBanner() {
           </div>
         </div>
         
-        <div className="flex-1 relative group w-full max-w-[650px]">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary to-orange-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
+        <div className="flex-1 relative w-full max-w-[650px]">
           <div className="relative rounded-2xl overflow-hidden border border-white/20 dark:border-slate-800 transition-all duration-500">
             <div className="aspect-video w-full bg-slate-100 dark:bg-slate-800">
               <img 
@@ -55,9 +54,6 @@ export function StudioBanner() {
         </div>
       </div>
       
-      {/* Decorative elements */}
-      <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-primary/5 rounded-full blur-3xl dark:bg-primary/10" />
-      <div className="absolute -top-6 -right-6 w-32 h-32 bg-orange-400/5 rounded-full blur-3xl dark:bg-orange-400/10" />
     </div>
   );
 }
