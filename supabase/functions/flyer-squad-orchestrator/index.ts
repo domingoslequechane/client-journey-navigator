@@ -129,19 +129,18 @@ serve(async (req) => {
               BRIEFING: "${briefing}"
 
               PROIBIÇÕES CRÍTICAS (INCLUA NA "creative_direction"):
-              1. Proíba mãos segurando telas de software falsas. Pessoas devem aparecer naturais.
-              2. Proíba painéis de vidro (glassmorphism) gigantescos que cubram rostos ou produtos.
-              3. O design deve respirar (espaço negativo generoso). Texto sempre no espaço vazio, NUNCA sobre rostos/produtos.
-              4. Ordene ao Designer: TODA tipografia do flyer usa EXCLUSIVAMENTE a fonte Google "${primaryFont}".
-              5. Proíba texto falso (lorem ipsum, gibberish, placas com letras distorcidas). Apenas os textos fornecidos.
+              1. PROIBIDO o uso de caracteres de texto como "(i)", "(1)", ou "-" para listas.
+              2. Ordene ao Designer que use ÍCONES GRÁFICOS (ex: círculos verdes, "checks" minimalistas ou pontos elegantes) para os bullet points de benefícios.
+              3. Proíba mãos segurando telas de software falsas. Pessoas devem aparecer naturais.
+              4. Proíba painéis de vidro (glassmorphism) gigantescos que cubram rostos ou produtos.
+              5. O design deve respirar (espaço negativo generoso). Texto sempre no espaço vazio, NUNCA sobre rostos/produtos.
+              6. Ordene ao Designer: TODA tipografia do flyer usa EXCLUSIVAMENTE a fonte Google "${primaryFont}".
+              7. Proíba texto falso (lorem ipsum, gibberish, placas com letras distorcidas). Apenas os textos fornecidos.
               ${approvedTemplateImage ? `
               🚨 MODO TEMPLATE APROVADO (LIFESTYLE EM CONTEXTO):
-              O cenário deve retratar o uso REAL e PRÁTICO do produto (Lifestyle In-Use):
-              1. CENÁRIO REALISTA: Se o produto é um chuveiro ou válvula, o fundo DEVE ser uma casa de banho premium moderna. O produto deve parecer estar instalado ou pronto a usar no seu ambiente natural.
-              2. DINAMISMO: O cenário deve mostrar a aplicação real (ex: uma torneira instalada numa pia de mármore, um portátil numa secretária de escritório real).
-              3. ARQUITETURA DO RODAPÉ:
-                 - NÍVEL 1 (TOPO): Pílula branca (pill) com Ícone Telemóvel + Número (Cores: Azul).
-                 - NÍVEL 2 (BASE): Abaixo da pílula, Ícone Pin + Endereço (Cor: Branco flutuante).
+              O cenário deve retratar o uso REAL e PRÁTICO do produto (Lifestyle In-Use).
+              - Use ÍCONES VISUAIS da marca para os benefícios, nunca texto como "(i)".
+              - Siga o DNA DO RODAPÉ: Pílula branca com telefone + Endereço flutuante em branco abaixo.
               ` : ''}
 
               Retorne APENAS JSON válido (sem markdown, sem texto extra):
@@ -195,15 +194,13 @@ serve(async (req) => {
               DIREÇÃO DO ORQUESTRADOR: "${context.orchestrator?.copy_direction}"
 
               REGRAS:
-              1. "footer" DEVE conter os contatos reais (telefone, site, endereço). É essencial para clínicas, imobiliárias, etc.
-              2. Mantenha os textos do flyer curtos e legíveis (headline: máx 7 palavras).
-              3. NÃO use marcas, nomes ou @handles da imagem de referência. Apenas o cliente informado.
+              1. PROIBIDO incluir caracteres como "(i)", "•" ou "-" dentro do texto retornado. Envie apenas o texto limpo.
+              2. "footer" DEVE conter os contatos reais (telefone, site, endereço).
+              3. Mantenha os textos do flyer curtos e legíveis (headline: máx 7 palavras).
+              4. NÃO use marcas, nomes ou @handles da imagem de referência.
               ${approvedTemplateImage ? `
-              🚨 MODO TEMPLATE APROVADO (CLONAGEM PROFISSIONAL):
-              Mantenha o tom de elite. 
-              1. headline: Curto e impactante.
-              2. body: Use bullet points elegantes com o símbolo (i) se presente no template.
-              3. footer/cta: NÃO invente novos botões. Use o formato do template (ex: botões brancos para telefone/morada).
+              🚨 MODO TEMPLATE APROVADO:
+              Mantenha o tom de elite. Envie apenas as frases dos benefícios em "body". O Designer se encarregará de colocar os ícones visuais adequados.
               ` : ''}
 
               Retorne APENAS JSON válido:
@@ -309,13 +306,14 @@ serve(async (req) => {
                 8. 📐 FORMATO OBRIGATÓRIO: ${orientationInstruction}
                 9. ✂️ APAGUE qualquer texto, @ ou logo da IMAGEM DE REFERÊNCIA.
                 10. 🎨 REGRAS DE OURO PARA DESIGN PROFISSIONAL:
-                    - SEM CAIXAS PESADAS: O texto deve flutuar. Se precisar de contraste, use um gradiente suave de preto ou azul no fundo.
-                    - SEM "HALOS": O recorte do produto deve ser cirúrgico. Sem brilho branco ou bordas serrilhadas.
-                    - SOMBRAS DE CONTATO (AO): Em vez de sombras "drop shadow" genéricas, use sombras suaves e escuras apenas onde o objeto toca o ecrã/chão.
-                    - BOKEH REALISTA: O fundo deve parecer uma fotografia profissional com profundidade de campo (bokeh).
-                    - CONTACT PILLS: Renderize os botões de contacto exatamente como o template (retângulos brancos perfeitamente arredondados com ícones finos e texto escuro).
+                    - 🚫 ZERO CARACTERES TEXTUAIS EM LISTAS: É terminantemente proibido desenhar "(i)", "(1)" ou "-". Em vez disso, desenhe ELEMENTOS GRÁFICOS reais como círculos coloridos, checkmarks estilizados ou ícones minimalistas.
+                    - SEM CAIXAS PESADAS: O texto deve flutuar em gradientes suaves.
+                    - SEM "HALOS": Recorte do produto orgânico e sem brilho branco.
+                    - SOMBRAS DE CONTATO (AO): Realistas e suaves.
+                    - BOKEH REALISTA: Fundo com desfoque fotográfico.
+                    - CONTACT PILLS: Pílula branca (telefone) + Texto branco (endereço) conforme o template.
                 11. MODO [${refMode.toUpperCase()}]:
-                   - SIMILAR: Reproduza a estrutura exata da referência, mas com acabamento luxuoso e cores do novo cliente.
+                   - SIMILAR: Reproduza a estrutura exata da referência, com acabamento de luxo e cores do novo cliente.
                    - INSPIRED: Use apenas a aura de estilo. Layout original e moderno.
                    - NEW: Ignore completamente a referência. Crie um design 2025 focado em conversão.
             `;
