@@ -135,12 +135,14 @@ serve(async (req) => {
               4. Ordene ao Designer: TODA tipografia do flyer usa EXCLUSIVAMENTE a fonte Google "${primaryFont}".
               5. Proíba texto falso (lorem ipsum, gibberish, placas com letras distorcidas). Apenas os textos fornecidos.
               ${approvedTemplateImage ? `
-              🚨 MODO TEMPLATE APROVADO:
-              Você recebeu a imagem [TEMPLATE APROVADO]. A sua "layout_strategy" e a "creative_direction" DEVEM ordenar ao designer uma SUBSTITUIÇÃO ESTRITA DE 4 PASSOS:
-              1. MANTER TUDO: O rodapé, o logotipo, a disposição das caixas de texto e o formato geral DEVEM ficar EXATAMENTE iguais ao template original.
-              2. TROCAR PRODUTO: Substituir o produto central usando as imagens fornecidas em [PRODUTO / TELA].
-              3. TROCAR TEXTO: Apenas trocar as palavras do Título (Headline) e Descrição (Body).
-              4. TROCAR FUNDO (CENÁRIO): Como o produto muda, ordene ao designer que recrie o "fundo/ambiente" (cenário/"product staging") para que faça sentido com o novo produto, mas mantendo o estilo de luz.
+              🚨 MODO TEMPLATE APROVADO (ACABAMENTO PREMIUM):
+              Você recebeu a imagem [TEMPLATE APROVADO]. A sua "layout_strategy" e a "creative_direction" DEVEM ordenar ao designer uma SUBSTITUIÇÃO DE 4 PASSOS com refinamento profissional:
+              1. MANTER TUDO: O rodapé, o logotipo e o formato DEVEM ser idênticos.
+              2. TROCAR PRODUTO: Use o produto fornecido com "Perfect Perspective".
+              3. TROCAR TEXTO: Apenas trocar as palavras.
+              4. TROCAR FUNDO (CENÁRIO BOKEH): Gere um novo ambiente fotorrealista com DESFOQUE DE FUNDO (shallow depth of field) para destacar o produto.
+              
+              VETO CRÍTICO: PROIBIDO criar caixas sólidas e opacas de cores vibrantes para o texto se o template não as tiver. O texto deve "flutuar" elegantemente sobre o fundo.
               ` : ''}
 
               Retorne APENAS JSON válido (sem markdown, sem texto extra):
@@ -245,14 +247,14 @@ serve(async (req) => {
 
             const templateOverride = approvedTemplateImage ? `
                 ╔══════════════════════════════════════════════╗
-                ║   🚨 MODO TEMPLATE APROVADO (CRÍTICO) 🚨     ║
+                ║   🚨 MODO TEMPLATE APROVADO (PREMIUM) 🚨     ║
                 ╚══════════════════════════════════════════════╝
-                A imagem marcada como [TEMPLATE APROVADO] é a sua bíblia de layout. Execute a SUBSTITUIÇÃO DE 4 PASSOS:
-                1. REPLICAR ESTRUTURA: Mantenha o rodapé, logotipos de fundo, fontes e a disposição das caixas de texto exatamente como no template.
-                2. INSERIR PRODUTO: Coloque as novas imagens de [PRODUTO / TELA] no local principal.
-                3. IMPRIMIR TEXTOS: Use os novos textos de H1 (Título) e Corpo (Descrição) nos locais originais.
-                4. GERAR NOVO CENÁRIO (STAGING): Apague o fundo/ambiente original do template e crie um NOVO cenário fotorrealista ("product staging") que combine com o novo produto, mantendo a harmonia de cores do template.
-                NÃO mude o posicionamento do logo ou do rodapé.
+                A imagem marcada como [TEMPLATE APROVADO] é a sua bíblia de layout. Execute a SUBSTITUIÇÃO ESTRITA:
+                1. REPLICAR ESTRUTURA: Mantenha o rodapé, logotipos e fontes.
+                2. INSERIR PRODUTO: Use as novas imagens de [PRODUTO / TELA]. Aplique "Ambient Occlusion" e sombras de contato realistas.
+                3. IMPRIMIR TEXTOS: Use os novos textos de H1 e Corpo. 🚫 VETO: Se o template usa texto flutuante, NÃO crie caixas coloridas sólidas atrás do texto.
+                4. NOVO CENÁRIO (STAGING + BOKEH): Gere um cenário fotorrealista com "Background Blur" (desfoque de lente) para que o produto salte para a frente.
+                NÃO use cores vibrantes demais que distraiam do produto principal.
             ` : '';
 
             let orientationInstruction = "QUADRADO (canvas 1080x1080 — igual em largura e altura)";
@@ -308,8 +310,13 @@ serve(async (req) => {
                     : '7. 🧩 INTEGRAÇÃO CENÁRIO/LIFESTYLE: Foram fornecidas imagens de produtos/telas. Você DEVE criar uma cena estilo "Product Staging" realista. Integre perfeitamente este produto a um ambiente impressionante. Combine as luzes, adicione reflexos e sombras precisos. O produto deve parecer que pertence fisicamente ao ambiente criado.'}
                 8. 📐 FORMATO OBRIGATÓRIO: ${orientationInstruction}
                 9. ✂️ APAGUE qualquer texto, @ ou logo da IMAGEM DE REFERÊNCIA.
-                10. MODO [${refMode.toUpperCase()}]:
-                   - SIMILAR: Reproduza a estrutura exata da referência (blocos, divisões, composição), mas com cores, logo e textos do novo cliente.
+                10. 🎨 ACABAMENTO DE DESIGNER HUMANO:
+                    - Use tipografia "Floating" (texto sem caixas de fundo pesadas) para um look moderno.
+                    - Aplique desfoque (Blur/Bokeh) no cenário de fundo para criar profundidade de campo.
+                    - Sombras de contato devem ser suaves e realistas (não apenas uma mancha preta).
+                    - A tipografia de apoio (descrições) deve ser elegante e leve, nunca pesada/grosseira.
+                11. MODO [${refMode.toUpperCase()}]:
+                   - SIMILAR: Reproduza a estrutura exata da referência, mas com acabamento luxuoso e cores do novo cliente.
                    - INSPIRED: Use apenas a aura de estilo. Layout original e moderno.
                    - NEW: Ignore completamente a referência. Crie um design 2025 focado em conversão.
             `;
