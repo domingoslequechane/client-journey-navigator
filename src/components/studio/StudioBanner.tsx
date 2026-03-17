@@ -8,10 +8,10 @@ export function StudioBanner() {
   return (
     <div className="relative overflow-hidden rounded-3xl transition-colors duration-300 shadow-xl
       bg-gradient-to-br from-white to-slate-50 border border-slate-200 mb-8
-      dark:bg-[#1a1a1a] dark:border-slate-800">
+      dark:bg-none dark:bg-[#1a1a1a] dark:border-slate-800">
       
       {/* Dynamic Background Accents */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,165,0,0.05),transparent_50%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(255,165,0,0.1),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,165,0,0.05),transparent_50%)] dark:hidden" />
       
       <div className="relative flex flex-col md:flex-row items-center gap-6 p-6 md:p-10">
         <div className="flex-1 space-y-4 text-center md:text-left">
