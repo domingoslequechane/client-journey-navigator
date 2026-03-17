@@ -128,19 +128,22 @@ serve(async (req) => {
 
               BRIEFING: "${briefing}"
 
-              PROIBIÇÕES CRÍTICAS (INCLUA NA "creative_direction"):
-              1. PROIBIDO o uso de caracteres de texto como "(i)", "(1)", ou "-" para listas.
-              2. Ordene ao Designer que use ÍCONES GRÁFICOS (ex: círculos verdes, "checks" minimalistas ou pontos elegantes) para os bullet points de benefícios.
-              3. Proíba mãos segurando telas de software falsas. Pessoas devem aparecer naturais.
-              4. Proíba painéis de vidro (glassmorphism) gigantescos que cubram rostos ou produtos.
-              5. O design deve respirar (espaço negativo generoso). Texto sempre no espaço vazio, NUNCA sobre rostos/produtos.
-              6. Ordene ao Designer: TODA tipografia do flyer usa EXCLUSIVAMENTE a fonte Google "${primaryFont}".
-              7. Proíba texto falso (lorem ipsum, gibberish, placas com letras distorcidas). Apenas os textos fornecidos.
+              🚨 DIRETIVA DE DETALHE ABSURDO (NÍVEL DIRETOR DE ARTE SENIOR):
+              1. ANÁLISE DE LUZ: Identifique a direção da luz no [TEMPLATE APROVADO]. Ordene ao Designer que aplique EXATAMENTE a mesma iluminação (luz direta, preenchimento e rim light) no novo produto.
+              2. GRID E ESPAÇAMENTO: O Designer deve respeitar os "respiros" (white space) do template. Nada de texto encostado às bordas ou ao produto.
+              3. MICRO-COMPONENTES:
+                 - Ícones: Devem ter a mesma espessura de linha (stroke weight) em todo o flyer.
+                 - Rodapé: A "Pílula" (pill) do telemóvel deve ter os cantos perfeitamente matemáticos.
+              4. LIFESTYLE HIPER-REALISTA: O fundo não é uma "foto de banco". Deve ser um cenário de alto padrão onde o produto pareça ter sido fotografado por um profissional (Shadows, Reflections, Depth of Field).
+              5. VETO A HALLUCINAÇÕES: Proibido inventar sombras "drop shadow" flutuantes. Use apenas Sombras de Contacto (Grounded Shadows).
+              6. FONTE: Exclusividade absoluta da "${primaryFont}".
               ${approvedTemplateImage ? `
-              🚨 MODO TEMPLATE APROVADO (LIFESTYLE EM CONTEXTO):
-              O cenário deve retratar o uso REAL e PRÁTICO do produto (Lifestyle In-Use).
-              - Use ÍCONES VISUAIS da marca para os benefícios, nunca texto como "(i)".
-              - Siga o DNA DO RODAPÉ: Pílula branca com telefone + Endereço flutuante em branco abaixo.
+              🚨 MODO CLONAGEM MOLECULAR (TEMPLATE APROVADO):
+              Ignore a criatividade livre. O seu único trabalho é a SUBSTITUIÇÃO CIRÚRGICA DE 4 PASSOS:
+              - Passo 1: Mantenha a arquitetura do rodapé (Pílula Topo + Endereço Base) intocável.
+              - Passo 2: Troque o produto integrando-o fisicamente ao novo ambiente.
+              - Passo 3: Use os novos textos com ícones gráficos reais (Checkmarks/Dots), nunca caracteres de teclado.
+              - Passo 4: Gere o fundo Depicting a real-world application with Bokeh.
               ` : ''}
 
               Retorne APENAS JSON válido (sem markdown, sem texto extra):
@@ -242,14 +245,17 @@ serve(async (req) => {
 
             const templateOverride = approvedTemplateImage ? `
                 ╔══════════════════════════════════════════════╗
-                ║   🚨 MODO LIFESTYLE EM USO (OBLIGATÓRIO) 🚨  ║
+                ║   🚨 MODO DETALHE ABSURDO (CGI & RETOUCH) 🚨 ║
                 ╚══════════════════════════════════════════════╝
-                A imagem [TEMPLATE APROVADO] dita o contexto. Você DEVE:
-                1. RETRATAR O USO REAL: O cenário de fundo deve ser o ambiente funcional do produto (ex: Banheiro de luxo para metais sanitários). O produto deve parecer fisicamente INSTALADO e integrado ao ambiente, não apenas flutuando na frente de uma foto.
-                2. DNA DO RODAPÉ:
-                   - Topo: Stadium/Pill branco com [Ícone Celular] + [Número] (em Azul).
-                   - Base: [Ícone Pin] + [Endereço] (Texto Branco flutuante).
-                3. ACABAMENTO: Fundo com Bokeh fotográfico e Sombras de Contato perfeitas (AO).
+                Você é um Mestre Retocador Digital. O seu nível de detalhe deve ser doentio:
+                1. FISICA DO PRODUTO: Analise o material do produto (ex: Chrome/Metal). Ele DEVE refletir sutilmente as cores do novo cenário criado. Aplique Sombras de Contacto (AO) escuras onde o metal toca a superfície e sombras suaves de preenchimento.
+                2. INTEGRAÇÃO DE BORDAS: Elimine qualquer halo ou serrilhado. O produto deve estar "fundido" ao fundo de forma orgânica.
+                3. DNA DO RODAPÉ (MATEMÁTICO): 
+                   - O recipiente branco deve ser um "Stadium Shape" perfeito. 
+                   - Ícone de Telemóvel e Pin de Localização devem ter o mesmo estilo minimalista (line icons). 
+                   - Respeite o alinhamento vertical exato: Pílula em cima, Endereço centrado em baixo.
+                4. TIPOGRAFIA FLUTUANTE: Use apenas gradientes sutis para garantir a leitura. Veto total a caixas sólidas atrás do texto principal.
+                5. CENÁRIO (STAGING): O cenário de fundo deve ser um ambiente de luxo "Lifestyle" que faça sentido para o produto, com profundidade de campo (Bokeh) ultrarrealista.
             ` : '';
 
             let orientationInstruction = "QUADRADO (canvas 1080x1080 — igual em largura e altura)";
