@@ -135,14 +135,13 @@ serve(async (req) => {
               4. Ordene ao Designer: TODA tipografia do flyer usa EXCLUSIVAMENTE a fonte Google "${primaryFont}".
               5. Proíba texto falso (lorem ipsum, gibberish, placas com letras distorcidas). Apenas os textos fornecidos.
               ${approvedTemplateImage ? `
-              🚨 MODO TEMPLATE APROVADO (DNA ESTRUTURAL):
-              Você tem a regra de ouro em [TEMPLATE APROVADO]. A "layout_strategy" deve ser:
-              1. FOOTER ESTÁTICO: O rodapé DEVE ser uma única pílula branca (white pill container) horizontal na base.
-                 - Conteúdo: [Ícone Telemóvel] + [Número] | [Ícone Mapa] [Endereço].
-                 - O separador "|" é obrigatório se o template o usar.
-              2. TEXTO FLUTUANTE: Proibido caixas ou logos de fundo no corpo do texto.
-              3. INTEGRAÇÃO: O produto deve ter sombras de contacto (AO) para não parecer flutuar.
-              4. FONTE: Use o peso light/regular da fonte "${primaryFont}" para o endereço.
+              🚨 MODO TEMPLATE APROVADO (DNA DO RODAPÉ):
+              O rodapé deve ser uma cópia matemática da imagem [TEMPLATE APROVADO]:
+              1. ESTRUTURA DE 2 NÍVEIS:
+                 - NÍVEL 1 (TOPO): Uma pílula branca (white stadium/pill) contendo apenas o ícone de telemóvel e o Número.
+                 - NÍVEL 2 (BASE): Abaixo da pílula, o ícone de localização (pin) e o Endereço em texto flutuante (sem fundo branco).
+              2. CORES: Texto e ícone dentro da pílula são AZUIS. Texto do endereço é BRANCO.
+              3. INTEGRAÇÃO: Sombra de contacto realística no produto e Bokeh no fundo.
               ` : ''}
 
               Retorne APENAS JSON válido (sem markdown, sem texto extra):
@@ -246,14 +245,13 @@ serve(async (req) => {
 
             const templateOverride = approvedTemplateImage ? `
                 ╔══════════════════════════════════════════════╗
-                ║   🚨 MODO TEMPLATE APROVADO (DNA FIXO) 🚨    ║
+                ║   🚨 MODO TEMPLATE APROVADO (DNA DO RODAPÉ) 🚨║
                 ╚══════════════════════════════════════════════╝
-                A imagem [TEMPLATE APROVADO] define o DNA visual. Você NÃO PODE alterar a estrutura do rodapé:
-                1. O RODAPÉ (FOOTER): Deve ser obrigatoriamente um ÚNICO retângulo branco com cantos 100% arredondados (Stadium/Pill-shape).
-                2. ÍCONES: Desenhe um ícone de telefone elegante antes do número e um ícone de localização (pin) antes do endereço.
-                3. SEPARADOR: Use uma barra vertical "|" para separar o contacto do endereço dentro da pílula branca.
-                4. SOMBRAS: Aplique sombras de contacto realistas (AO) no produto. Proibido halos brancos em volta do recorte.
-                5. CENÁRIO: Gere um fundo com desfoque de lente (bokeh) para profundidade profissional.
+                O rodapé (footer) é a parte mais crítica. Você DEVE seguir esta arquitetura:
+                1. NÍVEL SUPERIOR: Crie um retângulo branco com cantos totalmente arredondados (PILL/STADIUM). Dentro dele, coloque o ícone de telemóvel e o NÚMERO DE TELEFONE. Use as cores azuis do logo para o conteúdo interno.
+                2. NÍVEL INFERIOR: Abaixo do retângulo, coloque o ÍCONE DE PONTO (pin) e o ENDEREÇO. Este texto deve ser BRANCO e flutuante (sem caixa branca atrás).
+                3. PRODUTO: Aplique Sombras de Contacto (Ambient Occlusion) onde o produto toca as superfícies.
+                4. ACABAMENTO: Fundo com efeito Bokeh (desfoque profissional) e ZERO contornos brancos (halos) no recorte do produto.
             ` : '';
 
             let orientationInstruction = "QUADRADO (canvas 1080x1080 — igual em largura e altura)";
