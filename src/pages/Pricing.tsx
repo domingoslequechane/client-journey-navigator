@@ -15,13 +15,13 @@ const plans = [
     key: 'starter',
     name: 'Lança',
     subtitle: 'Freelancers / Pequenas Agências',
-    price: '$19 / 1.216 MT',
+    price: '$19',
     tagline: 'O essencial para começar a crescer.',
     image: planLanca,
-    color: 'hsl(217, 91%, 60%)',
-    bgColor: 'hsl(217, 91%, 60%, 0.1)',
-    borderColor: 'border-blue-500/30',
-    textColor: 'text-blue-500',
+    color: 'hsl(var(--primary))',
+    bgColor: 'hsl(var(--primary) / 0.1)',
+    borderColor: 'border-primary/30',
+    textColor: 'text-primary',
     features: [
       '5 Marcas (Clientes)',
       'Redes Sociais Ilimitadas',
@@ -33,13 +33,13 @@ const plans = [
     key: 'pro',
     name: 'Arco',
     subtitle: 'Agências em Crescimento',
-    price: '$54 / 3.456 MT',
+    price: '$54',
     tagline: 'Ferramentas para escalar seus resultados.',
     image: planArco,
-    color: 'hsl(270, 91%, 65%)',
-    bgColor: 'hsl(270, 91%, 65%, 0.1)',
-    borderColor: 'border-purple-500/30',
-    textColor: 'text-purple-500',
+    color: 'hsl(var(--primary))',
+    bgColor: 'hsl(var(--primary) / 0.1)',
+    borderColor: 'border-primary/40',
+    textColor: 'text-primary',
     popular: true,
     recommended: 'Mais Popular',
     features: [
@@ -53,13 +53,13 @@ const plans = [
     key: 'agency',
     name: 'Catapulta',
     subtitle: 'Grandes Agências / White Label',
-    price: '$99 / 6.336 MT',
+    price: '$99',
     tagline: 'Poder total para dominar o mercado.',
     image: planCatapulta,
-    color: 'hsl(25, 95%, 53%)',
-    bgColor: 'hsl(25, 95%, 53%, 0.1)',
-    borderColor: 'border-orange-500/30',
-    textColor: 'text-orange-500',
+    color: 'hsl(var(--primary))',
+    bgColor: 'hsl(var(--primary) / 0.1)',
+    borderColor: 'border-primary/30',
+    textColor: 'text-primary',
     features: [
       '30 Marcas (Clientes)',
       '30 Créditos Studio AI / dia',
@@ -109,7 +109,7 @@ const Pricing = () => {
 
   return (
     <PublicBackground>
-      <div className="min-h-screen">
+      <div className="h-screen overflow-y-auto custom-scrollbar">
         <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
@@ -142,12 +142,12 @@ const Pricing = () => {
             {plans.map((plan) => (
               <Card 
                 key={plan.key} 
-                className={`relative overflow-hidden ${plan.borderColor} ${plan.popular ? 'ring-2 ring-purple-500' : ''}`}
+                className={`relative overflow-hidden ${plan.borderColor} ${plan.popular ? 'ring-2 ring-primary shadow-xl' : ''}`}
                 style={{ backgroundColor: plan.bgColor }}
               >
                 {plan.popular && (
                   <div className="absolute top-0 right-0">
-                    <Badge className="rounded-none rounded-bl-lg bg-purple-500 text-white">
+                    <Badge className="rounded-none rounded-bl-lg bg-primary text-primary-foreground">
                       <Star className="h-3 w-3 mr-1" />
                       {plan.recommended || 'Popular'}
                     </Badge>
@@ -188,7 +188,7 @@ const Pricing = () => {
                       }}
                     >
                       <Sparkles className="h-4 w-4" />
-                      Iniciar Minha Transformação
+                      Começar Agora
                     </Button>
                   </Link>
                 </CardContent>

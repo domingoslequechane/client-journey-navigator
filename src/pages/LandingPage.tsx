@@ -1,35 +1,28 @@
 import { Link } from 'react-router-dom';
+import { LandingHeader } from '@/components/landing/LandingHeader';
 import DOMPurify from 'dompurify';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-
 import { 
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+
 import { 
   ArrowRight, 
   CheckCircle2, 
   Sparkles, 
   Rocket,
   Shield,
-  Clock,
-  TrendingUp,
-  Star,
-  CreditCard,
-  HelpCircle,
-  Bot,
-  LayoutGrid,
-  AlertTriangle,
-  Timer,
-  UserX,
   Eye,
+  Layout,
   CalendarCheck,
   Wallet,
+  TrendingUp,
   TrendingDown,
   Download,
   FileText,
@@ -47,783 +40,728 @@ import {
   Target,
   Users,
   LineChart,
-  Briefcase
+  Briefcase,
+  Bot,
+  AlertTriangle,
+  Timer,
+  Plus,
+  UserX
 } from 'lucide-react';
 import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration';
 import { useEffect, useState, useRef } from 'react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 
-// Plan images
+// Images
 import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
 import planCatapulta from '@/assets/plans/plan-catapulta.png';
 
-// Plan colors and config
+// Plan Config mapping exactly as previously established
 const planConfig = {
   starter: {
     name: 'Lança',
-    subtitle: 'Crescimento',
+    subtitle: 'Para a Pequena Agência',
     price: 19,
     originalPrice: null,
-    tagline: 'Lance sua marca no mundo digital!',
+    tagline: 'Profissionalize sua prospecção e fechamento.',
     image: planLanca,
-    color: 'hsl(217, 91%, 60%)',
-    bgColor: 'hsl(217, 91%, 60%, 0.1)',
-    features: ['5 clientes ativos', 'Funil ilimitado', '500 msgs IA', '5 usuários'],
+    color: 'hsl(var(--primary))',
+    bgColor: 'hsl(var(--primary) / 0.1)',
+    features: ['5 clientes ativos', 'Contratos e faturas', '500 msgs IA', 'Academia de Marketing completa'],
   },
   pro: {
     name: 'Arco',
-    subtitle: 'Profissional',
+    subtitle: 'Para a Agência em Crescimento',
     price: 54,
     originalPrice: null,
-    tagline: 'Alcance resultados com precisão!',
+    tagline: 'Automação total para quem não quer parar.',
     image: planArco,
-    color: 'hsl(270, 91%, 65%)',
-    bgColor: 'hsl(270, 91%, 65%, 0.1)',
-    features: ['15 clientes ativos', 'Funil ilimitado', '1200 msgs IA', '10 usuários'],
+    color: 'hsl(var(--primary))',
+    bgColor: 'hsl(var(--primary) / 0.1)',
+    features: ['15 clientes ativos', 'Todos os documentos', '1200 msgs IA', 'Academia de Marketing + IA'],
     popular: true,
   },
   agency: {
     name: 'Catapulta',
-    subtitle: 'Agência',
+    subtitle: 'Para a Agência Consolidada',
     price: 99,
     originalPrice: null,
-    tagline: 'Imponha sua agência no mercado!',
+    tagline: 'Poder total para dominar o mercado.',
     image: planCatapulta,
-    color: 'hsl(25, 95%, 53%)',
-    bgColor: 'hsl(25, 95%, 53%, 0.1)',
-    features: ['30 clientes ativos', 'Funil ilimitado', 'IA ilimitada', '20 usuários'],
+    color: 'hsl(var(--primary))',
+    bgColor: 'hsl(var(--primary) / 0.1)',
+    features: ['30 clientes ativos', 'Docs ilimitados', 'IA ilimitada', 'Suporte prioritário'],
   },
 };
 
-// Animation hook for scroll reveal
-const useScrollReveal = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  return { ref, isVisible };
-};
 
 export default function LandingPage() {
   const { t } = useTranslation('landing');
   const [isScrolled, setIsScrolled] = useState(false);
-  const [scrollY, setScrollY] = useState(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const { canInstall, isInstalled, install } = usePWAInstall();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-      setScrollY(window.scrollY);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    setIsScrolled(scrollTop > 20);
+    setShowScrollTop(scrollTop > 500);
+  };
+
+  const scrollToTop = () => {
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Inline keyframes for animations */}
-      <style>{`
-        @keyframes shimmer {
-          0%, 100% { transform: translateX(-100%); }
-          50% { transform: translateX(100%); }
-        }
-        @keyframes glow {
-          0%, 100% { opacity: 0.4; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(1.05); }
-        }
-      `}</style>
-      
-      {/* Parallax Background Elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/3 via-background to-background" />
-        
-        <div 
-          className="absolute top-[5%] left-[5%] w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] bg-primary/8 rounded-full blur-[120px]"
-          style={{ animation: 'glow 8s ease-in-out infinite' }}
-        />
-        <div 
-          className="absolute top-[50%] right-[5%] w-[25vw] h-[25vw] max-w-[350px] max-h-[350px] bg-primary/6 rounded-full blur-[100px]"
-          style={{ animation: 'glow 10s ease-in-out infinite', animationDelay: '2s' }}
-        />
-        <div 
-          className="absolute bottom-[10%] left-[15%] w-[20vw] h-[20vw] max-w-[300px] max-h-[300px] bg-primary/8 rounded-full blur-[80px]"
-          style={{ animation: 'glow 12s ease-in-out infinite', animationDelay: '4s' }}
-        />
-        
-        <div 
-          className="absolute top-[15%] right-[15%] w-20 h-20 border border-primary/10 rounded-xl rotate-45 transition-transform duration-100"
-          style={{ transform: `translateY(${scrollY * 0.1}px) rotate(45deg)` }}
-        />
-        <div 
-          className="absolute top-[45%] left-[8%] w-14 h-14 border border-primary/10 rounded-full transition-transform duration-100"
-          style={{ transform: `translateY(${scrollY * -0.08}px)` }}
-        />
-        <div 
-          className="absolute top-[70%] right-[12%] w-24 h-24 border border-primary/8 rounded-2xl rotate-12 transition-transform duration-100"
-          style={{ transform: `translateY(${scrollY * 0.12}px) rotate(12deg)` }}
-        />
-        
-        <div 
-          className="absolute inset-0 opacity-[0.015]"
-          style={{
-            backgroundImage: 'linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)',
-            backgroundSize: '80px 80px'
-          }}
-        />
+    <div 
+      ref={scrollContainerRef}
+      className="h-screen w-full bg-background text-foreground font-sans relative overflow-x-hidden overflow-y-auto custom-scrollbar scroll-smooth"
+      onScroll={handleScroll}
+    >
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] mix-blend-screen" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] mix-blend-screen" />
       </div>
 
-      {/* Header */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled 
-          ? 'bg-gradient-to-r from-background/95 via-primary/5 to-background/95 backdrop-blur-md border-b border-border shadow-lg' 
-          : 'bg-transparent'
-      }`}>
-        <div className={`absolute inset-0 transition-opacity duration-500 ${isScrolled ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 animate-pulse" style={{ animationDuration: '4s' }} />
-        </div>
-        <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-              <span className="text-primary-foreground font-bold text-xl">Q</span>
-            </div>
-            <span className="font-bold text-2xl tracking-tight">Qualify</span>
-          </div>
-          <nav className="hidden lg:flex items-center gap-8">
-            <a href="#problema" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{t('header.problem')}</a>
-            <a href="#solucao" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{t('header.solution')}</a>
-            <a href="#planos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{t('header.plans')}</a>
-            <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{t('header.faq')}</a>
-          </nav>
-          <div className="flex items-center gap-2">
+      <LandingHeader t={t} isScrolled={isScrolled} />
 
-            <ThemeToggle />
-            {canInstall && !isInstalled && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={install}
-                title={t('header.installApp')}
-                className="hidden sm:inline-flex"
-              >
-                <Download className="h-5 w-5" />
-              </Button>
-            )}
-            <Link to="/auth">
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex">{t('header.login')}</Button>
-            </Link>
-            <Link to="/auth">
-              <Button size="sm" className="gap-2 shadow-lg shadow-primary/25">
-                <span className="hidden sm:inline">{t('header.cta')}</span>
-                <span className="sm:hidden">{t('header.ctaMobile')}</span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* HERO - Gancho Provocador */}
-      <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-background" />
+      <main className="relative z-10 pt-20 lg:pt-32">
         
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            {/* Main headline - Provocador */}
-            <h1 
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 animate-fade-in"
-              style={{ animationDelay: '0.2s' }}
-            >
-              {t('hero.title')}{' '}
-              <span className="relative inline-block">
-                <span className="relative z-10 text-primary">{t('hero.titleHighlight')}</span>
-                <span className="absolute -bottom-2 left-0 right-0 h-4 bg-primary/20 -rotate-1" />
-              </span>
-              {' '}{t('hero.titleEnd')}
-            </h1>
-            
-            {/* Subheadline - Alternativa */}
-            <p 
-              className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-10 animate-fade-in max-w-3xl mx-auto leading-relaxed"
-              style={{ animationDelay: '0.4s' }}
-            >
-              {t('hero.subtitle')}
-            </p>
-            
-            {/* CTA único */}
-            <div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in"
-              style={{ animationDelay: '0.6s' }}
-            >
-              <Link to="/auth">
-                <Button size="lg" className="text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-8 gap-2 sm:gap-3 shadow-2xl shadow-primary/40 hover:shadow-primary/50 transition-all hover:scale-105 group">
-                  <Target className="h-5 w-5 sm:h-6 sm:w-6" />
-                  <span className="hidden sm:inline">{t('hero.cta')}</span>
-                  <span className="sm:hidden">{t('hero.ctaMobile')}</span>
-                  <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-
-              <Link to="/demo">
-                <Button size="lg" variant="outline" className="text-lg sm:text-xl px-6 sm:px-10 py-6 sm:py-8 gap-2 sm:gap-3 hover:bg-primary/5 transition-all">
-                  <Eye className="h-5 w-5 sm:h-6 sm:w-6" />
-                  Ver Demonstração
-                </Button>
-              </Link>
-            </div>
-            
-            {/* Trust badges simples */}
-            <div 
-              className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-10 text-xs sm:text-sm text-muted-foreground animate-fade-in"
-              style={{ animationDelay: '0.8s' }}
-            >
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
-                <span>{t('hero.trustNoCard')}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                <span>{t('hero.trustSetup')}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
-                <span>{t('hero.trustCancel')}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 inset-x-0 flex justify-center animate-bounce">
-          <div className="w-6 h-10 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-2">
-            <div className="w-1 h-2 bg-muted-foreground/50 rounded-full animate-pulse" />
-          </div>
-        </div>
-      </section>
-
-      {/* IDENTIFICAÇÃO - Abertura da Ferida (Condensado) */}
-      <section id="problema" className="py-20 md:py-32">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="text-center md:text-left">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
-                  {t('problem.title')}{' '}
-                  <span className="text-destructive">{t('problem.titleHighlight')}</span>
-                </h2>
-                
-                <div className="space-y-6 text-lg md:text-xl text-muted-foreground leading-relaxed">
-                  <p>
-                    {t('problem.description1')}
-                  </p>
-                  
-                  <p className="text-foreground font-medium">
-                    {t('problem.description2')} <span className="text-destructive">{t('problem.description2Highlight')}</span>
-                  </p>
+        {/* HERO SECTION */}
+        <section className="container mx-auto px-6 mb-24 md:mb-32">
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+            {/* Left Column: Text & CTA */}
+            <div className="flex-1 max-w-2xl">
+              <Badge variant="outline" className="mb-6 py-1.5 px-4 rounded-xl border-primary/30 bg-primary/5 text-primary">
+                <Sparkles className="h-4 w-4 mr-2 inline" />
+                A nova era das agências digitais
+              </Badge>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-[1.1]">
+                <span className="text-foreground">{t('hero.title')}</span>
+                <span className="text-primary">{t('hero.titleHighlight')}</span>
+              </h1>
+              <p className="text-lg md:text-xl text-muted-foreground mb-8 font-medium leading-relaxed">
+                {t('hero.subtitle')}
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <Link to="/auth" className="w-full sm:w-auto">
+                  <Button size="lg" className="h-12 w-full sm:w-auto rounded-xl px-8 text-base shadow-lg hover:shadow-primary/25 hover:-translate-y-1 transition-all">
+                    {t('hero.cta')}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <div className="text-sm text-muted-foreground flex flex-col gap-1 px-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    {t('hero.trustNoCard') || 'Setup em 2 minutos'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    {t('hero.trustCancel') || 'Cancele quando quiser'}
+                  </div>
                 </div>
               </div>
-              
-              <AnimatedIllustration 
-                section="problema" 
-                animationDirection="right"
-                className="h-64 md:h-80"
-              />
+            </div>
+
+            {/* Right Column: Floating Dashboard Mockup */}
+            <div className="flex-1 relative w-full w-max-xl perspective-1000">
+              <div className="relative transform rotate-y-[-10deg] rotate-x-[5deg] transition-transform duration-700">
+                {/* Main Mockup Card */}
+                <div className="bg-background border-2 border-border/80 rounded-2xl shadow-2xl overflow-hidden aspect-[4/3] flex flex-col backdrop-blur-sm">
+                  {/* Mockup Header */}
+                  <div className="h-10 bg-muted/50 border-b border-border/80 flex items-center px-4 gap-2">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-destructive/60" />
+                      <div className="w-3 h-3 rounded-full bg-warning/60" />
+                      <div className="w-3 h-3 rounded-full bg-success/60" />
+                    </div>
+                  </div>
+                  {/* Mockup Body Content (Simulated Kanban & Stats) */}
+                  <div className="p-6 flex-1 bg-gradient-to-br from-background to-muted/50 flex gap-4">
+                     {/* Sidebar fake */}
+                     <div className="w-16 h-full flex flex-col gap-4 border-r border-border/80 pr-4">
+                       <div className="h-8 w-8 rounded-lg bg-primary/20" />
+                       <div className="h-8 w-8 rounded-lg bg-muted-foreground/20" />
+                       <div className="h-8 w-8 rounded-lg bg-muted-foreground/20" />
+                       <div className="h-8 w-8 rounded-lg bg-muted-foreground/20" />
+                     </div>
+                     {/* Kanban Fake */}
+                     <div className="flex-1 flex gap-4 overflow-hidden">
+                       <div className="w-1/3 flex flex-col gap-3">
+                         <div className="h-4 w-20 bg-muted-foreground/30 rounded" />
+                         <div className="h-24 bg-card rounded-xl border border-border shadow-sm" />
+                         <div className="h-24 bg-card rounded-xl border border-border shadow-sm" />
+                       </div>
+                       <div className="w-1/3 flex flex-col gap-3">
+                         <div className="h-4 w-16 bg-muted-foreground/30 rounded" />
+                         <div className="h-24 bg-card rounded-xl border-2 border-primary/40 ring-4 ring-primary/5 shadow-md relative overflow-hidden">
+                           <div className="absolute top-0 right-0 w-8 h-8 bg-primary/10 rounded-bl-lg" />
+                         </div>
+                       </div>
+                       <div className="w-1/3 flex flex-col gap-3 opacity-60">
+                         <div className="h-4 w-24 bg-muted-foreground/30 rounded" />
+                         <div className="h-24 bg-card rounded-xl border border-border shadow-sm" />
+                       </div>
+                     </div>
+                  </div>
+                </div>
+
+                {/* Floating Element 1 - Stats */}
+                <div className="absolute -bottom-6 -left-6 bg-card border border-border/50 rounded-xl p-4 shadow-xl flex items-center gap-4 animate-float">
+                  <div className="h-12 w-12 rounded-full bg-success/20 flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-success" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">Contratos Ganhos</p>
+                    <p className="text-xl font-bold">+12,5K</p>
+                  </div>
+                </div>
+
+                {/* Floating Element 2 - AI Tag */}
+                <div className="absolute -top-6 -right-6 bg-card border border-border/50 rounded-xl p-3 shadow-xl flex items-center gap-3 animate-float" style={{ animationDelay: '1s' }}>
+                  <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <Bot className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="pr-2">
+                    <p className="text-sm font-bold">Qualify AI</p>
+                    <p className="text-[10px] text-muted-foreground">Assistente Online</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* AGITAÇÃO - O Custo de Continuar Assim */}
-      <section className="py-20 md:py-32 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
-              <AnimatedIllustration 
-                section="custo" 
-                animationDirection="left"
-                className="h-64 md:h-80 order-2 md:order-1"
-              />
-              
-              <div className="order-1 md:order-2 text-center md:text-left">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-                  {t('cost.title')}{' '}
-                  <span className="text-destructive">{t('cost.titleHighlight')}</span>
-                </h2>
-              </div>
-            </div>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              {/* Custo 1 */}
-              <div className="bg-card border border-border rounded-2xl p-8 text-center hover:border-destructive/50 transition-all duration-300 hover:shadow-lg group">
-                <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <AlertTriangle className="h-8 w-8 text-destructive" />
-                </div>
-                <div className="text-2xl font-bold text-destructive mb-2">{t('cost.revenueLoss')}</div>
-                <div className="text-sm text-muted-foreground mb-4">{t('cost.revenueLossDesc')}</div>
-                <p className="text-muted-foreground text-sm">
-                  {t('cost.revenueLossText')}
-                </p>
-              </div>
-              
-              {/* Custo 2 */}
-              <div className="bg-card border border-border rounded-2xl p-8 text-center hover:border-destructive/50 transition-all duration-300 hover:shadow-lg group">
-                <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <Briefcase className="h-8 w-8 text-destructive" />
-                </div>
-                <div className="text-2xl font-bold text-destructive mb-2">{t('cost.hoursWasted')}</div>
-                <div className="text-sm text-muted-foreground mb-4">{t('cost.hoursWastedDesc')}</div>
-                <p className="text-muted-foreground text-sm">
-                  {t('cost.hoursWastedText')}
-                </p>
-              </div>
-              
-              {/* Custo 3 */}
-              <div className="bg-card border border-border rounded-2xl p-8 text-center hover:border-destructive/50 transition-all duration-300 hover:shadow-lg group">
-                <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <LineChart className="h-8 w-8 text-destructive" />
-                </div>
-                <div className="text-2xl font-bold text-destructive mb-2">{t('cost.clientsLost')}</div>
-                <div className="text-sm text-muted-foreground mb-4">{t('cost.clientsLostDesc')}</div>
-                <p className="text-muted-foreground text-sm">
-                  {t('cost.clientsLostText')}
-                </p>
-              </div>
-            </div>
-            
-            <p className="text-center mt-12 text-lg text-foreground font-medium">
-              {t('cost.conclusion')} <span className="text-primary">{t('cost.conclusionHighlight')}</span>
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ESPERANÇA - A Virada (Condensado) */}
-      <section className="py-20 md:py-32">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="text-center md:text-left">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8">
-                  {t('hope.title')}{' '}
-                  <span className="text-primary">{t('hope.titleHighlight')}</span>
-                </h2>
-                
-                <p className="text-lg md:text-xl text-muted-foreground mb-6">
-                  {t('hope.description')}
-                </p>
-                
-                <p className="text-xl text-foreground font-medium">
-                  {t('hope.tagline')}
-                </p>
-              </div>
-              
-              <AnimatedIllustration 
-                section="esperanca" 
-                animationDirection="right"
-                className="h-64 md:h-80"
-              />
+        {/* TRUSTED BY / MARQUEE */}
+        <section className="py-10 border-y border-border/50 bg-muted/20 overflow-hidden">
+          <div className="container mx-auto px-6 text-center">
+            <p className="text-sm font-medium text-muted-foreground mb-6 uppercase tracking-wider">A escolha das agências que dominam o mercado</p>
+            <div className="flex items-center justify-center flex-wrap gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+              <div className="text-xl md:text-2xl font-bold font-mono">AgencyPro</div>
+              <div className="text-xl md:text-2xl font-bold flex items-center gap-2"><Rocket className="h-6 w-6"/> ScaleUp</div>
+              <div className="text-xl md:text-2xl font-bold italic">DigitalForce</div>
+              <div className="text-xl md:text-2xl font-extrabold uppercase">Growth<span className="text-primary">.co</span></div>
+              <div className="text-xl md:text-2xl font-medium tracking-widest">NEXUS</div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* SOLUÇÃO - O Método */}
-      <section id="solucao" className="py-20 md:py-32 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-                {t('solution.title')} <span className="text-primary">{t('solution.titleHighlight')}</span>
+        {/* O PROBLEMA (THE COSTS) */}
+        <section id="problema" className="py-24">
+          <div className="container mx-auto px-6">
+            <div className="max-w-3xl mx-auto text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                {t('cost.title')} <span className="text-destructive font-extrabold">{t('cost.titleHighlight')}</span>
               </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                {t('solution.description')}
+              <p className="text-lg text-muted-foreground">
+                Muitas agências patinam não por falta de leads, mas por vazamentos na operação e gestão caótica.
               </p>
             </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Card 1 */}
+              <Card className="bg-card border border-border/60 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-b from-background to-destructive/5 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-destructive/10 blur-3xl rounded-full -mr-10 -mt-10" />
+                <CardHeader className="relative z-10">
+                  <div className="h-14 w-14 rounded-2xl bg-destructive/10 flex items-center justify-center mb-4 group-hover:-translate-y-1 transition-transform border border-destructive/20">
+                    <AlertTriangle className="h-7 w-7 text-destructive" />
+                  </div>
+                  <CardTitle className="text-xl mb-2">{t('cost.revenueLoss')}</CardTitle>
+                  <CardDescription className="text-base text-muted-foreground leading-relaxed">
+                    {t('cost.revenueLossText')}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Card 2 */}
+              <Card className="bg-card border border-border/60 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-b from-background to-warning/5 group md:translate-y-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-warning/10 blur-3xl rounded-full -mr-10 -mt-10" />
+                <CardHeader className="relative z-10">
+                  <div className="h-14 w-14 rounded-2xl bg-warning/10 flex items-center justify-center mb-4 group-hover:-translate-y-1 transition-transform border border-warning/20">
+                    <Timer className="h-7 w-7 text-warning" />
+                  </div>
+                  <CardTitle className="text-xl mb-2">{t('cost.hoursWasted')}</CardTitle>
+                  <CardDescription className="text-base text-muted-foreground leading-relaxed">
+                    {t('cost.hoursWastedText')}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Card 3 */}
+              <Card className="bg-card border border-border/60 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-b from-background to-destructive/5 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-destructive/10 blur-3xl rounded-full -mr-10 -mt-10" />
+                <CardHeader className="relative z-10">
+                  <div className="h-14 w-14 rounded-2xl bg-destructive/10 flex items-center justify-center mb-4 group-hover:-translate-y-1 transition-transform border border-destructive/20">
+                    <UserX className="h-7 w-7 text-destructive" />
+                  </div>
+                  <CardTitle className="text-xl mb-2">{t('cost.clientsLost')}</CardTitle>
+                  <CardDescription className="text-base text-muted-foreground leading-relaxed">
+                    {t('cost.clientsLostText')}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
             
-            {/* Mockup visual simples */}
-            <div className="bg-card border border-border rounded-2xl p-6 md:p-8 mb-16 shadow-xl">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="h-3 w-3 rounded-full bg-destructive/50" />
-                <div className="h-3 w-3 rounded-full bg-warning/50" />
-                <div className="h-3 w-3 rounded-full bg-primary/50" />
-                <span className="text-sm text-muted-foreground ml-2">{t('solution.mockupTitle')}</span>
+            <div className="mt-16 text-center p-8 bg-muted/40 rounded-2xl border border-border/50 max-w-2xl mx-auto">
+              <p className="text-lg font-medium text-foreground">
+                {t('cost.conclusion')} <span className="text-primary font-bold">{t('cost.conclusionHighlight')}</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ESTATÍSTICAS / PROVA SOCIAL (Novo) */}
+        <section className="py-16 bg-primary text-primary-foreground relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+          <div className="container mx-auto px-6 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-primary-foreground/20">
+              <div className="px-4">
+                <div className="text-4xl md:text-5xl font-extrabold mb-2">3+</div>
+                <div className="text-sm font-medium opacity-90">Anos de Experiência (Time)</div>
               </div>
-              
-              <div className="flex md:grid md:grid-cols-7 gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                {[
-                  t('solution.stages.prospecting'),
-                  t('solution.stages.meeting'),
-                  t('solution.stages.contracting'),
-                  t('solution.stages.production'),
-                  t('solution.stages.traffic'),
-                  t('solution.stages.retention'),
-                  t('solution.stages.loyalty')
-                ].map((stage, i) => (
-                  <div key={stage} className="text-center min-w-[70px] flex-shrink-0 md:min-w-0">
-                    <div className="bg-muted rounded-lg p-2 md:p-3 mb-2 h-20 md:h-32 flex flex-col justify-between">
-                      <div className="text-[10px] md:text-xs font-medium text-muted-foreground truncate">{stage}</div>
-                      <div className="space-y-1">
-                        {[...Array(Math.max(1, 3 - i))].map((_, j) => (
-                          <div key={j} className="h-2 md:h-4 bg-primary/20 rounded animate-pulse" />
-                        ))}
+              <div className="px-4">
+                <div className="text-4xl md:text-5xl font-extrabold mb-2">10h</div>
+                <div className="text-sm font-medium opacity-90">Economizadas / Semana</div>
+              </div>
+              <div className="px-4">
+                <div className="text-4xl md:text-5xl font-extrabold mb-2">85%</div>
+                <div className="text-sm font-medium opacity-90">Taxa de Conversão da Ferramenta</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FUNCIONALIDADES / A SOLUÇÃO (Zig-Zag Layout) */}
+        <section id="funcionalidades" className="py-24">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-20 max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Entregamos a você o nosso melhor serviço
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Tudo o que uma agência ou consultor precisa para atrair, fechar e reter clientes, unificado em uma interface perfeita.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-24">
+              {/* Feature 1: Máquina Comercial (CRM) */}
+              <div className="flex flex-col md:flex-row items-center gap-12 lg:gap-20">
+                <div className="flex-1 order-2 md:order-1 relative">
+                  <div className="bg-card w-full aspect-video rounded-3xl border-2 border-border shadow-2xl overflow-hidden flex flex-col bg-gradient-to-tr from-background to-muted/50 relative">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary/20" />
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-background/50 backdrop-blur-sm">
+                      <div className="flex gap-4">
+                        <div className="text-[10px] font-bold text-primary uppercase tracking-wider">Pipeline</div>
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider opacity-50">Leads</div>
+                      </div>
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 rounded-full bg-destructive/40" />
+                        <div className="w-2 h-2 rounded-full bg-warning/40" />
+                        <div className="w-2 h-2 rounded-full bg-success/40" />
+                      </div>
+                    </div>
+                    <div className="flex-1 p-4 flex gap-4 overflow-hidden">
+                      {/* Column 1 */}
+                      <div className="flex-1 flex flex-col gap-3">
+                        <div className="flex items-center justify-between px-2">
+                           <span className="text-[9px] font-bold text-muted-foreground uppercase">Prospecção</span>
+                           <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">2</span>
+                        </div>
+                        <div className="bg-background shadow-sm rounded-xl border border-border p-3 space-y-2 hover:border-primary/30 transition-colors">
+                          <div className="w-full h-2 bg-muted-foreground/20 rounded" />
+                          <div className="w-3/4 h-2 bg-muted-foreground/10 rounded" />
+                          <div className="flex justify-between items-center pt-1">
+                            <div className="w-6 h-6 rounded-full bg-primary/20" />
+                            <div className="text-[9px] font-bold text-success">$ 5.200</div>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Column 2 */}
+                      <div className="flex-1 flex flex-col gap-3">
+                        <div className="flex items-center justify-between px-2">
+                           <span className="text-[9px] font-bold text-muted-foreground uppercase">Fechamento</span>
+                           <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">1</span>
+                        </div>
+                        <div className="bg-background shadow-md rounded-xl border-2 border-primary/30 p-3 space-y-2 relative">
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
+                          <div className="w-full h-2 bg-primary/20 rounded" />
+                          <div className="w-1/2 h-2 bg-primary/10 rounded" />
+                          <div className="flex justify-between items-center pt-1">
+                            <div className="flex -space-x-2">
+                              <div className="w-6 h-6 rounded-full bg-primary/20 border-2 border-background" />
+                              <div className="w-6 h-6 rounded-full bg-muted-foreground/20 border-2 border-background" />
+                            </div>
+                            <div className="text-[9px] font-bold text-primary">$ 12.000</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                  {/* Decorative */}
+                  <div className="absolute -z-10 -bottom-6 -left-6 w-32 h-32 bg-primary/20 rounded-full blur-2xl" />
+                </div>
+                <div className="flex-1 order-1 md:order-2">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+                    <LayoutDashboard className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-4">{t('features.clients.title')}</h3>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {t('features.clients.description')}
+                  </p>
+                </div>
               </div>
+
+              {/* Feature 2: Cérebro Estratégico (QIA) */}
+              <div className="flex flex-col md:flex-row items-center gap-12 lg:gap-20">
+                <div className="flex-1">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+                    <Bot className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-4">{t('features.qia.title')}</h3>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {t('features.qia.description')}
+                  </p>
+                </div>
+                <div className="flex-1 relative">
+                   <div className="bg-card w-full aspect-video rounded-3xl border-2 border-primary/20 shadow-[0_0_50px_-12px_hsla(var(--primary),0.2)] overflow-hidden flex p-6 items-center justify-center bg-gradient-to-bl from-primary/5 to-background">
+                     <div className="w-[85%] bg-background border border-border shadow-xl rounded-2xl p-5">
+                       <div className="flex items-start gap-4 mb-5">
+                         <div className="w-10 h-10 rounded-xl bg-primary/20 flex-shrink-0 flex items-center justify-center shadow-inner"><Bot className="w-6 h-6 text-primary" /></div>
+                         <div className="bg-muted p-4 rounded-2xl rounded-tl-sm text-sm font-medium border border-border/50 shadow-sm text-foreground">Qual seu próximo passo estratégico?</div>
+                       </div>
+                       <div className="flex items-start gap-4 flex-row-reverse">
+                         <div className="w-10 h-10 rounded-xl bg-muted-foreground/20 flex-shrink-0 shadow-inner" />
+                         <div className="bg-primary shadow-lg shadow-primary/25 text-primary-foreground p-4 rounded-2xl rounded-tr-sm text-sm font-semibold">Gere uma resposta de persuasão para o Lead A.</div>
+                       </div>
+                     </div>
+                   </div>
+                </div>
+              </div>
+
+              {/* Feature 3: Automação Burocrática (Docs) */}
+              <div className="flex flex-col md:flex-row items-center gap-12 lg:gap-20">
+                <div className="flex-1 order-2 md:order-1 relative">
+                  <div className="bg-card w-full aspect-video rounded-3xl border-2 border-border shadow-2xl overflow-hidden flex flex-col items-center justify-center bg-gradient-to-tr from-muted/50 to-background relative p-8">
+                    <div className="w-full max-w-[240px] bg-background rounded-xl border border-border shadow-2xl p-6 transform -rotate-2 hover:rotate-0 transition-transform duration-500">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <FileText className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                          <div className="w-32 h-3 bg-foreground/10 rounded mb-1" />
+                          <div className="w-20 h-2 bg-muted-foreground/10 rounded" />
+                        </div>
+                      </div>
+                      <div className="space-y-3 mb-8">
+                        <div className="w-full h-2 bg-muted-foreground/5 rounded" />
+                        <div className="w-full h-2 bg-muted-foreground/5 rounded" />
+                        <div className="w-4/5 h-2 bg-muted-foreground/5 rounded" />
+                      </div>
+                      <div className="flex items-center justify-between border-t border-border pt-4">
+                         <div className="flex flex-col gap-1">
+                           <div className="text-[8px] font-bold text-muted-foreground uppercase">Status</div>
+                           <div className="flex items-center gap-1 text-[10px] font-bold text-success uppercase"><CheckCircle2 className="w-3 h-3" /> Assinado</div>
+                         </div>
+                         <div className="w-8 h-8 rounded-full border-2 border-primary/40 bg-primary/5 flex items-center justify-center italic text-[10px] font-serif text-primary">JD</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 order-1 md:order-2">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+                    <FileText className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-4">{t('features.docs.title')}</h3>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {t('features.docs.description')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 4: Studio Criativo & Hub Social */}
+              <div className="flex flex-col md:flex-row items-center gap-12 lg:gap-20">
+                <div className="flex-1">
+                  <div className="h-12 w-12 rounded-xl bg-violet-500/10 flex items-center justify-center mb-6">
+                    <Palette className="h-6 w-6 text-violet-500" />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-4">{t('features.link23.title')}</h3>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {t('features.link23.description')}
+                  </p>
+                </div>
+                <div className="flex-1 relative">
+                  <div className="bg-card w-full aspect-video rounded-3xl border-2 border-border shadow-2xl overflow-hidden flex flex-col bg-gradient-to-br from-background to-muted/50">
+                    <div className="flex justify-between items-center px-5 py-3 border-b border-border/50 bg-background/50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center"><Calendar className="w-4 h-4 text-violet-500" /></div>
+                        <div className="text-xs font-bold text-foreground">Social Hub</div>
+                      </div>
+                      <Button size="sm" variant="outline" className="h-7 gap-2 text-[10px] bg-background hover:bg-violet-500 hover:text-white transition-all"><Plus className="w-3 h-3" /> Novo Agendamento</Button>
+                    </div>
+                    <div className="p-4 grid grid-cols-2 gap-4 flex-1 overflow-hidden">
+                       <div className="bg-background rounded-2xl border border-border p-3 flex flex-col gap-3 shadow-sm group hover:border-violet-300 transition-colors">
+                         <div className="w-full aspect-video bg-violet-500/5 rounded-xl border border-violet-500/10 flex items-center justify-center relative overflow-hidden">
+                            <Sparkles className="w-6 h-6 text-violet-500/20" />
+                            <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-violet-500 text-white text-[8px] font-bold rounded-full">Agendado: 14:30</div>
+                         </div>
+                         <div className="space-y-2">
+                           <div className="w-full h-2 bg-foreground/10 rounded" />
+                           <div className="w-2/3 h-2 bg-muted-foreground/10 rounded" />
+                         </div>
+                       </div>
+                       <div className="bg-background rounded-2xl border border-border p-3 flex flex-col gap-3 shadow-sm opacity-60">
+                         <div className="w-full aspect-video bg-muted/20 rounded-xl border border-border/50 flex items-center justify-center">
+                            <MessageSquare className="w-6 h-6 text-muted-foreground/20" />
+                         </div>
+                         <div className="space-y-2">
+                           <div className="w-full h-2 bg-muted-foreground/10 rounded" />
+                           <div className="w-1/2 h-2 bg-muted-foreground/10 rounded" />
+                         </div>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature 5: Presença Digital & Link 23 */}
+              <div className="flex flex-col md:flex-row items-center gap-12 lg:gap-20">
+                <div className="flex-1 order-2 md:order-1 relative">
+                  <div className="bg-card w-full aspect-video rounded-3xl border-2 border-border shadow-2xl flex items-center justify-center overflow-hidden bg-gradient-to-br from-background to-muted/50">
+                    <div className="w-[180px] h-[310px] border-[8px] border-border/80 rounded-[2.5rem] bg-background flex flex-col items-center p-4 shadow-2xl relative overflow-hidden group hover:border-orange-500/40 transition-colors duration-500">
+                      <div className="absolute top-2 w-16 h-1 rounded-full bg-border" />
+                      <div className="w-full flex justify-between px-2 pt-2 pb-4 opacity-40">
+                        <div className="text-[7px] font-bold tracking-tighter">9:41</div>
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 rounded-full border border-current opacity-50" />
+                          <div className="w-2 h-2 rounded-sm bg-current" />
+                        </div>
+                      </div>
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-primary mb-3 shadow-lg ring-4 ring-background flex items-center justify-center overflow-hidden">
+                        <div className="text-[10px] font-black text-white tracking-widest leading-none text-center">QUALIFY<br/>AGENCY</div>
+                      </div>
+                      <div className="w-3/4 h-3 bg-foreground/10 rounded-full mb-1" />
+                      <div className="w-1/2 h-1.5 bg-muted-foreground/10 rounded-full mb-6" />
+                      
+                      <div className="w-full space-y-2 px-2">
+                        <div className="w-full h-9 bg-primary/10 rounded-xl border border-primary/20 shadow-sm flex items-center px-3 gap-2 group/btn hover:bg-primary/20 transition-colors">
+                          <div className="w-5 h-5 rounded-lg bg-primary/20 flex items-center justify-center">
+                            <Share2 className="w-3 h-3 text-primary" />
+                          </div>
+                          <div className="w-16 h-1 bg-primary/40 rounded" />
+                        </div>
+                        <div className="w-full h-9 bg-background rounded-xl border border-border shadow-sm flex items-center px-3 gap-2">
+                          <div className="w-5 h-5 rounded-lg bg-muted flex items-center justify-center">
+                            <Bot className="w-3 h-3 text-muted-foreground" />
+                          </div>
+                          <div className="w-20 h-1 bg-muted-foreground/10 rounded" />
+                        </div>
+                        <div className="w-full h-9 bg-background rounded-xl border border-border shadow-sm flex items-center px-3 gap-2">
+                          <div className="w-5 h-5 rounded-lg bg-muted flex items-center justify-center">
+                            <Layout className="w-3 h-3 text-muted-foreground" />
+                          </div>
+                          <div className="w-24 h-1 bg-muted-foreground/10 rounded" />
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex gap-3">
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"><div className="w-4 h-4 rounded bg-muted-foreground/20" /></div>
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"><div className="w-4 h-4 rounded bg-muted-foreground/20" /></div>
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"><div className="w-4 h-4 rounded bg-muted-foreground/20" /></div>
+                      </div>
+
+                      <div className="absolute top-1/2 -right-8 bg-success text-success-foreground p-2 rounded-lg text-[8px] font-bold shadow-lg transform rotate-6 animate-bounce">
+                         +32% Cliques
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 order-1 md:order-2">
+                  <div className="h-12 w-12 rounded-xl bg-orange-500/10 flex items-center justify-center mb-6">
+                    <Share2 className="h-6 w-6 text-orange-500" />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-4">{t('features.presence.title')}</h3>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {t('features.presence.description')}
+                  </p>
+                </div>
+              </div>
+
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* RECURSOS - Grade de Recursos Expandida */}
-      <section className="py-20 md:py-32">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-                {t('features.title')}
+        {/* PRICING SECTION - Dark Contrast layout */}
+        <section id="planos" className="py-24 bg-card border-y border-border/50 text-card-foreground">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-16 max-w-2xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                Preços Simples e Flexíveis
               </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                {t('features.subtitle')}
+              <p className="text-lg text-muted-foreground">
+                Teste o nosso plano premium por 7 dias. Depois, escolha a capacidade ideal para sua operação.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Gestão de Clientes */}
-              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <LayoutDashboard className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">{t('features.clients.title')}</CardTitle>
-                  <CardDescription>{t('features.clients.description')}</CardDescription>
-                </CardHeader>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {(Object.entries(planConfig) as [string, typeof planConfig.pro][]).map(([key, plan]) => {
+                const planKey = key as 'starter' | 'pro' | 'agency';
+                const isPopular = 'popular' in plan && plan.popular;
+                
+                return (
+                  <Card 
+                    key={key}
+                    className={`relative overflow-hidden flex flex-col transition-all duration-300 border-border/50 bg-background/50 backdrop-blur-sm ${
+                      isPopular 
+                        ? 'ring-2 ring-primary/40 shadow-[0_0_50px_-12px_hsla(var(--primary),0.3)] scale-100 md:scale-105 z-10' 
+                        : 'shadow-sm hover:shadow-lg'
+                    }`}
+                    style={isPopular ? { borderColor: plan.color } : {}}
+                  >
+                    {isPopular && (
+                      <div className="bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest text-center py-1.5 shadow-sm">
+                        Plano Recomendado
+                      </div>
+                    )}
+                    <CardHeader className="text-center pb-8 border-b border-border/50 bg-muted/20 space-y-2">
+                      <CardTitle className="text-3xl font-extrabold" style={{ color: plan.color }}>
+                        {plan.name}
+                      </CardTitle>
+                      <CardDescription className="text-sm font-semibold opacity-80">
+                        {plan.subtitle}
+                      </CardDescription>
+                      <div className="flex items-baseline justify-center gap-1 pt-2">
+                        <span className="text-5xl font-black">${plan.price}</span>
+                        <span className="text-muted-foreground font-bold">/mês</span>
+                      </div>
+                      
+                      {/* FREE TRIAL BADGE */}
+                      <div className="flex justify-center pt-1">
+                        <span className="bg-orange-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg transform hover:scale-105 transition-transform uppercase tracking-tighter">
+                          14 Dias Grátis
+                        </span>
+                      </div>
 
-              {/* Finanças */}
-              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Wallet className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">{t('features.finance.title')}</CardTitle>
-                  <CardDescription>{t('features.finance.description')}</CardDescription>
-                </CardHeader>
-              </Card>
+                      <p className="text-xs text-muted-foreground mt-4 italic font-medium px-4">
+                        {plan.tagline}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="flex-1 p-8 flex flex-col">
+                      <ul className="space-y-4 mb-10 flex-1">
+                        {plan.features.map((feature: string, index: number) => (
+                          <li key={index} className="flex items-start gap-3 text-sm group">
+                            <div className="mt-0.5 rounded-full p-0.5 bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                              <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
+                            </div>
+                            <span className="text-foreground/80 font-semibold">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Link to="/auth" className="block w-full mt-auto">
+                        <Button 
+                          className="w-full h-14 text-base font-extrabold rounded-2xl shadow-xl hover:-translate-y-1 transition-all gap-2"
+                          style={{ 
+                            backgroundColor: plan.color,
+                            boxShadow: `0 10px 20px -5px ${plan.bgColor}`
+                          }}
+                        >
+                          <Zap className="w-5 h-5 fill-current" />
+                          Começar Agora
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              </div>
 
-              {/* Link 23 */}
-              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Share2 className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">{t('features.link23.title')}</CardTitle>
-                  <CardDescription>{t('features.link23.description')}</CardDescription>
-                </CardHeader>
-              </Card>
-
-              {/* Social Media */}
-              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Calendar className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">{t('features.social.title')}</CardTitle>
-                  <CardDescription>{t('features.social.description')}</CardDescription>
-                </CardHeader>
-              </Card>
-
-              {/* QIA - Destaque */}
-              <Card className="border-primary/30 bg-primary/5 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group lg:col-span-2">
-                <CardHeader className="flex-row gap-6 items-start">
-                  <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <Bot className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="text-xl">{t('features.qia.title')}</CardTitle>
-                      <Badge variant="secondary" className="bg-primary/20 text-primary border-none">IA Estratégica</Badge>
-                    </div>
-                    <CardDescription className="text-base">{t('features.qia.description')}</CardDescription>
-                  </div>
-                </CardHeader>
-              </Card>
-
-              {/* Studio AI - Destaque */}
-              <Card className="border-primary/30 bg-primary/5 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group lg:col-span-2">
-                <CardHeader className="flex-row gap-6 items-start">
-                  <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <Sparkles className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="text-xl">{t('features.studio.title')}</CardTitle>
-                      <Badge variant="secondary" className="bg-primary/20 text-primary border-none">Design com IA</Badge>
-                    </div>
-                    <CardDescription className="text-base">{t('features.studio.description')}</CardDescription>
-                  </div>
-                </CardHeader>
-              </Card>
-
-              {/* Documentos */}
-              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <FileCheck className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">{t('features.docs.title')}</CardTitle>
-                  <CardDescription>{t('features.docs.description')}</CardDescription>
-                </CardHeader>
-              </Card>
-
-              {/* Academia */}
-              <Card className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <GraduationCap className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">{t('features.academy.title')}</CardTitle>
-                  <CardDescription>{t('features.academy.description')}</CardDescription>
-                </CardHeader>
-              </Card>
+              {/* NEW: Price bottom info */}
+              <div className="mt-28 text-center space-y-12 pb-12">
+                <p className="text-muted-foreground font-medium text-lg">
+                  {t('pricing.cancelAnytime')}
+                </p>
+                <Link to="/pricing">
+                  <Button 
+                    variant="outline" 
+                    className="h-14 px-10 border-border bg-background shadow-md rounded-2xl gap-3 hover:bg-muted font-bold transition-all hover:shadow-xl group"
+                  >
+                    <Eye className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                    {t('pricing.comparePlans')}
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* OFERTA - Planos */}
-      <section id="planos" className="py-20 md:py-32 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-              {t('pricing.title')} <span className="text-primary">{t('pricing.titleHighlight')}</span>
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              {t('pricing.subtitle')}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {(Object.entries(planConfig) as [string, typeof planConfig.pro][]).map(([key, plan]) => {
-              const planKey = key as 'starter' | 'pro' | 'agency';
-              return (
-              <Card 
-                key={key}
-                className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 ${
-                  'popular' in plan && plan.popular ? 'ring-2' : ''
-                }`}
-                style={{
-                  ...('popular' in plan && plan.popular ? { borderColor: plan.color } : {}),
-                }}
-              >
-                {/* Plan Image */}
-                <div 
-                  className="relative h-48 overflow-hidden"
-                  style={{ backgroundColor: plan.bgColor }}
-                >
-                  <img 
-                    src={plan.image} 
-                    alt={t(`plans.${planKey}.name`)}
-                    className="w-full h-full object-cover"
-                  />
-                  {'popular' in plan && plan.popular && (
-                    <Badge 
-                      className="absolute top-3 right-3 shadow-lg text-white"
-                      style={{ backgroundColor: plan.color }}
-                    >
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      {t('pricing.mostPopular')}
-                    </Badge>
-                  )}
-                </div>
-
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2">
-                    <span style={{ color: plan.color }}>{t(`plans.${planKey}.name`)}</span>
-                  </CardTitle>
-                  <CardDescription>{t(`plans.${planKey}.subtitle`)}</CardDescription>
-                  <div className="pt-2">
-                    <span className="text-3xl font-bold" style={{ color: plan.color }}>
-                      ${plan.price}
-                    </span>
-                    <span className="text-muted-foreground">{t('pricing.perMonth')}</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] px-2 py-0">
-                        14 DIAS GRÁTIS
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-xs italic text-muted-foreground mt-2">
-                    {t(`plans.${planKey}.tagline`)}
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
-                    {(() => {
-                      const features = t(`plans.${planKey}.features`, { returnObjects: true });
-                      const featureList = Array.isArray(features) ? features : plan.features;
-                      return featureList.map((feature: string, index: number) => (
-                        <li key={index} className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: plan.color }} />
-                          <span>{feature}</span>
-                        </li>
-                      ));
-                    })()}
-                  </ul>
-                  
-                  <Link to="/auth" className="block">
-                    <Button 
-                      className="w-full gap-2 text-white shadow-lg"
-                      style={{ backgroundColor: plan.color }}
-                    >
-                      <Zap className="h-4 w-4" />
-                      {t('pricing.startFree')}
+        {/* BOTTOM CTA */}
+        <section className="py-24">
+          <div className="container mx-auto px-6">
+            <div className="bg-primary text-primary-foreground rounded-[2.5rem] p-10 md:p-16 text-center max-w-5xl mx-auto shadow-2xl relative overflow-hidden">
+              {/* Decorative shapes */}
+              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl blend-overlay" />
+              <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-black/10 rounded-full blur-3xl blend-overlay" />
+              
+              <div className="relative z-10">
+                <h2 className="text-3xl md:text-5xl font-extrabold mb-6">
+                  Pronto para escalar seu Negócio Digital?
+                </h2>
+                <p className="text-lg md:text-xl opacity-90 mb-10 max-w-2xl mx-auto">
+                  Junte-se a consultores e agências que automatizam o operacional e multiplicam suas receitas sem precisar trabalhar 14 horas por dia.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
+                  <Link to="/auth" className="w-full">
+                    <Button size="lg" variant="secondary" className="w-full h-14 text-lg font-bold rounded-xl shadow-xl hover:-translate-y-1 transition-transform">
+                      Criar conta gratuitamente
+                      <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
-                </CardContent>
-              </Card>
-            )})}
-          </div>
-
-          <div className="text-center mt-12 space-y-8">
-            <p className="text-muted-foreground mb-6">
-              {t('pricing.cancelAnytime')}
-            </p>
-            <Link to="/pricing">
-              <Button variant="outline" size="lg" className="gap-2">
-                <Eye className="h-5 w-5" />
-                {t('pricing.comparePlans')}
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ - Reduzido */}
-      <section id="faq" className="py-20 md:py-32">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4 gap-2">
-              <HelpCircle className="h-4 w-4" />
-              {t('faq.badge')}
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold">
-              {t('faq.title')}
-            </h2>
-          </div>
-
-          <div className="max-w-3xl mx-auto">
-            <Accordion type="single" collapsible className="space-y-4">
-              <AccordionItem value="item-1" className="bg-card border rounded-lg px-6">
-                <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                  {t('faq.q1')}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  {t('faq.a1')}
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-2" className="bg-card border rounded-lg px-6">
-                <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                  {t('faq.q2')}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  {t('faq.a2')}
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-3" className="bg-card border rounded-lg px-6">
-                <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                  {t('faq.q3')}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t('faq.a3')) }} />
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-4" className="bg-card border rounded-lg px-6">
-                <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                  {t('faq.q4')}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  {t('faq.a4')}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA FINAL - Urgência Emocional */}
-      <section className="py-20 md:py-32 bg-primary relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NDEgMC0xOCA4LjA1OS0xOCAxOHM4LjA1OSAxOCAxOCAxOCAxOC04LjA1OSAxOC0xOC04LjA1OS0xOC0xOC0xOHptMCAzMmMtNy43MzIgMC0xNC02LjI2OC0xNC0xNHM2LjI2OC0xNCAxNC0xNCAxNCA2LjI2OCAxNCAxNC02LjI2OCAxNC0xNCAxNHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjA1Ii8+PC9nPjwvc3ZnPg==')] opacity-30" />
-        
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground mb-6">
-            {t('cta.title')}{' '}
-            <span className="block mt-2">{t('cta.titleSecond')}</span>
-          </h2>
-          <p className="text-xl text-primary-foreground/80 mb-10 max-w-xl mx-auto">
-            {t('cta.subtitle')}
-          </p>
-          <Link to="/auth">
-            <Button size="lg" variant="secondary" className="text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-8 gap-2 sm:gap-3 shadow-2xl hover:scale-105 transition-all group">
-              <Rocket className="h-5 w-5 sm:h-6 sm:w-6 group-hover:animate-bounce" />
-              <span className="hidden sm:inline">{t('cta.button')}</span>
-              <span className="sm:hidden">{t('cta.buttonMobile')}</span>
-              <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
-            </Button>
-          </Link>
-          
-          <p className="mt-10 text-primary-foreground/60 text-sm">
-            {t('cta.footer')}
-          </p>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-12 border-t border-border bg-card">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-xl">Q</span>
+                </div>
+                <p className="mt-6 text-sm opacity-80 font-medium">
+                  {t('hero.trustNoCard') || 'Setup em 2 minutos'}
+                </p>
               </div>
-              <span className="font-bold text-xl">Qualify</span>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <footer className="bg-muted text-muted-foreground py-12 border-t border-border mt-auto">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 bg-primary/20 text-primary rounded flex items-center justify-center font-bold text-xs ring-1 ring-primary/50">
+                Q
+              </div>
+              <span className="font-semibold text-foreground">Qualify</span>
             </div>
             
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-muted-foreground">
-              <a href="#solucao" className="hover:text-foreground transition-colors">{t('footer.solution')}</a>
-              <a href="#planos" className="hover:text-foreground transition-colors">{t('footer.plans')}</a>
-              <a href="#faq" className="hover:text-foreground transition-colors">{t('footer.faq')}</a>
-              <Link to="/auth" className="hover:text-foreground transition-colors">{t('footer.login')}</Link>
+            <div className="flex gap-8 text-sm font-medium">
+              <a href="#" className="hover:text-foreground transition-colors">Termos & Condições</a>
+              <a href="#" className="hover:text-foreground transition-colors">Política de Privacidade</a>
+              <a href="#" className="hover:text-foreground transition-colors">Contato</a>
             </div>
             
-            <p className="text-sm text-muted-foreground">
-              {t('footer.copyright', { year: new Date().getFullYear() })}
+            <p className="text-sm">
+              &copy; {new Date().getFullYear()} Qualify Marketing. Direitos reservados.
             </p>
           </div>
         </div>
       </footer>
+
+      {/* FLOATING BACK TO TOP BUTTON */}
+      <Button
+        variant="secondary"
+        size="icon"
+        className={`fixed bottom-8 right-8 z-[110] rounded-full w-12 h-12 shadow-2xl transition-all duration-300 transform border border-border/50 bg-background/80 backdrop-blur-md ${
+          showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
+        } hover:bg-primary hover:text-primary-foreground group`}
+        onClick={scrollToTop}
+        aria-label="Voltar ao topo"
+      >
+        <ArrowRight className="h-6 w-6 -rotate-90 group-hover:-translate-y-1 transition-transform" />
+      </Button>
     </div>
   );
 }

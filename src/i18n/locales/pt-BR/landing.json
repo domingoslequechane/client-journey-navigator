@@ -10,43 +10,43 @@
     "installApp": "Instalar app"
   },
   "hero": {
-    "title": "O segredo para escalar sua agência sem",
-    "titleHighlight": "dobrar seu trabalho",
+    "title": "Não basta ter ambição, Você precisa ter a ",
+    "titleHighlight": "Ferramenta Certa",
     "titleEnd": "",
-    "subtitle": "Você não precisa de mais leads, você precisa de gestão. O Qualify é o sistema estratégico que transforma o caos do seu WhatsApp em uma operação previsível, lucrativa e profissional.",
-    "cta": "Quero o Método Qualify (14 dias grátis)",
+    "subtitle": "O sistema all-in-one para donos de agências de marketing que querem dominar suas vendas, automatizar o operacional e escalar o faturamento — sem precisar microgerenciar a equipe.",
+    "cta": "Testar o Qualify Grátis (14 Dias)",
     "ctaMobile": "Testar Grátis",
     "installApp": "Instalar App",
-    "trustNoCard": "Teste grátis por 14 dias",
-    "trustSetup": "Pronto em 2 minutos",
-    "trustCancel": "Cancele quando quiser"
+    "trustNoCard": "Setup em 2 minutos",
+    "trustSetup": "Cancele quando quiser",
+    "trustCancel": "Suporte dedicado"
   },
   "problem": {
-    "title": "Você é dono de agência ou",
-    "titleHighlight": "escravo do WhatsApp?",
-    "description1": "Si você passa o dia respondendo leads, cobrando equipe e tentando entender planilhas que nunca batem, você não tem uma empresa, você tem um emprego exaustivo.",
-    "description2": "O problema não é sua equipe ou seus leads.",
-    "description2Highlight": "É a falta de um processo que trabalhe por você."
+    "title": "Você abriu uma agência para ter liberdade financeira, mas acabou se tornando ",
+    "titleHighlight": "refém do WhatsApp?",
+    "description1": "A maioria dos donos de agências bate em um \"teto de vidro\". O problema nunca é a falta de vontade de trabalhar.",
+    "description2": "O problema ",
+    "description2Highlight": "é a falta de processo."
   },
   "cost": {
-    "title": "O que está impedindo você de",
-    "titleHighlight": "faturar o dobro?",
-    "revenueLoss": "O 'Vazamento' de Leads",
-    "revenueLossDesc": "dinheiro que morre no esquecimento",
-    "revenueLossText": "80% das vendas são perdidas por falta de follow-up. Sem gestão, você está jogando dinheiro no lixo todos os dias.",
-    "hoursWasted": "O Gargalo Operacional",
-    "hoursWastedDesc": "você preso no operacional",
-    "hoursWastedText": "Enquanto você gera contratos e orçamentos manualmente, sua agência para de crescer. O dono deve ser o estrategista, não o digitador.",
-    "clientsLost": "A Falta de Previsibilidade",
-    "clientsLostDesc": "viver no 'esperamos que dê certo'",
-    "clientsLostText": "Sem saber quanto vai faturar no próximo mês, você não consegue investir, contratar ou descansar. Isso é amadorismo.",
-    "conclusion": "Escalar exige sistema.",
-    "conclusionHighlight": "O Qualify é esse sistema."
+    "title": "O verdadeiro custo de tentar crescer sua agência ",
+    "titleHighlight": "sem o sistema certo.",
+    "revenueLoss": "Vazamento de Leads",
+    "revenueLossDesc": "Um lead esfriou e a equipe esqueceu de fazer o follow-up",
+    "revenueLossText": "Você perde dinheiro todos os dias abandonando prospectos quentes perdidos no meio do seu WhatsApp.",
+    "hoursWasted": "Trabalho Administrativo",
+    "hoursWastedDesc": "Horas gastas redigindo contratos",
+    "hoursWastedText": "Você fica brigando com Word e planilhas financeiras que não fecham. O dono deve estruturar, não digitar.",
+    "clientsLost": "Microgerenciamento",
+    "clientsLostDesc": "A equipe sem autonomia",
+    "clientsLostText": "A centralização total em você acontece porque faltam processos. Seus funcionários precisam de um método, não só do seu microgerenciamento.",
+    "conclusion": "Escalar exige ",
+    "conclusionHighlight": "Qualify."
   },
   "hope": {
-    "title": "A liberdade de ter uma agência",
-    "titleHighlight": "que roda sozinha",
-    "description": "Imagine acordar, abrir o dashboard e ver exatamente onde cada centavo está, quem sua equipe está atendendo e qual o próximo contrato a ser assinado.",
+    "title": "O Qualify não é apenas um software. ",
+    "titleHighlight": "É o seu Processo de Crescimento embalado.",
+    "description": "Deixe o trabalho repetitivo para as máquinas. Centralize seu CRM, suas finanças, suas propostas e sua inteligência comercial num único ecossistema elegante e feito exclusivamente para Agências e Consultorias.",
     "tagline": "Gestão estratégica não é luxo, é sobrevivência."
   },
   "solution": {
@@ -94,25 +94,19 @@
     "stat3Label": "Em contratos gerados"
   },
   "pricing": {
-    "title": "O investimento para a sua",
-    "titleHighlight": "liberdade",
-    "subtitle": "Escolha o plano que se adapta ao momento atual da sua agência. Teste grátis por 14 dias.",
-    "free": "Grátis",
-    "forever": "para sempre",
-    "perMonth": "/mês",
-    "mostPopular": "Recomendado para Escala",
+    "title": "O investimento exato para a sua ",
+    "titleHighlight": "escala de crescimento",
+    "subtitle": "Escolha o tamanho da sua ambição. Teste completo gratuitamente por 14 dias sem contratos de fidelidade. Em Dólares (USD).",
+    "free": "Starter",
+    "forever": "/mo",
+    "perMonth": "/mo",
+    "mostPopular": "Mais Popular",
     "startFree": "Iniciar Minha Transformação",
     "subscribe": "Assinar Agora",
     "cancelAnytime": "Sem fidelidade. Cancele quando quiser.",
     "comparePlans": "Ver Detalhes Técnicos"
   },
   "plans": {
-    "free": {
-      "name": "Bússola",
-      "subtitle": "Para o Autônomo",
-      "tagline": "Saia do papel e comece a se organizar.",
-      "features": ["3 clientes ativos", "Funil ilimitado", "90 msgs IA", "Academia de Marketing básica"]
-    },
     "starter": {
       "name": "Lança",
       "subtitle": "Para a Pequena Agência",
@@ -133,24 +127,24 @@
     }
   },
   "faq": {
-    "title": "Perguntas de quem quer crescer",
-    "badge": "Dúvidas Comuns",
-    "q1": "Por que o cartão é necessário no teste?",
-    "a1": "O Qualify não é um 'brinquedo', é uma ferramenta de gestão séria. O cartão garante que estamos lidando com donos de agência reais que buscam resultados profissionais. Você tem 14 dias para cancelar sem custo algum.",
-    "q2": "Eu já uso planilhas, por que mudar?",
-    "a2": "Planilhas são passivas. O Qualify é ativo. Ele te avisa quando um lead esfria, gera seus contratos e te dá insights de IA. Planilhas guardam dados, o Qualify gera lucro.",
-    "q3": "Quanto tempo leva para ver resultados?",
-    "a3": "A organização é imediata. Em 48h você já terá uma visão clara de todos os seus leads. O aumento em conversão costuma aparecer nos primeiros 30 dias de uso do método.",
-    "q4": "A IA realmente ajuda no dia a dia?",
-    "a4": "Sim. Ela analisa o comportamento dos seus leads e sugere a melhor abordagem, economizando horas de 'pensar no que escrever' e aumentando suas chances de fechamento."
+    "title": "Perguntas Frequentes",
+    "badge": "Esmagando as Dúvidas",
+    "q1": "Por que o cartão de crédito é exigido no teste de 14 dias?",
+    "a1": "O Qualify é uma ferramenta robusa para gestores ambiciosos, gerando altos custos de IA nos testes. Pedimos um cartão para evitar cadastros fraudulentos. Você tem autonomia total para cancelar no penúltimo dia sem ser cobrado.",
+    "q2": "Qual o tempo médio de implementação?",
+    "a2": "Dois minutos. O ecossistema é tão intuitivo que no mesmo dia você já terá as pipelines importadas e estará rodando propostas.",
+    "q3": "O sistema manda mensagens sozinho no WhatsApp?",
+    "a3": "Não. Não acreditamos no spam de robôs que irrita clientes B2B de alto ticket. O Qualify te dá a ESTRATÉGIA e o FUNIL perfeito, enquanto você ou sua equipe executa.",
+    "q4": "Posso gerar faturas e contratos válidos?",
+    "a4": "Completamente. Nossos contratos possuem registro digital válido e suas faturas conferem extremo profissionalismo à sua marca."
   },
   "cta": {
-    "title": "Você vai continuar sendo o gargalo",
-    "titleSecond": "da sua própria agência?",
-    "subtitle": "Pare de tentar resolver problemas de gestão com mais trabalho manual. Use o método que escala agências de verdade.",
-    "button": "Quero Profissionalizar Minha Agência Agora",
-    "buttonMobile": "Começar Agora",
-    "footer": "14 dias de teste grátis. Setup em 2 minutos."
+    "title": "A cada dia com processos amadores, ",
+    "titleSecond": "você abandona dinheiro na mesa.",
+    "subtitle": "A sua agência não vai faturar o dobro fazendo exatamente a mesma rotina desgastante de ontem. Está na hora de liderar seu negócio como um verdadeiro Diretor.",
+    "button": "Garantir meus 14 dias Grátis →",
+    "buttonMobile": "Teste 14 dias Grátis",
+    "footer": "Setup em 2 minutos. Cancele com um clique se não for ideal."
   },
   "footer": {
     "copyright": "© {{year}} Qualify. Todos os direitos reservados.",
@@ -160,39 +154,43 @@
     "login": "Entrar"
   },
   "features": {
-    "title": "A estrutura para sua escala",
-    "subtitle": "Tudo o que você precisa para deixar de ser um 'faz-tudo' e se tornar um CEO",
+    "title": "Pilares de Crescimento",
+    "subtitle": "Cinco máquinas dentro da sua Agência para você deixar de ser um 'faz-tudo' e se tornar um verdadeiro CEO.",
     "clients": {
-      "title": "Gestão de Pipeline",
-      "description": "Visualize o fluxo de dinheiro da sua agência e nunca mais perca um follow-up."
-    },
-    "finance": {
-      "title": "Saúde Financeira",
-      "description": "Saiba exatamente sua margem de lucro e previsibilidade de caixa."
-    },
-    "link23": {
-      "title": "Link 23 (Autoridade)",
-      "description": "Páginas de links profissionais que passam credibilidade imediata para seus clientes."
-    },
-    "social": {
-      "title": "Fluxo Editorial",
-      "description": "Aprovação de posts e calendário sem a bagunça dos grupos de WhatsApp."
+      "title": "1. Máquina Comercial (Kanban)",
+      "description": "Do primeiro 'Oi' ao fechamento do contrato. O CRM visual permite que você nunca mais perca o rastro de um dólar na mesa."
     },
     "qia": {
-      "title": "QIA: Cérebro Estratégico",
-      "description": "Nossa IA qualifica seus leads e te diz onde focar sua energia para fechar mais."
-    },
-    "studio": {
-      "title": "Studio AI (Design)",
-      "description": "Crie artes profissionais em segundos e libere sua equipe para o que importa."
+      "title": "2. Cérebro Estratégico (QIA)",
+      "description": "Sua consultora de elite. A QIA acompanha a jornada do cliente, antecipa necessidades e diz exatamente como destravar a venda e fechar o negócio."
     },
     "docs": {
-      "title": "Fábrica de Contratos",
-      "description": "Gere contratos, orçamentos e faturas com um clique. Profissionalismo instantâneo."
+      "title": "3. Automação Burocrática (Docs)",
+      "description": "Acabe com as idas e vindas de PDFs no Word. Gere contratos profissionais e faturas em 60 segundos com assinaturas digitais prontas."
+    },
+    "link23": {
+      "title": "4. Studio Criativo & Hub Social",
+      "description": "Agende postagens, gerencie calendários e use o Studio AI para criar designs e legendas em segundos. O ecossistema completo para sua agência dominar as redes sociais."
+    },
+    "presence": {
+      "title": "5. Presença Digital & Link 23",
+      "description": "Entregue cartões de visita digitais que engajam e centralize todos os seus links importantes em uma interface profissional e de alta conversão."
+    },
+    "finance": {
+      "title": "",
+      "description": ""
+    },
+    "social": {
+      "title": "",
+      "description": ""
+    },
+    "studio": {
+      "title": "",
+      "description": ""
     },
     "academy": {
-      "title": "Academia de Marketing",
-      "description": "Aprenda as estratégias de gestão que as maiores agências do país utilizam."
+      "title": "",
+      "description": ""
     }
   },
   "testimonials": {
