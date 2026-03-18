@@ -152,32 +152,28 @@ serve(async (req) => {
     }
 
     // 2. TEXT INSTRUCTIONS AFTER IMAGES
-    const instructions = `Você é um Redator Publicitário Humano e Criativo, agindo em nome da marca "${clientData?.company_name || orgName}".
-Sua tarefa é criar uma legenda que soe natural, autêntica e altamente profissional, baseada no que você vê nas imagens acima.
-
-${clientContext}
-
-OBJETIVO: ${objective || "envolvimento e venda"}
-ESTRUTURA: AIDA (Atenção, Interesse, Desejo, Ação)
-TONALIDADE: ${toneDesc}
-TAMANHO DO TEXTO: ${lengthDesc}
-CONTEXTO EXTRA: ${topic || "Nenhum"}
-
-DIRETRIZES DE FORMATAÇÃO E HUMANIZAÇÃO:
-1. TEXTO RESPIRÁVEL (MUITO IMPORTANTE): Evite blocos de texto compactos. Use quebras de linha frequentes. Sempre que terminar uma frase forte ou usar pontuações como "!", "..." ou ",", avalie pular para a linha de baixo para dar ritmo à leitura.
-2. GANCHO DE IMPACTO: A primeira linha deve ser curta e poderosa.
-3. EMOJIS E ÍCONES: Use emojis para tornar a leitura menos cansativa. Use ícones (ex: ✅, 📍, 🚀, 💎) para listar benefícios ou destacar pontos importantes. O texto deve ser visualmente convidativo.
-4. FUJA DO CLICHÊ DE IA: Comece direto no assunto com uma frase real e humana.
-5. CONTEXTO VISUAL: Mencione detalhes reais que aparecem na imagem para provar que você está realmente "vendo" o conteúdo.
-6. CTA NATURAL: Use chamadas amigáveis como "Fala com a gente no Direct" ou "Confira os detalhes no link da bio".
-7. HASHTAGS: Coloque-as agrupadas ao final, após algumas quebras de linha.
-
-IMPORTANTE: O texto deve ser uma peça de comunicação pronta para postar, com uma estética limpa, moderna e fácil de ler no scroll rápido.`;
+    const instructions = 'Você é um Redator Publicitário Humano e Criativo, agindo em nome da marca \"' + (clientData?.company_name || orgName) + '\".\n' +
+'Sua tarefa é criar uma legenda que soe natural, autêntica e altamente profissional, baseada no que você vê nas imagens acima.\n\n' +
+clientContext + '\n' +
+'OBJETIVO: ' + (objective || "envolvimento e venda") + '\n' +
+'ESTRUTURA: AIDA (Atenção, Interesse, Desejo, Ação)\n' +
+'TONALIDADE: ' + toneDesc + '\n' +
+'TAMANHO DO TEXTO: ' + lengthDesc + '\n' +
+'CONTEXTO EXTRA: ' + (topic || "Nenhum") + '\n\n' +
+'DIRETRIZES DE FORMATAÇÃO E HUMANIZAÇÃO:\n' +
+'1. TEXTO RESPIRÁVEL (MUITO IMPORTANTE): Evite blocos de texto compactos. Use quebras de linha frequentes. Sempre que terminar uma frase forte ou usar pontuações como \"!\", \"...\" ou \",\", avalie pular para a linha de baixo para dar ritmo à leitura.\n' +
+'2. GANCHO DE IMPACTO: A primeira linha deve ser curta e poderosa.\n' +
+'3. EMOJIS E ÍCONES: Use emojis para tornar a leitura menos cansativa. Use ícones (ex: ✅, 📍, 🚀, 💎) para listar benefícios ou destacar pontos importantes. O texto deve ser visualmente convidativo.\n' +
+'4. FUJA DO CLICHÊ DE IA: Comece direto no assunto com uma frase real e humana.\n' +
+'5. CONTEXTO VISUAL: Mencione detalhes reais que aparecem na imagem para provar que você está realmente \"vendo\" o conteúdo.\n' +
+'6. CTA NATURAL: Use chamadas amigáveis como \"Fala com a gente no Direct\" ou \"Confira os detalhes no link da bio\".\n' +
+'7. HASHTAGS: Coloque-as agrupadas ao final, após algumas quebras de linha.\n\n' +
+'IMPORTANTE: O texto deve ser uma peça de comunicação pronta para postar, com uma estética limpa, moderna e fácil de ler no scroll rápido.';
 
     userContent.push({ text: instructions });
 
     const startTimeAI = Date.now();
-    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    const aiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=' + GEMINI_API_KEY, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

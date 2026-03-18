@@ -19,39 +19,27 @@ serve(async (req) => {
     const platformNames = (platforms || []).join(", ") || "redes sociais";
     const count = slots_count || 3;
 
-    const prompt = `Você é um especialista em marketing digital e social media. Sugira os ${count} melhores horários para publicar um post do tipo "${content_type || 'feed'}" nas plataformas: ${platformNames}.
+    const prompt = 'Você é um especialista em marketing digital e social media. Sugira os ' + count + ' melhores horários para publicar um post do tipo \"' + (content_type || 'feed') + '\" nas plataformas: ' + platformNames + '.\n\nConsidere:\n- Os melhores horários de engajamento para cada plataforma no mercado brasileiro\n- Dias da semana com melhor performance\n- Horários de pico de audiência\n\nRetorne APENAS um JSON válido no formato:\n[\n  {\"date\": \"YYYY-MM-DD\", \"time\": \"HH:mm\", \"reason\": \"breve motivo\"}\n]\n\nUse datas a partir de amanhã. Não inclua nenhum texto fora do JSON.';
 
-Considere:
-- Os melhores horários de engajamento para cada plataforma no mercado brasileiro
-- Dias da semana com melhor performance
-- Horários de pico de audiência
-
-Retorne APENAS um JSON válido no formato:
-[
-  {"date": "YYYY-MM-DD", "time": "HH:mm", "reason": "breve motivo"}
-]
-
-Use datas a partir de amanhã. Não inclua nenhum texto fora do JSON.`;
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        system_instruction: { parts: [{ text: "Você é um assistente que retorna apenas JSON válido, sem markdown ou explicações." }] },
+        system_instruction: { parts: [{ text: 'Você é um assistente que retorna apenas JSON válido, sem markdown ou explicações.' }] },
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 1024,
-          response_mime_type: "application/json",
+          response_mime_type: 'application/json',
         },
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
-      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`Gemini API error: ${response.status}`);
+      console.error('Gemini API error:', response.status, errorText);
+      if (response.status === 429) return new Response(JSON.stringify({ error: 'Rate limit exceeded. Try again later.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      throw new Error('Gemini API error: ' + response.status);
     }
 
     const data = await response.json();

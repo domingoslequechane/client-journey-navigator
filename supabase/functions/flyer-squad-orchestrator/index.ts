@@ -9,9 +9,9 @@ const corsHeaders = {
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-// Modelos Pro: Texto (estável) vs Imagem (experimental Pro)
-const MODEL_TEXT  = "gemini-1.5-pro";
-const MODEL_IMAGE = "gemini-2.0-pro-exp-02-05";
+// Modelos Pro 2.5: Multimodal
+const MODEL_TEXT  = "gemini-2.5-pro";
+const MODEL_IMAGE = "gemini-2.5-pro";
 
 async function fetchImageAsBase64(url: string): Promise<string | null> {
     try {
