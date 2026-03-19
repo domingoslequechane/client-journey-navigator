@@ -868,7 +868,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                         <Plus className="h-5 w-5 text-primary" />
                       </div>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); setReferenceImage(null); saveSettings({ referenceImage: null }); }} className="absolute bottom-3 right-3 bg-destructive text-white rounded-full p-1.5 shadow-xl border border-white/20 active:scale-90 transition-transform z-20">
+                  <button onClick={(e) => { e.stopPropagation(); setReferenceImage(null); saveSettings({ referenceImage: null }); }} className="absolute bottom-3 right-3 bg-destructive text-white rounded-full p-1.5 shadow-xl border border-white/20 active:scale-90 transition-transform z-20 cursor-pointer">
                     <X className="h-3 w-3" />
                   </button>
                 </div>
@@ -910,7 +910,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                         <Plus className="h-5 w-5 text-primary" />
                       </div>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); setApprovedTemplateImage(null); saveSettings({ approvedTemplateImage: null }); }} className="absolute bottom-3 right-3 bg-destructive text-white rounded-full p-1.5 shadow-xl border border-white/20 active:scale-90 transition-transform z-20">
+                  <button onClick={(e) => { e.stopPropagation(); setApprovedTemplateImage(null); saveSettings({ approvedTemplateImage: null }); }} className="absolute bottom-3 right-3 bg-destructive text-white rounded-full p-1.5 shadow-xl border border-white/20 active:scale-90 transition-transform z-20 cursor-pointer">
                     <X className="h-3 w-3" />
                   </button>
                 </div>

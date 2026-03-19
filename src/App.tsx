@@ -58,6 +58,8 @@ import SocialMedia from "./pages/SocialMedia";
 import SocialPostEditor from "./pages/SocialPostEditor";
 import SocialApproval from "./pages/SocialApproval";
 import StudioTool from "./pages/studio/StudioTool";
+import AIAgents from "./pages/AIAgents";
+import AIAgentDetail from "./pages/AIAgentDetail";
 
 import { HeaderProvider } from "@/contexts/HeaderContext";
 
@@ -144,6 +146,8 @@ const App = () => (
                         </RoleProtectedRoute>
                       } />
                       <Route path="ai-assistant" element={<AgenteQIA />} />
+                      <Route path="ai-agents" element={<AIAgents />} />
+                      <Route path="ai-agents/:agentId" element={<AIAgentDetail />} />
                       <Route path="link-trees" element={
                         <RoleProtectedRoute privilege="link23">
                           <LinkTreeDashboard />

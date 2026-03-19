@@ -109,3 +109,12 @@ verify_jwt = false
 
 [functions.signup-invited-user]
 verify_jwt = false
+
+[functions.whatsapp-agent-instance]
+verify_jwt = true
+
+[functions.whatsapp-agent-config]
+verify_jwt = true
+
+[functions.whatsapp-agent-webhook]
+verify_jwt = false

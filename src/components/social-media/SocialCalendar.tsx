@@ -127,10 +127,10 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
           </Select>
 
           <div className="flex border border-border rounded-md">
-            <button onClick={() => setView('list')} className={cn("p-1.5 rounded-l-md transition-colors", view === 'list' ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
+            <button onClick={() => setView('list')} className={cn("p-1.5 rounded-l-md transition-colors cursor-pointer", view === 'list' ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
               <List className="h-4 w-4" />
             </button>
-            <button onClick={() => setView('calendar')} className={cn("p-1.5 rounded-r-md transition-colors", view === 'calendar' ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
+            <button onClick={() => setView('calendar')} className={cn("p-1.5 rounded-r-md transition-colors cursor-pointer", view === 'calendar' ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
               <CalendarDays className="h-4 w-4" />
             </button>
           </div>
@@ -157,7 +157,7 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
                     key={dateStr}
                     onClick={() => openDay(dateStr)}
                     className={cn(
-                      "min-h-[90px] p-2 text-left transition-all bg-card hover:bg-accent/30",
+                      "min-h-[90px] p-2 text-left transition-all bg-card hover:bg-accent/30 cursor-pointer",
                       !isCurrentMonth && "bg-muted/20 opacity-50",
                       todayFlag && "bg-primary/5",
                     )}
@@ -210,7 +210,7 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
                 {monthPosts.map(post => {
                   const statusCfg = STATUS_CONFIG[post.status as PostStatus] || STATUS_CONFIG.draft;
                   return (
-                    <button key={post.id} onClick={() => onEditPost(post)} className="w-full text-left">
+                    <button key={post.id} onClick={() => onEditPost(post)} className="w-full text-left cursor-pointer">
                       <div className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 transition-colors">
                         <div className="flex gap-0.5 shrink-0">
                           {post.platforms.slice(0, 3).map(p => (
@@ -257,7 +257,7 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
               selectedDayPosts.map(post => {
                 const statusCfg = STATUS_CONFIG[post.status as PostStatus] || STATUS_CONFIG.draft;
                 return (
-                  <button key={post.id} onClick={() => { setSheetOpen(false); onEditPost(post); }} className="w-full text-left">
+                  <button key={post.id} onClick={() => { setSheetOpen(false); onEditPost(post); }} className="w-full text-left cursor-pointer">
                     <Card className="hover:border-primary/50 transition-colors">
                       <CardContent className="p-3 space-y-2">
                         <p className="text-sm line-clamp-2">{post.content}</p>

@@ -263,3 +263,78 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   budget: 'Orçamento',
   commercial_proposal: 'Proposta Comercial',
 };
+
+// ============= AI Agents Types =============
+export type AIAgentStatus = 'active' | 'inactive' | 'paused';
+export type AIConversationChannel = 'whatsapp' | 'instagram' | 'messenger' | 'webchat';
+
+export interface AIAgent {
+  id: string;
+  organization_id: string;
+  client_id: string | null;
+  name: string;
+  welcome_message: string | null;
+  company_name: string | null;
+  company_sector: string | null;
+  company_description: string | null;
+  business_hours: string | null;
+  address: string | null;
+  address_reference: string | null;
+  instructions: string | null;
+  extra_info: string | null;
+  response_size: number;
+  response_delay_seconds: number;
+  show_typing: boolean;
+  mark_as_read: boolean;
+  status: AIAgentStatus;
+  whatsapp_connected: boolean;
+  connected_number: string | null;
+  uazapi_instance_id: string | null;
+  uazapi_instance_token: string | null;
+  uazapi_webhook_secret: string | null;
+  total_conversations: number;
+  total_messages: number;
+  last_activity_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined from clients table (optional)
+  clients?: { company_name: string } | null;
+}
+
+export interface AIAgentConversation {
+  id: string;
+  agent_id: string;
+  organization_id: string;
+  contact_name: string;
+  contact_phone: string | null;
+  contact_email: string | null;
+  channel: AIConversationChannel;
+  status: 'open' | 'closed';
+  message_count: number;
+  last_message_at: string;
+  created_at: string;
+}
+
+export interface AIAgentMessage {
+  id: string;
+  conversation_id: string;
+  organization_id: string;
+  external_id: string | null;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  message_type: string;
+  created_at: string;
+}
+
+export const AI_AGENT_STATUS_LABELS: Record<AIAgentStatus, string> = {
+  active: 'Ativo',
+  inactive: 'Inativo',
+  paused: 'Pausado',
+};
+
+export const AI_CHANNEL_LABELS: Record<AIConversationChannel, string> = {
+  whatsapp: 'WhatsApp',
+  instagram: 'Instagram',
+  messenger: 'Messenger',
+  webchat: 'Webchat',
+};

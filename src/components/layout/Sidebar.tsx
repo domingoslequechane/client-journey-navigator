@@ -36,7 +36,8 @@ import {
   Share2,
   Lock,
   Wand2,
-  Download
+  Download,
+  BrainCircuit
 } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { Button } from '@/components/ui/button';
@@ -147,6 +148,7 @@ export function Sidebar() {
       { name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: canAccessModule('editorial'), locked: !canAccessEditorial, requiredPlan: 'Lança' },
       { name: t('navigation.socialMedia'), href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: canAccessModule('social'), locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Bot, tutorialId: 'sidebar-ai', show: canAccessModule('qia'), locked: false, requiredPlan: '' },
+      { name: t('navigation.aiAgents', 'Agentes IA'), href: '/app/ai-agents', icon: BrainCircuit, tutorialId: 'sidebar-ai-agents', show: true, locked: false, requiredPlan: '' },
       { name: t('navigation.studio'), href: '/app/studio', icon: PenTool, tutorialId: 'sidebar-studio', show: canAccessModule('studio'), locked: !canAccessStudio, requiredPlan: 'Lança' },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: canAccessModule('academy'), locked: false, requiredPlan: '' },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canAccessModule('clients'), locked: false, requiredPlan: '' },

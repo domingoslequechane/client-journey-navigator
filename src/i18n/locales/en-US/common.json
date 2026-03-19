@@ -28,7 +28,8 @@
     "link23": "Link23",
     "editorial": "Editorial Line",
     "socialMedia": "Social Media",
-    "studio": "Creative Studio"
+    "studio": "Creative Studio",
+    "aiAgents": "AI Agents"
   },
   "actions": {
     "save": "Save",
