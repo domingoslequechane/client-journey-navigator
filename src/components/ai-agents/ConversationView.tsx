@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { AI_CHANNEL_LABELS } from '@/types';
 import { useAIAgentMessages } from '@/hooks/useAIAgentDetail';
 import type { AIAgentConversation } from '@/types';
+import { formatWhatsAppText } from '@/lib/whatsappFormatter';
 
 interface ConversationViewProps {
   conversation: AIAgentConversation;
@@ -125,7 +126,7 @@ export function ConversationView({ conversation }: ConversationViewProps) {
                           Intervenção Humana
                         </p>
                       )}
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{formatWhatsAppText(message.content)}</p>
                       <p className={cn(
                         'text-[10px] mt-1.5',
                         message.role === 'assistant'

@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/hooks/useOrganization';
 import { AI_CHANNEL_LABELS } from '@/types';
 import type { AIAgentConversation as ConversationType } from '@/types';
+import { formatWhatsAppText } from '@/lib/whatsappFormatter';
 
 function safeFormat(dateStr: string | null | undefined, fmt: string): string {
   if (!dateStr) return '';
@@ -331,7 +332,7 @@ export default function AIAgentConversation() {
                       )}
 
                       <p className="text-[13px] whitespace-pre-wrap leading-relaxed">
-                        {message.content}
+                        {formatWhatsAppText(message.content)}
                       </p>
 
                       <p
