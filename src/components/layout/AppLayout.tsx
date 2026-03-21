@@ -23,7 +23,7 @@ export function AppLayout() {
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto w-full md:pt-0">
+        <main className="flex flex-col flex-1 overflow-y-auto w-full md:pt-0">
           <Outlet />
         </main>
       </div>

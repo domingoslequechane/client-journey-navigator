@@ -160,7 +160,7 @@ export default function AIAgentConversation() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* ─── Chat Header ─── */}
       <div className="border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10 px-4 py-3">
         <div className="flex items-center gap-3">
@@ -232,7 +232,7 @@ export default function AIAgentConversation() {
       </div>
 
       {/* ─── Messages Area ─── */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div
           className="max-w-3xl mx-auto px-4 py-6 space-y-3"
           style={{
