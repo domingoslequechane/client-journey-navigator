@@ -17,8 +17,8 @@ interface ConversationViewProps {
 export function ConversationView({ conversation }: ConversationViewProps) {
   const { messages, isLoading } = useAIAgentMessages(conversation.id);
 
-  // Filter out system messages for display
-  const visibleMessages = messages.filter(m => m.role === 'user' || m.role === 'assistant');
+  // include system messages (sent by human) for display
+  const visibleMessages = messages.filter(m => m.role === 'user' || m.role === 'assistant' || m.role === 'system');
 
   return (
     <div className="space-y-4">
@@ -49,17 +49,28 @@ export function ConversationView({ conversation }: ConversationViewProps) {
                 </span>
               </div>
             </div>
-            <Badge
-              variant="outline"
-              className={cn(
-                'shrink-0',
-                conversation.status === 'open'
-                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                  : 'bg-muted text-muted-foreground'
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <Badge
+                variant="outline"
+                className={cn(
+                  conversation.status === 'open'
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                    : 'bg-muted text-muted-foreground'
+                )}
+              >
+                {conversation.status === 'open' ? 'Aberta' : 'Encerrada'}
+              </Badge>
+              {conversation.waiting_human && (
+                <Badge variant="secondary" className="bg-orange-500/10 text-orange-600 border-orange-500/20 whitespace-nowrap">
+                  Aguardando Humano
+                </Badge>
               )}
-            >
-              {conversation.status === 'open' ? 'Aberta' : 'Encerrada'}
-            </Badge>
+              {conversation.paused_until && new Date(conversation.paused_until) > new Date() && (
+                <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20 whitespace-nowrap">
+                  IA em Pausa
+                </Badge>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -87,19 +98,33 @@ export function ConversationView({ conversation }: ConversationViewProps) {
                       message.role === 'assistant' ? 'justify-start' : 'justify-end'
                     )}
                   >
-                    {message.role === 'assistant' && (
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                        <Bot className="h-4 w-4 text-primary" />
+                    {message.role !== 'user' && (
+                      <div className={cn(
+                        "h-8 w-8 rounded-full flex items-center justify-center shrink-0 mt-1",
+                        message.role === 'system' ? "bg-orange-500/10" : "bg-primary/10"
+                      )}>
+                        {message.role === 'system' ? (
+                          <User className="h-4 w-4 text-orange-600" />
+                        ) : (
+                          <Bot className="h-4 w-4 text-primary" />
+                        )}
                       </div>
                     )}
                     <div
                       className={cn(
                         'max-w-[80%] rounded-2xl px-4 py-2.5',
-                        message.role === 'assistant'
-                          ? 'bg-muted text-foreground rounded-tl-sm'
-                          : 'bg-primary text-primary-foreground rounded-tr-sm'
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                          : message.role === 'system'
+                            ? 'bg-orange-50 text-orange-950 border border-orange-200 rounded-tl-sm'
+                            : 'bg-muted text-foreground rounded-tl-sm'
                       )}
                     >
+                      {message.role === 'system' && (
+                        <p className="text-[10px] font-semibold text-orange-600 mb-1 uppercase tracking-wider">
+                          Intervenção Humana
+                        </p>
+                      )}
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                       <p className={cn(
                         'text-[10px] mt-1.5',

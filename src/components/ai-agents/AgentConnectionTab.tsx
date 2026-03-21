@@ -19,7 +19,7 @@ import type { UseMutationResult } from '@tanstack/react-query';
 
 interface AgentConnectionTabProps {
   agent: AIAgent;
-  instanceAction: UseMutationResult<any, any, 'connect' | 'status' | 'disconnect', unknown>;
+  instanceAction: UseMutationResult<any, any, { action: 'connect' | 'status' | 'disconnect', phone?: string }, unknown>;
   updateConfig: UseMutationResult<AIAgent, any, Partial<AIAgent>, unknown>;
   onRefresh: () => void;
 }
@@ -27,6 +27,9 @@ interface AgentConnectionTabProps {
 export function AgentConnectionTab({ agent, instanceAction, updateConfig, onRefresh }: AgentConnectionTabProps) {
   const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [connectMode, setConnectMode] = useState<'qr' | 'code'>('qr');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [connecting, setConnecting] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -52,19 +55,29 @@ export function AgentConnectionTab({ agent, instanceAction, updateConfig, onRefr
   const handleConnectWhatsapp = async () => {
     setConnecting(true);
     setQrCode(null);
+    setPairingCode(null);
 
     try {
-      const result = await instanceAction.mutateAsync('connect');
+      // Formata o número (se houver) removendo tudo que não é dígito
+      const formattedPhone = phoneNumber.replace(/\D/g, '');
+      
+      const result = await instanceAction.mutateAsync({ 
+        action: 'connect', 
+        phone: connectMode === 'code' ? formattedPhone : undefined 
+      });
 
-      if (result.qrcode) {
-        setQrCode(result.qrcode);
+      if (result.qrcode || result.paircode) {
+        if (result.qrcode) setQrCode(result.qrcode);
+        if (result.paircode) setPairingCode(result.paircode);
+
         // Start polling for connection status
         pollingRef.current = setInterval(async () => {
           try {
-            const statusResult = await instanceAction.mutateAsync('status');
+            const statusResult = await instanceAction.mutateAsync({ action: 'status' });
             if (statusResult.whatsapp_connected) {
               if (pollingRef.current) clearInterval(pollingRef.current);
               setQrCode(null);
+              setPairingCode(null);
               setConnecting(false);
               setWhatsappDialogOpen(false);
               toast.success('WhatsApp conectado com sucesso!');
@@ -79,15 +92,24 @@ export function AgentConnectionTab({ agent, instanceAction, updateConfig, onRefr
         setConnecting(false);
         setWhatsappDialogOpen(false);
         onRefresh();
+      } else if (result.error && result.debug) {
+        console.error('Debug UAZAPI:', result.debug);
+        toast.error(`Erro técnico UAZAPI: ${JSON.stringify(result.debug).substring(0, 100)}...`);
+        setConnecting(false);
+      } else {
+        toast.error('Não foi possível iniciar a conexão. Verifique os dados e tente novamente.');
+        setConnecting(false);
       }
-    } catch {
+    } catch (error: any) {
+      console.error('Erro ao conectar WhatsApp:', error);
+      toast.error('Erro ao conectar: ' + (error.message || 'Falha na comunicação.'));
       setConnecting(false);
     }
   };
 
   const handleDisconnectWhatsapp = async () => {
     try {
-      await instanceAction.mutateAsync('disconnect');
+      await instanceAction.mutateAsync({ action: 'disconnect' });
       setWhatsappDialogOpen(false);
       onRefresh();
     } catch {
@@ -273,15 +295,67 @@ export function AgentConnectionTab({ agent, instanceAction, updateConfig, onRefr
             <DialogDescription className="text-center">
               {isWhatsappConnected
                 ? 'Ao desconectar, o agente deixará de responder pelo WhatsApp deste cliente.'
-                : qrCode
-                  ? 'Escaneie o QR Code com o WhatsApp do celular do cliente para conectar.'
-                  : 'O agente passará a responder automaticamente as mensagens recebidas no WhatsApp Business do cliente.'}
+                : pairingCode
+                  ? 'No seu WhatsApp, vá em Aparelhos Conectados > Conectar com número de telefone e digite o código abaixo.'
+                  : qrCode
+                    ? 'Escaneie o QR Code com o WhatsApp do celular do cliente para conectar.'
+                    : 'Escolha como deseja conectar o agente ao WhatsApp Business do cliente.'}
             </DialogDescription>
           </DialogHeader>
 
+          {!isWhatsappConnected && !qrCode && !pairingCode && !connecting && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={connectMode === 'qr' ? 'default' : 'outline'}
+                  className="h-20 flex-col gap-2"
+                  onClick={() => setConnectMode('qr')}
+                >
+                  <QrCode className="h-6 w-6" />
+                  <span className="text-xs uppercase font-bold">QR Code</span>
+                </Button>
+                <Button
+                  variant={connectMode === 'code' ? 'default' : 'outline'}
+                  className="h-20 flex-col gap-2"
+                  onClick={() => setConnectMode('code')}
+                >
+                  <Smartphone className="h-6 w-6" />
+                  <span className="text-xs uppercase font-bold">Código</span>
+                </Button>
+              </div>
+
+              {connectMode === 'code' && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground uppercase">
+                    Número do WhatsApp (com DDD)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                      +
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Ex: 5511999999999"
+                      className="w-full p-3 pl-7 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        // Aceita apenas dígitos
+                        const onlyDigits = e.target.value.replace(/\D/g, '');
+                        setPhoneNumber(onlyDigits);
+                      }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic">
+                    Inclua o código do país à esquerda (ex: 258...)
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* QR Code Display */}
-          {qrCode && (
-            <div className="flex justify-center py-4">
+          {connectMode === 'qr' && qrCode && (
+            <div className="flex justify-center py-4 text-center">
               <div className="border rounded-xl p-3 bg-white">
                 <img
                   src={qrCode}
@@ -292,22 +366,49 @@ export function AgentConnectionTab({ agent, instanceAction, updateConfig, onRefr
             </div>
           )}
 
-          {connecting && !qrCode && (
+          {/* Pairing Code Display */}
+          {connectMode === 'code' && pairingCode && (
+            <div className="flex justify-center items-center py-8">
+              <div className="flex gap-1.5 items-center">
+                {pairingCode.replace(/-/g, '').split('').map((char, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <div 
+                      className="w-8 h-12 bg-muted rounded-lg flex items-center justify-center text-xl font-bold border-2 border-primary/20 shadow-sm"
+                    >
+                      {char}
+                    </div>
+                    {i === 3 && (
+                      <span className="text-2xl font-bold text-muted-foreground mx-1">
+                        -
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {connecting && !qrCode && !pairingCode && (
             <div className="flex flex-col items-center gap-3 py-6">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Gerando QR Code...</p>
+              <p className="text-sm text-muted-foreground">Iniciando conexão...</p>
             </div>
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setWhatsappDialogOpen(false)}>
-              {qrCode ? 'Fechar' : 'Cancelar'}
+            <Button variant="outline" onClick={() => {
+              setWhatsappDialogOpen(false);
+              setQrCode(null);
+              setPairingCode(null);
+              setConnecting(false);
+            }}>
+              {(qrCode || pairingCode) ? 'Fechar' : 'Cancelar'}
             </Button>
-            {!qrCode && !connecting && (
+            {!qrCode && !pairingCode && !connecting && (
               <Button
                 variant={isWhatsappConnected ? 'destructive' : 'default'}
                 onClick={isWhatsappConnected ? handleDisconnectWhatsapp : handleConnectWhatsapp}
-                disabled={instanceAction.isPending}
+                disabled={instanceAction.isPending || (connectMode === 'code' && !phoneNumber)}
               >
                 {instanceAction.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />

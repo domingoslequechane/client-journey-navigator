@@ -1,4 +1,4 @@
-import { FaInstagram, FaFacebookF, FaLinkedinIn, FaTiktok, FaYoutube, FaPinterestP, FaThreads, FaCircleQuestion, FaGoogle, FaReddit, FaTelegram, FaSnapchat, FaCloud } from 'react-icons/fa6';
+import { FaInstagram, FaFacebookF, FaLinkedinIn, FaTiktok, FaYoutube, FaPinterestP, FaThreads, FaCircleQuestion, FaGoogle, FaReddit, FaTelegram, FaSnapchat, FaCloud, FaWhatsapp } from 'react-icons/fa6';
 import { FaXTwitter } from 'react-icons/fa6';
 import { type SocialPlatform } from '@/lib/social-media-mock';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   telegram: FaTelegram,
   snapchat: FaSnapchat,
   bluesky: FaCloud,
+  whatsapp: FaWhatsapp,
 };
 
 const COLOR_MAP: Record<string, string> = {
@@ -33,6 +34,7 @@ const COLOR_MAP: Record<string, string> = {
   telegram: 'text-[hsl(200,80%,50%)]',
   snapchat: 'text-[hsl(55,100%,50%)]',
   bluesky: 'text-[hsl(200,90%,60%)]',
+  whatsapp: 'text-[hsl(142,70%,45%)]',
 };
 
 const BG_MAP: Record<string, string> = {
@@ -49,6 +51,7 @@ const BG_MAP: Record<string, string> = {
   telegram: 'bg-[hsl(200,80%,50%)]',
   snapchat: 'bg-[hsl(55,100%,50%)]',
   bluesky: 'bg-[hsl(200,90%,60%)]',
+  whatsapp: 'bg-[hsl(142,70%,45%)]',
 };
 
 interface PlatformIconProps {

@@ -12,7 +12,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import {
   LayoutDashboard,
   Kanban,
-  Bot,
+  MessagesSquare,
   GraduationCap,
   Users,
   MessageSquare,
@@ -27,8 +27,9 @@ import {
   CalendarDays,
   Wallet,
   Building2,
-  Share2,
+  Megaphone,
   PenTool,
+  BrainCircuit,
   Menu,
   ChevronRight,
   Rocket,
@@ -36,6 +37,7 @@ import {
   Download
 } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
   SheetContent,
@@ -85,7 +87,7 @@ export function MobileHeader() {
 
   // Main navigation items for the menu
   const menuItems = useMemo(() => {
-    const mainItems: Array<{ name: string; href: string; icon: any; show: boolean; isQia?: boolean }> = [
+    const mainItems: Array<{ name: string; href: string; icon: any; show: boolean; isQia?: boolean; badge?: string }> = [
       { name: 'Dashboard', href: '/app', icon: LayoutDashboard, show: true },
       { name: 'Pipeline', href: '/app/pipeline', icon: Kanban, show: true },
       { name: 'Finanças', href: '/app/finance', icon: Wallet, show: true },
@@ -93,9 +95,10 @@ export function MobileHeader() {
 
     mainItems.push({ name: t('navigation.link23'), href: '/app/link-trees', icon: Link2, show: true });
     mainItems.push({ name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, show: true });
-    mainItems.push({ name: t('navigation.socialMedia'), href: '/app/social-media', icon: Share2, show: true });
+    mainItems.push({ name: t('navigation.socialMedia'), href: '/app/social-media', icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, show: true });
 
-    mainItems.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: Bot, show: true, isQia: true });
+    mainItems.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: MessagesSquare, show: true, isQia: true });
+    mainItems.push({ name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, show: true, badge: 'BETA' });
     mainItems.push({ name: t('navigation.studio'), href: '/app/studio', icon: PenTool, show: true });
     mainItems.push({ name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true });
 
@@ -173,12 +176,13 @@ export function MobileHeader() {
       if (path === '/app') return { title: 'Dashboard', icon: LayoutDashboard };
       if (path.startsWith('/app/pipeline')) return { title: 'Pipeline', icon: Kanban };
       if (path.startsWith('/app/finance')) return { title: 'Finanças', icon: Wallet };
-      if (path.startsWith('/app/ai-assistant')) return { title: t('navigation.qia'), icon: Bot };
+      if (path.startsWith('/app/ai-assistant')) return { title: t('navigation.qia'), icon: MessagesSquare };
       if (path.startsWith('/app/clients')) return { title: t('navigation.clients'), icon: Building2 };
-      if (path.startsWith('/app/social-media')) return { title: t('navigation.socialMedia'), icon: Share2 };
+      if (path.startsWith('/app/social-media')) return { title: t('navigation.socialMedia'), icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any };
       if (path.startsWith('/app/editorial')) return { title: t('navigation.editorial'), icon: CalendarDays };
       if (path.startsWith('/app/link-trees')) return { title: t('navigation.link23'), icon: Link2 };
       if (path.startsWith('/app/studio')) return { title: t('navigation.studio'), icon: PenTool };
+      if (path.startsWith('/app/ai-agents')) return { title: t('navigation.aiAgents', 'Agentes de IA'), icon: BrainCircuit };
       if (path.startsWith('/app/academia')) return { title: t('navigation.academy'), icon: GraduationCap };
       if (path.startsWith('/app/team')) return { title: t('navigation.team'), icon: Users };
       if (path.startsWith('/app/settings')) return { title: t('navigation.settings'), icon: Settings };
@@ -259,6 +263,17 @@ export function MobileHeader() {
                         <div className="flex items-center gap-3">
                           <item.icon className={cn("h-5 w-5", isActive ? (isQia ? "text-white" : "text-primary") : "text-muted-foreground")} />
                           <span className={cn("font-semibold", isActive ? "font-bold" : "")}>{item.name}</span>
+                          {item.badge && (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] h-4 px-1.5 font-bold border-primary text-primary opacity-80 uppercase tracking-wider",
+                                isActive && isQia && "border-white text-white"
+                              )}
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
                         </div>
                         {isQia && isActive && <div className="h-2 w-2 rounded-full bg-white animate-pulse" />}
                       </button>

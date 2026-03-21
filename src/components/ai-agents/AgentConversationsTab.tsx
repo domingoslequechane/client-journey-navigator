@@ -1,14 +1,13 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { MessageSquare, Search, User, Clock, ChevronRight, X } from 'lucide-react';
+import { MessageSquare, Search, User, Clock, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { ConversationView } from '@/components/ai-agents/ConversationView';
 import { AI_CHANNEL_LABELS } from '@/types';
 import type { AIAgent, AIAgentConversation } from '@/types';
 
@@ -19,8 +18,8 @@ interface AgentConversationsTabProps {
 }
 
 export function AgentConversationsTab({ agent, conversations: allConversations, isLoading }: AgentConversationsTabProps) {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedConversation, setSelectedConversation] = useState<AIAgentConversation | null>(null);
 
   const conversations = useMemo(() => {
     if (!searchQuery) return allConversations;
@@ -28,24 +27,6 @@ export function AgentConversationsTab({ agent, conversations: allConversations, 
       conv.contact_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [allConversations, searchQuery]);
-
-  // Mobile: if a conversation is selected, show the ConversationView
-  if (selectedConversation) {
-    return (
-      <div className="space-y-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-2"
-          onClick={() => setSelectedConversation(null)}
-        >
-          <X className="h-4 w-4" />
-          Voltar às conversas
-        </Button>
-        <ConversationView conversation={selectedConversation} />
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -87,7 +68,7 @@ export function AgentConversationsTab({ agent, conversations: allConversations, 
             <Card
               key={conversation.id}
               className="hover:shadow-sm transition-all cursor-pointer group"
-              onClick={() => setSelectedConversation(conversation)}
+              onClick={() => navigate(`/app/ai-agents/${agent.id}/conversations/${conversation.id}`)}
             >
               <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center gap-3">
@@ -132,3 +113,4 @@ export function AgentConversationsTab({ agent, conversations: allConversations, 
     </div>
   );
 }
+

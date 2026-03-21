@@ -295,6 +295,7 @@ export interface AIAgent {
   total_conversations: number;
   total_messages: number;
   last_activity_at: string | null;
+  human_pause_duration: number;
   created_at: string;
   updated_at: string;
   // Joined from clients table (optional)
@@ -312,6 +313,8 @@ export interface AIAgentConversation {
   status: 'open' | 'closed';
   message_count: number;
   last_message_at: string;
+  paused_until: string | null;
+  waiting_human: boolean;
   created_at: string;
 }
 
@@ -320,6 +323,8 @@ export interface AIAgentMessage {
   conversation_id: string;
   organization_id: string;
   external_id: string | null;
+  quoted_message_id: string | null;
+  quoted_message_content: string | null;
   role: 'user' | 'assistant' | 'system';
   content: string;
   message_type: string;

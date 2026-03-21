@@ -1,4 +1,4 @@
-import { Bot } from 'lucide-react';
+import { MessagesSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QIAAvatarProps {
@@ -17,10 +17,10 @@ const QIAAvatar = ({ size = 32, className }: QIAAvatarProps) => {
         "relative flex items-center justify-center rounded-full bg-gradient-to-br from-primary to-chart-5 shadow-sm shrink-0 overflow-hidden",
         className
       )}
-      aria-label="Agente QIA Avatar"
+      aria-label="Assistente QIA Avatar"
     >
       <div className="absolute inset-0 bg-white/20 opacity-0 hover:opacity-100 transition-opacity" />
-      <Bot 
+      <MessagesSquare 
         size={iconSize} 
         color="white" 
         strokeWidth={2.5}

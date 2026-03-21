@@ -21,7 +21,7 @@
     "error": "Desculpe, ocorreu um erro. Tente novamente.",
     "rateLimited": "Você atingiu o limite de mensagens. Aguarde um momento.",
     "noCredits": "Você não tem créditos de IA disponíveis.",
-    "welcomeMessage": "Olá! Sou o **Agente QIA**, o teu assistente inteligente. Estou aqui para ajudar com o cliente **{{clientName}}**.\n\nComo posso auxiliar hoje?",
+    "welcomeMessage": "Olá! Sou o **Assistente QIA**, o teu assistente inteligente. Estou aqui para ajudar com o cliente **{{clientName}}**.\n\nComo posso auxiliar hoje?",
     "selectClientPrompt": "Selecione um cliente para iniciar uma conversa",
     "conversations": "Conversas",
     "aiUsageThisMonth": "Uso de IA este mês"

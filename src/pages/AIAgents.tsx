@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Bot, Search, MessageSquare, Zap } from 'lucide-react';
+import { Plus, BrainCircuit, Search, MessageSquare, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useHeader } from '@/contexts/HeaderContext';
 import { AgentCard } from '@/components/ai-agents/AgentCard';
@@ -21,7 +22,7 @@ export default function AIAgents() {
   const { agents, isLoading: loading } = useAIAgents();
 
   useEffect(() => {
-    setCustomTitle('Agentes IA');
+    setCustomTitle('Agentes de IA');
     setRightAction(
       <Button size="sm" className="h-9 px-3" onClick={() => setCreateDialogOpen(true)}>
         <Plus className="h-4 w-4" />
@@ -63,8 +64,14 @@ export default function AIAgents() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="hidden md:block">
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Bot className="h-6 w-6 text-primary" />
-              Agentes IA
+              <BrainCircuit className="h-6 w-6 text-primary" />
+              Agentes de IA
+              <Badge
+                variant="outline"
+                className="text-[10px] h-5 px-1.5 font-bold border-primary text-primary uppercase tracking-wider ml-1"
+              >
+                BETA
+              </Badge>
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               Gerencie os agentes de atendimento automático dos seus clientes
@@ -82,7 +89,7 @@ export default function AIAgents() {
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-full bg-primary/10 shrink-0">
-              <Bot className="h-5 w-5 text-primary" />
+              <BrainCircuit className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.total}</p>
@@ -144,7 +151,7 @@ export default function AIAgents() {
           [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)
         ) : filteredAgents.length === 0 ? (
           <div className="text-center py-12">
-            <Bot className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+            <BrainCircuit className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">Nenhum agente encontrado</p>
             <Button
               variant="outline"

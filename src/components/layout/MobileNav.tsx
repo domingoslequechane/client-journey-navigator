@@ -13,7 +13,7 @@ import {
   LayoutDashboard,
   Kanban,
   Sparkles,
-  Bot,
+  MessagesSquare,
   GraduationCap,
   Users,
   MessageSquare,
@@ -29,7 +29,7 @@ import {
   CalendarDays,
   Wallet,
   Building2,
-  Share2,
+  Megaphone,
   PenTool,
   ChevronUp,
   ChevronDown,
@@ -102,7 +102,7 @@ export function MobileNav() {
     }
 
     // AI Assistant for everyone
-    items.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: Bot, show: true });
+    items.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: MessagesSquare, show: true });
 
     return items;
   }, [canSeeSalesFunnel, canSeeOperationalFlow, canManageFinance, t]);
@@ -123,13 +123,13 @@ export function MobileNav() {
     items.push({ name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, show: true });
 
     // Add Social Media to more menu
-    items.push({ name: t('navigation.socialMedia'), href: '/app/social-media', icon: Share2, show: true });
+    items.push({ name: t('navigation.socialMedia'), href: '/app/social-media', icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, show: true });
 
     // Add Studio Criativo to more menu
     items.push({ name: t('navigation.studio'), href: '/app/studio', icon: PenTool, show: true });
 
     // Add AI Agents to more menu
-    items.push({ name: t('navigation.aiAgents', 'Agentes IA'), href: '/app/ai-agents', icon: BrainCircuit, show: true });
+    items.push({ name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, show: true, badge: 'BETA' });
 
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },

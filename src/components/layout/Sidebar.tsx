@@ -14,7 +14,7 @@ import {
   Building2,
   Kanban,
   Sparkles,
-  Bot,
+  MessagesSquare,
   PenTool,
   UsersRound,
   LogOut,
@@ -33,7 +33,7 @@ import {
   Link2,
   CalendarDays,
   Wallet,
-  Share2,
+  Megaphone,
   Lock,
   Wand2,
   Download,
@@ -146,9 +146,9 @@ export function Sidebar() {
       { name: t('navigation.finance'), href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canAccessModule('finances'), locked: !canAccessFinance, requiredPlan: 'Lança' },
       { name: t('navigation.link23'), href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: canAccessModule('link23'), locked: !canAccessLinkTree, requiredPlan: 'Lança' },
       { name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: canAccessModule('editorial'), locked: !canAccessEditorial, requiredPlan: 'Lança' },
-      { name: t('navigation.socialMedia'), href: '/app/social-media', icon: Share2, tutorialId: 'sidebar-social-media', show: canAccessModule('social'), locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
-      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: Bot, tutorialId: 'sidebar-ai', show: canAccessModule('qia'), locked: false, requiredPlan: '' },
-      { name: t('navigation.aiAgents', 'Agentes IA'), href: '/app/ai-agents', icon: BrainCircuit, tutorialId: 'sidebar-ai-agents', show: true, locked: false, requiredPlan: '' },
+      { name: t('navigation.socialMedia'), href: '/app/social-media', icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, tutorialId: 'sidebar-social-media', show: canAccessModule('social'), locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
+      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: MessagesSquare, tutorialId: 'sidebar-ai', show: canAccessModule('qia'), locked: false, requiredPlan: '' },
+      { name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, tutorialId: 'sidebar-ai-agents', show: true, locked: false, requiredPlan: '', badge: 'BETA' },
       { name: t('navigation.studio'), href: '/app/studio', icon: PenTool, tutorialId: 'sidebar-studio', show: canAccessModule('studio'), locked: !canAccessStudio, requiredPlan: 'Lança' },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: canAccessModule('academy'), locked: false, requiredPlan: '' },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canAccessModule('clients'), locked: false, requiredPlan: '' },
@@ -228,7 +228,20 @@ export function Sidebar() {
       >
         <item.icon className="h-5 w-5 shrink-0" />
         {!collapsed && (
-          <span>{item.name}</span>
+          <div className="flex items-center justify-between flex-1">
+            <span>{item.name}</span>
+            {item.badge && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-[10px] px-1.5 h-4 font-bold border-secondary text-secondary-foreground uppercase tracking-wider",
+                  isActive ? "bg-white/20 text-white border-white/30" : "bg-secondary/10"
+                )}
+              >
+                {item.badge}
+              </Badge>
+            )}
+          </div>
         )}
       </Link>
     );

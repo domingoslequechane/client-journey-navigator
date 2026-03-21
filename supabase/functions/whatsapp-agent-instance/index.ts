@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const UAZAPI_BASE_URL = Deno.env.get("UAZAPI_BASE_URL") || "https://api.uazapi.com";
+let UAZAPI_BASE_URL = Deno.env.get("UAZAPI_BASE_URL") || "https://api.uazapi.com";
 const UAZAPI_ADMIN_TOKEN = Deno.env.get("UAZAPI_ADMIN_TOKEN") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -67,6 +67,17 @@ serve(async (req) => {
     const { action, agent_id } = await req.json();
     if (!agent_id) return json({ error: "agent_id é obrigatório" }, 400);
 
+    // Validar configurações essenciais
+    if (!UAZAPI_ADMIN_TOKEN) {
+      console.error("ERRO: UAZAPI_ADMIN_TOKEN não configurado no Supabase Secrets.");
+      return json({ error: "Configuração incompleta: UAZAPI_ADMIN_TOKEN não encontrado." }, 500);
+    }
+    
+    if (UAZAPI_BASE_URL.includes("api.uazapi.com") && !UAZAPI_BASE_URL.startsWith("https://")) {
+      // Pequeno fix caso a URL base venha sem protocolo
+      UAZAPI_BASE_URL = "https://" + UAZAPI_BASE_URL;
+    }
+
     // Buscar agente e validar acesso
     const { data: agent, error: agentErr } = await supabase
       .from("ai_agents")
@@ -113,6 +124,7 @@ serve(async (req) => {
         });
 
         if (!result.ok || !result.data) {
+          console.error("Erro UAZAPI (/instance/init):", result.error);
           return json({ error: "Erro ao criar instância UAZAPI: " + (result.error || "desconhecido") }, 500);
         }
 
@@ -128,7 +140,7 @@ serve(async (req) => {
 
       // Configurar webhook
       const webhookUrl = `${SUPABASE_URL}/functions/v1/whatsapp-agent-webhook/${webhookSecret}`;
-      await uazapiRequest("/webhook", {
+      const webhookResult = await uazapiRequest("/webhook", {
         method: "POST",
         token: instanceToken,
         body: {
@@ -138,6 +150,11 @@ serve(async (req) => {
           excludeMessages: ["wasSentByApi", "isGroupYes"],
         },
       });
+
+      if (!webhookResult.ok) {
+        console.warn("Aviso ao configurar webhook:", webhookResult.error);
+        // Não bloqueia o connect, mas logamos o erro
+      }
 
       // Conectar (gerar QR Code)
       const connectResult = await uazapiRequest<{
@@ -150,8 +167,11 @@ serve(async (req) => {
         token: instanceToken,
       });
 
+      console.log("DEBUG: UAazAPI Connect Result:", JSON.stringify(connectResult));
+
       if (!connectResult.ok) {
-        return json({ error: "Erro ao conectar: " + (connectResult.error || "") }, 500);
+        console.error("Erro UAZAPI (/instance/connect):", connectResult.error);
+        return json({ error: "Erro ao conectar (UAZAPI): " + (connectResult.error || "") }, 500);
       }
 
       // Log
@@ -180,6 +200,8 @@ serve(async (req) => {
         method: "GET",
         token: instanceToken,
       });
+
+      console.log("DEBUG: UAazAPI Status Result:", JSON.stringify(statusResult));
 
       const isConnected = statusResult.data?.status === "connected";
 

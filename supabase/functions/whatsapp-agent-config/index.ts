@@ -22,6 +22,7 @@ const ALLOWED_UPDATE_FIELDS = [
   "show_typing",
   "mark_as_read",
   "status",
+  "human_pause_duration",
 ];
 
 serve(async (req) => {

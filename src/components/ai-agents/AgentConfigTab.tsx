@@ -13,6 +13,8 @@ import {
   Timer,
   Eye,
   Keyboard,
+  Users,
+  UserRound,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -93,6 +95,22 @@ const SECTIONS: ConfigSection[] = [
     iconColor: 'text-emerald-600',
     iconBg: 'bg-emerald-500/10',
   },
+  {
+    id: 'human_intervention',
+    title: 'Intervenção Humana',
+    description: 'Pausa automática e transição para atendimento humano',
+    icon: UserRound,
+    iconColor: 'text-orange-600',
+    iconBg: 'bg-orange-500/10',
+  },
+  {
+    id: 'chat_behavior',
+    title: 'Comportamento no Chat',
+    description: 'Atraso de resposta, tamanho das mensagens e marcação de leitura',
+    icon: Clock,
+    iconColor: 'text-purple-600',
+    iconBg: 'bg-purple-500/10',
+  },
 ];
 
 // Tamanho de resposta mapeado para labels leigos
@@ -117,6 +135,7 @@ export function AgentConfigTab({ agent, updateConfig }: AgentConfigTabProps) {
   const [responseDelay, setResponseDelay] = useState(agent.response_delay_seconds ?? 3);
   const [showTyping, setShowTyping] = useState(agent.show_typing ?? true);
   const [markAsRead, setMarkAsRead] = useState(agent.mark_as_read ?? true);
+  const [humanPauseDuration, setHumanPauseDuration] = useState(agent.human_pause_duration || 60);
   const [hasChanges, setHasChanges] = useState(false);
   const [openSections, setOpenSections] = useState<string[]>(['welcome']);
 
@@ -152,6 +171,7 @@ export function AgentConfigTab({ agent, updateConfig }: AgentConfigTabProps) {
         response_delay_seconds: responseDelay,
         show_typing: showTyping,
         mark_as_read: markAsRead,
+        human_pause_duration: humanPauseDuration,
       } as any);
       setHasChanges(false);
     } catch {
@@ -174,6 +194,7 @@ export function AgentConfigTab({ agent, updateConfig }: AgentConfigTabProps) {
     setResponseDelay(agent.response_delay_seconds ?? 3);
     setShowTyping(agent.show_typing ?? true);
     setMarkAsRead(agent.mark_as_read ?? true);
+    setHumanPauseDuration(agent.human_pause_duration || 60);
     setHasChanges(false);
   };
 
@@ -339,131 +360,129 @@ export function AgentConfigTab({ agent, updateConfig }: AgentConfigTabProps) {
                       </p>
                     </>
                   )}
+
+                  {/* Human Intervention */}
+                  {section.id === 'human_intervention' && (
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center mb-1">
+                          <Label>Tempo de Pausa (minutos)</Label>
+                          <span className="text-sm font-semibold text-primary">
+                            {humanPauseDuration} min
+                          </span>
+                        </div>
+                        <Slider
+                          value={[humanPauseDuration]}
+                          onValueChange={([v]) => { setHumanPauseDuration(v); markChanged(); }}
+                          min={0}
+                          max={1440}
+                          step={5}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                          <span>Sem pausa</span>
+                          <span>24 horas</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground flex items-start gap-1.5 leading-relaxed">
+                          <Info className="h-3 w-3 mt-0.5 shrink-0" />
+                          O agente IA ficará em silêncio por este tempo após um atendente humano enviar uma mensagem. 
+                          O agente voltará a responder automaticamente após esse período.
+                        </p>
+                      </div>
+
+                      <div className="pt-4 border-t">
+                        <Label className="text-sm font-medium block mb-2">Transição Automática</Label>
+                        <p className="text-xs text-muted-foreground mb-4">
+                          O bot chamará um colega humano se não souber responder ou se o cliente solicitar.
+                        </p>
+                        <div className="p-3 rounded-lg border bg-blue-50/50 flex items-start gap-3">
+                          <Users className="w-4 h-4 text-blue-600 mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium">Handoff Ativado</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">
+                              Quando o bot detecta necessidade de intervenção, ele marca a conversa para atendimento humano.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Chat Behavior */}
+                  {section.id === 'chat_behavior' && (
+                    <div className="space-y-8">
+                      {/* Response Size */}
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center mb-1">
+                          <Label>Tamanho das Respostas</Label>
+                          <span className="text-sm font-semibold text-primary">
+                            {RESPONSE_SIZE_LABELS[responseSize]}
+                          </span>
+                        </div>
+                        <Slider
+                          value={[responseSize]}
+                          onValueChange={([v]) => { setResponseSize(v); markChanged(); }}
+                          min={1}
+                          max={3}
+                          step={1}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                          <span>Curta</span>
+                          <span>Média</span>
+                          <span>Detalhada</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-5 pt-4 border-t">
+                        {/* Response Delay */}
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center mb-1">
+                            <Label>Atraso de Resposta (Debounce)</Label>
+                            <span className="text-sm font-semibold text-primary">
+                              {responseDelay} seg
+                            </span>
+                          </div>
+                          <Slider
+                            value={[responseDelay]}
+                            onValueChange={([v]) => { setResponseDelay(v); markChanged(); }}
+                            min={0}
+                            max={60}
+                            step={1}
+                            className="w-full"
+                          />
+                          <p className="text-xs text-muted-foreground italic">
+                            Impede que o bot responda picado se o cliente mandar várias mensagens rápidas.
+                          </p>
+                        </div>
+
+                        {/* Typing and Read status */}
+                        <div className="space-y-4 pt-4 border-t">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label className="text-sm">Mostrar Digitando</Label>
+                              <p className="text-[10px] text-muted-foreground">Exibe "digitando..." para o cliente</p>
+                            </div>
+                            <Switch checked={showTyping} onCheckedChange={(v) => { setShowTyping(v); markChanged(); }} />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label className="text-sm">Marcar como Lida</Label>
+                              <p className="text-[10px] text-muted-foreground">Marca mensagens como lidas automaticamente</p>
+                            </div>
+                            <Switch checked={markAsRead} onCheckedChange={(v) => { setMarkAsRead(v); markChanged(); }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CollapsibleContent>
             </Card>
           </Collapsible>
         );
       })}
-
-      {/* Response Size */}
-      <Card>
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-muted shrink-0">
-              <MessageCircle className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div>
-              <h4 className="font-medium text-sm">Tamanho das Respostas</h4>
-              <p className="text-xs text-muted-foreground">Define se o agente responde de forma mais curta ou mais detalhada</p>
-            </div>
-          </div>
-          <div className="space-y-3 pt-1">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Tamanho</span>
-              <span className="text-sm font-semibold text-primary">
-                {RESPONSE_SIZE_LABELS[responseSize]}
-              </span>
-            </div>
-            <Slider
-              value={[responseSize]}
-              onValueChange={([v]) => { setResponseSize(v); markChanged(); }}
-              min={1}
-              max={3}
-              step={1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>Curta e directa</span>
-              <span>Média</span>
-              <span>Detalhada</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Chat Behavior */}
-      <Card>
-        <CardContent className="p-4 space-y-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-indigo-500/10 shrink-0">
-              <Timer className="h-5 w-5 text-indigo-600" />
-            </div>
-            <div>
-              <h4 className="font-medium text-sm">Comportamento no Chat</h4>
-              <p className="text-xs text-muted-foreground">Configure como o agente interage antes de responder</p>
-            </div>
-          </div>
-
-          {/* Response Delay */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Tempo de espera antes de responder</span>
-              <span className="text-sm font-semibold text-primary">
-                {responseDelay}s
-              </span>
-            </div>
-            <Slider
-              value={[responseDelay]}
-              onValueChange={([v]) => { setResponseDelay(v); markChanged(); }}
-              min={0}
-              max={10}
-              step={1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>Imediato</span>
-              <span>10 segundos</span>
-            </div>
-            <p className="text-xs text-muted-foreground flex items-start gap-1.5">
-              <Info className="h-3 w-3 mt-0.5 shrink-0" />
-              Um pequeno atraso faz a conversa parecer mais natural e humana
-            </p>
-          </div>
-
-          <div className="h-px bg-border" />
-
-          {/* Show Typing */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 rounded-lg bg-muted shrink-0">
-                <Keyboard className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Mostrar "digitando..."</p>
-                <p className="text-xs text-muted-foreground">
-                  Exibe o indicador de digitação antes de enviar a resposta
-                </p>
-              </div>
-            </div>
-            <Switch
-              checked={showTyping}
-              onCheckedChange={(v) => { setShowTyping(v); markChanged(); }}
-            />
-          </div>
-
-          <div className="h-px bg-border" />
-
-          {/* Mark as Read */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 rounded-lg bg-muted shrink-0">
-                <Eye className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Marcar como visto</p>
-                <p className="text-xs text-muted-foreground">
-                  Marca a mensagem do contacto como lida automaticamente
-                </p>
-              </div>
-            </div>
-            <Switch
-              checked={markAsRead}
-              onCheckedChange={(v) => { setMarkAsRead(v); markChanged(); }}
-            />
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Actions */}
       {hasChanges && (

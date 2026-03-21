@@ -9,9 +9,13 @@ const corsHeaders = {
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-// Modelos Pro 2.5: Multimodal
-const MODEL_TEXT  = "gemini-2.5-pro";
-const MODEL_IMAGE = "gemini-2.5-pro";
+// Configuração de Modelos Gemini 3.1 (Architecture: Agentic Workflow)
+const MODELS = {
+    ORCHESTRATOR: "gemini-3.1-pro-preview",
+    COPYWRITER:   "gemini-3.1-flash-lite-preview",
+    DESIGNER:     "gemini-3.1-flash-image-preview",
+    REVIEWER:     "gemini-3.1-flash-lite-preview",
+};
 
 async function fetchImageAsBase64(url: string): Promise<string | null> {
     try {
@@ -35,9 +39,16 @@ async function callGemini(parts: any[], model: string, generateImage = false) {
     const body: any = {
         contents: [{ role: "user", parts }],
         generationConfig: {
-            responseModalities: generateImage ? ["TEXT", "IMAGE"] : ["TEXT"],
+            response_modalities: generateImage ? ["IMAGE", "TEXT"] : ["TEXT"],
         }
     };
+
+    // Ativa o raciocínio profundo (Thinking) apenas para o Orquestrador (Pro series)
+    if (model === MODELS.ORCHESTRATOR) {
+        body.generationConfig.thinking_config = {
+            thinking_level: "HIGH"
+        };
+    }
 
     const resp = await fetch(url, {
         method: "POST",
@@ -145,7 +156,7 @@ serve(async (req) => {
                 "layout_strategy": "Hierarquia idêntica ao template. ZERO SOBREPOSIÇÃO no produto principal."
               }
             `});
-            const data = await callGemini(parts, MODEL_TEXT, false);
+            const data = await callGemini(parts, MODELS.ORCHESTRATOR, false);
             const textPart = data.candidates[0].content.parts.find((p: any) => p.text && !p.thought);
             result = JSON.parse((textPart?.text || '{}').replace(/```json|```/g, '').trim());
         }
@@ -187,7 +198,7 @@ serve(async (req) => {
                 "social_caption": "Legenda curta e elegante"
               }
             `});
-            const data = await callGemini(parts, MODEL_TEXT, false);
+            const data = await callGemini(parts, MODELS.COPYWRITER, false);
             const textPart = data.candidates[0].content.parts.find((p: any) => p.text && !p.thought);
             result = JSON.parse((textPart?.text || '{}').replace(/```json|```/g, '').trim());
         }
@@ -225,12 +236,15 @@ serve(async (req) => {
                 5. INTEGRAÇÃO REALISTA: Use técnicas de CGI para que o produto pareça estar fisicamente no cenário (brilhos refletidos do ambiente, sombras de contato precisas).
             ` : '';
 
-            let orientationInstruction = "QUADRADO (1080x1080)";
+            let orientationInstruction = "QUADRADO (1:1)";
             if (ratio === "9:16") orientationInstruction = "VERTICAL (9:16)";
             else if (ratio === "16:9") orientationInstruction = "HORIZONTAL (16:9)";
+            else if (ratio === "4:5") orientationInstruction = "RETRATO (4:5)";
 
             const fullPrompt = `
-                Você é um Mestre Designer e sua missão é a EXATIDÃO ABSOLUTA.
+                Sua missão é a EXATIDÃO ABSOLUTA.
+                FORMATO OBRIGATÓRIO MONITORADO: ${orientationInstruction}
+                
                 ${reviewerFeedback}
                 ${templateOverride}
 
@@ -248,8 +262,7 @@ serve(async (req) => {
             `;
 
             parts.push({ text: fullPrompt });
-
-            const data = await callGemini(parts, MODEL_IMAGE, true);
+            const data = await callGemini(parts, MODELS.DESIGNER, true);
 
             let base64Data = null;
             let mimeType = "image/png";
@@ -299,7 +312,7 @@ serve(async (req) => {
                 "feedback": "Descreva o erro exato de layout ou tipografia"
               }
             `});
-            const data = await callGemini(parts, MODEL_TEXT, false);
+            const data = await callGemini(parts, MODELS.REVIEWER, false);
             const textPart = data.candidates[0].content.parts.find((p: any) => p.text && !p.thought);
             result = JSON.parse((textPart?.text || '{}').replace(/```json|```/g, '').trim());
         }

@@ -70,6 +70,13 @@ const PLATFORM_INSTRUCTIONS: Partial<Record<SocialPlatform, { steps: string[] }>
       'Confirme a conexão.',
     ],
   },
+  whatsapp: {
+    steps: [
+      'Faça login no WhatsApp Business na nova aba.',
+      'Autorize a leitura e envio de mensagens pela plataforma.',
+      'Finalize a configuração de webhook.',
+    ],
+  },
 };
 
 export function ConnectPlatformModal({

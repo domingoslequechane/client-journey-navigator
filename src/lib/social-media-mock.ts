@@ -1,6 +1,6 @@
 // Types and configs only - no mock data used in production anymore
 
-export type SocialPlatform = 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'twitter' | 'youtube' | 'pinterest' | 'threads';
+export type SocialPlatform = 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'twitter' | 'youtube' | 'pinterest' | 'threads' | 'whatsapp';
 
 export type PostStatus = 'draft' | 'pending_approval' | 'approved' | 'scheduled' | 'published' | 'failed' | 'rejected' | 'local_editing';
 
@@ -63,6 +63,7 @@ export const PLATFORM_CONFIG: Record<SocialPlatform, { label: string; color: str
   youtube: { label: 'YouTube', color: 'text-[hsl(0,80%,50%)]', bgColor: 'bg-[hsl(0,80%,50%)]', charLimit: 5000 },
   pinterest: { label: 'Pinterest', color: 'text-[hsl(350,80%,45%)]', bgColor: 'bg-[hsl(350,80%,45%)]', charLimit: 500 },
   threads: { label: 'Threads', color: 'text-foreground', bgColor: 'bg-foreground', charLimit: 500 },
+  whatsapp: { label: 'WhatsApp', color: 'text-[hsl(142,70%,45%)]', bgColor: 'bg-[hsl(142,70%,45%)]', charLimit: 4096 },
 };
 
 export const STATUS_CONFIG: Record<PostStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; color: string }> = {
@@ -85,4 +86,4 @@ export const CONTENT_TYPE_CONFIG: Record<ContentType, { label: string; icon: str
   text: { label: 'Texto', icon: 'text', platforms: ['linkedin', 'twitter', 'threads'] },
 };
 
-export const ALL_PLATFORMS: SocialPlatform[] = ['instagram', 'facebook', 'linkedin', 'tiktok', 'twitter', 'youtube', 'pinterest', 'threads'];
+export const ALL_PLATFORMS: SocialPlatform[] = ['instagram', 'facebook', 'linkedin', 'tiktok', 'twitter', 'youtube', 'pinterest', 'threads', 'whatsapp'];

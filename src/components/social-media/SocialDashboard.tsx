@@ -12,6 +12,7 @@ import { ConnectPlatformModal } from './ConnectPlatformModal';
 import { ConfirmActionModal } from './ConfirmActionModal';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 interface SocialDashboardProps {
   selectedClient: string;
@@ -27,6 +28,7 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
   const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [showWhatsappComingSoon, setShowWhatsappComingSoon] = useState(false);
 
   const connectedAccounts = accounts.filter(a => a.is_connected);
   const connectedPlatforms = new Set(connectedAccounts.map(a => a.platform));
@@ -38,6 +40,10 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
   const pendingCount = posts.filter(p => p.status === 'pending_approval').length;
 
   const handleConnect = (platform: SocialPlatform) => {
+    if (platform === 'whatsapp') {
+      setShowWhatsappComingSoon(true);
+      return;
+    }
     setConnectingPlatform(null);
     if (clientId) {
       connectPlatform.mutate({ platform, clientId });
@@ -226,6 +232,35 @@ export function SocialDashboard({ selectedClient }: SocialDashboardProps) {
         onConfirm={handleResetData}
         loading={isResetting}
       />
+
+      <Dialog open={showWhatsappComingSoon} onOpenChange={setShowWhatsappComingSoon}>
+        <DialogContent className="sm:max-w-[425px] overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-[hsl(142,70%,45%)]" />
+          <DialogHeader className="pt-4">
+            <div className="mx-auto h-16 w-16 rounded-2xl bg-[hsl(142,70%,45%)]/10 flex items-center justify-center mb-4">
+              <PlatformIcon platform="whatsapp" size="lg" />
+            </div>
+            <DialogTitle className="text-center text-2xl font-bold">WhatsApp Business</DialogTitle>
+            <DialogDescription className="text-center text-base pt-2">
+              Estamos a preparar algo incrível para a sua comunicação direta! 🚀
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 text-center space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed px-4">
+              A integração com o WhatsApp está em fase final de desenvolvimento. Em breve, poderá gerir conversas, enviar atualizações e automatizar o seu atendimento diretamente por aqui.
+            </p>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Em Breve</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowWhatsappComingSoon(false)} className="w-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,50%)] text-white">
+              Ficar Atento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -294,22 +329,40 @@ function ConnectedAccountCard({ account, onManage }: { account: SocialAccount; o
 
 function AvailablePlatformCard({ platform, onConnect }: { platform: SocialPlatform; onConnect: () => void }) {
   const config = PLATFORM_CONFIG[platform];
+  const isComingSoon = platform === 'whatsapp';
   
   return (
     <Card 
-      className="group hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer border-dashed"
+      className={cn(
+        "group transition-all cursor-pointer border-dashed relative overflow-hidden",
+        isComingSoon 
+          ? "opacity-80 hover:opacity-100 hover:border-muted-foreground/30 hover:bg-muted/30" 
+          : "hover:border-primary/50 hover:bg-primary/5"
+      )}
       onClick={onConnect}
     >
+      {isComingSoon && (
+        <div className="absolute top-0 right-0">
+          <div className="bg-[hsl(142,70%,45%)] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-md">
+            EM BREVE
+          </div>
+        </div>
+      )}
       <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-3">
         <div className="relative">
-          <PlatformIcon platform={platform} size="lg" className="grayscale group-hover:grayscale-0 transition-all" />
-          <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Plus className="h-3 w-3" />
-          </div>
+          <PlatformIcon platform={platform} size="lg" className={cn(
+            "transition-all",
+            !isComingSoon && "grayscale group-hover:grayscale-0"
+          )} />
+          {!isComingSoon && (
+            <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <Plus className="h-3 w-3" />
+            </div>
+          )}
         </div>
         <div className="space-y-0.5">
           <p className="text-xs font-bold truncate">{config.label}</p>
-          <p className="text-[10px] text-muted-foreground">Conectar</p>
+          <p className="text-[10px] text-muted-foreground">{isComingSoon ? 'Saber mais' : 'Conectar'}</p>
         </div>
       </CardContent>
     </Card>

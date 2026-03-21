@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Share2, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle, Lock, FileText, Pencil, ChevronLeft, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
+import { Megaphone, Plus, Search, CalendarPlus, LayoutDashboard, CalendarDays, BarChart3, ListFilter, RefreshCw, MessageCircle, Lock, FileText, Pencil, ChevronLeft, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -297,7 +297,7 @@ export default function SocialMedia() {
           <div className="hidden md:block">
             <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2">
-                <Share2 className="h-6 w-6 text-primary" />
+                <Megaphone className="h-6 w-6 text-primary -rotate-12" />
                 Social Media
               </div>
             </h1>

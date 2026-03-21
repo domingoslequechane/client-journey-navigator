@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { Bot, Loader2, PanelRightClose, PanelRightOpen, ArrowLeft } from 'lucide-react';
+import { MessagesSquare, Loader2, PanelRightClose, PanelRightOpen, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
@@ -155,7 +155,7 @@ export default function AgenteQIA() {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: t('welcomeMessage', `Olá! Sou o **Agente QIA**, o teu assistente inteligente. Estou aqui para ajudar com o cliente **${selectedClient.company_name}**.\n\nComo posso auxiliar hoje?`, { 
+        content: t('welcomeMessage', `Olá! Sou o **Assistente QIA**, o teu assistente inteligente. Estou aqui para ajudar com o cliente **${selectedClient.company_name}**.\n\nComo posso auxiliar hoje?`, { 
           ns: 'ai',
           clientName: selectedClient.company_name 
         }),
@@ -461,7 +461,7 @@ export default function AgenteQIA() {
   useEffect(() => {
     if (isMobile && selectedClientId && selectedClient) {
       setCustomTitle(selectedClient.company_name);
-      setCustomIcon(Bot);
+      setCustomIcon(MessagesSquare);
       setBackAction(() => handleBackToClientList);
     } else {
       setCustomTitle(null);
@@ -480,8 +480,8 @@ export default function AgenteQIA() {
         <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
           <div className="hidden h-14 px-4 border-b border-border flex items-center justify-between shrink-0">
             <h2 className="font-semibold flex items-center gap-2">
-              <Bot className="h-4 w-4 text-primary" />
-              {t('navigation.qia', 'Agente QIA', { ns: 'common' })}
+              <MessagesSquare className="h-4 w-4 text-primary" />
+              {t('navigation.qia', 'Assistente QIA', { ns: 'common' })}
             </h2>
           </div>
           <div className="flex-1 overflow-hidden">
@@ -507,8 +507,8 @@ export default function AgenteQIA() {
           {!selectedClientId ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <AnimatedContainer animation="scale-in" className="text-center">
-                <Bot className="h-12 w-12 mx-auto mb-4 text-primary/50" />
-                <h3 className="text-lg font-medium">{t('navigation.qia', 'Agente QIA', { ns: 'common' })}</h3>
+                <MessagesSquare className="h-12 w-12 mx-auto mb-4 text-primary/50" />
+                <h3 className="text-lg font-medium">{t('navigation.qia', 'Assistente QIA', { ns: 'common' })}</h3>
                 <p className="text-sm mt-1">{t('selectClientPrompt', 'Selecione um cliente para iniciar uma conversa', { ns: 'ai' })}</p>
               </AnimatedContainer>
             </div>
@@ -580,7 +580,7 @@ export default function AgenteQIA() {
       {!isMobile && (
         <div className={cn("border-l border-border bg-muted/30 flex flex-col transition-all duration-300", sidebarCollapsed ? "w-16" : "w-80")}>
           <div className="h-16 px-4 border-b border-border flex items-center justify-between">
-            {!sidebarCollapsed && <h2 className="font-semibold flex items-center gap-2"><Bot className="h-4 w-4 text-primary" />{t('conversations', 'Conversas', { ns: 'ai' })}</h2>}
+            {!sidebarCollapsed && <h2 className="font-semibold flex items-center gap-2"><MessagesSquare className="h-4 w-4 text-primary" />{t('conversations', 'Conversas', { ns: 'ai' })}</h2>}
             <Button variant="ghost" size="icon" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className={sidebarCollapsed ? "mx-auto" : ""}>
               {sidebarCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
             </Button>

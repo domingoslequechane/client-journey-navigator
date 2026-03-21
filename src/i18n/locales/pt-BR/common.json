@@ -9,7 +9,7 @@
     "operationalFlow": "Fluxo Operacional",
      "pipeline": "Pipeline",
     "clients": "Clientes",
-    "qia": "Agente QIA",
+    "qia": "Assistente QIA",
     "academy": "Academia de Marketing",
     "team": "Equipe",
     "settings": "Configurações",
@@ -29,7 +29,7 @@
     "editorial": "Linha Editorial",
     "socialMedia": "Social Media",
     "studio": "Studio Criativo",
-    "aiAgents": "Agentes IA"
+    "aiAgents": "Agentes de IA"
   },
   "actions": {
     "save": "Salvar",

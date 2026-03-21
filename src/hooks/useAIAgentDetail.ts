@@ -69,9 +69,9 @@ export function useAIAgentDetail(agentId: string | undefined) {
 
   // ─── WhatsApp instance actions ───
   const instanceAction = useMutation({
-    mutationFn: async (action: 'connect' | 'status' | 'disconnect') => {
+    mutationFn: async ({ action, phone }: { action: 'connect' | 'status' | 'disconnect', phone?: string }) => {
       const { data, error } = await supabase.functions.invoke('whatsapp-agent-instance', {
-        body: { agent_id: agentId, action },
+        body: { agent_id: agentId, action, phone },
       });
 
       if (error) throw error;

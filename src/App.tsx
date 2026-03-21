@@ -60,6 +60,7 @@ import SocialApproval from "./pages/SocialApproval";
 import StudioTool from "./pages/studio/StudioTool";
 import AIAgents from "./pages/AIAgents";
 import AIAgentDetail from "./pages/AIAgentDetail";
+import AIAgentConversation from "./pages/AIAgentConversation";
 
 import { HeaderProvider } from "@/contexts/HeaderContext";
 
@@ -148,6 +149,7 @@ const App = () => (
                       <Route path="ai-assistant" element={<AgenteQIA />} />
                       <Route path="ai-agents" element={<AIAgents />} />
                       <Route path="ai-agents/:agentId" element={<AIAgentDetail />} />
+                      <Route path="ai-agents/:agentId/conversations/:conversationId" element={<AIAgentConversation />} />
                       <Route path="link-trees" element={
                         <RoleProtectedRoute privilege="link23">
                           <LinkTreeDashboard />
