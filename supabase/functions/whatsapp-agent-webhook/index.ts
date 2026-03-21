@@ -627,31 +627,7 @@ serve(async (req: Request) => {
         });
       }
 
-      // Salvar mensagem do user
-      const { data: insertedMsg, error: insertErr } = await sb
-        .from("ai_agent_messages")
-        .insert({
-          conversation_id: conversationId,
-          organization_id: agent.organization_id,
-          external_id: messageId || null,
-          quoted_message_id: quotedMsgId,
-          quoted_message_content: quotedMsgContent,
-          role: fromMe ? "system" : "user",
-          content: text,
-          message_type: messageType,
-        })
-        .select("id, created_at")
-        .single();
-
-      if (insertErr) {
-        console.error("Erro ao inserir mensagem:", insertErr);
-        return new Response(JSON.stringify({ error: "Db error" }), { status: 500 });
-      }
-
-      const insertedMsgId = insertedMsg.id;
-      const insertedCreatedAt = insertedMsg.created_at;
-
-      // ─── Intervenção Humana: Pausar agente ───
+      // ─── Intervenção Humana: Verificar ECO da IA ANTES de salvar ───
       if (fromMe) {
         // Verificar se é uma mensagem da própria IA que acabamos de enviar
         const { data: recentAiMsg } = await sb
@@ -661,16 +637,30 @@ serve(async (req: Request) => {
           .eq("role", "assistant")
           .eq("content", text)
           .is("external_id", null)
-          .gt("created_at", new Date(Date.now() - 15000).toISOString())
+          .gt("created_at", new Date(Date.now() - 30000).toISOString())
           .maybeSingle();
 
         if (recentAiMsg) {
-          console.log(`Webhook: Ignorando 'fromMe' pois coincide com resposta recente da IA (${insertedMsgId})`);
+          console.log(`Webhook: Ignorando 'fromMe' pois coincide com resposta recente da IA`);
           if (messageId) {
             await sb.from("ai_agent_messages").update({ external_id: messageId }).eq("id", recentAiMsg.id);
           }
           return new Response(JSON.stringify({ ok: true, skipped: "self_ai_message" }), { status: 200 });
         }
+
+        // É realmente um humano escrevendo pelo WhatsApp → salvar como system e pausar
+        await sb
+          .from("ai_agent_messages")
+          .insert({
+            conversation_id: conversationId,
+            organization_id: agent.organization_id,
+            external_id: messageId || null,
+            quoted_message_id: quotedMsgId,
+            quoted_message_content: quotedMsgContent,
+            role: "system",
+            content: text,
+            message_type: messageType,
+          });
 
         const pauseMinutes = agent.human_pause_duration || 60;
         const pausedUntil = new Date(Date.now() + pauseMinutes * 60 * 1000).toISOString();
@@ -683,9 +673,32 @@ serve(async (req: Request) => {
           })
           .eq("id", conversationId);
           
-        console.log(`Webhook: Intervenção humana detectada via WhatsApp Web/Celular. Agente pausado por ${pauseMinutes} min.`);
+        console.log(`Webhook: Intervenção humana detectada via WhatsApp. Agente pausado por ${pauseMinutes} min.`);
         return new Response(JSON.stringify({ ok: true, paused_until: pausedUntil }), { status: 200 });
       }
+
+      // Salvar mensagem do user (apenas mensagens de clientes chegam aqui)
+      const { data: insertedMsg, error: insertErr } = await sb
+        .from("ai_agent_messages")
+        .insert({
+          conversation_id: conversationId,
+          organization_id: agent.organization_id,
+          external_id: messageId || null,
+          quoted_message_id: quotedMsgId,
+          quoted_message_content: quotedMsgContent,
+          role: "user",
+          content: text,
+          message_type: messageType,
+        })
+        .select("id, created_at")
+        .single();
+
+      if (insertErr) {
+        console.error("Erro ao inserir mensagem:", insertErr);
+        return new Response(JSON.stringify({ error: "Db error" }), { status: 500 });
+      }
+
+      const insertedMsgId = insertedMsg.id;
 
       // Incrementar contador de mensagens
       await sb.rpc("increment_ai_agent_stats", {
