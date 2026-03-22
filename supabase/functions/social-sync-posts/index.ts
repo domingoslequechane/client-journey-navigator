@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const ZERNIO_API_BASE = "https://zernio.com/api/v1";
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     }
 
     const orgId = profile.current_organization_id;
-    const LATE_API_KEY = Deno.env.get("LATE_API_KEY")!;
+    const ZERNIO_API_KEY = Deno.env.get("ZERNIO_API_KEY")!;
 
     const { data: posts, error: postsError } = await supabase
       .from("social_posts").select("id, late_post_id, status")
@@ -47,13 +47,13 @@ Deno.serve(async (req) => {
         let allDeleted = true;
 
         for (const lateId of ids) {
-          const response = await fetch(`${LATE_API_BASE}/posts/${lateId}`, {
-            headers: { Authorization: `Bearer ${LATE_API_KEY}` }
+          const response = await fetch(`${ZERNIO_API_BASE}/posts/${lateId}`, {
+            headers: { Authorization: `Bearer ${ZERNIO_API_KEY}` }
           });
 
           if (response.status === 404) {
-            console.log(`[social-sync-posts] Post ${lateId} not found on Late.dev (404)`);
-            continue; // Treat as deleted on Late.dev
+            console.log(`[social-sync-posts] Post ${lateId} not found on Zernio (404)`);
+            continue; // Treat as deleted on Zernio
           }
 
           if (response.ok) {
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
         let newStatus = post.status;
 
         if (allDeleted && ids.length > 0) {
-          console.log(`[social-sync-posts] All parts of post ${post.id} deleted from Late.dev. Removing from DB.`);
+          console.log(`[social-sync-posts] All parts of post ${post.id} deleted from Zernio. Removing from DB.`);
           await supabase.from("social_posts").delete().eq("id", post.id);
           syncedCount++;
           continue;
@@ -109,3 +109,5 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
+
+

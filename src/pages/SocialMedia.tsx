@@ -96,7 +96,7 @@ export default function SocialMedia() {
       } catch { }
     }
   }, []);
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 20;
 
   const { posts, isLoading, deletePost, sendForApproval, publishPost, syncPosts, refetch: refetchPosts } = useSocialPosts();
   const { accounts, syncAccounts, connectPlatform, refetch: refetchAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
@@ -211,15 +211,25 @@ export default function SocialMedia() {
     const metaNotes = postToDelete?.notes;
     let batchId: string | undefined;
 
-    // Only use batch deletion for drafts (compact batches)
-    // For scheduled posts, we usually want to delete them individually
-    if (postToDelete?.status === 'draft' && metaNotes?.includes('BATCH_META:')) {
-      try {
-        const metaStr = metaNotes.substring(metaNotes.indexOf('BATCH_META:') + 11);
-        const meta = JSON.parse(metaStr);
-        batchId = meta.batchId;
-      } catch (e) {
-        console.error("Error parsing batch meta:", e);
+    if (metaNotes) {
+      // 1. Check for legacy compact draft batchId
+      if (metaNotes.includes('BATCH_META:')) {
+        try {
+          const metaStr = metaNotes.substring(metaNotes.indexOf('BATCH_META:') + 11);
+          const meta = JSON.parse(metaStr);
+          batchId = meta.batchId;
+        } catch (e) {
+          console.error("Error parsing legacy batch meta:", e);
+        }
+      } 
+      // 2. Check for modern JSON batchId (used for multi-platform scheduled batches)
+      else if (metaNotes.startsWith('{') && metaNotes.includes('batchId')) {
+        try {
+          const meta = JSON.parse(metaNotes);
+          batchId = meta.batchId;
+        } catch (e) {
+          console.error("Error parsing modern batch meta:", e);
+        }
       }
     }
 

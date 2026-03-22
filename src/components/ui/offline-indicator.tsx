@@ -28,7 +28,7 @@ export function OfflineIndicator({ pendingCount = 0, isSyncing = false }: Offlin
         <>
           <WifiOff className="h-4 w-4" />
           <span>
-            Sem conexão - seus dados estão salvos localmente
+            Desconectado - seus dados estão salvos localmente
             {pendingCount > 0 && ` (${pendingCount} ${pendingCount === 1 ? 'item pendente' : 'itens pendentes'})`}
           </span>
         </>
@@ -44,7 +44,7 @@ export function OfflineIndicator({ pendingCount = 0, isSyncing = false }: Offlin
       {isOnline && justReconnected && !isSyncing && (
         <>
           <CheckCircle2 className="h-4 w-4" />
-          <span>Reconectado!</span>
+          <span>Reconectado</span>
         </>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const ZERNIO_API_BASE = "https://zernio.com/api/v1";
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -37,14 +37,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const LATE_API_KEY = Deno.env.get("LATE_API_KEY")!;
+    const ZERNIO_API_KEY = Deno.env.get("ZERNIO_API_KEY")!;
 
     console.log(`[social-media-presign] Requesting presigned URL for ${fileName} (${fileType})`);
 
-    const lateRes = await fetch(`${LATE_API_BASE}/media/presign`, {
+    const lateRes = await fetch(`${ZERNIO_API_BASE}/media/presign`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LATE_API_KEY}`,
+        Authorization: `Bearer ${ZERNIO_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ filename: fileName, contentType: fileType }),
@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     const lateData = await lateRes.json();
 
     if (!lateRes.ok) {
-      console.error("[social-media-presign] Late.dev error:", lateData);
+      console.error("[social-media-presign] Zernio error:", lateData);
       return new Response(JSON.stringify({ error: lateData.message || lateData.error || "Failed to get presigned URL", details: lateData }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -69,3 +69,6 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+
+

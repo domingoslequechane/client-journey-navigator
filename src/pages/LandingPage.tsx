@@ -639,7 +639,7 @@ export default function LandingPage() {
                       {/* FREE TRIAL BADGE */}
                       <div className="flex justify-center pt-1">
                         <span className="bg-orange-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg transform hover:scale-105 transition-transform uppercase tracking-tighter">
-                          14 Dias Grátis
+                          7 Dias Grátis
                         </span>
                       </div>
 

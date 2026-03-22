@@ -15,6 +15,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { InstallPromptBanner } from "./components/pwa/InstallPromptBanner";
+import { ReloadPrompt } from "./components/pwa/ReloadPrompt";
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -95,6 +96,7 @@ const App = () => (
               <PlanThemeProvider>
                 <OrganizationProvider>
                   <InstallPromptBanner />
+                  <ReloadPrompt />
                   <ErrorBoundary>
                     <Routes>
                     <Route path="/" element={<LandingPage />} />

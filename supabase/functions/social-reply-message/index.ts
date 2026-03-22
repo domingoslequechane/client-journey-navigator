@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const ZERNIO_API_BASE = "https://zernio.com/api/v1";
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const lateApiKey = Deno.env.get("LATE_API_KEY");
+    const zernioApiKey = Deno.env.get("ZERNIO_API_KEY");
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
 
@@ -51,21 +51,21 @@ Deno.serve(async (req) => {
       lateProfileId = client?.late_profile_id || null;
     }
 
-    if (lateProfileId && lateApiKey && message.external_id) {
+    if (lateProfileId && zernioApiKey && message.external_id) {
       try {
         const endpoint = message.message_type === "comment"
-          ? `${LATE_API_BASE}/comments/${message.external_id}/reply?profileId=${lateProfileId}`
-          : `${LATE_API_BASE}/messages/${message.external_id}/reply?profileId=${lateProfileId}`;
+          ? `${ZERNIO_API_BASE}/comments/${message.external_id}/reply?profileId=${lateProfileId}`
+          : `${ZERNIO_API_BASE}/messages/${message.external_id}/reply?profileId=${lateProfileId}`;
 
         const lateResponse = await fetch(endpoint, {
           method: "POST",
-          headers: { Authorization: `Bearer ${lateApiKey}`, "Content-Type": "application/json" },
+          headers: { Authorization: `Bearer ${zernioApiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({ content: reply_content }),
         });
 
-        if (!lateResponse.ok) console.error("[social-reply-message] Late.dev reply error:", await lateResponse.text());
+        if (!lateResponse.ok) console.error("[social-reply-message] Zernio reply error:", await lateResponse.text());
       } catch (err) {
-        console.error("[social-reply-message] Late.dev reply failed:", err);
+        console.error("[social-reply-message] Zernio reply failed:", err);
       }
     }
 
@@ -81,3 +81,5 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
+
+

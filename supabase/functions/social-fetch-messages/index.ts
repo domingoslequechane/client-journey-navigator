@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const ZERNIO_API_BASE = "https://zernio.com/api/v1";
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const lateApiKey = Deno.env.get("LATE_API_KEY");
+    const zernioApiKey = Deno.env.get("ZERNIO_API_KEY");
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
 
@@ -37,8 +37,8 @@ Deno.serve(async (req) => {
 
     const orgId = profile.current_organization_id;
 
-    if (!lateApiKey) {
-      return new Response(JSON.stringify({ fetched: 0, message: "Late.dev API key not configured" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!zernioApiKey) {
+      return new Response(JSON.stringify({ fetched: 0, message: "Zernio API key not configured" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -54,17 +54,17 @@ Deno.serve(async (req) => {
     }
 
     if (clientsToFetch.length === 0) {
-      return new Response(JSON.stringify({ fetched: 0, message: "No clients with Late.dev profiles" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ fetched: 0, message: "No clients with Zernio profiles" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     let totalFetched = 0;
 
     for (const client of clientsToFetch) {
-      const lateResponse = await fetch(`${LATE_API_BASE}/messages?profileId=${client.late_profile_id}`, {
-        headers: { Authorization: `Bearer ${lateApiKey}`, "Content-Type": "application/json" },
+      const lateResponse = await fetch(`${ZERNIO_API_BASE}/messages?profileId=${client.late_profile_id}`, {
+        headers: { Authorization: `Bearer ${zernioApiKey}`, "Content-Type": "application/json" },
       });
 
-      if (!lateResponse.ok) { console.error(`[social-fetch-messages] Late.dev API error for client ${client.id}:`, await lateResponse.text()); continue; }
+      if (!lateResponse.ok) { console.error(`[social-fetch-messages] Zernio API error for client ${client.id}:`, await lateResponse.text()); continue; }
 
       const lateData = await lateResponse.json();
       const lateMessages = lateData.data || lateData.messages || [];
@@ -94,3 +94,5 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
+
+

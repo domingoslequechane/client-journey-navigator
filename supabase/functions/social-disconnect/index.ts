@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const ZERNIO_API_BASE = "https://zernio.com/api/v1";
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -26,17 +26,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "late_account_id is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const LATE_API_KEY = Deno.env.get("LATE_API_KEY")!;
+    const ZERNIO_API_KEY = Deno.env.get("ZERNIO_API_KEY")!;
     console.log(`[social-disconnect] Disconnecting account ${late_account_id}`);
 
-    const response = await fetch(`${LATE_API_BASE}/accounts/${late_account_id}`, {
+    const response = await fetch(`${ZERNIO_API_BASE}/accounts/${late_account_id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${LATE_API_KEY}` },
+      headers: { Authorization: `Bearer ${ZERNIO_API_KEY}` },
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("[social-disconnect] Late.dev error:", errorData);
+      console.error("[social-disconnect] Zernio error:", errorData);
     }
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -45,3 +45,5 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
+
+

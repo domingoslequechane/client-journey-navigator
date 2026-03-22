@@ -162,10 +162,18 @@ export function PostModal({ open, onOpenChange, post, clientId, onSave, defaultD
       const platforms = Array.from(new Set(selectedAccounts.map(a => a.platform)));
 
       for (const item of postItems) {
-        let finalMediaUrls = item.mediaUrls.filter(url => !url.startsWith('blob:'));
-        if (item.files.length > 0) {
-          const uploadedUrls = await uploadFilesToLate(item.files);
-          finalMediaUrls = [...finalMediaUrls, ...uploadedUrls];
+        const blobIndices = item.mediaUrls
+          .map((url, idx) => url.startsWith('blob:') ? idx : -1)
+          .filter(idx => idx !== -1);
+        
+        const blobsToUpload = blobIndices.map(idx => item.files[idx]).filter((f): f is File => f != null);
+        let finalMediaUrls = [...item.mediaUrls];
+
+        if (blobsToUpload.length > 0) {
+          const uploadedUrls = await uploadFilesToLate(blobsToUpload);
+          blobIndices.forEach((originalIdx, i) => {
+            finalMediaUrls[originalIdx] = uploadedUrls[i];
+          });
         }
         const scheduledAt = new Date(`${item.scheduledAt}T${item.scheduledTime}`).toISOString();
         const postData = {

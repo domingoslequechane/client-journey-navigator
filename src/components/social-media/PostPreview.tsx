@@ -116,7 +116,7 @@ interface PreviewCommonProps {
 
 function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, username, MediaDisplay }: PreviewCommonProps & { username: string }) {
   return (
-    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto">
       <div className="flex items-center justify-between p-3.5">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#f09433] via-[#e6683c] to-[#bc1888] p-[1.5px] shrink-0">
@@ -163,7 +163,7 @@ function InstagramPreview({ content, mediaUrl, isOverLimit, charLimit, displayNa
 
 function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, MediaDisplay }: PreviewCommonProps) {
   return (
-    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto">
       <div className="flex items-center gap-3.5 p-5">
         <div className="w-11 h-11 rounded-full overflow-hidden border border-white/10 shrink-0">
           {avatar}
@@ -199,7 +199,7 @@ function FacebookPreview({ content, mediaUrl, isOverLimit, charLimit, displayNam
 
 function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, avatar, MediaDisplay }: PreviewCommonProps) {
   return (
-    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto">
       <div className="flex items-center gap-4 p-5">
         <div className="w-11 h-11 rounded-full overflow-hidden border border-white/10 shrink-0">
           {avatar}
@@ -236,7 +236,7 @@ function LinkedInPreview({ content, mediaUrl, isOverLimit, charLimit, displayNam
 
 function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit, displayName, username, avatar, MediaDisplay }: PreviewCommonProps & { username: string }) {
   return (
-    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto">
       <div className="flex items-start gap-4 p-5">
         <div className="w-11 h-11 rounded-full overflow-hidden border border-white/10 shrink-0">
           {avatar}
@@ -269,7 +269,7 @@ function TwitterPreview({ content, mediaUrl, isOverLimit, charLimit, displayName
 
 function GenericPreview({ content, mediaUrl, platform, isOverLimit, charLimit, displayName, username, avatar, MediaDisplay }: PreviewCommonProps & { username: string; platform: SocialPlatform; }) {
   return (
-    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="rounded-2xl overflow-hidden bg-[#1a1a1a] text-white border border-white/5 shadow-2xl w-full mx-auto">
       <div className="flex items-center gap-4 p-5">
         <div className="w-11 h-11 rounded-full overflow-hidden border border-white/10 shrink-0">
           {avatar}
@@ -300,7 +300,7 @@ function GenericPreview({ content, mediaUrl, platform, isOverLimit, charLimit, d
 function StoryPreview({ content, mediaUrl, platform, displayName, username, avatar, isVideo: isVideoProp }: { content: string; mediaUrl?: string; platform: SocialPlatform; displayName: string; username: string; avatar: React.ReactNode; isVideo?: boolean }) {
   const isVid = isVideo(mediaUrl, isVideoProp);
   return (
-    <div className="rounded-[32px] overflow-hidden bg-black text-white border border-white/10 shadow-2xl w-full aspect-[9/16] relative flex flex-col group/story animate-in fade-in zoom-in-95 duration-500">
+    <div className="rounded-[32px] overflow-hidden bg-black text-white border border-white/10 shadow-2xl w-full aspect-[9/16] relative flex flex-col group/story">
       {/* Background with blur effect to avoid "empty" space */}
       <div className="absolute inset-0 z-0">
         {mediaUrl ? (

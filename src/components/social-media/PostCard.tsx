@@ -34,7 +34,7 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
 
   return (
     <Card className={cn(
-      "hover:border-primary/30 transition-all relative group",
+      "relative group border-border/50",
       isSelected && "border-primary bg-primary/5 ring-1 ring-primary/20"
     )}>
       <CardContent className="p-3 sm:p-4">
@@ -49,7 +49,7 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
                 }}
               >
                 <div className={cn(
-                  "h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 shadow-sm",
+                  "h-6 w-6 rounded-lg border-2 flex items-center justify-center shadow-sm",
                   isSelected 
                     ? "bg-primary border-primary text-primary-foreground scale-110" 
                     : "bg-background border-slate-300 hover:border-primary hover:bg-slate-50"
@@ -63,7 +63,7 @@ export function PostCard({ post, onEdit, onDelete, onSendForApproval, onRetry, o
               <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 border bg-muted relative">
                 {(mediaUrl.includes('video') || mediaUrl.endsWith('.mp4') || mediaUrl.endsWith('.mov') || mediaUrl.endsWith('.webm')) ? (
                   <div className="w-full h-full relative flex items-center justify-center bg-black">
-                    <video src={mediaUrl} className="w-full h-full object-cover" autoPlay loop muted playsInline />
+                    <video src={mediaUrl} className="w-full h-full object-cover" muted playsInline />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                       <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                         <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[7px] border-l-white border-b-[4px] border-b-transparent ml-0.5" />

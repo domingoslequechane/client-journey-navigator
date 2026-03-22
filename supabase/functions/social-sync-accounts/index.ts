@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const ZERNIO_API_BASE = "https://zernio.com/api/v1";
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     }
 
     const orgId = profile.current_organization_id;
-    const LATE_API_KEY = Deno.env.get("LATE_API_KEY")!;
+    const ZERNIO_API_KEY = Deno.env.get("ZERNIO_API_KEY")!;
 
     let clientId: string | null = null;
     try { const body = await req.json(); clientId = body.client_id || null; } catch { }
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     }
 
     if (clientsToSync.length === 0) {
-      return new Response(JSON.stringify({ synced: 0, message: "No clients with Late.dev profiles found" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ synced: 0, message: "No clients with Zernio profiles found" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     let totalSynced = 0;
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     for (const client of clientsToSync) {
       console.log(`[social-sync-accounts] Syncing accounts for client ${client.id} (Late Profile: ${client.late_profile_id})`);
       
-      const accountsRes = await fetch(`${LATE_API_BASE}/accounts?profileId=${client.late_profile_id}`, { headers: { Authorization: `Bearer ${LATE_API_KEY}` } });
+      const accountsRes = await fetch(`${ZERNIO_API_BASE}/accounts?profileId=${client.late_profile_id}`, { headers: { Authorization: `Bearer ${ZERNIO_API_KEY}` } });
       const accountsData = await accountsRes.json();
       
       if (!accountsRes.ok) { 
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
 
       // Handle different response formats: array directly, or { accounts: [] }, or { data: [] }
       const lateAccounts = Array.isArray(accountsData) ? accountsData : (accountsData.accounts || accountsData.data || []);
-      console.log(`[social-sync-accounts] Found ${lateAccounts.length} accounts in Late.dev for profile ${client.late_profile_id}`);
+      console.log(`[social-sync-accounts] Found ${lateAccounts.length} accounts in Zernio for profile ${client.late_profile_id}`);
       if (lateAccounts.length === 0) {
         console.log(`[social-sync-accounts] Raw response for profile ${client.late_profile_id}:`, JSON.stringify(accountsData));
       }
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
         totalSynced++;
       }
 
-      // Mark accounts as disconnected if they are no longer in Late.dev
+      // Mark accounts as disconnected if they are no longer in Zernio
       for (const acc of existing) {
         if (acc.late_account_id && !syncedIds.has(acc.late_account_id)) {
           await supabase.from("social_accounts").update({ is_connected: false }).eq("id", acc.id);
@@ -118,3 +118,5 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
+
+

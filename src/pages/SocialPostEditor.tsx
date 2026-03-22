@@ -16,6 +16,8 @@ import { PlatformIcon } from '@/components/social-media/PlatformIcon';
 import { AICaptionModal } from '@/components/social-media/AICaptionModal';
 import { ConfirmActionModal } from '@/components/social-media/ConfirmActionModal';
 import { CalendarModal } from '@/components/social-media/CalendarModal';
+import { CustomCalendar } from '@/components/social-media/CustomCalendar';
+import { CustomTimePicker } from '@/components/social-media/CustomTimePicker';
 import { type SocialPlatform, type ContentType } from '@/lib/social-media-mock';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
@@ -28,7 +30,7 @@ import {
   Upload, Calendar, Clock, Loader2, X,
   Image as ImageIcon, Zap, Sparkles,
   Plus, Smartphone, MapPin,
-  ArrowLeft, FileText, Trash2,
+  ArrowLeft, FileText, Trash2, Check,
   CircleDashed, Film, Layers, Image,
   LayoutGrid, RefreshCw, Wifi, Signal, Battery,
   Eye, MoreVertical, Save, CalendarDays
@@ -36,7 +38,15 @@ import {
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { useHeader } from '@/contexts/HeaderContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -51,6 +61,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const getDefaultTime = () => format(addMinutes(new Date(), 15), 'HH:mm');
 
@@ -97,7 +108,7 @@ interface PostSchedule {
   id: string;
   platforms: SocialPlatform[];
   contentType: ContentType | ContentType[];
-  date: string;
+  dates: string[];
   time: string;
 }
 
@@ -108,13 +119,7 @@ interface PostItem {
   mediaUrls: string[];
   location: string;
   selectedAccountIds: string[];
-  schedules: Array<{
-    id: string;
-    platforms: SocialPlatform[];
-    contentType: ContentType | ContentType[];
-    date: string;
-    time: string;
-  }>;
+  schedules: PostSchedule[];
   latePostId?: string;
 }
 
@@ -275,10 +280,11 @@ export default function SocialPostEditor() {
     const rows: any[] = [];
     postItems.forEach((item, itemIdx) => {
       item.schedules.forEach((schedule, scheduleIdx) => {
-        // Show if it has at least a date and time, even if no accounts selected yet
-        if (schedule.date && schedule.time) {
-          const dateStr = `${schedule.date}T${schedule.time}`;
-          const dateObj = new Date(dateStr);
+        // Show all selected dates in the calendar
+        (schedule.dates || []).forEach(dateStr => {
+          if (!dateStr || !schedule.time) return;
+          const dateTimeStr = `${dateStr}T${schedule.time}`;
+          const dateObj = new Date(dateTimeStr);
 
           if (isNaN(dateObj.getTime())) return;
 
@@ -310,7 +316,7 @@ export default function SocialPostEditor() {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });
-        }
+        });
       });
     });
     return rows;
@@ -408,7 +414,7 @@ export default function SocialPostEditor() {
                 id: crypto.randomUUID(),
                 platforms: (data.platforms as SocialPlatform[]) || [],
                 contentType: (data.content_type as ContentType) || 'feed',
-                date: data.scheduled_at ? format(new Date(data.scheduled_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+                dates: [data.scheduled_at ? format(new Date(data.scheduled_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')],
                 time: data.scheduled_at ? format(new Date(data.scheduled_at), 'HH:mm') : getDefaultTime(),
               }]
             };
@@ -431,6 +437,40 @@ export default function SocialPostEditor() {
   }, [postId, organizationId, connectedAccounts.length]);
   // ────────────────────────────────────────────────────────────────────────────
 
+  const updatePostItem = (id: string, updates: Partial<PostItem>) => {
+    setPostItems(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  };
+
+  const handleDeletePostItem = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    if (postItems.length === 1) {
+      toast.error('Você deve ter pelo menos uma postagem.');
+      return;
+    }
+
+    // If id is provided but no confirmation yet, trigger modal
+    if (id && !postToDelete) {
+      setPostToDelete(id);
+      return;
+    }
+
+    const targetId = id || postToDelete;
+    if (!targetId) return;
+
+    const newItems = postItems.filter(p => p.id !== targetId);
+    setPostItems(newItems);
+
+    const currentIndex = postItems.findIndex(p => p.id === targetId);
+    if (activeIndex >= newItems.length) {
+      setActiveIndex(Math.max(0, newItems.length - 1));
+    } else if (activeIndex === currentIndex) {
+      // Stay on the same relative index if possible
+    }
+
+    setPostToDelete(null);
+  };
+
   const handleAddEmptyPost = () => {
     const newItem: PostItem = {
       id: `new-${crypto.randomUUID()}`,
@@ -443,7 +483,7 @@ export default function SocialPostEditor() {
         id: crypto.randomUUID(),
         platforms: connectedAccounts.map(a => a.platform as SocialPlatform),
         contentType: ['feed'],
-        date: format(new Date(), 'yyyy-MM-dd'),
+        dates: [format(new Date(), 'yyyy-MM-dd')],
         time: getDefaultTime(),
       }]
     };
@@ -461,7 +501,7 @@ export default function SocialPostEditor() {
             id: crypto.randomUUID(),
             platforms: connectedAccounts.map(a => a.platform as SocialPlatform),
             contentType: lastSchedule ? lastSchedule.contentType : ['feed'],
-            date: lastSchedule ? lastSchedule.date : format(new Date(), 'yyyy-MM-dd'),
+            dates: lastSchedule ? lastSchedule.dates : [format(new Date(), 'yyyy-MM-dd')],
             time: lastSchedule ? lastSchedule.time : getDefaultTime(),
           }]
         };
@@ -551,7 +591,7 @@ export default function SocialPostEditor() {
           id: crypto.randomUUID(),
           platforms: [],
           contentType: file.type.startsWith('video/') ? ['video'] : ['feed'],
-          date: format(new Date(), 'yyyy-MM-dd'),
+          dates: [format(new Date(), 'yyyy-MM-dd')],
           time: getDefaultTime(),
         }]
       }));
@@ -640,8 +680,10 @@ export default function SocialPostEditor() {
 
       postItems.forEach((item, index) => {
         const hasViolation = item.schedules.some(schedule => {
-          const scheduledAt = new Date(`${schedule.date}T${schedule.time}`);
-          return scheduledAt < minTime;
+          return schedule.dates.some(dateStr => {
+            const scheduledAt = new Date(`${dateStr}T${schedule.time}`);
+            return scheduledAt < minTime;
+          });
         });
         if (hasViolation) violations.push(index + 1);
       });
@@ -670,22 +712,28 @@ export default function SocialPostEditor() {
         const item = postItems[i];
         totalMediaFiles += item.files.length;
 
-        // Filter out local blob URLs that haven't been uploaded yet
-        let originalRemoteUrls = item.mediaUrls.filter(url => !url.startsWith('blob:'));
+        // 1. Identify which media needs uploading (blobs) and maintain indices
+        const blobIndices = item.mediaUrls
+          .map((url, idx) => url.startsWith('blob:') ? idx : -1)
+          .filter(idx => idx !== -1);
+        
+        const blobsToUpload = blobIndices.map(idx => item.files[idx]).filter((f): f is File => f != null);
+        let finalOriginalUrls = [...item.mediaUrls];
 
-        // Upload original files (no story processing) — used for Feed, Reels, etc.
-        let originalFilesToUpload = [...item.files].filter((f): f is File => f != null);
-        let finalOriginalUrls = [...originalRemoteUrls];
-
-        if (originalFilesToUpload.length > 0) {
+        if (blobsToUpload.length > 0) {
           const itemAccounts = connectedAccounts
             .filter(a => item.selectedAccountIds.includes(a.id))
             .map(a => a.account_name || a.username || PLATFORM_NAMES[a.platform] || a.platform)
             .join(', ');
+            
           setSavingStatus(`A enviar mídias para: ${itemAccounts || 'seus canais'}...`);
           setUploadProgress(0);
-          const uploadedUrls = await uploadFilesToLate(originalFilesToUpload, (p) => setUploadProgress(p));
-          finalOriginalUrls = [...finalOriginalUrls, ...uploadedUrls];
+          const uploadedUrls = await uploadFilesToLate(blobsToUpload, (p) => setUploadProgress(p));
+          
+          // Replace blobs with remote URLs at the correct indices (Preserves Order)
+          blobIndices.forEach((originalIdx, i) => {
+            finalOriginalUrls[originalIdx] = uploadedUrls[i];
+          });
           setUploadProgress(0);
         }
 
@@ -696,25 +744,22 @@ export default function SocialPostEditor() {
           // Return cached result if already processed
           if (storyProcessedUrls !== null) return storyProcessedUrls;
 
-          const mediaItems = item.mediaUrls.map((url, idx) => ({
-            url,
-            file: url.startsWith('blob:') ? item.files[idx] : null,
-            name: url.startsWith('blob:') ? (item.files[idx]?.name || `img_${idx}`) : (url.split('/').pop()?.split('?')[0] || `img_${idx}`)
-          }));
+          const results = [...finalOriginalUrls]; // Start with already uploaded original URLs
+          const imagesToProcess: { file: File, index: number, name: string }[] = [];
 
-          const results = [...item.mediaUrls];
-          const imagesToProcess: { file: File, index: number }[] = [];
-
-          for (let i = 0; i < mediaItems.length; i++) {
-            const m = mediaItems[i];
-            const isVideo = m.name.match(/\.(mp4|mov|avi|webm|m4v)$/i) || m.url.includes('video');
+          for (let i = 0; i < results.length; i++) {
+            const url = results[i];
+            const fileName = (url.split('/').pop()?.split('?')[0] || `media_${i}`);
+            const isVideo = fileName.match(/\.(mp4|mov|avi|webm|m4v)$/i) || url.includes('video');
 
             if (!isVideo) {
               try {
-                const processedFile = await __processImageForStoryHelper(m.url, m.file || new File([], m.name));
-                imagesToProcess.push({ file: processedFile, index: i });
+                // We use finalOriginalUrls[i] as the source URL (now guaranteed to be remote or already valid)
+                // If it was a new upload, finalOriginalUrls[i] is now the public URL from Supabase
+                const processedFile = await __processImageForStoryHelper(url, new File([], fileName));
+                imagesToProcess.push({ file: processedFile, index: i, name: fileName });
               } catch (e) {
-                console.warn("Failed to process image for story:", m.url, e);
+                console.warn("Failed to process image for story:", url, e);
               }
             }
           }
@@ -739,17 +784,21 @@ export default function SocialPostEditor() {
         let hasUsedOriginalId = false;
 
         for (const schedule of item.schedules) {
-          if (status === 'draft') continue; // We handle drafts compactly below the loops
+          if (status === 'draft') continue;
 
-          if (!schedule.date || !schedule.time) continue;
-          const scheduledAt = new Date(`${schedule.date}T${schedule.time}`).toISOString();
-          const globalPlatforms = Array.from(new Set(
-            connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).map(a => a.platform)
-          ));
-          const targetPlatforms = globalPlatforms.filter(p => (schedule.platforms || []).includes(p));
+          if (!schedule.dates || schedule.dates.length === 0 || !schedule.time) continue;
+          
+          for (const dateStr of schedule.dates) {
+            const baseDate = new Date(`${dateStr}T${schedule.time}`);
+            const scheduledAt = baseDate.toISOString();
 
-          if (targetPlatforms.length === 0) continue;
-          targetPlatforms.forEach(p => allTargetPlatforms.add(p));
+            const globalPlatforms = Array.from(new Set(
+              connectedAccounts.filter(a => item.selectedAccountIds.includes(a.id)).map(a => a.platform)
+            ));
+            const targetPlatforms = globalPlatforms.filter(p => (schedule.platforms || []).includes(p));
+
+            if (targetPlatforms.length === 0) continue;
+            targetPlatforms.forEach(p => allTargetPlatforms.add(p));
 
           const contentTypes = Array.isArray(schedule.contentType) ? schedule.contentType : [schedule.contentType];
 
@@ -898,21 +947,30 @@ export default function SocialPostEditor() {
                   });
                 }
               });
-            }
-          }
-        }
-      }
+            } // end loop content types (else)
+          } // end type loop
+        } // end repeatDays loop
+      } // end schedule loop
+    } // end postItems loop
+
 
       // Handle the "Compact Draft" save if needed
       if (status === 'draft') {
         setSavingStatus('A guardar rascunho compacto...');
 
         const itemsToSave = await Promise.all(postItems.map(async (item) => {
-          let finalMediaUrls = item.mediaUrls.filter(url => !url.startsWith('blob:'));
-          let filesToUpload = [...item.files].filter((f): f is File => f != null);
-          if (filesToUpload.length > 0) {
-            const uploadedUrls = await uploadFilesToLate(filesToUpload);
-            finalMediaUrls = [...finalMediaUrls, ...uploadedUrls];
+          const blobIndices = item.mediaUrls
+            .map((url, idx) => url.startsWith('blob:') ? idx : -1)
+            .filter(idx => idx !== -1);
+          
+          const blobsToUpload = blobIndices.map(idx => item.files[idx]).filter((f): f is File => f != null);
+          let finalMediaUrls = [...item.mediaUrls];
+
+          if (blobsToUpload.length > 0) {
+            const uploadedUrls = await uploadFilesToLate(blobsToUpload);
+            blobIndices.forEach((originalIdx, i) => {
+              finalMediaUrls[originalIdx] = uploadedUrls[i];
+            });
           }
           return { ...item, mediaUrls: finalMediaUrls, files: [] as any[] };
         }));
@@ -993,9 +1051,7 @@ export default function SocialPostEditor() {
     }
   };
 
-  const updatePostItem = (id: string, updates: Partial<PostItem>) => {
-    setPostItems(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
-  };
+
 
   const __processImageForStoryHelper = async (url: string, file: File): Promise<File> => {
     let activeUrl = url;
@@ -1104,35 +1160,7 @@ export default function SocialPostEditor() {
     }
   };
 
-  const handleDeletePostItem = (id: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
 
-    if (postItems.length === 1) {
-      toast.error('Você deve ter pelo menos uma postagem.');
-      return;
-    }
-
-    // If id is provided but no confirmation yet, trigger modal
-    if (id && !postToDelete) {
-      setPostToDelete(id);
-      return;
-    }
-
-    const targetId = id || postToDelete;
-    if (!targetId) return;
-
-    const newItems = postItems.filter(p => p.id !== targetId);
-    setPostItems(newItems);
-
-    const currentIndex = postItems.findIndex(p => p.id === targetId);
-    if (activeIndex >= newItems.length) {
-      setActiveIndex(Math.max(0, newItems.length - 1));
-    } else if (activeIndex === currentIndex) {
-      // Stay on the same relative index if possible
-    }
-
-    setPostToDelete(null);
-  };
 
   const currentPlatforms = useMemo(() => {
     if (!currentPostItem) return [];
@@ -1230,9 +1258,16 @@ export default function SocialPostEditor() {
       {/* Header Fixo - OCULTADO EM MOBILE (USANDO SYSTEM HEADER) */}
       <header className="h-14 lg:h-16 border-b bg-card px-3 lg:px-6 hidden lg:flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-2 lg:gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p className="text-[10px] font-bold">Voltar</p>
+            </TooltipContent>
+          </Tooltip>
           <div>
             <h1 className="font-bold text-sm lg:text-lg">{postId ? 'Editar Publicação' : 'Nova Publicação'}</h1>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold hidden sm:block">
@@ -1242,30 +1277,58 @@ export default function SocialPostEditor() {
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden sm:flex items-center gap-2 border-primary/20 hover:bg-primary/5 text-primary h-9"
-            onClick={() => setIsCalendarOpen(true)}
-          >
-            <CalendarDays className="h-4 w-4" />
-            <span>Ver Calendário</span>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden sm:flex items-center gap-2 border-primary/20 hover:bg-primary/5 text-primary h-9"
+                onClick={() => setIsCalendarOpen(true)}
+              >
+                <CalendarDays className="h-4 w-4" />
+                <span>Ver Calendário</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p className="text-[10px] font-bold">Ver todas as postagens agendadas no calendário</p>
+            </TooltipContent>
+          </Tooltip>
           {/* Desktop buttons */}
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            disabled={isSaving}
-            className="text-muted-foreground hover:text-foreground hidden lg:inline-flex"
-          >
-            Cancelar
-          </Button>
-          <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving} className="hidden lg:inline-flex">
-            {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
-          </Button>
-          <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 hidden lg:inline-flex">
-            <Calendar className="h-4 w-4" /> {(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                onClick={() => navigate(-1)}
+                disabled={isSaving}
+                className="text-muted-foreground hover:text-foreground hidden lg:inline-flex"
+              >
+                Cancelar
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p className="text-[10px] font-bold">Descartar alterações e sair</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving} className="hidden lg:inline-flex">
+                {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p className="text-[10px] font-bold">Salvar para continuar editando depois</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 hidden lg:inline-flex">
+                <Calendar className="h-4 w-4" /> {(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p className="text-[10px] font-bold">Programar a publicação automática nas datas escolhidas</p>
+            </TooltipContent>
+          </Tooltip>
 
           {/* Mobile dropdown for secondary actions */}
           {isMobile && (
@@ -1292,9 +1355,16 @@ export default function SocialPostEditor() {
             </DropdownMenu>
           )}
 
-          <Button onClick={() => handleSaveAction('published')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 shadow-lg shadow-primary/20 px-4 lg:px-6">
-            <Zap className="h-4 w-4" /> <span className="hidden sm:inline">{postId ? 'Atualizar e Publicar' : 'Publicar Agora'}</span><span className="sm:hidden">Publicar</span>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={() => handleSaveAction('published')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 shadow-lg shadow-primary/20 px-4 lg:px-6">
+                <Zap className="h-4 w-4" /> <span className="hidden sm:inline">{postId ? 'Atualizar e Publicar' : 'Publicar Agora'}</span><span className="sm:hidden">Publicar</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p className="text-[10px] font-bold">Enviar para as redes sociais imediatamente</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </header>
 
@@ -1344,9 +1414,16 @@ export default function SocialPostEditor() {
         <aside className="w-64 border-r bg-muted/10 flex-col shrink-0 hidden lg:flex">
           <div className="p-4 border-b border-border/50 bg-background flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Páginas</span>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-foreground hover:bg-muted" onClick={handleAddEmptyPost}>
-              <Plus className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-foreground hover:bg-muted" onClick={handleAddEmptyPost}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p className="text-[10px] font-bold">Criar novo post no lote</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
           <ScrollArea className="flex-1 bg-background">
             <div className="p-2 space-y-2">
@@ -1387,12 +1464,19 @@ export default function SocialPostEditor() {
                     </div>
                   </div>
                   {postItems.length > 1 && (
-                    <button
-                      onClick={(e) => handleDeletePostItem(item.id, e)}
-                      className="absolute top-1 right-1 p-1 rounded-full bg-destructive/10 text-destructive transition-all hover:bg-destructive hover:text-white shadow-sm z-10"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={(e) => handleDeletePostItem(item.id, e)}
+                          className="absolute top-1 right-1 p-1 rounded-full bg-destructive/10 text-destructive transition-all hover:bg-destructive hover:text-white shadow-sm z-10"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p className="text-[10px] font-bold">Remover este post do lote</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               ))}
@@ -1466,38 +1550,58 @@ export default function SocialPostEditor() {
 
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                               {isStory && !isVideo && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 px-3 bg-black/60 text-white hover:bg-black/80 font-inter text-[11px] rounded-full backdrop-blur-md border border-white/20 shadow-md"
-                                  onClick={() => processImageForStory(url, currentPostItem.files[i], currentPostItem.id, i)}
-                                >
-                                  Pré-visualizar Story
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-3 bg-black/60 text-white hover:bg-black/80 font-inter text-[11px] rounded-full backdrop-blur-md border border-white/20 shadow-md"
+                                      onClick={() => processImageForStory(url, currentPostItem.files[i], currentPostItem.id, i)}
+                                    >
+                                      Pré-visualizar Story
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    <p className="text-[10px] font-bold">Ajustar imagem para o formato vertical de Stories</p>
+                                  </TooltipContent>
+                                </Tooltip>
                               )}
 
-                              <button
-                                onClick={() => {
-                                  const newUrls = currentPostItem.mediaUrls.filter((_, idx) => idx !== i);
-                                  const newFiles = currentPostItem.files.filter((_, idx) => idx !== i);
-                                  updatePostItem(currentPostItem.id, { mediaUrls: newUrls, files: newFiles });
-                                }}
-                                className="bg-destructive text-white rounded-full p-1 hover:scale-110 transition-transform"
-                                title="Remover"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => {
+                                      const newUrls = currentPostItem.mediaUrls.filter((_, idx) => idx !== i);
+                                      const newFiles = currentPostItem.files.filter((_, idx) => idx !== i);
+                                      updatePostItem(currentPostItem.id, { mediaUrls: newUrls, files: newFiles });
+                                    }}
+                                    className="bg-destructive text-white rounded-full p-1 hover:scale-110 transition-transform"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="text-[10px] font-bold">Remover esta mídia</p>
+                                </TooltipContent>
+                              </Tooltip>
                             </div>
                           </div>
                         );
                       })}
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="aspect-square rounded-xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors text-muted-foreground"
-                      >
-                        <Upload className="h-6 w-6" />
-                        <span className="text-xs font-medium tracking-wide">Upload</span>
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="aspect-square rounded-xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors text-muted-foreground"
+                          >
+                            <Upload className="h-6 w-6" />
+                            <span className="text-xs font-medium tracking-wide">Upload</span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-[10px] font-bold">Adicionar imagens ou vídeos do seu dispositivo</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                     <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileSelection(e.target.files)} />
                   </section>
@@ -1545,125 +1649,214 @@ export default function SocialPostEditor() {
                     </div>
 
                     <div className="space-y-4">
-                      {currentPostItem.schedules.map((schedule, sIdx) => (
-                        <div key={schedule.id} className="bg-card p-5 rounded-xl border shadow-sm relative group/schedule">
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                            {/* Platform Icons (Clickable Selection) */}
-                            <div className="flex flex-1 gap-2 mx-1 md:mx-2">
-                              {currentPlatforms.length > 0 ? currentPlatforms.map(p => {
-                                let isSelected = false;
-                                if (schedule.platforms) {
-                                  isSelected = schedule.platforms.includes(p);
-                                }
+                      {currentPostItem.schedules.map((schedule, sIdx) => {
+                        const allowedTypes = getAllowedContentTypes(schedule.platforms || [], currentPostItem.files);
+                        
+                        return (
+                          <div key={schedule.id} className="bg-card p-5 rounded-xl border shadow-sm relative group/schedule">
+                            <div className="flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                              {/* Platform Icons (LEFT) */}
+                                <div className="flex items-center gap-1.5 shrink-0 px-1 border-r border-border/10 py-1 mr-1">
+                                  {currentPlatforms.length > 0 ? (
+                                    currentPlatforms.map(p => {
+                                      const isSelected = (schedule.platforms || []).includes(p);
+                                      return (
+                                        <Tooltip key={p}>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                let current = schedule.platforms || [];
+                                                if (current.includes(p)) {
+                                                  current = current.filter((x: any) => x !== p);
+                                                } else {
+                                                  current = [...current, p];
+                                                }
+                                                updateSchedule(currentPostItem.id, schedule.id, { platforms: current });
+                                              }}
+                                              className={cn(
+                                                "p-1 rounded-full relative transition-all cursor-pointer",
+                                                isSelected ? "ring-2 ring-primary scale-110 z-20" : "bg-muted/30 opacity-40 hover:opacity-100 grayscale hover:grayscale-0 z-10"
+                                              )}
+                                            >
+                                              <PlatformIcon platform={p} size="sm" />
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top">
+                                            <p className="text-[10px] font-bold">Publicar no {p}</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      );
+                                    })
+                                  ) : (
+                                    <div className="text-[9px] text-muted-foreground italic px-1">—</div>
+                                  )}
+                                </div>
 
-                                return (
-                                  <button
-                                    key={p}
-                                    type="button"
-                                    onClick={() => {
-                                      let current = schedule.platforms || [];
-                                      if (current.includes(p)) {
-                                        current = current.filter((x: any) => x !== p);
-                                      } else {
-                                        current = [...current, p];
-                                      }
-                                      updateSchedule(currentPostItem.id, schedule.id, { platforms: current });
-                                    }}
-                                    className={cn(
-                                      "p-0.5 rounded-full relative shadow-sm border transition-all cursor-pointer",
-                                      isSelected ? "bg-background ring-2 ring-primary scale-110 z-20" : "bg-muted opacity-50 hover:opacity-100 grayscale hover:grayscale-0 z-10"
-                                    )}
-                                    title={p}
-                                  >
-                                    <PlatformIcon platform={p} size="sm" />
-                                  </button>
-                                )
-                              }) : (
-                                <div className="text-[10px] text-muted-foreground italic mr-2">Canais não selecionados</div>
-                              )}
+                                {/* REST Group (RIGHT) */}
+                                <div className="flex items-center gap-2 ml-auto">
+                                  {/* Format Multi-Select */}
+                                  <div className="flex bg-background/40 rounded-lg p-0.5 min-w-[140px] border shrink-0">
+                                    {ALL_CONTENT_TYPES.filter(opt => allowedTypes.includes(opt.value)).map(opt => {
+                                      const isSel = Array.isArray(schedule.contentType)
+                                        ? schedule.contentType.includes(opt.value)
+                                        : schedule.contentType === opt.value;
+                                      return (
+                                        <Tooltip key={opt.value}>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                let current = Array.isArray(schedule.contentType) ? [...schedule.contentType] : [schedule.contentType];
+                                                if (current.includes(opt.value)) {
+                                                  current = current.filter((c: any) => c !== opt.value);
+                                                  if (current.length === 0) current = [opt.value];
+                                                } else {
+                                                  current.push(opt.value);
+                                                }
+                                                updateSchedule(currentPostItem.id, schedule.id, { contentType: current });
+                                              }}
+                                              className={cn(
+                                                "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold transition-all whitespace-nowrap",
+                                                isSel ? "bg-background text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground hover:bg-background/20"
+                                              )}
+                                            >
+                                              <opt.icon className="h-3.5 w-3.5" />
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top">
+                                            <p className="text-[10px] font-bold">Formato: {opt.label}</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Date Picker */}
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            className={cn(
+                                              "h-9 px-3 min-w-[120px] rounded-lg border bg-background/50 text-[11px] font-bold flex items-center justify-start gap-2 hover:border-primary/50 transition-all shadow-sm",
+                                              (schedule.dates || []).length === 0 && "text-muted-foreground"
+                                            )}
+                                          >
+                                            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                                            {(schedule.dates || []).length === 1
+                                              ? format(new Date((schedule.dates || [])[0] + 'T00:00:00'), 'dd/MM/yyyy')
+                                              : (schedule.dates || []).length > 1
+                                                ? `${(schedule.dates || []).length} Dias`
+                                                : 'Data'}
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0 z-[110] bg-transparent border-0 shadow-none outline-none" align="end">
+                                          <div className="bg-[#1A1A1A] rounded-2xl border border-white/5 shadow-2xl overflow-hidden flex flex-col">
+                                            <CustomCalendar
+                                              mode="multiple"
+                                              selected={(schedule.dates || []).map(d => new Date(d + 'T00:00:00'))}
+                                              onSelect={(dates) => {
+                                                if (dates) {
+                                                  const dateStrings = dates.map(d => format(d, 'yyyy-MM-dd')).sort();
+                                                  updateSchedule(currentPostItem.id, schedule.id, { dates: dateStrings });
+                                                }
+                                              }}
+                                              initialFocus
+                                            />
+                                            <div className="p-5 border-t border-white/5 flex flex-col gap-5">
+                                              <p className="text-[12px] sm:text-[13px] text-white/50 italic px-1 font-medium underline underline-offset-4 decoration-white/20 text-center leading-relaxed max-w-[240px] mx-auto">
+                                                Selecione vários dias clicando neles no calendário.
+                                              </p>
+                                              <div className="flex items-center gap-2 w-full">
+                                                <Button 
+                                                  variant="ghost" 
+                                                  className="flex-1 h-11 text-white/70 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5"
+                                                  onClick={() => {
+                                                    updateSchedule(currentPostItem.id, schedule.id, { dates: [format(new Date(), 'yyyy-MM-dd')] });
+                                                    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+                                                  }}
+                                                  title="Limpar seleções"
+                                                >
+                                                  <X className="h-5 w-5" />
+                                                </Button>
+                                                <Button 
+                                                  size="sm"
+                                                  className="flex-1 h-11 bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95"
+                                                  onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}
+                                                  title="Confirmar e Salvar"
+                                                >
+                                                  <Check className="h-5 w-5" />
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </PopoverContent>
+                                      </Popover>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                      <p className="text-[10px] font-bold">Selecionar datas de publicação</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+
+                                  {/* Time Picker */}
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="shrink-0">
+                                        <CustomTimePicker
+                                          value={schedule.time}
+                                          onChange={(val) => updateSchedule(currentPostItem.id, schedule.id, { time: val })}
+                                          className="w-[110px]"
+                                        />
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                      <p className="text-[10px] font-bold">Definir horário (24h)</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+
+                                  {currentPostItem.schedules.length > 1 && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 text-destructive/70 hover:bg-destructive/10 shrink-0 border border-white/5 rounded-xl bg-background/30 hover:text-destructive"
+                                          onClick={() => handleRemoveSchedule(currentPostItem.id, schedule.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top">
+                                        <p className="text-[10px] font-bold">Remover este agendamento</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+                                </div>
+                              </div>
                             </div>
+                        );
+                      })}
 
-                            {/* Format Multi-Select — filtered per platform */}
-                            <div className="flex bg-background/50 rounded-xl p-1 overflow-x-auto min-w-0 max-w-full no-scrollbar flex-[2] border">
-                              {(() => {
-                                const allowedTypes = getAllowedContentTypes(schedule.platforms || [], currentPostItem.files);
-                                return ALL_CONTENT_TYPES.filter(opt => allowedTypes.includes(opt.value)).map(opt => {
-                                  const isSel = Array.isArray(schedule.contentType)
-                                    ? schedule.contentType.includes(opt.value)
-                                    : schedule.contentType === opt.value;
-                                  return (
-                                    <button
-                                      key={opt.value}
-                                      type="button"
-                                      onClick={() => {
-                                        let current = Array.isArray(schedule.contentType) ? [...schedule.contentType] : [schedule.contentType];
-                                        if (current.includes(opt.value)) {
-                                          current = current.filter((c: any) => c !== opt.value);
-                                          if (current.length === 0) current = [opt.value];
-                                        } else {
-                                          current.push(opt.value);
-                                        }
-                                        updateSchedule(currentPostItem.id, schedule.id, { contentType: current });
-                                      }}
-                                      className={cn(
-                                        "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
-                                        isSel ? "bg-background text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                                      )}
-                                    >
-                                      <opt.icon className="h-3.5 w-3.5" />
-                                      <span className="hidden xs:inline">{opt.label}</span>
-                                    </button>
-                                  );
-                                });
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* Date & Time Mini */}
-                          <div className="flex items-center gap-2 flex-none ml-auto">
-                            <div className="relative w-36 sm:w-40">
-                              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                              <Input
-                                type="date"
-                                value={schedule.date}
-                                onChange={e => updateSchedule(currentPostItem.id, schedule.id, { date: e.target.value })}
-                                className="h-10 pl-8 pr-2 rounded-lg border-0 bg-transparent text-sm font-medium focus-visible:ring-0 focus-visible:ring-offset-0"
-                              />
-                            </div>
-                            <div className="relative w-28 sm:w-32 bg-background border rounded-lg shadow-sm">
-                              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                              <Input
-                                type="time"
-                                value={schedule.time}
-                                onChange={e => updateSchedule(currentPostItem.id, schedule.id, { time: e.target.value })}
-                                className="h-10 pl-8 pr-2 rounded-lg border-0 bg-transparent text-sm font-medium focus-visible:ring-0 focus-visible:ring-offset-0"
-                              />
-                            </div>
-
-                            {currentPostItem.schedules.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-10 w-10 text-destructive hover:bg-destructive/10 shrink-0 border border-transparent hover:border-destructive/20 rounded-xl bg-background"
-                                onClick={() => handleRemoveSchedule(currentPostItem.id, schedule.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-
-                      <Button
-                        variant="outline"
-                        className="w-full h-12 border-dashed border-2 border-border bg-transparent rounded-xl gap-2 hover:bg-primary/5 hover:border-primary/30 hover:text-primary transition-all text-muted-foreground font-medium"
-                        onClick={() => handleAddSchedule(currentPostItem.id)}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Adicionar outro horário
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full h-12 border-dashed border-2 border-border bg-transparent rounded-xl gap-2 hover:bg-primary/5 hover:border-primary/30 hover:text-primary transition-all text-muted-foreground font-medium"
+                            onClick={() => handleAddSchedule(currentPostItem.id)}
+                          >
+                            <Plus className="h-4 w-4" />
+                            Adicionar outro horário
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-[10px] font-bold">Adicionar uma nova data e canal de postagem para este conteúdo</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </section>
+
                 </AnimatedContainer>
               )}
             </div>

@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const ZERNIO_API_BASE = "https://zernio.com/api/v1";
 
 const getPlatformContentType = (platform: string, internalContentType: string, mediaUrls: string[] = []): string => {
   const isVideo = mediaUrls.some(url =>
@@ -103,23 +103,23 @@ Deno.serve(async (req) => {
     }
 
     const orgId = profile.current_organization_id;
-    const LATE_API_KEY = Deno.env.get("LATE_API_KEY");
+    const ZERNIO_API_KEY = Deno.env.get("ZERNIO_API_KEY");
 
-    if (!LATE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LATE_API_KEY not configured in Supabase secrets" }), {
+    if (!ZERNIO_API_KEY) {
+      return new Response(JSON.stringify({ error: "ZERNIO_API_KEY not configured in Supabase secrets" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Handle replacement: delete old posts from Late.dev if provided
-    if (replace_late_post_id && LATE_API_KEY) {
+    // Handle replacement: delete old posts from Zernio if provided
+    if (replace_late_post_id && ZERNIO_API_KEY) {
       const idsToDelete = replace_late_post_id.split(',').filter(Boolean);
-      console.log(`[social-publish] Replacing post: Deleting ${idsToDelete.length} parts from Late.dev`);
+      console.log(`[social-publish] Replacing post: Deleting ${idsToDelete.length} parts from Zernio`);
       for (const lateId of idsToDelete) {
         try {
-          const lateRes = await fetch(`${LATE_API_BASE}/posts/${lateId}`, {
+          const lateRes = await fetch(`${ZERNIO_API_BASE}/posts/${lateId}`, {
             method: "DELETE",
-            headers: { Authorization: `Bearer ${LATE_API_KEY}` },
+            headers: { Authorization: `Bearer ${ZERNIO_API_KEY}` },
           });
           if (!lateRes.ok) {
             console.warn(`[social-publish] Failed to delete old part ${lateId} (status ${lateRes.status})`);
@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
           } else if (post.cta_type === 'channel') {
             platformSpecificData.callToAction = {
               type: "LEARN_MORE",
-              url: "https://getlate.dev" // Placeholder or actual channel link
+              url: "https://zernio.com" // Placeholder or actual channel link
             };
           }
         }
@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
       });
 
     if (platforms.length === 0) {
-      return new Response(JSON.stringify({ error: "No Late.dev connected accounts found." }), {
+      return new Response(JSON.stringify({ error: "No Zernio connected accounts found." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -251,14 +251,14 @@ Deno.serve(async (req) => {
     if (publish_now) {
       latePayload.publishNow = true;
     } else if (post.scheduled_at) {
-      // Parse ISO string and remove the Z/milliseconds for Late API format
+      // Parse ISO string and remove the Z/milliseconds for Zernio API format
       const d = new Date(post.scheduled_at);
       latePayload.scheduledFor = d.toISOString().split('.')[0];
     } else {
       latePayload.publishNow = true;
     }
 
-    console.log(`[social-publish] Final Late.dev Payload:`, JSON.stringify(latePayload));
+    console.log(`[social-publish] Final Zernio Payload:`, JSON.stringify(latePayload));
 
     const isMultiStory = post.content_type === 'stories' && post.media_urls && post.media_urls.length > 1;
     const mediaToProcess = isMultiStory
@@ -278,12 +278,12 @@ Deno.serve(async (req) => {
         });
       }
 
-      console.log(`[social-publish] Publishing ${isMultiStory ? 'story slide' : 'post'} to Late.dev`);
+      console.log(`[social-publish] Publishing ${isMultiStory ? 'story slide' : 'post'} to Zernio`);
       console.log(`[social-publish] Payload:`, JSON.stringify(currentLatePayload));
 
-      const lateRes = await fetch(`${LATE_API_BASE}/posts`, {
+      const lateRes = await fetch(`${ZERNIO_API_BASE}/posts`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${LATE_API_KEY}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${ZERNIO_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify(currentLatePayload),
       });
 
@@ -291,14 +291,14 @@ Deno.serve(async (req) => {
       let lateData: any = {};
       try {
         lateData = lateText ? JSON.parse(lateText) : {};
-        console.log(`[social-publish] Late.dev response (Status ${lateRes.status}):`, lateText);
+        console.log(`[social-publish] Zernio response (Status ${lateRes.status}):`, lateText);
       } catch {
-        console.warn(`[social-publish] Late.dev response not JSON (Status ${lateRes.status}):`, lateText);
-        lateData = { error: `Late.dev returned status ${lateRes.status}`, raw: lateText };
+        console.warn(`[social-publish] Zernio response not JSON (Status ${lateRes.status}):`, lateText);
+        lateData = { error: `Zernio returned status ${lateRes.status}`, raw: lateText };
       }
 
       if (!lateRes.ok) {
-        console.error("[social-publish] Late.dev publish error:", lateData);
+        console.error("[social-publish] Zernio publish error:", lateData);
         lastError = lateData;
         if (!isMultiStory) break; // If not multi-story, stop on first error
       } else {
@@ -306,20 +306,20 @@ Deno.serve(async (req) => {
         if (resultId) {
           results.push(resultId);
         } else {
-          console.error("[social-publish] Late.dev returned 200 OK but NO ID found in response:", lateData);
-          lastError = { error: "No post ID returned from Late.dev", details: lateData };
+          console.error("[social-publish] Zernio returned 200 OK but NO ID found in response:", lateData);
+          lastError = { error: "No post ID returned from Zernio", details: lateData };
           if (!isMultiStory) break;
         }
       }
     }
 
     if (results.length === 0 && lastError) {
-      const errorMessage = lastError.error || "Late.dev publication failed";
+      const errorMessage = lastError.error || "Zernio publication failed";
       const errorDetails = lastError.details ? `: ${JSON.stringify(lastError.details)}` : "";
 
       await supabase.from("social_posts").update({
         status: "failed",
-        notes: `Late.dev error: ${errorMessage}${errorDetails}`
+        notes: `Zernio error: ${errorMessage}${errorDetails}`
       }).eq("id", post_id);
 
       return new Response(JSON.stringify({
@@ -350,3 +350,5 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+

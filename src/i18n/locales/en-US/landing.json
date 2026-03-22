@@ -14,10 +14,10 @@
     "titleHighlight": "doubling your workload",
     "titleEnd": "",
     "subtitle": "You don't need more leads, you need management. Qualify is the strategic system that transforms your WhatsApp chaos into a predictable, profitable, and professional operation.",
-    "cta": "Get the Qualify Method (14 days free)",
+    "cta": "Get the Qualify Method (7 days free)",
     "ctaMobile": "Try for Free",
     "installApp": "Install App",
-    "trustNoCard": "14-day free trial",
+    "trustNoCard": "7-day free trial",
     "trustSetup": "Ready in 2 minutes",
     "trustCancel": "Cancel anytime"
   },
@@ -96,7 +96,7 @@
   "pricing": {
     "title": "The investment for your",
     "titleHighlight": "freedom",
-    "subtitle": "Choose the plan that fits your agency's current stage. 14-day free trial.",
+    "subtitle": "Choose the plan that fits your agency's current stage. 7-day free trial.",
     "free": "Free",
     "forever": "forever",
     "perMonth": "/month",
@@ -136,7 +136,7 @@
     "title": "Questions from those who want to grow",
     "badge": "Common Doubts",
     "q1": "Why is a card required for the trial?",
-    "a1": "Qualify isn't a 'toy', it's a serious management tool. The card ensures we're dealing with real agency owners seeking professional results. You have 14 days to cancel at no cost.",
+    "a1": "Qualify isn't a 'toy', it's a serious management tool. The card ensures we're dealing with real agency owners seeking professional results. You have 7 days to cancel at no cost.",
     "q2": "I already use spreadsheets, why change?",
     "a2": "Spreadsheets are passive. Qualify is active. It warns you when a lead goes cold, generates your contracts, and gives you AI insights. Spreadsheets store data, Qualify generates profit.",
     "q3": "How long does it take to see results?",
@@ -150,7 +150,7 @@
     "subtitle": "Stop trying to solve management problems with more manual work. Use the method that actually scales agencies.",
     "button": "I Want to Professionalize My Agency Now",
     "buttonMobile": "Start Now",
-    "footer": "14-day free trial. 2-minute setup."
+    "footer": "7-day free trial. 2-minute setup."
   },
   "footer": {
     "copyright": "© {{year}} Qualify. All rights reserved.",

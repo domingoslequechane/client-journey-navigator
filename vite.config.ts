@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["favicon.ico", "og-image.png", "splash-logo-white.png", "splash-logo.png", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
         name: "Qualify — CRM com IA para Agências",

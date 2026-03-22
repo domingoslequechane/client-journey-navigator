@@ -180,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
       checkoutDataPayload.name = userName.trim();
     }
 
-    // Create checkout session with 14-day trial
+    // Create checkout session with 7-day trial
     const checkoutResponse = await fetch("https://api.lemonsqueezy.com/v1/checkouts", {
       method: "POST",
       headers: {

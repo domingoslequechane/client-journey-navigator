@@ -14,7 +14,7 @@
     "titleHighlight": "Ferramenta Certa",
     "titleEnd": "",
     "subtitle": "O sistema all-in-one para donos de agências de marketing que querem dominar suas vendas, automatizar o operacional e escalar o faturamento — sem precisar microgerenciar a equipe.",
-    "cta": "Testar o Qualify Grátis (14 Dias)",
+    "cta": "Testar o Qualify Grátis (7 Dias)",
     "ctaMobile": "Testar Grátis",
     "installApp": "Instalar App",
     "trustNoCard": "Setup em 2 minutos",
@@ -96,7 +96,7 @@
   "pricing": {
     "title": "O investimento exato para a sua ",
     "titleHighlight": "escala de crescimento",
-    "subtitle": "Escolha o tamanho da sua ambição. Teste completo gratuitamente por 14 dias sem contratos de fidelidade. Em Dólares (USD).",
+    "subtitle": "Escolha o tamanho da sua ambição. Teste completo gratuitamente por 7 dias sem contratos de fidelidade. Em Dólares (USD).",
     "free": "Starter",
     "forever": "/mo",
     "perMonth": "/mo",
@@ -129,7 +129,7 @@
   "faq": {
     "title": "Perguntas Frequentes",
     "badge": "Esmagando as Dúvidas",
-    "q1": "Por que o cartão de crédito é exigido no teste de 14 dias?",
+    "q1": "Por que o cartão de crédito é exigido no teste de 7 dias?",
     "a1": "O Qualify é uma ferramenta robusa para gestores ambiciosos, gerando altos custos de IA nos testes. Pedimos um cartão para evitar cadastros fraudulentos. Você tem autonomia total para cancelar no penúltimo dia sem ser cobrado.",
     "q2": "Qual o tempo médio de implementação?",
     "a2": "Dois minutos. O ecossistema é tão intuitivo que no mesmo dia você já terá as pipelines importadas e estará rodando propostas.",
@@ -142,8 +142,8 @@
     "title": "A cada dia com processos amadores, ",
     "titleSecond": "você abandona dinheiro na mesa.",
     "subtitle": "A sua agência não vai faturar o dobro fazendo exatamente a mesma rotina desgastante de ontem. Está na hora de liderar seu negócio como um verdadeiro Diretor.",
-    "button": "Garantir meus 14 dias Grátis →",
-    "buttonMobile": "Teste 14 dias Grátis",
+    "button": "Garantir meus 7 dias Grátis →",
+    "buttonMobile": "Teste 7 dias Grátis",
     "footer": "Setup em 2 minutos. Cancele com um clique se não for ideal."
   },
   "footer": {

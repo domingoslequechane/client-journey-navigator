@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const LATE_API_BASE = "https://getlate.dev/api/v1";
+const ZERNIO_API_BASE = "https://zernio.com/api/v1";
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -10,11 +10,11 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const LATE_API_KEY = Deno.env.get("LATE_API_KEY");
+    const ZERNIO_API_KEY = Deno.env.get("ZERNIO_API_KEY");
 
-    if (!LATE_API_KEY) {
-      console.error("[social-connect] LATE_API_KEY is missing");
-      return new Response(JSON.stringify({ error: "Server configuration error: LATE_API_KEY is missing" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!ZERNIO_API_KEY) {
+      console.error("[social-connect] ZERNIO_API_KEY is missing");
+      return new Response(JSON.stringify({ error: "Server configuration error: ZERNIO_API_KEY is missing" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const authHeader = req.headers.get("Authorization");
@@ -53,15 +53,15 @@ Deno.serve(async (req) => {
     // Helper to create profile in Late
     const createLateProfile = async (name: string) => {
       console.log("[social-connect] Creating Late profile for:", name);
-      const res = await fetch(`${LATE_API_BASE}/profiles`, {
+      const res = await fetch(`${ZERNIO_API_BASE}/profiles`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${LATE_API_KEY}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${ZERNIO_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       });
       const data = await res.json();
       if (!res.ok) {
         console.error("[social-connect] Failed to create profile:", data);
-        throw new Error(data.message || "Failed to create profile in Late API");
+        throw new Error(data.message || "Failed to create profile in Zernio API");
       }
       return data.profile?._id || data._id;
     };
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 
     // Helper to get connect URL
     const getConnectUrl = (profId: string) => {
-      const url = new URL(`${LATE_API_BASE}/connect/${platform}`);
+      const url = new URL(`${ZERNIO_API_BASE}/connect/${platform}`);
       url.searchParams.set("profileId", profId);
       if (redirect_url) {
         // Documentation uses redirect_url in curl but redirectUrl in Node.js. Setting both to be safe.
@@ -94,19 +94,19 @@ Deno.serve(async (req) => {
     
     // Try to get connect URL
     let connectRes = await fetch(getConnectUrl(profileId), { 
-      headers: { Authorization: `Bearer ${LATE_API_KEY}` } 
+      headers: { Authorization: `Bearer ${ZERNIO_API_KEY}` } 
     });
 
     // If 404, profile might be deleted in Late but exists in our DB. Re-create it.
     if (connectRes.status === 404) {
-      console.log("[social-connect] Profile not found in Late API (404), re-creating...");
+      console.log("[social-connect] Profile not found in Zernio API (404), re-creating...");
       try {
         profileId = await createLateProfile(client.company_name);
         await supabase.from("clients").update({ late_profile_id: profileId }).eq("id", client_id);
         
         // Retry connect
         connectRes = await fetch(getConnectUrl(profileId), { 
-          headers: { Authorization: `Bearer ${LATE_API_KEY}` } 
+          headers: { Authorization: `Bearer ${ZERNIO_API_KEY}` } 
         });
       } catch (e: any) {
         return new Response(JSON.stringify({ error: "Failed to recover profile: " + e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
 
     if (!authUrl) {
       console.error("[social-connect] No authUrl in response:", connectData);
-      return new Response(JSON.stringify({ error: "Invalid response from Late API", details: connectData }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Invalid response from Zernio API", details: connectData }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ authUrl, profileId }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -133,3 +133,5 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
+
+

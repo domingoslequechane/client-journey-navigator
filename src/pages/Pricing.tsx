@@ -134,7 +134,7 @@ const Pricing = () => {
               Escolha o plano ideal para sua agência
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Todos os planos incluem <strong>14 dias grátis</strong> para testar
+              Todos os planos incluem <strong>7 dias grátis</strong> para testar
             </p>
           </div>
 
@@ -167,7 +167,7 @@ const Pricing = () => {
                   <div className="mb-4">
                     <span className="text-3xl font-bold">{plan.price}</span>
                     <p className="text-sm text-muted-foreground mt-1">por mês</p>
-                    <p className="text-xs font-bold text-orange-500 uppercase mt-1">14 dias grátis</p>
+                    <p className="text-xs font-bold text-orange-500 uppercase mt-1">7 dias grátis</p>
                   </div>
 
                   <ul className="space-y-2 mb-6 text-left">
@@ -245,7 +245,7 @@ const Pricing = () => {
           <div className="text-center mt-16">
             <h2 className="text-2xl font-bold mb-4">Pronto para começar?</h2>
             <p className="text-muted-foreground mb-6">
-              Teste grátis por 14 dias. Sem compromisso, cancele quando quiser.
+              Teste grátis por 7 dias. Sem compromisso, cancele quando quiser.
             </p>
             <Link to="/auth">
               <Button size="lg" className="gap-2">

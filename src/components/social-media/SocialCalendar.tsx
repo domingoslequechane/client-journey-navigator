@@ -183,7 +183,7 @@ export function SocialCalendar({ posts, currentMonth, onMonthChange, onCreatePos
                             {post.status === 'scheduled' && <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--info))]" />}
                             {post.status === 'pending_approval' && <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--warning))]" />}
                             {(post.status === 'draft' || post.status === 'local_editing') && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_5px_rgba(249,115,22,0.5)] animate-pulse" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_5px_rgba(249,115,22,0.5)]" />
                             )}
                           </div>
                         ))}

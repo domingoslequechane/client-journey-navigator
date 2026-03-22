@@ -20,10 +20,10 @@ export function useOnlineStatus(options: UseOnlineStatusOptions = {}) {
       setJustReconnected(true);
       options.onReconnect?.();
       
-      // Clear "just reconnected" status after 3 seconds
+      // Clear "just reconnected" status after 5 seconds
       reconnectTimeoutRef.current = setTimeout(() => {
         setJustReconnected(false);
-      }, 3000);
+      }, 5000);
     }
   }, [isOnline, options]);
 

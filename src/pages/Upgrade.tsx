@@ -576,7 +576,7 @@ export default function Upgrade() {
 
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            14 dias grátis em qualquer plano. Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
+            7 dias grátis em qualquer plano. Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
           </p>
         </div>
 
