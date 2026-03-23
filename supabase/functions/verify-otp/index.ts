@@ -143,55 +143,97 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Mark OTP as verified
-    await supabase.from("email_otps").update({ verified: true }).eq("email", email);
+    // DO NOT mark as verified here anymore - we delete the record only at the very end
+    // so if createUser fails, the user can still retry with same code.
 
     // Create user with confirmed email - all signup users are admins (agency owners)
-    const { data: userData, error: signUpError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: fullName,
-        role: 'admin',
-      },
-    });
+    let userData: any;
+    let signUpError: any;
+
+    try {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+          role: 'admin',
+        },
+      });
+      userData = data;
+      signUpError = error;
+    } catch (e) {
+      console.error("[verify-otp] Exception in createUser:", e);
+      signUpError = e;
+    }
 
     if (signUpError) {
-      console.error("[verify-otp] Error creating user:", signUpError);
-      
-      // Generic error for all cases to prevent enumeration
-      return new Response(
-        JSON.stringify({ error: "Erro ao criar conta. Tente novamente." }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      // Check if user already exists
+      if (signUpError.message?.includes('already registered') || signUpError.code === 'user_already_exists') {
+        console.warn("[verify-otp] User already exists, checking if confirmed:", email);
+        
+        const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+        const existingUser = users?.find(u => u.email === email);
+        
+        if (existingUser) {
+          userData = { user: existingUser };
+          signUpError = null;
+          console.log("[verify-otp] Found existing user, proceeding to org check.");
+        } else {
+          return new Response(
+            JSON.stringify({ error: "Usuário já cadastrado. Tente fazer login." }),
+            { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+      } else {
+        console.error("[verify-otp] Error creating user:", signUpError);
+        return new Response(
+          JSON.stringify({ error: "Erro ao criar conta. Tente novamente." }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
     }
 
     const userId = userData.user?.id;
     
     if (userId) {
-      const orgName = fullName ? `${fullName}'s Agency` : `Agency`;
-      const { data: slugData } = await supabase.rpc('generate_slug', { name: orgName });
-      const slug = slugData || `agency-${Date.now()}`;
-      
-      const { data: orgData, error: orgError } = await supabase
+      // Check if user already has an organization
+      const { data: existingOrg } = await supabase
         .from("organizations")
-        .insert({
-          name: orgName,
-          slug: slug,
-          owner_id: userId,
-          trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        })
-        .select()
-        .single();
-      
-      if (orgError) {
-        console.error("[verify-otp] Error creating organization:", orgError);
-      } else if (orgData) {
+        .select("id")
+        .eq("owner_id", userId)
+        .maybeSingle();
+
+      let orgId = existingOrg?.id;
+
+      if (!orgId) {
+        const orgName = fullName ? `${fullName}'s Agency` : `Agency`;
+        const { data: slugData } = await supabase.rpc('generate_slug', { name: orgName });
+        const slug = slugData || `agency-${Date.now()}`;
+        
+        const { data: orgData, error: orgError } = await supabase
+          .from("organizations")
+          .insert({
+            name: orgName,
+            slug: slug,
+            owner_id: userId,
+            // Trial ends at is now NULL by default in the DB
+          })
+          .select()
+          .single();
+        
+        if (orgError) {
+          console.error("[verify-otp] Error creating organization:", orgError);
+        } else if (orgData) {
+          orgId = orgData.id;
+        }
+      }
+
+      if (orgId) {
         await supabase
           .from("profiles")
           .update({ 
-            organization_id: orgData.id,
+            organization_id: orgId,
             role: 'admin'
           })
           .eq('id', userId);

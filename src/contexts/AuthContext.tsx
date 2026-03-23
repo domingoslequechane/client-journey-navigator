@@ -16,7 +16,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    // Check if we have a recorded session to avoid initial flicker
+    // This makes the UI feel "static" and avoids the loading screen on focus/restore
+    return !sessionStorage.getItem('last_processed_session_token');
+  });
   const [isNewLogin, setIsNewLogin] = useState(() => {
     return sessionStorage.getItem('is_new_login') === 'true';
   });
@@ -78,8 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        sessionStorage.setItem('last_processed_session_token', session.access_token);
+      }
       setLoading(false);
     });
 

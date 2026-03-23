@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PrivilegeKey } from '@/hooks/usePermissions';
@@ -31,7 +31,21 @@ export function RoleProtectedRoute({
     isAdmin
   } = usePermissions();
 
+  const [showDelayedLoader, setShowDelayedLoader] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isLoading) {
+      timer = setTimeout(() => setShowDelayedLoader(true), 350);
+    } else {
+      setShowDelayedLoader(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
   if (isLoading) {
+    if (!showDelayedLoader) return null;
+    
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

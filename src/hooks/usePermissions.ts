@@ -95,7 +95,18 @@ export function usePermissions() {
                 is_org_owner: false,
             };
         },
+        initialData: () => {
+          // Pre-populate with cached data if available for instant UI
+          const cached = sessionStorage.getItem('cached_permissions');
+          return cached ? JSON.parse(cached) : undefined;
+        }
     });
+
+    // Update permission cache when fetch succeeds
+    const permissionsData = profile;
+    if (permissionsData && !isLoading) {
+      sessionStorage.setItem('cached_permissions', JSON.stringify(permissionsData));
+    }
 
     const permissions = useMemo(() => {
         const role = profile?.role || 'user';

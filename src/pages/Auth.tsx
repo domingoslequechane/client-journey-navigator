@@ -18,6 +18,7 @@ import { SignupForm } from '@/components/auth/SignupForm';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { SocialAuth } from '@/components/auth/SocialAuth';
 import { SuspendedDialog } from '@/components/auth/SuspendedDialog';
+import { AnimatedContainer } from '@/components/ui/animated-container';
 
 const createAuthSchema = (t: (key: string) => string) => z.object({
   email: z.string().email({ message: t('validation.invalidEmail') }),
@@ -100,7 +101,7 @@ export default function Auth() {
         : { email, password };
       
       // For signup, we still want min 6 chars
-      if (isSignUp && password.length < 6) {
+      if (isSignUp && password.length < 8) {
         setErrors({ password: t('validation.minPassword') });
         return false;
       }
@@ -307,7 +308,7 @@ export default function Auth() {
         <ThemeToggle />
       </div>
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
+        <AnimatedContainer className="w-full max-w-md">
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
             <ArrowLeft className="h-4 w-4" />
             {t('backToSite')}
@@ -364,7 +365,7 @@ export default function Auth() {
               </Tabs>
             </CardContent>
           </Card>
-        </div>
+        </AnimatedContainer>
       </div>
       <SuspendedDialog open={suspendedDialogOpen} onOpenChange={setSuspendedDialogOpen} />
     </PublicBackground>

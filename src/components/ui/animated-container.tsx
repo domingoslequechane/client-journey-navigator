@@ -4,11 +4,11 @@ import { HTMLAttributes, forwardRef } from "react";
 interface AnimatedContainerProps extends HTMLAttributes<HTMLDivElement> {
   delay?: number;
   duration?: number;
-  animation?: "fade-up" | "fade-in" | "scale-in" | "slide-left" | "slide-right";
+  animation?: "fade-up" | "fade-in" | "scale-in" | "slide-left" | "slide-right" | "blur-in";
 }
 
 const AnimatedContainer = forwardRef<HTMLDivElement, AnimatedContainerProps>(
-  ({ className, delay = 0, duration = 0.4, animation = "fade-up", style, children, ...props }, ref) => {
+  ({ className, delay = 0, duration = 0.4, animation = "blur-in", style, children, ...props }, ref) => {
     const animationStyles = {
       "fade-up": {
         "--animation-name": "fadeUp",
@@ -19,11 +19,11 @@ const AnimatedContainer = forwardRef<HTMLDivElement, AnimatedContainerProps>(
       "scale-in": {
         "--animation-name": "scaleIn",
       },
-      "slide-left": {
-        "--animation-name": "slideLeft",
-      },
       "slide-right": {
         "--animation-name": "slideRight",
+      },
+      "blur-in": {
+        "--animation-name": "blurIn",
       },
     };
 

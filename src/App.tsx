@@ -16,6 +16,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { InstallPromptBanner } from "./components/pwa/InstallPromptBanner";
 import { ReloadPrompt } from "./components/pwa/ReloadPrompt";
+import { RedirectNoticeModal } from "./components/layout/RedirectNoticeModal";
+import { SubscriptionExpiryModal } from '@/components/subscription/SubscriptionExpiryModal';
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -89,14 +91,17 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+
         <BrowserRouter>
           <HeaderProvider>
             <ScrollToTop />
+            <ReloadPrompt />
             <AuthProvider>
+              <RedirectNoticeModal />
+              <SubscriptionExpiryModal />
               <PlanThemeProvider>
                 <OrganizationProvider>
                   <InstallPromptBanner />
-                  <ReloadPrompt />
                   <ErrorBoundary>
                     <Routes>
                     <Route path="/" element={<LandingPage />} />
@@ -182,11 +187,7 @@ const App = () => (
                           <Settings />
                         </RoleProtectedRoute>
                       } />
-                      <Route path="subscription" element={
-                        <RoleProtectedRoute requireSubscription>
-                          <Subscription />
-                        </RoleProtectedRoute>
-                      } />
+                      <Route path="subscription" element={<Subscription />} />
                       <Route path="notifications" element={<Notifications />} />
                       <Route path="support" element={<SupportFeedback />} />
                       <Route path="upgrade" element={<Upgrade />} />

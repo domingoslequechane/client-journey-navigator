@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
+import { QualifySplashScreen } from '@/components/layout/QualifySplashScreen';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProtectedRouteProps {
@@ -12,7 +13,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { session, user, loading: authLoading, isNewLogin, clearNewLoginFlag } = useAuth();
-  const { loading: subLoading, hasAccess, organization } = useSubscription();
+  const { loading: subLoading, hasAccess, organization, isExpired, hasSubscriptionRecord } = useSubscription();
   const location = useLocation();
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [isSystemAdmin, setIsSystemAdmin] = useState<boolean | null>(null);
@@ -232,33 +233,38 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
   }, [user, organization, subLoading, isSystemAdmin]);
 
-  // Show loading while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
+  // State to hold delayed loading to avoid flicker on focus/restoration
+  const [showDelayedLoader, setShowDelayedLoader] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (authLoading || subLoading || isSystemAdmin === null || needsOrgSelection === null || (needsOnboarding === null && !isSystemAdmin)) {
+      timer = setTimeout(() => setShowDelayedLoader(true), 300);
+    } else {
+      setShowDelayedLoader(false);
+    }
+    return () => clearTimeout(timer);
+  }, [authLoading, subLoading, isSystemAdmin, needsOrgSelection, needsOnboarding]);
+
+  // If loading is true but under delay threshold, render NOTHING to keep UI stable
+  if ((authLoading || subLoading || isSystemAdmin === null || needsOrgSelection === null || (needsOnboarding === null && !isSystemAdmin)) && !showDelayedLoader) {
+    return null;
+  }
+
+  // Show splash screen while verifying everything
+  if (showDelayedLoader || authLoading || subLoading || isSystemAdmin === null || needsOrgSelection === null) {
+    let message = "Processando...";
+    if (authLoading) message = "Autenticando...";
+    else if (subLoading) message = "Verificando plano...";
+    else if (isSystemAdmin === null) message = "Identificando perfil...";
+    else if (needsOrgSelection === null) message = "Carregando agência...";
+
+    return <QualifySplashScreen message={message} />;
   }
 
   // Redirect to auth if not logged in
   if (!session) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
-  }
-
-  // Show loading while checking subscription and admin status
-  if (subLoading || isSystemAdmin === null || needsOrgSelection === null || (needsOnboarding === null && !isSystemAdmin)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Verificando...</p>
-        </div>
-      </div>
-    );
   }
 
   // System admins trying to access /app/* routes - redirect to admin panel
@@ -281,8 +287,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const target = organization ? '/app/settings?tab=agency' : '/app/onboarding';
     const current = `${location.pathname}${location.search}`;
 
-    if (current !== target) {
-      return <Navigate to={target} replace />;
+    if (current !== target && !current.includes('reason=')) {
+      return <Navigate to={`${target}${target.includes('?') ? '&' : '?'}reason=onboarding`} replace />;
     }
   }
 
@@ -292,6 +298,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     '/app/settings',
     '/app/onboarding',
     '/app/select-organization',
+    '/app/subscription',
   ];
 
   const isAllowedWithoutSubscription = allowedPathsWithoutSubscription.some(
@@ -300,7 +307,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!hasAccess && !isAllowedWithoutSubscription) {
     if (isOrgAdmin || isSystemAdmin) {
-      return <Navigate to="/select-plan" replace />;
+      if (hasSubscriptionRecord) {
+        return <Navigate to="/app/subscription?reason=expired" replace />;
+      }
+      return <Navigate to="/select-plan?reason=no_plan" replace />;
     }
 
     // For non-admins, show a clear message that the agency needs a subscription

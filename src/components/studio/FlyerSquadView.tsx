@@ -42,6 +42,14 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from '@/lib/utils';
@@ -160,6 +168,16 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     }
     return true;
   });
+  const [totalUsage, setTotalUsage] = useState({ promptTokens: 0, candidatesTokens: 0 });
+  const [agentUsage, setAgentUsage] = useState<Partial<Record<FlyerSquadAgent, { prompt: number, candidates: number, model: string } | null>>>({
+    orchestrator: null,
+    copywriter: null,
+    photographer: null,
+    designer: null,
+    reviewer: null,
+    publisher: null
+  });
+  const [showCostSummary, setShowCostSummary] = useState(false);
   const ITEMS_PER_PAGE = 9;
 
   useEffect(() => {
@@ -399,6 +417,15 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     setIsProcessing(true);
     setResultImage(null);
     setLogs([]);
+    setTotalUsage({ promptTokens: 0, candidatesTokens: 0 });
+    setAgentUsage({
+      orchestrator: null,
+      copywriter: null,
+      photographer: null,
+      designer: null,
+      reviewer: null,
+      publisher: null
+    });
     
     let currentContext = {
       project: {
@@ -439,6 +466,9 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
       let retryCount = 0;
       const MAX_RETRIES = 3;
       let lastImageUrl: string | null = null; 
+      
+      // Local accumulator for tokens (safest way in a loop)
+      let accumulatedUsage = { prompt: 0, candidates: 0 };
 
       while (currentStepIdx < AGENTS.length && retryCount <= MAX_RETRIES) {
         setCurrentStep(currentStepIdx);
@@ -472,6 +502,28 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         }
 
         currentContext[agent.id] = data.result;
+        
+        // Accumulate tokens
+        if (data.usageMetadata) {
+          accumulatedUsage.prompt += (data.usageMetadata.promptTokenCount || 0);
+          accumulatedUsage.candidates += (data.usageMetadata.candidatesTokenCount || 0);
+          
+          setAgentUsage(prev => ({
+            ...prev,
+            [agent.id]: {
+              prompt: (prev[agent.id]?.prompt || 0) + (data.usageMetadata.promptTokenCount || 0),
+              candidates: (prev[agent.id]?.candidates || 0) + (data.usageMetadata.candidatesTokenCount || 0),
+              model: (agent.id === 'designer') ? 'Gemini 3.1 Flash Image Preview' : 'Gemini 3.1 Pro Preview'
+            }
+          }));
+          
+          setTotalUsage(prev => ({
+            promptTokens: prev.promptTokens + (data.usageMetadata.promptTokenCount || 0),
+            candidatesTokens: prev.candidatesTokens + (data.usageMetadata.candidatesTokenCount || 0)
+          }));
+          
+          console.log(`[FlyerSquad] Agent ${agent.id} usage:`, data.usageMetadata);
+        }
 
         setLogs(prev => prev.map((log) => 
           log.agent === agent.id && log.status === 'working' ? { 
@@ -538,13 +590,24 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           title: project.name,
           niche: project.niche,
           size: aspectRatio,
-          style: tone
+          style: tone,
+          usage_prompt: accumulatedUsage.prompt,
+          usage_candidates: accumulatedUsage.candidates,
+          model: 'Gemini 3.1 Suite',
+          model_meta: JSON.stringify(agentUsage)
         });
 
         if (insertError) throw insertError;
         
+        // Finalize state update
+        setTotalUsage({
+          promptTokens: accumulatedUsage.prompt,
+          candidatesTokens: accumulatedUsage.candidates
+        });
+
         await refetchHistory();
         playCompletionSound();
+        setShowCostSummary(true);
       }
 
       toast.success('Flyer gerado com sucesso! 🚀');
@@ -1083,9 +1146,23 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                               <span className="font-bold text-xs tracking-tight">{agent.label}</span>
                               {isActive && <span className="text-[8px] font-black tracking-widest text-primary uppercase animate-pulse">Trabalhando</span>}
                             </div>
-                            <p className="text-[10px] text-muted-foreground line-clamp-1">
-                              {isActive ? agent.description : isDone ? "Concluído" : "Aguardando..."}
-                            </p>
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] text-muted-foreground line-clamp-1">
+                                {isActive ? agent.description : isDone ? "Concluído" : "Aguardando..."}
+                              </p>
+                              {agentUsage[agent.id] && (
+                                <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-right-2 duration-500">
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/5 border border-primary/10">
+                                    <span className="text-[8px] font-black text-primary/40 uppercase tracking-tighter">In</span>
+                                    <span className="text-[9px] font-mono font-bold text-primary">{agentUsage[agent.id]?.prompt.toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/5 border border-primary/10">
+                                    <span className="text-[8px] font-black text-primary/40 uppercase tracking-tighter">Out</span>
+                                    <span className="text-[9px] font-mono font-bold text-primary">{agentUsage[agent.id]?.candidates.toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -1390,6 +1467,120 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         </div>
       )}
       </div>
+      <Dialog open={showCostSummary} onOpenChange={setShowCostSummary}>
+        <DialogContent className="sm:max-w-lg bg-background/95 backdrop-blur-xl border-primary/20 shadow-2xl overflow-hidden rounded-[32px] p-0 gap-0">
+          <div className="p-8 bg-gradient-to-br from-primary/10 via-transparent to-transparent">
+            <DialogHeader className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-xl bg-primary/20 border border-primary/30">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-black tracking-tight">Análise de Custo da Geração</DialogTitle>
+                  <DialogDescription className="text-sm font-medium">
+                    Breakdown transparente por Agente Especialista
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Table Header */}
+              <div className="grid grid-cols-12 gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2">
+                <div className="col-span-4">Agente</div>
+                <div className="col-span-3 text-right">In / Out Tokens</div>
+                <div className="col-span-3 text-right">Modelo</div>
+                <div className="col-span-2 text-right">Custo USD</div>
+              </div>
+
+              <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                {AGENTS.filter(a => agentUsage[a.id]).map((agent) => {
+                  const usage = agentUsage[agent.id]!;
+                  const isPro = usage.model.includes('3.1 Pro');
+                  const rates = isPro 
+                    ? { in: 0.00000125, out: 0.000005 } 
+                    : { in: 0.0000001, out: 0.0000004 };
+                  
+                  const agentCost = (usage.prompt * rates.in) + (usage.candidates * rates.out);
+
+                  return (
+                    <div key={agent.id} className="grid grid-cols-12 gap-2 p-3 rounded-2xl bg-white/5 border border-white/5 items-center hover:bg-white/10 transition-colors">
+                      <div className="col-span-4 flex items-center gap-2">
+                        <div className={cn("p-1.5 rounded-lg bg-background border shadow-xs", agent.color)}>
+                          <agent.icon className="h-3 w-3" />
+                        </div>
+                        <span className="text-xs font-bold truncate">{agent.label}</span>
+                      </div>
+                      <div className="col-span-3 text-right">
+                        <p className="text-[10px] font-mono font-bold leading-none">{usage.prompt.toLocaleString()}</p>
+                        <p className="text-[10px] font-mono leading-none text-muted-foreground mt-1">{usage.candidates.toLocaleString()}</p>
+                      </div>
+                      <div className="col-span-3 text-right">
+                        <Badge variant="outline" className={cn("text-[8px] px-1.5 py-0 border-primary/20", isPro ? "text-amber-500" : "text-blue-500")}>
+                          {usage.model.replace('Gemini ', '')}
+                        </Badge>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <span className="text-[10px] font-mono font-bold text-primary">${agentCost.toFixed(5)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Totals Section */}
+              <div className="relative pt-6 mt-2 border-t border-primary/20">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-black uppercase tracking-tighter text-foreground">Total Investimento IA</p>
+                    <div className="flex gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
+                        <span className="text-[10px] font-bold text-muted-foreground">{totalUsage.promptTokens.toLocaleString()} Input</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500/50" />
+                        <span className="text-[10px] font-bold text-muted-foreground">{totalUsage.candidatesTokens.toLocaleString()} Output</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-mono font-black text-primary leading-none">
+                      ${(
+                        Object.entries(agentUsage).reduce((acc, [id, usage]) => {
+                          if (!usage) return acc;
+                          const isPro = usage.model.includes('3.1 Pro');
+                          const rates = isPro 
+                            ? { in: 0.00000125, out: 0.000005 } 
+                            : { in: 0.0000001, out: 0.0000004 };
+                          return acc + (usage.prompt * rates.in) + (usage.candidates * rates.out);
+                        }, 0)
+                      ).toFixed(6)}
+                    </p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-primary/50 mt-1">USD TOTAL</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+                  <p className="text-[9px] text-amber-600 font-bold leading-relaxed uppercase tracking-tight flex items-center gap-2">
+                    <Info className="h-3 w-3" />
+                    Transparência de Custos (Tier Estilingue)
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+                    A geração de imagem está incluída no custo de saída do Designer. Os valores são baseados nas tabelas de preços oficiais da Google Cloud Vertex AI / Gemini API.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-8">
+              <Button onClick={() => setShowCostSummary(false)} className="w-full h-12 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20">
+                Fechar Relatório
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

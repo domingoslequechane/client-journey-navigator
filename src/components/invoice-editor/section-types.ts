@@ -1,5 +1,37 @@
 export type PaperSize = 'A4' | 'A5';
 
+export type LayoutModel = 
+  | 'classic'
+  | 'centered'
+  | 'sidebar'
+  | 'compact'
+  | 'modern_split'
+  | 'letterhead'
+  | 'logo_hero'
+  | 'logo_centered'
+  | 'sidebar_vertical'
+  | 'onix_hero'
+  | 'borcelle_navy'
+  | 'orange_geometric'
+  | 'purple_angular';
+
+export type TemplateStyle = 
+  | 'modern' 
+  | 'classic' 
+  | 'minimal' 
+  | 'onix' 
+  | 'cyber_neo' 
+  | 'corporate_pro' 
+  | 'eco_friendly' 
+  | 'luxury_gold' 
+  | 'blueprint' 
+  | 'kawaii' 
+  | 'minimalist_luxe' 
+  | 'retro_80s' 
+  | 'space_odyssey' 
+  | 'artistic_brush'
+  | 'spanish_vibe';
+
 export type InvoiceType = 'proforma' | 'factura' | 'recibo' | 'orcamento';
 
 export type SectionType = 

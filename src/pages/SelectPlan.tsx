@@ -113,7 +113,7 @@ export default function SelectPlan() {
               name: 'Agency',
               slug: slugData || `temp-${Date.now()}`,
               owner_id: user.id,
-              plan_type: 'free',
+              plan_type: null,
             })
             .select()
             .single();

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 // Stages that count towards client limits (operational stages)
 const OPERATIONAL_STAGES = ['producao', 'trafego', 'retencao', 'fidelizacao'] as const;
 
-export type PlanType = 'free' | 'starter' | 'pro' | 'agency';
+export type PlanType = 'starter' | 'pro' | 'agency' | 'free' | null;
 
 interface PlanLimits {
   maxClients: number | null;
@@ -51,11 +51,11 @@ const DEFAULT_LIMITS: PlanLimits = {
   maxSocialPostsPerMonth: 100,
   maxLinkPages: 5,
   can_export_data: true,
-  has_finance_module: true,
-  has_studio_module: true,
-  has_linktree_module: true,
-  has_editorial_module: true,
-  has_social_module: true,
+  has_finance_module: false,
+  has_studio_module: false,
+  has_linktree_module: false,
+  has_editorial_module: false,
+  has_social_module: false,
   has_social_inbox: false,
 };
 
@@ -74,7 +74,7 @@ const DEFAULT_USAGE: Usage = {
 export function usePlanLimits(): UsePlanLimitsReturn {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [planType, setPlanType] = useState<PlanType>('starter');
+  const [planType, setPlanType] = useState<PlanType>('free');
   const [limits, setLimits] = useState<PlanLimits>(DEFAULT_LIMITS);
   const [usage, setUsage] = useState<Usage>(DEFAULT_USAGE);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
@@ -109,30 +109,32 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         .eq('id', orgId)
         .single();
 
-      const currentPlanType = (organization?.plan_type as PlanType) || 'starter';
+      const currentPlanType = (organization?.plan_type as PlanType) || null;
       setPlanType(currentPlanType);
 
-      // Hardcoded fallbacks for social accounts based on plan
+      // Restrictive fallbacks for non-paid plans
+      const isPaid = ['starter', 'pro', 'agency'].includes(currentPlanType as string);
+
       const socialAccountLimits: Record<string, number> = {
-        'free': 3,
         'starter': 5,
         'pro': 15,
         'agency': 30
       };
 
       const clientLimits: Record<string, number> = {
-        'free': 3,
         'starter': 5,
         'pro': 15,
         'agency': 30
       };
 
       const dailyStudioLimits: Record<string, number> = {
-        'free': 5,
         'starter': 5,
         'pro': 15,
         'agency': 30
       };
+
+      const getLimitValue = (map: Record<string, number>, type: PlanType) => 
+        (type && isPaid) ? map[type as string] : 0;
 
       const { data: planLimitsData } = await supabase
         .from('plan_limits')
@@ -143,15 +145,15 @@ export function usePlanLimits(): UsePlanLimitsReturn {
       if (planLimitsData) {
         const d = planLimitsData as any;
         setLimits({
-          // Use DB value if present, otherwise use hardcoded fallback
-          maxClients: d.max_clients ?? clientLimits[currentPlanType],
-          maxSocialAccounts: d.max_social_accounts ?? socialAccountLimits[currentPlanType],
+          // Use DB value if present, otherwise use restrictive fallback
+          maxClients: d.max_clients ?? getLimitValue(clientLimits, currentPlanType),
+          maxSocialAccounts: d.max_social_accounts ?? getLimitValue(socialAccountLimits, currentPlanType),
           maxContractsPerMonth: d.max_contracts_per_month,
           maxAIMessagesPerMonth: d.max_ai_messages_per_month,
           maxTeamMembers: d.max_team_members,
           maxContractTemplates: d.max_contract_templates,
           maxStudioGenerations: d.max_studio_generations,
-          dailyStudioLimit: dailyStudioLimits[currentPlanType],
+          dailyStudioLimit: getLimitValue(dailyStudioLimits, currentPlanType),
           maxSocialPostsPerMonth: d.max_social_posts_per_month,
           maxLinkPages: d.max_link_pages,
           can_export_data: d.can_export_data ?? false,
@@ -163,12 +165,13 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           has_social_inbox: d.has_social_inbox ?? false,
         });
       } else {
-        // Fallback if no DB record
+        // Fallback for NULL or undefined plan
         setLimits({
           ...DEFAULT_LIMITS,
-          maxClients: clientLimits[currentPlanType],
-          maxSocialAccounts: socialAccountLimits[currentPlanType],
-          dailyStudioLimit: dailyStudioLimits[currentPlanType],
+          maxClients: getLimitValue(clientLimits, currentPlanType),
+          maxSocialAccounts: getLimitValue(socialAccountLimits, currentPlanType),
+          dailyStudioLimit: getLimitValue(dailyStudioLimits, currentPlanType),
+          can_export_data: isPaid,
         });
       }
 

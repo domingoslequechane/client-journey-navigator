@@ -48,13 +48,14 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { LanguageSelector } from '@/components/ui/language-selector';
 import { ModuleLockedModal } from '@/components/subscription/ModuleLockedModal';
+import { AnimatedContainer } from '@/components/ui/animated-container';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const SIDEBAR_COLLAPSED_KEY = 'qualify-sidebar-collapsed';
 const TABLET_MIN = 768;
 const TABLET_MAX = 1024;
 
 const PLAN_CONFIG = {
-  free: { name: 'plans.compass', icon: Compass },
   starter: { name: 'plans.lance', icon: Target },
   pro: { name: 'plans.bow', icon: TrendingUp },
   agency: { name: 'plans.catapult', icon: Rocket },
@@ -64,7 +65,7 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { planType, organization } = useSubscription();
+  const { loading: subLoading, planType, organization, daysRemaining, hasActiveSubscription, hasSubscriptionRecord } = useSubscription();
   const { t } = useTranslation('common');
   const {
     canAccessModule,
@@ -80,8 +81,10 @@ export function Sidebar() {
   } = usePlanLimits();
   const { canInstall, install } = usePWAInstall();
 
-  const currentPlan = PLAN_CONFIG[planType] || PLAN_CONFIG.free;
-  const PlanIcon = currentPlan.icon;
+
+  const isNoPlan = !subLoading && (!planType || (planType as string) === 'free') && !hasActiveSubscription;
+  const currentPlan = planType && planType !== 'free' ? PLAN_CONFIG[planType as keyof typeof PLAN_CONFIG] : { name: 'Escolher um Plano', icon: Target };
+  const PlanIcon = isNoPlan ? Target : currentPlan.icon;
 
   const [manualCollapsed, setManualCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
@@ -141,18 +144,18 @@ export function Sidebar() {
   // Filter navigation items based on role + module access
   const navigation = useMemo(() => {
     const allItems = [
-      { name: t('navigation.dashboard'), href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true, locked: false, requiredPlan: '' },
-      { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canAccessModule('pipeline'), locked: false, requiredPlan: '' },
+      { name: t('navigation.dashboard'), href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true, locked: isNoPlan, requiredPlan: 'Lança' },
+      { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canAccessModule('pipeline'), locked: isNoPlan, requiredPlan: 'Lança' },
       { name: t('navigation.finance'), href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canAccessModule('finances'), locked: !canAccessFinance, requiredPlan: 'Lança' },
       { name: t('navigation.link23'), href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: canAccessModule('link23'), locked: !canAccessLinkTree, requiredPlan: 'Lança' },
       { name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: canAccessModule('editorial'), locked: !canAccessEditorial, requiredPlan: 'Lança' },
       { name: t('navigation.socialMedia'), href: '/app/social-media', icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, tutorialId: 'sidebar-social-media', show: canAccessModule('social'), locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
-      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: MessagesSquare, tutorialId: 'sidebar-ai', show: canAccessModule('qia'), locked: false, requiredPlan: '' },
-      { name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, tutorialId: 'sidebar-ai-agents', show: true, locked: false, requiredPlan: '', badge: 'BETA' },
-      { name: t('navigation.studio'), href: '/app/studio', icon: PenTool, tutorialId: 'sidebar-studio', show: canAccessModule('studio'), locked: !canAccessStudio, requiredPlan: 'Lança' },
-      { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: canAccessModule('academy'), locked: false, requiredPlan: '' },
-      { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canAccessModule('clients'), locked: false, requiredPlan: '' },
-      { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canAccessModule('team'), locked: false, requiredPlan: '' },
+      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: MessagesSquare, tutorialId: 'sidebar-ai', show: canAccessModule('qia'), locked: isNoPlan, requiredPlan: 'Lança' },
+      { name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, tutorialId: 'sidebar-ai-agents', show: true, locked: isNoPlan, requiredPlan: 'Lança', badge: 'BETA' },
+      { name: t('navigation.studio'), href: '/app/studio', icon: PenTool, tutorialId: 'sidebar-studio', show: canAccessModule('studio'), locked: !canAccessStudio || isNoPlan, requiredPlan: 'Lança' },
+      { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: canAccessModule('academy'), locked: isNoPlan, requiredPlan: 'Lança' },
+      { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canAccessModule('clients'), locked: isNoPlan, requiredPlan: 'Lança' },
+      { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canAccessModule('team'), locked: isNoPlan, requiredPlan: 'Lança' },
     ];
     return allItems.filter(item => item.show);
   }, [canAccessModule, canAccessFinance, canAccessStudio, canAccessLinkTree, canAccessEditorial, canAccessSocialMedia, t]);
@@ -282,9 +285,9 @@ export function Sidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="px-2 py-3 border-b border-border flex justify-center shrink-0">
-                  <Building2
-                    className="h-5 w-5"
-                    style={{ color: `hsl(var(--plan-${planType}-primary, var(--primary)))` }}
+                  <PlanIcon
+                    className={cn("h-5 w-5", isNoPlan ? "text-destructive animate-pulse" : "")}
+                    style={!isNoPlan ? { color: `hsl(var(--plan-${planType}-primary, var(--primary)))` } : {}}
                   />
                 </div>
               </TooltipTrigger>
@@ -293,11 +296,17 @@ export function Sidebar() {
           ) : (
             <div className="px-4 py-3 border-b border-border shrink-0">
               <p
-                className="text-sm font-medium truncate"
-                style={{ color: `hsl(var(--plan-${planType}-primary, var(--primary)))` }}
+                className={cn("text-sm font-medium truncate", isNoPlan ? "text-destructive" : "")}
+                style={!isNoPlan ? { color: `hsl(var(--plan-${planType}-primary, var(--primary)))` } : {}}
               >
                 {organization.name}
               </p>
+              {!collapsed && !isNoPlan && daysRemaining > 0 && (
+                <p className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1 mt-1">
+                  <CalendarDays className="h-3 w-3" />
+                  {daysRemaining} {daysRemaining === 1 ? 'dia restante' : 'dias restantes'}
+                </p>
+              )}
             </div>
           )
         )}
@@ -308,12 +317,30 @@ export function Sidebar() {
             onScroll={handleScroll}
             className="flex-1 px-2 py-4 space-y-1 overflow-y-auto custom-scrollbar"
           >
-            {navigation.map((item) => {
-              const isActive = item.href === '/app'
-                ? location.pathname === '/app'
-                : location.pathname.startsWith(item.href);
-              return <NavItem key={item.name} item={item} isActive={isActive} />;
-            })}
+            {subLoading ? (
+              // Navigation Skeletons
+              Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2.5 blur-[2px] animate-pulse">
+                  <Skeleton className="h-5 w-5 rounded-lg shrink-0" />
+                  {!collapsed && <Skeleton className="h-4 w-32" />}
+                </div>
+              ))
+            ) : (
+              navigation.map((item, index) => {
+                const isActive = item.href === '/app'
+                  ? location.pathname === '/app'
+                  : location.pathname.startsWith(item.href);
+                return (
+                  <AnimatedContainer 
+                    key={item.name} 
+                    delay={index * 0.03} 
+                    duration={0.4}
+                  >
+                    <NavItem item={item} isActive={isActive} />
+                  </AnimatedContainer>
+                );
+              })
+            )}
           </nav>
           {showScrollIndicator && (
             <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-card to-transparent pointer-events-none flex items-end justify-center pb-2">
@@ -345,128 +372,164 @@ export function Sidebar() {
           )}
 
           {/* Support & Feedback */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/app/support"
-                  className={cn(
-                    'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    location.pathname === '/app/support'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                  )}
-                >
-                  <HeadphonesIcon className="h-5 w-5" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">{t('navigation.support')}</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Link
-              to="/app/support"
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                location.pathname === '/app/support'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
-            >
-              <HeadphonesIcon className="h-5 w-5" />
-              {t('navigation.support')}
-            </Link>
-          )}
+          <AnimatedContainer delay={0.25}>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/app/support"
+                    className={cn(
+                      'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      location.pathname === '/app/support'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    )}
+                  >
+                    <HeadphonesIcon className="h-5 w-5" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">{t('navigation.support')}</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link
+                to="/app/support"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  location.pathname === '/app/support'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                )}
+              >
+                <HeadphonesIcon className="h-5 w-5" />
+                {t('navigation.support')}
+              </Link>
+            )}
+          </AnimatedContainer>
 
           {/* Notifications */}
-          <NotificationBell collapsed={collapsed} />
+          <AnimatedContainer delay={0.3}>
+            <NotificationBell collapsed={collapsed} />
+          </AnimatedContainer>
 
-          {/* Settings - Available to all users */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
+          {/* Settings - Available to all users, but locked visually if no plan */}
+          <AnimatedContainer delay={0.35}>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {isNoPlan ? (
+                    <button
+                      onClick={() => setLockedModule({ name: t('navigation.settings'), plan: 'Lança' })}
+                      className={cn(
+                        'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors w-full',
+                        'text-muted-foreground/50 hover:bg-accent/50 cursor-pointer'
+                      )}
+                    >
+                      <Settings className="h-5 w-5 opacity-50" />
+                    </button>
+                  ) : (
+                    <Link
+                      to="/app/settings"
+                      data-tutorial="sidebar-settings"
+                      className={cn(
+                        'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        location.pathname === '/app/settings'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      )}
+                    >
+                      <Settings className="h-5 w-5" />
+                    </Link>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {isNoPlan ? `🔒 ${t('navigation.settings')} (Plano Lança)` : t('navigation.settings')}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              isNoPlan ? (
+                <button
+                  onClick={() => setLockedModule({ name: t('navigation.settings'), plan: 'Lança' })}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left',
+                    'text-muted-foreground/50 hover:bg-accent/50 cursor-pointer'
+                  )}
+                >
+                  <Settings className="h-5 w-5 shrink-0 opacity-50" />
+                  <span className="flex-1 opacity-60">{t('navigation.settings')}</span>
+                  <Lock className="h-3.5 w-3.5 opacity-50" />
+                </button>
+              ) : (
                 <Link
                   to="/app/settings"
                   data-tutorial="sidebar-settings"
                   className={cn(
-                    'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     location.pathname === '/app/settings'
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
                 >
                   <Settings className="h-5 w-5" />
+                  {t('navigation.settings')}
                 </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">{t('navigation.settings')}</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Link
-              to="/app/settings"
-              data-tutorial="sidebar-settings"
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                location.pathname === '/app/settings'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
-            >
-              <Settings className="h-5 w-5" />
-              {t('navigation.settings')}
-            </Link>
-          )}
+              )
+            )}
+          </AnimatedContainer>
 
-          {/* Subscription - Admin only */}
-          {isAdmin && (
-            collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    to="/app/subscription"
-                    className={cn(
-                      'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                      location.pathname === '/app/subscription'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    )}
-                  >
-                    <div className={cn(
-                      "p-1 rounded",
-                      location.pathname === '/app/subscription' ? 'bg-primary-foreground/20' : 'bg-primary/10'
-                    )}>
-                      <PlanIcon className={cn(
-                        "h-4 w-4",
-                        location.pathname === '/app/subscription' ? 'text-primary-foreground' : 'text-primary'
-                      )} />
-                    </div>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {t('plans.plan')} {t(currentPlan.name)}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
-                to="/app/subscription"
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                  location.pathname === '/app/subscription'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                )}
-              >
-                <div className={cn(
-                  "p-1 rounded",
-                  location.pathname === '/app/subscription' ? 'bg-primary-foreground/20' : 'bg-primary/10'
-                )}>
-                  <PlanIcon className={cn(
-                    "h-4 w-4",
-                    location.pathname === '/app/subscription' ? 'text-primary-foreground' : 'text-primary'
-                  )} />
-                </div>
-                <span>{t('plans.plan')} {t(currentPlan.name)}</span>
-              </Link>
-            )
-          )}
+          {/* Subscription - Available to all users to see status */}
+          <AnimatedContainer delay={0.4}>
+            {true && (
+              collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={hasSubscriptionRecord ? "/app/subscription" : "/select-plan"}
+                      className={cn(
+                        'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        (location.pathname === '/select-plan' || location.pathname === '/app/subscription')
+                          ? 'bg-primary text-primary-foreground'
+                          : isNoPlan ? 'bg-destructive/10 text-destructive hover:bg-destructive/20' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      )}
+                    >
+                      <div className={cn(
+                        "p-1 rounded",
+                        (location.pathname === '/select-plan' || location.pathname === '/app/subscription') ? 'bg-primary-foreground/20' : isNoPlan ? 'bg-destructive/10' : 'bg-primary/10'
+                      )}>
+                        <PlanIcon className={cn(
+                          "h-4 w-4",
+                          (location.pathname === '/select-plan' || location.pathname === '/app/subscription') ? 'text-primary-foreground' : isNoPlan ? 'text-destructive' : 'text-primary'
+                        )} />
+                      </div>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    {isNoPlan ? 'Escolher um Plano' : `Plano ${t(currentPlan.name)}`}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Link
+                  to={hasSubscriptionRecord ? "/app/subscription" : "/select-plan"}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    (location.pathname === '/select-plan' || location.pathname === '/app/subscription')
+                      ? 'bg-primary text-primary-foreground'
+                      : isNoPlan ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )}
+                >
+                  <div className={cn(
+                    "p-1 rounded",
+                    (location.pathname === '/select-plan' || location.pathname === '/app/subscription') ? 'bg-primary-foreground/20' : isNoPlan ? 'bg-destructive/10' : 'bg-primary/10'
+                  )}>
+                    <PlanIcon className={cn(
+                      "h-4 w-4",
+                      (location.pathname === '/select-plan' || location.pathname === '/app/subscription') ? 'text-primary-foreground' : isNoPlan ? 'text-destructive' : 'text-primary'
+                    )} />
+                  </div>
+                  <span>{isNoPlan ? 'Escolher um Plano' : `Plano ${t(currentPlan.name)}`}</span>
+                </Link>
+              )
+            )}
+          </AnimatedContainer>
 
           {canInstall && (
             collapsed ? (

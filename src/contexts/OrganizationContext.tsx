@@ -24,9 +24,14 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(u
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
-    const [organizationId, setOrgIdState] = useState<string | null>(null);
+    const [organizationId, setOrgIdState] = useState<string | null>(() => {
+        return sessionStorage.getItem('last_processed_org_id');
+    });
     const [organization, setOrganization] = useState<Organization | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(() => {
+        // If we have a previously processed org, stay static and don't show loading on focus/restore
+        return !sessionStorage.getItem('last_processed_org_id');
+    });
 
     const fetchOrganizationDetails = async (orgId: string) => {
         try {
@@ -74,10 +79,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
             if (activeOrgId) {
                 setOrgIdState(activeOrgId);
+                sessionStorage.setItem('last_processed_org_id', activeOrgId);
                 await fetchOrganizationDetails(activeOrgId);
             } else {
                 setOrgIdState(null);
                 setOrganization(null);
+                sessionStorage.removeItem('last_processed_org_id');
             }
         } catch (error) {
             console.error('Error refreshing organization:', error);

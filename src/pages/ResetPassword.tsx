@@ -12,8 +12,8 @@ import { PublicBackground } from '@/components/layout/PublicBackground';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 const passwordSchema = z.object({
-  password: z.string().min(6, { message: 'Senha deve ter no mínimo 6 caracteres' }),
-  confirmPassword: z.string().min(6, { message: 'Confirmação de senha deve ter no mínimo 6 caracteres' }),
+  password: z.string().min(8, { message: 'Senha deve ter no mínimo 8 caracteres' }),
+  confirmPassword: z.string().min(8, { message: 'Confirmação de senha deve ter no mínimo 8 caracteres' }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -154,7 +154,7 @@ export default function ResetPassword() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
