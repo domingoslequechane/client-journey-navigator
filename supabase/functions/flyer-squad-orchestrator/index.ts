@@ -61,7 +61,21 @@ async function callGemini(parts: any[], model: string, generateImage = false) {
         throw new Error(`Gemini Error (${resp.status}): ${err.substring(0, 500)}`);
     }
 
-    const data = await resp.json();
+    const rawText = await resp.text();
+    let data;
+    try {
+        data = JSON.parse(rawText);
+    } catch (e) {
+        console.warn("Gemini non-JSON response encountered. Simulating valid structure for text:", rawText.substring(0, 200));
+        // Fallback: wrap it in a pseudo candidate structure so the rest of the code works
+        data = {
+            candidates: [{
+                content: { parts: [{ text: rawText }] },
+                role: "model"
+            }],
+            usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 } // estimated
+        };
+    }
     
     if (!data.candidates || !data.candidates[0]) {
         console.error("Invalid Gemini response:", JSON.stringify(data).substring(0, 500));
@@ -440,11 +454,13 @@ serve(async (req) => {
                 ${(context.orchestrator?.layout_strategy?.constraints || []).map((c: string) => `- ${c}`).join('\n')}
 
                 ALÉM DISSO (LEIS GERAIS DO STUDIO E RENDERING):
-                - QUALIDADE VISUAL: Masterpiece fotorealista, Octane Render ou Unreal Engine style, Studio Lighting meticuloso, 8k resolution.
+                - QUALIDADE VISUAL: Masterpiece fotorealista 4K ULTRA-HD (3840x2160 pixels equivalent quality).
+                - DETALHES: Octane Render ou Unreal Engine style, Studio Lighting meticuloso, cores profundas e vibrantes, nitidez absoluta.
                 - TIPOGRAFIA: "${primaryFont}" (texto em foco afiado, altamente legível, kerning e alinhamento perfeitos, layout limpo).
                 - NEGATIVE SPACE: Use espaço livre para deixar a arte respirar. Estética minimalista premium, focada na alta conversão.
                 - 🚫 ZERO TEXTO FALSO/ALUCINADO.
                 - 🚫 ZERO SOBREPOSIÇÃO NO PRODUTO.
+                - 🚫 ZERO RUÍDO: A imagem deve ser cristalina, padrão Retina Display 4K.
 
                 CONTEÚDO TEXTUAL OBRIGATÓRIO:
                 H1: "${context.copywriter?.headline}"
