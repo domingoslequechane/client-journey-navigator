@@ -12,6 +12,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
+      // Disable PWA in development to prevent service worker reload loops
+      disable: mode !== 'production',
       registerType: "prompt",
       includeAssets: ["favicon.ico", "og-image.png", "splash-logo-white.png", "splash-logo.png", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
