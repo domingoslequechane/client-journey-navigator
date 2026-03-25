@@ -143,7 +143,16 @@ export function Sidebar() {
 
   // Filter navigation items based on role + module access
   const navigation = useMemo(() => {
-    const allItems = [
+    const allItems: Array<{ 
+      name: string; 
+      href: string; 
+      icon: any; 
+      tutorialId: string; 
+      show: boolean; 
+      locked: boolean; 
+      requiredPlan: string; 
+      badge?: string; 
+    }> = [
       { name: t('navigation.dashboard'), href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true, locked: isNoPlan, requiredPlan: 'Lança' },
       { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canAccessModule('pipeline'), locked: isNoPlan, requiredPlan: 'Lança' },
       { name: t('navigation.finance'), href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canAccessModule('finances'), locked: !canAccessFinance, requiredPlan: 'Lança' },
@@ -151,7 +160,7 @@ export function Sidebar() {
       { name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: canAccessModule('editorial'), locked: !canAccessEditorial, requiredPlan: 'Lança' },
       { name: t('navigation.socialMedia'), href: '/app/social-media', icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, tutorialId: 'sidebar-social-media', show: canAccessModule('social'), locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
       { name: t('navigation.qia'), href: '/app/ai-assistant', icon: MessagesSquare, tutorialId: 'sidebar-ai', show: canAccessModule('qia'), locked: isNoPlan, requiredPlan: 'Lança' },
-      { name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, tutorialId: 'sidebar-ai-agents', show: true, locked: isNoPlan, requiredPlan: 'Lança', badge: 'BETA' },
+      { name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, tutorialId: 'sidebar-ai-agents', show: true, locked: isNoPlan, requiredPlan: 'Lança' },
       { name: t('navigation.studio'), href: '/app/studio', icon: PenTool, tutorialId: 'sidebar-studio', show: canAccessModule('studio'), locked: !canAccessStudio || isNoPlan, requiredPlan: 'Lança' },
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: canAccessModule('academy'), locked: isNoPlan, requiredPlan: 'Lança' },
       { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canAccessModule('clients'), locked: isNoPlan, requiredPlan: 'Lança' },

@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { InvoiceSection, SectionSettings as SectionSettingsType } from './section-types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { Slider } from '@/components/ui/slider';
 
 interface SectionSettingsProps {
   section: InvoiceSection;
@@ -57,7 +58,22 @@ export function SectionSettings({
                 ))}
               </RadioGroup>
             </div>
-            <div className="h-px bg-border" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/80">Tamanho do Logo</Label>
+                <span className="text-[10px] font-mono text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded">{local.logoSize || 100}%</span>
+              </div>
+              <Slider
+                value={[local.logoSize || 100]}
+                min={20}
+                max={200}
+                step={5}
+                onValueChange={([v]) => set('logoSize', v)}
+                className="py-2"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 italic">Dica: A área do logo se ajusta automaticamente para remover margens.</p>
+            </div>
+            <div className="h-px bg-border my-2" />
             <div className="space-y-3">
               <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/80">Campos visíveis</Label>
               <Toggle label="Mostrar NUIT" checked={local.showNuit ?? true} onChange={v => set('showNuit', v)} />
@@ -77,6 +93,36 @@ export function SectionSettings({
                 />
               </div>
             )}
+            <div className="h-px bg-border my-2" />
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/80">Informações da Agência</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Nome da Agência</Label>
+                  <Input value={local.agencyName || ''} onChange={e => set('agencyName', e.target.value)} placeholder="QUALIFY" className="h-9" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">NUIT</Label>
+                  <Input value={local.agencyNuit || ''} onChange={e => set('agencyNuit', e.target.value)} placeholder="400123987" className="h-9" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Telefone 1</Label>
+                  <Input value={local.agencyPhone1 || ''} onChange={e => set('agencyPhone1', e.target.value)} placeholder="+258 84 000 0000" className="h-9" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Telefone 2</Label>
+                  <Input value={local.agencyPhone2 || ''} onChange={e => set('agencyPhone2', e.target.value)} placeholder="+258 87 000 0000" className="h-9" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Email</Label>
+                  <Input value={local.agencyEmail || ''} onChange={e => set('agencyEmail', e.target.value)} placeholder="info@qualify.mz" className="h-9" />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Endereço</Label>
+                  <Input value={local.agencyAddress || ''} onChange={e => set('agencyAddress', e.target.value)} placeholder="Av. 25 de Setembro, 147 - Maputo" className="h-9" />
+                </div>
+              </div>
+            </div>
           </div>
         );
 

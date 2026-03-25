@@ -89,17 +89,6 @@ export function InvoicePreview({
 
   const aspectRatio = paperSize === 'A4' ? '210 / 297' : '148 / 210';
 
-  // Mock agency data using Qualify brand for demonstration
-  const mockAgency = {
-    name: agency?.name || "QUALIFY",
-    logo_url: agency?.logo_url || "/splash-logo.png",
-    logo_white_url: agency?.logo_url || "/splash-logo-white.png", // Fallback to custom logo if available
-    nuit: agency?.nuit || "400123987",
-    address: agency?.address || "Av. 25 de Setembro, 147 - Maputo",
-    phone: agency?.phone || "+258 84 000 0000",
-    email: agency?.email || "info@qualify.mz"
-  };
-
   // Get section by type
   const getSection = (type: string) => visibleSections.find((s) => s.type === type);
 
@@ -111,6 +100,19 @@ export function InvoicePreview({
   const paymentSection = getSection('payment');
   const signaturesSection = getSection('signatures');
   const footerSection = getSection('footer');
+
+  // Mock agency data using Qualify brand for demonstration
+  // Prioritize values from header section settings if available
+  const mockAgency = {
+    name: headerSection?.settings.agencyName || agency?.name || "QUALIFY",
+    logo_url: agency?.logo_url || "/splash-logo.png",
+    logo_white_url: agency?.logo_url || "/splash-logo-white.png", // Fallback to custom logo if available
+    nuit: headerSection?.settings.agencyNuit || agency?.nuit || "400123987",
+    address: headerSection?.settings.agencyAddress || agency?.address || "Av. 25 de Setembro, 147 - Maputo",
+    phone: headerSection?.settings.agencyPhone1 || agency?.phone || "+258 84 000 0000",
+    phone2: headerSection?.settings.agencyPhone2 || "",
+    email: headerSection?.settings.agencyEmail || agency?.email || "info@qualify.mz"
+  };
 
   const isDark = ['cyber_neo', 'luxury_gold', 'retro_80s', 'space_odyssey'].includes(templateStyle);
 
@@ -142,7 +144,6 @@ export function InvoicePreview({
                           templateStyle === 'luxury_gold' ? '#121212' : 
                           templateStyle === 'retro_80s' ? '#240b36' :
                           templateStyle === 'space_odyssey' ? '#1a1c2c' :
-                          templateStyle === 'blueprint' ? '#004e92' :
                           templateStyle === 'eco_friendly' ? '#fdfaf5' :
                           templateStyle === 'kawaii' ? '#fff5f8' :
                           'white',
@@ -156,9 +157,6 @@ export function InvoicePreview({
         `}} />
 
       {/* Background Patterns */}
-      {templateStyle === 'blueprint' && (
-        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-      )}
       {templateStyle === 'space_odyssey' && (
         <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(circle_at_50%_50%,_rgba(255,255,255,0.1)_1px,_transparent_1px)] bg-[length:40px_40px]" />
       )}
@@ -187,7 +185,7 @@ export function InvoicePreview({
         {layoutModel === 'sidebar_vertical' && (
           <div className="w-[12%] flex items-center justify-center border-r border-gray-100 min-h-full bg-white relative overflow-hidden">
              <div className="rotate-[-90deg] whitespace-nowrap flex items-center gap-4">
-                <span className="text-[12px] font-medium tracking-[0.3em] uppercase opacity-20 text-gray-400">Documento</span>
+                <span className="text-[12px] font-medium tracking-[0.3em] uppercase opacity-20 text-gray-400">Factura</span>
                 <span className="text-[24px] font-black uppercase" style={{ color: primaryColor }}>
                    {INVOICE_TYPE_LABELS[invoiceInfoSection?.settings?.invoiceType || 'proforma']} 25-0043
                 </span>
@@ -205,27 +203,44 @@ export function InvoicePreview({
              {/* Gradient/Vibrant Banner - Compacted */}
              <div className="p-4 flex justify-between items-center relative min-h-[90px] bg-[#bef264]">
                 <div className="z-10 animate-fade-in">
-                   <div className="text-[#1a1a1a] font-bold text-[8px] opacity-60 uppercase tracking-[0.4em] block mb-0.5">Factura</div>
-                   <div className="text-[#1a1a1a] font-black text-[22px] uppercase leading-none tracking-[-0.04em]">
-                      {INVOICE_TYPE_LABELS[invoiceInfoSection?.settings.invoiceType || 'proforma']}
-                   </div>
-                   <div className="flex items-center gap-1.5 mt-1.5 text-[#1a1a1a]/80">
-                      <div className="h-0.5 w-3 bg-current opacity-40" />
-                      <div className="font-black text-[10px] tracking-tight italic">Ref. 25-0043</div>
-                   </div>
-                </div>
+                   {invoiceInfoSection && (
+                     <>
+                        <div className="text-[#1a1a1a] font-bold text-[8px] opacity-60 uppercase tracking-[0.4em] block mb-0.5">Factura</div>
+                        <div className="text-[#1a1a1a] font-black text-[22px] uppercase leading-none tracking-[-0.04em]">
+                           {INVOICE_TYPE_LABELS[invoiceInfoSection.settings?.invoiceType || 'proforma']}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1.5 text-[#1a1a1a]">
+                           <div className="h-0.5 w-3 bg-current opacity-40" />
+                           <div className="font-black text-[10px] tracking-tight italic">Ref. 25-0043</div>
+                        </div>
+                     </>
+                   )}
+                 </div>
                 
                 <div className="text-right z-10 flex flex-col items-end">
-                   <div className="w-14 h-14 flex items-center justify-center p-2 rounded-2xl bg-white shadow-lg mb-2">
-                     <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
-                   </div>
-                   <div className="flex flex-col items-end text-right mt-1.5 space-y-0.5">
-                       <span className="text-[#1a1a1a] font-black text-[10px] uppercase tracking-tighter leading-none mb-0.5">{mockAgency.name}</span>
-                       <span className="font-bold text-[5px] opacity-60 uppercase tracking-widest leading-none">{mockAgency.nuit}</span>
-                       <span className="font-bold text-[5px] opacity-60 uppercase tracking-widest leading-none">{mockAgency.phone}</span>
-                       <span className="font-bold text-[5px] opacity-60 uppercase tracking-widest leading-none max-w-[140px]">{mockAgency.address}</span>
-                       <span className="font-bold text-[5px] opacity-60 uppercase tracking-widest leading-none">{mockAgency.email}</span>
-                    </div>
+                   {headerSection && (
+                     <>
+                       <div 
+                         className="flex items-center justify-center p-0 mb-2"
+                         style={{ 
+                           width: `${(headerSection.settings?.logoSize || 100) * 0.56}px`, 
+                           height: 'auto',
+                           maxWidth: '100%'
+                         }}
+                       >
+                         <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
+                       </div>
+                       <div className="flex flex-col items-end text-right mt-1.5 space-y-0.5">
+                           <span className="text-[#1a1a1a] font-black text-[10px] uppercase tracking-tighter leading-none mb-0.5">{mockAgency.name}</span>
+                           <span className="font-bold text-[5px] opacity-60 uppercase tracking-widest leading-none">NUIT: {mockAgency.nuit}</span>
+                           <span className="font-bold text-[5px] opacity-60 uppercase tracking-widest leading-none">
+                             {mockAgency.phone}{mockAgency.phone2 ? ` / ${mockAgency.phone2}` : ''}
+                           </span>
+                           <span className="font-bold text-[5px] opacity-60 uppercase tracking-widest leading-none max-w-[140px]">{mockAgency.address}</span>
+                           <span className="font-bold text-[5px] opacity-60 uppercase tracking-widest leading-none">{mockAgency.email}</span>
+                        </div>
+                     </>
+                   )}
                 </div>
                 
                 {/* Patterns - Scaled Down */}
@@ -234,31 +249,43 @@ export function InvoicePreview({
              </div>
              
              {/* Data Bar - Compacted Grid */}
-             <div className="bg-[#1a1a1b] px-4 py-2.5 text-white grid grid-cols-4 items-center gap-4">
-                <div className="col-span-2 border-r border-white/10 pr-4">
-                   <div className="text-white/60 text-[5px] uppercase tracking-[0.2em] mb-1 font-black">Cliente</div>
-                   <div className="font-black text-[9px] uppercase tracking-tighter text-[#bef264] leading-none mb-1">Quadrado Mágico</div>
-                   <div className="text-white/80 text-[6px] font-bold space-y-0.5">
-                      <p>Av. de Moçambique, 123 • Maputo</p>
-                      <p>NUIT: 401 223 334</p>
-                   </div>
-                </div>
-                
-                <div className="border-r border-white/10 px-4 flex flex-col gap-1.5 items-end justify-center h-full text-right">
-                   <div>
-                      <div className="text-white/60 text-[5px] uppercase font-bold tracking-widest leading-none mb-0.5">Emissão</div>
-                      <div className="font-black text-[8px] whitespace-nowrap">22 SET 25</div>
-                   </div>
-                   <div>
-                      <div className="text-white/60 text-[5px] uppercase font-bold tracking-widest leading-none mb-0.5">Vencimento</div>
-                      <div className="font-black text-[8px] text-red-400 whitespace-nowrap">06 OUT 25</div>
-                   </div>
-                </div>
-                <div className="flex flex-col justify-center h-full items-end text-right pl-6">
-                    <div className="text-white/30 text-[5px] uppercase font-black tracking-[0.2em] mb-1">Total</div>
-                    <div className="font-black text-[14px] text-[#bef264] leading-none whitespace-nowrap">5.336 mt</div>
-                 </div>
-             </div>
+             {(clientSection || invoiceInfoSection || totalsSection) && (
+               <div className="bg-[#1a1a1b] px-4 py-2.5 text-white flex items-center justify-between gap-4">
+                  {clientSection && (
+                    <div className="flex-1 border-r border-white/10 pr-4">
+                       <div className="text-white/60 text-[5px] uppercase tracking-[0.2em] mb-1 font-black">Cliente</div>
+                       <div className="font-black text-[9px] uppercase tracking-tighter text-[#bef264] leading-none mb-1">Quadrado Mágico</div>
+                       <div className="text-white/80 text-[6px] font-bold space-y-0.5">
+                          {clientSection.settings?.showClientAddress !== false && <p>Av. de Moçambique, 123 • Maputo</p>}
+                          {clientSection.settings?.showClientNuit !== false && <p>NUIT: 401 223 334</p>}
+                          {clientSection.settings?.showClientEmail !== false && <p>vendas@quadrado.africa</p>}
+                          {clientSection.settings?.showClientPhone !== false && <p>+258 84 000 0000</p>}
+                       </div>
+                    </div>
+                  )}
+                  
+                  {invoiceInfoSection && (
+                    <div className="border-r border-white/10 px-4 flex flex-col gap-1.5 items-end justify-center h-full text-right">
+                       <div>
+                          <div className="text-white/60 text-[5px] uppercase font-bold tracking-widest leading-none mb-0.5">Emissão</div>
+                          <div className="font-black text-[8px] whitespace-nowrap">22 SET 25</div>
+                       </div>
+                       {invoiceInfoSection.settings?.showDueDate !== false && (
+                         <div>
+                            <div className="text-white/60 text-[5px] uppercase font-bold tracking-widest leading-none mb-0.5">Vencimento</div>
+                            <div className="font-black text-[8px] text-red-400 whitespace-nowrap">06 OUT 25</div>
+                         </div>
+                       )}
+                    </div>
+                  )}
+                  {totalsSection && (
+                    <div className="flex flex-col justify-center h-full items-end text-right pl-2">
+                        <div className="text-white/30 text-[5px] uppercase font-black tracking-[0.2em] mb-1">Total</div>
+                        <div className="font-black text-[14px] text-[#bef264] leading-none whitespace-nowrap">5.336 mt</div>
+                     </div>
+                  )}
+               </div>
+             )}
           </div>
         ) : layoutModel === 'borcelle_navy' ? (
           /* BORCELLE NAVY - Organic Blue Curves & Centered Logo */
@@ -273,47 +300,67 @@ export function InvoicePreview({
              
              <div className="relative z-10 pt-4 flex flex-col items-center">
                 {/* Centered Logo Box */}
-                <div className="w-16 h-16 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 flex items-center justify-center mb-6 animate-scale-in">
-                   <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
-                </div>
+                {headerSection && (
+                  <div 
+                    className="p-0 flex items-center justify-center mb-6 animate-scale-in bg-transparent"
+                    style={{ 
+                      width: `${(headerSection.settings?.logoSize || 100) * 0.64}px`, 
+                      height: 'auto',
+                      maxWidth: '100%'
+                    }}
+                  >
+                     <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
+                  </div>
+                )}
                 
                 <div className="w-full grid grid-cols-2 gap-8 px-8">
                    {/* Left: Client Data Area */}
                    <div className="animate-fade-in-left">
-                      <div className="text-[#1a1a1b] font-black text-[7px] uppercase tracking-[0.3em] mb-2">Dados do Cliente</div>
-                      <div className="space-y-0.5">
-                         <div className="text-[10px] font-black uppercase text-gray-800 tracking-tight leading-none mb-1">Quadrado Mágico</div>
-                         <div className="text-[6px] text-gray-500 font-bold uppercase leading-tight space-y-0.5">
-                            <p>Av. de Moçambique, 123 • Maputo</p>
-                            <p>NUIT: 401 223 334</p>
-                            <p>{clientSection?.settings.showClientEmail && "vendas@quadrado.africa"}</p>
-                         </div>
-                      </div>
+                     {clientSection && (
+                        <>
+                          <div className="text-[#1a1a1b] font-black text-[7px] uppercase tracking-[0.3em] mb-2">Dados do Cliente</div>
+                          <div className="space-y-0.5">
+                             <div className="text-[10px] font-black uppercase text-gray-800 tracking-tight leading-none mb-1">Quadrado Mágico</div>
+                             <div className="text-[6px] text-gray-500 font-bold uppercase leading-tight space-y-0.5">
+                                {clientSection.settings?.showClientAddress !== false && <p>Av. de Moçambique, 123 • Maputo</p>}
+                                {clientSection.settings?.showClientNuit !== false && <p>NUIT: 401 223 334</p>}
+                                {clientSection.settings?.showClientEmail !== false && <p>vendas@quadrado.africa</p>}
+                                {clientSection.settings?.showClientPhone !== false && <p>+258 84 000 0000</p>}
+                             </div>
+                          </div>
+                        </>
+                     )}
                    </div>
                    
                    {/* Right: Agency Data Area */}
                    <div className="text-right animate-fade-in-right">
-                      <div className="text-[#1a1a1b] font-black text-[7px] uppercase tracking-[0.3em] mb-2">Dados da Empresa</div>
-                      <div className="space-y-0.5">
-                         <div className="text-[10px] font-black uppercase text-gray-800 tracking-tight leading-none mb-1" style={{ color: primaryColor }}>{mockAgency.name}</div>
-                         <div className="text-[6px] text-gray-500 font-bold uppercase leading-tight space-y-0.5">
-                            <p>{mockAgency.address}</p>
-                            <p>NUIT: {mockAgency.nuit}</p>
-                            <p>{mockAgency.phone} • {mockAgency.email}</p>
-                         </div>
-                      </div>
+                      {headerSection && (
+                        <>
+                          <div className="text-[#1a1a1b] font-black text-[7px] uppercase tracking-[0.3em] mb-2">Dados da Empresa</div>
+                          <div className="space-y-0.5">
+                             <div className="text-[10px] font-black uppercase text-gray-800 tracking-tight leading-none mb-1" style={{ color: primaryColor }}>{mockAgency.name}</div>
+                             <div className="text-[6px] text-gray-500 font-bold uppercase leading-tight space-y-0.5">
+                                <p>{mockAgency.address}</p>
+                                <p>NUIT: {mockAgency.nuit}</p>
+                                <p>{mockAgency.phone}{mockAgency.phone2 ? ` • ${mockAgency.phone2}` : ''} • {mockAgency.email}</p>
+                             </div>
+                          </div>
+                        </>
+                      )}
                    </div>
                 </div>
                 
                 {/* Date Row */}
-                <div className="mt-4 pt-2 border-t border-gray-100 w-full px-8 flex justify-between items-center">
-                   <div className="text-[6px] font-black uppercase tracking-widest text-[#1e3a8a]">
-                      Data Documento: <span className="text-gray-900 ml-1">25 MAR 2025</span>
-                   </div>
-                   <div className="bg-[#1e3a8a] text-white px-3 py-1 rounded-full text-[6px] font-black uppercase tracking-widest">
-                      {INVOICE_TYPE_LABELS[invoiceInfoSection?.settings.invoiceType || 'proforma']} #25-0043
-                   </div>
-                </div>
+                {invoiceInfoSection && (
+                  <div className="mt-4 pt-2 border-t border-gray-100 w-full px-8 flex justify-between items-center">
+                     <div className="text-[6px] font-black uppercase tracking-widest text-[#1e3a8a]">
+                        Data Factura: <span className="text-gray-900 ml-1">25 MAR 2025</span>
+                     </div>
+                     <div className="bg-[#1e3a8a] text-white px-3 py-1 rounded-full text-[6px] font-black uppercase tracking-widest">
+                        {INVOICE_TYPE_LABELS[invoiceInfoSection.settings?.invoiceType || 'proforma']} #25-0043
+                     </div>
+                  </div>
+                )}
              </div>
           </div>
         ) : layoutModel === 'orange_geometric' ? (
@@ -322,13 +369,23 @@ export function InvoicePreview({
              {/* Geometric Header Header Design */}
              <div className="relative h-16 flex items-stretch">
                 <div className="flex-1 bg-white p-4 flex items-center gap-3">
-                   <div className="w-10 h-10 bg-white border border-gray-100 rounded-lg p-1.5 shadow-sm">
-                     <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
-                   </div>
-                   <div>
-                      <div className="font-black text-[10px] uppercase tracking-tighter leading-none" style={{ color: primaryColor }}>{mockAgency.name}</div>
-                      <div className="text-[5px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">{mockAgency.nuit}</div>
-                   </div>
+                    {headerSection && (
+                      <>
+                        <div 
+                          className="p-0 bg-transparent"
+                          style={{ 
+                            width: `${(headerSection.settings?.logoSize || 100) * 0.4}px`, 
+                            height: 'auto'
+                          }}
+                        >
+                          <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
+                        </div>
+                       <div>
+                          <div className="font-black text-[10px] uppercase tracking-tighter leading-none" style={{ color: primaryColor }}>{mockAgency.name}</div>
+                          <div className="text-[5px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">NUIT: {mockAgency.nuit}</div>
+                       </div>
+                      </>
+                    )}
                 </div>
                 
                 {/* The Red/Orange Angular Accents */}
@@ -341,27 +398,37 @@ export function InvoicePreview({
              </div>
              
              {/* Data Rows below geometric header */}
-             <div className="p-4 grid grid-cols-2 gap-8 bg-gray-50/30">
-                <div className="flex flex-col gap-1">
-                   <div className="text-[5px] font-black text-gray-500 uppercase tracking-[0.2em] mb-0.5 border-b border-gray-200 pb-0.5">Invoice To:</div>
-                   <div className="font-black text-[10px] uppercase text-gray-800 leading-tight">Quadrado Mágico</div>
-                   <div className="text-[6px] text-gray-600 font-bold uppercase tracking-tight max-w-[150px]">
-                      {clientSection?.settings.showClientAddress && "Av. de Moçambique, 123 • Maputo"}
-                   </div>
-                </div>
-                
-                <div className="text-right flex flex-col items-end gap-1">
-                   <div className="text-[5px] font-black text-gray-500 uppercase tracking-[0.2em] mb-0.5 border-b border-gray-200 pb-0.5 w-full">Details:</div>
-                   <div className="flex justify-between w-full text-[6px] pt-1">
-                      <span className="text-gray-500 font-bold uppercase">No. :</span>
-                      <span className="font-black text-gray-900">25-0043</span>
-                   </div>
-                   <div className="flex justify-between w-full text-[6px]">
-                      <span className="text-gray-500 font-bold uppercase">Data :</span>
-                      <span className="font-black text-gray-900">25 SET 2025</span>
-                   </div>
-                </div>
-             </div>
+             {(clientSection || invoiceInfoSection) && (
+               <div className="p-4 grid grid-cols-2 gap-8 bg-gray-50/30">
+                  <div className="flex flex-col gap-1">
+                     {clientSection && (
+                       <>
+                          <div className="text-[5px] font-black text-gray-500 uppercase tracking-[0.2em] mb-0.5 border-b border-gray-200 pb-0.5">Invoice To:</div>
+                          <div className="font-black text-[10px] uppercase text-gray-800 leading-tight">Quadrado Mágico</div>
+                          <div className="text-[6px] text-gray-600 font-bold uppercase tracking-tight max-w-[150px]">
+                             {clientSection.settings?.showClientAddress && "Av. de Moçambique, 123 • Maputo"}
+                          </div>
+                       </>
+                     )}
+                  </div>
+                  
+                  <div className="text-right flex flex-col items-end gap-1">
+                     {invoiceInfoSection && (
+                       <>
+                          <div className="text-[5px] font-black text-gray-500 uppercase tracking-[0.2em] mb-0.5 border-b border-gray-200 pb-0.5 w-full">Details:</div>
+                          <div className="flex justify-between w-full text-[6px] pt-1">
+                             <span className="text-gray-500 font-bold uppercase">No. :</span>
+                             <span className="font-black text-gray-900">25-0043</span>
+                          </div>
+                          <div className="flex justify-between w-full text-[6px]">
+                             <span className="text-gray-500 font-bold uppercase">Data :</span>
+                             <span className="font-black text-gray-900">25 SET 2025</span>
+                          </div>
+                       </>
+                     )}
+                  </div>
+               </div>
+             )}
           </div>
         ) : layoutModel === 'purple_angular' ? (
           /* PURPLE ANGULAR - Modern Tech Approach */
@@ -369,13 +436,23 @@ export function InvoicePreview({
              <div className="flex items-stretch min-h-[80px]">
                 <div className="flex-1 p-4 bg-white">
                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 p-2 bg-white rounded-xl shadow-lg border border-purple-50 flex items-center justify-center">
-                         <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
-                      </div>
-                      <div>
-                        <div className="font-black text-[11px] uppercase text-[#7c3aed] tracking-tight leading-none mb-0.5">{mockAgency.name}</div>
-                        <div className="text-[5px] text-gray-600 font-black tracking-[0.3em] uppercase opacity-90">Creative Design Studio</div>
-                      </div>
+                      {headerSection && (
+                        <>
+                          <div 
+                            className="p-0 flex items-center justify-center bg-transparent"
+                            style={{ 
+                              width: `${(headerSection.settings?.logoSize || 100) * 0.4}px`, 
+                              height: 'auto'
+                            }}
+                          >
+                             <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
+                          </div>
+                         <div>
+                           <div className="font-black text-[11px] uppercase text-[#7c3aed] tracking-tight leading-none mb-0.5">{mockAgency.name}</div>
+                           <div className="text-[5px] text-gray-600 font-black tracking-[0.3em] uppercase opacity-90">Company Details</div>
+                         </div>
+                        </>
+                      )}
                    </div>
                 </div>
                 
@@ -395,83 +472,141 @@ export function InvoicePreview({
              </div>
              
              {/* Info Bar with Purple accents */}
-             <div className="px-6 py-3 border-t border-gray-50 flex justify-between bg-gray-50/50">
-                <div className="flex flex-col gap-0.5">
-                   <div className="text-[9px] font-black text-gray-900 uppercase leading-none mb-1 tracking-tight">Quadrado Mágico</div>
-                   <div className="text-[6px] text-gray-600 font-bold uppercase flex items-center gap-2">
-                      <span className="w-1 h-1 bg-[#7c3aed] rounded-full" />
-                      <span>Av. de Moçambique, 123 • Maputo</span>
-                   </div>
-                   <div className="text-[6px] text-gray-600 font-bold uppercase flex items-center gap-2">
-                      <span className="w-1 h-1 bg-[#7c3aed] rounded-full" />
-                      <span>NUIT: 401 223 334</span>
-                   </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 text-right">
-                   <div>
-                      <div className="text-[4px] text-gray-400 font-black uppercase tracking-widest mb-0.5 opacity-50">Emitido em</div>
-                      <div className="text-[7px] font-black text-gray-800">25 SET 25</div>
-                   </div>
-                   <div>
-                      <div className="text-[4px] text-[#7c3aed] font-black uppercase tracking-widest mb-0.5 opacity-50">Vencimento em</div>
-                      <div className="text-[7px] font-black text-[#7c3aed]">05 OUT 25</div>
-                   </div>
-                </div>
-             </div>
+             {(clientSection || invoiceInfoSection) && (
+               <div className="px-6 py-3 border-t border-gray-50 flex justify-between bg-gray-50/50">
+                  <div className="flex flex-col gap-0.5">
+                     {clientSection && (
+                       <>
+                          <div className="text-[9px] font-black text-gray-900 uppercase leading-none mb-1 tracking-tight">Quadrado Mágico</div>
+                          <div className="text-[6px] text-gray-600 font-bold uppercase flex flex-col gap-1 mt-1">
+                              {clientSection.settings?.showClientAddress !== false && (
+                                <div className="flex items-center gap-2">
+                                  <span className="w-1 h-1 bg-[#7c3aed] rounded-full" />
+                                  <span>Av. de Moçambique, 123 • Maputo</span>
+                                </div>
+                              )}
+                              {clientSection.settings?.showClientNuit !== false && (
+                                <div className="flex items-center gap-2">
+                                  <span className="w-1 h-1 bg-[#7c3aed] rounded-full" />
+                                  <span>NUIT: 401 223 334</span>
+                                </div>
+                              )}
+                              {clientSection.settings?.showClientEmail !== false && (
+                                <div className="flex items-center gap-2">
+                                  <span className="w-1 h-1 bg-[#7c3aed] rounded-full" />
+                                  <span>vendas@quadrado.africa</span>
+                                </div>
+                              )}
+                           </div>
+                       </>
+                     )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-right">
+                     {invoiceInfoSection && (
+                       <>
+                          <div>
+                             <div className="text-[4px] text-gray-400 font-black uppercase tracking-widest mb-0.5 opacity-50">Emitido em</div>
+                             <div className="text-[7px] font-black text-gray-800">25 SET 25</div>
+                          </div>
+                           {invoiceInfoSection.settings?.showDueDate !== false && (
+                             <div>
+                                <div className="text-[4px] text-[#7c3aed] font-black uppercase tracking-widest mb-0.5 opacity-50">Vencimento em</div>
+                                <div className="text-[7px] font-black text-[#7c3aed]">05 OUT 25</div>
+                             </div>
+                           )}
+                       </>
+                     )}
+                  </div>
+               </div>
+             )}
           </div>
         ) : layoutModel === 'centered' ? (
           <div className="grid grid-cols-3 items-center mb-2 pb-3 border-b border-gray-100">
             <div className="text-left">
-              <div className="uppercase tracking-[0.3em] font-black text-[6px] opacity-40 mb-1">Doc.</div>
-              <div className="font-black text-[12px] leading-none" style={{ color: primaryColor }}>
-                {INVOICE_TYPE_LABELS[invoiceInfoSection?.settings.invoiceType || 'proforma']}
-              </div>
-              <div className="text-gray-400 font-bold text-[6px] mt-0.5">#25-0043</div>
+              {invoiceInfoSection && (
+                <>
+                  <div className="uppercase tracking-[0.3em] font-black text-[6px] opacity-40 mb-1">Doc.</div>
+                  <div className="font-black text-[12px] leading-none" style={{ color: primaryColor }}>
+                    {INVOICE_TYPE_LABELS[invoiceInfoSection.settings?.invoiceType || 'proforma']}
+                  </div>
+                  <div className="text-gray-400 font-bold text-[6px] mt-0.5">#25-0043</div>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col items-center">
-              <div className="w-12 h-12 mb-1 flex items-center justify-center p-2 rounded-xl bg-white shadow-md border border-gray-50">
-                <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
-              </div>
-              <div className="font-black text-[10px] uppercase truncate max-w-full" style={{ color: primaryColor }}>{mockAgency.name}</div>
+              {headerSection && (
+                <>
+                  <div 
+                    className="mb-1 flex items-center justify-center p-0 bg-transparent"
+                    style={{ 
+                      width: `${(headerSection.settings?.logoSize || 100) * 0.48}px`, 
+                      height: 'auto'
+                    }}
+                  >
+                    <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
+                  </div>
+                  <div className="font-black text-[10px] uppercase truncate max-w-full" style={{ color: primaryColor }}>{mockAgency.name}</div>
+                </>
+              )}
             </div>
 
             <div className="text-right">
-               <div className="text-gray-400 font-bold text-[5px] uppercase leading-tight line-clamp-2">
-                  {mockAgency.address}
-               </div>
-               <div className="font-bold text-[5px] opacity-60 uppercase tracking-widest leading-none mt-1">{mockAgency.nuit}</div>
-               <div className="text-[6px] font-black mt-1" style={{ color: primaryColor }}>{mockAgency.phone}</div>
+              {headerSection && (
+                <>
+                   <div className="text-gray-400 font-bold text-[5px] uppercase leading-tight line-clamp-2">
+                      {mockAgency.address}
+                   </div>
+                   <div className="font-bold text-[5px] opacity-60 uppercase tracking-widest leading-none mt-1">NUIT: {mockAgency.nuit}</div>
+                   <div className="text-[6px] font-black mt-1 flex flex-col items-end" style={{ color: primaryColor }}>
+                      <span>{mockAgency.phone}</span>
+                      {mockAgency.phone2 && <span>{mockAgency.phone2}</span>}
+                   </div>
+                </>
+              )}
             </div>
           </div>
         ) : layoutModel === 'sidebar' ? (
           <div className="grid grid-cols-[auto_1fr] gap-0 mb-2 border border-gray-100 rounded-lg overflow-hidden bg-muted/5">
             <div className="bg-white p-3 border-r border-gray-100 min-w-[100px]">
-               <div className="text-gray-500 text-[5px] uppercase font-black tracking-widest mb-1">ID</div>
-               <div className="font-black text-[12px] leading-tight mb-0.5 tracking-tighter" style={{ color: primaryColor }}>25-0043</div>
-               <div className="text-gray-600 font-bold text-[5px] uppercase">{INVOICE_TYPE_LABELS[invoiceInfoSection?.settings.invoiceType || 'proforma']}</div>
-               <div className="h-px w-full bg-gray-50 my-2" />
-               <div className="flex items-center gap-1">
-                  <div className="w-1 h-1 rounded-full bg-green-500" />
-                  <span className="text-gray-600 text-[5px] font-bold">ORIGINAL</span>
-               </div>
+               {invoiceInfoSection && (
+                 <>
+                    <div className="text-gray-500 text-[5px] uppercase font-black tracking-widest mb-1">ID</div>
+                    <div className="font-black text-[12px] leading-tight mb-0.5 tracking-tighter" style={{ color: primaryColor }}>25-0043</div>
+                    <div className="text-gray-600 text-[5px] uppercase">{INVOICE_TYPE_LABELS[invoiceInfoSection.settings?.invoiceType || 'proforma']}</div>
+                    <div className="h-px w-full bg-gray-50 my-2" />
+                    <div className="flex items-center gap-1">
+                       <div className="w-1 h-1 rounded-full bg-green-500" />
+                       <span className="text-gray-600 text-[5px] font-bold">ORIGINAL</span>
+                    </div>
+                 </>
+               )}
             </div>
             
             <div className="p-3 flex justify-between items-center bg-white/50">
                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-white rounded-lg p-2 shadow-sm border border-gray-50 flex items-center justify-center">
+                   <div 
+                    className="p-0 flex items-center justify-center bg-transparent"
+                    style={{ 
+                      width: `${(headerSection?.settings.logoSize || 100) * 0.4}px`, 
+                      height: 'auto'
+                    }}
+                  >
                      <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
                   </div>
                   <div className="flex flex-col">
                     <div className="font-black text-[10px] uppercase tracking-tight leading-none mb-0.5" style={{ color: primaryColor }}>{mockAgency.name}</div>
-                    <div className="text-gray-600 text-[6px] font-bold uppercase tracking-widest">{mockAgency.nuit}</div>
+                    <div className="text-gray-600 text-[6px] font-bold uppercase tracking-widest">NUIT: {mockAgency.nuit}</div>
                   </div>
                </div>
                <div className="text-right flex flex-col items-end">
                   <div className="font-bold text-[6px] uppercase text-gray-700 leading-tight mb-0.5 max-w-[120px]">{mockAgency.address}</div>
                   <div className="font-black text-[7px]" style={{ color: primaryColor }}>{mockAgency.email}</div>
-                  <div className="text-gray-600 text-[6px] mt-0.5 font-bold">{mockAgency.phone}</div>
+                  <div className="text-gray-600 text-[6px] mt-0.5 font-bold flex flex-col items-end">
+                    <span>{mockAgency.phone}</span>
+                    {mockAgency.phone2 && <span>{mockAgency.phone2}</span>}
+                  </div>
                </div>
             </div>
           </div>
@@ -479,25 +614,40 @@ export function InvoicePreview({
           <div className="relative mb-2">
              <div className="h-10 w-full flex items-center justify-between px-4 text-white relative overflow-hidden rounded-t-lg" style={{ backgroundColor: primaryColor }}>
                 <div className="flex items-center gap-2 z-10">
-                   <div className="w-7 h-7 bg-white/10 backdrop-blur rounded p-1.5 flex items-center justify-center">
-                     <img src={mockAgency.logo_white_url} className="w-full h-full object-contain" alt="Logo" />
-                   </div>
-                   <div className="flex flex-col">
-                     <span className="font-black text-[10px] uppercase leading-none">{mockAgency.name}</span>
-                     <span className="text-[6px] opacity-90 truncate max-w-[100px] font-black">{mockAgency.address}</span>
-                   </div>
+                   {headerSection && (
+                     <>
+                        <div 
+                         className="backdrop-blur rounded p-1.5 flex items-center justify-center bg-transparent"
+                         style={{ 
+                           width: `${(headerSection.settings?.logoSize || 100) * 0.4}px`, 
+                           height: 'auto'
+                         }}
+                        >
+                          <img src={mockAgency.logo_white_url} className="w-full h-full object-contain" alt="Logo" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-black text-[10px] uppercase leading-none">{mockAgency.name}</span>
+                          <span className="text-[6px] opacity-90 truncate max-w-[100px] font-black">{mockAgency.address}</span>
+                        </div>
+                     </>
+                   )}
                 </div>
                 <div className="flex gap-2 items-center z-10 border-l border-white/20 pl-4 h-6">
-                   <div className="text-right flex flex-col">
-                      <div className="text-[5px] uppercase opacity-80 font-black">Contato</div>
-                      <div className="text-[7px] font-black leading-none">{mockAgency.phone}</div>
-                      <div className="text-[5px] font-black opacity-80 uppercase leading-none mt-1">NUIT: {mockAgency.nuit}</div>
-                   </div>
-                   <div className="text-right flex flex-col">
-                      <div className="text-[5px] uppercase opacity-80 font-black">Email / Endereço</div>
-                      <div className="text-[7px] font-black leading-none">{mockAgency.email}</div>
-                      <div className="text-[5px] font-black opacity-80 uppercase truncate max-w-[80px] leading-none mt-1">{mockAgency.address}</div>
-                   </div>
+                   {headerSection && (
+                     <>
+                        <div className="text-right flex flex-col">
+                           <div className="text-[5px] uppercase opacity-80 font-black">Contato</div>
+                           <div className="text-[7px] font-black leading-none">{mockAgency.phone}</div>
+                           {mockAgency.phone2 && <div className="text-[7px] font-black leading-none mt-0.5">{mockAgency.phone2}</div>}
+                           <div className="text-[5px] font-black opacity-80 uppercase leading-none mt-1">NUIT: {mockAgency.nuit}</div>
+                        </div>
+                        <div className="text-right flex flex-col">
+                           <div className="text-[5px] uppercase opacity-80 font-black">Email / Endereço</div>
+                           <div className="text-[7px] font-black leading-none">{mockAgency.email}</div>
+                           <div className="text-[5px] font-black opacity-80 uppercase truncate max-w-[80px] leading-none mt-1">{mockAgency.address}</div>
+                        </div>
+                     </>
+                   )}
                 </div>
              </div>
              <div className="h-0.5 w-full bg-black/5" />
@@ -505,13 +655,23 @@ export function InvoicePreview({
         ) : layoutModel === 'compact' ? (
           <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-50 bg-gray-50/10 px-2 rounded-t-lg">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-white shadow-sm overflow-hidden flex items-center justify-center border border-gray-100 p-1">
-                <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
-              </div>
-              <div className="flex flex-col">
-                 <span className="font-black text-[9px] uppercase tracking-tight" style={{ color: primaryColor }}>{mockAgency.name}</span>
-                 <span className="text-[4px] text-gray-400 font-bold tracking-widest">{mockAgency.nuit}</span>
-              </div>
+              {headerSection && (
+                <>
+                  <div 
+                    className="flex items-center justify-center p-0 bg-transparent"
+                    style={{ 
+                      width: `${(headerSection.settings?.logoSize || 100) * 0.28}px`, 
+                      height: 'auto'
+                    }}
+                  >
+                    <img src={mockAgency.logo_url} className="w-full h-full object-contain" alt="Logo" />
+                  </div>
+                  <div className="flex flex-col">
+                     <span className="font-black text-[9px] uppercase tracking-tight" style={{ color: primaryColor }}>{mockAgency.name}</span>
+                     <span className="text-[4px] text-gray-400 font-bold tracking-widest">NUIT: {mockAgency.nuit} | {mockAgency.phone}</span>
+                  </div>
+                </>
+              )}
             </div>
             {invoiceInfoSection && (
               <div className="text-right px-2 py-0.5 rounded-full border border-gray-100 bg-white">
@@ -526,37 +686,51 @@ export function InvoicePreview({
           /* CLASSIC / PROFESSIONAL DEFAULT - REFACTORED TO GRID (SCALED) */
           <div className="grid grid-cols-2 gap-2 mb-2 pb-4 border-b border-gray-100">
              <div className="flex flex-col justify-end">
-                {mockAgency.logo_url && (
-                   <div className="w-16 h-10 flex items-center justify-start mb-3">
-                     <img src={mockAgency.logo_url} className="h-full object-contain" alt="Logo" />
-                   </div>
-                )}
-                <div className="space-y-0.5">
-                   <div className="text-gray-500 text-[5px] font-black uppercase tracking-[0.3em] mb-1">Empresa :</div>
-                   <div className="font-black text-[11px] text-gray-800 leading-tight uppercase tracking-tighter" style={{ color: primaryColor }}>{mockAgency.name}</div>
-                   <div className="text-gray-700 text-[6px] font-bold uppercase tracking-widest leading-none">NUIT: {mockAgency.nuit}</div>
-                </div>
+               {headerSection && (
+                 <>
+                   {mockAgency.logo_url && (
+                      <div 
+                        className="flex items-center justify-start mb-3 bg-transparent"
+                        style={{ 
+                          width: `${(headerSection.settings?.logoSize || 100) * 0.64}px`, 
+                          height: 'auto'
+                        }}
+                      >
+                        <img src={mockAgency.logo_url} className="w-full object-contain" alt="Logo" />
+                      </div>
+                   )}
+                  <div className="space-y-0.5">
+                     <div className="text-gray-500 text-[5px] font-black uppercase tracking-[0.3em] mb-1">Empresa :</div>
+                     <div className="font-black text-[11px] text-gray-800 leading-tight uppercase tracking-tighter" style={{ color: primaryColor }}>{mockAgency.name}</div>
+                     <div className="text-gray-700 text-[6px] font-bold uppercase tracking-widest leading-none">NUIT: {mockAgency.nuit}</div>
+                  </div>
+                 </>
+               )}
              </div>
 
              <div className="flex flex-col items-end justify-start text-right">
-                <div className="mb-2">
-                   <div className="text-gray-600 text-[6px] font-black uppercase tracking-[0.4em] mb-0.5">Documento</div>
-                   <div className="font-black text-[20px] leading-none uppercase" style={{ color: primaryColor }}>
-                     {invoiceInfoSection ? INVOICE_TYPE_LABELS[invoiceInfoSection.settings.invoiceType || 'proforma'] : 'Factura'}
-                   </div>
-                   <div className="text-[#1a1a1a] font-bold text-[6px] opacity-80 uppercase tracking-widest mt-1">Ref. 25-0043</div>
-                </div>
+                {invoiceInfoSection && (
+                  <>
+                    <div className="mb-2">
+                       <div className="text-gray-600 text-[6px] font-black uppercase tracking-[0.4em] mb-0.5">Factura</div>
+                       <div className="font-black text-[20px] leading-none uppercase" style={{ color: primaryColor }}>
+                         {INVOICE_TYPE_LABELS[invoiceInfoSection.settings?.invoiceType || 'proforma']}
+                       </div>
+                       <div className="text-[#1a1a1a] font-bold text-[6px] opacity-80 uppercase tracking-widest mt-1">Ref. 25-0043</div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-gray-50 pt-2 mt-1 w-full max-w-[140px]">
-                   <div>
-                      <div className="text-[5px] font-black text-gray-500 uppercase tracking-widest">Emissão</div>
-                      <div className="text-[7px] font-black text-gray-700">25 MAR 25</div>
-                   </div>
-                   <div>
-                      <div className="text-[5px] font-black text-gray-500 uppercase tracking-widest">Vencimento</div>
-                      <div className="text-[7px] font-black text-gray-700 font-mono">08 ABR 25</div>
-                   </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-gray-50 pt-2 mt-1 w-full max-w-[140px]">
+                       <div>
+                          <div className="text-[5px] font-black text-gray-500 uppercase tracking-widest">Emissão</div>
+                          <div className="text-[7px] font-black text-gray-700">25 MAR 25</div>
+                       </div>
+                       <div>
+                          <div className="text-[5px] font-black text-gray-500 uppercase tracking-widest">Vencimento</div>
+                          <div className="text-[7px] font-black text-gray-700 font-mono">08 ABR 25</div>
+                       </div>
+                    </div>
+                  </>
+                )}
              </div>
           </div>
         )}
@@ -582,7 +756,7 @@ export function InvoicePreview({
                    </div>
                 </div>
                 <div className="rounded-xl p-3 border border-border bg-muted/5 shadow-sm">
-                   <div className="text-[5px] font-bold text-gray-600 uppercase tracking-widest mb-1">Dados do Documento</div>
+                   <div className="text-[5px] font-bold text-gray-600 uppercase tracking-widest mb-1">Dados da Factura</div>
                    <div className="grid grid-cols-2 gap-1 gap-y-1.5 h-full content-center">
                        <div>
                          <div className="text-[4px] text-gray-600 uppercase font-bold tracking-widest">Emissão</div>
@@ -605,38 +779,39 @@ export function InvoicePreview({
                 style={layoutModel !== 'compact' ? { backgroundColor: `${primaryColor}20` } : {}}
               >
                 <div className="flex justify-between gap-2">
-                  {/* Left: Client Info */}
-                  {clientSection && (
-                    <div className="flex-1">
-                       <div className="text-[5px] text-gray-400 mb-0.5 uppercase font-bold tracking-widest">Facturar para</div>
-                       <div className="font-black text-[10px] text-gray-800 uppercase leading-none tracking-tight">Quadrado Mágico</div>
-                       <div className="text-gray-500 text-[6px] mt-1 space-y-0.5 leading-tight font-medium">
-                          <div>Av. de Moçambique, 123 • Maputo</div>
-                          <div>NUIT: 401 223 334</div>
-                          {clientSection.settings.showClientEmail && <div>vendas@quadrado.africa</div>}
-                       </div>
-                    </div>
-                  )}
-
-                  {/* Right: Dates + Total */}
-                  {invoiceInfoSection && (
-                    <div className={cn(
-                      "text-right px-2",
-                      layoutModel !== 'compact' && "border-l border-gray-300"
-                    )}>
-                      <div className="text-[5px]">
-                        <span className="text-gray-500">Data: </span>
-                        <span>25/12/2025</span>
-                      </div>
-                      {invoiceInfoSection.settings.showTotalInHeader && (
-                        <div className="mt-1 pt-1 border-t border-gray-300">
-                          <div className="font-bold text-[8px]" style={{ color: primaryColor }}>
-                            Total: 5.336 mt
-                          </div>
+                   {/* Left: Client Info */}
+                   {clientSection && (
+                     <div className="flex-1">
+                        <div className="text-[5px] text-gray-400 mb-0.5 uppercase font-bold tracking-widest">Facturar para</div>
+                        <div className="font-black text-[10px] text-gray-800 uppercase leading-none tracking-tight">Quadrado Mágico</div>
+                        <div className="text-gray-500 text-[6px] mt-1 space-y-0.5 leading-tight font-medium">
+                           {clientSection.settings?.showClientAddress !== false && <div>Av. de Moçambique, 123 • Maputo</div>}
+                           {clientSection.settings?.showClientNuit !== false && <div>NUIT: 401 223 334</div>}
+                           {clientSection.settings?.showClientEmail !== false && <div>vendas@quadrado.africa</div>}
+                           {clientSection.settings?.showClientPhone !== false && <div>+258 84 000 0000</div>}
                         </div>
-                      )}
-                    </div>
-                  )}
+                     </div>
+                   )}
+
+                   {/* Right: Dates + Total */}
+                   {invoiceInfoSection && (
+                     <div className={cn(
+                       "text-right px-2",
+                       layoutModel !== 'compact' && "border-l border-gray-300"
+                     )}>
+                       <div className="text-[5px]">
+                         <span className="text-gray-500">Data: </span>
+                         <span>25/12/2025</span>
+                       </div>
+                       {invoiceInfoSection.settings.showTotalInHeader && (
+                         <div className="mt-1 pt-1 border-t border-gray-300">
+                           <div className="font-bold text-[8px]" style={{ color: primaryColor }}>
+                             Total: 5.336 mt
+                           </div>
+                         </div>
+                       )}
+                     </div>
+                   )}
                 </div>
               </div>
             )}
@@ -723,18 +898,18 @@ export function InvoicePreview({
                    <div className="bg-transparent pr-4">
                       <div className="text-[8px] font-black uppercase mb-1">Nota :</div>
                       <div className="text-[6px] text-gray-500 max-w-[220px] leading-relaxed">
-                         Este é um documento preliminar enviado ao cliente com os preços de um produto ou serviço com o objetivo de informá-lo(a) antes da venda ser confirmada.
+                         Esta é uma factura preliminar enviada ao cliente com os preços de um produto ou serviço com o objetivo de informá-lo(a) antes da venda ser confirmada.
                       </div>
                    </div>
                 ) : (
-                 totalsSection.settings.showNotes && (
+                  totalsSection.settings.showNotes && (
                <div className="flex-1">
                   <div className="text-[5px] text-gray-700 mb-0.5 font-bold">Nota:</div>
                   <div className="text-[6px] text-gray-800 font-medium">
-                   Este é um documento enviado ao cliente informando os preços antes da venda.
+                   Esta é uma factura enviada ao cliente informando os preços antes da venda.
                   </div>
                </div>
-                 )
+                  )
                 )}
              </div>
 
@@ -853,13 +1028,13 @@ export function InvoicePreview({
               <div className="flex-1 text-center pb-1">
                    {layoutModel !== 'onix_hero' && (
                       <div className="text-[5px] text-gray-400 leading-relaxed max-w-[150px] mx-auto">
-                         {footerSection.settings.footerLegalText || 'Documento não válido para fins fiscais.'}
+                         {footerSection.settings.footerLegalText || 'Factura não válida para fins fiscais.'}
                       </div>
                    )}
                 {layoutModel === 'onix_hero' ? (
                    <div className="text-[5px] mt-1 font-black uppercase opacity-80 leading-tight flex flex-col items-center text-center">
-                      <span>Obrigado por confiar na {mockAgency.name}.</span>
-                      <span className="text-[#84cc16]">Construímos para durar.</span>
+                      <span>{footerSection.settings.footerText || `Obrigado por confiar na ${mockAgency.name}.`}</span>
+                      {!footerSection.settings.footerText && <span className="text-[#84cc16]">Construímos para durar.</span>}
                    </div>
                 ) : (
                    <div className="text-[5px] mt-1" style={{ color: primaryColor }}>
@@ -885,7 +1060,7 @@ export function InvoicePreview({
         {/* Universal Footer Attribution */}
         <div className="mt-1 pb-0 text-center w-full relative">
            <div className="text-[5px] text-gray-300 font-bold tracking-tight uppercase opacity-50 relative z-10">
-              Documento processado eletronicamente pelo Qualify.<br/>
+              Factura processada eletronicamente pelo Qualify.<br/>
               Termos e condições de serviço aplicáveis.
            </div>
            
@@ -898,7 +1073,7 @@ export function InvoicePreview({
                 </svg>
               </div>
            )}
-        </div>
+         </div>
       </div>
     </div>
   </div>

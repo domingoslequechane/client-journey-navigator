@@ -13,12 +13,18 @@ import {
   Loader2, Save, Check, Sparkles, ChevronRight,
   ChevronLeft, Palette, FileText, LayoutTemplate,
   Eye, Droplets, AlignLeft, Maximize2, Minimize2,
-  Upload, ImageIcon, X
+  Upload, ImageIcon, X, Settings2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SimplifiedEditor } from '@/components/invoice-editor/SimplifiedEditor';
 import { InvoicePreview } from '@/components/invoice-editor/InvoicePreview';
-import { DEFAULT_SECTIONS, TemplateStyle, LayoutModel } from '../invoice-editor/section-types';
+import {
+  TemplateStyle,
+  LayoutModel,
+  DEFAULT_SECTIONS,
+  PaperSize,
+  InvoiceSection,
+} from '../invoice-editor/section-types';
 import { GoogleFontPicker } from '@/components/studio/GoogleFontPicker';
 
 /* ─────────────────────────────────────────────────────────────────
@@ -100,18 +106,6 @@ const LAYOUTS: {
     imagePath: 'https://cgpnyuefthhghonrqitp.supabase.co/storage/v1/object/public/placeholders/layout-letterhead.png',
   },
   {
-    value: 'logo_hero',
-    label: 'Logo Minimalista',
-    description: 'Destaque para o logo à esquerda sem o título da agência',
-    imagePath: 'https://cgpnyuefthhghonrqitp.supabase.co/storage/v1/object/public/placeholders/layout-logo-hero.png',
-  },
-  {
-    value: 'logo_centered',
-    label: 'Logo Central Grande',
-    description: 'Logo de grandes dimensões centralizado sem texto redundante',
-    imagePath: 'https://cgpnyuefthhghonrqitp.supabase.co/storage/v1/object/public/placeholders/layout-logo-centered.png',
-  },
-  {
     value: 'sidebar_vertical',
     label: 'Lateral Vertical',
     description: 'ID do documento na vertical à esquerda (Estilo Europeu)',
@@ -159,7 +153,6 @@ const STYLES: {
   { value: 'corporate_pro',   label: 'Corporate Pro',   accent: '#002a5c', bg: '#f5f7fa' },
   { value: 'eco_friendly',    label: 'Eco Friendly',    accent: '#4a6741', bg: '#fdfaf5' },
   { value: 'luxury_gold',     label: 'Luxury Gold',     accent: '#d4af37', bg: '#121212', dark: true },
-  { value: 'blueprint',       label: 'Blueprint',       accent: '#ffffff', bg: '#004e92', dark: true },
   { value: 'kawaii',          label: 'Kawaii',          accent: '#ff8fab', bg: '#fff5f8' },
   { value: 'minimalist_luxe', label: 'Minimalist Luxe', accent: '#000000', bg: '#ffffff' },
   { value: 'retro_80s',       label: 'Retro 80s',       accent: '#ff2d78', bg: '#240b36', dark: true },
@@ -235,6 +228,7 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
   const [editorOpen, setEditorOpen] = useState(false);
   const [previewMaximized, setPreviewMaximized] = useState(false);
   const [step, setStep] = useState<Step>('layout');
+  const [sections, setSections] = useState<InvoiceSection[]>(DEFAULT_SECTIONS);
   const aiInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -287,11 +281,40 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
           font_family: (data as any).font_family || 'Inter',
         };
         setSettings(loaded);
+        if (data.custom_layout && (data.custom_layout as any).sections) {
+          setSections((data.custom_layout as any).sections);
+        }
         localStorage.setItem(`invoice_settings_v2_${organizationId}`, JSON.stringify(loaded));
       }
       setLoading(false);
     })();
   }, [organizationId]);
+
+  useEffect(() => {
+    if (!editorOpen && organizationId) {
+      (async () => {
+        const { data } = await supabase
+          .from('invoice_template_settings')
+          .select('custom_layout, template_style, layout_model, font_family, primary_color')
+          .eq('organization_id', organizationId)
+          .maybeSingle();
+        
+        const d = data as any;
+        if (d?.custom_layout && d.custom_layout.sections) {
+          setSections(d.custom_layout.sections);
+        }
+        if (d) {
+          setSettings(p => ({
+            ...p,
+            template_style: (d.template_style as TemplateStyle) || p.template_style,
+            layout_model: (d.layout_model as LayoutModel) || p.layout_model,
+            font_family: d.font_family || p.font_family,
+            primary_color: d.primary_color || p.primary_color,
+          }));
+        }
+      })();
+    }
+  }, [editorOpen, organizationId]);
 
   const handleSave = async () => {
     if (!organizationId || !isAdmin) return;
@@ -453,7 +476,7 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
           {step === 'layout' && (
             <div className="flex flex-col gap-5">
               <div>
-                <h3 className="text-base font-semibold mb-1 text-foreground">Estrutura do documento</h3>
+                <h3 className="text-base font-semibold mb-1 text-foreground">Estrutura da Factura</h3>
                 <p className="text-sm text-foreground/80">
                   Escolha como os elementos são organizados na página
                 </p>
@@ -701,62 +724,25 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Agency name */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da Agência</Label>
-                  <Input
-                    value={settings.agency_name || ''}
-                    onChange={e => setSettings(p => ({ ...p, agency_name: e.target.value || null }))}
-                    disabled={!isAdmin}
-                    placeholder="Ex: QUALIFY"
-                    className="h-9"
-                  />
+              <div className="p-4 rounded-xl border border-dashed border-primary/20 bg-primary/5 flex flex-col items-center text-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Settings2 className="h-5 w-5 text-primary" />
                 </div>
-                {/* NUIT */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">NUIT</Label>
-                  <Input
-                    value={settings.agency_nuit || ''}
-                    onChange={e => setSettings(p => ({ ...p, agency_nuit: e.target.value || null }))}
-                    disabled={!isAdmin}
-                    placeholder="Ex: 400123987"
-                    className="h-9"
-                  />
+                <div>
+                  <h4 className="font-semibold text-sm">Dados da Agência (NUIT, Contatos, etc.)</h4>
+                  <p className="text-xs text-muted-foreground max-w-[300px] mt-1">
+                    Agora pode configurar os dados da sua agência diretamente no editor de secções para maior flexibilidade.
+                  </p>
                 </div>
-                {/* Phone */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Telefone</Label>
-                  <Input
-                    value={settings.agency_phone || ''}
-                    onChange={e => setSettings(p => ({ ...p, agency_phone: e.target.value || null }))}
-                    disabled={!isAdmin}
-                    placeholder="+258 84 000 0000"
-                    className="h-9"
-                  />
-                </div>
-                {/* Email */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</Label>
-                  <Input
-                    value={settings.agency_email || ''}
-                    onChange={e => setSettings(p => ({ ...p, agency_email: e.target.value || null }))}
-                    disabled={!isAdmin}
-                    placeholder="info@agencia.mz"
-                    className="h-9"
-                  />
-                </div>
-                {/* Address */}
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Endereço</Label>
-                  <Input
-                    value={settings.agency_address || ''}
-                    onChange={e => setSettings(p => ({ ...p, agency_address: e.target.value || null }))}
-                    disabled={!isAdmin}
-                    placeholder="Av. 25 de Setembro, 147 - Maputo"
-                    className="h-9"
-                  />
-                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setEditorOpen(true)}
+                  className="gap-2 h-8 text-xs font-semibold"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Abrir Editor de Secções
+                </Button>
               </div>
 
               <div className="h-px bg-border" />
@@ -825,7 +811,7 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
               {/* Editor de secções */}
               <div className="p-5 rounded-xl border border-border bg-card flex items-center justify-between gap-4">
                 <div>
-                  <div className="font-semibold text-sm mb-0.5">Secções do documento</div>
+                  <div className="font-semibold text-sm mb-0.5">Secções da Factura</div>
                   <p className="text-xs text-muted-foreground">
                     Reordene, mostre ou oculte secções como cabeçalho, cliente, serviços, totais e rodapé
                   </p>
@@ -883,7 +869,7 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
             <div className="aspect-[210/297] relative overflow-hidden bg-white">
               <InvoicePreview
                 key={`${settings.layout_model}-${settings.template_style}-${settings.font_family}`}
-                sections={DEFAULT_SECTIONS}
+                sections={sections}
                 paperSize="A4"
                 primaryColor={settings.primary_color}
                 showWatermark={settings.show_watermark}
@@ -917,19 +903,22 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
 
         {/* ── PREVIEW MAXIMIZED DIALOG ── */}
         <Dialog open={previewMaximized} onOpenChange={setPreviewMaximized}>
-          <DialogContent className="max-w-none w-[90vw] h-[92vh] flex flex-col p-0 overflow-hidden bg-muted/50">
-            <div className="flex items-center justify-between px-5 py-3 border-b bg-background">
-              <span className="font-semibold text-sm flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
-                Pré-visualização em Escala Real
-              </span>
-              <Button variant="ghost" size="sm" onClick={() => setPreviewMaximized(false)} className="gap-1.5 h-8">
-                <Minimize2 className="h-3.5 w-3.5" />
-                Fechar
-              </Button>
-            </div>
-            <div className="flex-1 flex items-center justify-center p-8 overflow-auto">
-              <div className="h-full max-h-full shadow-2xl" style={{ aspectRatio: '210/297' }}>
+          <DialogContent className="max-w-none w-screen h-screen border-none bg-background/80 backdrop-blur-md p-0 overflow-hidden">
+            {/* Floating close button */}
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setPreviewMaximized(false)} 
+              className="fixed top-6 right-6 z-[100] rounded-full shadow-2xl bg-background/50 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all hover:scale-110 active:scale-95 group"
+            >
+              <X className="h-5 w-5 text-primary group-hover:rotate-90 transition-transform duration-300" />
+            </Button>
+
+            <div className="w-full h-full flex items-center justify-center p-4 md:p-8 overflow-auto">
+              <div 
+                className="h-full max-h-[92vh] shadow-[0_0_50px_rgba(0,0,0,0.2)] bg-white animate-in zoom-in-95 duration-500 rounded-sm overflow-hidden" 
+                style={{ aspectRatio: '210/297' }}
+              >
                 <InvoicePreview
                   key={`maximized-${settings.layout_model}-${settings.template_style}-${settings.font_family}`}
                   sections={DEFAULT_SECTIONS}
@@ -950,8 +939,16 @@ export function InvoiceTemplateSettings({ organizationId }: InvoiceTemplateSetti
                 />
               </div>
             </div>
-            <div className="px-5 py-3 border-t bg-background text-[11px] text-muted-foreground text-center">
-              {settings.layout_model} · {settings.template_style} · {settings.primary_color}
+            
+            {/* Floating Info Badge */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 rounded-full bg-background/40 backdrop-blur-md border border-primary/10 shadow-xl opacity-60 hover:opacity-100 transition-opacity">
+               <div className="flex items-center gap-3 text-[10px] uppercase font-bold tracking-widest text-primary/80">
+                  <span>{settings.layout_model}</span>
+                  <div className="w-1 h-1 rounded-full bg-primary/30" />
+                  <span>{settings.template_style}</span>
+                  <div className="w-1 h-1 rounded-full bg-primary/30" />
+                  <span>A4 Layout</span>
+               </div>
             </div>
           </DialogContent>
         </Dialog>

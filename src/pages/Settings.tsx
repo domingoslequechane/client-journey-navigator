@@ -21,6 +21,7 @@ import {
   Phone, AlertTriangle, CreditCard, Plus, X,
   Settings as SettingsIcon, Check, Shield,
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 // ─── Module-level cache ───────────────────────────────────────────────────────
 // Stored outside React so it survives component unmounts (e.g. switching OS windows).
@@ -60,11 +61,11 @@ interface SettingsCache {
 // ─── Nav items ────────────────────────────────────────────────────────────────
 type NavSection = 'profile' | 'agency' | 'knowledge' | 'documents';
 
-const NAV_ITEMS: { id: NavSection; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
+const NAV_ITEMS: { id: NavSection; label: string; icon: React.ReactNode; adminOnly?: boolean; badge?: string }[] = [
   { id: 'profile',    label: 'Meu Perfil',        icon: <User className="h-4 w-4" /> },
   { id: 'agency',     label: 'Agência',            icon: <Building2 className="h-4 w-4" />, adminOnly: true },
   { id: 'knowledge',  label: 'Base de Conhecimento', icon: <BookOpen className="h-4 w-4" />, adminOnly: true },
-  { id: 'documents',  label: 'Documentos',         icon: <FileText className="h-4 w-4" />, adminOnly: true },
+  { id: 'documents',  label: 'Documentos',         icon: <FileText className="h-4 w-4" />, adminOnly: true, badge: 'BETA' },
 ];
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -441,14 +442,21 @@ export default function Settings() {
               key={item.id}
               onClick={() => goTo(item.id)}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left',
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left justify-between',
                 activeSection === item.id
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               )}
             >
-              {item.icon}
-              {item.label}
+              <div className="flex items-center gap-3">
+                {item.icon}
+                {item.label}
+              </div>
+              {item.badge && (
+                <Badge variant="secondary" className="text-[9px] px-1.5 h-4 font-bold bg-primary/10 text-primary border-none uppercase">
+                  {item.badge}
+                </Badge>
+              )}
             </button>
           ))}
         </aside>
@@ -466,8 +474,15 @@ export default function Settings() {
                   : 'bg-muted text-muted-foreground'
               )}
             >
-              {item.icon}
-              {item.label}
+              <div className="flex items-center gap-1.5">
+                {item.icon}
+                {item.label}
+                {item.badge && (
+                  <Badge variant="secondary" className="text-[8px] px-1 h-3 font-bold bg-primary/10 text-primary border-none uppercase">
+                    {item.badge}
+                  </Badge>
+                )}
+              </div>
             </button>
           ))}
         </div>

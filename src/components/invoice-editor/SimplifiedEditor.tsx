@@ -126,7 +126,7 @@ export function SimplifiedEditor({
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
-    const items = Array.from(sections);
+    const items = [...sortedSections];
     const [moved] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, moved);
     setSections(items.map((item, i) => ({ ...item, order: i })));
@@ -149,14 +149,16 @@ export function SimplifiedEditor({
         organization_id: organizationId,
         custom_layout: { sections } as any,
         paper_size: paperSize,
-        template_style: 'onix',
+        template_style: templateStyle,
+        layout_model: layoutModel,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'organization_id' });
 
-      toast({ title: 'Guardado!', description: 'Configuração de secções guardada.' });
+      toast({ title: 'Guardado!', description: 'Configuração de secções guardada com sucesso.' });
       onOpenChange(false);
-    } catch {
-      toast({ title: 'Erro ao guardar', variant: 'destructive' });
+    } catch (error) {
+      console.error('Error saving layout:', error);
+      toast({ title: 'Erro ao guardar', description: 'Não foi possível persistir as alterações.', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
