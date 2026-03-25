@@ -129,7 +129,7 @@ export function MobileNav() {
     items.push({ name: t('navigation.studio'), href: '/app/studio', icon: PenTool, show: true });
 
     // Add AI Agents to more menu
-    items.push({ name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, show: true, badge: 'BETA' });
+    items.push({ name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, show: true });
 
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },

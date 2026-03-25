@@ -42,6 +42,14 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from '@/lib/utils';
@@ -160,6 +168,15 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     }
     return true;
   });
+  const [totalUsage, setTotalUsage] = useState({ promptTokens: 0, candidatesTokens: 0 });
+  const [agentUsage, setAgentUsage] = useState<Partial<Record<FlyerSquadAgent, { prompt: number, candidates: number, model: string } | null>>>({
+    orchestrator: null,
+    copywriter: null,
+    designer: null,
+    reviewer: null,
+    publisher: null
+  });
+  const [showCostSummary, setShowCostSummary] = useState(false);
   const ITEMS_PER_PAGE = 9;
 
   useEffect(() => {
@@ -399,6 +416,15 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     setIsProcessing(true);
     setResultImage(null);
     setLogs([]);
+    setTotalUsage({ promptTokens: 0, candidatesTokens: 0 });
+    setAgentUsage({
+      orchestrator: null,
+      copywriter: null,
+      photographer: null,
+      designer: null,
+      reviewer: null,
+      publisher: null
+    });
     
     let currentContext = {
       project: {
@@ -439,6 +465,9 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
       let retryCount = 0;
       const MAX_RETRIES = 3;
       let lastImageUrl: string | null = null; 
+      
+      // Local accumulator for tokens (safest way in a loop)
+      let accumulatedUsage = { prompt: 0, candidates: 0 };
 
       while (currentStepIdx < AGENTS.length && retryCount <= MAX_RETRIES) {
         setCurrentStep(currentStepIdx);
@@ -472,6 +501,28 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         }
 
         currentContext[agent.id] = data.result;
+        
+        // Accumulate tokens
+        if (data.usageMetadata) {
+          accumulatedUsage.prompt += (data.usageMetadata.promptTokenCount || 0);
+          accumulatedUsage.candidates += (data.usageMetadata.candidatesTokenCount || 0);
+          
+          setAgentUsage(prev => ({
+            ...prev,
+            [agent.id]: {
+              prompt: (prev[agent.id]?.prompt || 0) + (data.usageMetadata.promptTokenCount || 0),
+              candidates: (prev[agent.id]?.candidates || 0) + (data.usageMetadata.candidatesTokenCount || 0),
+              model: (agent.id === 'designer') ? 'Gemini 3.1 Flash Image Preview' : 'Gemini 3.1 Pro Preview'
+            }
+          }));
+          
+          setTotalUsage(prev => ({
+            promptTokens: prev.promptTokens + (data.usageMetadata.promptTokenCount || 0),
+            candidatesTokens: prev.candidatesTokens + (data.usageMetadata.candidatesTokenCount || 0)
+          }));
+          
+          console.log(`[FlyerSquad] Agent ${agent.id} usage:`, data.usageMetadata);
+        }
 
         setLogs(prev => prev.map((log) => 
           log.agent === agent.id && log.status === 'working' ? { 
@@ -538,11 +589,21 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           title: project.name,
           niche: project.niche,
           size: aspectRatio,
-          style: tone
+          style: tone,
+          usage_prompt: accumulatedUsage.prompt,
+          usage_candidates: accumulatedUsage.candidates,
+          model: 'Gemini 3.1 Suite',
+          model_meta: JSON.stringify(agentUsage)
         });
 
         if (insertError) throw insertError;
         
+        // Finalize state update
+        setTotalUsage({
+          promptTokens: accumulatedUsage.prompt,
+          candidatesTokens: accumulatedUsage.candidates
+        });
+
         await refetchHistory();
         playCompletionSound();
       }
@@ -1083,9 +1144,11 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                               <span className="font-bold text-xs tracking-tight">{agent.label}</span>
                               {isActive && <span className="text-[8px] font-black tracking-widest text-primary uppercase animate-pulse">Trabalhando</span>}
                             </div>
-                            <p className="text-[10px] text-muted-foreground line-clamp-1">
-                              {isActive ? agent.description : isDone ? "Concluído" : "Aguardando..."}
-                            </p>
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] text-muted-foreground line-clamp-1">
+                                {isActive ? agent.description : isDone ? "Concluído" : "Aguardando..."}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1390,6 +1453,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         </div>
       )}
       </div>
+      {/* Modal de Custos Ocultado por solicitação do usuário */}
     </div>
   );
 }

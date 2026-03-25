@@ -1,5 +1,37 @@
 export type PaperSize = 'A4' | 'A5';
 
+export type LayoutModel = 
+  | 'classic'
+  | 'centered'
+  | 'sidebar'
+  | 'compact'
+  | 'modern_split'
+  | 'letterhead'
+  | 'logo_hero'
+  | 'logo_centered'
+  | 'sidebar_vertical'
+  | 'onix_hero'
+  | 'borcelle_navy'
+  | 'orange_geometric'
+  | 'purple_angular';
+
+export type TemplateStyle = 
+  | 'modern' 
+  | 'classic' 
+  | 'minimal' 
+  | 'onix' 
+  | 'cyber_neo' 
+  | 'corporate_pro' 
+  | 'eco_friendly' 
+  | 'luxury_gold' 
+  | 'blueprint' 
+  | 'kawaii' 
+  | 'minimalist_luxe' 
+  | 'retro_80s' 
+  | 'space_odyssey' 
+  | 'artistic_brush'
+  | 'spanish_vibe';
+
 export type InvoiceType = 'proforma' | 'factura' | 'recibo' | 'orcamento';
 
 export type SectionType = 
@@ -21,6 +53,15 @@ export interface SectionSettings {
   showSlogan?: boolean;
   slogan?: string;
   showEmail?: boolean;
+  logoSize?: number;
+  
+  // Agency Info (Header section)
+  agencyName?: string;
+  agencyNuit?: string;
+  agencyPhone1?: string;
+  agencyPhone2?: string;
+  agencyEmail?: string;
+  agencyAddress?: string;
   
   // Invoice Info
   invoiceType?: InvoiceType;
@@ -100,6 +141,13 @@ export const DEFAULT_SECTIONS: InvoiceSection[] = [
       showSlogan: true,
       slogan: 'A sua agência de marketing digital',
       showEmail: true,
+      logoSize: 100,
+      agencyName: 'QUALIFY',
+      agencyNuit: '400123987',
+      agencyPhone1: '+258 84 000 0000',
+      agencyPhone2: '',
+      agencyEmail: 'info@qualify.mz',
+      agencyAddress: 'Av. 25 de Setembro, 147 - Maputo',
     },
   },
   {

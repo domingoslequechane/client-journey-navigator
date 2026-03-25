@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -19,6 +19,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { 
   Loader2, CheckCircle2, Clock, Receipt, XCircle, Compass, Target, 
   TrendingUp, Rocket, Sparkles, AlertTriangle, ExternalLink, RotateCcw, CreditCard 
@@ -88,14 +96,23 @@ export function SubscriptionTab() {
   const { user } = useAuth();
   const { 
     loading, subscription, organization, isActive, isPaidPlan, planType, 
-    isPastDue, cancelAtPeriodEnd, refetch 
+    isPastDue, cancelAtPeriodEnd, isExpired, hasActiveSubscription, refetch 
   } = useSubscription();
+  const location = useLocation();
+  const [showRedirectModal, setShowRedirectModal] = useState(false);
   const [payments, setPayments] = useState<PaymentHistory[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const currentPlan = PLAN_CONFIG[planType] || PLAN_CONFIG.free;
   const PlanIcon = currentPlan.icon;
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('reason') === 'expired') {
+      setShowRedirectModal(true);
+    }
+  }, [location]);
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -123,34 +140,21 @@ export function SubscriptionTab() {
   }, [organization?.id]);
 
   const handleManagePayment = async () => {
-    if (!organization?.id) return;
-    
-    setActionLoading('portal');
-    try {
-      const { data, error } = await supabase.functions.invoke('manage-subscription', {
-        body: {
-          action: 'get-portal-url',
-          organizationId: organization.id,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.customerPortalUrl) {
-        window.open(data.customerPortalUrl, '_blank');
-      } else {
-        throw new Error('URL do portal não encontrada');
-      }
-    } catch (error: any) {
-      console.error('Error getting portal URL:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível abrir o portal de pagamento',
-        variant: 'destructive',
-      });
-    } finally {
-      setActionLoading(null);
+    if (subscription?.lemonsqueezyCustomerPortalUrl) {
+      window.open(subscription.lemonsqueezyCustomerPortalUrl, '_blank');
+      return;
     }
+
+    if (!subscription?.lemonsqueezySubscriptionId) {
+      toast({
+        title: 'Informação',
+        description: 'ID da assinatura não encontrado. Tente sincronizar primeiro.',
+      });
+      return;
+    }
+    
+    // Fallback if portal URL is not set yet
+    window.open(`https://app.lemonsqueezy.com/my-orders`, '_blank');
   };
 
   const handleCancelSubscription = async () => {
@@ -190,6 +194,14 @@ export function SubscriptionTab() {
     
     setActionLoading('resume');
     try {
+      // First, sync to make sure we have the latest status from LS
+      const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-subscription', {
+        body: { organizationId: organization.id },
+      });
+      
+      if (syncError) console.error('Auto-sync before resume failed:', syncError);
+      await refetch();
+
       const { data, error } = await supabase.functions.invoke('manage-subscription', {
         body: {
           action: 'resume',
@@ -197,7 +209,15 @@ export function SubscriptionTab() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+      
+      if (data?.error) {
+        console.error('Business logic error:', data.error);
+        throw new Error(data.error);
+      }
 
       toast({
         title: 'Assinatura reativada',
@@ -208,8 +228,8 @@ export function SubscriptionTab() {
     } catch (error: any) {
       console.error('Error resuming subscription:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível reativar a assinatura',
+        title: 'Erro ao reativar',
+        description: error.message || 'Não foi possível reativar a assinatura. Verifique se o seu cartão é válido.',
         variant: 'destructive',
       });
     } finally {
@@ -268,7 +288,7 @@ export function SubscriptionTab() {
       )}
 
       {/* Pending Cancellation Alert */}
-      {cancelAtPeriodEnd && subscription?.currentPeriodEnd && (
+      {cancelAtPeriodEnd && subscription?.currentPeriodEnd && hasActiveSubscription && (
         <Alert className="border-yellow-500/30 bg-yellow-500/5">
           <Clock className="h-4 w-4 text-yellow-500" />
           <AlertTitle className="text-yellow-600">Cancelamento Pendente</AlertTitle>
@@ -317,9 +337,16 @@ export function SubscriptionTab() {
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <PlanIcon className={cn("h-4 w-4 sm:h-5 sm:w-5", currentPlan.color)} />
                   Plano {currentPlan.name}
+                  {hasActiveSubscription ? (
+                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20 ml-2">Ativo</Badge>
+                  ) : subscription?.status === 'cancelled' || cancelAtPeriodEnd ? (
+                    <Badge variant="outline" className="text-yellow-500 border-yellow-500/20 ml-2">Cancelado</Badge>
+                  ) : isExpired ? (
+                    <Badge variant="destructive" className="ml-2">Expirado</Badge>
+                  ) : null}
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
-                  {isPaidPlan && isActive ? 'Sua assinatura está ativa' : 'Você não possui assinatura ativa'}
+                  {hasActiveSubscription ? 'Sua assinatura está ativa' : 'Você não possui assinatura ativa no momento'}
                 </CardDescription>
               </div>
             </div>
@@ -346,7 +373,7 @@ export function SubscriptionTab() {
           {/* Management buttons */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-4 border-t">
             {/* Payment management - only for paid plans */}
-            {isPaidPlan && isActive && (
+            {isPaidPlan && hasActiveSubscription && (
               <>
                 <Button 
                   variant="outline" 
@@ -519,6 +546,27 @@ export function SubscriptionTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Redirect Reason Modal */}
+      <Dialog open={showRedirectModal} onOpenChange={setShowRedirectModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Acesso Restrito
+            </DialogTitle>
+            <DialogDescription className="py-2">
+              Você foi redirecionado para esta página porque o plano da sua agência expirou ou foi cancelado. 
+              Para continuar utilizando todas as funcionalidades do Qualify, é necessário reativar sua assinatura ou escolher um novo plano.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setShowRedirectModal(false)}>
+              Entendi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

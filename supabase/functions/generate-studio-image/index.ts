@@ -154,6 +154,8 @@ serve(async (req) => {
         // Add instructions ALWAYS LAST to ensure high attention
         // Use extremely aggressive constraints as Gemini API often ignores imageGenerationConfig.aspectRatio in image-to-image
         const instructionPart = `${systemPrompt}
+MANDATORY QUALITY: Generate this image in EXTREME 4K RESOLUTION (3840x2160 equivalent quality). 
+Maintain razor-sharp edges, hyper-realistic textures, and zero noise.
 
 =========================================
 EXTREME MANDATORY CONSTRAINT:

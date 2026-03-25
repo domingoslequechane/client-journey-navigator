@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { MobileHeader } from './MobileHeader';
 import { OfflineIndicator } from '@/components/ui/offline-indicator';
@@ -7,6 +7,7 @@ import { AccessChangeNotification } from '@/components/auth/AccessChangeNotifica
 
 export function AppLayout() {
   const { queueLength, isSyncing } = useSyncQueue();
+  const location = useLocation();
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-background overflow-hidden font-sans">
@@ -22,8 +23,12 @@ export function AppLayout() {
           <Sidebar />
         </div>
 
-        {/* Main Content Area */}
-        <main className="flex flex-col flex-1 overflow-y-auto w-full md:pt-0">
+        {/* Main Content Area - Keyed to path trigger blurIn on navigation */}
+        <main 
+          key={location.pathname}
+          className="flex flex-col flex-1 overflow-y-auto w-full md:pt-0 animate-in"
+          style={{ animationName: 'blurIn', animationDuration: '0.5s', animationFillMode: 'both' }}
+        >
           <Outlet />
         </main>
       </div>

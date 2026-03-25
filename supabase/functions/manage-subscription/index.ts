@@ -214,14 +214,45 @@ async function handler(req: Request): Promise<Response> {
 
       case "resume": {
         // Resume/uncancel the subscription
+        // First, check if LS subscription exists and its current status
+        // First, check the actual status in LemonSqueezy
+        const getLsSub = await fetch(
+          `https://api.lemonsqueezy.com/v1/subscriptions/${lsSubscriptionId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${LEMONSQUEEZY_API_KEY}`,
+              Accept: "application/vnd.api+json",
+            },
+          }
+        );
+
+        if (getLsSub.ok) {
+          const lsData = await getLsSub.json();
+          const lsStatus = lsData.data.attributes.status;
+          console.log(`[manage-subscription] Current LS status: ${lsStatus}`);
+          
+          if (lsStatus === 'expired') {
+            return new Response(
+              JSON.stringify({ error: "Sua assinatura já expirou no LemonSqueezy e não pode ser reativada. Por favor, assine novamente um plano." }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          
+          if (lsStatus === 'active' && !lsData.data.attributes.cancelled) {
+             // Already active and not cancelled, just update local db and return success
+             await supabaseClient.from("subscriptions").update({ cancel_at_period_end: false, status: 'active' }).eq("id", subscription.id);
+             return new Response(JSON.stringify({ success: true, message: "Subscription is already active" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+        }
+
         const lsResponse = await fetch(
           `https://api.lemonsqueezy.com/v1/subscriptions/${lsSubscriptionId}`,
           {
             method: "PATCH",
             headers: {
               Authorization: `Bearer ${LEMONSQUEEZY_API_KEY}`,
-              Accept: "application/json",
-              "Content-Type": "application/json",
+              Accept: "application/vnd.api+json",
+              "Content-Type": "application/vnd.api+json",
             },
             body: JSON.stringify({
               data: {
@@ -236,16 +267,37 @@ async function handler(req: Request): Promise<Response> {
         );
 
         if (!lsResponse.ok) {
-          const errorData = await lsResponse.text();
-          console.error("[manage-subscription] Resume error:", errorData);
-          throw new Error("Failed to resume subscription");
+          const errorText = await lsResponse.text();
+          console.error(`[manage-subscription] Resume error (status ${lsResponse.status}):`, errorText);
+          
+          let friendlyError = "Failed to resume subscription";
+          try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.errors && errorJson.errors[0]) {
+              friendlyError = errorJson.errors[0].detail || errorJson.errors[0].title || friendlyError;
+            }
+          } catch (e) { /* ignore */ }
+          
+          return new Response(
+            JSON.stringify({ error: friendlyError, details: errorText }),
+            { status: lsResponse.status || 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
         }
 
         // Update local database
-        await supabaseClient
+        // Also reset status to 'active' if it was cancelled/expired
+        const { error: updateError } = await supabaseClient
           .from("subscriptions")
-          .update({ cancel_at_period_end: false })
+          .update({ 
+            cancel_at_period_end: false,
+            status: 'active', // Should become active if successfully resumed
+            updated_at: new Date().toISOString()
+          })
           .eq("id", subscription.id);
+
+        if (updateError) {
+          console.error("[manage-subscription] Error updating local db after resume:", updateError);
+        }
 
         console.log("[manage-subscription] Subscription resumed successfully");
 

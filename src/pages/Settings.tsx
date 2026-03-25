@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -7,18 +7,26 @@ import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Save, Loader2, User, BookOpen, Upload, FileText, Trash2, Lock, Eye, EyeOff, Phone, AlertTriangle, Sparkles, CreditCard, Plus, X, Settings as SettingsIcon } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
-import { AnimatedContainer } from '@/components/ui/animated-container';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHeader } from '@/contexts/HeaderContext';
 import { usePermissions } from '@/hooks/usePermissions';
-import { DocumentTemplatesTab } from '@/components/settings/DocumentTemplatesTab';
 import { InvoiceTemplateSettings } from '@/components/settings/InvoiceTemplateSettings';
+import { DocumentTemplatesTab } from '@/components/settings/DocumentTemplatesTab';
 import { DeleteAgencyModal } from '@/components/settings/DeleteAgencyModal';
+import { AgencyOnboardingModal } from '@/components/settings/AgencyOnboardingModal';
+import {
+  User, Building2, BookOpen, FileText, ArrowLeft,
+  Save, Loader2, Upload, Trash2, Lock, Eye, EyeOff,
+  Phone, AlertTriangle, CreditCard, Plus, X,
+  Settings as SettingsIcon, Check, Shield,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
+// ─── Module-level cache ───────────────────────────────────────────────────────
+// Stored outside React so it survives component unmounts (e.g. switching OS windows).
+// Cleared only on explicit user logout.
+let _cache: SettingsCache | null = null;
 
 interface PaymentMethod {
   id: string;
@@ -28,1056 +36,853 @@ interface PaymentMethod {
   is_default: boolean;
 }
 
-interface AgencySettings {
-  id: string;
-  agency_name: string;
-  headquarters: string | null;
-  nuit: string | null;
-  representative_name: string | null;
-  representative_position: string | null;
-  knowledge_base_url: string | null;
-  knowledge_base_name: string | null;
-  knowledge_base_text: string | null;
+interface SettingsCache {
+  profile: {
+    full_name: string | null;
+    role: string;
+  };
+  org: {
+    id: string;
+    name: string;
+    phone: string;
+    headquarters: string | null;
+    nuit: string | null;
+    representative_name: string | null;
+    representative_position: string | null;
+    knowledge_base_url: string | null;
+    knowledge_base_name: string | null;
+    knowledge_base_text: string | null;
+    owner_id: string;
+    onboarding_completed: boolean;
+  } | null;
+  paymentMethods: PaymentMethod[];
 }
 
-interface UserProfile {
-  full_name: string | null;
-  avatar_url: string | null;
-  role: string;
-}
+// ─── Nav items ────────────────────────────────────────────────────────────────
+type NavSection = 'profile' | 'agency' | 'knowledge' | 'documents';
 
+const NAV_ITEMS: { id: NavSection; label: string; icon: React.ReactNode; adminOnly?: boolean; badge?: string }[] = [
+  { id: 'profile',    label: 'Meu Perfil',        icon: <User className="h-4 w-4" /> },
+  { id: 'agency',     label: 'Agência',            icon: <Building2 className="h-4 w-4" />, adminOnly: true },
+  { id: 'knowledge',  label: 'Base de Conhecimento', icon: <BookOpen className="h-4 w-4" />, adminOnly: true },
+  { id: 'documents',  label: 'Documentos',         icon: <FileText className="h-4 w-4" />, adminOnly: true, badge: 'BETA' },
+];
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 export default function Settings() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isAdmin, isLoading: permissionsLoading } = usePermissions();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploadingKB, setUploadingKB] = useState(false);
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'profile' | 'agency' | 'knowledge' | 'documents'>('profile');
   const { setBackAction } = useHeader();
 
-  const [settings, setSettings] = useState<AgencySettings>({
-    id: '',
-    agency_name: '',
-    headquarters: '',
-    nuit: '',
-    representative_name: '',
-    representative_position: '',
-    knowledge_base_url: null,
-    knowledge_base_name: null,
-    knowledge_base_text: null,
-  });
+  // ─ UI state
+  const [activeSection, setActiveSection] = useState<NavSection>('profile');
+  const [loading, setLoading] = useState(true);
 
+  // ─ Form state – initialized from cache if available
+  const [profile, setProfile] = useState({ full_name: '', role: 'sales' });
+  const [org, setOrg] = useState<SettingsCache['org'] | null>(null);
+  const [orgPhone, setOrgPhone] = useState('');
+  const [orgName, setOrgName] = useState('');
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [savingPayment, setSavingPayment] = useState(false);
-
-  // Organization state
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const [organizationPhone, setOrganizationPhone] = useState('');
-  const [organizationName, setOrganizationName] = useState('');
+  const [kbText, setKbText] = useState('');
+  const [kbFileName, setKbFileName] = useState<string | null>(null);
+  const [kbFileUrl, setKbFileUrl] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [onboardingCompleted, setOnboardingCompleted] = useState(true);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [hasShownOnboardingModal, setHasShownOnboardingModal] = useState(false);
 
-  const [profile, setProfile] = useState<UserProfile>({
-    full_name: '',
-    avatar_url: null,
-    role: 'sales',
-  });
+  // ─ Saving state
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingAgency, setSavingAgency] = useState(false);
+  const [savingKB, setSavingKB] = useState(false);
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [uploadingKB, setUploadingKB] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
 
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ─── Section from URL ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const tab = searchParams.get('tab') as NavSection | null;
+    const allowed: NavSection[] = isAdmin
+      ? ['profile', 'agency', 'knowledge', 'documents']
+      : ['profile'];
+    if (tab && allowed.includes(tab)) setActiveSection(tab);
+  }, [isAdmin, searchParams]);
+
+  const goTo = (section: NavSection) => {
+    setActiveSection(section);
+    const p = new URLSearchParams(searchParams);
+    p.set('tab', section);
+    setSearchParams(p, { replace: true });
+  };
+
+  // ─── Back button ───────────────────────────────────────────────────────────
+  const handleBack = useCallback(() => {
+    if (window.history.length > 2) navigate(-1);
+    else navigate('/app');
+  }, [navigate]);
 
   useEffect(() => {
-    if (!user || permissionsLoading) {
+    setBackAction(() => handleBack);
+    return () => setBackAction(null);
+  }, [setBackAction, handleBack]);
+
+  // ─── Data fetch — uses module cache, only hits DB once per session ─────────
+  useEffect(() => {
+    if (!user || permissionsLoading) return;
+
+    if (_cache) {
+      // Restore from cache — no DB call needed
+      setProfile({ full_name: _cache.profile.full_name || '', role: _cache.profile.role });
+      setOrg(_cache.org);
+      setOrgPhone(_cache.org?.phone || '');
+      setOrgName(_cache.org?.name || '');
+      setPaymentMethods(_cache.paymentMethods);
+      setKbText(_cache.org?.knowledge_base_text || '');
+      setKbFileName(_cache.org?.knowledge_base_name || null);
+      setKbFileUrl(_cache.org?.knowledge_base_url || null);
+      setIsOwner(_cache.org?.owner_id === user.id);
+      setLoading(false);
       return;
     }
 
-    fetchProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, permissionsLoading]);
-
-
-  const fetchProfile = async () => {
-    if (!user) return;
-
-    setLoading(true);
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url, role, organization_id, current_organization_id')
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setProfile(data);
-
-        const orgId = data.current_organization_id || data.organization_id;
-
-        if (!orgId) {
-          setOrganizationId(null);
-          return;
-        }
-
-        setOrganizationId(orgId);
-
-        const { data: orgData, error: orgError } = await supabase
-          .from('organizations')
-          .select(
-            'id, phone, name, owner_id, headquarters, nuit, representative_name, representative_position, knowledge_base_url, knowledge_base_name, knowledge_base_text, onboarding_completed'
-          )
-          .eq('id', orgId)
+    (async () => {
+      setLoading(true);
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, role, organization_id, current_organization_id')
+          .eq('id', user.id)
           .single();
 
-        if (orgError) throw orgError;
+        if (profileError) throw profileError;
 
-        // Fetch payment methods
-        const { data: paymentData } = await supabase
-          .from('payment_methods')
-          .select('*')
-          .eq('organization_id', orgId)
-          .order('is_default', { ascending: false });
+        const orgId = profileData?.current_organization_id || profileData?.organization_id;
 
-        if (paymentData) {
-          setPaymentMethods(paymentData);
+        let orgData: SettingsCache['org'] = null;
+        let payments: PaymentMethod[] = [];
+
+        if (orgId) {
+          const { data: o, error: oErr } = await supabase
+            .from('organizations')
+            .select('id, phone, name, owner_id, headquarters, nuit, representative_name, representative_position, knowledge_base_url, knowledge_base_name, knowledge_base_text, onboarding_completed')
+            .eq('id', orgId)
+            .single();
+          if (!oErr && o) orgData = o as SettingsCache['org'];
+
+          const { data: pm } = await supabase
+            .from('payment_methods')
+            .select('*')
+            .eq('organization_id', orgId)
+            .order('is_default', { ascending: false });
+          if (pm) payments = pm;
         }
 
-        if (orgData) {
-          setOrganizationPhone(orgData.phone || '');
-          setOrganizationName(orgData.name || '');
-          setIsOwner(orgData.owner_id === user.id);
-          setOnboardingCompleted(orgData.onboarding_completed ?? false);
+        // Write to module-level cache
+        _cache = {
+          profile: { full_name: profileData?.full_name || null, role: profileData?.role || 'sales' },
+          org: orgData,
+          paymentMethods: payments,
+        };
 
-          setSettings(prev => ({
-            ...prev,
-            id: orgData.id,
-            agency_name: orgData.name || '',
-            headquarters: orgData.headquarters || '',
-            nuit: orgData.nuit || '',
-            representative_name: orgData.representative_name || '',
-            representative_position: orgData.representative_position || '',
-            knowledge_base_url: orgData.knowledge_base_url || null,
-            knowledge_base_name: orgData.knowledge_base_name || null,
-            knowledge_base_text: orgData.knowledge_base_text || null,
-          }));
-        }
+        setProfile({ full_name: profileData?.full_name || '', role: profileData?.role || 'sales' });
+        setOrg(orgData);
+        setOrgPhone(orgData?.phone || '');
+        setOrgName(orgData?.name || '');
+        setPaymentMethods(payments);
+        setKbText(orgData?.knowledge_base_text || '');
+        setKbFileName(orgData?.knowledge_base_name || null);
+        setKbFileUrl(orgData?.knowledge_base_url || null);
+        setIsOwner(orgData?.owner_id === user.id);
+      } catch (err) {
+        console.error(err);
+        toast({ title: 'Erro', description: 'Não foi possível carregar as configurações.', variant: 'destructive' });
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      toast({ title: 'Erro', description: 'Não foi possível carregar o perfil', variant: 'destructive' });
+    })();
+  }, [user, permissionsLoading]);
+
+  // Handle onboarding modal trigger
+  useEffect(() => {
+    // Only show modal if:
+    // 1. Data has loaded (loading is false)
+    // 2. Org exists
+    // 3. Onboarding is NOT completed
+    // 4. We haven't shown it yet in this session
+    // 5. We are in the agency section
+    if (!loading && org && !org.onboarding_completed && !hasShownOnboardingModal && activeSection === 'agency') {
+      setShowOnboardingModal(true);
+      setHasShownOnboardingModal(true);
+    }
+  }, [loading, org, activeSection, hasShownOnboardingModal]);
+
+  // ─── Save profile ─────────────────────────────────────────────────────────
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase.from('profiles').update({ full_name: profile.full_name }).eq('id', user.id);
+      if (error) throw error;
+      if (_cache) _cache.profile.full_name = profile.full_name;
+      toast({ title: 'Perfil actualizado!' });
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível actualizar o perfil.', variant: 'destructive' });
     } finally {
-      setLoading(false);
+      setSavingProfile(false);
     }
   };
 
-  const handleSaveAgency = async () => {
-    if (!isAdmin) {
-      toast({
-        title: 'Acesso negado',
-        description: 'Apenas administradores podem alterar as configurações da agência',
-        variant: 'destructive',
-      });
+  // ─── Change password ──────────────────────────────────────────────────────
+  const handleChangePassword = async () => {
+    if (!passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({ title: 'Erro', description: 'As senhas não coincidem.', variant: 'destructive' });
       return;
     }
-
-    if (!organizationId) {
-      toast({ title: 'Erro', description: 'Organização não encontrada', variant: 'destructive' });
+    if (passwordForm.newPassword.length < 6) {
+      toast({ title: 'Erro', description: 'A senha deve ter pelo menos 6 caracteres.', variant: 'destructive' });
       return;
     }
-
-    setSaving(true);
+    setChangingPassword(true);
     try {
-      // Apenas o nome da agência é obrigatório para o onboarding inicial
-      const isComplete = Boolean(settings.agency_name?.trim());
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword });
+      if (error) throw error;
+      setPasswordForm({ newPassword: '', confirmPassword: '' });
+      toast({ title: 'Senha alterada com sucesso!' });
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível alterar a senha.', variant: 'destructive' });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
-      const { error } = await supabase
-        .from('organizations')
-        .update({
-          name: settings.agency_name.trim(),
-          headquarters: settings.headquarters?.trim() || null,
-          nuit: settings.nuit?.trim() || null,
-          phone: organizationPhone?.trim() || null,
-          representative_name: settings.representative_name?.trim() || null,
-          representative_position: settings.representative_position?.trim() || null,
-          onboarding_completed: isComplete,
-        })
-        .eq('id', organizationId);
+  // ─── Save agency ──────────────────────────────────────────────────────────
+  const handleSaveAgency = async () => {
+    if (!org?.id || !isAdmin) return;
+    
+    if (!orgName.trim()) {
+      toast({ title: 'Erro', description: 'O nome da agência é obrigatório.', variant: 'destructive' });
+      return;
+    }
+
+    setSavingAgency(true);
+    const wasJustOnboarding = !org.onboarding_completed;
+
+    try {
+      const { error } = await supabase.from('organizations').update({
+        name: orgName.trim(),
+        phone: orgPhone.trim() || null,
+        headquarters: org.headquarters?.trim() || null,
+        nuit: org.nuit?.trim() || null,
+        representative_name: org.representative_name?.trim() || null,
+        representative_position: org.representative_position?.trim() || null,
+        onboarding_completed: true,
+      }).eq('id', org.id);
 
       if (error) throw error;
+      
+      const updatedOrg = { 
+        ...org, 
+        name: orgName, 
+        phone: orgPhone, 
+        onboarding_completed: true 
+      };
+      
+      setOrg(updatedOrg);
+      if (_cache) _cache.org = updatedOrg;
 
-      setOrganizationName(settings.agency_name.trim());
-      setOnboardingCompleted(isComplete);
-
-      toast({
-        title: 'Sucesso!',
-        description: 'Configurações da agência salvas com sucesso.',
-      });
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast({ title: 'Erro', description: 'Não foi possível salvar as configurações', variant: 'destructive' });
+      if (wasJustOnboarding) {
+        toast({ 
+          title: 'Configuração concluída!', 
+          description: 'A sua agência foi configurada e o acesso total foi desbloqueado.' 
+        });
+      } else {
+        toast({ title: 'Agência actualizada!' });
+      }
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível guardar.', variant: 'destructive' });
     } finally {
-      setSaving(false);
+      setSavingAgency(false);
     }
   };
 
-  const handleKBFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isAdmin) return;
+  // ─── Payment methods ──────────────────────────────────────────────────────
+  const handleSavePayments = async () => {
+    if (!org?.id) return;
+    setSavingPayment(true);
+    try {
+      for (const m of paymentMethods) {
+        if (m.id.startsWith('new-')) {
+          await supabase.from('payment_methods').insert({
+            organization_id: org.id,
+            provider_name: m.provider_name,
+            account_number: m.account_number,
+            recipient_name: m.recipient_name || null,
+            is_default: m.is_default,
+          });
+        } else {
+          await supabase.from('payment_methods').update({
+            provider_name: m.provider_name,
+            account_number: m.account_number,
+            recipient_name: m.recipient_name || null,
+          }).eq('id', m.id);
+        }
+      }
+      const { data } = await supabase.from('payment_methods').select('*').eq('organization_id', org.id).order('is_default', { ascending: false });
+      if (data) {
+        setPaymentMethods(data);
+        if (_cache) _cache.paymentMethods = data;
+      }
+      toast({ title: 'Métodos de pagamento guardados!' });
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível guardar.', variant: 'destructive' });
+    } finally {
+      setSavingPayment(false);
+    }
+  };
 
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // ─── Knowledge base ────────────────────────────────────────────────────────
+  const handleSaveKBText = async () => {
+    if (!org?.id) return;
+    setSavingKB(true);
+    try {
+      const { error } = await supabase.from('organizations').update({ knowledge_base_text: kbText }).eq('id', org.id);
+      if (error) throw error;
+      if (_cache?.org) _cache.org.knowledge_base_text = kbText;
+      toast({ title: 'Texto de conhecimento guardado!' });
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível guardar.', variant: 'destructive' });
+    } finally {
+      setSavingKB(false);
+    }
+  };
 
+  const handleKBUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !org?.id) return;
     if (file.size > 20 * 1024 * 1024) {
-      toast({ title: 'Arquivo muito grande', description: 'O tamanho máximo é 20MB', variant: 'destructive' });
+      toast({ title: 'Arquivo muito grande', description: 'Máximo 20MB', variant: 'destructive' });
       return;
     }
-
     setUploadingKB(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `knowledge-base-${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('knowledge-base')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      if (!organizationId) {
-        throw new Error('Organização não encontrada');
-      }
-
-      const { error: updateError } = await supabase
-        .from('organizations')
-        .update({
-          knowledge_base_url: filePath,
-          knowledge_base_name: file.name,
-        })
-        .eq('id', organizationId);
-
-      if (updateError) throw updateError;
-
-      setSettings(prev => ({
-        ...prev,
-        knowledge_base_url: filePath,
-        knowledge_base_name: file.name,
-      }));
-
-      toast({ title: 'Sucesso!', description: 'Base de conhecimento carregada' });
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({ title: 'Erro', description: 'Não foi possível carregar o arquivo', variant: 'destructive' });
+      const ext = file.name.split('.').pop();
+      const path = `knowledge-base-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('knowledge-base').upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { error: updateErr } = await supabase.from('organizations').update({ knowledge_base_url: path, knowledge_base_name: file.name }).eq('id', org.id);
+      if (updateErr) throw updateErr;
+      setKbFileUrl(path);
+      setKbFileName(file.name);
+      if (_cache?.org) { _cache.org.knowledge_base_url = path; _cache.org.knowledge_base_name = file.name; }
+      toast({ title: 'Documento carregado!' });
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível carregar.', variant: 'destructive' });
     } finally {
       setUploadingKB(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleDeleteKBFile = async () => {
-    if (!isAdmin || !settings.knowledge_base_url) return;
-
+  const handleDeleteKB = async () => {
+    if (!org?.id || !kbFileUrl) return;
     setUploadingKB(true);
     try {
-      await supabase.storage
-        .from('knowledge-base')
-        .remove([settings.knowledge_base_url]);
-
-      if (!organizationId) {
-        throw new Error('Organização não encontrada');
-      }
-
-      const { error } = await supabase
-        .from('organizations')
-        .update({
-          knowledge_base_url: null,
-          knowledge_base_name: null,
-        })
-        .eq('id', organizationId);
-
-      if (error) throw error;
-
-      setSettings(prev => ({
-        ...prev,
-        knowledge_base_url: null,
-        knowledge_base_name: null,
-      }));
-
-      toast({ title: 'Sucesso!', description: 'Arquivo removido' });
-    } catch (error) {
-      console.error('Delete error:', error);
-      toast({ title: 'Erro', description: 'Não foi possível remover o arquivo', variant: 'destructive' });
+      await supabase.storage.from('knowledge-base').remove([kbFileUrl]);
+      await supabase.from('organizations').update({ knowledge_base_url: null, knowledge_base_name: null }).eq('id', org.id);
+      setKbFileUrl(null);
+      setKbFileName(null);
+      if (_cache?.org) { _cache.org.knowledge_base_url = null; _cache.org.knowledge_base_name = null; }
+      toast({ title: 'Documento removido.' });
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível remover.', variant: 'destructive' });
     } finally {
       setUploadingKB(false);
     }
   };
 
-  const handleSaveKBText = async () => {
-    if (!isAdmin) return;
-
-    setSaving(true);
-    try {
-      if (!organizationId) {
-        throw new Error('Organização não encontrada');
-      }
-
-      const { error } = await supabase
-        .from('organizations')
-        .update({
-          knowledge_base_text: settings.knowledge_base_text,
-        })
-        .eq('id', organizationId);
-
-      if (error) throw error;
-
-      toast({ title: 'Sucesso!', description: 'Texto de conhecimento salvo' });
-    } catch (error) {
-      console.error('Error saving KB text:', error);
-      toast({ title: 'Erro', description: 'Não foi possível salvar o texto', variant: 'destructive' });
-    } finally {
-      setSaving(false);
-    }
+  const roleLabel: Record<string, string> = {
+    admin: 'Administrador', sales: 'Vendas',
+    operations: 'Operações', campaign_management: 'Gestor de Campanhas',
   };
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
-
-    setSavingProfile(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: profile.full_name,
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      toast({ title: 'Sucesso!', description: 'Perfil atualizado' });
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      toast({ title: 'Erro', description: 'Não foi possível atualizar o perfil', variant: 'destructive' });
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
-  const handleChangePassword = async () => {
-    if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
-      toast({ title: 'Erro', description: 'Preencha todos os campos de senha', variant: 'destructive' });
-      return;
-    }
-
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({ title: 'Erro', description: 'As senhas não coincidem', variant: 'destructive' });
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 6) {
-      toast({ title: 'Erro', description: 'A senha deve ter pelo menos 6 caracteres', variant: 'destructive' });
-      return;
-    }
-
-    setChangingPassword(true);
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwordForm.newPassword
-      });
-
-      if (error) throw error;
-
-      toast({ title: 'Sucesso!', description: 'Senha alterada com sucesso' });
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (error) {
-      console.error('Error changing password:', error);
-      toast({ title: 'Erro', description: 'Não foi possível alterar a senha', variant: 'destructive' });
-    } finally {
-      setChangingPassword(false);
-    }
-  };
-
-  const handleBack = () => {
-    if (window.history.length > 2) {
-      navigate(-1);
-    } else {
-      navigate('/app');
-    }
-  };
-
-  useEffect(() => {
-    setBackAction(() => handleBack);
-    return () => setBackAction(null);
-  }, [setBackAction]);
-
-  const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = {
-      admin: 'Administrador',
-      sales: 'Vendas',
-      operations: 'Operações',
-      campaign_management: 'Gestor de Campanhas',
-    };
-    return labels[role] || role;
-  };
-
-  const coerceTab = (tab: string | null) => {
-    const allowed: Array<'profile' | 'agency' | 'knowledge' | 'documents'> = isAdmin
-      ? ['profile', 'agency', 'knowledge', 'documents']
-      : ['profile'];
-
-    if (tab && (allowed as string[]).includes(tab)) {
-      return tab as (typeof allowed)[number];
-    }
-
-    return 'profile' as const;
-  };
-
-  const handleTabChange = (next: string) => {
-    const nextTab = coerceTab(next);
-    setActiveTab(nextTab);
-
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set('tab', nextTab);
-    setSearchParams(nextParams, { replace: true });
-  };
-
-  useEffect(() => {
-    setActiveTab(coerceTab(searchParams.get('tab')));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, searchParams]);
-
+  // ─── Loading screen ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="h-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm">A carregar configurações…</p>
+        </div>
       </div>
     );
   }
 
+  const visibleNav = NAV_ITEMS.filter(n => !n.adminOnly || isAdmin);
+
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="h-full flex flex-col">
-      {/* Fixed Header */}
-      <div className="shrink-0 p-4 md:px-8 md:pt-8 md:pb-4 bg-background sticky top-0 z-10 border-b border-border md:border-b-0 hidden md:block">
-        <AnimatedContainer animation="fade-up" className="flex items-center gap-3 md:gap-4 max-w-4xl mx-auto">
-          <Button variant="ghost" size="icon" onClick={handleBack} className="shrink-0">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="text-xl md:text-3xl font-bold flex items-center gap-2">
-              <SettingsIcon className="h-7 w-7 md:h-8 md:w-8 text-primary" />
-              Configurações
-            </h1>
-            <p className="text-sm md:text-base text-muted-foreground">Gerencie as configurações do sistema</p>
-          </div>
-        </AnimatedContainer>
-      </div>
+    <div className="h-full flex flex-col bg-background">
+      {/* ── Top Header (desktop only) ── */}
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-auto p-4 md:px-8 md:pb-8 pt-4 md:pt-4">
-        <div className="max-w-4xl mx-auto">
 
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-            <TabsList className={cn("grid w-full", isAdmin ? "grid-cols-4" : "grid-cols-1")}>
-              <TabsTrigger value="profile" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
-                <User className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">Meu Perfil</span>
-                <span className="sm:hidden">Perfil</span>
-              </TabsTrigger>
-              {isAdmin && (
-                <>
-                  <TabsTrigger value="agency" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
-                    <Building2 className="h-3 w-3 md:h-4 md:w-4" />
-                    <span className="hidden sm:inline">Agência</span>
-                    <span className="sm:hidden">Agência</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="knowledge" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
-                    <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
-                    <span className="hidden sm:inline">Conhecimento</span>
-                    <span className="sm:hidden">Conhec.</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="documents" className="gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-2">
-                    <FileText className="h-3 w-3 md:h-4 md:w-4" />
-                    <span className="hidden sm:inline">Documentos</span>
-                    <span className="sm:hidden">Docs.</span>
-                  </TabsTrigger>
-                </>
+      {/* ── Body: sidebar + content ── */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* Sidebar */}
+        <aside className="hidden md:flex w-56 flex-col gap-1 border-r border-border px-3 py-4 bg-muted/20 shrink-0">
+          {visibleNav.map(item => (
+            <button
+              key={item.id}
+              onClick={() => goTo(item.id)}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left justify-between',
+                activeSection === item.id
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               )}
-            </TabsList>
-
-            {/* Profile Tab */}
-            <TabsContent value="profile">
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5" />
-                      Informações Pessoais
-                    </CardTitle>
-                    <CardDescription>
-                      Atualize suas informações de perfil
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        value={user?.email || ''}
-                        disabled
-                        className="bg-muted"
-                      />
-                      <p className="text-xs text-muted-foreground">O email não pode ser alterado</p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="full_name">Nome Completo</Label>
-                      <Input
-                        id="full_name"
-                        placeholder="Seu nome completo"
-                        value={profile.full_name || ''}
-                        onChange={(e) => setProfile(prev => ({ ...prev, full_name: e.target.value }))}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="role">Função</Label>
-                      <Input
-                        id="role"
-                        value={getRoleLabel(profile.role)}
-                        disabled
-                        className="bg-muted"
-                      />
-                      <p className="text-xs text-muted-foreground">A função só pode ser alterada por administradores</p>
-                    </div>
-
-                    <Button onClick={handleSaveProfile} disabled={savingProfile} className="w-full gap-2">
-                      {savingProfile ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Salvando...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4" />
-                          Salvar Perfil
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Lock className="h-5 w-5" />
-                      Alterar Senha
-                    </CardTitle>
-                    <CardDescription>
-                      Atualize sua senha de acesso
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="new_password">Nova Senha</Label>
-                      <div className="relative">
-                        <Input
-                          id="new_password"
-                          type={showNewPassword ? "text" : "password"}
-                          placeholder="Digite a nova senha"
-                          value={passwordForm.newPassword}
-                          onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                        >
-                          {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm_password">Confirmar Nova Senha</Label>
-                      <Input
-                        id="confirm_password"
-                        type="password"
-                        placeholder="Confirme a nova senha"
-                        value={passwordForm.confirmPassword}
-                        onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                      />
-                    </div>
-
-                    <Button
-                      onClick={handleChangePassword}
-                      disabled={changingPassword}
-                      variant="outline"
-                      className="w-full gap-2"
-                    >
-                      {changingPassword ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Alterando...
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="h-4 w-4" />
-                          Alterar Senha
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
+            >
+              <div className="flex items-center gap-3">
+                {item.icon}
+                {item.label}
               </div>
-            </TabsContent>
-
-            {/* Agency Tab */}
-            <TabsContent value="agency">
-              {!onboardingCompleted && isAdmin && (
-                <Alert className="mb-6 border-primary/50 bg-primary/5">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <AlertTitle className="text-primary">Bem-vindo! Configure sua agência</AlertTitle>
-                  <AlertDescription className="text-muted-foreground">
-                    Para começar a usar o sistema, preencha pelo menos o <strong>nome da sua agência</strong> abaixo.
-                    Os demais campos são opcionais e podem ser preenchidos depois.
-                  </AlertDescription>
-                </Alert>
+              {item.badge && (
+                <Badge variant="secondary" className="text-[9px] px-1.5 h-4 font-bold bg-primary/10 text-primary border-none uppercase">
+                  {item.badge}
+                </Badge>
               )}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    Dados da Agência
-                  </CardTitle>
-                  <CardDescription>
-                    {isAdmin
-                      ? 'Configure as informações básicas da sua agência'
-                      : 'Apenas administradores podem alterar estas informações'
+            </button>
+          ))}
+        </aside>
+
+        {/* Mobile top tabs */}
+        <div className="md:hidden flex gap-1 overflow-x-auto px-4 py-3 border-b border-border shrink-0 bg-background w-full">
+          {visibleNav.map(item => (
+            <button
+              key={item.id}
+              onClick={() => goTo(item.id)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
+                activeSection === item.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              )}
+            >
+              <div className="flex items-center gap-1.5">
+                {item.icon}
+                {item.label}
+                {item.badge && (
+                  <Badge variant="secondary" className="text-[8px] px-1 h-3 font-bold bg-primary/10 text-primary border-none uppercase">
+                    {item.badge}
+                  </Badge>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-auto">
+          <div className="py-6 px-4 md:px-8 w-full">
+
+            {/* ── Profile ── */}
+            {activeSection === 'profile' && (
+              <div className="space-y-6 animate-fade-in">
+                <SectionHeader
+                  icon={<User className="h-5 w-5" />}
+                  title="Meu Perfil"
+                  subtitle="Gerencie as suas informações pessoais"
+                />
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                  <SettingsCard title="Informações Pessoais" icon={<User className="h-4 w-4" />}>
+                    <FieldGroup>
+                      <Field label="Email">
+                        <Input value={user?.email || ''} disabled className="bg-muted/50 opacity-70" />
+                        <p className="text-xs text-muted-foreground">O email não pode ser alterado</p>
+                      </Field>
+                      <Field label="Nome Completo">
+                        <Input
+                          placeholder="O seu nome completo"
+                          value={profile.full_name || ''}
+                          onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))}
+                        />
+                      </Field>
+                      <Field label="Função">
+                        <Input value={roleLabel[profile.role] || profile.role} disabled className="bg-muted/50 opacity-70" />
+                      </Field>
+                    </FieldGroup>
+                    <ActionRow>
+                      <SaveButton loading={savingProfile} onClick={handleSaveProfile} label="Guardar Perfil" />
+                    </ActionRow>
+                  </SettingsCard>
+
+                  <SettingsCard title="Alterar Senha" icon={<Lock className="h-4 w-4" />}>
+                    <FieldGroup>
+                      <Field label="Nova Senha">
+                        <div className="relative">
+                          <Input
+                            type={showNewPassword ? 'text' : 'password'}
+                            placeholder="mínimo 6 caracteres"
+                            value={passwordForm.newPassword}
+                            onChange={e => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(v => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </Field>
+                      <Field label="Confirmar Senha">
+                        <Input
+                          type="password"
+                          placeholder="Confirme a nova senha"
+                          value={passwordForm.confirmPassword}
+                          onChange={e => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                        />
+                      </Field>
+                    </FieldGroup>
+                    <ActionRow>
+                      <SaveButton loading={changingPassword} onClick={handleChangePassword} label="Alterar Senha" icon={<Shield className="h-4 w-4" />} />
+                    </ActionRow>
+                  </SettingsCard>
+                </div>
+              </div>
+            )}
+
+            {/* ── Agency ── */}
+            {activeSection === 'agency' && isAdmin && (
+              <div className="space-y-6 animate-fade-in">
+                <SectionHeader
+                  icon={<Building2 className="h-5 w-5" />}
+                  title="Dados da Agência"
+                  subtitle="Informações que aparecem nos documentos gerados"
+                />
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                  <SettingsCard title="Identificação" icon={<Building2 className="h-4 w-4" />}>
+                    <FieldGroup>
+                      <Field label="Nome da Agência *">
+                        <Input
+                          placeholder="Ex: Onix Agência"
+                          value={orgName}
+                          onChange={e => setOrgName(e.target.value)}
+                        />
+                      </Field>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Field label="NUIT">
+                          <Input
+                            placeholder="Ex: 400123987"
+                            value={org?.nuit || ''}
+                            onChange={e => setOrg(o => o ? ({ ...o, nuit: e.target.value }) : o)}
+                          />
+                        </Field>
+                        <Field label="Telefone">
+                          <PhoneInput
+                            value={orgPhone}
+                            onChange={setOrgPhone}
+                            placeholder="+258 84 000 0000"
+                          />
+                        </Field>
+                      </div>
+                      <Field label="Sede / Endereço">
+                        <Input
+                          placeholder="Ex: Av. 25 de Setembro, 147 – Maputo"
+                          value={org?.headquarters || ''}
+                          onChange={e => setOrg(o => o ? ({ ...o, headquarters: e.target.value }) : o)}
+                        />
+                      </Field>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Field label="Nome do Representante">
+                          <Input
+                            placeholder="Ex: João Silva"
+                            value={org?.representative_name || ''}
+                            onChange={e => setOrg(o => o ? ({ ...o, representative_name: e.target.value }) : o)}
+                          />
+                        </Field>
+                        <Field label="Cargo">
+                          <Input
+                            placeholder="Ex: Diretor Geral"
+                            value={org?.representative_position || ''}
+                            onChange={e => setOrg(o => o ? ({ ...o, representative_position: e.target.value }) : o)}
+                          />
+                        </Field>
+                      </div>
+                    </FieldGroup>
+                    <ActionRow>
+                      <SaveButton loading={savingAgency} onClick={handleSaveAgency} label="Guardar Agência" />
+                    </ActionRow>
+                  </SettingsCard>
+
+                  <SettingsCard
+                    title="Métodos de Pagamento"
+                    icon={<CreditCard className="h-4 w-4" />}
+                    subtitle="Dados exibidos nas facturas"
+                    action={
+                      <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => {
+                        setPaymentMethods(prev => [...prev, {
+                          id: `new-${Date.now()}`,
+                          provider_name: '', account_number: '', recipient_name: '',
+                          is_default: prev.length === 0,
+                        }]);
+                      }}>
+                        <Plus className="h-3.5 w-3.5" /> Adicionar
+                      </Button>
                     }
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="agency_name" className="flex items-center gap-1">
-                      Nome da Agência
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="agency_name"
-                      placeholder="Ex: Onix Agence"
-                      value={settings.agency_name}
-                      onChange={(e) => setSettings(prev => ({ ...prev, agency_name: e.target.value }))}
-                      disabled={!isAdmin}
-                      className={!settings.agency_name?.trim() && !onboardingCompleted ? 'border-destructive' : ''}
-                    />
-                    {!settings.agency_name?.trim() && !onboardingCompleted && (
-                      <p className="text-xs text-destructive">Campo obrigatório</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="headquarters">Sede Social</Label>
-                    <Input
-                      id="headquarters"
-                      placeholder="Ex: Av. Eduardo Mondlane, 123 - Maputo"
-                      value={settings.headquarters || ''}
-                      onChange={(e) => setSettings(prev => ({ ...prev, headquarters: e.target.value }))}
-                      disabled={!isAdmin}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="nuit">NUIT</Label>
-                      <Input
-                        id="nuit"
-                        placeholder="Ex: 123456789"
-                        value={settings.nuit || ''}
-                        onChange={(e) => setSettings(prev => ({ ...prev, nuit: e.target.value }))}
-                        disabled={!isAdmin}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone" className="flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        Contacto da Agência
-                      </Label>
-                      <PhoneInput
-                        value={organizationPhone}
-                        onChange={setOrganizationPhone}
-                        placeholder="+258 84 123 4567"
-                        disabled={!isAdmin}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="representative_name">Nome do Representante</Label>
-                      <Input
-                        id="representative_name"
-                        placeholder="Ex: João Silva"
-                        value={settings.representative_name || ''}
-                        onChange={(e) => setSettings(prev => ({ ...prev, representative_name: e.target.value }))}
-                        disabled={!isAdmin}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="representative_position">Cargo do Representante</Label>
-                      <Input
-                        id="representative_position"
-                        placeholder="Ex: Diretor Geral"
-                        value={settings.representative_position || ''}
-                        onChange={(e) => setSettings(prev => ({ ...prev, representative_position: e.target.value }))}
-                        disabled={!isAdmin}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Dados de Pagamento */}
-                  <div className="pt-6 border-t border-border">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-base font-semibold flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Dados de Pagamento
-                      </h3>
-                      {isAdmin && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setPaymentMethods(prev => [...prev, {
-                              id: `new-${Date.now()}`,
-                              provider_name: '',
-                              account_number: '',
-                              recipient_name: '',
-                              is_default: prev.length === 0
-                            }]);
-                          }}
-                          className="gap-1"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Adicionar
-                        </Button>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Informações exibidas nas facturas de prestação de serviços
-                    </p>
-
+                  >
                     {paymentMethods.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        Nenhum método de pagamento adicionado
-                      </p>
+                      <div className="text-center py-8 text-muted-foreground text-sm border border-dashed border-border rounded-xl">
+                        Nenhum método de pagamento ainda
+                      </div>
                     ) : (
-                      <div className="space-y-4">
-                        {paymentMethods.map((method, index) => (
-                          <div key={method.id} className="p-3 border border-border rounded-lg space-y-3">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <Input
-                                placeholder="Provedora (M-Pesa, BCI...)"
-                                value={method.provider_name}
-                                onChange={(e) => {
-                                  const updated = [...paymentMethods];
-                                  updated[index].provider_name = e.target.value;
-                                  setPaymentMethods(updated);
-                                }}
-                                disabled={!isAdmin}
-                              />
-                              <Input
-                                placeholder="Número de Conta"
-                                value={method.account_number}
-                                onChange={(e) => {
-                                  const updated = [...paymentMethods];
-                                  updated[index].account_number = e.target.value;
-                                  setPaymentMethods(updated);
-                                }}
-                                disabled={!isAdmin}
-                              />
-                              <Input
-                                placeholder="Destinatário"
-                                value={method.recipient_name || ''}
-                                onChange={(e) => {
-                                  const updated = [...paymentMethods];
-                                  updated[index].recipient_name = e.target.value;
-                                  setPaymentMethods(updated);
-                                }}
-                                disabled={!isAdmin}
-                              />
-                            </div>
-                            {isAdmin && (
-                              <div className="flex justify-end">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={async () => {
-                                    const methodId = method.id;
-                                    if (!methodId.startsWith('new-')) {
-                                      await supabase.from('payment_methods').delete().eq('id', methodId);
-                                    }
-                                    setPaymentMethods(prev => prev.filter(m => m.id !== methodId));
-                                  }}
-                                  className="text-muted-foreground hover:text-destructive gap-1"
-                                >
-                                  <X className="h-4 w-4" />
-                                  Remover
-                                </Button>
-                              </div>
-                            )}
+                      <div className="space-y-3">
+                        {paymentMethods.map((m, i) => (
+                          <div key={m.id} className="group relative p-2.5 rounded-xl border border-border bg-muted/20 flex flex-col md:flex-row items-center gap-2.5">
+                            <Input 
+                              placeholder="Banco / Provedora" 
+                              value={m.provider_name}
+                              className="w-full md:w-36 bg-background/40 h-10"
+                              onChange={e => setPaymentMethods(prev => prev.map((x, xi) => xi === i ? { ...x, provider_name: e.target.value } : x))} 
+                            />
+                            <Input 
+                              placeholder="Nº de Conta / Celular" 
+                              value={m.account_number}
+                              className="w-full md:w-52 bg-background/40 h-10"
+                              onChange={e => setPaymentMethods(prev => prev.map((x, xi) => xi === i ? { ...x, account_number: e.target.value } : x))} 
+                            />
+                            <Input 
+                              placeholder="Titular / Destinatário" 
+                              value={m.recipient_name}
+                              className="flex-1 bg-background/40 h-10"
+                              onChange={e => setPaymentMethods(prev => prev.map((x, xi) => xi === i ? { ...x, recipient_name: e.target.value } : x))} 
+                            />
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-10 text-muted-foreground hover:text-destructive hover:bg-destructive/5 gap-2 px-3 shrink-0"
+                              onClick={async () => {
+                                if (!m.id.startsWith('new-')) await supabase.from('payment_methods').delete().eq('id', m.id);
+                                setPaymentMethods(prev => prev.filter(x => x.id !== m.id));
+                              }}>
+                              <X className="h-4 w-4" />
+                              <span className="md:hidden lg:inline text-xs font-medium">Remover</span>
+                            </Button>
                           </div>
                         ))}
                       </div>
                     )}
-
-                    {isAdmin && paymentMethods.length > 0 && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        disabled={savingPayment}
-                        onClick={async () => {
-                          if (!organizationId) return;
-                          setSavingPayment(true);
-                          try {
-                            for (const method of paymentMethods) {
-                              if (method.id.startsWith('new-')) {
-                                await supabase.from('payment_methods').insert({
-                                  organization_id: organizationId,
-                                  provider_name: method.provider_name,
-                                  account_number: method.account_number,
-                                  recipient_name: method.recipient_name || null,
-                                  is_default: method.is_default
-                                });
-                              } else {
-                                await supabase.from('payment_methods').update({
-                                  provider_name: method.provider_name,
-                                  account_number: method.account_number,
-                                  recipient_name: method.recipient_name || null,
-                                }).eq('id', method.id);
-                              }
-                            }
-                            // Refresh
-                            const { data } = await supabase.from('payment_methods').select('*').eq('organization_id', organizationId).order('is_default', { ascending: false });
-                            if (data) setPaymentMethods(data);
-                            toast({ title: 'Sucesso!', description: 'Métodos de pagamento salvos' });
-                          } catch (error) {
-                            console.error(error);
-                            toast({ title: 'Erro', description: 'Não foi possível salvar', variant: 'destructive' });
-                          } finally {
-                            setSavingPayment(false);
-                          }
-                        }}
-                        className="mt-3 gap-2"
-                      >
-                        {savingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        Salvar Métodos de Pagamento
-                      </Button>
+                    {paymentMethods.length > 0 && (
+                      <ActionRow>
+                        <SaveButton loading={savingPayment} onClick={handleSavePayments} label="Guardar Pagamentos" />
+                      </ActionRow>
                     )}
-                  </div>
+                  </SettingsCard>
+                </div>
 
-                  {isAdmin && (
-                    <Button onClick={handleSaveAgency} disabled={saving} className="w-full gap-2">
-                      {saving ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Salvando...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4" />
-                          Salvar Configurações
-                        </>
-                      )}
+                {/* Danger zone — full width */}
+                {isOwner && org?.id && (
+                  <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <h3 className="font-semibold text-destructive text-sm">Zona de Perigo</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">Esta acção é irreversível</p>
+                    <Button variant="destructive" size="sm" className="gap-2" onClick={() => setShowDeleteModal(true)}>
+                      <Trash2 className="h-4 w-4" />
+                      Apagar Agência Permanentemente
                     </Button>
-                  )}
+                  </div>
+                )}
+              </div>
+            )}
 
-                  {/* Delete Agency Section - Only for owner */}
-                  {isAdmin && isOwner && organizationId && (
-                    <div className="pt-6 border-t border-border">
-                      <Card className="border-destructive/50 bg-destructive/5">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-destructive flex items-center gap-2 text-base">
-                            <AlertTriangle className="h-5 w-5" />
-                            Zona de Perigo
-                          </CardTitle>
-                          <CardDescription>
-                            Ações irreversíveis para sua agência
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="px-3 sm:px-6">
-                          <Button
-                            variant="destructive"
-                            onClick={() => setShowDeleteModal(true)}
-                            className="w-full gap-2 text-xs sm:text-sm"
-                          >
-                            <Trash2 className="h-4 w-4 shrink-0" />
-                            <span className="hidden sm:inline">Apagar Agência Permanentemente</span>
-                            <span className="sm:hidden">Apagar Agência</span>
-                          </Button>
-                        </CardContent>
-                      </Card>
+            {/* ── Knowledge Base ── */}
+            {activeSection === 'knowledge' && isAdmin && (
+              <div className="space-y-6 animate-fade-in">
+                <SectionHeader
+                  icon={<BookOpen className="h-5 w-5" />}
+                  title="Base de Conhecimento"
+                  subtitle="Documentos e informações que o Agente de IA usa para responder"
+                />
+
+                <SettingsCard title="Documento PDF" icon={<FileText className="h-4 w-4" />}>
+                  {kbFileUrl ? (
+                    <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-muted/20">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <FileText className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{kbFileName}</p>
+                        <p className="text-xs text-muted-foreground">Documento activo</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploadingKB}>
+                          {uploadingKB ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                          Substituir
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 text-muted-foreground hover:text-destructive gap-1.5 text-xs" onClick={handleDeleteKB} disabled={uploadingKB}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="border-2 border-dashed border-border rounded-xl p-10 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {uploadingKB ? (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                          <p className="text-sm">A carregar…</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Upload className="h-7 w-7" />
+                          <p className="text-sm font-medium">Clique para carregar PDF</p>
+                          <p className="text-xs">Máximo 20MB</p>
+                        </div>
+                      )}
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleKBUpload} className="hidden" />
+                </SettingsCard>
 
-            {/* Knowledge Base Tab */}
-            <TabsContent value="knowledge">
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Documento PDF
-                    </CardTitle>
-                    <CardDescription>
-                      {isAdmin
-                        ? 'Carregue um documento PDF como base de conhecimento para o Agente de IA'
-                        : 'Apenas administradores podem alterar a base de conhecimento'
-                      }
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {settings.knowledge_base_url ? (
-                      <div className="space-y-4">
-                        <div className="p-4 bg-muted rounded-lg flex items-center gap-3">
-                          <FileText className="h-8 w-8 text-primary" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{settings.knowledge_base_name}</p>
-                            <p className="text-sm text-muted-foreground">Documento atual</p>
-                          </div>
-                        </div>
-                        {isAdmin && (
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => fileInputRef.current?.click()}
-                              disabled={uploadingKB}
-                              className="flex-1 gap-2"
-                            >
-                              {uploadingKB ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Upload className="h-4 w-4" />
-                              )}
-                              Alterar
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              onClick={handleDeleteKBFile}
-                              disabled={uploadingKB}
-                              className="gap-2"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Remover
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div
-                        className={`border-2 border-dashed border-border rounded-lg p-8 text-center ${isAdmin ? 'cursor-pointer hover:border-primary/50' : 'opacity-50'} transition-colors`}
-                        onClick={() => isAdmin && fileInputRef.current?.click()}
-                      >
-                        {uploadingKB ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="text-sm text-muted-foreground">Carregando...</p>
-                          </div>
-                        ) : (
-                          <>
-                            <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                            <p className="text-sm font-medium">Clique para carregar</p>
-                            <p className="text-xs text-muted-foreground mt-1">PDF (máx 20MB)</p>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleKBFileUpload}
-                      className="hidden"
-                    />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5" />
-                      Texto de Conhecimento
-                    </CardTitle>
-                    <CardDescription>
-                      {isAdmin
-                        ? 'Digite informações adicionais que o Agente de IA deve conhecer sobre a agência'
-                        : 'Apenas administradores podem alterar o texto de conhecimento'
-                      }
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Textarea
-                      placeholder="Ex: Nossa agência foi fundada em 2015 e é especializada em marketing digital para PMEs em Moçambique. Nossos principais serviços incluem gestão de redes sociais, tráfego pago e criação de conteúdo..."
-                      value={settings.knowledge_base_text || ''}
-                      onChange={(e) => setSettings(prev => ({ ...prev, knowledge_base_text: e.target.value }))}
-                      disabled={!isAdmin}
-                      rows={8}
-                    />
-                    {isAdmin && (
-                      <Button onClick={handleSaveKBText} disabled={saving} className="w-full gap-2">
-                        {saving ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Salvando...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="h-4 w-4" />
-                            Salvar Texto
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
+                <SettingsCard title="Texto de Conhecimento" icon={<BookOpen className="h-4 w-4" />} subtitle="Informações adicionais sobre a agência">
+                  <Textarea
+                    placeholder="Ex: A nossa agência foi fundada em 2015 e é especializada em marketing digital para PMEs em Moçambique…"
+                    value={kbText}
+                    onChange={e => setKbText(e.target.value)}
+                    rows={8}
+                    className="resize-none"
+                  />
+                  <ActionRow>
+                    <SaveButton loading={savingKB} onClick={handleSaveKBText} label="Guardar Texto" />
+                  </ActionRow>
+                </SettingsCard>
               </div>
-            </TabsContent>
+            )}
 
-            {/* Documents Tab */}
-            <TabsContent value="documents">
-              <div className="space-y-6">
-                <InvoiceTemplateSettings organizationId={organizationId} />
+            {/* ── Documents ── */}
+            {activeSection === 'documents' && isAdmin && (
+              <div className="space-y-6 animate-fade-in">
+                <SectionHeader
+                  icon={<FileText className="h-5 w-5" />}
+                  title="Documentos"
+                  subtitle="Configure os modelos de facturas e documentos da agência"
+                />
+                <InvoiceTemplateSettings organizationId={org?.id || null} />
                 <DocumentTemplatesTab />
               </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+            )}
+
+          </div>
+        </main>
       </div>
 
-      {/* Delete Agency Modal */}
-      {organizationId && (
+      {/* Delete modal */}
+      {org?.id && (
         <DeleteAgencyModal
           open={showDeleteModal}
           onOpenChange={setShowDeleteModal}
-          organizationId={organizationId}
-          organizationName={organizationName}
+          organizationId={org.id}
+          organizationName={orgName}
         />
       )}
+      {/* Onboarding Welcome Modal */}
+      <AgencyOnboardingModal 
+        isOpen={showOnboardingModal} 
+        onClose={() => setShowOnboardingModal(false)} 
+      />
     </div>
+  );
+}
+
+// ─── Shared sub-components ────────────────────────────────────────────────────
+
+function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
+  return (
+    <div className="flex items-center gap-3 pb-2 border-b border-border">
+      <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+        {icon}
+      </div>
+      <div>
+        <h2 className="text-lg font-bold">{title}</h2>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function SettingsCard({
+  title, subtitle, icon, children, action
+}: {
+  title: string;
+  subtitle?: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/20">
+        <div className="flex items-center gap-2.5">
+          <div className="text-primary">{icon}</div>
+          <div>
+            <h3 className="font-semibold text-sm">{title}</h3>
+            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+          </div>
+        </div>
+        {action}
+      </div>
+      <div className="p-5 space-y-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FieldGroup({ children }: { children: React.ReactNode }) {
+  return <div className="space-y-4">{children}</div>;
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm font-medium">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+function ActionRow({ children }: { children: React.ReactNode }) {
+  return <div className="flex justify-end pt-2 border-t border-border mt-4">{children}</div>;
+}
+
+function SaveButton({
+  loading, onClick, label, icon
+}: {
+  loading: boolean;
+  onClick: () => void;
+  label: string;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <Button onClick={onClick} disabled={loading} className="gap-2 h-9">
+      {loading
+        ? <Loader2 className="h-4 w-4 animate-spin" />
+        : (icon || <Check className="h-4 w-4" />)
+      }
+      {loading ? 'A guardar…' : label}
+    </Button>
   );
 }

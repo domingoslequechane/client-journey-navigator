@@ -9,11 +9,11 @@ const corsHeaders = {
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-// Configuração de Modelos Gemini 3.1 (Architecture: Agentic Workflow)
+// Configuração de Modelos Gemini (Architecture: Agentic Workflow)
 const MODELS = {
     ORCHESTRATOR: "gemini-3.1-pro-preview",
-    COPYWRITER:   "gemini-2.5-flash",
-    DESIGNER:     "gemini-3.1-flash-image-preview",
+    COPYWRITER:   "gemini-3.1-pro-preview",
+    DESIGNER:     "gemini-3.1-flash-image-preview", 
     REVIEWER:     "gemini-3.1-pro-preview",
 };
 
@@ -43,8 +43,7 @@ async function callGemini(parts: any[], model: string, generateImage = false) {
         }
     };
 
-    // Ativa o raciocínio profundo (Thinking) para modelos Pro (Orchestrator e Reviewer)
-    if (model === MODELS.ORCHESTRATOR || model === MODELS.REVIEWER) {
+    if (model.includes("pro-preview")) {
         body.generationConfig.thinking_config = {
             thinking_level: "HIGH"
         };
@@ -58,10 +57,106 @@ async function callGemini(parts: any[], model: string, generateImage = false) {
 
     if (!resp.ok) {
         const err = await resp.text();
-        throw new Error(`Gemini Error: ${err}`);
+        console.error("Gemini API error response:", err);
+        throw new Error(`Gemini Error (${resp.status}): ${err.substring(0, 500)}`);
     }
 
-    return await resp.json();
+    const rawText = await resp.text();
+    let data;
+    try {
+        data = JSON.parse(rawText);
+    } catch (e) {
+        console.warn("Gemini non-JSON response encountered. Simulating valid structure for text:", rawText.substring(0, 200));
+        // Fallback: wrap it in a pseudo candidate structure so the rest of the code works
+        data = {
+            candidates: [{
+                content: { parts: [{ text: rawText }] },
+                role: "model"
+            }],
+            usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 } // estimated
+        };
+    }
+    
+    if (!data.candidates || !data.candidates[0]) {
+        console.error("Invalid Gemini response:", JSON.stringify(data).substring(0, 500));
+        throw new Error("Resposta inválida da API: sem candidatos");
+    }
+    
+    if (!data.candidates[0].content || !data.candidates[0].content.parts) {
+        console.error("Invalid Gemini response structure:", JSON.stringify(data).substring(0, 500));
+        throw new Error("Resposta inválida da API: estrutura unexpected");
+    }
+
+    return data;
+}
+
+/**
+ * Normaliza os metadados de uso do Gemini para garantir consistência entre modelos
+ */
+function normalizeUsage(data: any) {
+    const usage = data.usageMetadata || data.usage_metadata || {};
+    return {
+        promptTokenCount: usage.promptTokenCount || usage.prompt_token_count || usage.promptTokens || 0,
+        candidatesTokenCount: usage.candidatesTokenCount || usage.candidates_token_count || usage.candidatesTokens || 0,
+        totalTokenCount: usage.totalTokenCount || usage.total_token_count || ( (usage.promptTokenCount || 0) + (usage.candidatesTokenCount || 0) ) || 0
+    };
+}
+
+function extractJsonFromResponse(content: string, fallback: any = {}): any {
+    const cleanedVariants = [
+        content,
+        content.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '').trim(),
+    ];
+
+    for (const variant of cleanedVariants) {
+        try {
+            const parsed = JSON.parse(variant);
+            if (parsed && typeof parsed === 'object') return parsed;
+        } catch { /* continue */ }
+
+        const jsonMatch = variant.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            let candidate = jsonMatch[0];
+            candidate = candidate
+                .replace(/[\x00-\x1F\x7F]/g, ' ')
+                .replace(/,\s*}/g, '}')
+                .replace(/,\s*]/g, ']');
+
+            try {
+                const parsed = JSON.parse(candidate);
+                if (parsed && typeof parsed === 'object') return parsed;
+            } catch {
+                let repaired = candidate;
+                let inString = false;
+                let lastQuotePos = -1;
+                for (let i = 0; i < repaired.length; i++) {
+                    if (repaired[i] === '"' && (i === 0 || repaired[i - 1] !== '\\')) {
+                        inString = !inString;
+                        lastQuotePos = i;
+                    }
+                }
+                if (inString) repaired += '"';
+
+                let braces = 0, brackets = 0;
+                for (const char of repaired) {
+                    if (char === '{') braces++;
+                    if (char === '}') braces--;
+                    if (char === '[') brackets++;
+                    if (char === ']') brackets--;
+                }
+                while (brackets > 0) { repaired += ']'; brackets--; }
+                while (braces > 0) { repaired += '}'; braces--; }
+
+                try {
+                    const parsed = JSON.parse(repaired);
+                    if (parsed && typeof parsed === 'object') return parsed;
+                } catch { /* continue */ }
+            }
+        }
+    }
+
+    console.warn('Could not parse AI response, returning fallback. Raw:', content.substring(0, 200));
+    return fallback;
 }
 
 serve(async (req) => {
@@ -200,13 +295,16 @@ serve(async (req) => {
             `});
             const data = await callGemini(parts, MODELS.ORCHESTRATOR, false);
             
-            // Extract the JSON safely handling potential markdown formatting
-            const textPart = data.candidates[0].content.parts.find((p: any) => p.text && !p.thought);
+            const content = data.candidates[0].content;
+            const partsArray = content?.parts || [];
+            const textPart = partsArray.find((p: any) => p.text && !p.thought);
             const rawText = textPart?.text || '{}';
-            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-            const jsonString = jsonMatch ? jsonMatch[0] : '{}';
             
-            result = JSON.parse(jsonString);
+            result = extractJsonFromResponse(rawText, { analysis: {}, creative_direction: "", copy_direction: {}, layout_strategy: {} });
+            const usageMetadata = normalizeUsage(data);
+            return new Response(JSON.stringify({ success: true, agent, result, usageMetadata }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -255,12 +353,16 @@ serve(async (req) => {
             `});
             const data = await callGemini(parts, MODELS.COPYWRITER, false);
             
-            const textPart = data.candidates[0].content.parts.find((p: any) => p.text && !p.thought);
+            const content = data.candidates[0].content;
+            const partsArray = content?.parts || [];
+            const textPart = partsArray.find((p: any) => p.text && !p.thought);
             const rawText = textPart?.text || '{}';
-            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-            const jsonString = jsonMatch ? jsonMatch[0] : '{}';
             
-            result = JSON.parse(jsonString);
+            result = extractJsonFromResponse(rawText, { headline: "", subheadline: "", body: "", cta: "", footer: "", social_caption: "" });
+            const usageMetadata = normalizeUsage(data);
+            return new Response(JSON.stringify({ success: true, agent, result, usageMetadata }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -352,11 +454,13 @@ serve(async (req) => {
                 ${(context.orchestrator?.layout_strategy?.constraints || []).map((c: string) => `- ${c}`).join('\n')}
 
                 ALÉM DISSO (LEIS GERAIS DO STUDIO E RENDERING):
-                - QUALIDADE VISUAL: Masterpiece fotorealista, Octane Render ou Unreal Engine style, Studio Lighting meticuloso, 8k resolution.
+                - QUALIDADE VISUAL: Masterpiece fotorealista 4K ULTRA-HD (3840x2160 pixels equivalent quality).
+                - DETALHES: Octane Render ou Unreal Engine style, Studio Lighting meticuloso, cores profundas e vibrantes, nitidez absoluta.
                 - TIPOGRAFIA: "${primaryFont}" (texto em foco afiado, altamente legível, kerning e alinhamento perfeitos, layout limpo).
                 - NEGATIVE SPACE: Use espaço livre para deixar a arte respirar. Estética minimalista premium, focada na alta conversão.
                 - 🚫 ZERO TEXTO FALSO/ALUCINADO.
                 - 🚫 ZERO SOBREPOSIÇÃO NO PRODUTO.
+                - 🚫 ZERO RUÍDO: A imagem deve ser cristalina, padrão Retina Display 4K.
 
                 CONTEÚDO TEXTUAL OBRIGATÓRIO:
                 H1: "${context.copywriter?.headline}"
@@ -388,6 +492,10 @@ serve(async (req) => {
             const { data: { publicUrl } } = supabase.storage.from("studio-assets").getPublicUrl(fileName);
 
             result = { imageUrl: publicUrl };
+            const usageMetadata = normalizeUsage(data);
+            return new Response(JSON.stringify({ success: true, agent, result, usageMetadata }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -426,8 +534,15 @@ serve(async (req) => {
               }
             `});
             const data = await callGemini(parts, MODELS.REVIEWER, false);
-            const textPart = data.candidates[0].content.parts.find((p: any) => p.text && !p.thought);
-            result = JSON.parse((textPart?.text || '{}').replace(/```json|```/g, '').trim());
+            const content = data.candidates[0].content;
+            const partsArray = content?.parts || [];
+            const textPart = partsArray.find((p: any) => p.text && !p.thought);
+            const rawText = (textPart?.text || '').replace(/```json|```/g, '').trim();
+            result = extractJsonFromResponse(rawText, { status: 'approved', feedback: '' });
+            const usageMetadata = normalizeUsage(data);
+            return new Response(JSON.stringify({ success: true, agent, result, usageMetadata }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
         }
 
         // ──────────────────────────────────────────────────────────────

@@ -412,7 +412,10 @@ serve(async (req: Request) => {
     const event = (body.EventType as string) || (body.event as string) || "message";
 
     // Extrair URL Base caso exista
-    const uazapiUrl = (body.BaseUrl as string) || UAZAPI_BASE_URL;
+    let uazapiUrl = (body.BaseUrl as string) || UAZAPI_BASE_URL;
+    if (uazapiUrl && !uazapiUrl.startsWith("http")) {
+      uazapiUrl = "https://" + uazapiUrl;
+    }
 
     // ─── Evento de Digitação (Presence) ───
     if (event === "presence" || event === "chat_state") {
@@ -470,9 +473,19 @@ serve(async (req: Request) => {
         return new Response(JSON.stringify({ ok: true, skipped: "whatsapp_disconnected" }), { status: 200 });
       }
 
-      const messageData = (body.message as Record<string, unknown>)
-        || (body.data as Record<string, unknown>);
-      if (!messageData) return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      // Extrair dados da mensagem (pode vir no body.message ou body.data ou body.data.message)
+      let messageData: any = body.message || body.data;
+      if (!messageData) return new Response(JSON.stringify({ ok: true, skipped: "no_payload" }), { status: 200 });
+
+      // Se for um evento nested da UAZAPI (ex: Evolution), a mensagem real está em messageData.message
+      if (messageData.message && typeof messageData.message === "object") {
+        messageData = { ...messageData, ...messageData.message };
+      }
+      
+      // Alguns provedores mandam em data.msg
+      if (messageData.msg && typeof messageData.msg === "object") {
+        messageData = { ...messageData, ...messageData.msg };
+      }
 
       // Ignorar grupos
       const isGroup = (messageData.isGroup as boolean)
@@ -632,15 +645,22 @@ serve(async (req: Request) => {
         // Verificar se é uma mensagem da própria IA que acabamos de enviar
         const { data: recentAiMsg } = await sb
           .from("ai_agent_messages")
-          .select("id")
+          .select("id, content")
           .eq("conversation_id", conversationId)
           .eq("role", "assistant")
-          .eq("content", text)
           .is("external_id", null)
-          .gt("created_at", new Date(Date.now() - 30000).toISOString())
+          .gt("created_at", new Date(Date.now() - 60000).toISOString())
+          .order("created_at", { ascending: false })
+          .limit(1)
           .maybeSingle();
 
-        if (recentAiMsg) {
+        const isEcho = recentAiMsg && (
+          recentAiMsg.content.trim() === text.trim() || 
+          text.trim().includes(recentAiMsg.content.trim()) ||
+          recentAiMsg.content.trim().includes(text.trim())
+        );
+
+        if (isEcho) {
           console.log(`Webhook: Ignorando 'fromMe' pois coincide com resposta recente da IA`);
           if (messageId) {
             await sb.from("ai_agent_messages").update({ external_id: messageId }).eq("id", recentAiMsg.id);
@@ -830,7 +850,7 @@ serve(async (req: Request) => {
       // Verificar se a IA chamou ferramenta
       if (aiResult.toolCalls && aiResult.toolCalls.length > 0) {
         for (const toolCall of aiResult.toolCalls) {
-          if (toolCall.function.name === "solicitar_ajuda_colega") {
+          if (toolCall.function.name === "transferir_atendimento_para_humano") {
             const args = JSON.parse(toolCall.function.arguments);
             console.log(`Webhook: AI solicitou ajuda de colega. Motivo: ${args.motivo}`);
             
@@ -896,15 +916,19 @@ serve(async (req: Request) => {
         .eq("id", conversationId);
 
       // ─── Enviar via WhatsApp ───
-      await sendTextMessage(
-        agent.uazapi_instance_token!,
-        phone,
-        cleanResponse,
-        agent.show_typing ? 2000 : 500,
-        agent.mark_as_read,
-        aiResult.replyToId,
-        uazapiUrl
-      );
+      if (agent.uazapi_instance_token) {
+        await sendTextMessage(
+          agent.uazapi_instance_token,
+          phone,
+          cleanResponse,
+          agent.show_typing ? 2000 : 500,
+          agent.mark_as_read,
+          aiResult.replyToId,
+          uazapiUrl
+        );
+      } else {
+        console.warn(`Webhook: Impossível enviar resposta para [${phone}] pois o agente [${agent.name}] não tem instance_token.`);
+      }
 
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }

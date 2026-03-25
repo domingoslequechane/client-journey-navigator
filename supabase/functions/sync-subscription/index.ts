@@ -205,27 +205,36 @@ serve(async (req) => {
     else if (attrs.status === 'past_due') status = 'past_due';
     else if (attrs.status === 'cancelled') status = 'cancelled';
     else if (attrs.status === 'expired') status = 'expired';
+    else if (attrs.status === 'on_hold') status = 'past_due';
+    else if (attrs.status === 'unpaid') status = 'past_due';
 
     console.log('Updating subscription - planType:', planType, 'status:', status);
+    
+    // Determine current period start and end
+    // LemonSqueezy status 'cancelled' or 'expired' might have renwes_at = null, but they have ends_at
+      const portalUrl = subscriptionData.attributes.urls?.customer_portal;
+      
+      console.log(`[sync-subscription] Found subscription: ${subscriptionData.id}, mapping status: ${attrs.status} -> ${status}`);
+      console.log(`[sync-subscription] Portal URL: ${portalUrl}`);
 
-    // Update or insert subscription record
-    const subscriptionRecord = {
-      organization_id: organizationId,
-      lemonsqueezy_subscription_id: subscriptionData.id,
-      lemonsqueezy_customer_id: String(attrs.customer_id),
-      lemonsqueezy_order_id: String(attrs.order_id),
-      lemonsqueezy_product_id: String(attrs.product_id),
-      lemonsqueezy_variant_id: variantId,
-      status: status,
-      current_period_start: attrs.renews_at ? new Date(attrs.created_at).toISOString() : null,
-      current_period_end: attrs.renews_at ? new Date(attrs.renews_at).toISOString() : null,
-      cancel_at_period_end: attrs.cancelled || false,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error: subError } = await supabaseClient
-      .from('subscriptions')
-      .upsert(subscriptionRecord, { onConflict: 'organization_id' });
+      const { error: subError } = await supabaseClient
+        .from('subscriptions')
+        .upsert({
+          organization_id: organizationId,
+          lemonsqueezy_subscription_id: String(subscriptionData.id),
+          lemonsqueezy_customer_id: String(attrs.customer_id),
+          lemonsqueezy_order_id: String(attrs.order_id),
+          lemonsqueezy_product_id: String(attrs.product_id),
+          lemonsqueezy_variant_id: String(attrs.variant_id),
+          status: status,
+          current_period_start: (attrs.renews_at || attrs.ends_at) ? new Date(attrs.created_at).toISOString() : null,
+          current_period_end: (attrs.renews_at || attrs.ends_at) ? new Date(attrs.renews_at || attrs.ends_at).toISOString() : null,
+          cancel_at_period_end: attrs.cancelled || (status === 'cancelled' || status === 'expired'),
+          lemonsqueezy_customer_portal_url: portalUrl,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'organization_id'
+        });
 
     if (subError) {
       console.error('Error upserting subscription:', subError);

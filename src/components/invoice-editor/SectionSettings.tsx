@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -7,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { InvoiceSection, SectionSettings as SectionSettingsType } from './section-types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { Slider } from '@/components/ui/slider';
 
 interface SectionSettingsProps {
   section: InvoiceSection;
@@ -19,9 +22,17 @@ export function SectionSettings({
   onClose,
   onUpdateSettings,
 }: SectionSettingsProps) {
-  const settings = section.settings;
+  // LOCAL state — fixes the toggle bug where turning off won't let you turn back on
+  const [local, setLocal] = useState<SectionSettingsType>(section.settings);
 
-  const handleChange = (key: keyof SectionSettingsType, value: any) => {
+  // Sync when section changes (e.g. switching between sections)
+  useEffect(() => {
+    setLocal(section.settings);
+  }, [section.id]);
+
+  const set = <K extends keyof SectionSettingsType>(key: K, value: SectionSettingsType[K]) => {
+    const updated = { ...local, [key]: value };
+    setLocal(updated);
     onUpdateSettings(section.id, { [key]: value });
   };
 
@@ -31,214 +42,241 @@ export function SectionSettings({
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Posição do Logo</Label>
+              <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/80">Posição do Logo</Label>
               <RadioGroup
-                value={settings.logoPosition || 'left'}
-                onValueChange={(v) => handleChange('logoPosition', v)}
+                value={local.logoPosition || 'right'}
+                onValueChange={(v) => set('logoPosition', v as 'left' | 'center' | 'right')}
+                className="flex gap-4"
               >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="left" id="logo-left" />
-                  <Label htmlFor="logo-left" className="font-normal">Esquerda</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="center" id="logo-center" />
-                  <Label htmlFor="logo-center" className="font-normal">Centro</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="right" id="logo-right" />
-                  <Label htmlFor="logo-right" className="font-normal">Direita</Label>
-                </div>
+                {['left', 'center', 'right'].map(pos => (
+                  <div key={pos} className="flex items-center space-x-2">
+                    <RadioGroupItem value={pos} id={`logo-${pos}`} />
+                    <Label htmlFor={`logo-${pos}`} className="font-normal capitalize cursor-pointer">
+                      {pos === 'left' ? 'Esquerda' : pos === 'center' ? 'Centro' : 'Direita'}
+                    </Label>
+                  </div>
+                ))}
               </RadioGroup>
             </div>
-            <ToggleSetting
-              label="Mostrar NUIT"
-              checked={settings.showNuit ?? true}
-              onChange={(v) => handleChange('showNuit', v)}
-            />
-            <ToggleSetting
-              label="Mostrar Telefone"
-              checked={settings.showPhone ?? true}
-              onChange={(v) => handleChange('showPhone', v)}
-            />
-            <ToggleSetting
-              label="Mostrar Endereço"
-              checked={settings.showAddress ?? true}
-              onChange={(v) => handleChange('showAddress', v)}
-            />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/80">Tamanho do Logo</Label>
+                <span className="text-[10px] font-mono text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded">{local.logoSize || 100}%</span>
+              </div>
+              <Slider
+                value={[local.logoSize || 100]}
+                min={20}
+                max={200}
+                step={5}
+                onValueChange={([v]) => set('logoSize', v)}
+                className="py-2"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 italic">Dica: A área do logo se ajusta automaticamente para remover margens.</p>
+            </div>
+            <div className="h-px bg-border my-2" />
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/80">Campos visíveis</Label>
+              <Toggle label="Mostrar NUIT" checked={local.showNuit ?? true} onChange={v => set('showNuit', v)} />
+              <Toggle label="Mostrar Telefone" checked={local.showPhone ?? true} onChange={v => set('showPhone', v)} />
+              <Toggle label="Mostrar Endereço" checked={local.showAddress ?? true} onChange={v => set('showAddress', v)} />
+              <Toggle label="Mostrar Email" checked={local.showEmail ?? true} onChange={v => set('showEmail', v)} />
+              <Toggle label="Mostrar Slogan" checked={local.showSlogan ?? true} onChange={v => set('showSlogan', v)} />
+            </div>
+            {local.showSlogan && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Texto do Slogan</Label>
+                <Input
+                  value={local.slogan || ''}
+                  onChange={e => set('slogan', e.target.value)}
+                  placeholder="Marketing Digital de Elite"
+                  className="h-9"
+                />
+              </div>
+            )}
+            <div className="h-px bg-border my-2" />
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/80">Informações da Agência</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Nome da Agência</Label>
+                  <Input value={local.agencyName || ''} onChange={e => set('agencyName', e.target.value)} placeholder="QUALIFY" className="h-9" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">NUIT</Label>
+                  <Input value={local.agencyNuit || ''} onChange={e => set('agencyNuit', e.target.value)} placeholder="400123987" className="h-9" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Telefone 1</Label>
+                  <Input value={local.agencyPhone1 || ''} onChange={e => set('agencyPhone1', e.target.value)} placeholder="+258 84 000 0000" className="h-9" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Telefone 2</Label>
+                  <Input value={local.agencyPhone2 || ''} onChange={e => set('agencyPhone2', e.target.value)} placeholder="+258 87 000 0000" className="h-9" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Email</Label>
+                  <Input value={local.agencyEmail || ''} onChange={e => set('agencyEmail', e.target.value)} placeholder="info@qualify.mz" className="h-9" />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Endereço</Label>
+                  <Input value={local.agencyAddress || ''} onChange={e => set('agencyAddress', e.target.value)} placeholder="Av. 25 de Setembro, 147 - Maputo" className="h-9" />
+                </div>
+              </div>
+            </div>
           </div>
         );
 
       case 'client':
         return (
-          <div className="space-y-4">
-            <ToggleSetting
-              label="Mostrar Email"
-              checked={settings.showEmail ?? true}
-              onChange={(v) => handleChange('showEmail', v)}
-            />
-            <ToggleSetting
-              label="Mostrar Telefone"
-              checked={settings.showClientPhone ?? true}
-              onChange={(v) => handleChange('showClientPhone', v)}
-            />
-            <ToggleSetting
-              label="Mostrar Endereço"
-              checked={settings.showClientAddress ?? true}
-              onChange={(v) => handleChange('showClientAddress', v)}
-            />
+          <div className="space-y-3">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Campos visíveis</Label>
+            <Toggle label="Mostrar Email" checked={local.showClientEmail ?? true} onChange={v => set('showClientEmail', v)} />
+            <Toggle label="Mostrar Telefone" checked={local.showClientPhone ?? true} onChange={v => set('showClientPhone', v)} />
+            <Toggle label="Mostrar Endereço" checked={local.showClientAddress ?? true} onChange={v => set('showClientAddress', v)} />
+            <Toggle label="Mostrar NUIT" checked={local.showClientNuit ?? true} onChange={v => set('showClientNuit', v)} />
           </div>
         );
 
       case 'invoice_info':
         return (
-          <div className="space-y-4">
-            <ToggleSetting
-              label="Mostrar Data de Vencimento"
-              checked={settings.showDueDate ?? true}
-              onChange={(v) => handleChange('showDueDate', v)}
-            />
+          <div className="space-y-3">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Campos visíveis</Label>
+            <Toggle label="Mostrar Data de Vencimento" checked={local.showDueDate ?? true} onChange={v => set('showDueDate', v)} />
+            <Toggle label="Mostrar Validade" checked={local.showValidity ?? true} onChange={v => set('showValidity', v)} />
+            <Toggle label="Mostrar Total no Cabeçalho" checked={local.showTotalInHeader ?? true} onChange={v => set('showTotalInHeader', v)} />
           </div>
         );
 
       case 'services':
         return (
-          <div className="space-y-4">
-            <ToggleSetting
-              label="Mostrar Coluna Quantidade"
-              checked={settings.showQuantity ?? true}
-              onChange={(v) => handleChange('showQuantity', v)}
-            />
-            <ToggleSetting
-              label="Mostrar Coluna Preço Unitário"
-              checked={settings.showUnitPrice ?? true}
-              onChange={(v) => handleChange('showUnitPrice', v)}
-            />
+          <div className="space-y-3">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Colunas da tabela</Label>
+            <Toggle label="Mostrar Coluna Quantidade" checked={local.showQuantity ?? true} onChange={v => set('showQuantity', v)} />
+            <Toggle label="Mostrar Coluna Preço Unitário" checked={local.showUnitPrice ?? true} onChange={v => set('showUnitPrice', v)} />
+            <Toggle label="Mostrar Nº de Linha" checked={local.showRowNumbers ?? true} onChange={v => set('showRowNumbers', v)} />
           </div>
         );
 
       case 'totals':
         return (
-          <div className="space-y-4">
-            <ToggleSetting
-              label="Mostrar Subtotal"
-              checked={settings.showSubtotal ?? true}
-              onChange={(v) => handleChange('showSubtotal', v)}
-            />
-            <ToggleSetting
-              label="Mostrar IVA"
-              checked={settings.showTax ?? true}
-              onChange={(v) => handleChange('showTax', v)}
-            />
+          <div className="space-y-3">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Campos visíveis</Label>
+            <Toggle label="Mostrar Subtotal" checked={local.showSubtotal ?? true} onChange={v => set('showSubtotal', v)} />
+            <Toggle label="Mostrar IVA (16%)" checked={local.showTax ?? true} onChange={v => set('showTax', v)} />
+            <Toggle label="Mostrar Notas" checked={local.showNotes ?? true} onChange={v => set('showNotes', v)} />
           </div>
         );
 
       case 'payment':
         return (
-          <div className="space-y-4">
-            <ToggleSetting
-              label="Mostrar Provedora (M-Pesa, Banco, etc)"
-              checked={settings.showPaymentProvider ?? true}
-              onChange={(v) => handleChange('showPaymentProvider', v)}
-            />
-            <ToggleSetting
-              label="Mostrar Número da Conta"
-              checked={settings.showPaymentAccount ?? true}
-              onChange={(v) => handleChange('showPaymentAccount', v)}
-            />
-            <ToggleSetting
-              label="Mostrar Nome do Destinatário"
-              checked={settings.showPaymentRecipient ?? true}
-              onChange={(v) => handleChange('showPaymentRecipient', v)}
-            />
+          <div className="space-y-3">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Campos visíveis</Label>
+            <Toggle label="Mostrar Provedora (M-Pesa, Banco…)" checked={local.showPaymentProvider ?? true} onChange={v => set('showPaymentProvider', v)} />
+            <Toggle label="Mostrar Número da Conta" checked={local.showPaymentAccount ?? true} onChange={v => set('showPaymentAccount', v)} />
+            <Toggle label="Mostrar Nome do Destinatário" checked={local.showPaymentRecipient ?? true} onChange={v => set('showPaymentRecipient', v)} />
           </div>
         );
 
       case 'signatures':
         return (
           <div className="space-y-4">
-            <ToggleSetting
-              label="Assinatura do Cliente"
-              checked={settings.showClientSignature ?? true}
-              onChange={(v) => handleChange('showClientSignature', v)}
-            />
-            {settings.showClientSignature && (
-              <div className="space-y-2 pl-4">
-                <Label>Label da Assinatura do Cliente</Label>
-                <Input
-                  value={settings.clientSignatureLabel || 'O Cliente'}
-                  onChange={(e) => handleChange('clientSignatureLabel', e.target.value)}
-                  placeholder="O Cliente"
-                />
-              </div>
-            )}
-            <ToggleSetting
-              label="Assinatura da Agência"
-              checked={settings.showAgencySignature ?? true}
-              onChange={(v) => handleChange('showAgencySignature', v)}
-            />
-            {settings.showAgencySignature && (
-              <div className="space-y-2 pl-4">
-                <Label>Label da Assinatura da Agência</Label>
-                <Input
-                  value={settings.agencySignatureLabel || 'A Agência'}
-                  onChange={(e) => handleChange('agencySignatureLabel', e.target.value)}
-                  placeholder="A Agência"
-                />
-              </div>
-            )}
+            <div className="space-y-3">
+              <Toggle label="Assinatura do Cliente" checked={local.showClientSignature ?? true} onChange={v => set('showClientSignature', v)} />
+              {local.showClientSignature && (
+                <div className="pl-3 border-l-2 border-primary/30 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Label</Label>
+                  <Input
+                    value={local.clientSignatureLabel || 'O Cliente'}
+                    onChange={e => set('clientSignatureLabel', e.target.value)}
+                    placeholder="O Cliente"
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )}
+            </div>
+            <div className="space-y-3">
+              <Toggle label="Assinatura da Agência" checked={local.showAgencySignature ?? true} onChange={v => set('showAgencySignature', v)} />
+              {local.showAgencySignature && (
+                <div className="pl-3 border-l-2 border-primary/30 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Label</Label>
+                  <Input
+                    value={local.agencySignatureLabel || 'O Responsável'}
+                    onChange={e => set('agencySignatureLabel', e.target.value)}
+                    placeholder="O Responsável"
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         );
 
       case 'footer':
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Texto do Rodapé</Label>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mensagem de Agradecimento</Label>
               <Textarea
-                value={settings.footerText || ''}
-                onChange={(e) => handleChange('footerText', e.target.value)}
+                value={local.footerText || ''}
+                onChange={e => set('footerText', e.target.value)}
                 placeholder="Obrigado pela preferência!"
-                rows={3}
+                rows={2}
+                className="text-sm resize-none"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Texto Legal</Label>
+              <Textarea
+                value={local.footerLegalText || ''}
+                onChange={e => set('footerLegalText', e.target.value)}
+                placeholder="Documento não válido para fins fiscais."
+                rows={2}
+                className="text-sm resize-none"
               />
             </div>
           </div>
         );
 
       default:
-        return <p className="text-muted-foreground">Sem configurações disponíveis.</p>;
+        return <p className="text-sm text-muted-foreground">Sem configurações disponíveis.</p>;
     }
   };
 
   return (
-    <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-10 flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b">
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
         <div>
-          <h3 className="font-semibold">{section.label}</h3>
-          <p className="text-sm text-muted-foreground">Configurações</p>
+          <h3 className="font-semibold text-base">{section.label}</h3>
+          <p className="text-sm text-muted-foreground">{section.description}</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
+          <X className="h-4 w-4" />
         </Button>
       </div>
-      <ScrollArea className="flex-1 p-4">
-        {renderSettings()}
+      <ScrollArea className="flex-1">
+        <div className="p-4">
+          {renderSettings()}
+        </div>
       </ScrollArea>
     </div>
   );
 }
 
-function ToggleSetting({
+function Toggle({
   label,
   checked,
   onChange,
 }: {
   label: string;
   checked: boolean;
-  onChange: (checked: boolean) => void;
+  onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <Label className="font-normal">{label}</Label>
+    <div className={cn(
+      'flex items-center justify-between py-2 px-3 rounded-lg transition-colors',
+      checked ? 'bg-primary/5' : 'bg-muted/30'
+    )}>
+      <Label className="font-normal text-sm cursor-pointer">{label}</Label>
       <Switch
         checked={checked}
         onCheckedChange={onChange}

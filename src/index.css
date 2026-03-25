@@ -347,20 +347,26 @@ All colors MUST be HSL.
   }
 }
 
-@keyframes slideRight {
+@keyframes blurIn {
   from {
+    filter: blur(8px);
     opacity: 0;
-    transform: translateX(-20px);
+    transform: scale(0.98);
   }
 
   to {
+    filter: blur(0);
     opacity: 1;
-    transform: translateX(0);
+    transform: scale(1);
   }
 }
 
 .animate-in {
   animation-fill-mode: both;
+}
+
+.blur-load {
+  animation: blurIn 0.5s ease-out both;
 }
 
 /* Phone Input Styles */

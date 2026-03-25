@@ -239,10 +239,11 @@ export default function LandingPage() {
           <div className="container mx-auto px-6 text-center">
             <p className="text-sm font-medium text-muted-foreground mb-6 uppercase tracking-wider">A escolha das agências que dominam o mercado</p>
             <div className="flex items-center justify-center flex-wrap gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-              <div className="text-xl md:text-2xl font-bold font-mono">AgencyPro</div>
+              <div className="text-xl md:text-2xl font-bold font-mono">Onix Agence</div>
               <div className="text-xl md:text-2xl font-bold flex items-center gap-2"><Rocket className="h-6 w-6"/> ScaleUp</div>
-              <div className="text-xl md:text-2xl font-bold italic">DigitalForce</div>
+              <div className="text-xl md:text-2xl font-bold italic">ACE Publicidade</div>
               <div className="text-xl md:text-2xl font-extrabold uppercase">Growth<span className="text-primary">.co</span></div>
+              <div className="text-xl md:text-2xl font-medium tracking-widest">MEG Grafica</div>
               <div className="text-xl md:text-2xl font-medium tracking-widest">NEXUS</div>
             </div>
           </div>

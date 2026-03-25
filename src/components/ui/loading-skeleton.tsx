@@ -192,7 +192,7 @@ export function DashboardSkeleton() {
       </div>
 
       {/* Funnel Overview */}
-      <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
+    <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6 blur-[2px] animate-pulse">
         <div className="flex justify-between mb-4">
           <div className="space-y-2">
             <Skeleton className="h-5 w-40" />
@@ -209,7 +209,7 @@ export function DashboardSkeleton() {
 
       {/* Two Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
+      <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6 blur-[2px] animate-pulse">
           <div className="flex justify-between mb-6">
             <Skeleton className="h-5 w-36" />
             <Skeleton className="h-8 w-20" />
@@ -220,7 +220,7 @@ export function DashboardSkeleton() {
             ))}
           </div>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
+      <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6 blur-[2px] animate-pulse">
           <Skeleton className="h-5 w-32 mb-6" />
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (

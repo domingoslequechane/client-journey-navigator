@@ -220,6 +220,7 @@ serve(async (req) => {
             current_period_start: subscriptionData.renews_at ? new Date(subscriptionData.created_at).toISOString() : null,
             current_period_end: subscriptionData.renews_at ? new Date(subscriptionData.renews_at).toISOString() : null,
             cancel_at_period_end: subscriptionData.cancelled || false,
+            lemonsqueezy_customer_portal_url: subscriptionData.urls?.customer_portal,
           }, {
             onConflict: 'organization_id'
           });

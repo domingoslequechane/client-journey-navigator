@@ -98,7 +98,7 @@ export function MobileHeader() {
     mainItems.push({ name: t('navigation.socialMedia'), href: '/app/social-media', icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, show: true });
 
     mainItems.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: MessagesSquare, show: true, isQia: true });
-    mainItems.push({ name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, show: true, badge: 'BETA' });
+    mainItems.push({ name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, show: true });
     mainItems.push({ name: t('navigation.studio'), href: '/app/studio', icon: PenTool, show: true });
     mainItems.push({ name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true });
 
