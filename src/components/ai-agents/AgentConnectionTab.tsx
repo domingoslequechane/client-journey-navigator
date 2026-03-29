@@ -159,8 +159,8 @@ export function AgentConnectionTab({ agent, instanceAction, updateConfig, onRefr
 
       {/* Channels */}
       <div>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Canais de Atendimento
+        <h3 className="text-sm font-semibold text-muted-foreground tracking-wider mb-3 normal-case">
+          Canais de atendimento
         </h3>
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
           {/* WhatsApp - Available */}
@@ -326,7 +326,7 @@ export function AgentConnectionTab({ agent, instanceAction, updateConfig, onRefr
 
               {connectMode === 'code' && (
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground uppercase">
+                  <label className="text-xs font-medium text-muted-foreground normal-case">
                     Número do WhatsApp (com DDD)
                   </label>
                   <div className="relative">

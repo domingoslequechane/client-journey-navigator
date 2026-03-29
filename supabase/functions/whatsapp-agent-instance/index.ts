@@ -2,275 +2,312 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-let UAZAPI_BASE_URL = Deno.env.get("UAZAPI_BASE_URL") || "https://api.uazapi.com";
-const UAZAPI_ADMIN_TOKEN = Deno.env.get("UAZAPI_ADMIN_TOKEN") || "";
+const EVOLUTION_URL = Deno.env.get("EVOLUTION_GO_URL")?.replace(/\/$/, "") || "http://localhost:8080";
+const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_GO_API_KEY") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-// SUPABASE_URL já contém o domínio correto para as Edge Functions
 
-// ─── UAZAPI helpers ──────────────────────────────────────────
-
-async function uazapiRequest<T = unknown>(
+async function evolutionRequest<T = any>(
   path: string,
-  opts: { method?: string; token?: string; adminToken?: boolean; body?: Record<string, unknown> } = {}
+  method = "GET",
+  body?: any
 ): Promise<{ ok: boolean; data?: T; error?: string }> {
-  const { method = "GET", token, adminToken = false, body } = opts;
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-
-  if (adminToken) headers["admintoken"] = UAZAPI_ADMIN_TOKEN;
-  else if (token) headers["token"] = token;
-
   try {
-    const res = await fetch(`${UAZAPI_BASE_URL}${path}`, {
+    const url = `${EVOLUTION_URL}${path}`;
+    console.log(`[Evolution] ${method} request to: ${url}`);
+    
+    const res = await fetch(url, {
       method,
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": EVOLUTION_API_KEY,
+      },
       body: body ? JSON.stringify(body) : undefined,
     });
+    
     const data = await res.json();
-    if (!res.ok) return { ok: false, error: data?.error || data?.message || `HTTP ${res.status}` };
+    if (!res.ok) {
+      console.error(`[Evolution] Error ${res.status}:`, data);
+      return { ok: false, error: data?.error || data?.message || `HTTP ${res.status}` };
+    }
     return { ok: true, data: data as T };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
+    console.error(`[Evolution] Connection error:`, err);
+    return { ok: false, error: err instanceof Error ? err.message : "Unreachable" };
   }
 }
-
-function generateSecret(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-// ─── Main handler ────────────────────────────────────────────
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
   const corsHeaders = getCorsHeaders(req);
-  const json = (data: unknown, status = 200) =>
+  const json = (data: any, status = 200) =>
     new Response(JSON.stringify(data), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   try {
-    // Auth
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Não autorizado" }, 401);
+    if (!authHeader) return json({ error: "No authorization header" }, 401);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return json({ error: "Não autorizado" }, 401);
+    if (!user) return json({ error: "Invalid user session" }, 401);
 
-    const { action, agent_id } = await req.json();
-    if (!agent_id) return json({ error: "agent_id é obrigatório" }, 400);
+    const body = await req.json();
+    const { action, agent_id, organization_id } = body;
 
-    // Validar configurações essenciais
-    if (!UAZAPI_ADMIN_TOKEN) {
-      console.error("ERRO: UAZAPI_ADMIN_TOKEN não configurado no Supabase Secrets.");
-      return json({ error: "Configuração incompleta: UAZAPI_ADMIN_TOKEN não encontrado." }, 500);
-    }
-    
-    if (UAZAPI_BASE_URL.includes("api.uazapi.com") && !UAZAPI_BASE_URL.startsWith("https://")) {
-      // Pequeno fix caso a URL base venha sem protocolo
-      UAZAPI_BASE_URL = "https://" + UAZAPI_BASE_URL;
-    }
+    // --- ACTION: sync ---
+    if (action === "sync") {
+      console.log(`[Sync] Realizando sincronização para org: ${organization_id}`);
+      if (!organization_id) return json({ ok: false, error: "organization_id is required for sync" }, 200);
 
-    // Buscar agente e validar acesso
-    const { data: agent, error: agentErr } = await supabase
-      .from("ai_agents")
-      .select("*, organizations(name)")
-      .eq("id", agent_id)
-      .single();
-
-    if (agentErr || !agent) return json({ error: "Agente não encontrado" }, 404);
-
-    // Verificar se user pertence à org
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("organization_id", agent.organization_id)
-      .maybeSingle();
-
-    if (!membership) return json({ error: "Sem permissão" }, 403);
-
-    // ─── ACTION: connect ───
-    if (action === "connect") {
-      let instanceToken = agent.uazapi_instance_token;
-      let webhookSecret = agent.uazapi_webhook_secret;
-
-      // Gerar webhook secret se não existe
-      if (!webhookSecret) {
-        webhookSecret = generateSecret();
-        await supabase
-          .from("ai_agents")
-          .update({ uazapi_webhook_secret: webhookSecret })
-          .eq("id", agent_id);
+      // 1. Fetch all instances from Evolution
+      const { ok, data, error } = await evolutionRequest("/instance/all", "GET");
+      
+      if (!ok) {
+        console.error("[Sync] Erro ao buscar instâncias na Evolution:", error);
+        return json({ ok: false, error: "A API da Evolution retornou erro: " + error }, 200);
+      }      // 1.1 Robust Parser: Using the exact schema provided by user
+      let evoInstances = [];
+      if (data && data.message === "success" && Array.isArray(data.data)) {
+        evoInstances = data.data;
+      } else if (Array.isArray(data)) {
+        evoInstances = data;
+      } else if (data && typeof data === 'object') {
+        evoInstances = data.data || data.instances || data.result || [];
       }
 
-      // Criar instância na UAZAPI se não existe
-      if (!instanceToken) {
-        const result = await uazapiRequest<{ id: string; token: string }>("/instance/init", {
-          method: "POST",
-          adminToken: true,
-          body: {
-            name: `qualify-${agent.organization_id.slice(0, 8)}-${agent_id.slice(0, 8)}`,
-            systemName: agent.name,
-            adminField01: agent.organization_id,
-          },
-        });
+      const { data: dbAgents } = await supabase
+        .from("atende_ai_instances")
+        .select("*")
+        .eq("organization_id", organization_id);
 
-        if (!result.ok || !result.data) {
-          console.error("Erro UAZAPI (/instance/init):", result.error);
-          return json({ error: "Erro ao criar instância UAZAPI: " + (result.error || "desconhecido") }, 500);
+      const matchedDbIds = new Set();
+      let updatedCount = 0;
+      let createdCount = 0;
+
+      for (const ins of evoInstances) {
+        const instanceId = ins.id;
+        const instanceName = ins.name || ins.instanceName;
+        const isConnected = ins.connected === true;
+        const owner = ins.jid?.replace("@s.whatsapp.net", "") || null;
+        const profilePic = ins.profilePictureUrl || null;
+
+        const existingAgent = dbAgents?.find(a => 
+          a.evolution_instance_id === instanceId
+        );
+
+        if (existingAgent) {
+          matchedDbIds.add(existingAgent.id);
+          const { error: upErr } = await supabase
+            .from("atende_ai_instances")
+            .update({
+              whatsapp_connected: isConnected,
+              connected_number: owner,
+              profile_picture: profilePic,
+              status: isConnected ? "active" : "inactive"
+            })
+            .eq("id", existingAgent.id);
+          
+          if (!upErr) updatedCount++;
+        } else {
+          const { error: insErr } = await supabase
+            .from("atende_ai_instances")
+            .insert({
+              organization_id,
+              name: instanceName,
+              evolution_instance_id: instanceId,
+              whatsapp_connected: isConnected,
+              connected_number: owner,
+              profile_picture: profilePic,
+              status: isConnected ? "active" : "inactive"
+            });
+          if (!insErr) createdCount++;
         }
-
-        instanceToken = result.data.token;
-        await supabase
-          .from("ai_agents")
-          .update({
-            uazapi_instance_id: result.data.id,
-            uazapi_instance_token: result.data.token,
-          })
-          .eq("id", agent_id);
       }
 
-      // Configurar webhook
-      const webhookUrl = `${SUPABASE_URL}/functions/v1/whatsapp-agent-webhook/${webhookSecret}`;
-      const webhookResult = await uazapiRequest("/webhook", {
-        method: "POST",
-        token: instanceToken,
-        body: {
-          enabled: true,
-          url: webhookUrl,
-          events: ["messages", "connection"],
-          excludeMessages: ["wasSentByApi", "isGroupYes"],
-        },
-      });
+      let orphanCount = 0;
+      // SMART CLEANUP with 10min GRACE PERIOD
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      
+      const orphans = dbAgents?.filter(dbA => {
+        // If the agent is in the Evolution list, it's not an orphan
+        const isInEvolution = evoInstances.some((evoA: any) => (evoA.id || evoA.instance?.instanceId) === dbA.evolution_instance_id);
+        if (isInEvolution) return false;
 
-      if (!webhookResult.ok) {
-        console.warn("Aviso ao configurar webhook:", webhookResult.error);
-        // Não bloqueia o connect, mas logamos o erro
+        // If the agent was created in the last 10 minutes, give it a grace period (don't delete)
+        const isRecentlyCreated = dbA.created_at > tenMinutesAgo;
+        if (isRecentlyCreated) return false;
+
+        // Otherwise, it's a true orphan (doesn't exist in Evolution and is old enough)
+        return true;
+      }) || [];
+      
+      orphanCount = orphans.length;
+      if (orphanCount > 0) {
+        await supabase.from("atende_ai_instances").delete().in("id", orphans.map(a => a.id));
       }
 
-      // Conectar (gerar QR Code)
-      const connectResult = await uazapiRequest<{
-        status: string;
-        qrcode?: string;
-        paircode?: string;
-        owner?: string;
-      }>("/instance/connect", {
-        method: "POST",
-        token: instanceToken,
-      });
-
-      console.log("DEBUG: UAazAPI Connect Result:", JSON.stringify(connectResult));
-
-      if (!connectResult.ok) {
-        console.error("Erro UAZAPI (/instance/connect):", connectResult.error);
-        return json({ error: "Erro ao conectar (UAZAPI): " + (connectResult.error || "") }, 500);
-      }
-
-      // Log
-      await supabase.from("ai_agent_connection_log").insert({
-        agent_id,
-        event: "connect_attempt",
-        details: JSON.stringify({ status: connectResult.data?.status }),
-      });
-
-      return json({
-        status: connectResult.data?.status || "waiting_qr",
-        qrcode: connectResult.data?.qrcode || null,
-        paircode: connectResult.data?.paircode || null,
-        owner: connectResult.data?.owner || null,
+      return new Response(JSON.stringify({ ok: true, updated: updatedCount, created: createdCount, deleted: orphanCount }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // ─── ACTION: status ───
-    if (action === "status") {
-      const instanceToken = agent.uazapi_instance_token;
-      if (!instanceToken) {
-        return json({ status: "disconnected", whatsapp_connected: false });
+    // --- ACTION: create ---
+    if (action === "create") {
+      const { name, organization_id } = body;
+      if (!name) return json({ ok: false, error: "Name is required" }, 200);
+      
+      // CREATE UNIQUE SLUG with Org Prefix + Random Suffix to avoid collisions
+      const orgPrefix = organization_id ? organization_id.substring(0, 4) : "off";
+      const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+      const uniqueSuffix = Math.random().toString(36).substring(2, 6);
+      const instanceName = `${orgPrefix}-${slug}-${uniqueSuffix}`;
+      
+      console.log(`[Create] Criando instância única: ${instanceName}`);
+      
+      const { ok, data, error } = await evolutionRequest("/instance/create", "POST", {
+        instanceName: instanceName,
+        name: instanceName,
+        token: Math.random().toString(36).substring(2, 12)
+      });
+      
+      if (!ok) {
+        console.error("[Create] Erro ao criar instância na central:", error);
+        const errDetail = typeof error === 'string' ? error : JSON.stringify(error);
+        return json({ ok: false, error: "Erro na central: " + errDetail }, 200);
+      }
+      
+      // Return the data directly from Evolution AND our generated instanceName
+      return json({ ok: true, data, evolution_instance_id: instanceName }, 200);
+    }
+
+    // --- ACTION: delete ---
+    if (action === "delete") {
+      const instanceIdentifier = body.instance_id || body.instance_name;
+      if (!instanceIdentifier) return json({ ok: false, error: "instance_id is required" }, 200);
+
+      let uuidToDelete = instanceIdentifier;
+
+      // 1. Evolution Go DELETE requires the strict UUID format (instance.id), not the instanceName.
+      // We must fetch all instances to map the instanceName to its actual UUID.
+      // Utilizando '/instance/all' visto que é a roda que provadamente funciona no bloco 'sync'
+      const { data: allRes, ok: fetchOk } = await evolutionRequest("/instance/all", "GET");
+      
+      if (fetchOk) {
+        let arr = [];
+        if (allRes && allRes.message === "success" && Array.isArray(allRes.data)) arr = allRes.data;
+        else if (Array.isArray(allRes)) arr = allRes;
+        else if (allRes && typeof allRes === 'object') arr = allRes.data || allRes.instances || allRes.result || [];
+
+        const target = arr.find((a: any) => 
+          a.id === instanceIdentifier || 
+          a.name === instanceIdentifier || 
+          a.instanceName === instanceIdentifier ||
+          a.instance?.instanceName === instanceIdentifier ||
+          a.instance?.name === instanceIdentifier ||
+          a.instance?.id === instanceIdentifier
+        );
+
+        if (target) {
+            if (target.id) uuidToDelete = target.id;
+            else if (target.instance?.instanceId) uuidToDelete = target.instance.instanceId;
+            else if (target.instance?.id) uuidToDelete = target.instance.id;
+        } else {
+            console.warn(`[Delete] Instance ${instanceIdentifier} not found in Evolution Go. Assuming already deleted.`);
+            return json({ ok: true, deleted_in_evolution: true, notes: "Already deleted in Evolution" }, 200);
+        }
+      } else {
+          console.warn(`[Delete] fetchInstances failed. Proceeding with raw identifier.`);
       }
 
-      const statusResult = await uazapiRequest<{ status: string; owner?: string }>("/instance/status", {
-        method: "GET",
-        token: instanceToken,
-      });
+      console.log(`[Delete] Resolved ${instanceIdentifier} to UUID: ${uuidToDelete}`);
 
-      console.log("DEBUG: UAazAPI Status Result:", JSON.stringify(statusResult));
+      // Optional: Logout first to prevent Evolution 'active' blockers
+      await evolutionRequest(`/instance/logout/${instanceIdentifier}`, "DELETE");
 
-      const isConnected = statusResult.data?.status === "connected";
+      // Now Delete by UUID
+      const { ok, error } = await evolutionRequest(`/instance/delete/${uuidToDelete}`, "DELETE");
+      
+      if (!ok) {
+        console.warn(`[Delete] Evolution returned error: ${error}`);
+        return json({ ok: false, error }, 200);
+      }
+      return json({ ok: true, deleted_in_evolution: true });
+    }
 
-      // Atualizar estado se mudou
+    if (!agent_id) return json({ error: "agent_id is required" }, 400);
+
+    const { data: agent } = await supabase.from("ai_agents").select("*").eq("id", agent_id).single();
+    if (!agent) return json({ error: "Agent not found" }, 404);
+
+    const instanceName = agent.uazapi_instance_id || agent.name.toLowerCase().replace(/\s+/g, '-');
+
+    // --- ACTION: connect ---
+    if (action === "connect") {
+      // 1. Check if instance exists, if not create
+      const checkRes = await evolutionRequest(`/instance/connectionState/${instanceName}`);
+      
+      if (!checkRes.ok && checkRes.error?.includes("not found")) {
+        await evolutionRequest("/instance/create", "POST", {
+          instanceName,
+          token: agent.uazapi_instance_token || "default_token",
+          qrcode: true
+        });
+      }
+
+      // 2. Get connect info (QR/Pair)
+      const connectRes = await evolutionRequest(`/instance/connect/${instanceName}`);
+      if (!connectRes.ok) return json({ error: connectRes.error }, 500);
+
+      return json(connectRes.data);
+    }
+
+    // --- ACTION: status ---
+    if (action === "status") {
+      const res = await evolutionRequest(`/instance/connectionState/${instanceName}`);
+      if (!res.ok) return json({ status: "disconnected", whatsapp_connected: false });
+
+      const isConnected = res.data?.instance?.state === "open";
+      const owner = res.data?.instance?.owner?.replace("@s.whatsapp.net", "") || null;
+
       if (isConnected !== agent.whatsapp_connected) {
         await supabase
           .from("ai_agents")
           .update({
-            whatsapp_connected: isConnected,
-            connected_number: isConnected ? (statusResult.data?.owner || null) : null,
-            status: isConnected ? "active" : "inactive",
+             whatsapp_connected: isConnected,
+             connected_number: isConnected ? owner : agent.connected_number,
+             status: isConnected ? "active" : "inactive"
           })
           .eq("id", agent_id);
-
-        // Se acabou de conectar, reconfigurar webhook
-        if (isConnected && agent.uazapi_webhook_secret) {
-          const webhookUrl = `${SUPABASE_URL}/functions/v1/whatsapp-agent-webhook/${agent.uazapi_webhook_secret}`;
-          await uazapiRequest("/webhook", {
-            method: "POST",
-            token: instanceToken,
-            body: {
-              enabled: true,
-              url: webhookUrl,
-              events: ["messages", "connection"],
-              excludeMessages: ["wasSentByApi", "isGroupYes"],
-            },
-          });
-        }
       }
 
-      return json({
-        status: statusResult.data?.status || "disconnected",
+      return json({ 
+        status: isConnected ? "connected" : "disconnected",
         whatsapp_connected: isConnected,
-        owner: statusResult.data?.owner || null,
-        qrcode: (statusResult.data as Record<string, unknown>)?.qrcode || null,
+        owner,
+        qrcode: res.data?.qrcode || null
       });
     }
 
-    // ─── ACTION: disconnect ───
+    // --- ACTION: disconnect ---
     if (action === "disconnect") {
-      const instanceToken = agent.uazapi_instance_token;
-      if (instanceToken) {
-        await uazapiRequest("/instance/disconnect", {
-          method: "POST",
-          token: instanceToken,
-        });
-      }
-
+      await evolutionRequest(`/instance/logout/${instanceName}`, "DELETE");
       await supabase
         .from("ai_agents")
-        .update({
-          whatsapp_connected: false,
-          connected_number: null,
-          status: "inactive",
-        })
+        .update({ whatsapp_connected: false, status: "inactive" })
         .eq("id", agent_id);
-
-      await supabase.from("ai_agent_connection_log").insert({
-        agent_id,
-        event: "disconnected",
-        details: "Desconectado pelo usuário",
-      });
-
-      return json({ ok: true, status: "disconnected" });
+      return json({ ok: true });
     }
 
-    return json({ error: `Ação desconhecida: ${action}` }, 400);
+    return json({ error: "Unknown action" }, 400);
   } catch (err) {
-    console.error("whatsapp-agent-instance error:", err);
-    return json({ error: "Erro interno do servidor" }, 500);
+    console.error(err);
+    return json({ error: "Internal server error" }, 500);
   }
 });

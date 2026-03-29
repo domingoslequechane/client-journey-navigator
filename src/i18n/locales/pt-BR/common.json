@@ -29,7 +29,8 @@
     "editorial": "Linha Editorial",
     "socialMedia": "Social Media",
     "studio": "Studio Criativo",
-    "aiAgents": "Agentes de IA"
+    "aiAgents": "Agentes de IA",
+    "atendeAI": "Atende AI"
   },
   "actions": {
     "save": "Salvar",

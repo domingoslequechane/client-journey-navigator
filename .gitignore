@@ -28,3 +28,7 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Ficheiros sensíveis — nunca commitar
+secrets.txt
+*.secrets

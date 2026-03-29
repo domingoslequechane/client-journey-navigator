@@ -25,6 +25,7 @@ interface PlanLimits {
   has_editorial_module: boolean;
   has_social_module: boolean;
   has_social_inbox: boolean;
+  has_atende_ai_module: boolean;
 }
 
 interface Usage {
@@ -57,6 +58,7 @@ const DEFAULT_LIMITS: PlanLimits = {
   has_editorial_module: false,
   has_social_module: false,
   has_social_inbox: false,
+  has_atende_ai_module: true,
 };
 
 const DEFAULT_USAGE: Usage = {
@@ -163,6 +165,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           has_editorial_module: d.has_editorial_module ?? false,
           has_social_module: d.has_social_module ?? false,
           has_social_inbox: d.has_social_inbox ?? false,
+          has_atende_ai_module: d.has_atende_ai_module ?? true,
         });
       } else {
         // Fallback for NULL or undefined plan
@@ -256,6 +259,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     canAccessEditorial: limits.has_editorial_module,
     canAccessSocialMedia: limits.has_social_module,
     canAccessSocialInbox: limits.has_social_inbox,
+    canAccessAtendeAI: limits.has_atende_ai_module,
     canInviteTeamMember: canUnlimited(limits.maxTeamMembers, usage.teamMembersCount),
     canExportData: limits.can_export_data,
     canAddContractTemplate: canUnlimited(limits.maxContractTemplates, usage.contractTemplatesCount),
@@ -293,6 +297,7 @@ export interface UsePlanLimitsReturn {
   canAccessEditorial: boolean;
   canAccessSocialMedia: boolean;
   canAccessSocialInbox: boolean;
+  canAccessAtendeAI: boolean;
   canAddSocialAccount: boolean;
   canPublishSocialPost: boolean;
   canAddLinkPage: boolean;

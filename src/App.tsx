@@ -62,6 +62,8 @@ import SocialPostEditor from "./pages/SocialPostEditor";
 import SocialApproval from "./pages/SocialApproval";
 import StudioTool from "./pages/studio/StudioTool";
 import AIAgents from "./pages/AIAgents";
+import AtendeAI from "./pages/AtendeAI";
+import AtendeAIDetail from "./pages/AtendeAIDetail";
 import AIAgentDetail from "./pages/AIAgentDetail";
 import AIAgentConversation from "./pages/AIAgentConversation";
 
@@ -157,6 +159,11 @@ const App = () => (
                       <Route path="ai-agents" element={<AIAgents />} />
                       <Route path="ai-agents/:agentId" element={<AIAgentDetail />} />
                       <Route path="ai-agents/:agentId/conversations/:conversationId" element={<AIAgentConversation />} />
+                      
+                      {/* Atende AI Module */}
+                      <Route path="atende-ai" element={<AtendeAI />} />
+                      <Route path="atende-ai/:agentNameSlug" element={<AtendeAIDetail />} />
+                      <Route path="atende-ai/:agentNameSlug/conversations/:conversationId" element={<AIAgentConversation />} />
                       <Route path="link-trees" element={
                         <RoleProtectedRoute privilege="link23">
                           <LinkTreeDashboard />
