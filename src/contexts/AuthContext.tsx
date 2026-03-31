@@ -94,7 +94,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Clear local state immediately to avoid redirect/race conditions
+      setUser(null);
+      setSession(null);
+      sessionStorage.removeItem('is_new_login');
+      sessionStorage.removeItem('last_processed_session_token');
+      loginRecordedRef.current = null;
+      
+      // Perform Supabase signout - global: true ensures all sessions are cleared
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: reload the whole window to ensure clean state if errors occur
+      window.location.href = '/auth';
+    }
   };
 
   return (

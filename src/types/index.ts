@@ -287,8 +287,7 @@ export interface AIAgent {
   show_typing: boolean;
   mark_as_read: boolean;
   status: AIAgentStatus;
-  whatsapp_connected: boolean;
-  connected_number: string | null;
+  profile_picture: string | null;
   uazapi_instance_id: string | null;
   uazapi_instance_token: string | null;
   uazapi_webhook_secret: string | null;
@@ -298,8 +297,75 @@ export interface AIAgent {
   human_pause_duration: number;
   created_at: string;
   updated_at: string;
+  whatsapp_connected: boolean;
+  connected_number: string | null;
   // Joined from clients table (optional)
   clients?: { company_name: string } | null;
+}
+
+export interface AtendeAIInstance {
+  id: string;
+  organization_id: string;
+  evolution_instance_id: string | null;
+  client_id: string | null;
+  name: string;
+  instructions: string | null;
+  welcome_message: string | null;
+  company_name: string | null;
+  company_sector: string | null;
+  company_description: string | null;
+  business_hours: string | null;
+  address: string | null;
+  address_reference: string | null;
+  extra_info: string | null;
+  response_size: number;
+  response_delay_seconds: number;
+  show_typing: boolean;
+  mark_as_read: boolean;
+  human_pause_duration: number;
+  total_conversations: number;
+  total_messages: number;
+  last_activity_at: string | null;
+  evolution_webhook_secret: string;
+  instance_api_key: string | null;
+  evolution_id: string | null;
+  clients?: { company_name: string } | null;
+  status: 'active' | 'inactive';
+  whatsapp_connected: boolean;
+  connected_number: string | null;
+  profile_picture: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AtendeAIConversation {
+  id: string;
+  instance_id: string;
+  organization_id: string;
+  contact_name: string;
+  contact_phone: string | null;
+  contact_email: string | null;
+  channel: AIConversationChannel;
+  status: 'open' | 'closed';
+  message_count: number;
+  last_message_at: string;
+  last_presence_at: string | null;
+  paused_until: string | null;
+  waiting_human: boolean;
+  created_at: string;
+}
+
+export interface AtendeAIMessage {
+  id: string;
+  conversation_id: string;
+  organization_id: string;
+  external_id: string | null;
+  quoted_message_id: string | null;
+  quoted_message_content: string | null;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  message_type: string;
+  created_at: string;
 }
 
 export interface AIAgentConversation {

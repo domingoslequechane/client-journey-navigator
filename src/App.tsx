@@ -55,13 +55,15 @@ import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
 import AdminSupport from "./pages/admin/AdminSupport";
 import PartnerProgram from "./pages/PartnerProgram";
 import LinkTreePublic from "./pages/LinkTreePublic";
-import { FinanceTransactions, FinanceProjects, FinanceGoals, FinanceReports } from "./pages/finance";
 import Editorial from "./pages/Editorial";
 import SocialMedia from "./pages/SocialMedia";
+import Finances from "./pages/Finances";
 import SocialPostEditor from "./pages/SocialPostEditor";
 import SocialApproval from "./pages/SocialApproval";
 import StudioTool from "./pages/studio/StudioTool";
 import AIAgents from "./pages/AIAgents";
+import AtendeAI from "./pages/AtendeAI";
+import AtendeAIDetail from "./pages/AtendeAIDetail";
 import AIAgentDetail from "./pages/AIAgentDetail";
 import AIAgentConversation from "./pages/AIAgentConversation";
 
@@ -157,6 +159,11 @@ const App = () => (
                       <Route path="ai-agents" element={<AIAgents />} />
                       <Route path="ai-agents/:agentId" element={<AIAgentDetail />} />
                       <Route path="ai-agents/:agentId/conversations/:conversationId" element={<AIAgentConversation />} />
+                      
+                      {/* Atende AI Module */}
+                      <Route path="atende-ai" element={<AtendeAI />} />
+                      <Route path="atende-ai/:agentNameSlug" element={<AtendeAIDetail />} />
+                      <Route path="atende-ai/:agentNameSlug/conversations/:conversationId" element={<AIAgentConversation />} />
                       <Route path="link-trees" element={
                         <RoleProtectedRoute privilege="link23">
                           <LinkTreeDashboard />
@@ -193,29 +200,10 @@ const App = () => (
                       <Route path="upgrade" element={<Upgrade />} />
                       <Route path="finance" element={
                         <RoleProtectedRoute privilege="finance">
-                          <FinanceReports />
+                          <Finances />
                         </RoleProtectedRoute>
                       } />
-                      <Route path="finance/transactions" element={
-                        <RoleProtectedRoute privilege="finance">
-                          <FinanceTransactions />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="finance/projects" element={
-                        <RoleProtectedRoute privilege="finance">
-                          <FinanceProjects />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="finance/goals" element={
-                        <RoleProtectedRoute privilege="finance">
-                          <FinanceGoals />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="finance/reports" element={
-                        <RoleProtectedRoute privilege="finance">
-                          <FinanceReports />
-                        </RoleProtectedRoute>
-                      } />
+                      <Route path="finance/*" element={<Navigate to="/app/finance" replace />} />
                       <Route path="editorial" element={
                         <RoleProtectedRoute privilege="editorial">
                           <Editorial />
