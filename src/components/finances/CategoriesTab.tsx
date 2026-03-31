@@ -39,10 +39,10 @@ export function CategoriesTab() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header Info */}
-      <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 p-4 rounded-2xl flex gap-3 text-sm text-blue-700 dark:text-blue-300">
+      <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex gap-3 text-sm text-primary">
         <Info className="h-5 w-5 shrink-0" />
         <div className="space-y-1">
-          <p className="font-semibold">Listamos abaixo alguns tipos essenciais de entradas e saídas de dinheiro na sua empresa.</p>
+          <p className="font-semibold text-zinc-900 dark:text-zinc-100">Listamos abaixo alguns tipos essenciais de entradas e saídas de dinheiro na sua empresa.</p>
           <p className="opacity-80">Importante: você pode excluir e incluir novos tipos, rolando a página até o final da lista.</p>
         </div>
       </div>
@@ -51,12 +51,12 @@ export function CategoriesTab() {
         
         {/* REVENUE COLUMN */}
         <div className="border rounded-2xl overflow-hidden shadow-sm bg-card transition-all hover:shadow-md">
-          <div className="bg-emerald-600 p-4 text-center">
-            <h3 className="text-white font-bold tracking-widest text-lg">RECEITAS</h3>
+          <div className="bg-emerald-600 py-2 px-4 text-center">
+            <h3 className="text-white font-bold text-lg">Receitas</h3>
           </div>
           <div className="divide-y">
             {revenues.map((cat) => (
-              <div key={cat.id} className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors group">
+              <div key={cat.id} className="flex items-center justify-between px-4 h-[44px] hover:bg-muted/50 transition-colors group">
                 <span className="text-sm font-medium">{cat.name}</span>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -110,12 +110,12 @@ export function CategoriesTab() {
 
         {/* EXPENSE COLUMN */}
         <div className="border rounded-2xl overflow-hidden shadow-sm bg-card transition-all hover:shadow-md">
-          <div className="bg-rose-700 p-4 text-center">
-            <h3 className="text-white font-bold tracking-widest text-lg">DESPESAS</h3>
+          <div className="bg-rose-700 py-2 px-4 text-center">
+            <h3 className="text-white font-bold text-lg">Despesas</h3>
           </div>
           <div className="divide-y max-h-[600px] overflow-y-auto">
             {expenses.map((cat) => (
-              <div key={cat.id} className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors group">
+              <div key={cat.id} className="flex items-center justify-between px-4 h-[44px] hover:bg-muted/50 transition-colors group">
                 <span className="text-sm font-medium">{cat.name}</span>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

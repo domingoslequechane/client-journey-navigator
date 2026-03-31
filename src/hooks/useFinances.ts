@@ -26,8 +26,8 @@ export function useFinances() {
   });
 
   // Transactions with optional filters
-  const useTransactionsQuery = (month?: number, year?: number) => useQuery({
-    queryKey: ['finances-transactions', orgId, month, year],
+  const useTransactionsQuery = (startDate?: string, endDate?: string) => useQuery({
+    queryKey: ['finances-transactions', orgId, startDate, endDate],
     queryFn: async () => {
       if (!orgId) return [];
       let query = supabase
@@ -35,10 +35,11 @@ export function useFinances() {
         .select('*, category:finances_categories(*)')
         .eq('organization_id', orgId);
 
-      if (month !== undefined && year !== undefined) {
-        const startDate = new Date(year, month - 1, 1).toISOString();
-        const endDate = new Date(year, month, 0).toISOString();
-        query = query.gte('date', startDate).lte('date', endDate);
+      if (startDate) {
+        query = query.gte('date', startDate);
+      }
+      if (endDate) {
+        query = query.lte('date', endDate);
       }
 
       const { data, error } = await query.order('date', { ascending: false });

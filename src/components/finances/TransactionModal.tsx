@@ -11,8 +11,12 @@ import {
 import { FinanceTransaction, FinanceCategory, TransactionType, ExpenseClassification } from '@/types/finance';
 import { useFinances } from '@/hooks/useFinances';
 import { useOrganization } from '@/hooks/useOrganization';
-import { Plus, Check, Clock } from 'lucide-react';
+import { Plus, Check, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface TransactionModalProps {
   open: boolean;
@@ -21,7 +25,7 @@ interface TransactionModalProps {
 }
 
 export function TransactionModal({ open, onOpenChange, transaction }: TransactionModalProps) {
-  const { organizationId } = useOrganization();
+  const { organizationId, currencySymbol } = useOrganization();
   const { categories, createTransaction, updateTransaction, createCategory } = useFinances();
   
   const [type, setType] = useState<TransactionType>(transaction?.type || 'RECEITA');
@@ -103,7 +107,7 @@ export function TransactionModal({ open, onOpenChange, transaction }: Transactio
           
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="type">Tipo de Lançamento</Label>
+              <Label htmlFor="type">Tipo de Lançamento <span className="text-primary">*</span></Label>
               <Select value={type} onValueChange={(v) => setType(v as TransactionType)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
@@ -118,7 +122,7 @@ export function TransactionModal({ open, onOpenChange, transaction }: Transactio
 
             {type === 'DESPESA' && (
               <div className="grid gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                <Label htmlFor="classification">Classificação da Despesa</Label>
+                <Label htmlFor="classification">Classificação da Despesa <span className="text-primary">*</span></Label>
                 <Select value={classification} onValueChange={(v) => setClassification(v as ExpenseClassification)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a classificação" />
@@ -154,31 +158,61 @@ export function TransactionModal({ open, onOpenChange, transaction }: Transactio
               <div className="grid gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
                 <Label htmlFor="due_date" className="flex items-center gap-2">
                   <Clock className="h-3 w-3" />
-                  Prazo de Pagamento (Vencimento)
+                  Prazo de Pagamento (Vencimento) <span className="text-primary">*</span>
                 </Label>
-                <Input 
-                  id="due_date" 
-                  type="date" 
-                  value={dueDate} 
-                  onChange={(e) => setDueDate(e.target.value)} 
-                  required 
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? format(new Date(dueDate + 'T00:00:00'), "dd/MM/yyyy") : <span>Selecione uma data</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dueDate ? new Date(dueDate + 'T00:00:00') : undefined}
+                      onSelect={(date) => setDueDate(date ? format(date, 'yyyy-MM-dd') : '')}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             )}
 
             <div className="grid gap-2">
-              <Label htmlFor="date">Data do Pagamento/Recebimento</Label>
-              <Input 
-                id="date" 
-                type="date" 
-                value={date} 
-                onChange={(e) => setDate(e.target.value)} 
-                required 
-              />
+              <Label htmlFor="date">Data do Pagamento/Recebimento <span className="text-primary">*</span></Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(new Date(date + 'T00:00:00'), "dd/MM/yyyy") : <span>Selecione uma data</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date ? new Date(date + 'T00:00:00') : undefined}
+                    onSelect={(d) => setDate(d ? format(d, 'yyyy-MM-dd') : '')}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="category">Categoria</Label>
+              <Label htmlFor="category">Categoria <span className="text-primary">*</span></Label>
               {isAddingCategory ? (
                 <div className="flex gap-2">
                   <Input 
@@ -210,7 +244,7 @@ export function TransactionModal({ open, onOpenChange, transaction }: Transactio
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Descrição</Label>
+              <Label htmlFor="description">Descrição <span className="text-primary">*</span></Label>
               <Input 
                 id="description" 
                 value={description} 
@@ -221,16 +255,16 @@ export function TransactionModal({ open, onOpenChange, transaction }: Transactio
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="amount">Valor</Label>
+              <Label htmlFor="amount">Valor <span className="text-primary">*</span></Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{currencySymbol}</span>
                 <Input 
                   id="amount" 
                   type="number" 
                   step="0.01" 
                   value={amount} 
                   onChange={(e) => setAmount(e.target.value)} 
-                  className="pl-10" 
+                  className="pl-12" 
                   placeholder="0,00"
                   required 
                 />

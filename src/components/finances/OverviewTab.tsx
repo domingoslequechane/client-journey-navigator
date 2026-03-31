@@ -201,7 +201,7 @@ export function OverviewTab({ transactions, year }: OverviewTabProps) {
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" />
-                    <YAxis tickFormatter={(v) => `R$ ${v}`} />
+                    <YAxis tickFormatter={(v) => `${currencySymbol} ${v}`} />
                     <Tooltip 
                       formatter={(v: any) => formatValue(v)}
                       contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
@@ -225,7 +225,7 @@ export function OverviewTab({ transactions, year }: OverviewTabProps) {
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" />
-                    <YAxis tickFormatter={(v) => `R$ ${v}`} />
+                    <YAxis tickFormatter={(v) => `${currencySymbol} ${v}`} />
                     <Tooltip 
                       formatter={(v: any) => formatValue(v)}
                       contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
@@ -298,7 +298,7 @@ export function OverviewTab({ transactions, year }: OverviewTabProps) {
                       fontSize={10} 
                       tickLine={false} 
                       axisLine={false} 
-                      tickFormatter={(v) => `R$${v/1000}k`}
+                      tickFormatter={(v) => `${currencySymbol}${v/1000}k`}
                     />
                     <Tooltip 
                       formatter={(v: any) => formatValue(v)}

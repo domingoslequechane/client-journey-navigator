@@ -44,30 +44,30 @@ export function DebtsTab() {
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Resumo de Dívidas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-amber-500/5 to-transparent border-amber-500/10">
+        <Card className="bg-gradient-to-br from-destructive/5 to-transparent border-destructive/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <AlertCircle className="h-4 w-4 text-destructive" />
               Total Vencido
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">
+            <div className="text-2xl font-bold text-destructive">
               {formatValue(totalOverdue)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">{overdueDebts.length} conta(s) atrasada(s)</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-primary/5 to-transparent border-primary/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-500" />
+              <Clock className="h-4 w-4 text-primary" />
               A Vencer
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-primary">
               {formatValue(totalUpcoming)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">{upcomingDebts.length} conta(s) no prazo</p>
@@ -110,22 +110,22 @@ export function DebtsTab() {
               return (
                 <div 
                   key={debt.id}
-                  className={`group flex items-center justify-between p-4 bg-white dark:bg-zinc-900/50 rounded-2xl border transition-all hover:shadow-md ${isOverdue ? 'border-amber-500/20 bg-amber-500/[0.02]' : 'hover:border-primary/20'}`}
+                  className={`group flex items-center justify-between p-4 bg-white dark:bg-zinc-900/50 rounded-2xl border transition-all hover:shadow-md ${isOverdue ? 'border-destructive/20 bg-destructive/[0.02]' : 'hover:border-primary/20'}`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`p-2.5 rounded-xl ${isOverdue ? 'bg-amber-500/10 text-amber-600' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'}`}>
+                    <div className={`p-2.5 rounded-xl ${isOverdue ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'}`}>
                       {isOverdue ? <AlertCircle className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-zinc-900 dark:text-zinc-100">{debt.description}</span>
                         {debt.classification && (
-                          <Badge variant="secondary" className="text-[10px] uppercase font-bold py-0 h-4 bg-muted/50 border-none">
+                          <Badge variant="secondary" className="text-[10px] font-bold py-0 h-4 bg-muted/50 border-none">
                             {debt.classification}
                           </Badge>
                         )}
                         {isOverdue && (
-                          <Badge variant="destructive" className="text-[10px] uppercase font-bold py-0 h-4 animate-pulse">
+                          <Badge variant="destructive" className="text-[10px] font-bold py-0 h-4 animate-pulse">
                             Vencido
                           </Badge>
                         )}
@@ -143,10 +143,10 @@ export function DebtsTab() {
 
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <div className={`text-lg font-bold ${isOverdue ? 'text-amber-600' : ''}`}>
+                      <div className={`text-lg font-bold ${isOverdue ? 'text-destructive' : 'text-primary'}`}>
                         {formatValue(debt.amount)}
                       </div>
-                      <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Valor em Aberto</div>
+                      <div className="text-[10px] text-muted-foreground font-medium">Valor em Aberto</div>
                     </div>
                     
                     <div className="flex items-center gap-2">
@@ -158,9 +158,9 @@ export function DebtsTab() {
                       >
                         Editar
                       </Button>
-                      <Button 
+                       <Button 
                         size="sm" 
-                        className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm gap-2"
+                        className="h-9 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm gap-2"
                         onClick={() => handleMarkAsPaid(debt)}
                         disabled={updateTransaction.isPending}
                       >

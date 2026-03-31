@@ -18,12 +18,20 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, startOfMonth, endOfMonth } from "date-fns";
+import { DateRange } from "react-day-picker";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarIcon } from 'lucide-react';
 
 export default function Finances() {
-  const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
-  const [month, setMonth] = useState(currentMonth);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
   const [year, setYear] = useState(currentYear);
   const [activeTab, setActiveTab] = useState('overview');
   const [modalOpen, setModalOpen] = useState(false);
@@ -31,8 +39,11 @@ export default function Finances() {
 
   const { useTransactionsQuery, deleteTransaction } = useFinances();
   
-  // Filter transactions by selected month/year
-  const { data: transactions = [], isLoading } = useTransactionsQuery(month, year);
+  // Filter transactions by selected range
+  const { data: transactions = [], isLoading } = useTransactionsQuery(
+    dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined
+  );
 
   const months = [
     { value: 1, label: 'Janeiro' },
@@ -86,7 +97,8 @@ export default function Finances() {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio_financeiro_${months.find(m => m.value === month)?.label}_${year}.csv`);
+    const monthLabel = dateRange?.from ? months[dateRange.from.getMonth()].label : 'periodo';
+    link.setAttribute('download', `relatorio_financeiro_${monthLabel}_${year}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -111,22 +123,48 @@ export default function Finances() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <div className="flex gap-2 bg-muted/50 p-1 rounded-xl items-center">
-              <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
-                <SelectTrigger className="w-[140px] border-none bg-transparent h-9 focus:ring-0">
-                  <SelectValue placeholder="Mês" />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map(m => (
-                    <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
+            <div className="flex gap-2 p-1 rounded-xl items-center">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant={"outline"}
+                    className={cn(
+                      "w-[260px] justify-start text-left font-normal bg-muted/50 border-none h-10",
+                      !dateRange && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "dd/MM/yyyy")} -{" "}
+                          {format(dateRange.to, "dd/MM/yyyy")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "dd/MM/yyyy")
+                      )
+                    ) : (
+                      <span>Filtrar por período</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+
               <div className="w-[1px] h-4 bg-border mx-1" />
               
               <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
-                <SelectTrigger className="w-[100px] border-none bg-transparent h-9 focus:ring-0">
+                <SelectTrigger className="w-[100px] border-none bg-muted/50 h-10 focus:ring-0">
                   <SelectValue placeholder="Ano" />
                 </SelectTrigger>
                 <SelectContent>
