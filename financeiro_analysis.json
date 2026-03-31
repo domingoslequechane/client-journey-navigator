@@ -1,0 +1,1192 @@
+{
+  "COMO USAR": [
+    [
+      "Bem vindo à sua planilha de controle financeiro!\nPara Começar, leia as instruções abaixo:"
+    ],
+    [
+      "1. Vá em arquivo > Fazer uma cópia. Lembrando que você deve estar logado em um e-mail do gmail. "
+    ],
+    [
+      "2. A planilha está dividida por meses, acesse a aba do mês atual pra começar seu controle financeiro"
+    ],
+    [
+      "3. Se está utilizando a planilha pela primeira vez , preencha o campo \"saldo inicial\" manualmente. Conforme utilizar, os próximos meses do ano serão preenchidos de forma automática"
+    ],
+    [
+      "4. Abaixo da linha de saldo inicial, preencha seus lançamentos. É importante que inclua todas as informações solicitadas: tipo de lançamento, categoria, descrição, valor e data"
+    ],
+    [
+      "5. Na coluna \"Categoria\" existem algumas categorias de lançamento pré cadastradas, mas você pode editar, excluir e inserir novas, na aba \"CATEGORIAS\""
+    ],
+    [
+      "6. Na coluna \"Data pagamento/recebimento\" é importante inserir a data exata de entrada ou saída de dinheiro da conta. Para selecionar a data, clique duas vezes na célula"
+    ],
+    [
+      "7. Vá até a aba \"VISÃO GERAL\" para acompanhar as receitas e despesas mês a mês."
+    ]
+  ],
+  "VISÃO GERAL": [
+    [
+      "VISÃO GERAL MÊS A MÊS ↓\n(preenchido automaticamente, não é necessário editar)"
+    ],
+    [
+      "RESULTADO ",
+      "JANEIRO",
+      null,
+      "RESULTADO ",
+      "FEVEREIRO",
+      null,
+      "RESULTADO ",
+      "MARÇO",
+      null,
+      "RESULTADO ",
+      "ABRIL",
+      null,
+      null,
+      "RESULTADO ",
+      "MAIO",
+      null,
+      null,
+      "RESULTADO ",
+      "JUNHO"
+    ],
+    [
+      null,
+      0,
+      null,
+      null,
+      0,
+      null,
+      null,
+      0,
+      null,
+      null,
+      0,
+      null,
+      null,
+      null,
+      0,
+      null,
+      null,
+      null,
+      0
+    ],
+    [
+      "SALDO INICIAL",
+      0,
+      null,
+      "SALDO INICIAL",
+      0,
+      null,
+      "SALDO INICIAL",
+      0,
+      null,
+      "SALDO INICIAL",
+      0,
+      null,
+      null,
+      "DESPESA",
+      -12946.84,
+      null,
+      null,
+      "DESPESA",
+      -9476
+    ],
+    [
+      "Total geral",
+      0,
+      null,
+      "Total geral",
+      0,
+      null,
+      "Total geral",
+      0,
+      null,
+      "Total geral",
+      0,
+      null,
+      null,
+      "RECEITA",
+      17500,
+      null,
+      null,
+      "RECEITA",
+      5000
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "SALDO INICIAL",
+      0,
+      null,
+      null,
+      "SALDO INICIAL",
+      4553.16
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Total geral",
+      4553.16,
+      null,
+      null,
+      "Total geral",
+      77.15999999999985
+    ],
+    [
+      "RESULTADO ",
+      "JULHO",
+      null,
+      "RESULTADO ",
+      "AGOSTO",
+      null,
+      "RESULTADO ",
+      "SETEMBRO",
+      null,
+      "RESULTADO ",
+      "OUTUBRO",
+      null,
+      null,
+      "RESULTADO ",
+      "NOVEMBRO",
+      null,
+      null,
+      "RESULTADO ",
+      "DEZEMBRO"
+    ]
+  ],
+  "Detalhe2": [
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      0,
+      null,
+      0,
+      null,
+      0
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "JAN": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "JANEIRO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo inicial do ano"
+    ],
+    [
+      null,
+      0
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      0,
+      null,
+      0,
+      null,
+      0
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "FEV": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "FEVEREIRO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      0
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      0,
+      null,
+      0,
+      null,
+      0
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "MAR": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "MARÇO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      0
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      0,
+      null,
+      0,
+      null,
+      0
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "ABR": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "ABRIL",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      0
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      0,
+      null,
+      0,
+      null,
+      0
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "MAI": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "MAIO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      0
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      0,
+      null,
+      0,
+      null,
+      0
+    ],
+    [
+      "RECEITA",
+      "Vendas",
+      "Concepção e Desemvolvimento Web (P1)",
+      17500,
+      45806,
+      17500,
+      null,
+      17500
+    ],
+    [
+      "DESPESA",
+      "Materiais",
+      "Portadocumentos e Arquivo",
+      308,
+      45806,
+      17192,
+      null,
+      -308
+    ],
+    [
+      "DESPESA",
+      "Energia elétrica",
+      "Escritorio",
+      100,
+      45807,
+      17092,
+      null,
+      -100
+    ]
+  ],
+  "JUN": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "JUNHO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      4553.16
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      4553.16,
+      null,
+      4553.16,
+      null,
+      4553.16
+    ],
+    [
+      "DESPESA",
+      "Dízimo",
+      "-",
+      1510,
+      45809,
+      3043.16,
+      null,
+      -1510
+    ],
+    [
+      "RECEITA",
+      "Vendas",
+      "Recorrencia FERRANOVA",
+      5000,
+      45810,
+      8043.16,
+      null,
+      5000
+    ],
+    [
+      "DESPESA",
+      "Investimentos",
+      "Legalização Empresarial",
+      5791,
+      45811,
+      2252.16,
+      null,
+      -5791
+    ]
+  ],
+  "JUL": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "JULHO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      77.16
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      77.16,
+      null,
+      77.16,
+      null,
+      77.16
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "AGO": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "AGOSTO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      77.16
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      77.16,
+      null,
+      77.16,
+      null,
+      77.16
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "SET": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "SETEMBRO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      77.16
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      77.16,
+      null,
+      77.16,
+      null,
+      77.16
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "OUT": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "OUTUBRO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      77.16
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      77.16,
+      null,
+      77.16,
+      null,
+      77.16
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "NOV": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "NOVEMBRO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      77.16
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      77.16,
+      null,
+      77.16,
+      null,
+      77.16
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "DEZ": [
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\nTODOS OS DIREITOS RESERVADOS\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "DEZEMBRO",
+      "SALDO ANTERIOR:",
+      "← 1 - Comece inserindo seu saldo\n(caso tenha usado a planilha no último mês, o saldo será preenchido automaticamente)"
+    ],
+    [
+      null,
+      77.16
+    ],
+    [
+      "↓ 2 - FAÇA SEUS LANÇAMENTOS AQUI "
+    ],
+    [
+      "Tipo de lançamento",
+      "Categoria",
+      "Descrição",
+      "Valor",
+      "Data pagamento/recebimento",
+      "Acumulado na data",
+      null,
+      "VALOR2"
+    ],
+    [
+      "SALDO INICIAL",
+      null,
+      null,
+      77.16,
+      null,
+      77.16,
+      null,
+      77.16
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "",
+      null,
+      ""
+    ]
+  ],
+  "CATEGORIAS": [
+    [
+      "Listamos abaixo alguns tipos essenciais de entradas e saídas de dinheiro na sua empresa. ",
+      null,
+      "Autor: Contabilizei Contabilidade Ltda.\r\nTODOS OS DIREITOS RESERVADOS\r\nNos termos da Lei n° 9.610, de 19 de fevereiro de 1998, que regula os direitos autorais, é proibida a reprodução total ou parcial deste material, exceto para uso pessoal, por qualquer forma, sem permissão por escrito, dos Autores. A reprodução não autorizada, além das sanções civis (apreensão e indenização), está sujeita as penalidades que trata artigo 184 do Código Penal."
+    ],
+    [
+      "Importante: você pode excluir e incluir novos tipos, rolando a página até o final da lista"
+    ],
+    [
+      "RECEITAS",
+      "DESPESAS"
+    ],
+    [
+      "Vendas",
+      "Fornecedores"
+    ],
+    [
+      "Juros",
+      "Materiais"
+    ],
+    [
+      "Financiamento",
+      "Retiradas sócios"
+    ],
+    [
+      "Entrada",
+      "Folha de pagamento"
+    ],
+    [
+      null,
+      "Aluguel"
+    ]
+  ]
+}

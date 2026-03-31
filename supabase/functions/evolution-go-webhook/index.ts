@@ -1,11 +1,15 @@
 /**
  * evolution-go-webhook
  *
- * Webhook exclusivo para o Atende AI — recebe eventos do Evolution Go e escreve
- * nas tabelas `atende_ai_conversations` e `atende_ai_messages` (arquitetura
- * totalmente independente do módulo legado "Agentes de IA").
+ * Recebe eventos do Evolution Go (Go Edition) e processa mensagens via IA.
+ * Autenticação: UUID secreto no path → /evolution-go-webhook/{secret}
  *
- * Autenticação: secret UUID no path   /evolution-go-webhook/{evolution_webhook_secret}
+ * Eventos suportados (conforme manual oficial):
+ *   - QRCode        → salva qr_code_base64 no banco
+ *   - Connected     → marca instância como conectada
+ *   - PairSuccess   → marca instância como conectada
+ *   - LoggedOut     → marca instância como desconectada
+ *   - Message       → processa mensagens e responde com IA
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -14,124 +18,68 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
-const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") || "";
-const EVOLUTION_GO_BASE_URL = Deno.env.get("EVOLUTION_GO_BASE_URL") || "";
+const EVOLUTION_GO_BASE_URL = (Deno.env.get("EVOLUTION_GO_URL") || Deno.env.get("EVOLUTION_GO_BASE_URL") || "").replace(/\/$/, "");
 const EVOLUTION_GO_API_KEY = Deno.env.get("EVOLUTION_GO_API_KEY") || "";
 
-// ─── Helpers ─────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────
 
-function normalizePhone(phone: string): string {
-  return phone.replace(/[^0-9]/g, "").replace(/@.*$/, "");
+function normalizePhone(jid: string): string {
+  // Remove sufixos como ":38@s.whatsapp.net" → limpa para o número puro
+  return jid.replace(/@.*$/, "").replace(/:.*$/, "").replace(/[^0-9]/g, "");
 }
-
-async function logToDb(sb: any, instanceId: string, event: string, details: string) {
-  try {
-    // Use a simple console log fallback if table doesn't exist yet
-    console.log(`[${event}] instance:${instanceId} — ${details.substring(0, 300)}`);
-  } catch (_e) {}
-}
-
-// ─── Evolution Go: Send Text Message ────────────────────────
 
 async function sendTextMessage(
   instanceName: string,
   number: string,
   text: string,
+  apiKey: string,
   delayMs = 1500,
 ) {
   if (!EVOLUTION_GO_BASE_URL) {
-    console.warn("EVOLUTION_GO_BASE_URL not set — cannot send message");
-    return;
+    console.warn("EVOLUTION_GO_BASE_URL não configurada — não pode enviar mensagem");
+    return false;
   }
-
   const res = await fetch(`${EVOLUTION_GO_BASE_URL}/message/sendText/${instanceName}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "apikey": EVOLUTION_GO_API_KEY,
+      "apikey": apiKey || EVOLUTION_GO_API_KEY,
     },
-    body: JSON.stringify({
-      number,
-      text,
-      delay: delayMs,
-    }),
+    body: JSON.stringify({ number, text, delay: delayMs }),
   });
-
   if (!res.ok) {
-    const txt = await res.text();
-    console.error(`sendTextMessage failed: ${res.status} ${txt}`);
+    console.error(`sendTextMessage falhou: ${res.status}`, await res.text());
   }
-
   return res.ok;
 }
 
-// ─── OpenAI: Build System Prompt ─────────────────────────────
+// ─── AI ────────────────────────────────────────────────────
 
-function buildSystemPrompt(instance: Record<string, unknown>): string {
+function buildSystemPrompt(instance: any): string {
   const parts: string[] = [];
+  const name = instance.name || "Atendente Virtual";
+  const companyName = instance.company_name || "";
 
-  const name = (instance.name as string) || "Atendente Virtual";
-  const companyName = (instance.company_name as string) || "";
-
-  parts.push(`## 1. IDENTIDADE`);
+  parts.push(`## IDENTIDADE`);
   parts.push(`Você é ${name}${companyName ? `, representando a empresa ${companyName}` : ""} no atendimento via WhatsApp.`);
   parts.push("");
-  parts.push(`## 2. COMUNICAÇÃO`);
+  parts.push(`## COMUNICAÇÃO`);
   parts.push(`- Seja sempre educado, objetivo e em português.`);
   parts.push(`- Use emojis com moderação para manter o tom humano.`);
-  parts.push(`- Mensagens curtas e parágrafos espaçados — o WhatsApp não é lugar para textos densos.`);
-  parts.push("");
+  parts.push(`- Mensagens curtas e parágrafos espaçados.`);
 
-  // Company info
-  if (companyName) parts.push(`Nome da empresa: ${companyName}`);
-  const sector = instance.company_sector as string;
-  if (sector) parts.push(`Ramo: ${sector}`);
-  const desc = instance.company_description as string;
-  if (desc) { parts.push(""); parts.push(`## SOBRE A EMPRESA`); parts.push(desc); }
+  if (instance.company_sector) parts.push(`\nRamo: ${instance.company_sector}`);
+  if (instance.company_description) parts.push(`\n## SOBRE A EMPRESA\n${instance.company_description}`);
+  if (instance.business_hours) parts.push(`\n## HORÁRIO\n${instance.business_hours}`);
+  if (instance.address) parts.push(`\n## ENDEREÇO\n${instance.address}`);
+  if (instance.instructions) parts.push(`\n## INSTRUÇÕES (PRIORIDADE MÁXIMA)\n${instance.instructions}`);
+  if (instance.extra_info) parts.push(`\n## INFORMAÇÕES ADICIONAIS\n${instance.extra_info}`);
 
-  // Business hours
-  const hours = instance.business_hours as string;
-  if (hours) { parts.push(""); parts.push(`## HORÁRIO DE FUNCIONAMENTO`); parts.push(hours); }
-
-  // Address
-  const address = instance.address as string;
-  const addressRef = instance.address_reference as string;
-  if (address) {
-    parts.push(""); parts.push(`## ENDEREÇO`);
-    parts.push(`- Endereço: ${address}`);
-    if (addressRef) parts.push(`- Referência: ${addressRef}`);
-  }
-
-  // Response size
-  const size = (instance.response_size as number) || 2;
-  if (size === 1) parts.push("\n## TAMANHO: Respostas CURTAS, máximo 2-3 frases.");
-  else if (size === 3) parts.push("\n## TAMANHO: Respostas DETALHADAS quando necessário.");
-  else parts.push("\n## TAMANHO: Respostas de tamanho médio, claras e objetivas.");
-
-  // Agent-specific instructions (highest priority)
-  const instructions = instance.instructions as string;
-  if (instructions) {
-    parts.push("");
-    parts.push("## INSTRUÇÕES DE ATENDIMENTO (PRIORIDADE MÁXIMA)");
-    parts.push(instructions);
-  }
-
-  // Extra info
-  const extra = instance.extra_info as string;
-  if (extra) {
-    parts.push(""); parts.push("## INFORMAÇÕES ADICIONAIS"); parts.push(extra);
-  }
-
-  // Current datetime
   const now = new Date();
-  const dateStr = now.toLocaleDateString("pt-BR", { timeZone: "Africa/Maputo" });
-  const timeStr = now.toLocaleTimeString("pt-BR", { timeZone: "Africa/Maputo", hour: "2-digit", minute: "2-digit" });
-  parts.push(`\n## DATA E HORA ATUAL: ${dateStr} às ${timeStr} (fuso: Maputo)`);
+  parts.push(`\n## DATA/HORA: ${now.toLocaleString("pt-BR", { timeZone: "Africa/Maputo" })} (Maputo)`);
 
   return parts.join("\n");
 }
-
-// ─── OpenAI: Call Chat Completions ──────────────────────────
 
 async function callAI(
   systemPrompt: string,
@@ -143,49 +91,40 @@ async function callAI(
     ...history,
     { role: "user", content: userMessage },
   ];
-
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages,
-      temperature: 0.4,
-      max_tokens: 1024,
-    }),
+    body: JSON.stringify({ model: "gpt-4o-mini", messages, temperature: 0.4, max_tokens: 1024 }),
   });
-
   if (!res.ok) {
-    console.error("OpenAI error:", res.status, await res.text());
-    return "Desculpe, tive um problema técnico ao processar a sua mensagem.";
+    console.error("OpenAI erro:", res.status, await res.text());
+    return "Desculpe, tive um problema técnico.";
   }
-
   const data = await res.json();
   return (data.choices?.[0]?.message?.content || "").trim();
 }
 
-// ─── Main Handler ────────────────────────────────────────────
+// ─── Handler Principal ───────────────────────────────────────
 
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200 });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { status: 200 });
 
   try {
+    // Extrair o secret UUID do path
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/");
     const secret = pathParts[pathParts.length - 1];
 
     if (!secret || secret.length < 10) {
-      return new Response(JSON.stringify({ error: "Invalid secret" }), { status: 401 });
+      return new Response(JSON.stringify({ error: "Secret inválido" }), { status: 401 });
     }
 
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Locate the Atende AI instance by its evolution_webhook_secret UUID
+    // Localizar a instância pelo secret UUID
     const { data: instance, error: instanceErr } = await sb
       .from("atende_ai_instances")
       .select("*")
@@ -193,81 +132,159 @@ serve(async (req: Request) => {
       .single();
 
     if (instanceErr || !instance) {
-      console.error("Webhook: instância não encontrada para o secret");
-      return new Response(JSON.stringify({ error: "Invalid secret" }), { status: 401 });
+      console.error("Webhook: instância não encontrada para o secret:", secret.substring(0, 8) + "...");
+      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401 });
     }
 
-    let body: Record<string, unknown>;
+    let body: any;
     try {
       body = await req.json();
     } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
+      return new Response(JSON.stringify({ error: "JSON inválido" }), { status: 400 });
     }
 
-    const event = (body.event as string) || (body.EventType as string) || "message";
+    // O event name vem no campo "event" conforme documentação oficial
+    const event = body.event as string || "";
+    console.log(`[Webhook] Evento recebido: "${event}" p/ instância: ${instance.id}`);
 
-    // ─── Connection event ─────────────────────────────────
-    if (event === "connection.update" || event === "connection") {
-      const connected = (body.state as string) === "open";
-
-      await sb
-        .from("atende_ai_instances")
-        .update({
-          whatsapp_connected: connected,
-          status: connected ? "active" : "inactive",
-          connected_number: connected ? ((body.number as string) || null) : null,
-        })
-        .eq("id", instance.id);
-
+    // ─── QRCode: salvar no banco para o frontend fazer polling ───
+    if (event === "QRCode" || event === "qrcode.updated") {
+      const qrBase64 = body.data?.qrcode || body.data?.base64 || body.qrcode || body.code || null;
+      if (qrBase64) {
+        await sb
+          .from("atende_ai_instances")
+          .update({ qr_code_base64: qrBase64 })
+          .eq("id", instance.id);
+      }
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
 
-    // ─── Message received event ───────────────────────────
-    if (event === "messages.upsert" || event === "message" || event === "messages") {
+    // ─── Connected / PairSuccess / Update: instância conectada ──────────
+    const isActuallyConnected = 
+      event === "Connected" || 
+      event === "PairSuccess" || 
+      event === "connection.update" ||
+      body.data?.status === "open" || 
+      body.data?.state === "open" ||
+      body.data?.Connected === true ||
+      body.data?.LoggedIn === true ||
+      body.status === "open" ||
+      body.state === "open";
+
+    if (isActuallyConnected && (event === "connection.update" || event === "Connected" || event === "PairSuccess" || body.data?.status === "open" || body.status === "open")) {
+       const status = body.data?.status || body.status || body.data?.state || body.state || "open";
+       // Em connection.update, só procedemos se o status for "open"
+       if ((event === "connection.update") && status !== "open") {
+          // Ignorar se for "close", "connecting", etc.
+       } else {
+          console.log(`[Webhook] Conexão confirmada para: ${instance.id} (Evento: ${event}, Status: ${status})`);
+          const jid = body.data?.jid || body.data?.ID || body.data?.instance?.owner || body.data?.owner || body.owner || body.instance?.owner || null;
+          const number = jid ? normalizePhone(jid.toString()) : null;
+          const profileName = body.data?.instance?.instanceName || body.data?.name || body.data?.Name || null;
+          
+          const updates: any = {
+            whatsapp_connected: true,
+            status: "active",
+            qr_code_base64: null, 
+          };
+
+          if (number) updates.connected_number = number;
+          if (profileName && (!instance.name || instance.name.includes("+"))) updates.name = profileName;
+
+          await sb
+            .from("atende_ai_instances")
+            .update(updates)
+            .eq("id", instance.id);
+          return new Response(JSON.stringify({ ok: true, status: "connected" }), { status: 200 });
+       }
+    }
+
+    // ─── LoggedOut / Disconnected / close: instância desconectada ─────────────────────
+    const isDisconnected = 
+      event === "LoggedOut" || 
+      event === "Disconnected" || 
+      (event === "connection.update" && (body.data?.status === "close" || body.status === "close" || body.data?.state === "close" || body.state === "close")) ||
+      body.data?.status === "close" || 
+      body.data?.state === "close" ||
+      body.status === "close" ||
+      body.state === "close";
+
+    if (isDisconnected) {
+      console.log(`[Webhook] Desconexão detectada para: ${instance.id} (Evento: ${event})`);
+      await sb
+        .from("atende_ai_instances")
+        .update({
+          whatsapp_connected: false,
+          status: "inactive",
+          connected_number: null,
+          qr_code_base64: null,
+        })
+        .eq("id", instance.id);
+      return new Response(JSON.stringify({ ok: true, status: "disconnected" }), { status: 200 });
+    }
+
+    // ─── OfflineSyncCompleted: sincronização finalizada ────────
+    if (event === "OfflineSyncCompleted") {
+      await sb
+        .from("atende_ai_instances")
+        .update({
+          whatsapp_connected: true,
+          status: "active",
+          qr_code_base64: null,
+        })
+        .eq("id", instance.id);
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }
+
+    // ─── Message: processar e responder com IA ─────────────────
+    if (event === "Message") {
+      // Só responde se a instância estiver ativa
       if (instance.status !== "active") {
         return new Response(JSON.stringify({ ok: true, skipped: "instance_not_active" }), { status: 200 });
       }
 
-      const messageData =
-        (body.data as Record<string, unknown>) ||
-        (body.message as Record<string, unknown>) ||
-        {};
+      const info = body.data?.Info as any;
+      const msgContent = body.data?.Message as any;
 
-      const isGroup =
-        (messageData.key as any)?.remoteJid?.includes("@g.us") ||
-        ((messageData.chatid as string) || "").includes("@g.us");
-
-      if (isGroup) return new Response(JSON.stringify({ ok: true }), { status: 200 });
-
-      const fromMe =
-        (messageData.key as any)?.fromMe === true ||
-        messageData.fromMe === true;
-
-      const remoteJid =
-        (messageData.key as any)?.remoteJid ||
-        (messageData.chatid as string) ||
-        "";
-      const phone = normalizePhone(remoteJid);
-      const messageId =
-        (messageData.key as any)?.id ||
-        (messageData.messageid as string) ||
-        (messageData.id as string) ||
-        "";
-
-      // Extract text
-      const msgContent =
-        (messageData.message as any)?.conversation ||
-        (messageData.message as any)?.extendedTextMessage?.text ||
-        (messageData.text as string) ||
-        (messageData.content as string) ||
-        "";
-      const text = (typeof msgContent === "string" ? msgContent : "").trim();
-
-      if (!text) {
-        return new Response(JSON.stringify({ ok: true, skipped: "no_text" }), { status: 200 });
+      if (!info) {
+        return new Response(JSON.stringify({ ok: true, skipped: "no_info" }), { status: 200 });
       }
 
-      // Deduplicate
+      // Ignorar mensagens do próprio bot
+      if (info.IsFromMe === true) {
+        return new Response(JSON.stringify({ ok: true, skipped: "from_me" }), { status: 200 });
+      }
+
+      // Ignorar grupos
+      if (info.IsGroup === true || (info.Chat || "").includes("@g.us")) {
+        return new Response(JSON.stringify({ ok: true, skipped: "group" }), { status: 200 });
+      }
+
+      const phone = normalizePhone(info.Chat || info.Sender || "");
+      const messageId = info.ID || "";
+      const senderName = info.PushName || phone;
+
+      // Extrair texto ou tipo de media recebido
+      let text = (
+        msgContent?.conversation ||
+        msgContent?.extendedTextMessage?.text ||
+        msgContent?.imageMessage?.caption ||
+        msgContent?.videoMessage?.caption ||
+        msgContent?.documentMessage?.caption ||
+        ""
+      ).trim();
+
+      const messageType = info.MediaType || info.Type || "text";
+
+      if (!text) {
+        if (messageType === "audio") text = "[Áudio recebido]";
+        else if (messageType === "image") text = "[Imagem recebida]";
+        else if (messageType === "video") text = "[Vídeo recebido]";
+        else if (messageType === "document") text = "[Documento recebido]";
+        else return new Response(JSON.stringify({ ok: true, skipped: "no_text" }), { status: 200 });
+      }
+
+      // Deduplicação por messageId
       if (messageId) {
         const { data: existing } = await sb
           .from("atende_ai_messages")
@@ -281,13 +298,13 @@ serve(async (req: Request) => {
         }
       }
 
-      // Find or create conversation (last 24h)
-      let conversationId: string;
+      // Encontrar ou criar conversa (janela de 24h)
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      let conversationId: string;
 
       const { data: existingConv } = await sb
         .from("atende_ai_conversations")
-        .select("id, paused_until, waiting_human")
+        .select("id, paused_until")
         .eq("instance_id", instance.id)
         .eq("contact_phone", phone)
         .eq("status", "open")
@@ -299,11 +316,9 @@ serve(async (req: Request) => {
       if (existingConv) {
         conversationId = existingConv.id;
 
-        // Respect human pause
-        if (!fromMe && existingConv.paused_until) {
-          if (new Date() < new Date(existingConv.paused_until)) {
-            return new Response(JSON.stringify({ ok: true, skipped: "paused_by_human" }), { status: 200 });
-          }
+        // Respeitar pausa por intervenção humana
+        if (existingConv.paused_until && new Date() < new Date(existingConv.paused_until)) {
+          return new Response(JSON.stringify({ ok: true, skipped: "paused_by_human" }), { status: 200 });
         }
 
         await sb
@@ -311,17 +326,12 @@ serve(async (req: Request) => {
           .update({ last_message_at: new Date().toISOString() })
           .eq("id", conversationId);
       } else {
-        const contactName =
-          (messageData.pushName as string) ||
-          (messageData.senderName as string) ||
-          phone;
-
         const { data: newConv } = await sb
           .from("atende_ai_conversations")
           .insert({
             instance_id: instance.id,
             organization_id: instance.organization_id,
-            contact_name: contactName,
+            contact_name: senderName,
             contact_phone: phone,
             channel: "whatsapp",
             status: "open",
@@ -331,7 +341,6 @@ serve(async (req: Request) => {
 
         conversationId = newConv!.id;
 
-        // Increment conversation counter
         await sb.rpc("increment_atende_ai_stats", {
           p_instance_id: instance.id,
           p_conversations: 1,
@@ -339,47 +348,7 @@ serve(async (req: Request) => {
         });
       }
 
-      // Human intervention (fromMe message in an active conversation)
-      if (fromMe) {
-        const { data: recentAiMsg } = await sb
-          .from("atende_ai_messages")
-          .select("id")
-          .eq("conversation_id", conversationId)
-          .eq("role", "assistant")
-          .eq("content", text)
-          .is("external_id", null)
-          .gt("created_at", new Date(Date.now() - 30000).toISOString())
-          .maybeSingle();
-
-        if (recentAiMsg) {
-          if (messageId) {
-            await sb.from("atende_ai_messages").update({ external_id: messageId }).eq("id", recentAiMsg.id);
-          }
-          return new Response(JSON.stringify({ ok: true, skipped: "self_ai_message" }), { status: 200 });
-        }
-
-        // Real human intervention → pause the bot
-        await sb.from("atende_ai_messages").insert({
-          conversation_id: conversationId,
-          organization_id: instance.organization_id,
-          external_id: messageId || null,
-          role: "system",
-          content: text,
-          message_type: "text",
-        });
-
-        const pauseMinutes = instance.human_pause_duration || 60;
-        const pausedUntil = new Date(Date.now() + pauseMinutes * 60 * 1000).toISOString();
-
-        await sb
-          .from("atende_ai_conversations")
-          .update({ paused_until: pausedUntil, waiting_human: false })
-          .eq("id", conversationId);
-
-        return new Response(JSON.stringify({ ok: true, paused_until: pausedUntil }), { status: 200 });
-      }
-
-      // Save incoming user message
+      // Guardar mensagem do utilizador
       const { data: insertedMsg, error: insertErr } = await sb
         .from("atende_ai_messages")
         .insert({
@@ -388,54 +357,46 @@ serve(async (req: Request) => {
           external_id: messageId || null,
           role: "user",
           content: text,
-          message_type: "text",
+          message_type: ["text", "image", "video", "audio", "document"].includes(messageType) ? messageType : "text",
         })
-        .select("id, created_at")
+        .select("id")
         .single();
 
       if (insertErr) {
-        console.error("Insert message error:", insertErr);
+        console.error("Erro ao inserir mensagem:", insertErr);
         return new Response(JSON.stringify({ error: "DB error" }), { status: 500 });
       }
 
-      const insertedMsgId = insertedMsg.id;
-
-      // Increment message counter
       await sb.rpc("increment_atende_ai_stats", {
         p_instance_id: instance.id,
         p_conversations: 0,
         p_messages: 1,
       });
 
-      // Debounce / buffer waiting
+      // Buffer para aguardar mensagens em série (debounce)
       const bufferSeconds = instance.response_delay_seconds ?? 3;
       if (bufferSeconds > 0) {
         const startTime = Date.now();
-        const maxWait = 20000;
-
-        while (Date.now() - startTime < maxWait) {
-          await new Promise(resolve => setTimeout(resolve, 1200));
-
+        while (Date.now() - startTime < Math.min(bufferSeconds * 1000, 20000)) {
+          await new Promise((r) => setTimeout(r, 1200));
           const { data: latestMsg } = await sb
             .from("atende_ai_messages")
             .select("id")
             .eq("conversation_id", conversationId)
             .eq("role", "user")
             .order("created_at", { ascending: false })
-            .order("id", { ascending: false })
             .limit(1)
             .maybeSingle();
 
-          if (latestMsg && latestMsg.id !== insertedMsgId) {
+          if (latestMsg && latestMsg.id !== insertedMsg.id) {
             return new Response(JSON.stringify({ ok: true, skipped: "newer_detected" }), { status: 200 });
           }
 
-          const elapsed = Date.now() - startTime;
-          if (elapsed >= bufferSeconds * 1000) break;
+          if (Date.now() - startTime >= bufferSeconds * 1000) break;
         }
       }
 
-      // Load conversation history
+      // Mensagem de boas-vindas (primeira mensagem)
       const { data: historyRows } = await sb
         .from("atende_ai_messages")
         .select("role, content")
@@ -445,23 +406,20 @@ serve(async (req: Request) => {
 
       const history = (historyRows || [])
         .slice(0, -1)
-        .map((m: any) => {
-          if (m.role === "system") {
-            return {
-              role: "user",
-              content: `[AVISO INTERNO]: Um atendente humano enviou esta mensagem: "${m.content}"`,
-            };
-          }
-          return { role: m.role === "assistant" ? "assistant" : "user", content: m.content };
-        });
+        .map((m: any) => ({
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: m.content,
+        }));
 
-      // Welcome message on first message
       const isFirstMessage = history.length === 0;
-      if (isFirstMessage && instance.welcome_message && instance.evolution_instance_id) {
-        await sendTextMessage(instance.evolution_instance_id, phone, instance.welcome_message);
+      const instanceApiKey = instance.instance_api_key || EVOLUTION_GO_API_KEY;
+      const instanceName = instance.evolution_instance_id;
+
+      if (isFirstMessage && instance.welcome_message && instanceName) {
+        await sendTextMessage(instanceName, phone, instance.welcome_message, instanceApiKey);
       }
 
-      // Build prompt and call AI
+      // Chamar IA
       const systemPrompt = buildSystemPrompt(instance);
       const aiReply = await callAI(systemPrompt, history, text);
 
@@ -469,7 +427,7 @@ serve(async (req: Request) => {
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
 
-      // Save AI reply
+      // Guardar resposta da IA
       await sb.from("atende_ai_messages").insert({
         conversation_id: conversationId,
         organization_id: instance.organization_id,
@@ -478,27 +436,26 @@ serve(async (req: Request) => {
         message_type: "text",
       });
 
-      // Increment message count for AI reply
       await sb.rpc("increment_atende_ai_stats", {
         p_instance_id: instance.id,
         p_conversations: 0,
         p_messages: 1,
       });
 
-      // Send reply via Evolution Go
-      if (instance.evolution_instance_id) {
+      // Enviar resposta via Evolution Go (com token específico da instância)
+      if (instanceName) {
         const delayMs = instance.show_typing ? 1500 : 500;
-        await sendTextMessage(instance.evolution_instance_id, phone, aiReply, delayMs);
+        await sendTextMessage(instanceName, phone, aiReply, instanceApiKey, delayMs);
       }
 
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
 
-    // Unhandled event — just acknowledge
-    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    // Evento não tratado — aceitar sem erro para não causar retentativas
+    return new Response(JSON.stringify({ ok: true, event }), { status: 200 });
 
   } catch (err: any) {
-    console.error("Webhook unhandled error:", err);
+    console.error("Webhook erro inesperado:", err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 });

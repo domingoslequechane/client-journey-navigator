@@ -1,0 +1,16 @@
+
+=== Instance: KZo93uQqE99i ===
+[KZo93uQqE99i GET /instance/status] HTTP 200: {"data":{"Connected":true,"LoggedIn":true,"Name":"domingosf.lequechane🤓"},"message":"success"}
+[KZo93uQqE99i GET /instance/settings] HTTP 404: 404 page not found
+[KZo93uQqE99i GET /instance/info] HTTP 404: 404 page not found
+[KZo93uQqE99i GET /instance/profile] HTTP 404: 404 page not found
+[KZo93uQqE99i GET /instance/qr] HTTP 400: {"error":"session already logged in"}
+[KZo93uQqE99i GET /chat/presence] HTTP 404: 404 page not found
+
+=== Instance: rCIbsSZ97yKn ===
+[rCIbsSZ97yKn GET /instance/status] HTTP 200: {"data":{"Connected":true,"LoggedIn":true,"Name":"Joana"},"message":"success"}
+[rCIbsSZ97yKn GET /instance/settings] HTTP 404: 404 page not found
+[rCIbsSZ97yKn GET /instance/info] HTTP 404: 404 page not found
+[rCIbsSZ97yKn GET /instance/profile] HTTP 404: 404 page not found
+[rCIbsSZ97yKn GET /instance/qr] HTTP 400: {"error":"session already logged in"}
+[rCIbsSZ97yKn GET /chat/presence] HTTP 404: 404 page not found

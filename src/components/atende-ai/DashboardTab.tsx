@@ -125,12 +125,12 @@ export function DashboardTab({ agent }: { agent: any }) {
         />
         <AtendeInstanceInfoCard 
           label="Número" 
-          value={agent?.connected_number || agent?.phone || '-'} 
+          value={agent?.connected_number ? `+${agent.connected_number}` : (agent?.phone ? `+${agent.phone}` : '-')} 
           icon={Smartphone} 
         />
         <AtendeInstanceInfoCard 
-          label="Integração" 
-          value="EvoGo" 
+          label="Canais conectados" 
+          value={isConnected ? 'WhatsApp' : 'Nenhum'} 
           icon={Zap} 
         />
         <AtendeInstanceInfoCard 

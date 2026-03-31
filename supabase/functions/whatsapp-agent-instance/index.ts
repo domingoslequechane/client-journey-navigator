@@ -2,45 +2,97 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const EVOLUTION_URL = Deno.env.get("EVOLUTION_GO_URL")?.replace(/\/$/, "") || "http://localhost:8080";
-const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_GO_API_KEY") || "";
+const EVOLUTION_URL = Deno.env.get("EVOLUTION_GO_URL")?.replace(/\/$/, "") || Deno.env.get("EVOLUTION_GO_BASE_URL")?.replace(/\/$/, "") || "http://localhost:8080";
+const EVOLUTION_API_KEY = (Deno.env.get("EVOLUTION_GO_API_KEY") || "BXWlDFI5S3VubVswSHlgijVoCi0TQNYo").trim();
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+function generateStrongToken(length = 32) {
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let retVal = "";
+  for (let i = 0, n = charset.length; i < length; ++i) {
+    retVal += charset.charAt(Math.floor(Math.random() * n));
+  }
+  return retVal;
+}
 
 async function evolutionRequest<T = any>(
   path: string,
   method = "GET",
-  body?: any
-): Promise<{ ok: boolean; data?: T; error?: string }> {
+  body?: any,
+  extraHeaders?: Record<string, string>,
+  overrideApiKey?: string
+): Promise<{ ok: boolean; data?: T; error?: string; status?: number }> {
   try {
-    const url = `${EVOLUTION_URL}${path}`;
-    console.log(`[Evolution] ${method} request to: ${url}`);
+    const rawKey = overrideApiKey || EVOLUTION_API_KEY;
+    const trimmedKey = (rawKey || "").trim();
     
+    if (!trimmedKey) {
+      return { ok: false, error: "Evolution API Key is missing", status: 401 };
+    }
+    
+    const url = `${EVOLUTION_URL}${path}`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "apikey": trimmedKey,
+      ...extraHeaders,
+    };
+
+    console.log(`[Evolution] ${method} -> ${url} | Key: ${trimmedKey.slice(0, 4)}...`);
+
     const res = await fetch(url, {
       method,
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": EVOLUTION_API_KEY,
-      },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
     
-    const data = await res.json();
+    const rawText = await res.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseErr) {
+      data = { message: rawText };
+    }
+
     if (!res.ok) {
       console.error(`[Evolution] Error ${res.status}:`, data);
-      return { ok: false, error: data?.error || data?.message || `HTTP ${res.status}` };
+      return { ok: false, error: data?.error || data?.message || rawText || `HTTP ${res.status}`, status: res.status };
     }
-    return { ok: true, data: data as T };
+    return { ok: true, data: data as T, status: res.status };
   } catch (err) {
-    console.error(`[Evolution] Connection error:`, err);
+    console.error(`[Evolution] Fetch Error:`, err);
     return { ok: false, error: err instanceof Error ? err.message : "Unreachable" };
   }
+}
+
+function extractInstanceMetadata(remote: any) {
+  const data = remote.data || remote;
+  
+  // Connections status extraction
+  const state = (data.status || data.state || data.connectionStatus || "").toString().toLowerCase();
+  const isConnected = state === "open" || state === "connected" || data.Connected === true || data.status === "CONNECTED";
+
+  // Phone number extraction fallback chain
+  let rawJid = data.owner || data.ownerJid || data.jid || data.number || 
+               data.me?.id || data.info?.me?.id || 
+               data.instance?.owner || data.instance?.jid || data.instance?.settings?.owner ||
+               null;
+  
+  let connectedNumber = rawJid ? rawJid.toString().split(/[#:@]/)[0] : null;
+  
+  // Profile picture fallback
+  const profilePic = data.profilePictureUrl || data.profilePicUrl || data.profilePicture ||
+                     data.instance?.profilePictureUrl || null;
+
+  return { isConnected, state, connectedNumber, profilePic, name: data.Name };
 }
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
   const corsHeaders = getCorsHeaders(req);
+  
   const json = (data: any, status = 200) =>
     new Response(JSON.stringify(data), {
       status,
@@ -52,262 +104,306 @@ serve(async (req) => {
     if (!authHeader) return json({ error: "No authorization header" }, 401);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return json({ error: "Invalid user session" }, 401);
-
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) return json({ error: "Invalid user session" }, 401);
+    
     const body = await req.json();
-    const { action, agent_id, organization_id } = body;
+    const { action, organization_id } = body;
 
-    // --- ACTION: sync ---
-    if (action === "sync") {
-      console.log(`[Sync] Realizando sincronização para org: ${organization_id}`);
-      if (!organization_id) return json({ ok: false, error: "organization_id is required for sync" }, 200);
+    console.log(`[Request] Action: ${action}, Org: ${organization_id}, Body Keys: ${Object.keys(body).join(", ")}`);
 
-      // 1. Fetch all instances from Evolution
-      const { ok, data, error } = await evolutionRequest("/instance/all", "GET");
-      
-      if (!ok) {
-        console.error("[Sync] Erro ao buscar instâncias na Evolution:", error);
-        return json({ ok: false, error: "A API da Evolution retornou erro: " + error }, 200);
-      }      // 1.1 Robust Parser: Using the exact schema provided by user
-      let evoInstances = [];
-      if (data && data.message === "success" && Array.isArray(data.data)) {
-        evoInstances = data.data;
-      } else if (Array.isArray(data)) {
-        evoInstances = data;
-      } else if (data && typeof data === 'object') {
-        evoInstances = data.data || data.instances || data.result || [];
-      }
+    if (!organization_id) {
+      console.error("[Error] organization_id is missing in request body");
+      return json({ error: "organization_id is required" }, 400);
+    }
 
-      const { data: dbAgents } = await supabase
-        .from("atende_ai_instances")
-        .select("*")
-        .eq("organization_id", organization_id);
+    // Verify membership
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("organization_id", organization_id)
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .maybeSingle();
 
-      const matchedDbIds = new Set();
-      let updatedCount = 0;
-      let createdCount = 0;
+    if (!membership) return json({ error: "Unauthorized access to this agency" }, 403);
 
-      for (const ins of evoInstances) {
-        const instanceId = ins.id;
-        const instanceName = ins.name || ins.instanceName;
-        const isConnected = ins.connected === true;
-        const owner = ins.jid?.replace("@s.whatsapp.net", "") || null;
-        const profilePic = ins.profilePictureUrl || null;
+    // ROUTING
+    switch (action) {
+      case "sync-all": {
+        console.log(`[SyncAll] Syncing local instances via status fetch (global key failed previously)`);
+        
+        const { data: localInstances } = await supabase
+          .from("atende_ai_instances")
+          .select("*")
+          .eq("organization_id", organization_id);
 
-        const existingAgent = dbAgents?.find(a => 
-          a.evolution_instance_id === instanceId
-        );
-
-        if (existingAgent) {
-          matchedDbIds.add(existingAgent.id);
-          const { error: upErr } = await supabase
-            .from("atende_ai_instances")
-            .update({
-              whatsapp_connected: isConnected,
-              connected_number: owner,
-              profile_picture: profilePic,
-              status: isConnected ? "active" : "inactive"
-            })
-            .eq("id", existingAgent.id);
-          
-          if (!upErr) updatedCount++;
-        } else {
-          const { error: insErr } = await supabase
-            .from("atende_ai_instances")
-            .insert({
-              organization_id,
-              name: instanceName,
-              evolution_instance_id: instanceId,
-              whatsapp_connected: isConnected,
-              connected_number: owner,
-              profile_picture: profilePic,
-              status: isConnected ? "active" : "inactive"
-            });
-          if (!insErr) createdCount++;
+        if (!localInstances || localInstances.length === 0) {
+           return json({ ok: true, updated: 0 });
         }
-      }
 
-      let orphanCount = 0;
-      // SMART CLEANUP with 10min GRACE PERIOD
-      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      
-      const orphans = dbAgents?.filter(dbA => {
-        // If the agent is in the Evolution list, it's not an orphan
-        const isInEvolution = evoInstances.some((evoA: any) => (evoA.id || evoA.instance?.instanceId) === dbA.evolution_instance_id);
-        if (isInEvolution) return false;
+        let updatedCount = 0;
+        const debugLogs: any[] = [];
 
-        // If the agent was created in the last 10 minutes, give it a grace period (don't delete)
-        const isRecentlyCreated = dbA.created_at > tenMinutesAgo;
-        if (isRecentlyCreated) return false;
+        for (const local of localInstances) {
+           const apiKey = local.instance_api_key || local.evolution_instance_token || EVOLUTION_API_KEY;
+           const targetId = local.evolution_instance_id || local.evolution_id || local.name;
 
-        // Otherwise, it's a true orphan (doesn't exist in Evolution and is old enough)
-        return true;
-      }) || [];
-      
-      orphanCount = orphans.length;
-      if (orphanCount > 0) {
-        await supabase.from("atende_ai_instances").delete().in("id", orphans.map(a => a.id));
-      }
+           if (!targetId || !apiKey) {
+               debugLogs.push({ id: local.id, name: local.name, status: "skipped_missing_credentials" });
+               continue;
+           }
 
-      return new Response(JSON.stringify({ ok: true, updated: updatedCount, created: createdCount, deleted: orphanCount }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
+           console.log(`[SyncAll] Checking status for ${local.name}... target: ${targetId}`);
+           
+           try {
+             // Chamada na API usando o apiKey
+             const res = await evolutionRequest(`/instance/status`, "GET", undefined, undefined, apiKey);
+             
+             if (res.ok && res.data) {
+               const { isConnected, connectedNumber, profilePic } = extractInstanceMetadata(res.data);
+               const updatePayload: any = {
+                  whatsapp_connected: isConnected,
+                  status: isConnected ? "active" : "inactive",
+                  updated_at: new Date().toISOString()
+               };
 
-    // --- ACTION: create ---
-    if (action === "create") {
-      const { name, organization_id } = body;
-      if (!name) return json({ ok: false, error: "Name is required" }, 200);
-      
-      // CREATE UNIQUE SLUG with Org Prefix + Random Suffix to avoid collisions
-      const orgPrefix = organization_id ? organization_id.substring(0, 4) : "off";
-      const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-      const uniqueSuffix = Math.random().toString(36).substring(2, 6);
-      const instanceName = `${orgPrefix}-${slug}-${uniqueSuffix}`;
-      
-      console.log(`[Create] Criando instância única: ${instanceName}`);
-      
-      const { ok, data, error } = await evolutionRequest("/instance/create", "POST", {
-        instanceName: instanceName,
-        name: instanceName,
-        token: Math.random().toString(36).substring(2, 12)
-      });
-      
-      if (!ok) {
-        console.error("[Create] Erro ao criar instância na central:", error);
-        const errDetail = typeof error === 'string' ? error : JSON.stringify(error);
-        return json({ ok: false, error: "Erro na central: " + errDetail }, 200);
-      }
-      
-      // Return the data directly from Evolution AND our generated instanceName
-      return json({ ok: true, data, evolution_instance_id: instanceName }, 200);
-    }
+               if (connectedNumber) updatePayload.connected_number = connectedNumber;
+               if (profilePic) updatePayload.profile_picture = profilePic;
 
-    // --- ACTION: delete ---
-    if (action === "delete") {
-      const instanceIdentifier = body.instance_id || body.instance_name;
-      if (!instanceIdentifier) return json({ ok: false, error: "instance_id is required" }, 200);
-
-      let uuidToDelete = instanceIdentifier;
-
-      // 1. Evolution Go DELETE requires the strict UUID format (instance.id), not the instanceName.
-      // We must fetch all instances to map the instanceName to its actual UUID.
-      // Utilizando '/instance/all' visto que é a roda que provadamente funciona no bloco 'sync'
-      const { data: allRes, ok: fetchOk } = await evolutionRequest("/instance/all", "GET");
-      
-      if (fetchOk) {
-        let arr = [];
-        if (allRes && allRes.message === "success" && Array.isArray(allRes.data)) arr = allRes.data;
-        else if (Array.isArray(allRes)) arr = allRes;
-        else if (allRes && typeof allRes === 'object') arr = allRes.data || allRes.instances || allRes.result || [];
-
-        const target = arr.find((a: any) => 
-          a.id === instanceIdentifier || 
-          a.name === instanceIdentifier || 
-          a.instanceName === instanceIdentifier ||
-          a.instance?.instanceName === instanceIdentifier ||
-          a.instance?.name === instanceIdentifier ||
-          a.instance?.id === instanceIdentifier
-        );
-
-        if (target) {
-            if (target.id) uuidToDelete = target.id;
-            else if (target.instance?.instanceId) uuidToDelete = target.instance.instanceId;
-            else if (target.instance?.id) uuidToDelete = target.instance.id;
-        } else {
-            console.warn(`[Delete] Instance ${instanceIdentifier} not found in Evolution Go. Assuming already deleted.`);
-            return json({ ok: true, deleted_in_evolution: true, notes: "Already deleted in Evolution" }, 200);
+               await supabase.from("atende_ai_instances").update(updatePayload).eq("id", local.id);
+               updatedCount++;
+               debugLogs.push({ id: local.id, name: local.name, status: isConnected ? "active" : "inactive", error: null });
+             } else {
+               // Falhou - vamos marcar como desconectado
+               await supabase.from("atende_ai_instances").update({
+                  whatsapp_connected: false,
+                  status: "inactive",
+                  updated_at: new Date().toISOString()
+               }).eq("id", local.id);
+               updatedCount++;
+               debugLogs.push({ id: local.id, name: local.name, status: "inactive_fallback", error: res.error || "Evolution Failed" });
+             }
+           } catch (loopErr: any) {
+               console.error(`Error processing instance ${local.name}:`, loopErr);
+               debugLogs.push({ id: local.id, name: local.name, status: "error", error: loopErr.message });
+           }
         }
-      } else {
-          console.warn(`[Delete] fetchInstances failed. Proceeding with raw identifier.`);
+        
+        return json({ ok: true, updated: updatedCount, logs: debugLogs });
       }
 
-      console.log(`[Delete] Resolved ${instanceIdentifier} to UUID: ${uuidToDelete}`);
+      case "create": {
+        const { name } = body;
+        if (!name) return json({ error: "Name is required" }, 400);
 
-      // Optional: Logout first to prevent Evolution 'active' blockers
-      await evolutionRequest(`/instance/logout/${instanceIdentifier}`, "DELETE");
+        const technicalId = generateStrongToken(12);
+        const instanceToken = generateStrongToken();
+        const createRes = await evolutionRequest("/instance/create", "POST", { name: technicalId, token: instanceToken });
+        
+        if (!createRes.ok) return json({ ok: false, error: createRes.error }, 200);
+        
+        const resData = createRes.data as any;
+        const evolutionId = resData?.id || resData?.data?.id || resData?.instance?.id;
+        const webhook_secret = crypto.randomUUID();
+        const webhookUrl = `${SUPABASE_URL}/functions/v1/evolution-go-webhook/${webhook_secret}`;
+        
+        try {
+          await evolutionRequest(`/webhook/instance/set`, "POST", {
+            url: webhookUrl,
+            webhook_by_events: false,
+            events: ["ALL"]
+          }, undefined, instanceToken);
+        } catch (e) { console.error("Webhook error", e); }
 
-      // Now Delete by UUID
-      const { ok, error } = await evolutionRequest(`/instance/delete/${uuidToDelete}`, "DELETE");
-      
-      if (!ok) {
-        console.warn(`[Delete] Evolution returned error: ${error}`);
-        return json({ ok: false, error }, 200);
-      }
-      return json({ ok: true, deleted_in_evolution: true });
-    }
-
-    if (!agent_id) return json({ error: "agent_id is required" }, 400);
-
-    const { data: agent } = await supabase.from("ai_agents").select("*").eq("id", agent_id).single();
-    if (!agent) return json({ error: "Agent not found" }, 404);
-
-    const instanceName = agent.uazapi_instance_id || agent.name.toLowerCase().replace(/\s+/g, '-');
-
-    // --- ACTION: connect ---
-    if (action === "connect") {
-      // 1. Check if instance exists, if not create
-      const checkRes = await evolutionRequest(`/instance/connectionState/${instanceName}`);
-      
-      if (!checkRes.ok && checkRes.error?.includes("not found")) {
-        await evolutionRequest("/instance/create", "POST", {
-          instanceName,
-          token: agent.uazapi_instance_token || "default_token",
-          qrcode: true
+        return json({ 
+          ok: true, 
+          evolution_instance_id: technicalId, 
+          evolution_id: evolutionId, 
+          instance_api_key: instanceToken,
+          evolution_webhook_secret: webhook_secret
         });
       }
 
-      // 2. Get connect info (QR/Pair)
-      const connectRes = await evolutionRequest(`/instance/connect/${instanceName}`);
-      if (!connectRes.ok) return json({ error: connectRes.error }, 500);
+      default: {
+        // Actions requiring instance_id
+        const instanceId = body.instance_id || body.agentId || body.id;
+        if (!instanceId) return json({ error: "instance_id is required" }, 400);
 
-      return json(connectRes.data);
-    }
+        console.log(`[Action] ${action} for instance: ${instanceId}`);
 
-    // --- ACTION: status ---
-    if (action === "status") {
-      const res = await evolutionRequest(`/instance/connectionState/${instanceName}`);
-      if (!res.ok) return json({ status: "disconnected", whatsapp_connected: false });
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(instanceId);
+        
+        let query = supabase.from("atende_ai_instances").select("*").eq("organization_id", organization_id);
+        
+        if (isUuid) {
+          query = query.or(`id.eq.${instanceId},evolution_id.eq.${instanceId},evolution_instance_id.eq.${instanceId}`);
+        } else {
+          query = query.or(`evolution_id.eq.${instanceId},evolution_instance_id.eq.${instanceId},name.eq.${instanceId}`);
+        }
 
-      const isConnected = res.data?.instance?.state === "open";
-      const owner = res.data?.instance?.owner?.replace("@s.whatsapp.net", "") || null;
+        const { data: atendeInstance, error: searchError } = await query.maybeSingle();
 
-      if (isConnected !== agent.whatsapp_connected) {
-        await supabase
-          .from("ai_agents")
-          .update({
-             whatsapp_connected: isConnected,
-             connected_number: isConnected ? owner : agent.connected_number,
-             status: isConnected ? "active" : "inactive"
-          })
-          .eq("id", agent_id);
+        if (searchError) {
+          console.error(`[Error] Database search failed:`, searchError);
+          throw searchError;
+        }
+
+        if (!atendeInstance) {
+          console.error(`[Error] Instance NOT found for: ${instanceId} in Org: ${organization_id}`);
+          return json({ error: "Instância não encontrada no banco de dados local" }, 404);
+        }
+
+        const apiKey = atendeInstance.instance_api_key || atendeInstance.evolution_instance_token || EVOLUTION_API_KEY;
+
+        if (action === "status" || action === "sync") {
+          const res = await evolutionRequest(`/instance/status`, "GET", undefined, undefined, apiKey);
+          
+          if (!res.ok && res.status === 404) {
+             // Fallback: search by name in all
+             const all = await evolutionRequest("/instance/all", "GET");
+             const remote = Array.isArray(all.data) ? all.data.find((r: any) => r.id === atendeInstance.evolution_id || r.name === atendeInstance.evolution_instance_id) : null;
+             
+             if (remote) {
+                const { isConnected, connectedNumber, profilePic } = extractInstanceMetadata(remote);
+                const updatePayload: any = {
+                  whatsapp_connected: isConnected,
+                  status: isConnected ? "active" : "inactive",
+                  updated_at: new Date().toISOString()
+                };
+
+                if (connectedNumber) updatePayload.connected_number = connectedNumber;
+                if (profilePic) updatePayload.profile_picture = profilePic;
+
+                await supabase.from("atende_ai_instances").update(updatePayload).eq("id", atendeInstance.id);
+                return json({ ok: true, isConnected });
+             } else {
+                // Not found even in fallback. Mark as disconnected.
+                await supabase.from("atende_ai_instances").update({
+                  whatsapp_connected: false,
+                  status: "inactive",
+                  updated_at: new Date().toISOString()
+                }).eq("id", atendeInstance.id);
+                return json({ ok: true, isConnected: false });
+             }
+          } else if (!res.ok) {
+             // Other error, mark disconnected.
+             await supabase.from("atende_ai_instances").update({
+                whatsapp_connected: false,
+                status: "inactive",
+                updated_at: new Date().toISOString()
+             }).eq("id", atendeInstance.id);
+             return json({ ok: false, isConnected: false, error: res.error });
+          }
+
+          const { isConnected, connectedNumber, profilePic } = extractInstanceMetadata(res.data);
+          
+          const updatePayload: any = {
+            whatsapp_connected: isConnected,
+            status: isConnected ? "active" : "inactive",
+            updated_at: new Date().toISOString()
+          };
+
+          if (connectedNumber) updatePayload.connected_number = connectedNumber;
+          if (profilePic) updatePayload.profile_picture = profilePic;
+
+          await supabase.from("atende_ai_instances").update(updatePayload).eq("id", atendeInstance.id);
+
+          return json({ ok: true, isConnected });
+        }
+
+        if (action === "connect") {
+          const digits = body.phone ? body.phone.replace(/\D/g, "") : null;
+          
+          // Documentation POST /instance/connect supports webhookUrl and subscribe
+          const webhookSecret = atendeInstance.evolution_webhook_secret || crypto.randomUUID();
+          const webhookUrl = `${SUPABASE_URL}/functions/v1/evolution-go-webhook/${webhookSecret}`;
+          
+          if (!atendeInstance.evolution_webhook_secret) {
+            await supabase
+              .from("atende_ai_instances")
+              .update({ evolution_webhook_secret: webhookSecret })
+              .eq("id", atendeInstance.id);
+          }
+          
+          const payload: any = { 
+            webhookUrl: webhookUrl,
+            subscribe: [
+              "MESSAGE", 
+              "SEND_MESSAGE", 
+              "CONNECTION", 
+              "QRCODE", 
+              "MESSAGES_SET", 
+              "MESSAGES_UPSERT", 
+              "OFFLINE_SYNC_COMPLETED"
+            ],
+            immediate: true
+          };
+
+          // If phone is provided, Evolution uses it for Pairing Code
+          if (digits) {
+            payload.phone = digits;
+          }
+
+          const res = await evolutionRequest(`/instance/connect`, "POST", payload, undefined, apiKey);
+          if (!res.ok) return json({ ok: false, error: res.error }, 200);
+
+          // Evolution returns base64 for QR or pairingCode for Pairing
+          return json({ 
+            ok: true, 
+            qrCode: res.data?.base64 || res.data?.qrcode, 
+            pairingCode: res.data?.pairingCode || res.data?.code 
+          });
+        }
+
+        if (action === "disconnect") {
+          console.log(`[Disconnect] Attempting to disconnect ${atendeInstance.evolution_instance_id}...`);
+          try {
+            // Tentamos desconectar na Evolution. Se falhar, ignoramos e limpamos localmente.
+            const res = await evolutionRequest(`/instance/disconnect`, "POST", undefined, undefined, apiKey);
+            if (!res.ok) {
+               console.warn(`[Disconnect] Evolution API returned error (ignoring): ${res.error}`);
+               // Fallback para /logout se /disconnect falhar
+               await evolutionRequest(`/instance/logout`, "POST", undefined, undefined, apiKey);
+            }
+          } catch (e) {
+            console.error(`[Disconnect] Failed to call Evolution API:`, e);
+          }
+          
+          console.log(`[Disconnect] Cleaning up local database for ${atendeInstance.id}`);
+          // Garantimos que o estado local seja limpo
+          const { error: updateError } = await supabase
+            .from("atende_ai_instances")
+            .update({
+              whatsapp_connected: false,
+              status: "inactive",
+              qr_code_base64: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", atendeInstance.id);
+            
+          if (updateError) {
+            console.error(`[Disconnect] Database update failed:`, updateError);
+            return json({ error: "Erro ao atualizar banco de dados local" }, 500);
+          }
+
+          return json({ ok: true, message: "Instância desconectada com sucesso localmente" });
+        }
+
+        if (action === "delete") {
+          const deleteId = atendeInstance.evolution_instance_id || atendeInstance.evolution_id || atendeInstance.name;
+          await evolutionRequest(`/instance/delete/${deleteId}`, "DELETE", undefined, undefined, apiKey);
+          await supabase.from("atende_ai_instances").delete().eq("id", atendeInstance.id);
+          return json({ ok: true });
+        }
+
+        return json({ error: `Unsupported action: ${action}` }, 400);
       }
-
-      return json({ 
-        status: isConnected ? "connected" : "disconnected",
-        whatsapp_connected: isConnected,
-        owner,
-        qrcode: res.data?.qrcode || null
-      });
     }
-
-    // --- ACTION: disconnect ---
-    if (action === "disconnect") {
-      await evolutionRequest(`/instance/logout/${instanceName}`, "DELETE");
-      await supabase
-        .from("ai_agents")
-        .update({ whatsapp_connected: false, status: "inactive" })
-        .eq("id", agent_id);
-      return json({ ok: true });
-    }
-
-    return json({ error: "Unknown action" }, 400);
-  } catch (err) {
-    console.error(err);
-    return json({ error: "Internal server error" }, 500);
+  } catch (err: any) {
+    console.error("Function Error:", err);
+    return json({ error: err.message }, 500);
   }
 });

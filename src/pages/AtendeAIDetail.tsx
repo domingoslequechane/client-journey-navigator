@@ -45,8 +45,10 @@ export default function AtendeAIDetail() {
     return slug === agentNameSlug || a.id === agentNameSlug;
   });
 
-  // Detail hook — provides conversations, messages and config update for the standalone schema
-  const { conversations, conversationsLoading, updateConfig } = useAtendeAIDetail(agent?.id);
+  // Detail hook — provides conversations, messages, config update and connection actions
+  const { instance, conversations, conversationsLoading, updateConfig, instanceAction, sendMessage } = useAtendeAIDetail(agent?.id);
+
+  const effectiveAgent = instance || agent;
 
   // NOTE: We do NOT auto-sync here because it caused a race condition:
   // 1. Agent created locally with evolution_instance_id = null
@@ -96,67 +98,61 @@ export default function AtendeAIDetail() {
       toast.success("Atendente removido com sucesso!");
       setIsDeleteDialogOpen(false);
       navigate('/app/atende-ai');
-    } catch (e) {
-      toast.error("Erro ao remover atendente.");
+    } catch (e: any) {
+      console.error("[DeleteAgent] falhou:", e);
+      toast.error(`Erro ao remover atendente: ${e.message || String(e)}`);
     }
   };
 
-  const isOnline = agent.status === 'active';
-  const clientName = agent.clients?.company_name || agent.company_name || 'Agência principal';
+  const isOnline = effectiveAgent.status === 'active' || effectiveAgent.whatsapp_connected;
+  const clientName = effectiveAgent.clients?.company_name || effectiveAgent.company_name || 'Agência principal';
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0c0c0c] text-zinc-900 dark:text-white selection:bg-[#ff7a00]/30 overflow-x-hidden pb-20 transition-colors duration-300">
       <div className="space-y-6 p-4 md:p-6 pt-6 md:pt-6 pb-12 animate-in fade-in duration-500">
         
-        {/* Superior Header Refactored */}
+        {/* Header navigation and actions */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            {/* Back Button */}
             <Button 
               variant="ghost" 
-              size="icon"
-              onClick={() => navigate('/app/atende-ai')} 
-              className="text-zinc-400 hover:text-[#ff7a00] hover:bg-zinc-50 dark:hover:bg-[#1a1a1a] h-9 w-9 rounded-md transition-all shrink-0"
+              size="icon" 
+              onClick={() => navigate('/app/atende-ai')}
+              className="h-9 w-9 rounded-md bg-zinc-50 dark:bg-[#1a1a1a] text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-
-            {/* Profile Avatar & Title Group */}
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center border border-zinc-200 dark:border-zinc-800 shrink-0 overflow-hidden shadow-sm">
-                {agent.profile_picture ? (
-                  <img src={agent.profile_picture} alt={agent.name} className="h-full w-full object-cover" />
-                ) : (
-                  <User className="h-6 w-6 text-zinc-400" />
-                )}
-              </div>
-              <div className="space-y-0">
-                <h1 className="text-2xl font-bold text-zinc-900 dark:text-white leading-tight flex items-center gap-2">
-                  {agent.name}
-                </h1>
-                <div className="flex flex-col gap-1 items-start mt-1">
-                  <p className="text-sm text-zinc-500 dark:text-zinc-500 font-medium leading-none">
-                    {clientName}
-                  </p>
-                  <code className="text-[11px] bg-zinc-100 dark:bg-[#1a1a1a] text-zinc-500 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800">
-                    ID Técnico: {agent.evolution_instance_id || 'Não sincronizado'}
-                  </code>
-                </div>
-              </div>
+            <div>
+               <div className="flex items-center gap-2">
+                 <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                   {effectiveAgent.name}
+                 </h1>
+                 <span className={cn(
+                    "px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full",
+                    effectiveAgent.whatsapp_connected 
+                      ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
+                      : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                 )}>
+                   {effectiveAgent.whatsapp_connected ? 'Conectado' : 'Desconectado'}
+                 </span>
+               </div>
+               <p className="text-sm text-zinc-500 font-medium flex items-center gap-2">
+                  <User className="h-3 w-3" />
+                  {clientName}
+               </p>
             </div>
           </div>
 
-          {/* Right Actions */}
-          <div className="flex items-center gap-3 ml-auto md:ml-0">
-             {syncInstance && (
+          <div className="flex items-center gap-3">
+             {effectiveAgent.evolution_instance_id && (
                <Button 
-                  onClick={() => syncInstance.mutate(agent.id)}
-                  disabled={syncInstance.isPending}
+                  onClick={() => instanceAction.mutate({ action: 'status' })}
+                  disabled={instanceAction.isPending}
                   variant="outline" 
                   className="h-9 gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-zinc-200 dark:border-zinc-800 rounded-md text-sm transition-colors"
                >
-                 <RefreshCw className={cn("h-4 w-4", syncInstance.isPending && "animate-spin")} />
-                 {syncInstance.isPending ? 'Sincronizando...' : 'Sincronizar'}
+                 <RefreshCw className={cn("h-4 w-4", instanceAction.isPending && "animate-spin")} />
+                 {instanceAction.isPending ? 'Sincronizando...' : 'Sincronizar'}
                </Button>
              )}
 
@@ -172,10 +168,10 @@ export default function AtendeAIDetail() {
                <div className="flex items-center gap-2">
                   <div className={cn(
                     "h-2 w-2 rounded-full animate-pulse shadow-[0_0_8px_rgba(0,0,0,0.1)]",
-                    isOnline ? "bg-emerald-500 shadow-emerald-500/20" : "bg-red-500 shadow-red-500/20"
+                    effectiveAgent.whatsapp_connected ? "bg-emerald-500 shadow-emerald-500/20" : "bg-zinc-400 shadow-zinc-400/20"
                   )} />
                   <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-tight whitespace-nowrap">
-                    {isOnline ? 'Sistema online' : 'Sistema offline'}
+                    {effectiveAgent.whatsapp_connected ? 'Sistema Operacional' : 'Aguardando Pareamento'}
                   </span>
                </div>
             </div>
@@ -187,26 +183,26 @@ export default function AtendeAIDetail() {
 
         {/* Tab Content Rendering */}
         <article className="min-h-[500px]">
-          {activeTab === 'dashboard' && <DashboardTab agent={agent} />}
-          {activeTab === 'connection' && (
+          {activeTab === 'dashboard' && <DashboardTab agent={effectiveAgent} />}
+          {activeTab === 'connection' && effectiveAgent && (
             <ConnectionTab 
-              agent={agent} 
-              onRefreshQR={() => refreshQR.mutate(agent.id)} 
-              onGeneratePairCode={(phone) => console.log("Pairing...", phone)} 
+              agent={effectiveAgent} 
+              instanceAction={instanceAction}
             />
           )}
           
           {activeTab === 'chat' && (
             <AtendeChatTab
-              instance={agent}
+              instance={effectiveAgent}
               conversations={conversations}
               isLoading={conversationsLoading}
+              sendMessage={sendMessage}
             />
           )}
 
           {activeTab === 'training' && (
             <AtendeTrainingTab
-              instance={agent}
+              instance={effectiveAgent}
               updateConfig={updateConfig}
             />
           )}

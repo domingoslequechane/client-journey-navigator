@@ -297,6 +297,8 @@ export interface AIAgent {
   human_pause_duration: number;
   created_at: string;
   updated_at: string;
+  whatsapp_connected: boolean;
+  connected_number: string | null;
   // Joined from clients table (optional)
   clients?: { company_name: string } | null;
 }
@@ -325,6 +327,8 @@ export interface AtendeAIInstance {
   total_messages: number;
   last_activity_at: string | null;
   evolution_webhook_secret: string;
+  instance_api_key: string | null;
+  evolution_id: string | null;
   clients?: { company_name: string } | null;
   status: 'active' | 'inactive';
   whatsapp_connected: boolean;

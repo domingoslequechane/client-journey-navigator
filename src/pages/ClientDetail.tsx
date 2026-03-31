@@ -103,6 +103,28 @@ export default function ClientDetail() {
         toast({ title: 'Erro ao atualizar fase', description: stageError.message, variant: 'destructive' });
         return;
       }
+
+      // Automation: CRM -> Finance
+      // When moving to operational stages, auto-generate a revenue entry
+      const operationalDbStages = ['producao', 'trafego', 'retencao', 'fidelizacao'];
+      if (operationalDbStages.includes(newDbStage) && dbStageMap[client.stage] !== newDbStage) {
+        const { error: finError } = await (supabase.from('finances_transactions') as any).insert({
+          organization_id: organizationId,
+          type: 'RECEITA',
+          amount: updatedClient.monthlyBudget,
+          description: `Mensalidade Automática: ${updatedClient.companyName}`,
+          date: new Date().toISOString(),
+          is_paid: true,
+          classification: 'VARIAVEL'
+        });
+
+        if (!finError) {
+          toast({ 
+            title: 'Financeiro Atualizado', 
+            description: `Receita de MT ${updatedClient.monthlyBudget.toLocaleString()} gerada automaticamente.` 
+          });
+        }
+      }
     }
 
     // Update Checklist Items (tasks)

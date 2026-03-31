@@ -55,9 +55,9 @@ import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
 import AdminSupport from "./pages/admin/AdminSupport";
 import PartnerProgram from "./pages/PartnerProgram";
 import LinkTreePublic from "./pages/LinkTreePublic";
-import { FinanceTransactions, FinanceProjects, FinanceGoals, FinanceReports } from "./pages/finance";
 import Editorial from "./pages/Editorial";
 import SocialMedia from "./pages/SocialMedia";
+import Finances from "./pages/Finances";
 import SocialPostEditor from "./pages/SocialPostEditor";
 import SocialApproval from "./pages/SocialApproval";
 import StudioTool from "./pages/studio/StudioTool";
@@ -200,29 +200,10 @@ const App = () => (
                       <Route path="upgrade" element={<Upgrade />} />
                       <Route path="finance" element={
                         <RoleProtectedRoute privilege="finance">
-                          <FinanceReports />
+                          <Finances />
                         </RoleProtectedRoute>
                       } />
-                      <Route path="finance/transactions" element={
-                        <RoleProtectedRoute privilege="finance">
-                          <FinanceTransactions />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="finance/projects" element={
-                        <RoleProtectedRoute privilege="finance">
-                          <FinanceProjects />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="finance/goals" element={
-                        <RoleProtectedRoute privilege="finance">
-                          <FinanceGoals />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="finance/reports" element={
-                        <RoleProtectedRoute privilege="finance">
-                          <FinanceReports />
-                        </RoleProtectedRoute>
-                      } />
+                      <Route path="finance/*" element={<Navigate to="/app/finance" replace />} />
                       <Route path="editorial" element={
                         <RoleProtectedRoute privilege="editorial">
                           <Editorial />

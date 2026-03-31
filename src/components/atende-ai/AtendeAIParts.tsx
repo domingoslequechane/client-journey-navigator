@@ -240,15 +240,13 @@ export function AtendeInstanceCard({ agent, onClick }: { agent: AtendeAIInstance
             {clientName}
           </p>
           
-          <div className="flex justify-center mt-0.5 mb-1.5">
-            <p className="text-[10px] bg-zinc-100 dark:bg-zinc-800/60 text-zinc-400 dark:text-zinc-500 font-mono px-2 py-0.5 rounded-sm inline-block truncate max-w-full">
-              {agent.evolution_instance_id || 'Não sincronizado'}
-            </p>
-          </div>
+
 
           <div className="flex items-center justify-center gap-1.5 text-[12px] text-zinc-400 dark:text-zinc-500 mb-1.5">
              <Smartphone className="h-3 w-3" />
-             <span className="font-medium truncate">{agent.connected_number || 'Sem número'}</span>
+             <span className="font-medium truncate">
+                {agent.connected_number ? `+${agent.connected_number}` : ((agent as any).phone ? `+${(agent as any).phone}` : 'Sem número')}
+             </span>
           </div>
            
           <div className="flex items-center justify-center mt-auto pt-1">

@@ -1,0 +1,19 @@
+=== 1) /instance/all with GLOBAL key ===
+[GLOBAL-all] HTTP 401: {"error":"not authorized"}
+
+=== 2) /instance/fetchInstances with GLOBAL key ===
+[GLOBAL-fetch] HTTP 404: 404 page not found
+
+=== Instance: KZo93uQqE99i ===
+[KZo93uQqE99i-status] HTTP 200: {"data":{"Connected":true,"LoggedIn":true,"Name":"domingosf.lequechane🤓"},"message":"success"}
+[KZo93uQqE99i-connState] HTTP 404: 404 page not found
+[KZo93uQqE99i-me] HTTP 404: 404 page not found
+
+=== Instance: rCIbsSZ97yKn ===
+[rCIbsSZ97yKn-status] HTTP 200: {"data":{"Connected":true,"LoggedIn":true,"Name":"Joana"},"message":"success"}
+[rCIbsSZ97yKn-connState] HTTP 404: 404 page not found
+[rCIbsSZ97yKn-me] HTTP 404: 404 page not found
+
+=== 3) /instance/all with INSTANCE keys ===
+[KZo93uQqE99i-all] HTTP 401: {"error":"not authorized"}
+[rCIbsSZ97yKn-all] HTTP 401: {"error":"not authorized"}

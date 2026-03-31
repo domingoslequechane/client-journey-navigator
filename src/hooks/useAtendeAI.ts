@@ -42,28 +42,28 @@ export function useAtendeAI() {
         throw new Error('Erro ao criar na Evolution: ' + (evoResult?.error || 'resposta inválida'));
       }
 
-      // 2. Extract exact identifier from the Edge Function
-      const evoData = evoResult?.data || {};
-      
-      // The Edge Function now explicitly returns the exact instanceName it generated 
-      // (e.g. "16f8-este") so we don't have to guess based on undefined Evolution Go payloads.
+      // 2. Extract identifiers from the Edge Function
       const instanceIdToStore = evoResult?.evolution_instance_id;
+      const instanceApiKeyToStore = evoResult?.instance_api_key;
+      const webhookSecretToStore = evoResult?.evolution_webhook_secret;
 
       if (!instanceIdToStore) {
          throw new Error('Falha crítica: Edge function não retornou o evolution_instance_id.');
       }
 
-      console.log('[Create] Full evo response:', JSON.stringify(evoData));
       console.log('[Create] Storing evolution_instance_id:', instanceIdToStore);
 
-      // 3. Save to local DB with the ID from Evolution Go (never null)
+      // 3. Save to local DB
       const { data: newAgent, error: dbErr } = await (supabase
         .from('atende_ai_instances' as any)
         .insert({
           organization_id: orgId,
           client_id,
-          name,                                  // Display name chosen by user
-          evolution_instance_id: instanceIdToStore, // The ID for: DELETE /instance/delete/{instanceId}
+          name,
+          evolution_instance_id: instanceIdToStore,
+          evolution_id: evoResult?.evolution_id,
+          instance_api_key: instanceApiKeyToStore,
+          evolution_webhook_secret: webhookSecretToStore,
           status: 'inactive',
         })
         .select()
@@ -98,6 +98,7 @@ export function useAtendeAI() {
           body: {
             action: 'delete',
             instance_id: agent.evolution_instance_id, // The exact ID from Evolution Go
+            organization_id: orgId
           }
         });
         console.log('[Delete] Evolution result:', evoResult);
@@ -175,7 +176,7 @@ export function useAtendeAI() {
   const syncAll = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('whatsapp-agent-instance', {
-        body: { action: 'sync', organization_id: orgId },
+        body: { action: 'sync-all', organization_id: orgId },
       });
       if (error) throw error;
       return data;
