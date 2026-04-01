@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,8 @@ import {
   ChevronRight,
   ChevronDown,
   Shield,
+  BarChart2,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -22,12 +24,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const ADMIN_SIDEBAR_COLLAPSED_KEY = 'qualify-admin-sidebar-collapsed';
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badgeKey?: string;
+}
+
+const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Usuários', href: '/admin/users', icon: Users },
+  { name: 'Analytics', href: '/admin/analytics', icon: BarChart2 },
+  { name: 'Agências', href: '/admin/agencies', icon: Building2 },
+  { name: 'Utilizadores', href: '/admin/users', icon: Users },
   { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
-  { name: 'Feedbacks', href: '/admin/feedbacks', icon: MessageSquare },
-  { name: 'Suporte', href: '/admin/support', icon: HeadphonesIcon },
+  { name: 'Feedbacks', href: '/admin/feedbacks', icon: MessageSquare, badgeKey: 'feedbacks' },
+  { name: 'Suporte', href: '/admin/support', icon: HeadphonesIcon, badgeKey: 'tickets' },
 ];
 
 export function AdminLayout() {
@@ -42,6 +53,7 @@ export function AdminLayout() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const [badges, setBadges] = useState<Record<string, number>>({ feedbacks: 0, tickets: 0 });
   const navRef = useRef<HTMLElement>(null);
 
   const handleScroll = () => {
@@ -49,6 +61,15 @@ export function AdminLayout() {
       const { scrollTop, scrollHeight, clientHeight } = navRef.current;
       setShowScrollIndicator(scrollHeight > clientHeight && scrollTop + clientHeight < scrollHeight - 5);
     }
+  };
+
+  // Fetch badge counts
+  const fetchBadges = async () => {
+    const [{ count: feedbacks }, { count: tickets }] = await Promise.all([
+      supabase.from('feedbacks').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+    ]);
+    setBadges({ feedbacks: feedbacks || 0, tickets: tickets || 0 });
   };
 
   useEffect(() => {
@@ -64,6 +85,13 @@ export function AdminLayout() {
   useEffect(() => {
     localStorage.setItem(ADMIN_SIDEBAR_COLLAPSED_KEY, String(collapsed));
   }, [collapsed]);
+
+  useEffect(() => {
+    fetchBadges();
+    // Refresh badges every 30 seconds
+    const interval = setInterval(fetchBadges, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const checkAdminRole = async () => {
@@ -124,6 +152,7 @@ export function AdminLayout() {
   }
 
   const NavItem = ({ item, isActive }: { item: typeof navigation[0]; isActive: boolean }) => {
+    const badgeCount = item.badgeKey ? badges[item.badgeKey] || 0 : 0;
     const content = (
       <Link
         to={item.href}
@@ -135,8 +164,27 @@ export function AdminLayout() {
           collapsed && 'justify-center px-2'
         )}
       >
-        <item.icon className="h-5 w-5 shrink-0" />
-        {!collapsed && item.name}
+        <div className="relative shrink-0">
+          <item.icon className="h-5 w-5" />
+          {collapsed && badgeCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 flex items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-white">
+              {badgeCount > 9 ? '9+' : badgeCount}
+            </span>
+          )}
+        </div>
+        {!collapsed && (
+          <>
+            <span className="flex-1">{item.name}</span>
+            {badgeCount > 0 && (
+              <span className={cn(
+                'text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center',
+                isActive ? 'bg-white/20 text-white' : 'bg-destructive/15 text-destructive'
+              )}>
+                {badgeCount > 99 ? '99+' : badgeCount}
+              </span>
+            )}
+          </>
+        )}
       </Link>
     );
 

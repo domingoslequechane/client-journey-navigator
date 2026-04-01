@@ -53,6 +53,8 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
 import AdminSupport from "./pages/admin/AdminSupport";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminAgencies from "./pages/admin/AdminAgencies";
 import PartnerProgram from "./pages/PartnerProgram";
 import LinkTreePublic from "./pages/LinkTreePublic";
 import Editorial from "./pages/Editorial";
@@ -236,6 +238,8 @@ const App = () => (
                       </ProtectedRoute>
                     }>
                       <Route index element={<AdminDashboard />} />
+                      <Route path="analytics" element={<AdminAnalytics />} />
+                      <Route path="agencies" element={<AdminAgencies />} />
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="subscriptions" element={<AdminSubscriptions />} />
                       <Route path="feedbacks" element={<AdminFeedbacks />} />
