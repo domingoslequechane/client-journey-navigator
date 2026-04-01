@@ -168,6 +168,7 @@ export default function Onboarding() {
             country: countryName,
             city: cityName,
             headquarters: `${cityName}, ${countryName}`,
+            trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
           })
           .select()
           .single();
@@ -200,7 +201,7 @@ export default function Onboarding() {
             {
               user_id: sessionUser.id,
               organization_id: organizationId,
-              role: 'admin',
+              role: 'Owner',
               is_active: true,
             },
             { onConflict: 'user_id,organization_id' }
@@ -233,7 +234,7 @@ export default function Onboarding() {
             {
               user_id: sessionUser.id,
               organization_id: organizationId,
-              role: 'admin',
+              role: 'Owner',
               is_active: true,
             },
             { onConflict: 'user_id,organization_id' }

@@ -72,7 +72,8 @@ export function Sidebar() {
   const { t } = useTranslation('common');
   const {
     canAccessModule,
-    isAdmin
+    isAdmin,
+    isInternalAdmin
   } = usePermissions();
 
   const {
@@ -145,8 +146,8 @@ export function Sidebar() {
     }
   };
 
-  // Check if internal admin (emails containing qfy-admin)
-  const isInternalAdmin = user?.email?.toLowerCase().includes('qfy-admin');
+  // Role check is now centralized in usePermissions
+  // Removed hardcoded email check for a more robust role-based approach
 
   // Filter navigation items based on role + module access
   const navigation = useMemo(() => {

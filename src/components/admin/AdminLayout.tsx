@@ -3,6 +3,8 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { usePermissions } from '@/hooks/usePermissions';
+import { toast } from 'sonner';
 import {
   LayoutDashboard,
   Users,
@@ -17,11 +19,14 @@ import {
   BarChart2,
   Building2,
   Wallet,
+  Download,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { AdminAIChat } from './AdminAIChat';
 
 const ADMIN_SIDEBAR_COLLAPSED_KEY = 'qualify-admin-sidebar-collapsed';
@@ -42,19 +47,19 @@ const navigation: NavItem[] = [
   { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
   { name: 'Feedbacks', href: '/admin/feedbacks', icon: MessageSquare, badgeKey: 'feedbacks' },
   { name: 'Suporte', href: '/admin/support', icon: HeadphonesIcon, badgeKey: 'tickets' },
+  { name: 'Configurações', href: '/admin/settings', icon: Settings },
 ];
 
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isInternalAdmin, isLoading: permissionsLoading } = usePermissions();
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem(ADMIN_SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';
   });
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
   const [badges, setBadges] = useState<Record<string, number>>({ feedbacks: 0, tickets: 0 });
   const navRef = useRef<HTMLElement>(null);
@@ -96,48 +101,69 @@ export function AdminLayout() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const checkAdminRole = async () => {
-      if (!user) {
-        setLoading(false);
-        navigate('/auth');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'proprietor')
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error checking admin role:', error);
-        setIsAdmin(false);
-      } else {
-        setIsAdmin(!!data);
-      }
-      setLoading(false);
-    };
-
-    checkAdminRole();
-  }, [user, navigate]);
-
   const handleSignOut = async () => {
     await signOut();
     setLogoutDialogOpen(false);
     navigate('/auth');
   };
 
-  if (loading) {
+  // Real-time listener for support messages
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-support-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages',
+          filter: 'is_admin=eq.false'
+        },
+        async (payload) => {
+          const soundEnabled = localStorage.getItem('admin-sound-enabled') !== 'false';
+          const notificationsEnabled = localStorage.getItem('admin-notifications-enabled') !== 'false';
+
+          if (soundEnabled) {
+            const audio = new Audio('/universfield-notification.mp3');
+            audio.play().catch(e => console.log('Audio play failed:', e));
+          }
+
+          if (notificationsEnabled) {
+            toast.info('Nova mensagem de suporte recebida!', {
+              description: payload.new.message?.substring(0, 50) + '...',
+              action: {
+                label: 'Ver',
+                onClick: () => navigate('/admin/support')
+              }
+            });
+          }
+          
+          // Refresh badges to show new unread
+          fetchBadges();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  console.log('AdminLayout: State', { isInternalAdmin, permissionsLoading, userId: user?.id });
+
+  if (permissionsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Skeleton className="h-12 w-48" />
+        <div className="text-center space-y-4">
+          <Skeleton className="h-12 w-48 mx-auto" />
+          <p className="text-sm text-muted-foreground animate-pulse">Verificando credenciais de admin...</p>
+        </div>
       </div>
     );
   }
 
-  if (!isAdmin) {
+  if (!isInternalAdmin) {
+    console.warn('AdminLayout: Access Denied', { role: user?.email, isInternalAdmin });
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center space-y-4">
@@ -241,28 +267,46 @@ export function AdminLayout() {
           </div>
 
           <div className="p-2 border-t border-border space-y-1 shrink-0">
-            {/* Back to App */}
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    to="/app"
-                    className="flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <LayoutDashboard className="h-5 w-5" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Voltar ao App</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
-                to="/app"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              >
-                <LayoutDashboard className="h-5 w-5" />
-                Voltar ao App
-              </Link>
-            )}
+            {/* Theme Toggle & Install App */}
+            <div className={cn("flex flex-col gap-1", collapsed && "items-center")}>
+              {collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-full flex justify-center">
+                      <ThemeToggle variant="ghost" size="icon" className="h-10 w-10" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Alternar Tema</TooltipContent>
+                </Tooltip>
+              ) : (
+                <div className="flex items-center gap-3 px-3 py-1">
+                  <ThemeToggle />
+                  <span className="text-sm font-medium text-muted-foreground">Alternar Tema</span>
+                </div>
+              )}
+
+              {collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/app"
+                      className="flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+                    >
+                      <Download className="h-5 w-5" />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Instalar App</TooltipContent>
+                </Tooltip>
+              ) : (
+                <Link
+                  to="/app"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+                >
+                  <Download className="h-5 w-5" />
+                  Instalar App
+                </Link>
+              )}
+            </div>
 
             {user && (
               <div className={cn("pt-2 border-t border-border mt-2", collapsed && "px-1")}>

@@ -89,7 +89,7 @@ export function AccessChangeNotification() {
 
     if (!isOpen) return null;
 
-    const isAdmin = role === 'admin' || privileges.includes('admin');
+    const isAdmin = role === 'Owner' || role === 'admin' || role === 'qfy-admin' || privileges.includes('admin');
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -118,7 +118,7 @@ export function AccessChangeNotification() {
                     <div className="bg-muted p-4 rounded-lg space-y-2">
                         <p className="text-sm font-medium flex items-center gap-2">
                             <span className="text-muted-foreground font-normal">Novo Perfil:</span>
-                            {isAdmin ? "Administrador" : "Colaborador"}
+                            {isAdmin ? "Administrador/Dono" : "Colaborador"}
                         </p>
                         <div className="space-y-1">
                             <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Privilégios Activos:</p>

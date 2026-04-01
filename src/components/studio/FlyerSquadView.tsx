@@ -185,7 +185,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
 
   const playCompletionSound = () => {
     if (isSpecialistMode) {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      const audio = new Audio('/universfield-notification.mp3');
       audio.volume = 0.5;
       audio.play().catch(e => console.error("Error playing sound:", e));
     }

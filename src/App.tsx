@@ -56,6 +56,7 @@ import AdminSupport from "./pages/admin/AdminSupport";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminAgencies from "./pages/admin/AdminAgencies";
 import AdminFinance from "./pages/admin/AdminFinance";
+import AdminSettings from "./pages/admin/AdminSettings";
 import PartnerProgram from "./pages/PartnerProgram";
 import LinkTreePublic from "./pages/LinkTreePublic";
 import Editorial from "./pages/Editorial";
@@ -122,8 +123,16 @@ const App = () => (
                     <Route path="/approve/:token" element={<SocialApproval />} />
                     {/* Public Link23 page (handle includes the leading @) */}
                     <Route path="/:orgSlug/:handle" element={<LinkTreePublic />} />
-                    <Route path="/app/onboarding" element={<Onboarding />} />
-                    <Route path="/app/select-organization" element={<SelectOrganization />} />
+                    <Route path="/app/onboarding" element={
+                      <ProtectedRoute>
+                        <Onboarding />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/app/select-organization" element={
+                      <ProtectedRoute>
+                        <SelectOrganization />
+                      </ProtectedRoute>
+                    } />
                     <Route
                       path="/app"
                       element={
@@ -143,12 +152,12 @@ const App = () => (
                       } />
                       <Route path="clients/:clientId" element={<ClientDetail />} />
                       <Route path="clients/edit/:clientId" element={
-                        <RoleProtectedRoute allowedRoles={['admin', 'sales', 'owner']}>
+                        <RoleProtectedRoute allowedRoles={['Owner', 'sales', 'owner']}>
                           <EditClient />
                         </RoleProtectedRoute>
                       } />
                       <Route path="new-client" element={
-                        <RoleProtectedRoute allowedRoles={['admin', 'sales', 'owner']}>
+                        <RoleProtectedRoute allowedRoles={['Owner', 'sales', 'owner']}>
                           <NewClient />
                         </RoleProtectedRoute>
                       } />
@@ -246,6 +255,7 @@ const App = () => (
                       <Route path="finance" element={<AdminFinance />} />
                       <Route path="feedbacks" element={<AdminFeedbacks />} />
                       <Route path="support" element={<AdminSupport />} />
+                      <Route path="settings" element={<AdminSettings />} />
                     </Route>
                     <Route path="/not-found" element={<NotFound />} />
                     <Route path="*" element={<NotFound />} />

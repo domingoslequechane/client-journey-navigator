@@ -28,22 +28,31 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         return;
       }
 
-      // Admin access is restricted to internal team (emails containing qfy-admin)
-      const isInternalTeam = user.email.toLowerCase().includes('qfy-admin');
+      // Super-admin access is restricted to qfy-admin or legacy admin role in user_roles table
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .in('role', ['qfy-admin', 'qfy_admin', 'admin', 'administrator'] as any)
+        .maybeSingle();
       
-      // Fallback check: also check user_roles for existing proprietors like qualify-admin
-      if (!isInternalTeam) {
-        const { data } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'proprietor')
-          .maybeSingle();
+      const emailLower = user?.email?.toLowerCase() || '';
+      const isInternalTeam = 
+        emailLower.includes('qfy-admin') || 
+        emailLower.includes('qfy_admin') || 
+        emailLower.includes('qualify-admin') ||
+        (emailLower.startsWith('admin@') && emailLower.includes('onixagence.com'));
         
-        setIsSystemAdmin(!!data);
-      } else {
-        setIsSystemAdmin(true);
-      }
+      const isSystemAdminVal = !!data || isInternalTeam;
+      
+      console.log('ProtectedRoute: System Admin check result', { 
+        email: user.email, 
+        hasRole: !!data, 
+        isInternalTeam,
+        isSystemAdminVal 
+      });
+      
+      setIsSystemAdmin(isSystemAdminVal);
     };
 
     checkSystemAdmin();
@@ -88,7 +97,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             {
               user_id: user.id,
               organization_id: profile.organization_id,
-              role: 'admin',
+              role: 'Owner',
               is_active: true,
             },
             { onConflict: 'user_id,organization_id' }
@@ -151,16 +160,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Safety timeout to prevent infinite loading
   useEffect(() => {
     const timeout = setTimeout(() => {
+      if (isSystemAdmin === null) {
+        console.warn('ProtectedRoute: isSystemAdmin check timed out, defaulting to false');
+        setIsSystemAdmin(false);
+      }
+      if (needsOrgSelection === null) {
+        console.warn('ProtectedRoute: needsOrgSelection check timed out, defaulting to false');
+        setNeedsOrgSelection(false);
+      }
       if (needsOnboarding === null && !subLoading && isSystemAdmin === false) {
         setNeedsOnboarding(false);
-      }
-      if (needsOrgSelection === null && !authLoading && isSystemAdmin === false) {
-        setNeedsOrgSelection(false);
       }
     }, 5000);
 
     return () => clearTimeout(timeout);
-  }, [needsOnboarding, needsOrgSelection, subLoading, authLoading, isSystemAdmin]);
+  }, [isSystemAdmin, needsOrgSelection, needsOnboarding, subLoading]);
 
   // Check for pending plan selection or onboarding
   useEffect(() => {
@@ -191,9 +205,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
         const isAdminForOrg =
           orgData?.owner_id === user.id ||
-          membership?.role === 'admin' ||
-          membership?.role === 'owner' ||
-          (membership?.role as string) === 'proprietor' || // Cast para string para evitar erro de tipo literal
+          (membership?.role as string) === 'admin' ||
+          (membership?.role as string) === 'owner' ||
+          (membership?.role as string) === 'Owner' ||     // Full support for exact "Owner" role
+          (membership?.role as string) === 'qfy-admin' || // qfy-admin is also admin for the org they are in
+          (membership?.role as string) === 'proprietor' || 
           membership?.privileges?.includes('admin');
 
         setIsOrgAdmin(Boolean(isAdminForOrg));
@@ -277,27 +293,34 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // System admins trying to access /app/* routes - redirect to admin panel
+  // 1. Strict area separation: System admins trying to access /app/* - redirect to /admin
   if (isSystemAdmin && location.pathname.startsWith('/app')) {
+    console.log('ProtectedRoute: System Admin attempted to access /app - redirecting to /admin');
     return <Navigate to="/admin" replace />;
   }
 
-  // System admins have full access to admin area
+  // 2. Strict area separation: Normal users trying to access /admin/* - redirect to /app
+  if (!isSystemAdmin && location.pathname.startsWith('/admin')) {
+    console.log('ProtectedRoute: Normal user attempted to access /admin - redirecting to /app');
+    return <Navigate to="/app" replace />;
+  }
+
+  // 3. System admins have full access to admin area
   if (isSystemAdmin) {
     return <>{children}</>;
   }
 
   // Redirect to organization selection if needed
-  if (needsOrgSelection) {
+  if (needsOrgSelection && location.pathname !== '/app/select-organization') {
     return <Navigate to="/app/select-organization" replace />;
   }
 
   // Redirect to onboarding/configuração da agência se necessário
   if (needsOnboarding) {
     const target = organization ? '/app/settings?tab=agency' : '/app/onboarding';
-    const current = `${location.pathname}${location.search}`;
+    const current = location.pathname;
 
-    if (current !== target && !current.includes('reason=')) {
+    if (current !== target && !location.search.includes('reason=')) {
       return <Navigate to={`${target}${target.includes('?') ? '&' : '?'}reason=onboarding`} replace />;
     }
   }

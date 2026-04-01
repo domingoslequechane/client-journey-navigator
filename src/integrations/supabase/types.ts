@@ -71,6 +71,30 @@ export type Database = {
           },
         ]
       }
+      admin_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agency_settings: {
         Row: {
           agency_name: string
@@ -112,6 +136,287 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ai_agent_connection_log: {
+        Row: {
+          agent_id: string
+          created_at: string | null
+          details: string | null
+          event: string
+          id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string | null
+          details?: string | null
+          event: string
+          id?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string | null
+          details?: string | null
+          event?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_agent_connection_log_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_agent_conversations: {
+        Row: {
+          agent_id: string
+          channel: string
+          closed_at: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          id: string
+          last_message_at: string | null
+          last_presence_at: string | null
+          message_count: number | null
+          organization_id: string
+          paused_until: string | null
+          started_at: string | null
+          status: string
+          waiting_human: boolean | null
+        }
+        Insert: {
+          agent_id: string
+          channel?: string
+          closed_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          id?: string
+          last_message_at?: string | null
+          last_presence_at?: string | null
+          message_count?: number | null
+          organization_id: string
+          paused_until?: string | null
+          started_at?: string | null
+          status?: string
+          waiting_human?: boolean | null
+        }
+        Update: {
+          agent_id?: string
+          channel?: string
+          closed_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          id?: string
+          last_message_at?: string | null
+          last_presence_at?: string | null
+          message_count?: number | null
+          organization_id?: string
+          paused_until?: string | null
+          started_at?: string | null
+          status?: string
+          waiting_human?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_agent_conversations_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_agent_conversations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_agent_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          external_id: string | null
+          id: string
+          message_type: string | null
+          organization_id: string
+          quoted_message_content: string | null
+          quoted_message_id: string | null
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          message_type?: string | null
+          organization_id: string
+          quoted_message_content?: string | null
+          quoted_message_id?: string | null
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          message_type?: string | null
+          organization_id?: string
+          quoted_message_content?: string | null
+          quoted_message_id?: string | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_agent_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agent_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_agent_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_agents: {
+        Row: {
+          address: string | null
+          address_reference: string | null
+          business_hours: string | null
+          client_id: string | null
+          company_description: string | null
+          company_name: string | null
+          company_sector: string | null
+          connected_number: string | null
+          created_at: string | null
+          evolution_apikey: string | null
+          evolution_instance_id: string | null
+          evolution_instance_token: string | null
+          extra_info: string | null
+          human_pause_duration: number | null
+          id: string
+          instructions: string | null
+          is_v2: boolean | null
+          last_activity_at: string | null
+          mark_as_read: boolean | null
+          name: string
+          organization_id: string
+          profile_picture: string | null
+          response_delay_seconds: number | null
+          response_size: number | null
+          show_typing: boolean | null
+          status: string
+          total_conversations: number | null
+          total_messages: number | null
+          uazapi_instance_id: string | null
+          uazapi_instance_token: string | null
+          uazapi_webhook_secret: string | null
+          updated_at: string | null
+          welcome_message: string | null
+          whatsapp_connected: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          address_reference?: string | null
+          business_hours?: string | null
+          client_id?: string | null
+          company_description?: string | null
+          company_name?: string | null
+          company_sector?: string | null
+          connected_number?: string | null
+          created_at?: string | null
+          evolution_apikey?: string | null
+          evolution_instance_id?: string | null
+          evolution_instance_token?: string | null
+          extra_info?: string | null
+          human_pause_duration?: number | null
+          id?: string
+          instructions?: string | null
+          is_v2?: boolean | null
+          last_activity_at?: string | null
+          mark_as_read?: boolean | null
+          name: string
+          organization_id: string
+          profile_picture?: string | null
+          response_delay_seconds?: number | null
+          response_size?: number | null
+          show_typing?: boolean | null
+          status?: string
+          total_conversations?: number | null
+          total_messages?: number | null
+          uazapi_instance_id?: string | null
+          uazapi_instance_token?: string | null
+          uazapi_webhook_secret?: string | null
+          updated_at?: string | null
+          welcome_message?: string | null
+          whatsapp_connected?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          address_reference?: string | null
+          business_hours?: string | null
+          client_id?: string | null
+          company_description?: string | null
+          company_name?: string | null
+          company_sector?: string | null
+          connected_number?: string | null
+          created_at?: string | null
+          evolution_apikey?: string | null
+          evolution_instance_id?: string | null
+          evolution_instance_token?: string | null
+          extra_info?: string | null
+          human_pause_duration?: number | null
+          id?: string
+          instructions?: string | null
+          is_v2?: boolean | null
+          last_activity_at?: string | null
+          mark_as_read?: boolean | null
+          name?: string
+          organization_id?: string
+          profile_picture?: string | null
+          response_delay_seconds?: number | null
+          response_size?: number | null
+          show_typing?: boolean | null
+          status?: string
+          total_conversations?: number | null
+          total_messages?: number | null
+          uazapi_instance_id?: string | null
+          uazapi_instance_token?: string | null
+          uazapi_webhook_secret?: string | null
+          updated_at?: string | null
+          welcome_message?: string | null
+          whatsapp_connected?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_agents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_agents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_conversations: {
         Row: {
@@ -231,6 +536,249 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      atende_ai_conversations: {
+        Row: {
+          channel: string
+          contact_email: string | null
+          contact_name: string
+          contact_phone: string | null
+          created_at: string
+          id: string
+          instance_id: string
+          last_message_at: string
+          last_presence_at: string | null
+          message_count: number | null
+          organization_id: string
+          paused_until: string | null
+          status: string
+          waiting_human: boolean | null
+        }
+        Insert: {
+          channel?: string
+          contact_email?: string | null
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          instance_id: string
+          last_message_at?: string
+          last_presence_at?: string | null
+          message_count?: number | null
+          organization_id: string
+          paused_until?: string | null
+          status?: string
+          waiting_human?: boolean | null
+        }
+        Update: {
+          channel?: string
+          contact_email?: string | null
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          instance_id?: string
+          last_message_at?: string
+          last_presence_at?: string | null
+          message_count?: number | null
+          organization_id?: string
+          paused_until?: string | null
+          status?: string
+          waiting_human?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atende_ai_conversations_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "atende_ai_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atende_ai_conversations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      atende_ai_instances: {
+        Row: {
+          address: string | null
+          address_reference: string | null
+          business_hours: string | null
+          client_id: string | null
+          company_description: string | null
+          company_sector: string | null
+          connected_number: string | null
+          connection_status: string | null
+          created_at: string | null
+          evolution_id: string | null
+          evolution_instance_id: string | null
+          evolution_instance_token: string | null
+          evolution_webhook_secret: string | null
+          extra_info: string | null
+          human_pause_duration: number | null
+          id: string
+          instance_api_key: string | null
+          instructions: string | null
+          last_activity_at: string | null
+          mark_as_read: boolean | null
+          name: string
+          organization_id: string
+          profile_picture: string | null
+          qr_code_base64: string | null
+          response_delay_seconds: number | null
+          response_size: number | null
+          show_typing: boolean | null
+          status: string | null
+          total_conversations: number | null
+          total_messages: number | null
+          updated_at: string | null
+          welcome_message: string | null
+          whatsapp_connected: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          address_reference?: string | null
+          business_hours?: string | null
+          client_id?: string | null
+          company_description?: string | null
+          company_sector?: string | null
+          connected_number?: string | null
+          connection_status?: string | null
+          created_at?: string | null
+          evolution_id?: string | null
+          evolution_instance_id?: string | null
+          evolution_instance_token?: string | null
+          evolution_webhook_secret?: string | null
+          extra_info?: string | null
+          human_pause_duration?: number | null
+          id?: string
+          instance_api_key?: string | null
+          instructions?: string | null
+          last_activity_at?: string | null
+          mark_as_read?: boolean | null
+          name: string
+          organization_id: string
+          profile_picture?: string | null
+          qr_code_base64?: string | null
+          response_delay_seconds?: number | null
+          response_size?: number | null
+          show_typing?: boolean | null
+          status?: string | null
+          total_conversations?: number | null
+          total_messages?: number | null
+          updated_at?: string | null
+          welcome_message?: string | null
+          whatsapp_connected?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          address_reference?: string | null
+          business_hours?: string | null
+          client_id?: string | null
+          company_description?: string | null
+          company_sector?: string | null
+          connected_number?: string | null
+          connection_status?: string | null
+          created_at?: string | null
+          evolution_id?: string | null
+          evolution_instance_id?: string | null
+          evolution_instance_token?: string | null
+          evolution_webhook_secret?: string | null
+          extra_info?: string | null
+          human_pause_duration?: number | null
+          id?: string
+          instance_api_key?: string | null
+          instructions?: string | null
+          last_activity_at?: string | null
+          mark_as_read?: boolean | null
+          name?: string
+          organization_id?: string
+          profile_picture?: string | null
+          qr_code_base64?: string | null
+          response_delay_seconds?: number | null
+          response_size?: number | null
+          show_typing?: boolean | null
+          status?: string | null
+          total_conversations?: number | null
+          total_messages?: number | null
+          updated_at?: string | null
+          welcome_message?: string | null
+          whatsapp_connected?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atende_ai_instances_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atende_ai_instances_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      atende_ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          external_id: string | null
+          id: string
+          message_type: string
+          organization_id: string
+          quoted_message_content: string | null
+          quoted_message_id: string | null
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          message_type?: string
+          organization_id: string
+          quoted_message_content?: string | null
+          quoted_message_id?: string | null
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          message_type?: string
+          organization_id?: string
+          quoted_message_content?: string | null
+          quoted_message_id?: string | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atende_ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "atende_ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atende_ai_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -635,6 +1183,48 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_events: {
+        Row: {
+          action: string
+          created_at: string | null
+          feature: string
+          id: string
+          organization_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          feature: string
+          id?: string
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          feature?: string
+          id?: string
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feature_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedbacks: {
         Row: {
           admin_notes: string | null
@@ -678,6 +1268,98 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "feedbacks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finances_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finances_categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finances_transactions: {
+        Row: {
+          amount: number
+          category_id: string | null
+          classification: string | null
+          created_at: string
+          date: string
+          description: string
+          due_date: string | null
+          id: string
+          is_paid: boolean | null
+          organization_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          classification?: string | null
+          created_at?: string
+          date: string
+          description: string
+          due_date?: string | null
+          id?: string
+          is_paid?: boolean | null
+          organization_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          classification?: string | null
+          created_at?: string
+          date?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          is_paid?: boolean | null
+          organization_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finances_transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finances_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finances_transactions_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -899,10 +1581,18 @@ export type Database = {
       }
       invoice_template_settings: {
         Row: {
+          agency_address: string | null
+          agency_email: string | null
+          agency_logo_url: string | null
+          agency_name: string | null
+          agency_nuit: string | null
+          agency_phone: string | null
           created_at: string | null
           custom_layout: Json | null
+          font_family: string | null
           footer_text: string | null
           id: string
+          layout_model: string | null
           organization_id: string
           paper_size: string | null
           primary_color: string | null
@@ -912,10 +1602,18 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          agency_address?: string | null
+          agency_email?: string | null
+          agency_logo_url?: string | null
+          agency_name?: string | null
+          agency_nuit?: string | null
+          agency_phone?: string | null
           created_at?: string | null
           custom_layout?: Json | null
+          font_family?: string | null
           footer_text?: string | null
           id?: string
+          layout_model?: string | null
           organization_id: string
           paper_size?: string | null
           primary_color?: string | null
@@ -925,10 +1623,18 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          agency_address?: string | null
+          agency_email?: string | null
+          agency_logo_url?: string | null
+          agency_name?: string | null
+          agency_nuit?: string | null
+          agency_phone?: string | null
           created_at?: string | null
           custom_layout?: Json | null
+          font_family?: string | null
           footer_text?: string | null
           id?: string
+          layout_model?: string | null
           organization_id?: string
           paper_size?: string | null
           primary_color?: string | null
@@ -1291,6 +1997,13 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "organization_members_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       organizations: {
@@ -1349,7 +2062,7 @@ export type Database = {
           representative_name?: string | null
           representative_position?: string | null
           slug: string
-          trial_ends_at?: string
+          trial_ends_at: string
           updated_at?: string
         }
         Update: {
@@ -2005,13 +2718,17 @@ export type Database = {
           id: string
           image_url: string
           model: string | null
+          model_meta: string | null
           niche: string | null
           organization_id: string
           project_id: string
           prompt: string
           size: string | null
+          social_caption: string | null
           style: string | null
           title: string | null
+          usage_candidates: number | null
+          usage_prompt: number | null
         }
         Insert: {
           created_at?: string
@@ -2020,13 +2737,17 @@ export type Database = {
           id?: string
           image_url: string
           model?: string | null
+          model_meta?: string | null
           niche?: string | null
           organization_id: string
           project_id: string
           prompt: string
           size?: string | null
+          social_caption?: string | null
           style?: string | null
           title?: string | null
+          usage_candidates?: number | null
+          usage_prompt?: number | null
         }
         Update: {
           created_at?: string
@@ -2035,13 +2756,17 @@ export type Database = {
           id?: string
           image_url?: string
           model?: string | null
+          model_meta?: string | null
           niche?: string | null
           organization_id?: string
           project_id?: string
           prompt?: string
           size?: string | null
+          social_caption?: string | null
           style?: string | null
           title?: string | null
+          usage_candidates?: number | null
+          usage_prompt?: number | null
         }
         Relationships: [
           {
@@ -2198,6 +2923,7 @@ export type Database = {
         Row: {
           ai_generated: boolean | null
           category: string
+          completed: boolean | null
           created_at: string
           description: string | null
           difficulty_level: string | null
@@ -2211,6 +2937,7 @@ export type Database = {
         Insert: {
           ai_generated?: boolean | null
           category: string
+          completed?: boolean | null
           created_at?: string
           description?: string | null
           difficulty_level?: string | null
@@ -2224,6 +2951,7 @@ export type Database = {
         Update: {
           ai_generated?: boolean | null
           category?: string
+          completed?: boolean | null
           created_at?: string
           description?: string | null
           difficulty_level?: string | null
@@ -2252,6 +2980,7 @@ export type Database = {
           current_period_start: string | null
           id: string
           lemonsqueezy_customer_id: string | null
+          lemonsqueezy_customer_portal_url: string | null
           lemonsqueezy_order_id: string | null
           lemonsqueezy_product_id: string | null
           lemonsqueezy_subscription_id: string | null
@@ -2267,6 +2996,7 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           lemonsqueezy_customer_id?: string | null
+          lemonsqueezy_customer_portal_url?: string | null
           lemonsqueezy_order_id?: string | null
           lemonsqueezy_product_id?: string | null
           lemonsqueezy_subscription_id?: string | null
@@ -2282,6 +3012,7 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           lemonsqueezy_customer_id?: string | null
+          lemonsqueezy_customer_portal_url?: string | null
           lemonsqueezy_order_id?: string | null
           lemonsqueezy_product_id?: string | null
           lemonsqueezy_subscription_id?: string | null
@@ -2446,8 +3177,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_organization: {
+        Args: { target_org_id: string }
+        Returns: undefined
+      }
+      admin_delete_user: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       check_invite_email_exists: { Args: { token: string }; Returns: boolean }
       cleanup_old_support_tickets: { Args: never; Returns: undefined }
+      count_instance_messages: {
+        Args: { p_instance_id: string }
+        Returns: number
+      }
       generate_slug: { Args: { name: string }; Returns: string }
       get_current_user_email: { Args: never; Returns: string }
       get_or_create_usage: {
@@ -2479,6 +3222,22 @@ export type Database = {
       has_team_privilege: {
         Args: { org_uuid: string; user_uuid: string }
         Returns: boolean
+      }
+      increment_ai_agent_stats: {
+        Args: {
+          p_agent_id: string
+          p_conversations?: number
+          p_messages?: number
+        }
+        Returns: undefined
+      }
+      increment_atende_ai_stats: {
+        Args: {
+          p_conversations?: number
+          p_instance_id: string
+          p_messages?: number
+        }
+        Returns: undefined
       }
       increment_usage: {
         Args: { p_feature_type: string; p_organization_id: string }
@@ -2546,7 +3305,13 @@ export type Database = {
         | "status_change"
         | "task_completed"
         | "task_uncompleted"
-      app_role: "admin" | "moderator" | "user" | "proprietor"
+      app_role:
+        | "admin"
+        | "moderator"
+        | "user"
+        | "proprietor"
+        | "Owner"
+        | "qfy-admin"
       financial_goal_type: "monthly" | "quarterly" | "yearly"
       financial_payment_method:
         | "transfer"
@@ -2583,6 +3348,8 @@ export type Database = {
         | "campaign_management"
         | "admin"
         | "owner"
+        | "Owner"
+        | "qfy-admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2724,7 +3491,14 @@ export const Constants = {
         "task_completed",
         "task_uncompleted",
       ],
-      app_role: ["admin", "moderator", "user", "proprietor"],
+      app_role: [
+        "admin",
+        "moderator",
+        "user",
+        "proprietor",
+        "Owner",
+        "qfy-admin",
+      ],
       financial_goal_type: ["monthly", "quarterly", "yearly"],
       financial_payment_method: [
         "transfer",
@@ -2765,6 +3539,8 @@ export const Constants = {
         "campaign_management",
         "admin",
         "owner",
+        "Owner",
+        "qfy-admin",
       ],
     },
   },

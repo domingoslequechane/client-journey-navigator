@@ -30,7 +30,7 @@ interface TeamMember {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
-  role?: 'sales' | 'operations' | 'campaign_management' | 'admin' | 'owner' | string;
+  role?: 'sales' | 'operations' | 'campaign_management' | 'Owner' | 'User' | 'qfy-admin' | string;
   created_at: string | null;
   email?: string | null;
   status: 'active' | 'pending' | 'suspended';
@@ -43,7 +43,8 @@ const ROLE_COLORS: Record<string, string> = {
   sales: 'bg-blue-100 text-blue-800',
   operations: 'bg-purple-100 text-purple-800',
   campaign_management: 'bg-orange-100 text-orange-800',
-  admin: 'bg-red-100 text-red-800',
+  Owner: 'bg-red-100 text-red-800',
+  'qfy-admin': 'bg-purple-100 text-purple-800',
 };
 
 const STATUS_CONFIG: Record<string, { labelKey: string; color: string; icon: any }> = {
@@ -764,10 +765,10 @@ export default function Team() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
               <ShieldAlert className="h-5 w-5" />
-              Promoção a Administrador
+              Promoção a Administrador (Owner)
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>Você está prestes a promover <strong>{pendingAdminPromotion?.member.full_name}</strong> para Administrador.</p>
+              <p>Você está prestes a promover <strong>{pendingAdminPromotion?.member.full_name}</strong> para <strong>Dono (Owner)</strong>.</p>
               <p className="text-amber-600 font-medium">Esta ação concederá privilégios completos sobre o sistema, incluindo:</p>
               <ul className="list-disc list-inside text-sm space-y-1 mt-2">
                 <li>Gerenciamento de todos os clientes</li>

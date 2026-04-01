@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 
 interface RoleProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: ('admin' | 'sales' | 'operations' | 'campaign_management' | 'owner')[];
+  allowedRoles?: ('admin' | 'sales' | 'operations' | 'campaign_management' | 'owner' | 'Owner' | 'qfy-admin' | 'User')[];
   privilege?: PrivilegeKey;
   requireClients?: boolean;
   requireTeam?: boolean;
@@ -56,15 +56,20 @@ export function RoleProtectedRoute({
   // Check specific permission requirements
   let hasAccess = true;
 
-  if (allowedRoles && role) {
-    hasAccess = allowedRoles.includes(role as any);
-  }
+  // System admins (qfy-admin) have access to everything
+  if (role === 'qfy-admin') {
+    hasAccess = true;
+  } else {
+    if (allowedRoles && role) {
+      hasAccess = allowedRoles.includes(role as any);
+    }
 
-  if (privilege && !hasPrivilege(privilege)) hasAccess = false;
-  if (requireClients && !hasPrivilege('clients')) hasAccess = false;
-  if (requireTeam && !hasPrivilege('team')) hasAccess = false;
-  if (requireSettings && !hasPrivilege('settings')) hasAccess = false;
-  if (requireSubscription && !isAdmin) hasAccess = false;
+    if (privilege && !hasPrivilege(privilege)) hasAccess = false;
+    if (requireClients && !hasPrivilege('clients')) hasAccess = false;
+    if (requireTeam && !hasPrivilege('team')) hasAccess = false;
+    if (requireSettings && !hasPrivilege('settings')) hasAccess = false;
+    if (requireSubscription && !isAdmin) hasAccess = false;
+  }
 
   if (!hasAccess) {
     return (

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/hooks/useOrganization';
 
-export type UserRole = 'admin' | 'sales' | 'operations' | 'campaign_management' | 'owner';
+export type UserRole = 'admin' | 'sales' | 'operations' | 'campaign_management' | 'owner' | 'Owner' | 'qfy-admin' | 'User';
 
 // Stages each role is responsible for
 const SALES_STAGES = ['prospeccao', 'reuniao', 'contratacao'];
@@ -133,8 +133,8 @@ export function useUserRole() {
   return {
     role,
     loading,
-    isAdmin: role === 'owner' || role === 'admin' || isOwner,
-    isOwner: role === 'owner' || isOwner,
+    isAdmin: role === 'owner' || role === 'Owner' || role === 'admin' || role === 'qfy-admin' || isOwner,
+    isOwner: role === 'owner' || role === 'Owner' || role === 'qfy-admin' || isOwner,
     accountType,
     isSales: role === 'sales',
     isOperations: role === 'operations',

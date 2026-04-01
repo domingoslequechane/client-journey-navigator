@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type PrivilegeKey =
     | 'sales'
@@ -29,11 +30,11 @@ export const UNIVERSAL_PRIVILEGES: PrivilegeKey[] = [
 ];
 
 export function usePermissions() {
+    const { user } = useAuth();
     const { organizationId: orgId } = useOrganization();
     const { data: profile, isLoading } = useQuery({
-        queryKey: ['profile-permissions', orgId],
+        queryKey: ['profile-permissions', user?.id, orgId],
         queryFn: async () => {
-            const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
 
             // Get profile and user roles in parallel
@@ -47,11 +48,20 @@ export function usePermissions() {
                     .from('user_roles')
                     .select('role')
                     .eq('user_id', user.id)
-                    .eq('role', 'proprietor')
+                    .in('role', ['proprietor', 'Owner', 'qfy-admin', 'qfy_admin', 'admin', 'administrator'] as any)
                     .maybeSingle()
             ]);
 
-            if (!profileData) return null;
+            if (!profileData) {
+                console.error('usePermissions: No profile data found for user', user.id);
+                return null;
+            }
+
+            console.log('usePermissions: Raw data fetched', { 
+                profileRole: profileData.role, 
+                globalRole: roleData?.role, 
+                accountId: user.id 
+            });
 
             // If we have an organization ID, fetch org-specific permissions
             if (orgId) {
@@ -72,26 +82,27 @@ export function usePermissions() {
                 // isOrgOwner is reliably determined via the server-side function
                 const isOrgOwner = isOrgOwnerResult === true;
 
-                if (memberData) {
-                    return {
-                        ...profileData,
-                        is_proprietor: !!roleData,
-                        is_org_owner: isOrgOwner,
-                        role: memberData.role,
-                        privileges: memberData.privileges
-                    };
-                }
-
-                return {
+                const result = memberData ? {
                     ...profileData,
                     is_proprietor: !!roleData,
+                    global_role: roleData?.role,
+                    is_org_owner: isOrgOwner,
+                    role: memberData.role,
+                    privileges: memberData.privileges
+                } : {
+                    ...profileData,
+                    is_proprietor: !!roleData,
+                    global_role: roleData?.role,
                     is_org_owner: isOrgOwner,
                 };
+
+                return result;
             }
 
             return {
                 ...profileData,
                 is_proprietor: !!roleData,
+                global_role: roleData?.role,
                 is_org_owner: false,
             };
         },
@@ -109,16 +120,38 @@ export function usePermissions() {
     }
 
     const permissions = useMemo(() => {
-        const role = profile?.role || 'user';
+        const rawRole = profile?.role?.toLowerCase() || 'user';
         const privileges = (profile?.privileges as string[]) || [];
         const isProprietor = (profile as any)?.is_proprietor || false;
-        // isOrgOwner is TRUE only when the current user is the owner_id of the CURRENT org
         const isOrgOwner = (profile as any)?.is_org_owner || false;
 
-        // isAdmin: org owner (by owner_id), global proprietor, or 'owner' role
-        const isAdmin = isOrgOwner || isProprietor || role === 'owner';
-        // isOwner: same as isAdmin for organization context
-        const isOwner = isOrgOwner || isProprietor || role === 'owner';
+        // Normalize roles and email for comparison
+        const globalRole = ((profile as any)?.global_role as string || '').toLowerCase();
+        const emailLower = user?.email?.toLowerCase() || '';
+        
+        const isInternalAdmin = 
+            rawRole.includes('qfy') || 
+            globalRole.includes('qfy') || 
+            rawRole.includes('qualify') ||
+            emailLower.includes('qfy') ||
+            emailLower.includes('qualify') ||
+            rawRole === 'admin' || 
+            rawRole === 'administrator' || 
+            globalRole === 'admin' || 
+            globalRole === 'administrator';
+
+        const isAdmin = isOrgOwner || isProprietor || rawRole === 'owner' || rawRole === 'Owner' || isInternalAdmin;
+        const isOwner = isOrgOwner || isProprietor || rawRole === 'owner' || rawRole === 'Owner' || isAdmin;
+
+        console.log('usePermissions: Final calculation', {
+            email: emailLower,
+            profileRole: rawRole,
+            globalRole: globalRole,
+            isInternalAdmin,
+            isAdmin,
+            isOwner,
+            orgId
+        });
 
         const hasPrivilege = (key: PrivilegeKey): boolean => {
             if (isAdmin) return true;
@@ -160,7 +193,7 @@ export function usePermissions() {
         };
 
         return {
-            role,
+            role: rawRole,
             privileges,
             isAdmin,
             isOwner,
@@ -169,6 +202,7 @@ export function usePermissions() {
             canAccessModule,
             lastNotifiedRole: profile?.last_notified_role,
             lastNotifiedPrivileges: profile?.last_notified_privileges || [],
+            isInternalAdmin
         };
     }, [profile, orgId]);
 

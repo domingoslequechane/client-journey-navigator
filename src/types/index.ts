@@ -81,7 +81,7 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'sales' | 'operations' | 'content';
+  role: 'Owner' | 'manager' | 'sales' | 'operations' | 'content' | 'qfy-admin';
   roleLabel: string;
   avatar?: string;
   createdAt: string;
