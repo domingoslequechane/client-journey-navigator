@@ -1295,6 +1295,8 @@ export type Database = {
       }
       organizations: {
         Row: {
+          city: string | null
+          country: string | null
           created_at: string
           currency: string
           delete_scheduled_for: string | null
@@ -1322,6 +1324,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           currency?: string
           delete_scheduled_for?: string | null
@@ -1349,6 +1353,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           currency?: string
           delete_scheduled_for?: string | null

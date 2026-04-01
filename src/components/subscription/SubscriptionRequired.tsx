@@ -7,21 +7,28 @@ import { useUserRole } from '@/hooks/useUserRole';
 interface SubscriptionRequiredProps {
   feature: string;
   showExportOption?: boolean;
+  title?: string;
+  description?: string;
 }
 
-export function SubscriptionRequired({ feature, showExportOption = false }: SubscriptionRequiredProps) {
+export function SubscriptionRequired({ 
+  feature, 
+  showExportOption = false,
+  title = "Assinatura Necessária",
+  description
+}: SubscriptionRequiredProps) {
   const { isAdmin } = useUserRole();
 
   return (
-    <div className="flex items-center justify-center min-h-[400px] p-4">
+    <div className="flex items-center justify-center min-h-[400px] p-4 font-sans">
       <Card className="max-w-md w-full border-dashed">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
             <Lock className="h-8 w-8 text-muted-foreground" />
           </div>
-          <CardTitle className="text-xl">Assinatura Necessária</CardTitle>
+          <CardTitle className="text-xl">{title}</CardTitle>
           <CardDescription className="mt-2">
-            Para acessar {feature}, você precisa ter uma assinatura ativa.
+            {description || `Para acessar ${feature}, você precisa ter uma assinatura ativa.`}
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">

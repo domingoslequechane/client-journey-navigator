@@ -16,11 +16,13 @@ import {
   Shield,
   BarChart2,
   Building2,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AdminAIChat } from './AdminAIChat';
 
 const ADMIN_SIDEBAR_COLLAPSED_KEY = 'qualify-admin-sidebar-collapsed';
 
@@ -33,7 +35,8 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Analytics', href: '/admin/analytics', icon: BarChart2 },
+  { name: 'Financeiro', href: '/admin/finance', icon: Wallet },
+  { name: 'Análise', href: '/admin/analytics', icon: BarChart2 },
   { name: 'Agências', href: '/admin/agencies', icon: Building2 },
   { name: 'Utilizadores', href: '/admin/users', icon: Users },
   { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
@@ -337,8 +340,11 @@ export function AdminLayout() {
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto relative">
           <Outlet />
+          
+          {/* Assistente de IA Especialista para Admin */}
+          <AdminAIChat />
         </main>
       </div>
     </TooltipProvider>

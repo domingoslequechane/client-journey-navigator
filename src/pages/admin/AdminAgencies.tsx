@@ -11,7 +11,16 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
-import { Search, Building2, Trash2, Users, Briefcase } from 'lucide-react';
+import { Search, Building2, Trash2, Users, Briefcase, Phone, User, MessageCircle, Edit2 } from 'lucide-react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -23,6 +32,8 @@ interface Agency {
   members_count: number;
   clients_count: number;
   status?: string;
+  representative_name?: string | null;
+  phone?: string | null;
 }
 
 export default function AdminAgencies() {
@@ -31,14 +42,22 @@ export default function AdminAgencies() {
   const [search, setSearch] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
+  const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
   const [confirmName, setConfirmName] = useState('');
+  
+  const [editForm, setEditForm] = useState({
+    name: '',
+    representative_name: '',
+    phone: ''
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchAgencies = async () => {
     setLoading(true);
     try {
       const { data: orgs, error: orgsError } = await supabase
         .from('organizations')
-        .select('id, name, created_at')
+        .select('id, name, created_at, representative_name, phone')
         .order('created_at', { ascending: false });
 
       if (orgsError) throw orgsError;
@@ -51,7 +70,7 @@ export default function AdminAgencies() {
       const orgIds = orgs.map(o => o.id);
 
       const [{ data: members }, { data: clients }, { data: subs }] = await Promise.all([
-        supabase.from('organization_members').select('organization_id').in('organization_id', orgIds),
+        supabase.from('organization_members').select('organization_id').in('organization_id', orgIds).eq('is_active', true),
         supabase.from('clients').select('organization_id').in('organization_id', orgIds),
         supabase.from('subscriptions').select('organization_id, status').in('organization_id', orgIds)
       ]);
@@ -89,6 +108,16 @@ export default function AdminAgencies() {
 
   useEffect(() => {
     fetchAgencies();
+
+    const channels = [
+      supabase.channel('agencies-orgs').on('postgres_changes', { event: '*', schema: 'public', table: 'organizations' }, () => fetchAgencies()).subscribe(),
+      supabase.channel('agencies-members').on('postgres_changes', { event: '*', schema: 'public', table: 'organization_members' }, () => fetchAgencies()).subscribe(),
+      supabase.channel('agencies-subs').on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () => fetchAgencies()).subscribe()
+    ];
+
+    return () => {
+      channels.forEach(ch => supabase.removeChannel(ch));
+    };
   }, []);
 
   const handleDeleteAgency = async (id: string, name: string) => {
@@ -115,8 +144,37 @@ export default function AdminAgencies() {
     }
   };
 
+  const handleUpdateAgency = async () => {
+    if (!editingAgency) return;
+    
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({
+          name: editForm.name,
+          representative_name: editForm.representative_name,
+          phone: editForm.phone
+        })
+        .eq('id', editingAgency.id);
+
+      if (error) throw error;
+
+      toast.success('Agência atualizada com sucesso');
+      setEditingAgency(null);
+      await fetchAgencies();
+    } catch (err) {
+      console.error('Error updating agency:', err);
+      toast.error('Erro ao atualizar agência');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const filteredAgencies = agencies.filter(agency =>
-    agency.name.toLowerCase().includes(search.toLowerCase())
+    agency.name.toLowerCase().includes(search.toLowerCase()) ||
+    agency.representative_name?.toLowerCase().includes(search.toLowerCase()) ||
+    agency.phone?.includes(search)
   );
 
   const getSubBadge = (status?: string) => {
@@ -173,6 +231,8 @@ export default function AdminAgencies() {
                     <TableRow>
                       <TableHead>Nome da Agência</TableHead>
                       <TableHead>Status (Plano)</TableHead>
+                      <TableHead>Representante</TableHead>
+                      <TableHead>Contacto</TableHead>
                       <TableHead className="text-center">Colaboradores</TableHead>
                       <TableHead className="text-center">Clientes</TableHead>
                       <TableHead>Data de Criação</TableHead>
@@ -193,6 +253,27 @@ export default function AdminAgencies() {
                           </div>
                         </TableCell>
                         <TableCell>{getSubBadge(agency.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{agency.representative_name || '—'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground font-mono">{agency.phone || '—'}</span>
+                            {agency.phone && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10"
+                                onClick={() => window.open(`https://wa.me/${agency.phone?.replace(/\D/g, '')}`, '_blank')}
+                                title="Contactar via WhatsApp"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             <Users className="h-3.5 w-3.5 text-muted-foreground" />
@@ -209,24 +290,41 @@ export default function AdminAgencies() {
                           {format(new Date(agency.created_at), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={deletingId === agency.id}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                            onClick={() => {
-                              setSelectedAgency(agency);
-                              setConfirmName('');
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" /> Eliminar
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={() => {
+                                setEditingAgency(agency);
+                                setEditForm({
+                                  name: agency.name,
+                                  representative_name: agency.representative_name || '',
+                                  phone: agency.phone || ''
+                                });
+                              }}
+                            >
+                              <Edit2 className="h-4 w-4 mr-1" /> Editar
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={deletingId === agency.id}
+                              className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                              onClick={() => {
+                                setSelectedAgency(agency);
+                                setConfirmName('');
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" /> Eliminar
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
                     {filteredAgencies.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
                           <Building2 className="h-8 w-8 mx-auto mb-2 opacity-40" />
                           Nenhuma agência encontrada
                         </TableCell>
@@ -293,6 +391,79 @@ export default function AdminAgencies() {
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      {/* Modal para Editar Agência */}
+      <Dialog open={!!editingAgency} onOpenChange={(open) => !open && setEditingAgency(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="h-5 w-5 text-primary" /> Editar Informações da Agência
+            </DialogTitle>
+            <DialogDescription>
+              Atualize os detalhes de contacto e representante desta agência.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="agency-name">Nome da Agência</Label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="agency-name"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="pl-9"
+                  placeholder="Nome da empresa"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rep-name">Nome do Representante</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="rep-name"
+                  value={editForm.representative_name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, representative_name: e.target.value }))}
+                  className="pl-9"
+                  placeholder="Ex: João Silva"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rep-phone">Contacto (WhatsApp)</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="rep-phone"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                  className="pl-9"
+                  placeholder="+258 8X XXX XXXX"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1 px-1">
+                Utilizado para o follow-up rápido via WhatsApp no painel.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingAgency(null)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdateAgency} 
+              disabled={isUpdating || !editForm.name}
+            >
+              {isUpdating ? 'A guardar...' : 'Guardar Alterações'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

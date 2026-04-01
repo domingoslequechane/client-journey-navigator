@@ -7,16 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, ArrowRight, Globe, LogOut } from 'lucide-react';
+import { Building2, ArrowRight, Globe, LogOut, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { COUNTRIES } from '@/lib/currencies';
+import { CITIES_BY_COUNTRY } from '@/lib/locations';
 import { useDraft } from '@/hooks/useDraft';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PublicBackground } from '@/components/layout/PublicBackground';
 
 interface OnboardingFormData {
   agencyName: string;
   selectedCountry: string;
+  selectedCity: string;
 }
 
 export default function Onboarding() {
@@ -32,10 +34,18 @@ export default function Onboarding() {
     clearDraft,
   } = useDraft<OnboardingFormData>({
     key: 'onboarding_form',
-    initialValue: { agencyName: '', selectedCountry: 'MZ' },
+    initialValue: { 
+      agencyName: '', 
+      selectedCountry: 'MZ',
+      selectedCity: ''
+    },
     storage: 'local',
     lazy: true,
   });
+
+  const availableCities = useMemo(() => {
+    return CITIES_BY_COUNTRY[formData.selectedCountry] || [];
+  }, [formData.selectedCountry]);
 
   // Check if returning from successful payment
   useEffect(() => {
@@ -100,7 +110,15 @@ export default function Onboarding() {
       return;
     }
 
-    // A validação de sessão é feita dentro do try (cobre casos de login social)
+    if (!formData.selectedCountry) {
+      toast.error('Por favor, selecione o seu país');
+      return;
+    }
+
+    if (!formData.selectedCity) {
+      toast.error('Por favor, selecione a sua cidade/província');
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -126,9 +144,11 @@ export default function Onboarding() {
         .eq('owner_id', sessionUser.id)
         .maybeSingle();
 
-      // Get country currency
+      // Get country data
       const country = COUNTRIES.find(c => c.code === formData.selectedCountry);
+      const cityName = availableCities.find(c => c.code === formData.selectedCity)?.name || formData.selectedCity;
       const currency = country?.currency || 'MZN';
+      const countryName = country?.name || formData.selectedCountry;
 
       let organizationId = ownedOrg?.id;
 
@@ -145,6 +165,9 @@ export default function Onboarding() {
             owner_id: sessionUser.id,
             currency: currency,
             onboarding_completed: true,
+            country: countryName,
+            city: cityName,
+            headquarters: `${cityName}, ${countryName}`,
           })
           .select()
           .single();
@@ -195,6 +218,9 @@ export default function Onboarding() {
             slug: slug || `agency-${Date.now()}`,
             currency: currency,
             onboarding_completed: true,
+            country: countryName,
+            city: cityName,
+            headquarters: `${cityName}, ${countryName}`,
           })
           .eq('id', organizationId);
 
@@ -311,7 +337,15 @@ export default function Onboarding() {
                   <Globe className="h-4 w-4" />
                   País
                 </Label>
-                <Select value={formData.selectedCountry} onValueChange={(value) => setFormData({ ...formData, selectedCountry: value })} disabled={isSubmitting}>
+                <Select 
+                  value={formData.selectedCountry} 
+                  onValueChange={(value) => setFormData({ 
+                    ...formData, 
+                    selectedCountry: value,
+                    selectedCity: '' // Reset city when country changes
+                  })} 
+                  disabled={isSubmitting}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o seu país" />
                   </SelectTrigger>
@@ -325,6 +359,32 @@ export default function Onboarding() {
                 </Select>
                 <p className="text-sm text-muted-foreground">
                   A moeda será definida automaticamente com base no país selecionado
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city" className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Cidade/Província
+                </Label>
+                <Select 
+                  value={formData.selectedCity} 
+                  onValueChange={(value) => setFormData({ ...formData, selectedCity: value })} 
+                  disabled={isSubmitting || availableCities.length === 0}
+                >
+                  <SelectTrigger id="city">
+                    <SelectValue placeholder={formData.selectedCountry ? "Selecione a sua cidade" : "Selecione o país primeiro"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCities.map((city) => (
+                      <SelectItem key={city.code} value={city.code}>
+                        {city.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Selecione a localização da sua sede principal
                 </p>
               </div>
 

@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Users, Building2, CreditCard, MessageSquare, TrendingUp,
   AlertCircle, Sparkles, Activity, Clock, ArrowUpRight, ArrowDownRight,
-  Minus, HeadphonesIcon, Bell
+  Minus, HeadphonesIcon, Bell, Wallet
 } from 'lucide-react';
 import { NotificationCreator } from '@/components/admin/NotificationCreator';
 import {
@@ -28,6 +28,9 @@ interface DashboardStats {
   pendingFeedbacks: number;
   totalFeedbacks: number;
   openTickets: number;
+  mrr: number;
+  totalRevenue: number;
+  churnRate: number;
 }
 
 interface GrowthDataPoint {
@@ -112,13 +115,15 @@ export default function AdminDashboard() {
         { count: totalUsers },
         { count: totalOrganizations },
         { data: subscriptions },
+        { data: payments },
         { count: pendingFeedbacks },
         { count: totalFeedbacks },
         { count: openTickets },
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('organizations').select('*', { count: 'exact', head: true }),
-        supabase.from('subscriptions').select('status'),
+        supabase.from('subscriptions').select('status, organization_id'),
+        supabase.from('payment_history').select('amount, status'),
         supabase.from('feedbacks').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('feedbacks').select('*', { count: 'exact', head: true }),
         supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open'),
@@ -130,6 +135,14 @@ export default function AdminDashboard() {
         s.status === 'expired' || s.status === 'cancelled'
       ).length || 0;
 
+      // Simplified MRR: (Average revenue per sub - let's assume 30 for now or calculate from payments)
+      // Actually, let's just sum payments in the last month for a better estimate or just show total revenue
+      const totalRevenue = payments?.filter(p => p.status === 'confirmed' || p.status === 'paid')
+        .reduce((sum, p) => sum + (Number(p.amount) || 0), 0) || 0;
+      
+      const mrr = activeSubscriptions * 29.90; // Fallback estimate
+      const churnRate = totalOrganizations > 0 ? (expiredSubscriptions / totalOrganizations) * 100 : 0;
+
       const newStats: DashboardStats = {
         totalUsers: totalUsers || 0,
         totalOrganizations: totalOrganizations || 0,
@@ -139,6 +152,9 @@ export default function AdminDashboard() {
         pendingFeedbacks: pendingFeedbacks || 0,
         totalFeedbacks: totalFeedbacks || 0,
         openTickets: openTickets || 0,
+        mrr,
+        totalRevenue,
+        churnRate,
       };
 
       setPrevStats(prevStatsRef.current);
@@ -176,8 +192,14 @@ export default function AdminDashboard() {
         fetchStats();
       }).subscribe();
 
+    const membersChannel = supabase.channel('admin-members-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'organization_members' }, () => {
+        fetchStats();
+      }).subscribe();
+
     return () => {
       supabase.removeChannel(profilesChannel);
+      supabase.removeChannel(membersChannel);
       supabase.removeChannel(orgsChannel);
       supabase.removeChannel(subsChannel);
       supabase.removeChannel(feedbacksChannel);
@@ -194,26 +216,49 @@ export default function AdminDashboard() {
 
   const statCards = [
     {
-      title: 'Total de Utilizadores',
-      value: stats?.totalUsers || 0,
-      prev: prevStats?.totalUsers,
-      icon: Users,
+      title: 'MRR (Previsto)',
+      value: stats?.mrr || 0,
+      displayValue: `$${(stats?.mrr || 0).toLocaleString('pt-MZ', { minimumFractionDigits: 2 })}`,
+      prev: prevStats?.mrr,
+      icon: TrendingUp,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
-      action: () => navigate('/admin/users'),
+      action: () => navigate('/admin/finance'),
     },
     {
-      title: 'Organizações',
-      value: stats?.totalOrganizations || 0,
-      prev: prevStats?.totalOrganizations,
-      icon: Building2,
+      title: 'Receita Total',
+      value: stats?.totalRevenue || 0,
+      displayValue: `$${(stats?.totalRevenue || 0).toLocaleString('pt-MZ', { minimumFractionDigits: 2 })}`,
+      prev: prevStats?.totalRevenue,
+      icon: Wallet,
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500/10',
+      action: () => navigate('/admin/finance'),
+    },
+    {
+      title: 'Taxa de Churn',
+      value: stats?.churnRate || 0,
+      displayValue: `${(stats?.churnRate || 0).toFixed(1)}%`,
+      prev: prevStats?.churnRate,
+      icon: Activity,
+      color: 'text-rose-500',
+      bgColor: 'bg-rose-500/10',
+      action: () => navigate('/admin/finance'),
+    },
+    {
+      title: 'Utilizadores',
+      value: stats?.totalUsers || 0,
+      displayValue: stats?.totalUsers || 0,
+      prev: prevStats?.totalUsers,
+      icon: Users,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
-      action: null,
+      action: () => navigate('/admin/users'),
     },
     {
       title: 'Assinaturas Activas',
       value: stats?.activeSubscriptions || 0,
+      displayValue: stats?.activeSubscriptions || 0,
       prev: prevStats?.activeSubscriptions,
       icon: CreditCard,
       color: 'text-emerald-500',
@@ -223,33 +268,17 @@ export default function AdminDashboard() {
     {
       title: 'Em Período de Teste',
       value: stats?.trialingSubscriptions || 0,
+      displayValue: stats?.trialingSubscriptions || 0,
       prev: prevStats?.trialingSubscriptions,
-      icon: TrendingUp,
+      icon: Clock,
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-500/10',
       action: () => navigate('/admin/subscriptions'),
     },
     {
-      title: 'Assinaturas Expiradas',
-      value: stats?.expiredSubscriptions || 0,
-      prev: prevStats?.expiredSubscriptions,
-      icon: AlertCircle,
-      color: 'text-red-500',
-      bgColor: 'bg-red-500/10',
-      action: () => navigate('/admin/subscriptions'),
-    },
-    {
-      title: 'Feedbacks Pendentes',
-      value: stats?.pendingFeedbacks || 0,
-      prev: prevStats?.pendingFeedbacks,
-      icon: MessageSquare,
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-500/10',
-      action: () => navigate('/admin/feedbacks'),
-    },
-    {
-      title: 'Tickets de Suporte Abertos',
+      title: 'Tickets Abertos',
       value: stats?.openTickets || 0,
+      displayValue: stats?.openTickets || 0,
       prev: prevStats?.openTickets,
       icon: HeadphonesIcon,
       color: 'text-cyan-500',
@@ -301,7 +330,7 @@ export default function AdminDashboard() {
                     <Skeleton className="h-8 w-20" />
                   ) : (
                     <div className="flex items-end justify-between">
-                      <p className="text-3xl font-bold">{card.value}</p>
+                      <p className="text-3xl font-bold">{card.displayValue}</p>
                       {trend && (
                         <div className={`flex items-center gap-1 text-xs font-medium ${trend.color}`}>
                           <trend.icon className="h-3.5 w-3.5" />
@@ -338,7 +367,7 @@ export default function AdminDashboard() {
                         <Skeleton className="h-7 w-12 mt-1" />
                       ) : (
                         <div className="flex items-center gap-2">
-                          <p className="text-2xl font-bold">{card.value}</p>
+                          <p className="text-2xl font-bold">{card.displayValue}</p>
                           {trend && (
                             <span className={`text-xs font-medium ${trend.color} flex items-center gap-0.5`}>
                               <trend.icon className="h-3 w-3" />

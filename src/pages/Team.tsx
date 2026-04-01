@@ -297,14 +297,7 @@ export default function Team() {
   const executeRoleChange = async (memberId: string, role: string, privileges: string[] = []) => {
     setActionLoading(memberId);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: role as any, privileges })
-        .eq('id', memberId);
-
-      if (error) throw error;
-
-      // Also update organization_members
+      // Update organization_members - this is the source of truth for agency roles
       if (currentUserOrgId) {
         const { error: orgMemberError } = await supabase
           .from('organization_members')
@@ -524,9 +517,14 @@ export default function Team() {
           <DialogTrigger asChild>
             <Button
               className="gap-2 w-full sm:w-auto"
-              disabled={!canInviteTeamMember}
+              disabled={!canInviteTeamMember || !currentUserIsOwner}
             >
-              {!canInviteTeamMember ? (
+              {!currentUserIsOwner ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  <span>Restrito a Donos</span>
+                </>
+              ) : !canInviteTeamMember ? (
                 <>
                   <Lock className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('limits.reached', 'Limite Atingido')}</span>
@@ -683,19 +681,7 @@ export default function Team() {
                 ))}
               </TooltipProvider>
             </div>
-            {/* Role selection - Only visible to owners to promote/demote others */}
-            {currentUserIsOwner && selectedMember?.id !== (supabase.auth.getUser() as any).data?.user?.id && (
-              <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">Papel de Fundador (Owner)</Label>
-                  <p className="text-xs text-muted-foreground">Concede acesso total e poder de gestão sobre a agência.</p>
-                </div>
-                <Switch
-                  checked={selectedRole === 'owner'}
-                  onCheckedChange={(checked) => setSelectedRole(checked ? 'owner' : 'user')}
-                />
-              </div>
-            )}
+
 
             <div className="flex items-center gap-2 px-1 pt-2">
               <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">Universal</Badge>
@@ -905,7 +891,12 @@ export default function Team() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {isPending ? (
+                            {!currentUserIsOwner ? (
+                              <DropdownMenuItem disabled className="text-muted-foreground italic text-xs">
+                                <Lock className="h-3 w-3 mr-2" />
+                                Apenas donos podem alterar
+                              </DropdownMenuItem>
+                            ) : isPending ? (
                               <>
                                 <DropdownMenuItem onClick={() => handleResendInvite(member)}>
                                   <RefreshCw className="h-4 w-4 mr-2" />
@@ -934,7 +925,7 @@ export default function Team() {
                                   }}
                                   disabled={
                                     member.id === currentUser?.id ||
-                                    (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
+                                    member.id === orgOwnerId
                                   }
                                 >
                                   <Shield className="h-4 w-4 mr-2" />
@@ -944,7 +935,7 @@ export default function Team() {
                                   onClick={() => handleToggleSuspend(member)}
                                   disabled={
                                     member.id === currentUser?.id ||
-                                    (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
+                                    member.id === orgOwnerId
                                   }
                                 >
                                   {member.status === 'suspended' ? (
@@ -965,7 +956,7 @@ export default function Team() {
                                   className="text-destructive"
                                   disabled={
                                     member.id === currentUser?.id ||
-                                    (!currentUserIsOwner && (member.role === 'owner' || member.id === orgOwnerId))
+                                    member.id === orgOwnerId
                                   }
                                 >
                                   <UserX className="h-4 w-4 mr-2" />

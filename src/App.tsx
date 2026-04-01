@@ -55,6 +55,7 @@ import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminAgencies from "./pages/admin/AdminAgencies";
+import AdminFinance from "./pages/admin/AdminFinance";
 import PartnerProgram from "./pages/PartnerProgram";
 import LinkTreePublic from "./pages/LinkTreePublic";
 import Editorial from "./pages/Editorial";
@@ -242,6 +243,7 @@ const App = () => (
                       <Route path="agencies" element={<AdminAgencies />} />
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="subscriptions" element={<AdminSubscriptions />} />
+                      <Route path="finance" element={<AdminFinance />} />
                       <Route path="feedbacks" element={<AdminFeedbacks />} />
                       <Route path="support" element={<AdminSupport />} />
                     </Route>

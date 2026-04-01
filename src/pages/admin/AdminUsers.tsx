@@ -12,19 +12,41 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
-import { Search, UserX, UserCheck, Users, ShieldAlert, Trash2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Search, UserX, UserCheck, Users, ShieldAlert, Trash2, Shield, Settings2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 interface UserWithOrg {
-  id: string;
+  id: string; // User Profile ID
+  membership_id?: string; // Organization Member ID (optional for orphans)
   email: string | null;
   full_name: string | null;
-  role: string;
+  role: string; // Role in THAT organization, or fallback role
   suspended: boolean;
   created_at: string | null;
-  organization: { name: string } | null;
+  organization_id: string | null;
+  is_primary_owner?: boolean;
+  organization: { 
+    id: string;
+    name: string;
+    owner_id: string;
+  } | null;
   subscription_status?: string | null;
 }
 
@@ -37,45 +59,92 @@ export default function AdminUsers() {
   const [selectedDeleteUser, setSelectedDeleteUser] = useState<UserWithOrg | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
 
+  const [roleUser, setRoleUser] = useState<UserWithOrg | null>(null);
+  const [newRole, setNewRole] = useState<string>('');
+
   const fetchUsers = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, role, suspended, created_at, current_organization_id')
-      .order('created_at', { ascending: false });
+    try {
+      // 1. Fetch all profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, role, suspended, created_at')
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (profilesError) throw profilesError;
+
+      // 2. Fetch all organization members with their organization details
+      const { data: memberships, error: membersError } = await supabase
+        .from('organization_members')
+        .select(`
+          id,
+          user_id,
+          role,
+          organization_id,
+          organizations (
+            id,
+            name,
+            owner_id
+          )
+        `);
+
+      if (membersError) throw membersError;
+
+      // 3. Fetch all subscriptions status
+      const { data: subs, error: subsError } = await supabase
+        .from('subscriptions')
+        .select('organization_id, status');
+
+      if (subsError) throw subsError;
+
+      const subscriptionMap = Object.fromEntries((subs || []).map(s => [s.organization_id, s.status]));
+
+      const finalUsers: UserWithOrg[] = [];
+
+      // 4. Map profiles and memberships
+      (profiles || []).forEach(profile => {
+        const userMemberships = (memberships || []).filter(m => m.user_id === profile.id);
+
+        if (userMemberships.length > 0) {
+          userMemberships.forEach(membership => {
+            const org = membership.organizations as any;
+            finalUsers.push({
+              id: profile.id,
+              membership_id: membership.id,
+              email: profile.email,
+              full_name: profile.full_name,
+              role: membership.role || 'user',
+              suspended: profile.suspended || false,
+              created_at: profile.created_at,
+              organization_id: membership.organization_id,
+              is_primary_owner: org?.owner_id === profile.id,
+              organization: org ? { id: org.id, name: org.name, owner_id: org.owner_id } : null,
+              subscription_status: membership.organization_id ? subscriptionMap[membership.organization_id] : null
+            });
+          });
+        } else {
+          // Orphan user (no organization)
+          finalUsers.push({
+            id: profile.id,
+            email: profile.email,
+            full_name: profile.full_name,
+            role: profile.role || 'user',
+            suspended: profile.suspended || false,
+            created_at: profile.created_at,
+            organization_id: null,
+            is_primary_owner: false,
+            organization: null,
+            subscription_status: null
+          });
+        }
+      });
+
+      setUsers(finalUsers);
+    } catch (error) {
       console.error('Error fetching users:', error);
+      toast.error('Erro ao carregar a lista de utilizadores.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const orgIds = [...new Set(data?.filter(u => u.current_organization_id).map(u => u.current_organization_id))];
-
-    let orgMap: Record<string, string> = {};
-    let subscriptionMap: Record<string, string> = {};
-
-    if (orgIds.length > 0) {
-      const [{ data: orgs }, { data: subs }] = await Promise.all([
-        supabase.from('organizations').select('id, name').in('id', orgIds),
-        supabase.from('subscriptions').select('organization_id, status').in('organization_id', orgIds),
-      ]);
-
-      orgMap = Object.fromEntries((orgs || []).map(o => [o.id, o.name]));
-      subscriptionMap = Object.fromEntries((subs || []).map(s => [s.organization_id, s.status]));
-    }
-
-    const usersWithOrg = (data || []).map(user => ({
-      ...user,
-      organization: user.current_organization_id && orgMap[user.current_organization_id]
-        ? { name: orgMap[user.current_organization_id] }
-        : null,
-      subscription_status: user.current_organization_id
-        ? subscriptionMap[user.current_organization_id] || null
-        : null,
-    }));
-
-    setUsers(usersWithOrg);
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -117,6 +186,44 @@ export default function AdminUsers() {
     }
   };
 
+  const handleUpdateRole = async () => {
+    if (!roleUser) return;
+    
+    setActionLoading(roleUser.id);
+    try {
+      // 1. Atualizar perfil global
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: newRole as any })
+        .eq('id', roleUser.id);
+
+      if (profileError) throw profileError;
+
+      // 2. Atualizar função na organização específica
+      if (roleUser.organization_id) {
+        const { error: memberError } = await supabase
+          .from('organization_members')
+          .update({ role: newRole as any })
+          .eq('user_id', roleUser.id)
+          .eq('organization_id', roleUser.organization_id);
+        
+        if (memberError) {
+          console.warn('Erro ao atualizar função na organização:', memberError);
+          // Não lançamos erro aqui para não travar a UI se o perfil global foi atualizado
+        }
+      }
+
+      toast.success('Função actualizada com sucesso!');
+      setRoleUser(null);
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Erro ao mudar função:', error);
+      toast.error('Erro ao actualizar a função do utilizador.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const filteredUsers = users.filter(user =>
     user.email?.toLowerCase().includes(search.toLowerCase()) ||
     user.full_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -125,10 +232,11 @@ export default function AdminUsers() {
 
   const getRoleBadge = (role: string) => {
     const map: Record<string, { label: string; className: string }> = {
-      admin: { label: 'Admin', className: 'bg-purple-500/10 text-purple-500' },
-      sales: { label: 'Comercial', className: 'bg-blue-500/10 text-blue-500' },
-      operations: { label: 'Operações', className: 'bg-green-500/10 text-green-500' },
-      campaign_management: { label: 'Campanhas', className: 'bg-orange-500/10 text-orange-500' },
+      admin: { label: 'Administrador', className: 'bg-purple-500/10 text-purple-500' },
+      owner: { label: 'Proprietário', className: 'bg-amber-500/10 text-amber-600' },
+      sales: { label: 'Colaborador (Vendas)', className: 'bg-blue-500/10 text-blue-500' },
+      operations: { label: 'Colaborador (Ops)', className: 'bg-green-500/10 text-green-500' },
+      campaign_management: { label: 'Colaborador (Campanhas)', className: 'bg-orange-500/10 text-orange-500' },
     };
     const entry = map[role] || { label: role, className: 'bg-muted text-muted-foreground' };
     return <Badge className={`border-0 ${entry.className}`}>{entry.label}</Badge>;
@@ -220,7 +328,7 @@ export default function AdminUsers() {
                   </TableHeader>
                   <TableBody>
                     {filteredUsers.map((user) => (
-                      <TableRow key={user.id} className={user.suspended ? 'opacity-60' : ''}>
+                      <TableRow key={`${user.id}-${user.organization_id || 'orphan'}`} className={user.suspended ? 'opacity-60' : ''}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
@@ -294,8 +402,27 @@ export default function AdminUsers() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              disabled={actionLoading === user.id}
-                              className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                              disabled={actionLoading === user.id || user.is_primary_owner}
+                              className={user.is_primary_owner 
+                                ? "text-stone-400 cursor-not-allowed opacity-50" 
+                                : "text-stone-500 hover:text-stone-600 hover:bg-stone-500/10"}
+                              title={user.is_primary_owner ? "Dono da Agência (Imutável)" : ""}
+                              onClick={() => {
+                                setRoleUser(user);
+                                setNewRole(user.role);
+                              }}
+                            >
+                              <Shield className="h-4 w-4 md:mr-1" /> <span className="hidden md:inline">Função</span>
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={actionLoading === user.id || user.is_primary_owner}
+                              className={user.is_primary_owner
+                                ? "text-red-300 cursor-not-allowed opacity-50"
+                                : "text-red-500 hover:text-red-600 hover:bg-red-500/10"}
+                              title={user.is_primary_owner ? "Dono da Agência (Imutável)" : ""}
                               onClick={() => {
                                 setSelectedDeleteUser(user);
                                 setDeleteConfirmName('');
@@ -369,6 +496,58 @@ export default function AdminUsers() {
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      {/* Role Update Modal */}
+      <Dialog open={!!roleUser} onOpenChange={(open) => !open && setRoleUser(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" /> Alterar Função do Utilizador
+            </DialogTitle>
+            <DialogDescription>
+              Defina o nível de acesso para <span className="font-bold text-foreground">{roleUser?.full_name || roleUser?.email}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Seleccione a nova função</label>
+              <Select value={newRole} onValueChange={setNewRole}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccione uma função" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="sales">Colaborador (Comercial)</SelectItem>
+                  <SelectItem value="operations">Colaborador (Operações)</SelectItem>
+                  <SelectItem value="campaign_management">Colaborador (Campanhas)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border">
+              <p className="font-semibold mb-1 flex items-center gap-1">
+                <ShieldAlert className="h-3 w-3" /> Info sobre níveis:
+              </p>
+              <ul className="list-disc list-inside space-y-1">
+                <li><strong>Administrador:</strong> Gestão total da agência e definições.</li>
+                <li><strong>Colaborador:</strong> Acesso focado em operações diárias e clientes.</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-end gap-2">
+            <Button variant="ghost" onClick={() => setRoleUser(null)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdateRole} 
+              disabled={actionLoading === roleUser?.id || newRole === roleUser?.role}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {actionLoading === roleUser?.id ? 'A actualizar...' : 'Confirmar Alteração'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

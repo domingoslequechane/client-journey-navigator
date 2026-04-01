@@ -20,22 +20,30 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [needsOrgSelection, setNeedsOrgSelection] = useState<boolean | null>(null);
   const [isOrgAdmin, setIsOrgAdmin] = useState<boolean | null>(null);
 
-  // Check if user is a system admin (app owner)
+  // Check if user is a system admin (internal team with qfy-admin in email)
   useEffect(() => {
     const checkSystemAdmin = async () => {
-      if (!user) {
+      if (!user || !user.email) {
         setIsSystemAdmin(false);
         return;
       }
 
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'proprietor')
-        .maybeSingle();
-
-      setIsSystemAdmin(!!data);
+      // Admin access is restricted to internal team (emails containing qfy-admin)
+      const isInternalTeam = user.email.toLowerCase().includes('qfy-admin');
+      
+      // Fallback check: also check user_roles for existing proprietors like qualify-admin
+      if (!isInternalTeam) {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'proprietor')
+          .maybeSingle();
+        
+        setIsSystemAdmin(!!data);
+      } else {
+        setIsSystemAdmin(true);
+      }
     };
 
     checkSystemAdmin();
@@ -184,6 +192,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         const isAdminForOrg =
           orgData?.owner_id === user.id ||
           membership?.role === 'admin' ||
+          membership?.role === 'owner' ||
+          (membership?.role as string) === 'proprietor' || // Cast para string para evitar erro de tipo literal
           membership?.privileges?.includes('admin');
 
         setIsOrgAdmin(Boolean(isAdminForOrg));
@@ -306,18 +316,27 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   );
 
   if (!hasAccess && !isAllowedWithoutSubscription) {
-    if (isOrgAdmin || isSystemAdmin) {
+    const isAdmin = 
+      isOrgAdmin || 
+      isSystemAdmin || 
+      organization?.planType === 'agency'; // Per-org checks
+
+    if (isAdmin) {
       if (hasSubscriptionRecord) {
         return <Navigate to="/app/subscription?reason=expired" replace />;
       }
       return <Navigate to="/select-plan?reason=no_plan" replace />;
     }
 
-    // For non-admins, show a clear message that the agency needs a subscription
+    // Para Colaboradores, mostra apenas o aviso amigável sem forçar redirecionamento de pagamento
     return (
       <PublicBackground>
         <div className="min-h-screen flex items-center justify-center p-4">
-          <SubscriptionRequired feature="o sistema Qualify" />
+          <SubscriptionRequired 
+            feature="o sistema Qualify" 
+            title="Assinatura da Agência Pendente"
+            description="Esta agência não possui uma assinatura activa no momento. Por favor, contacte o proprietário da conta para regularizar o acesso remunerado."
+          />
         </div>
       </PublicBackground>
     );

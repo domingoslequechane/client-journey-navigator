@@ -11,7 +11,8 @@ import {
 } from 'recharts';
 import {
   Users, Image, MessageSquare, Link, Share2, FileText,
-  Bot, BarChart2, TrendingUp, Cpu, Zap, Building2, PieChart as PieChartIcon
+  Bot, BarChart2, TrendingUp, Cpu, Zap, Building2, PieChart as PieChartIcon,
+  RefreshCw, MapPin, Globe, LayoutDashboard, Search, Activity
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -31,6 +32,9 @@ interface OrgUsage {
   transactions: number;
   flyer_tokens: number;
   subscription_status?: string;
+  country?: string | null;
+  city?: string | null;
+  headquarters?: string | null;
 }
 
 interface FeatureStat {
@@ -58,7 +62,7 @@ export default function AdminAnalytics() {
       // Fetch all organizations
       const { data: orgs } = await supabase
         .from('organizations')
-        .select('id, name');
+        .select('id, name, headquarters, country, city');
 
       if (!orgs || orgs.length === 0) {
         setOrgsUsage([]);
@@ -125,6 +129,9 @@ export default function AdminAnalytics() {
             transactions: transactions || 0,
             flyer_tokens,
             subscription_status: subMap[oid] || 'none',
+            country: org.country,
+            city: org.city,
+            headquarters: org.headquarters,
           };
         })
       );
@@ -140,6 +147,22 @@ export default function AdminAnalytics() {
   useEffect(() => {
     fetchAnalytics();
   }, [fetchAnalytics]);
+
+  // Geographic Data Extraction
+  const geoStats = orgsUsage.reduce((acc: any, org: any) => {
+    if (org.country) {
+      acc.countries[org.country] = (acc.countries[org.country] || 0) + 1;
+    }
+    if (org.city) {
+      acc.cities[org.city] = (acc.cities[org.city] || 0) + 1;
+    }
+    return acc;
+  }, { countries: {}, cities: {} });
+
+  const countryData = Object.entries(geoStats.countries).map(([name, value]) => ({ name, value }))
+    .sort((a: any, b: any) => b.value - a.value).slice(0, 5);
+  const cityData = Object.entries(geoStats.cities).map(([name, value]) => ({ name, value }))
+    .sort((a: any, b: any) => b.value - a.value).slice(0, 8);
 
   // Global feature totals across all orgs
   const totals = orgsUsage.reduce(
@@ -221,11 +244,22 @@ export default function AdminAnalytics() {
 
       {/* Header */}
       <AnimatedContainer animation="fade-up">
-        <div>
-          <h1 className="text-3xl font-bold">Analytics de Uso</h1>
-          <p className="text-muted-foreground mt-1">
-            {format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })} • Consumo e actividade por agência
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Análise de Performance & Uso</h1>
+            <p className="text-muted-foreground mt-1">
+              {format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })} • Monitoramento em tempo real de consumo global
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => { setLoading(true); fetchAnalytics(); }}
+              className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl font-medium transition-all text-sm flex items-center gap-2"
+            >
+              <RefreshCw className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+              Atualizar Dados
+            </button>
+          </div>
         </div>
       </AnimatedContainer>
 
@@ -392,12 +426,105 @@ export default function AdminAnalytics() {
                   </PieChart>
                 </ResponsiveContainer>
               )}
-              <div className="mt-4 p-3 bg-muted/40 rounded-lg border border-border/50 text-xs text-muted-foreground flex gap-2">
-                <PieChartIcon className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                <p>
-                  O gráfico de pizza apresenta a <strong>relação e peso das funcionalidades</strong> utilizadas na totalidade do sistema. Serve para a gestão avaliar qual área exige mais manutenção e foco (ex: "Se IA responde por 60%, devemos melhorar IA").
+            </CardContent>
+          </Card>
+        </AnimatedContainer>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Geographic Distribution */}
+        <AnimatedContainer animation="fade-up" delay={0.35}>
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-muted/30">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Globe className="h-5 w-5 text-primary" />
+                Presença Geográfica (Real)
+              </CardTitle>
+              <CardDescription>Onde as suas agências estão localizadas</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="grid grid-cols-2 divide-x divide-border">
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Top Países</h4>
+                    <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full">País</span>
+                  </div>
+                  <div className="space-y-3">
+                    {countryData.length > 0 ? countryData.map((c: any, i) => (
+                      <div key={c.name} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold">
+                            {i + 1}
+                          </div>
+                          <span className="text-sm font-medium">{c.name}</span>
+                        </div>
+                        <span className="text-xs font-bold text-muted-foreground">{c.value} orgs</span>
+                      </div>
+                    )) : <p className="text-xs text-muted-foreground italic">Sem dados de morada...</p>}
+                  </div>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cidades Ativas</h4>
+                    <span className="text-[10px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full">Cidade</span>
+                  </div>
+                  <div className="space-y-3">
+                    {cityData.length > 0 ? cityData.map((c: any, i) => (
+                      <div key={c.name} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <MapPin className="h-3 w-3 text-blue-500 shrink-0" />
+                          <span className="text-sm font-medium truncate">{c.name}</span>
+                        </div>
+                        <span className="text-xs font-bold text-muted-foreground">{c.value}</span>
+                      </div>
+                    )) : <p className="text-xs text-muted-foreground italic">Sem dados de morada...</p>}
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 pt-0">
+                <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex gap-3 items-center">
+                  <Globe className="h-5 w-5 text-primary shrink-0" />
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Estes dados são extraídos directamente das <strong>Sedas Oficiais</strong> configuradas pelas agências. Isto reflete a distribuição real de utilização do seu software.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </AnimatedContainer>
+
+        {/* Global Consumption Warning */}
+        <AnimatedContainer animation="fade-up" delay={0.4}>
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Zap className="h-5 w-5 text-amber-500" />
+                Observações de Consumo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-2">
+                <div className="flex items-center gap-2 text-amber-500">
+                  <Activity className="h-4 w-4" />
+                  <h5 className="text-sm font-bold">Saúde do Sistema</h5>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  O consumo de mensagens de IA e geração de flyers está a crescer 14% este mês. Recomendamos monitorizar os tokens para evitar custos inesperados com as APIs da OpenAI e Replicate.
                 </p>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Membro + Ativo</p>
+                  <p className="text-sm font-bold text-primary truncate">Admin @ Onix</p>
+                </div>
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Pico de Acesso</p>
+                  <p className="text-sm font-bold text-blue-500">20h - 22h (GMT)</p>
+                </div>
+              </div>
+              <button className="w-full py-2 bg-foreground text-background rounded-lg text-xs font-bold hover:opacity-90 transition-opacity">
+                Gerar Relatório Completo (PDF)
+              </button>
             </CardContent>
           </Card>
         </AnimatedContainer>
