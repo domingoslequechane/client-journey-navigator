@@ -80,6 +80,26 @@ export interface StudioImage {
   created_at: string;
 }
 
+export interface StudioCarousel {
+  id: string;
+  project_id: string;
+  organization_id: string;
+  created_by: string;
+  prompt: string;
+  image_urls: string[];
+  size: string;
+  style?: string;
+  niche?: string;
+  model?: string;
+  generation_mode?: string;
+  title?: string;
+  social_caption?: string;
+  usage_prompt?: number;
+  usage_candidates?: number;
+  model_meta?: string;
+  created_at: string;
+}
+
 export interface ToolGenerationSettings {
   toolId: string;
   prompt: string;
@@ -120,7 +140,20 @@ export const STUDIO_TOOLS: StudioTool[] = [
     promptPlaceholder: 'Ex: Black Friday com descontos imperdíveis...',
     gradientFrom: '#8b5cf6',
     gradientTo: '#d946ef',
-    previewImage: '/inspiration/flyer_preview_landscape.png',
+    previewImage: '/inspiration/flyer_clean_mockup.png',
+  },
+  {
+    id: 'carousel',
+    label: 'Carrossel',
+    description: 'Criação de publicações multicamadas (sequência de imagens) para redes sociais',
+    category: 'squad',
+    icon: Sparkles,
+    requiresInputImage: true,
+    inputLabel: 'Produto principal',
+    promptPlaceholder: 'Ex: Conteúdo educativo passo-a-passo sobre marketing...',
+    gradientFrom: '#f43f5e',
+    gradientTo: '#ec4899',
+    previewImage: '/inspiration/carousel_clean_mockup.png',
   },
   // ── Criar Imagens com IA ────────────────────────────────────────────────
   {

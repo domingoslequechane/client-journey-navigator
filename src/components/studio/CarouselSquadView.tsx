@@ -18,6 +18,9 @@ import {
   Plus,
   ArrowLeft,
   ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  MonitorPlay,
   Info,
   Eye,
   Maximize,
@@ -26,9 +29,9 @@ import {
   RectangleHorizontal,
   RectangleVertical,
   Layout,
+  Layers,
   Copy,
-  RotateCcw,
-  ArrowRight
+  RotateCcw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -59,12 +62,14 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
+import { renderCarouselSlide, getSlideDimensions, getRatioKey, dataUrlToBlob } from '@/lib/carouselCanvasRenderer';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { StudioTool, FlyerSquadAgent, SquadLog } from '@/types/studio';
 
-interface FlyerSquadViewProps {
+interface CarouselSquadViewProps {
   tool: StudioTool;
   projectId?: string;
   onBackToHub?: () => void;
@@ -73,12 +78,12 @@ interface FlyerSquadViewProps {
 const AGENTS: { id: FlyerSquadAgent; label: string; icon: any; color: string; description: string }[] = [
   { id: 'orchestrator', label: 'Orquestrador', icon: Sparkles, color: 'text-yellow-500', description: 'Analisa o cliente e define a estratégia' },
   { id: 'copywriter', label: 'Copywriter', icon: UserPen, color: 'text-blue-500', description: 'Define objetivo e conteúdo textual' },
-  { id: 'designer', label: 'Designer', icon: Palette, color: 'text-purple-500', description: 'Renderiza o flyer final' },
+  { id: 'designer', label: 'Designer', icon: Palette, color: 'text-purple-500', description: 'Renderiza o carrossel final' },
   { id: 'reviewer', label: 'Revisor', icon: ClipboardCheck, color: 'text-green-500', description: 'Garante a qualidade máxima' },
   { id: 'publisher', label: 'Publicador', icon: Send, color: 'text-indigo-500', description: 'Entrega o produto pronto' },
 ];
 
-const FLYER_OBJECTIVES = [
+const CAROUSEL_OBJECTIVES = [
   { id: 'venda', label: 'Venda', emoji: '💰' },
   { id: 'consciencializacao', label: 'Consciencialização', emoji: '📢' },
   { id: 'engajamento', label: 'Engajamento', emoji: '💬' },
@@ -86,7 +91,7 @@ const FLYER_OBJECTIVES = [
   { id: 'institucional', label: 'Institucional', emoji: '🏢' },
 ];
 
-const FLYER_TONES = [
+const CAROUSEL_TONES = [
   { id: 'direto', label: 'Direto', emoji: '😎' },
   { id: 'casual', label: 'Casual', emoji: '🤗' },
   { id: 'persuasivo', label: 'Persuasivo', emoji: '🤩' },
@@ -94,13 +99,13 @@ const FLYER_TONES = [
   { id: 'amigavel', label: 'Amigável', emoji: '😊' },
 ];
 
-const FLYER_COPY_LENGTHS = [
+const CAROUSEL_COPY_LENGTHS = [
   { id: 'curta', label: 'Curta' },
   { id: 'media', label: 'Média' },
   { id: 'longa', label: 'Longa' },
 ];
 
-const FLYER_SIZES = [
+const CAROUSEL_SIZES = [
   { id: 'square', label: 'Quadrado (1:1)', icon: Maximize, ratio: '1:1', dimensions: '1080x1080' },
   { id: 'story', label: 'Story (9:16)', icon: Smartphone, ratio: '9:16', dimensions: '1080x1920' },
   { id: 'landscape', label: 'Horizontal (16:9)', icon: RectangleHorizontal, ratio: '16:9', dimensions: '1920x1080' },
@@ -137,7 +142,7 @@ const resizeImage = (base64Str: string, maxWidth: number = 1536, maxHeight: numb
   });
 };
 
-export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewProps) {
+export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSquadViewProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { organizationId: orgId } = useOrganization();
@@ -146,6 +151,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
   const [copyLength, setCopyLength] = useState<string>('media');
   const [refMode, setRefMode] = useState<'similar' | 'inspired' | 'new'>('similar');
   const [aspectRatio, setAspectRatio] = useState<string>('square');
+  const [numberOfSlides, setNumberOfSlides] = useState<number>(0);
   const [productImages, setProductImages] = useState<string[]>([]);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [approvedTemplateImage, setApprovedTemplateImage] = useState<string | null>(null);
@@ -154,22 +160,32 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [logs, setLogs] = useState<SquadLog[]>([]);
-  const [resultImage, setResultImage] = useState<string | null>(null);
+  const [resultImages, setResultImages] = useState<string[]>([]);
   const [resultCaption, setResultCaption] = useState<string | null>(null);
+  const [isWaitingForCopyApproval, setIsWaitingForCopyApproval] = useState(false);
+  const [editableCopy, setEditableCopy] = useState<any>(null);
+  const [copyApprovalResolve, setCopyApprovalResolve] = useState<{resolve: (val: any) => void} | null>(null);
   const [activeTab, setActiveTab] = useState<'create' | 'history'>('create');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [isSpecialistMode, setIsSpecialistMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('flyer_specialist_mode');
+      const saved = localStorage.getItem('carousel_specialist_mode');
       return saved !== null ? JSON.parse(saved) : true;
     }
     return true;
   });
   const [totalUsage, setTotalUsage] = useState({ promptTokens: 0, candidatesTokens: 0 });
+  const [generationMode, setGenerationMode] = useState<'ai' | 'js'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('carousel_generation_mode') as 'ai' | 'js') || 'ai';
+    }
+    return 'ai';
+  });
   const [agentUsage, setAgentUsage] = useState<Partial<Record<FlyerSquadAgent, { prompt: number, candidates: number, model: string } | null>>>({
     orchestrator: null,
     copywriter: null,
@@ -178,14 +194,15 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     publisher: null
   });
   const [showCostSummary, setShowCostSummary] = useState(false);
-  const [isWaitingForCopyApproval, setIsWaitingForCopyApproval] = useState(false);
-  const [editableCopy, setEditableCopy] = useState<any>(null);
-  const [copyApprovalResolve, setCopyApprovalResolve] = useState<{ resolve: (value: any) => void } | null>(null);
   const ITEMS_PER_PAGE = 9;
 
   useEffect(() => {
-    localStorage.setItem('flyer_specialist_mode', JSON.stringify(isSpecialistMode));
+    localStorage.setItem('carousel_specialist_mode', JSON.stringify(isSpecialistMode));
   }, [isSpecialistMode]);
+
+  useEffect(() => {
+    localStorage.setItem('carousel_generation_mode', generationMode);
+  }, [generationMode]);
 
   const playCompletionSound = () => {
     if (isSpecialistMode) {
@@ -228,6 +245,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
       if (settings.copyLength) setCopyLength(settings.copyLength);
       if (settings.refMode) setRefMode(settings.refMode);
       if (settings.aspectRatio) setAspectRatio(settings.aspectRatio);
+      if (settings.numberOfSlides) setNumberOfSlides(settings.numberOfSlides);
       if (settings.briefing) setBriefing(settings.briefing);
       if (settings.hasOwnProperty('allowImageManipulation')) setAllowImageManipulation(settings.allowImageManipulation);
       if (settings.productImages) setProductImages(settings.productImages);
@@ -279,13 +297,13 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     return () => clearTimeout(timer);
   }, [briefing, project]);
 
-  // Fetch Flyer History
+  // Fetch Carousel History
   const { data: history = [], refetch: refetchHistory, isRefetching: isRefreshingHistory } = useQuery({
-    queryKey: ['flyer-history', projectId],
+    queryKey: ['carousel-history', projectId],
     queryFn: async () => {
       if (!projectId) return [];
       const { data, error } = await supabase
-        .from('studio_flyers')
+        .from('studio_carousels')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
@@ -295,19 +313,21 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     enabled: !!projectId
   });
 
-  // Preview List Logic
-  const previewImages = activeTab === 'history' 
-    ? history.map(h => h.image_url)
-    : resultImage ? [resultImage] : [];
+  // Preview images for the CURRENTLY OPENED carousel
+  const currentCarouselImages = previewIndex !== null
+    ? (activeTab === 'history' 
+        ? (history[previewIndex]?.image_urls || [])
+        : resultImages)
+    : [];
 
   const handleNextPreview = () => {
-    if (previewIndex === null || previewIndex >= previewImages.length - 1) return;
-    setPreviewIndex(previewIndex + 1);
+    if (previewIndex === null || activeSlideIndex >= currentCarouselImages.length - 1) return;
+    setActiveSlideIndex(activeSlideIndex + 1);
   };
 
   const handlePrevPreview = () => {
-    if (previewIndex === null || previewIndex <= 0) return;
-    setPreviewIndex(previewIndex - 1);
+    if (previewIndex === null || activeSlideIndex <= 0) return;
+    setActiveSlideIndex(activeSlideIndex - 1);
   };
 
   // Keyboard navigation
@@ -320,7 +340,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [previewIndex, previewImages]);
+  }, [previewIndex, activeSlideIndex, currentCarouselImages]);
 
   // Touch Swipe Logic
   const onTouchStart = (e: React.TouchEvent) => {
@@ -341,22 +361,92 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     if (isRightSwipe) handlePrevPreview();
   };
   
-  const handleDownload = async (url: string, filename: string = 'flyer.png') => {
+  // Extract Supabase storage path from public URL
+  const extractStoragePath = (publicUrl: string): string | null => {
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
+      const url = new URL(publicUrl);
+      // Path format: /storage/v1/object/public/studio-assets/ORG_ID/...
+      const match = url.pathname.match(/\/storage\/v1\/object\/public\/studio-assets\/(.+)/);
+      return match ? match[1] : null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Download using Supabase SDK - bypasses CORS issues entirely
+  const handleDownload = async (url: string, filename: string = 'carrossel.png') => {
+    const toastId = toast.loading('A preparar download...');
+    try {
+      const storagePath = extractStoragePath(url);
+      let blob: Blob;
+
+      if (storagePath) {
+        // Use Supabase SDK which handles auth and CORS
+        const { data, error } = await supabase.storage.from('studio-assets').download(storagePath);
+        if (error || !data) throw new Error(error?.message || 'Falha no download');
+        blob = data;
+      } else {
+        // Fallback: direct fetch for non-Supabase URLs
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        blob = await res.blob();
+      }
+
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = filename;
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-      toast.success('Download iniciado!');
-    } catch (e) {
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 3000);
+      toast.success('Download iniciado!', { id: toastId });
+    } catch (e: any) {
       console.error('Download error:', e);
-      toast.error('Erro ao baixar imagem');
+      toast.error('Erro ao baixar: ' + e.message, { id: toastId });
+    }
+  };
+
+  const handleBatchDownloadZip = async (urls: string[], zipName: string = 'carrossel-completo.zip') => {
+    const toastId = toast.loading(`A preparar ZIP (0/${urls.length})...`);
+    try {
+      const zip = new JSZip();
+
+      for (let index = 0; index < urls.length; index++) {
+        toast.loading(`A preparar ZIP (${index + 1}/${urls.length})...`, { id: toastId });
+        const url = urls[index];
+        const storagePath = extractStoragePath(url);
+        let blob: Blob;
+
+        if (storagePath) {
+          const { data, error } = await supabase.storage.from('studio-assets').download(storagePath);
+          if (error || !data) throw new Error(`Slide ${index + 1}: ` + (error?.message || 'Falha'));
+          blob = data;
+        } else {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          blob = await res.blob();
+        }
+
+        zip.file(`${index + 1}.png`, blob);
+      }
+
+      toast.loading('A gerar arquivo ZIP...', { id: toastId });
+      const content = await zip.generateAsync({ type: 'blob' });
+      const blobUrl = window.URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = zipName;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 3000);
+      toast.success('Carrossel ZIP descarregado!', { id: toastId });
+    } catch (e: any) {
+      console.error('ZIP error:', e);
+      toast.error('Erro ao gerar ZIP: ' + e.message, { id: toastId });
     }
   };
 
@@ -409,7 +499,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
       return;
     }
     if (!briefing.trim()) {
-      toast.error('Informe os detalhes/briefing para o Flyer');
+      toast.error('Informe os detalhes/briefing para o Carrossel');
       return;
     }
     if (!orgId) {
@@ -418,7 +508,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
     }
 
     setIsProcessing(true);
-    setResultImage(null);
+    setResultImages([]);
     setLogs([]);
     setTotalUsage({ promptTokens: 0, candidatesTokens: 0 });
     setAgentUsage({
@@ -430,7 +520,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
       publisher: null
     });
     
-    let currentContext = {
+    let currentContext: any = {
       project: {
         name: project.name,
         niche: project.niche,
@@ -449,13 +539,14 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         websiteUrl: (project.settings as any)?.website_url,
         captionInstructions: (project.settings as any)?.caption_instructions,
         logoUrl: project.logo_images?.[0],
-        objective: FLYER_OBJECTIVES.find(o => o.id === objective)?.label || objective,
-        tone: FLYER_TONES.find(t => t.id === tone)?.label || tone,
-        copyLength: FLYER_COPY_LENGTHS.find(l => l.id === copyLength)?.label || copyLength,
+        objective: CAROUSEL_OBJECTIVES.find(o => o.id === objective)?.label || objective,
+        tone: CAROUSEL_TONES.find(t => t.id === tone)?.label || tone,
+        copyLength: CAROUSEL_COPY_LENGTHS.find(l => l.id === copyLength)?.label || copyLength,
         referenceMode: refMode,
-        size: FLYER_SIZES.find(s => s.id === aspectRatio)?.label || aspectRatio,
-        dimensions: FLYER_SIZES.find(s => s.id === aspectRatio)?.dimensions || '1080x1080',
-        ratio: FLYER_SIZES.find(s => s.id === aspectRatio)?.ratio || '1:1',
+        size: CAROUSEL_SIZES.find(s => s.id === aspectRatio)?.label || aspectRatio,
+        dimensions: CAROUSEL_SIZES.find(s => s.id === aspectRatio)?.dimensions || '1080x1080',
+        ratio: CAROUSEL_SIZES.find(s => s.id === aspectRatio)?.ratio || '1:1',
+        numberOfSlides,
         primaryFont: (project.settings as any)?.primary_font || null
       }
     };
@@ -468,7 +559,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
       let currentStepIdx = 0;
       let retryCount = 0;
       const MAX_RETRIES = 3;
-      let lastImageUrl: string | null = null; 
+      let lastImageUrls: string[] = []; 
       
       // Local accumulator for tokens (safest way in a loop)
       let accumulatedUsage = { prompt: 0, candidates: 0 };
@@ -477,15 +568,224 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         setCurrentStep(currentStepIdx);
         const agent = AGENTS[currentStepIdx];
         
-        const newLog: SquadLog = {
-          agent: agent.id,
-          action: `${agent.label} trabalhando${agent.id === 'designer' && retryCount > 0 ? ` (revisão ${retryCount})` : ''}...`,
-          status: 'working',
-          timestamp: new Date().toISOString()
-        };
-        setLogs(prev => [...prev, newLog]);
+        if (agent.id === 'designer') {
+          const slides = currentContext.copywriter?.slides || [];
+          const totalSlides = slides.length;
+          const finalImages: string[] = new Array(totalSlides).fill(null);
 
-        const { data, error } = await supabase.functions.invoke('flyer-squad-orchestrator', {
+          // ── JS / Canvas Mode ─────────────────────────────────────────────
+          if (generationMode === 'js') {
+            setLogs(prev => [...prev, {
+              agent: 'designer',
+              action: `🖌️ Modo JS: Renderizando ${totalSlides} slides localmente...`,
+              status: 'working',
+              timestamp: new Date().toISOString()
+            }]);
+
+            // Load logo blob once via Supabase SDK (no CORS)
+            let logoBlob: Blob | null = null;
+            const logoUrl = currentContext.project?.logoUrl;
+            if (logoUrl) {
+              try {
+                const pathMatch = new URL(logoUrl).pathname.match(/\/storage\/v1\/object\/public\/studio-assets\/(.+)/);
+                if (pathMatch) {
+                  const { data } = await supabase.storage.from('studio-assets').download(pathMatch[1]);
+                  logoBlob = data;
+                }
+              } catch { /* logo optional */ }
+            }
+
+            const { width, height } = getSlideDimensions(aspectRatio);
+            const ratioKey = getRatioKey(aspectRatio);
+
+            for (let i = 0; i < totalSlides; i++) {
+              setLogs(prev => [...prev, {
+                agent: 'designer',
+                action: `🖌️ Renderizando slide ${i + 1}/${totalSlides}...`,
+                status: 'working',
+                timestamp: new Date().toISOString()
+              }]);
+              
+              // Load background image for this specific slide
+              let slideBgBlob: Blob | null = null;
+              if (productImages.length > 0) {
+                try {
+                  const imgDataUrl = productImages[i % productImages.length];
+                  slideBgBlob = dataUrlToBlob(imgDataUrl);
+                } catch { /* ignore */ }
+              } else if (referenceImage) {
+                try {
+                  slideBgBlob = dataUrlToBlob(referenceImage);
+                } catch { /* ignore */ }
+              }
+
+              // Load approved custom base template if any
+              let customTemplateBlob: Blob | null = null;
+              if (approvedTemplateImage) {
+                try {
+                  customTemplateBlob = dataUrlToBlob(approvedTemplateImage);
+                } catch { /* ignore */ }
+              }
+
+              const slideBlob = await renderCarouselSlide({
+                width,
+                height,
+                ratio: ratioKey,
+                primaryColor: currentContext.project?.primaryColor || '#F97316',
+                secondaryColor: currentContext.project?.secondaryColor || '#1a1a1a',
+                fontFamily: currentContext.project?.primaryFont || 'Montserrat',
+                logoBlob,
+                productBlob: slideBgBlob,
+                templateBlob: customTemplateBlob,
+                headline: slides[i]?.headline || '',
+                body: slides[i]?.body || '',
+                slideIndex: i,
+                totalSlides,
+              });
+
+              // Upload to Supabase Storage
+              const fileName = `${orgId}/carousel-squad/${Date.now()}-slide${i + 1}.png`;
+              await supabase.storage.from('studio-assets').upload(fileName, slideBlob, { contentType: 'image/png' });
+              const { data: { publicUrl } } = supabase.storage.from('studio-assets').getPublicUrl(fileName);
+
+              finalImages[i] = publicUrl;
+              const visible = finalImages.filter(Boolean);
+              setResultImages([...visible]);
+              lastImageUrls = [...visible];
+
+              setLogs(prev => [...prev, {
+                agent: 'designer',
+                action: `✅ Slide ${i + 1} renderizado.`,
+                status: 'completed',
+                timestamp: new Date().toISOString()
+              }]);
+            }
+
+            currentContext.designer = { imageUrls: finalImages };
+            currentStepIdx = 4; // Skip to Publisher
+            continue;
+          }
+
+          // ── AI / Gemini Mode (Sequential com Contexto Visual) ─────────────────────────────
+
+          setLogs(prev => [...prev, {
+            agent: 'designer',
+            action: `Iniciando Pipeline de Geração Sequencial IA — ${totalSlides} slides.`,
+            status: 'working',
+            timestamp: new Date().toISOString()
+          }]);
+
+          let previousSlideUrl: string | null = null;
+
+          for (let i = 0; i < totalSlides; i++) {
+            setCurrentStep(2); // Muda UI para Designer
+            setLogs(prev => [...prev, {
+              agent: 'designer',
+              action: `Criando painel ${i + 1} de ${totalSlides}...`,
+              status: 'working',
+              timestamp: new Date().toISOString()
+            }]);
+
+            const designRes = await supabase.functions.invoke('carousel-squad-orchestrator', {
+              body: { 
+                agent: 'designer', 
+                productImages, 
+                referenceImage, 
+                approvedTemplateImage, 
+                refMode, 
+                allowImageManipulation, 
+                briefing, 
+                organizationId: orgId, 
+                projectId: projectId, 
+                numSlides: numberOfSlides, 
+                context: { 
+                  ...currentContext, 
+                  slideIndex: i, 
+                  slideCopy: slides[i],
+                  previousSlideUrl // Passa a imagem anterior como guia visual!
+                } 
+              }
+            });
+
+            if (designRes.error) {
+               console.error(`Slide ${i+1} Edge Error:`, designRes.error);
+               throw new Error(`Designer falhou no slide ${i + 1}: Edge Function Error (${designRes.error.message})`);
+            }
+
+            if (!designRes.data?.success) {
+               const serverError = designRes.data?.error || 'Erro interno da IA';
+               throw new Error(`Designer falhou no slide ${i + 1}: ${serverError}`);
+            }
+
+            const imageUrl = designRes.data.result.imageUrl;
+            finalImages[i] = imageUrl;
+
+            setLogs(prev => [...prev, {
+                agent: 'designer',
+                action: `✓ Slide ${i+1} renderizado.`,
+                status: 'completed',
+                timestamp: new Date().toISOString()
+            }]);
+
+            const visibleImages = finalImages.filter(img => img !== null);
+            setResultImages([...visibleImages]);
+            lastImageUrls = [...visibleImages];
+
+            // Trigger Reviewer synchronously before moving to next slide
+            setCurrentStep(3); // Animates UI back to Reviewer
+            setLogs(prev => [...prev, {
+                agent: 'reviewer',
+                action: `Analisando alinhamento do slide ${i + 1}...`,
+                status: 'working',
+                timestamp: new Date().toISOString()
+            }]);
+
+            const { data: reviewData } = await supabase.functions.invoke('carousel-squad-orchestrator', {
+              body: {
+                agent: 'reviewer',
+                organizationId: orgId,
+                projectId: projectId,
+                numSlides: numberOfSlides,
+                context: { ...currentContext, slideIndex: i, imageUrl }
+              }
+            });
+
+            if (reviewData?.success && reviewData.result.status === 'approved') {
+              setLogs(prev => [...prev, {
+                  agent: 'reviewer',
+                  action: `✓ Slide ${i+1} aprovado pelo Diretor!`,
+                  status: 'completed',
+                  timestamp: new Date().toISOString()
+              }]);
+              // Guarda este slide perfeito como contexto visual para o próximo!
+              previousSlideUrl = imageUrl;
+            } else if (reviewData?.success && reviewData.result.status === 'rejected') {
+              toast.warning(`Diretor de Arte sugeriu ajuste no Slide ${i+1}: ${reviewData.result.feedback}`);
+              setLogs(prev => [...prev, {
+                  agent: 'reviewer',
+                  action: `⚠ Slide ${i+1} sugerido ajuste: ${reviewData.result.feedback}`,
+                  status: 'failed',
+                  timestamp: new Date().toISOString()
+              }]);
+              // Even if rejected, we use it as context so the next slide doesn't drift away
+              previousSlideUrl = imageUrl;
+            } else {
+              previousSlideUrl = imageUrl;
+            }
+
+            if (designRes.data.usageMetadata) {
+                accumulatedUsage.prompt += designRes.data.usageMetadata.promptTokens || 0;
+                accumulatedUsage.candidates += designRes.data.usageMetadata.candidatesTokens || 0;
+            }
+          }
+
+          // Complete Designer Step in Context
+          currentContext.designer = { imageUrls: finalImages };
+          currentStepIdx = 4; // Skip to Publisher
+          continue;
+        }
+
+        const { data, error } = await supabase.functions.invoke('carousel-squad-orchestrator', {
           body: {
             agent: agent.id,
             productImages,
@@ -496,6 +796,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
             briefing,
             organizationId: orgId,
             projectId: projectId,
+            numSlides: numberOfSlides,
             context: currentContext
           }
         });
@@ -519,13 +820,6 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
               model: (agent.id === 'designer') ? 'Gemini 3.1 Flash Image Preview' : 'Gemini 3.1 Pro Preview'
             }
           }));
-          
-          setTotalUsage(prev => ({
-            promptTokens: prev.promptTokens + (data.usageMetadata.promptTokenCount || 0),
-            candidatesTokens: prev.candidatesTokens + (data.usageMetadata.candidatesTokenCount || 0)
-          }));
-          
-          console.log(`[FlyerSquad] Agent ${agent.id} usage:`, data.usageMetadata);
         }
 
         setLogs(prev => prev.map((log) => 
@@ -537,65 +831,30 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           } : log
         ));
 
-        if (agent.id === 'copywriter' && data.result.social_caption) {
-          setResultCaption(data.result.social_caption);
-          lastCaption = data.result.social_caption; // Track synchronously
-
-          // --- PAUSE FOR HUMAN REVIEW ---
+        if (agent.id === 'copywriter') {
+          let copyData = data.result;
+          
+          // Pause and let user review the copy
           setIsWaitingForCopyApproval(true);
-          setEditableCopy({
-            social_caption: data.result.social_caption,
-            headline: data.result.headline || data.result.copy?.headline || '',
-            subheadline: data.result.subheadline || data.result.copy?.subheadline || '',
-            body: data.result.body || data.result.copy?.body || '',
-            cta: data.result.cta || data.result.copy?.cta || ''
+          setEditableCopy(copyData);
+          
+          const approvedCopy: any = await new Promise((resolve) => {
+             setCopyApprovalResolve({ resolve });
           });
-
-          // Create a promise and store the resolve function
-          const selection = await new Promise<any>((resolve) => {
-            setCopyApprovalResolve({ resolve });
-          });
-
-          // Reset approval state
+          
           setIsWaitingForCopyApproval(false);
           setCopyApprovalResolve(null);
-
-          // Update context with the (possibly) edited copy
-          data.result.social_caption = selection.social_caption;
-          data.result.headline = selection.headline;
-          data.result.subheadline = selection.subheadline;
-          data.result.body = selection.body;
-          data.result.cta = selection.cta;
+          setEditableCopy(null);
           
-          currentContext[agent.id] = data.result;
-          lastCaption = selection.social_caption;
-        }
-
-        if (agent.id === 'designer' && data.result.imageUrl) {
-          setResultImage(data.result.imageUrl);
-          lastImageUrl = data.result.imageUrl; // BUG FIX: Track synchronously
-        }
-
-        if (agent.id === 'reviewer') {
-          if (data.result.status === 'rejected') {
-            toast.info(
-              <div className="flex flex-col gap-1">
-                <p className="font-bold text-sm text-blue-800">Diretor de Arte solicitou um ajuste</p>
-                <p className="text-xs text-blue-600 leading-relaxed">{data.result.feedback}</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">
-                  Refinando design (Tentativa {retryCount + 1} de {MAX_RETRIES})...
-                </p>
-              </div>,
-              { duration: 6000 }
-            );
-            
-            currentContext['reviewer_feedback'] = data.result.feedback;
-            retryCount++;
-            currentStepIdx = 2; // Go back to Designer
-            continue;
-          } else {
-            toast.success(`Arte aprovada pelo Diretor! Score: ${data.result.score}/10 ✨`);
+          currentContext.copywriter = approvedCopy;
+          if (approvedCopy.social_caption) {
+            setResultCaption(approvedCopy.social_caption);
+            lastCaption = approvedCopy.social_caption; 
           }
+        }
+
+        if (agent.id === 'publisher') {
+          // publisher logs are handled in the final save block outside the loop
         }
 
         // Move to next agent
@@ -603,19 +862,18 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
       }
 
       // Final step: Save and Publish
-      // BUG FIX: Use the synchronous lastImageUrl variable, not the async React state
-      if (lastImageUrl) {
+      if (lastImageUrls.length > 0) {
         setLogs(prev => [...prev, {
           agent: 'publisher',
-          action: 'Publicando e salvando histórico...',
+          action: 'Finalizando projeto e salvando histórico...',
           status: 'completed',
           timestamp: new Date().toISOString()
         }]);
 
-        const { error: insertError } = await supabase.from('studio_flyers').insert({
+        const { error: insertError } = await supabase.from('studio_carousels').insert({
           project_id: projectId,
           organization_id: orgId,
-          image_url: lastImageUrl,
+          image_urls: lastImageUrls,
           social_caption: lastCaption || resultCaption,
           prompt: briefing,
           created_by: user.id,
@@ -639,9 +897,10 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
 
         await refetchHistory();
         playCompletionSound();
+        toast.success('Carrossel gerado com sucesso! 🚀');
+      } else {
+        throw new Error("Ocorreu um problema ao recuperar as imagens geradas pela IA. Tente novamente.");
       }
-
-      toast.success('Flyer gerado com sucesso! 🚀');
     } catch (error: any) {
       console.error('Squad Error:', error);
       toast.error(`Falha na geração: ${error.message}`);
@@ -668,7 +927,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
   return (
     <div className="flex h-full md:h-screen bg-background relative overflow-hidden w-full">
       <div className="hidden md:block shrink-0 h-full border-r">
-        <StudioQuickMenu currentToolId="flyer" />
+        <StudioQuickMenu currentToolId="carousel" />
       </div>
 
       <div className="flex-1 flex flex-col h-full bg-background overflow-hidden lg:flex-row">
@@ -684,7 +943,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold tracking-tight">Gerador de Flyer</h2>
+            <h2 className="text-lg font-bold tracking-tight">Gerador de Carrossel</h2>
           </div>
         </div>
 
@@ -719,6 +978,47 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           )}
         </div>
 
+        {/* Generation Mode Toggle */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Modo de Geração
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setGenerationMode('ai')}
+              className={cn(
+                "flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all",
+                generationMode === 'ai'
+                  ? "bg-primary/10 border-primary/50 ring-1 ring-primary/30 text-foreground"
+                  : "bg-background border-primary/10 text-muted-foreground hover:border-primary/20"
+              )}
+            >
+              <Sparkles className={cn("h-5 w-5", generationMode === 'ai' ? "text-primary" : "text-muted-foreground")} />
+              <span className="text-[11px] font-bold">IA Generativa</span>
+              <span className="text-[9px] leading-tight opacity-70">Criativo, único por geração</span>
+            </button>
+            <button
+              onClick={() => setGenerationMode('js')}
+              className={cn(
+                "flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all",
+                generationMode === 'js'
+                  ? "bg-primary/10 border-primary/50 ring-1 ring-primary/30 text-foreground"
+                  : "bg-background border-primary/10 text-muted-foreground hover:border-primary/20"
+              )}
+            >
+              <Layers className={cn("h-5 w-5", generationMode === 'js' ? "text-primary" : "text-muted-foreground")} />
+              <span className="text-[11px] font-bold">Template JS</span>
+              <span className="text-[9px] leading-tight opacity-70">100% consistente, rápido</span>
+            </button>
+          </div>
+          {generationMode === 'js' && (
+            <p className="text-[10px] text-muted-foreground px-1 leading-relaxed">
+              ✅ Layout programático garante logo, fontes e posições idênticos em todos os slides.
+            </p>
+          )}
+        </div>
+
         {/* Tom de voz */}
         <div className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -726,7 +1026,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
             Tom de Voz
           </h3>
           <div className="flex flex-wrap gap-2">
-            {FLYER_TONES.map((t) => (
+            {CAROUSEL_TONES.map((t) => (
               <button
                 key={t.id}
                 onClick={() => {
@@ -754,7 +1054,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
             Extensão do Texto
           </h3>
           <div className="grid grid-cols-3 gap-2">
-            {FLYER_COPY_LENGTHS.map((l) => (
+            {CAROUSEL_COPY_LENGTHS.map((l) => (
               <button
                 key={l.id}
                 onClick={() => {
@@ -774,14 +1074,43 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           </div>
         </div>
 
+        
+        {/* Number of Slides */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Número de Slides
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {[0, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+              <button
+                key={num}
+                onClick={() => {
+                  setNumberOfSlides(num);
+                  saveSettings({ numberOfSlides: num });
+                }}
+                className={cn(
+                  "py-2 px-4 rounded-xl border text-[11px] font-bold transition-all flex items-center gap-2",
+                  numberOfSlides === num 
+                    ? "bg-primary border-primary text-white shadow-lg" 
+                    : "bg-background border-primary/10 text-muted-foreground hover:border-primary/30"
+                )}
+              >
+                {num === 0 && <Sparkles className="h-3 w-3" />}
+                {num === 0 ? "Automático (IA decide)" : num}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Objective */}
         <div className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-            Objetivo do Flyer
+            Objetivo do Carrossel
           </h3>
           <div className="flex flex-wrap gap-2">
-            {FLYER_OBJECTIVES.map((obj) => (
+            {CAROUSEL_OBJECTIVES.map((obj) => (
               <button
                 key={obj.id}
                 onClick={() => {
@@ -802,14 +1131,14 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           </div>
         </div>
 
-        {/* Flyer Size */}
+        {/* Carousel Size */}
         <div className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-            3. Tamanho do Flyer
+            3. Tamanho do Carrossel
           </h3>
           <div className="grid grid-cols-4 gap-2">
-            {FLYER_SIZES.map((size) => (
+            {CAROUSEL_SIZES.map((size) => (
               <button
                 key={size.id}
                 onClick={() => {
@@ -839,7 +1168,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
             4. Detalhes do Conteúdo (Briefing)
           </h3>
           <Textarea 
-            placeholder="Descreva o que deve constar no flyer, ofertas, chamadas para ação..."
+            placeholder="Descreva o que deve constar no carrossel, ofertas, chamadas para ação..."
             className="min-h-[80px] max-h-[150px] resize-none border-primary/10 focus-visible:ring-primary/20 text-xs rounded-xl"
             value={briefing}
             onChange={(e) => setBriefing(e.target.value)}
@@ -1034,7 +1363,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           ) : (
             <>
               <Sparkles className="mr-2 h-4 w-4" />
-              Gerar Flyer Profissional
+              Gerar Carrossel Profissional
             </>
           )}
         </Button>
@@ -1052,7 +1381,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                 activeTab === 'create' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
-              CRIAR FLYER
+              CRIAR CARROSEL
             </button>
             <button 
               onClick={() => setActiveTab('history')}
@@ -1113,7 +1442,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
           {activeTab === 'create' ? (
             <>
-              {!isProcessing && !resultImage && (
+              {!isProcessing && resultImages.length === 0 && (
                 <div className="max-w-lg w-full text-center mt-12 space-y-8 animate-in fade-in duration-700">
                   <div className="relative grid grid-cols-5 gap-3 max-w-sm mx-auto">
                     {AGENTS.map((agent) => (
@@ -1127,7 +1456,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                   
                   <div className="space-y-3">
                     <h2 className="text-3xl font-black tracking-tighter text-foreground">
-                      {project?.name || 'Flyer Engine'}
+                      {project?.name || 'Carousel Engine'}
                     </h2>
                     <p className="text-sm text-muted-foreground leading-relaxed text-balance px-10">
                       Envie o produto e o briefing. Nossos especialistas aplicarão as regras de marca do projeto para garantir o melhor resultado.
@@ -1136,13 +1465,13 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                 </div>
               )}
 
-              {isProcessing && (
+              {isProcessing && !isWaitingForCopyApproval && (
                 <div className="max-w-xl w-full bg-background rounded-[24px] border shadow-xl overflow-hidden mt-4 animate-in fade-in zoom-in duration-500">
                   <div className="p-6 border-b bg-gradient-to-br from-primary/5 to-transparent">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-bold flex items-center gap-2 text-sm">
                         <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        Gerando Flyer
+                        Gerando Carrossel
                       </h3>
                       <Badge variant="secondary" className="font-mono text-[10px]">
                         {Math.round(((currentStep + 1) / AGENTS.length) * 100)}%
@@ -1151,35 +1480,72 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                     <Progress value={((currentStep + 1) / AGENTS.length) * 100} className="h-2 rounded-full" />
                   </div>
 
-                  <div className="p-6 space-y-4">
+                  <div className="p-6 space-y-4 relative">
+                    {/* Linha vertical que conecta os ícones */}
+                    <div className="absolute left-[41px] top-[42px] bottom-[42px] w-[2px] bg-muted/60 z-0 rounded-full" />
+                    
                     {AGENTS.map((agent, i) => {
+                      if (generationMode === 'js' && agent.id === 'reviewer') return null;
+
                       const isActive = i === currentStep;
                       const isDone = i < currentStep && currentStep !== -1;
                       const isPending = i > currentStep;
+                      
+                      const agentLogs = logs.filter(l => l.agent === agent.id);
+                      const lastLog = agentLogs.length > 0 ? agentLogs[agentLogs.length - 1] : null;
+
+                      // Display the real action text if it's working or failed
+                      let displayDesc = agent.description;
+                      if (isActive && lastLog) {
+                        displayDesc = lastLog.action;
+                      } else if (isDone) {
+                        displayDesc = "Concluído";
+                      } else if (isPending) {
+                        displayDesc = "Aguardando a vez...";
+                      }
+
+                      // Adjust status text color and style based on log status
+                      let statusBadge = "Aguardando";
+                      if (isActive) statusBadge = "Trabalhando";
+                      if (isDone) statusBadge = "Verificado";
+                      if (lastLog?.status === 'failed') statusBadge = "Tentando Novamente";
 
                       return (
                         <div key={agent.id} className={cn(
-                          "flex gap-4 items-start transition-all duration-300",
+                          "flex gap-4 items-start transition-all duration-500 relative z-10",
                           isActive ? "opacity-100 translate-x-1" : "opacity-40",
                           isPending && "filter grayscale"
                         )}>
                           <div className={cn(
-                            "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors border-2",
-                            isActive ? "bg-primary text-white border-primary animate-pulse" : 
+                            "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-500 border-2",
+                            isActive ? "bg-primary text-white border-primary scale-110 shadow-primary/30" : 
                             isDone ? "bg-green-500 text-white border-green-500" : 
                             "bg-muted text-muted-foreground border-transparent"
                           )}>
-                            {isDone ? <CheckCircle2 className="h-5 w-5" /> : <agent.icon className="h-5 w-5" />}
+                            {isDone && generationMode !== 'ai' ? <CheckCircle2 className="h-5 w-5" /> : 
+                             isDone && generationMode === 'ai' && agent.id === 'designer' ? <CheckCircle2 className="h-5 w-5" /> : 
+                            <agent.icon className={cn("h-5 w-5", isActive && "animate-pulse")} />}
                           </div>
                           
-                          <div className="flex-1 space-y-0.5">
+                          <div className="flex-1 space-y-0.5 pt-1.5">
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-xs tracking-tight">{agent.label}</span>
-                              {isActive && <span className="text-[8px] font-black tracking-widest text-primary uppercase animate-pulse">Trabalhando</span>}
+                              <span className={cn("font-bold text-xs tracking-tight transition-colors", isActive ? "text-foreground" : "text-muted-foreground")}>{agent.label}</span>
+                              <span className={cn(
+                                "text-[9px] font-black tracking-widest uppercase transition-colors px-2 py-0.5 rounded-full outline outline-1",
+                                isActive ? "text-primary outline-primary/30 bg-primary/10 animate-pulse" : 
+                                isDone ? "text-green-500 outline-green-500/30 bg-green-500/10" : 
+                                "text-muted-foreground outline-transparent"
+                              )}>{statusBadge}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <p className="text-[10px] text-muted-foreground line-clamp-1">
-                                {isActive ? agent.description : isDone ? "Concluído" : "Aguardando..."}
+                              <p className={cn(
+                                "text-[11px] font-medium line-clamp-1 transition-colors duration-300",
+                                isActive && "text-primary italic animate-in fade-in slide-in-from-left-2",
+                                isDone && "text-muted-foreground",
+                                isPending && "text-muted-foreground/50",
+                                lastLog?.status === 'failed' && "text-amber-500"
+                              )}>
+                                {displayDesc}
                               </p>
                             </div>
                           </div>
@@ -1191,92 +1557,103 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
               )}
 
               {isWaitingForCopyApproval && editableCopy && (
-                <div className="max-w-xl w-full bg-background rounded-[24px] border shadow-xl mt-4 animate-in fade-in zoom-in duration-500 mb-20 scroll-mt-20">
+                <div className="max-w-3xl w-full bg-background rounded-[24px] border shadow-xl mt-4 animate-in fade-in zoom-in duration-500 mb-20">
                   <div className="p-6 border-b bg-gradient-to-br from-primary/5 to-transparent flex flex-col gap-2">
-                    <h3 className="font-bold flex items-center gap-2 text-sm text-primary uppercase tracking-tighter">
-                      <UserPen className="h-4 w-4" /> Revisão de Conteúdo (Copy)
+                    <h3 className="font-bold flex items-center gap-2 text-sm text-primary">
+                      ✨ Revisão de Copy
                     </h3>
-                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-70">
-                      Revisando o trabalho do Copywriter IA
+                    <p className="text-xs text-muted-foreground">
+                      Analise e modifique o conteúdo gerado pela IA antes de enviar para o Diretor de Arte (Designer).
                     </p>
                   </div>
-                  
-                  <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                  <div className="p-6 pb-12 space-y-6">
+                    <div className="space-y-3">
+                      <Label className="text-xs font-bold text-muted-foreground uppercase">Legenda (Social Caption)</Label>
+                      <Textarea 
+                        value={editableCopy.social_caption || ''} 
+                        onChange={(e) => setEditableCopy({...editableCopy, social_caption: e.target.value})}
+                        className="text-xs min-h-[100px] rounded-xl border-primary/20"
+                      />
+                    </div>
+                    
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Chamada Principal (Headline)</Label>
-                        <Input 
-                          value={editableCopy.headline}
-                          onChange={(e) => setEditableCopy({ ...editableCopy, headline: e.target.value })}
-                          className="bg-muted/30 border-primary/10 rounded-xl h-12 font-bold text-sm"
-                          placeholder="Ex: Oferta Imperdível"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Subtítulo (Opcional)</Label>
-                        <Input 
-                          value={editableCopy.subheadline}
-                          onChange={(e) => setEditableCopy({ ...editableCopy, subheadline: e.target.value })}
-                          className="bg-muted/30 border-primary/10 rounded-xl h-10 text-xs"
-                          placeholder="Ex: Apenas hoje na nossa loja"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Corpo do Texto</Label>
-                        <Textarea 
-                          value={editableCopy.body}
-                          onChange={(e) => setEditableCopy({ ...editableCopy, body: e.target.value })}
-                          className="bg-muted/30 border-primary/10 rounded-xl min-h-[100px] text-xs leading-relaxed"
-                          placeholder="Descreva a oferta detalhadamente..."
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Chamada para Ação (CTA)</Label>
-                        <Input 
-                          value={editableCopy.cta}
-                          onChange={(e) => setEditableCopy({ ...editableCopy, cta: e.target.value })}
-                          className="bg-muted/30 border-primary/10 rounded-xl h-10 text-xs font-bold text-primary"
-                          placeholder="Ex: Clique no link da bio"
-                        />
-                      </div>
-
-                      <div className="pt-4 border-t border-dashed border-primary/10 space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60">Legenda para Rede Social</Label>
-                        <Textarea 
-                          value={editableCopy.social_caption}
-                          onChange={(e) => setEditableCopy({ ...editableCopy, social_caption: e.target.value })}
-                          className="bg-primary/5 border-primary/10 rounded-xl min-h-[120px] text-xs italic"
-                        />
-                      </div>
+                      {editableCopy.slides?.map((slide: any, idx: number) => (
+                        <div key={idx} className="p-4 border rounded-xl space-y-3 bg-muted/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="font-mono text-[10px] bg-background">Slide {idx + 1}</Badge>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[11px] font-bold">Headline (Título Forte)</Label>
+                            <Input 
+                              value={slide.headline || ''}
+                              onChange={(e) => {
+                                const newSlides = [...editableCopy.slides];
+                                newSlides[idx] = { ...slide, headline: e.target.value };
+                                setEditableCopy({ ...editableCopy, slides: newSlides });
+                              }}
+                              className="text-sm font-bold h-10 border-primary/20"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[11px] font-bold">Body (Corpo de Texto)</Label>
+                            <Textarea 
+                              value={slide.body || ''}
+                              onChange={(e) => {
+                                const newSlides = [...editableCopy.slides];
+                                newSlides[idx] = { ...slide, body: e.target.value };
+                                setEditableCopy({ ...editableCopy, slides: newSlides });
+                              }}
+                              className="text-xs min-h-[60px] resize-y border-primary/20"
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
                     <Button 
-                      className="w-full h-12 rounded-xl text-xs font-black tracking-widest uppercase shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all mt-4"
+                      className="w-full h-12 rounded-xl text-xs font-black tracking-tight mt-6" 
                       onClick={() => copyApprovalResolve?.resolve(editableCopy)}
                     >
-                      APROVAR E ENVIAR PARA DESIGNER <ArrowRight className="ml-2 h-4 w-4" />
+                      APROVAR COPY E CONTINUAR PARA DESIGN <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
                 </div>
               )}
 
-              {resultImage && !isProcessing && (
+              {resultImages.length > 0 && !isProcessing && (
                 <div className="max-w-2xl w-full space-y-6 animate-in slide-in-from-bottom-8 duration-700 mt-4">
                   <div className="relative group rounded-[24px] overflow-hidden shadow-2xl border-4 border-background bg-muted cursor-zoom-in" onClick={() => setPreviewIndex(0)}>
-                      <img src={resultImage} alt="Final Flyer" className="w-full h-auto transition-transform duration-500 group-hover:scale-[1.02]" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-8">
-                        <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
+                      
+                      <div className="flex overflow-x-auto snap-x space-x-4 p-4 w-full">
+                        {resultImages.map((img, idx) => (
+                          <img 
+                            key={idx} 
+                            src={img} 
+                            alt={`Final Slide ${idx + 1}`} 
+                            className="w-3/4 max-w-sm h-auto snap-center rounded-[24px] shadow-sm ring-1 ring-background cursor-pointer hover:scale-[1.02] transition-transform" 
+                            onClick={() => {
+                              setPreviewIndex(0); // For create tab, previewIndex is just a toggle
+                              setActiveSlideIndex(idx);
+                            }}
+                          />
+                        ))}
+                      </div>
+  
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-8 pointer-events-none">
+                        <div className="flex gap-3 items-center" onClick={(e) => e.stopPropagation()}>
                             <Button 
                               size="default" 
-                              className="rounded-xl h-12 px-6 shadow-xl"
-                              onClick={() => handleDownload(resultImage, `flyer-${project?.name || 'design'}.png`)}
+                              className="rounded-xl h-12 px-6 shadow-xl pointer-events-auto"
+                              onClick={() => handleBatchDownloadZip(resultImages, `carrossel-${project?.name || 'design'}.zip`)}
                             >
-                              <Download className="mr-2 h-4 w-4" /> Download 4K
+                              <Download className="mr-2 h-4 w-4" /> Download 4K (ZIP)
                             </Button>
-                            <Button size="icon" variant="secondary" className="rounded-xl h-12 w-12 shadow-xl" onClick={() => setResultImage(null)}>
+                            <Button 
+                              size="icon" 
+                              variant="secondary" 
+                              className="rounded-xl h-12 w-12 shadow-xl pointer-events-auto text-foreground" 
+                              onClick={(e) => { e.stopPropagation(); setResultImages([]); }}
+                            >
                               <X className="h-5 w-5" />
                             </Button>
                         </div>
@@ -1284,10 +1661,10 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                   </div>
                   <div className="flex justify-center">
                       <Button variant="outline" className="rounded-xl" onClick={() => {
-                        setResultImage(null);
+                        setResultImages([]);
                         setResultCaption(null);
                       }}>
-                        Criar outro Flyer
+                        Criar outro Carrossel
                       </Button>
                   </div>
 
@@ -1328,30 +1705,32 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                    <>
                      {history
                        .slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-                       .map((flyer) => (
+                       .map((carousel) => (
                         <div 
-                          key={flyer.id} 
+                          key={carousel.id} 
                           className="group relative aspect-[3/4] bg-muted rounded-[24px] overflow-hidden border shadow-sm hover:shadow-xl transition-all cursor-zoom-in isolate"
-                          onClick={() => {
-                            const idx = history.findIndex(h => h.id === flyer.id);
-                            setPreviewIndex(idx);
-                          }}
+                            onClick={() => {
+                              const idx = history.findIndex(h => h.id === carousel.id);
+                              setPreviewIndex(idx);
+                              setActiveSlideIndex(0);
+                            }}
                         >
                            <img 
-                             src={flyer.image_url} 
-                             alt={flyer.prompt} 
+                             src={carousel.image_urls?.[0]} 
+                             alt={carousel.prompt} 
                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 transform-gpu will-change-transform" 
                            />
                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all p-6 flex flex-col justify-end">
-                              <p className="text-white text-xs line-clamp-2 mb-4 font-medium opacity-80">{flyer.prompt}</p>
+                              <p className="text-white text-xs line-clamp-2 mb-4 font-medium opacity-80">{carousel.prompt}</p>
                               <div className="flex gap-2">
                                  <Button 
                                    size="sm" 
                                    className="flex-1 rounded-xl h-10 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
                                    onClick={(e) => {
                                      e.stopPropagation();
-                                     const idx = history.findIndex(h => h.id === flyer.id);
+                                     const idx = history.findIndex(h => h.id === carousel.id);
                                      setPreviewIndex(idx);
+                                     setActiveSlideIndex(0);
                                    }}
                                  >
                                    <Eye className="h-4 w-4 mr-2" /> Ver
@@ -1361,7 +1740,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                                    className="rounded-xl h-10 w-10 bg-white text-black hover:bg-white/90"
                                    onClick={(e) => {
                                      e.stopPropagation();
-                                     handleDownload(flyer.image_url, `flyer-${flyer.id}.png`);
+                                     carousel.image_urls?.forEach((u: string, i: number) => handleDownload(u, `carousel-${carousel.id}-${i+1}.png`));
                                    }}
                                  >
                                    <Download className="h-4 w-4" />
@@ -1370,7 +1749,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                            </div>
                            <div className="absolute top-4 left-4">
                               <Badge className="bg-black/60 backdrop-blur-md border-white/10 text-[9px]">
-                                {formatDistanceToNow(new Date(flyer.created_at), { addSuffix: true, locale: ptBR })}
+                                {formatDistanceToNow(new Date(carousel.created_at), { addSuffix: true, locale: ptBR })}
                               </Badge>
                            </div>
                         </div>
@@ -1412,7 +1791,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                       <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
                         <ImageIcon className="h-8 w-8 opacity-20" />
                       </div>
-                      <p className="text-sm font-medium">Nenhum flyer gerado neste projeto ainda.</p>
+                      <p className="text-sm font-medium">Nenhum carrossel gerado neste projeto ainda.</p>
                    </div>
                  )}
                </div>
@@ -1422,7 +1801,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
       </div>
 
       {/* ── Image Preview Modal ── */}
-      {previewIndex !== null && previewImages[previewIndex] && (
+      {previewIndex !== null && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300"
           onClick={() => setPreviewIndex(null)}
@@ -1431,23 +1810,23 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           onTouchEnd={onTouchEnd}
         >
           {/* Navegação */}
-          {previewImages.length > 1 && (
+          {currentCarouselImages.length > 1 && (
             <>
-              {previewIndex > 0 && (
+              {activeSlideIndex > 0 && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 rounded-full h-12 w-12 hidden md:flex"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 rounded-full h-12 w-12 hidden md:flex transition-all hover:scale-110"
                   onClick={(e) => { e.stopPropagation(); handlePrevPreview(); }}
                 >
                   <ChevronLeft className="h-8 w-8" />
                 </Button>
               )}
-              {previewIndex < previewImages.length - 1 && (
+              {activeSlideIndex < currentCarouselImages.length - 1 && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 rounded-full h-12 w-12 hidden md:flex"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 rounded-full h-12 w-12 hidden md:flex transition-all hover:scale-110"
                   onClick={(e) => { e.stopPropagation(); handleNextPreview(); }}
                 >
                   <ChevronLeft className="h-8 w-8 rotate-180" />
@@ -1467,28 +1846,48 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           
           <div className="relative w-full max-w-6xl flex flex-col md:flex-row items-center md:items-stretch gap-6" onClick={(e) => e.stopPropagation()}>
             {/* Esquerda: Imagem */}
-            <div className="relative group flex-1 flex items-center justify-center">
+            <div className="relative group flex-1 flex flex-col items-center justify-center gap-4">
               <img 
-                src={previewImages[previewIndex]} 
-                alt="Flyer Preview" 
-                className="max-w-full max-h-[70vh] md:max-h-[85vh] object-contain rounded-2xl shadow-2xl ring-1 ring-white/10 transition-all duration-300" 
+                src={currentCarouselImages[activeSlideIndex]} 
+                alt="Carrossel Preview" 
+                className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain rounded-2xl shadow-2xl ring-1 ring-white/10 transition-all duration-300" 
               />
+              
+              {/* Pontos de Paginação */}
+              {currentCarouselImages.length > 1 && (
+                <div className="flex gap-2 p-2 bg-black/40 backdrop-blur-md rounded-full shadow-lg">
+                  {currentCarouselImages.map((_, dotIdx) => (
+                    <div 
+                      key={dotIdx}
+                      role="button"
+                      onClick={() => setActiveSlideIndex(dotIdx)}
+                      className={cn(
+                        "w-2 h-2 rounded-full transition-all duration-300 cursor-pointer",
+                        activeSlideIndex === dotIdx 
+                          ? "bg-primary w-6" 
+                          : "bg-white/20 hover:bg-white/40"
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Badge className="bg-black/60 backdrop-blur-md border-white/10">
-                  {previewIndex + 1} / {previewImages.length}
+                  {activeSlideIndex + 1} / {currentCarouselImages.length}
                 </Badge>
               </div>
             </div>
 
             {/* Direita: Conteúdo e Legenda */}
             <div className="w-full md:w-[400px] shrink-0 flex flex-col gap-6 bg-white/5 backdrop-blur-xl rounded-[32px] p-6 border border-white/10 shadow-2xl">
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 flex-1 overflow-hidden">
                 <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-primary" />
-                  Detalhes do Flyer
+                  Detalhes do Carrossel
                 </h3>
                 
-                <div className="space-y-4 overflow-y-auto max-h-[40vh] md:max-h-[50vh] pr-2">
+                <div className="space-y-4 overflow-y-auto flex-1 pr-2">
                   {((activeTab === 'history' && (history[previewIndex!] as any)?.social_caption) || (activeTab === 'create' && resultCaption)) ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
@@ -1538,13 +1937,23 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                 </div>
               </div>
 
-              <div className="mt-auto pt-6 border-t border-white/10 flex flex-col gap-3">
+              <div className="pt-6 border-t border-white/10 flex flex-col gap-3">
                 <Button 
                   className="rounded-xl w-full h-12 font-bold shadow-xl bg-primary hover:bg-primary/90 text-white"
-                  onClick={() => handleDownload(previewImages[previewIndex!], `flyer-HD.png`)}
+                  onClick={() => handleDownload(currentCarouselImages[activeSlideIndex], `${activeSlideIndex + 1}.png`)}
                 >
-                  <Download className="mr-2 h-5 w-5" /> Baixar Imagem HD
+                  <Download className="mr-2 h-5 w-5" /> Baixar Slide {activeSlideIndex + 1}
                 </Button>
+                
+                {currentCarouselImages.length > 1 && (
+                  <Button 
+                    variant="secondary"
+                    className="rounded-xl w-full h-12 font-bold shadow-xl text-foreground"
+                    onClick={() => handleBatchDownloadZip(currentCarouselImages, `carrossel-${project?.name || 'historico'}.zip`)}
+                  >
+                    <Download className="mr-2 h-5 w-5" /> Baixar Carrossel Inteiro (ZIP)
+                  </Button>
+                )}
                 
                 <Button 
                   variant="outline"

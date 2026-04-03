@@ -2675,6 +2675,81 @@ export type Database = {
           },
         ]
       }
+      studio_carousels: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          generation_mode: string | null
+          id: string
+          image_urls: string[]
+          model: string | null
+          model_meta: string | null
+          niche: string | null
+          organization_id: string | null
+          project_id: string | null
+          prompt: string
+          size: string
+          social_caption: string | null
+          style: string | null
+          title: string | null
+          usage_candidates: number | null
+          usage_prompt: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          generation_mode?: string | null
+          id?: string
+          image_urls: string[]
+          model?: string | null
+          model_meta?: string | null
+          niche?: string | null
+          organization_id?: string | null
+          project_id?: string | null
+          prompt: string
+          size: string
+          social_caption?: string | null
+          style?: string | null
+          title?: string | null
+          usage_candidates?: number | null
+          usage_prompt?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          generation_mode?: string | null
+          id?: string
+          image_urls?: string[]
+          model?: string | null
+          model_meta?: string | null
+          niche?: string | null
+          organization_id?: string | null
+          project_id?: string | null
+          prompt?: string
+          size?: string
+          social_caption?: string | null
+          style?: string | null
+          title?: string | null
+          usage_candidates?: number | null
+          usage_prompt?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_carousels_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "studio_carousels_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "studio_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       studio_flyer_ratings: {
         Row: {
           created_at: string

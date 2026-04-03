@@ -86,189 +86,192 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
+const App = () => {
+  console.log("App component rendering...");
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
 
-        <BrowserRouter>
-          <HeaderProvider>
-            <ScrollToTop />
-            <ReloadPrompt />
-            <AuthProvider>
-              <RedirectNoticeModal />
-              <SubscriptionExpiryModal />
-              <PlanThemeProvider>
-                <OrganizationProvider>
-                  <InstallPromptBanner />
-                  <ErrorBoundary>
-                    <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/demo/*" element={<Demo />} />
-                    <Route path="/pricing" element={<Pricing />} />
-                    <Route path="/parcerias" element={<PartnerProgram />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/verify-email" element={<VerifyEmail />} />
-                    <Route path="/set-password" element={<SetPassword />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/select-plan" element={<SelectPlan />} />
-                    <Route path="/accept-invite" element={<AcceptInvite />} />
-                    <Route path="/approve/:token" element={<SocialApproval />} />
-                    {/* Public Link23 page (handle includes the leading @) */}
-                    <Route path="/:orgSlug/:handle" element={<LinkTreePublic />} />
-                    <Route path="/app/onboarding" element={
-                      <ProtectedRoute>
-                        <Onboarding />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/app/select-organization" element={
-                      <ProtectedRoute>
-                        <SelectOrganization />
-                      </ProtectedRoute>
-                    } />
-                    <Route
-                      path="/app"
-                      element={
+          <BrowserRouter>
+            <HeaderProvider>
+              <ScrollToTop />
+              <ReloadPrompt />
+              <AuthProvider>
+                <RedirectNoticeModal />
+                <SubscriptionExpiryModal />
+                <PlanThemeProvider>
+                  <OrganizationProvider>
+                    <InstallPromptBanner />
+                    <ErrorBoundary>
+                      <Routes>
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/demo/*" element={<Demo />} />
+                      <Route path="/pricing" element={<Pricing />} />
+                      <Route path="/parcerias" element={<PartnerProgram />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/verify-email" element={<VerifyEmail />} />
+                      <Route path="/set-password" element={<SetPassword />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/select-plan" element={<SelectPlan />} />
+                      <Route path="/accept-invite" element={<AcceptInvite />} />
+                      <Route path="/approve/:token" element={<SocialApproval />} />
+                      {/* Public Link23 page (handle includes the leading @) */}
+                      <Route path="/:orgSlug/:handle" element={<LinkTreePublic />} />
+                      <Route path="/app/onboarding" element={
                         <ProtectedRoute>
-                          <AppLayout />
+                          <Onboarding />
                         </ProtectedRoute>
-                      }
-                    >
-                      <Route index element={<Dashboard />} />
-                      <Route path="pipeline" element={<Pipeline />} />
-                      <Route path="sales-funnel" element={<Navigate to="/app/pipeline?tab=sales" replace />} />
-                      <Route path="operational-flow" element={<Navigate to="/app/pipeline?tab=operations" replace />} />
-                      <Route path="clients" element={
-                        <RoleProtectedRoute requireClients>
-                          <Clients />
-                        </RoleProtectedRoute>
                       } />
-                      <Route path="clients/:clientId" element={<ClientDetail />} />
-                      <Route path="clients/edit/:clientId" element={
-                        <RoleProtectedRoute allowedRoles={['Owner', 'sales', 'owner']}>
-                          <EditClient />
-                        </RoleProtectedRoute>
+                      <Route path="/app/select-organization" element={
+                        <ProtectedRoute>
+                          <SelectOrganization />
+                        </ProtectedRoute>
                       } />
-                      <Route path="new-client" element={
-                        <RoleProtectedRoute allowedRoles={['Owner', 'sales', 'owner']}>
-                          <NewClient />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="academia" element={<Academia />} />
-                      <Route path="team" element={
-                        <RoleProtectedRoute requireTeam>
-                          <Team />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="ai-assistant" element={<AgenteQIA />} />
-                      <Route path="ai-agents" element={<AIAgents />} />
-                      <Route path="ai-agents/:agentId" element={<AIAgentDetail />} />
-                      <Route path="ai-agents/:agentId/conversations/:conversationId" element={<AIAgentConversation />} />
-                      
-                      {/* Atende AI Module */}
-                      <Route path="atende-ai" element={<AtendeAI />} />
-                      <Route path="atende-ai/:agentNameSlug" element={<AtendeAIDetail />} />
-                      <Route path="atende-ai/:agentNameSlug/conversations/:conversationId" element={<AIAgentConversation />} />
-                      <Route path="link-trees" element={
-                        <RoleProtectedRoute privilege="link23">
-                          <LinkTreeDashboard />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="clients/:clientId/links" element={
-                        <RoleProtectedRoute privilege="link23">
-                          <LinkTreeEditor />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="studio" element={
-                        <RoleProtectedRoute privilege="studio">
-                          <StudioDashboard />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="studio" element={
-                        <RoleProtectedRoute privilege="studio">
-                          <StudioDashboard />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="studio/tools/:toolId" element={
-                        <RoleProtectedRoute privilege="studio">
-                          <StudioTool />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="settings" element={
-                        <RoleProtectedRoute requireSettings>
-                          <Settings />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="subscription" element={<Subscription />} />
-                      <Route path="notifications" element={<Notifications />} />
-                      <Route path="support" element={<SupportFeedback />} />
-                      <Route path="upgrade" element={<Upgrade />} />
-                      <Route path="finance" element={
-                        <RoleProtectedRoute privilege="finance">
-                          <Finances />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="finance/*" element={<Navigate to="/app/finance" replace />} />
-                      <Route path="editorial" element={
-                        <RoleProtectedRoute privilege="editorial">
-                          <Editorial />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="social-media" element={
-                        <RoleProtectedRoute privilege="social_media">
-                          <SocialMedia />
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="social-media/new" element={
-                        <RoleProtectedRoute privilege="social_media">
-                          <ErrorBoundary>
-                            <SocialPostEditor />
-                          </ErrorBoundary>
-                        </RoleProtectedRoute>
-                      } />
-                      <Route path="social-media/edit/:postId" element={
-                        <RoleProtectedRoute privilege="social_media">
-                          <ErrorBoundary>
-                            <SocialPostEditor />
-                          </ErrorBoundary>
-                        </RoleProtectedRoute>
-                      } />
-                    </Route>
-                    {/* Admin Routes - wrapped in ProtectedRoute for auth gate */}
-                    <Route path="/admin" element={
-                      <ProtectedRoute>
-                        <AdminLayout />
-                      </ProtectedRoute>
-                    }>
-                      <Route index element={<AdminDashboard />} />
-                      <Route path="analytics" element={<AdminAnalytics />} />
-                      <Route path="agencies" element={<AdminAgencies />} />
-                      <Route path="users" element={<AdminUsers />} />
-                      <Route path="subscriptions" element={<AdminSubscriptions />} />
-                      <Route path="finance" element={<AdminFinance />} />
-                      <Route path="feedbacks" element={<AdminFeedbacks />} />
-                      <Route path="support" element={<AdminSupport />} />
-                      <Route path="settings" element={<AdminSettings />} />
-                    </Route>
-                    <Route path="/not-found" element={<NotFound />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </ErrorBoundary>
-              </OrganizationProvider>
-            </PlanThemeProvider>
-          </AuthProvider>
-          </HeaderProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+                      <Route
+                        path="/app"
+                        element={
+                          <ProtectedRoute>
+                            <AppLayout />
+                          </ProtectedRoute>
+                        }
+                      >
+                        <Route index element={<Dashboard />} />
+                        <Route path="pipeline" element={<Pipeline />} />
+                        <Route path="sales-funnel" element={<Navigate to="/app/pipeline?tab=sales" replace />} />
+                        <Route path="operational-flow" element={<Navigate to="/app/pipeline?tab=operations" replace />} />
+                        <Route path="clients" element={
+                          <RoleProtectedRoute requireClients>
+                            <Clients />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="clients/:clientId" element={<ClientDetail />} />
+                        <Route path="clients/edit/:clientId" element={
+                          <RoleProtectedRoute allowedRoles={['Owner', 'sales', 'owner']}>
+                            <EditClient />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="new-client" element={
+                          <RoleProtectedRoute allowedRoles={['Owner', 'sales', 'owner']}>
+                            <NewClient />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="academia" element={<Academia />} />
+                        <Route path="team" element={
+                          <RoleProtectedRoute requireTeam>
+                            <Team />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="ai-assistant" element={<AgenteQIA />} />
+                        <Route path="ai-agents" element={<AIAgents />} />
+                        <Route path="ai-agents/:agentId" element={<AIAgentDetail />} />
+                        <Route path="ai-agents/:agentId/conversations/:conversationId" element={<AIAgentConversation />} />
+                        
+                        {/* Atende AI Module */}
+                        <Route path="atende-ai" element={<AtendeAI />} />
+                        <Route path="atende-ai/:agentNameSlug" element={<AtendeAIDetail />} />
+                        <Route path="atende-ai/:agentNameSlug/conversations/:conversationId" element={<AIAgentConversation />} />
+                        <Route path="link-trees" element={
+                          <RoleProtectedRoute privilege="link23">
+                            <LinkTreeDashboard />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="clients/:clientId/links" element={
+                          <RoleProtectedRoute privilege="link23">
+                            <LinkTreeEditor />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="studio" element={
+                          <RoleProtectedRoute privilege="studio">
+                            <StudioDashboard />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="studio" element={
+                          <RoleProtectedRoute privilege="studio">
+                            <StudioDashboard />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="studio/tools/:toolId" element={
+                          <RoleProtectedRoute privilege="studio">
+                            <StudioTool />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="settings" element={
+                          <RoleProtectedRoute requireSettings>
+                            <Settings />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="subscription" element={<Subscription />} />
+                        <Route path="notifications" element={<Notifications />} />
+                        <Route path="support" element={<SupportFeedback />} />
+                        <Route path="upgrade" element={<Upgrade />} />
+                        <Route path="finance" element={
+                          <RoleProtectedRoute privilege="finance">
+                            <Finances />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="finance/*" element={<Navigate to="/app/finance" replace />} />
+                        <Route path="editorial" element={
+                          <RoleProtectedRoute privilege="editorial">
+                            <Editorial />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="social-media" element={
+                          <RoleProtectedRoute privilege="social_media">
+                            <SocialMedia />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="social-media/new" element={
+                          <RoleProtectedRoute privilege="social_media">
+                            <ErrorBoundary>
+                              <SocialPostEditor />
+                            </ErrorBoundary>
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="social-media/edit/:postId" element={
+                          <RoleProtectedRoute privilege="social_media">
+                            <ErrorBoundary>
+                              <SocialPostEditor />
+                            </ErrorBoundary>
+                          </RoleProtectedRoute>
+                        } />
+                      </Route>
+                      {/* Admin Routes - wrapped in ProtectedRoute for auth gate */}
+                      <Route path="/admin" element={
+                        <ProtectedRoute>
+                          <AdminLayout />
+                        </ProtectedRoute>
+                      }>
+                        <Route index element={<AdminDashboard />} />
+                        <Route path="analytics" element={<AdminAnalytics />} />
+                        <Route path="agencies" element={<AdminAgencies />} />
+                        <Route path="users" element={<AdminUsers />} />
+                        <Route path="subscriptions" element={<AdminSubscriptions />} />
+                        <Route path="finance" element={<AdminFinance />} />
+                        <Route path="feedbacks" element={<AdminFeedbacks />} />
+                        <Route path="support" element={<AdminSupport />} />
+                        <Route path="settings" element={<AdminSettings />} />
+                      </Route>
+                      <Route path="/not-found" element={<NotFound />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </ErrorBoundary>
+                </OrganizationProvider>
+              </PlanThemeProvider>
+            </AuthProvider>
+            </HeaderProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

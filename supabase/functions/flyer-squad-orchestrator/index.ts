@@ -39,7 +39,7 @@ async function callGemini(parts: any[], model: string, generateImage = false) {
     const body: any = {
         contents: [{ role: "user", parts }],
         generationConfig: {
-            response_modalities: generateImage ? ["IMAGE", "TEXT"] : ["TEXT"],
+            responseModalities: generateImage ? ["IMAGE", "TEXT"] : ["TEXT"],
         }
     };
 
@@ -187,7 +187,10 @@ serve(async (req) => {
         };
 
         // Campos de configuração da marca (vindos do onboarding)
-        const primaryFont        = context.project?.primaryFont        || "Montserrat";
+        const primaryFont        = context.project?.primaryFont;
+        const fontInstruction    = primaryFont 
+            ? `Tipografia Principal OBRIGATÓRIA: Use apenas a fonte Google Fonts "${primaryFont}". Não utilize nenhuma outra.` 
+            : `Tipografia: Escolha uma fonte moderna, premium e legível que maximize o impacto do design para o nicho de ${context.project?.niche || 'negócios'}.`;
         const captionInstructions = context.project?.captionInstructions || "Tom profissional e engajador. Use emojis moderadamente.";
         const ratio              = context.project?.ratio              || "1:1";
         const dimensions         = context.project?.dimensions         || "1080x1080";
@@ -246,9 +249,10 @@ serve(async (req) => {
               - Nicho: "${context.project?.niche}"
               - Descrição da Marca: "${context.project?.description || 'Não fornecida'}"
               - Cores: Primária (${context.project?.primaryColor}), Secundária (${context.project?.secondaryColor})
-              - Tipografia Principal OBRIGATÓRIA: Fonte Google Fonts "${primaryFont}"
-              - Regras da Marca: ${context.project?.instructions || 'Nenhuma'}
-              - Restrições da Marca: ${context.project?.restrictions || 'Nenhuma'}
+              - ${fontInstruction}
+              - Regras da Marca: "${context.project?.instructions || 'Nenhuma'}"
+              - Restrições: "${context.project?.restrictions || 'Nenhuma'}"
+              - Info de Contacto: ${JSON.stringify(context.project?.contactInfo || {})}
               - Padrão de Legendas: "${captionInstructions}"
 
               CONFIGURAÇÃO DO RESULTADO ESPERADO:
@@ -486,8 +490,9 @@ serve(async (req) => {
             if (!base64Data) throw new Error("Designer falhou: API não retornou imagem");
 
             const ext = mimeType.includes('jpeg') ? 'jpg' : 'png';
-            const fileName = `${organizationId}/flyer-squad/${Date.now()}.${ext}`;
+            const fileName = organizationId + "/flyer-squad/" + Date.now() + "." + ext;
             const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            
             await supabase.storage.from("studio-assets").upload(fileName, imageBuffer, { contentType: mimeType });
             const { data: { publicUrl } } = supabase.storage.from("studio-assets").getPublicUrl(fileName);
 

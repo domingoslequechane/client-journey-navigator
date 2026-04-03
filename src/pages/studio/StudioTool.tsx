@@ -20,6 +20,9 @@ import { ProductStagingToolView } from '@/components/studio/ProductStagingToolVi
 import { FlyerSquadView } from '@/components/studio/FlyerSquadView';
 import { FlyerProjectHub } from '@/components/studio/FlyerProjectHub';
 import { FlyerProjectOnboarding } from '@/components/studio/FlyerProjectOnboarding';
+import { CarouselSquadView } from '@/components/studio/CarouselSquadView';
+import { CarouselProjectHub } from '@/components/studio/CarouselProjectHub';
+import { CarouselProjectOnboarding } from '@/components/studio/CarouselProjectOnboarding';
 import { cn } from '@/lib/utils';
 import { StudioQuickMenu } from '@/components/studio/StudioQuickMenu';
 import { useHeader } from '@/contexts/HeaderContext';
@@ -124,6 +127,44 @@ export default function StudioTool() {
 
         return (
             <FlyerProjectHub 
+                onCreateNew={() => setIsOnboarding(true)}
+                onSelectProject={(id) => setSelectedProjectId(id)}
+                onEditProject={(id) => setEditProjectId(id)}
+            />
+        );
+    }
+
+    if (tool.id === 'carousel') {
+        if (isOnboarding || editProjectId) {
+            return (
+                <CarouselProjectOnboarding 
+                    projectId={editProjectId || undefined}
+                    onComplete={(p) => {
+                        queryClient.invalidateQueries({ queryKey: ['studio-project', p.id] });
+                        setSelectedProjectId(p.id);
+                        setIsOnboarding(false);
+                        setEditProjectId(null);
+                    }}
+                    onCancel={() => {
+                        setIsOnboarding(false);
+                        setEditProjectId(null);
+                    }}
+                />
+            );
+        }
+
+        if (selectedProjectId) {
+            return (
+                <CarouselSquadView 
+                    tool={tool} 
+                    projectId={selectedProjectId} 
+                    onBackToHub={() => setSelectedProjectId(null)}
+                />
+            );
+        }
+
+        return (
+            <CarouselProjectHub 
                 onCreateNew={() => setIsOnboarding(true)}
                 onSelectProject={(id) => setSelectedProjectId(id)}
                 onEditProject={(id) => setEditProjectId(id)}
