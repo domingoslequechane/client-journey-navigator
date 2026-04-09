@@ -737,58 +737,45 @@ ISTO INCLUI: Japonês (日本語), Chinês (中文), Coreano (한국어), Árabe
 Fundo texturizado com texto ghosted? Esse texto TAMBÉM deve estar no idioma correto.
 
 ═══════════════════════════════════════════════════════
+🏛️ IDENTIDADE: Você é o Designer Chefe de uma agência de luxo. Seu trabalho é traduzir copy em arte visual minimalista, cara e sofisticada. Menos é mais.
 
-🏗️ TIPO DE SLIDE: ${isCover ? "🎯 CAPA / COVER (Slide de Abertura)" : slideIndex === forcedNumSlides - 1 ? "🏁 CTA (Call to Action — Slide Final)" : "📄 CONTEÚDO / BODY (Slide de Desenvolvimento)"}
+🏗️ TIPO DE SLIDE: ${isCover ? "🎯 CAPA (O Hook Visual — Deve ser impactante e limpo)" : slideIndex === forcedNumSlides - 1 ? "🏁 CTA (O Fecho — Call to Action com autoridade)" : "📄 CONTEÚDO (Desenvolvimento limpo e espaçoso)"}
 
-${refModeInstruction ? `🖼️ MODO DE REFERÊNCIA: ${refModeInstruction}\nATENÇÃO: No modo SIMILAR, analise a FILOSOFIA de design (espaçamento, proporções, hierarquia, paleta, estilo atmosférico) — NÃO clone graficamente as mesmas caixas e elementos. Adapte para a identidade deste cliente.\n` : ''}
+${refModeInstruction ? `🖼️ INSTRUÇÃO DE ESTILO: ${refModeInstruction}\n` : ''}
 
-📐 REGRAS DE PROPORÇÃO E ESPAÇO (NON-NEGOTIABLE):
-• Safe Zone: 15% de margem em TODAS as bordas. Zero elementos nesta área.
-• Proporção total: Texto + decorações visuais ≤ 38% da área do canvas.
-• Os 62%+ restantes são ESPAÇO NEGATIVO INTENCIONAL — deixe respirar.
-• Headline: máximo 2 linhas de texto. Nunca mais.
-• Body text: máximo 3 linhas de texto. Nunca mais.
-• Fontes: small is premium. Nunca use fontes que pareçam grandes ou dominantes.
+📐 PRINCÍPIOS DE DESIGN (OBRIGATÓRIO):
+• MINIMALISMO EXTREMO: Use o máximo de ESPAÇO NEGATIVO. O design deve "respirar". Nunca entulhe o slide.
+• HIERARQUIA: Headline em destaque, body text discreto e elegante.
+• TIPOGRAFIA: Use APENAS a fonte "${context.project?.primaryFont || 'Montserrat'}" com pesos variados (Bold para títulos, Regular para corpo).
+• MARGENS: Mantenha todos os elementos importantes longe das bordas (margem de segurança de 15%).
 
-🖼️ FUNDO GLOBAL DESTE CARROSSEL (${bgMode === 'dynamic' ? 'MODO DINÂMICO' : 'MODO ÚNICO'}):
-"${context.orchestrator?.analysis?.background_theme || 'Fundo com a paleta definida da marca, clean e profissional'}"
-${bgMode === 'dynamic' ? '🌀 MODO DINÂMICO ATIVO: NÃO replique o fundo de outros slides. O backgroundInstruction abaixo define o cenário específico para ESTE slide.' : '⚠️ MODO ÚNICO ATIVO: Este fundo deve ser ABSOLUTAMENTE IDÊNTICO em todos os slides. Copie exatamente as cores, texturas e elementos decorativos.'}
+${context.reviewerFeedback ? `🚨 FOCO TOTAL EM CORREÇÃO: Sua versão anterior foi REJEITADA. O erro foi: "${context.reviewerFeedback}". Sua missão agora é resolver este problema específico SEM ALTERAR a paleta ou o fundo base.` : ''}
 
-🎨 ESTRUTURA DO SLIDE:
-${isCover
-  ? `CAPA — REGRAS ESTRITAS:\n  • Estilo hook minimalista e magnético\n  • Headline GRANDE e impactante (o maior elemento visual)\n  • Elementos de fundo dinâmicos que destacam o texto de forma limpa`
-  : slideIndex === forcedNumSlides - 1
-  ? `CTA (Slide Final) — REGRAS ESTRITAS:\n  • Destaque o Call to Action de forma clara\n  • Headline apelativa ao engagement\n  • Botão ou elemento visual sublinhando a chamada à ação\n  • Logotipo mais proeminente que nos outros slides`
-  : `BODY — REGRAS ESTRITAS:\n  • Título em destaque com hierarquia forte\n  • Corpo de texto alinhado de forma refinada, tipografia limpa\n  • NÃO obrigue o texto a ficar dentro de caixas opacas ou cápsulas se não fizer sentido na estética atual. O texto preferencialmente deve integrar-se diretamente com o fundo usando contraste premium.\n  • Máximo espaçamento e respiro em toda a volta do texto`
-}
+🖼️ FUNDO (${bgMode === 'dynamic' ? 'DINÂMICO' : 'ÚNICO'}):
+${bgMode === 'dynamic' 
+  ? '🌀 Crie um cenário visual novo que ilustre o conteúdo deste slide, mantendo a paleta.' 
+  : '⚠️ MANTENHA O MESMO FUNDO EXATO DE TODOS OS OUTROS SLIDES. Consistência é a lei.'}
+Tema: "${context.orchestrator?.analysis?.background_theme || 'Fundo clean e profissional'}"
 
-${paginationInstruction}
-${backgroundInstruction}
-${footerInstruction}
-${logoInstruction}
-
-📝 CONTEÚDO DESTE SLIDE:
+📝 CONTEÚDO PARA ESCREVER NA IMAGEM:
 Headline: "${slideCopy.headline}"
-Body: "${isCover || slideIndex === forcedNumSlides - 1 ? '(sem body neste tipo de slide)' : slideCopy.body}"
+Body Text: "${isCover || slideIndex === forcedNumSlides - 1 ? '' : slideCopy.body}"
 
 ${projectLearnings}
 
-${context.reviewerFeedback ? `🚨 ALERTA DE CORREÇÃO PENDENTE (TENTATIVA ANTERIOR REJEITADA PELO DIRETOR):\nVOCÊ DEVE CORRIGIR IMEDIATAMENTE ESTE ERRO ESPECÍFICO NESTA NOVA GERAÇÃO:\n"${context.reviewerFeedback}"\nAplique a correção solicitada sem arruinar o resto do design.` : ''}
+🎯 ESPECIFICAÇÕES TÉCNICAS:
+• Idioma: Escreva EXCLUSIVAMENTE em ${contentLanguage}.
+• Sem Metadados: Nunca escreva "Slide", "Headline" ou "Body" na imagem.
+• Paleta: ${paletteColors.join(', ')}.
+• Logotipo: ${layoutStrategy.logo_position || 'Canto inferior'} — Máximo de discrição.
+• Paginação: ${paginationStyle === 'none' ? 'Inexistente' : 'Canto superior direito (minimalista)'}.
 
-🎨 DIREÇÃO CRIATIVA GLOBAL: "${context.orchestrator?.creative_direction || 'Estilo premium e moderno'}"
-🎯 PALETA EXATA: ${paletteColors.join(', ')}
-🔤 FONTE OBRIGATÓRIA: "${context.project?.primaryFont || 'Montserrat'}" — Use APENAS esta fonte em toda a composição.
+🎨 TOQUE FINAL DO DIRETOR:
+- Priorize CLAREZA e CONTRASTE.
+- O texto deve ser legível à primeira vista.
+- Mantenha a elegância minimalista que definimos.
 
-📌 POSICIONAMENTO FIXO (idêntico em TODOS os slides):
-• Logotipo: ${layoutStrategy.logo_position || 'Canto inferior esquerdo'} — altura máxima 40px para canvas 1080px.
-• Paginação: canto superior direito — tamanho mínimo, discreto.
-
-🚫 REGRAS ABSOLUTAS — VIOLAÇÃO = FALHA CRÍTICA:
-1. IDIOMA: Zero caracteres em língua que não seja "${contentLanguage}". Inclui texto em background.
-2. TEXTO TÉCNICO: Nunca escreva "Slide 1", "Headline", "Body", "Caption", "Footer" ou qualquer metadado no design.
-4. TAMANHO: Nenhum elemento single pode ultrapassar 40% da dimensão do canvas.
-5. LOGOTIPO: Posição FIXA. Nunca move entre slides. Mesma escala.
-6. FUNDO: A cor/textura base do fundo é FIXA. Não mude entre slides.
+REALIZE UM DESIGN QUE PAREÇA FEITO POR UM HUMANO ESPECIALISTA.
                 `;
 
                 parts.push({ text: fullPrompt });
