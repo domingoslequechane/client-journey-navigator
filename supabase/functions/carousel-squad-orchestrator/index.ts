@@ -912,19 +912,20 @@ ${body.slideCopy ? `Headline: "${body.slideCopy.headline}"\nBody: "${body.slideC
 ${projectLearnings}
 
 Critérios de avaliação INEGOCIÁVEIS (LEIA PALAVRA POR PALAVRA DO DESIGN):
-1. ✅ FIDELIDADE AO TEXTO E IDIOMA: O texto que a IA colocou no slide CORRESPONDE RIGOROSAMENTE à Headline e Body pedidas? Há palavras inventadas (gibberish)? Faltam letras? Há algum caractere asiático ou língua diferente inserido aleatoriamente no fundo? Existe texto metadado visível (ex: "Slide 1, Headline, Body, Footer")? Se houver UM ÚNICO erro ortográfico ou palavra inventada = REJECT.
-2. ✅ LIMPEZA E AUSÊNCIA DE ARTEFATOS: Tem pedaços bizarros de UI (ex: contador de likes falso, ícones distorcidos, rabiscos aleatórios que não parecem texto humano)? Se tiver = REJECT.
-3. ✅ REGRAS DA PAGINAÇÃO E LOGOTIPO: A paginação ou logotipo foi alterada ou escrita com valores errados/inventados? = REJECT.
-4. ✅ MEMÓRIA DO PROJETO (SUPER CRÍTICO): Leia com rigor as diretrizes em "O QUE O CLIENTE REJEITOU" ou "INSTRUCOES FIXAS" que você recebeu acima. Se o designer cometeu O MESMO ERRO que o cliente proibiu, REJEITE IMEDIATAMENTE e exija de forma ríspida corrigí-lo.
-5. ✅ ESPAÇO E ESTÉTICA EXECUTIVA: O layout respeita a direção do Orchestrator? O negative space está visível ou o texto está esmagado/cortado nas extremidades? Se não estiver premium = REJECT.
+1. ✅ FIDELIDADE AO TEXTO E IDIOMA: O texto que a IA colocou no slide CORRESPONDE RIGOROSAMENTE à Headline e Body pedidas? Se houver UM ÚNICO erro ortográfico ou palavra inventada no texto central = REJECT.
+2. ✅ LIMPEZA: Há artefatos bizarros que destroem a estética (ex: rostos deformados, ícones ilegíveis)?
+3. ✅ REGRAS DA PAGINAÇÃO E LOGOTIPO: A paginação ou logotipo está visível?
+
+${(body.retryCount || 0) > 1 ? `
+🚨 AVISO DE ECONOMIA DE CRÉDITOS: Esta é a tentativa número ${(body.retryCount || 0) + 1}. 
+O designer já tentou várias vezes. A menos que a imagem tenha um erro CRÍTICO de leitura ou idioma que a torne INUTILIZÁVEL, tente ser mais tolerante com detalhes estéticos menores para não desperdiçar créditos do cliente. Priorize a entrega do valor real.` : `
+VOCÊ É O DETETOR DE HALLUCINATIONS! NÃO SEJA LAÇO. Se vir erros, REJEITE IMEDIATAMENTE.`}
 
 Retorne APENAS um JSON no formato EXATO:
 {
   "status": "approved" ou "rejected",
-  "feedback": "Opcional se approved. Se rejected, DESTRUA a imagem com UMA FRASE muito clara listando os erros EXATOS (ex: 'O texto está em gibberish e inventou palavras na segunda linha', ou 'Você usou fundo escuro e o cliente tinha proibido isso strictamente'). Seja implacável."
+  "feedback": "Opcional se approved. Se rejected, descreva o erro com uma frase curta."
 }
-
-VOCÊ É O DETETOR DE HALLUCINATIONS! NÃO SEJA LAÇO. Se vir erros, REJEITE IMEDIATAMENTE. O design MANDA no cliente. Se aprovar algo com texto alienígena, a agência perde o contrato.
                 `});
             } else {
                 // Batch review

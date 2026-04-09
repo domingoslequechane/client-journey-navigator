@@ -840,7 +840,7 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
             
             let slideApproved = false;
             let slideRetryCount = 0;
-            const MAX_SLIDE_RETRIES = 30; // Removido o limite rígido, agora itera praticamente de forma ilimitada até à perfeição
+            const MAX_SLIDE_RETRIES = 3; // Limite de tentativas para evitar gasto excessivo de créditos
             let currentImageUrl: string | null = null;
             let reviewerFeedback: string | null = null;
 
@@ -850,7 +850,7 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
               setCurrentStep(2); // Muda UI para Designer
               setLogs(prev => [...prev, {
                 agent: 'designer',
-                action: slideRetryCount === 0 ? `Criando painel ${i + 1} de ${totalSlides}...` : `Refinando painel ${i + 1} em busca da perfeição (Tentativa ${slideRetryCount})...`,
+                action: slideRetryCount === 0 ? `Criando painel ${i + 1} de ${totalSlides}...` : `Refinando painel ${i + 1} (Tentativa ${slideRetryCount}/${MAX_SLIDE_RETRIES})...`,
                 status: 'working',
                 timestamp: new Date().toISOString()
               }]);
@@ -917,7 +917,12 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                   organizationId: orgId,
                   projectId: projectId,
                   numSlides: numberOfSlides,
-                  context: { ...currentContext, slideIndex: i, imageUrl }
+                  context: { 
+                    ...currentContext, 
+                    slideIndex: i, 
+                    imageUrl,
+                    retryCount: slideRetryCount
+                  }
                 }
               });
 
@@ -936,6 +941,19 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                 slideApproved = true;
               } else if (reviewData?.success && reviewData.result.status === 'rejected') {
                 reviewerFeedback = reviewData.result.feedback;
+                
+                // If we reached max retries, we force-approve it to move on
+                if (slideRetryCount >= MAX_SLIDE_RETRIES) {
+                  setLogs(prev => [...prev, {
+                    agent: 'reviewer',
+                    action: `⚠ Limite de refinamento atingido (${MAX_SLIDE_RETRIES}). Usando melhor versão atual.`,
+                    status: 'completed',
+                    timestamp: new Date().toISOString()
+                  }]);
+                  slideApproved = true;
+                  continue;
+                }
+
                 toast.error(
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest">
@@ -947,7 +965,7 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                     </p>
                     <div className="text-[9px] text-muted-foreground mt-1 flex items-center gap-1.5">
                       <Loader2 className="h-3 w-3 animate-spin" />
-                      O Designer está a fazer as correções...
+                      O Designer está a fazer as correções (Tentativa {slideRetryCount + 1}/{MAX_SLIDE_RETRIES})...
                     </div>
                   </div>,
                   { 
@@ -962,14 +980,6 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                     timestamp: new Date().toISOString()
                 }]);
                 slideRetryCount++;
-                if (slideRetryCount > MAX_SLIDE_RETRIES) {
-                  setLogs(prev => [...prev, {
-                      agent: 'reviewer',
-                      action: `⚠ Máximo de tentativas atingido. Avançando...`,
-                      status: 'failed',
-                      timestamp: new Date().toISOString()
-                  }]);
-                }
               } else {
                 slideApproved = true;
               }
