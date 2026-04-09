@@ -535,9 +535,10 @@ Retorne APENAS um JSON válido com esta estrutura exata:
               ${projectLearnings}
               
               🚨 REGRAS CRÍTICAS DE COPY (NÃO SEJA GENÉRICO):
-              1. VALOR PROFUNDO: O conteúdo gerado na propriedade "body" deve ser TÉCNICO, ESPECÍFICO e INSIGHTFUL. Extraia os dados reais, exemplos e números do briefing. O leitor precisa aprender algo valioso.
+              1. VALOR PROFUNDO: O conteúdo gerado na propriedade "body" deve ser TÉCNICO, ESPECÍFICO e INSIGHTFUL. Extraia os dados reais, examples e números do briefing. O leitor precisa aprender algo valioso.
               2. PROIBIDO CLICHÊS: Não use frases óbvias ("A inteligência artificial ajuda empresas", "Conheça as vantagens"). Use ângulos provocativos e argumentos concretos (ex: "LLMs open-source reduzem custos de GTM em 40% se integrados via API").
               3. TOM: Sofisticado, direto e persuasivo de alto nível (estilo consultoria premium).
+              4. LEGENDA CURTA: A "social_caption" deve ser impactante mas ter RIGOROSAMENTE no máximo 500 caracteres, incluindo hashtags.
               
               🚨 ESTRUTURA DO CARROSSEL:
               ${isAuto 
@@ -549,7 +550,7 @@ Retorne APENAS um JSON válido com esta estrutura exata:
               
               Retorne APENAS o JSON no formato abaixo:
               {
-                "social_caption": "Caption para Instagram com hashtags. Profundo, retenha leitor com o insight principal (não vai na imagem).",
+                "social_caption": "Caption para Instagram com hashtags. RIGOROSAMENTE MÁXIMO 500 CARACTERES. Profundo, retenha leitor com o insight principal (não vai na imagem).",
                 "slides": [
                   {
                     "slide_number": 1,
