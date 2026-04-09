@@ -1707,6 +1707,11 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
           </div>
         </div>
 
+        {/* Project Learnings / AI Memory Panel */}
+        <div className="space-y-3">
+          <CarouselFeedbackPanel projectId={projectId!} />
+        </div>
+
         {isProcessing ? (
           <Button 
             className="w-full h-12 text-sm font-bold rounded-xl shadow-md transition-all mt-4 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-400 border border-red-500/20"
