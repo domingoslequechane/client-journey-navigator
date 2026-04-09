@@ -731,17 +731,19 @@ A IMAGEM FINAL deve ter exatamente as proporções ${ratio}. Não gere uma image
 ═══════════════════════════════════════════════════════
 
 🚨 PROCESSO DE PENSAMENTO (Obrigatório — EXECUTE ANTES DE RENDERIZAR):
-1. VERIFICAÇÃO DE PALAVRAS: Escreva mentalmente cada palavra da Headline "${slideCopy.headline}" ${isCover || slideIndex === forcedNumSlides - 1 ? '' : `e do Body "${slideCopy.body}"`}. Verifique a ortografia de cada termo. Use APENAS as palavras exatas fornecidas, sem inventar sinónimos ou abreviaturas.
-2. Auditoria de Fundo: Se o cenário de fundo tiver objetos (livros, gavetas, caixas), eles DEVEM estar com faces completamente limpas, sem qualquer texto.
-3. Auditoria de Sizing: O bloco de texto central (Headline + Body) não pode ultrapassar 40% da área total da imagem.
+1. Auditoria de Texto: Visualize cada letra de "${slideCopy.headline}" ${isCover || slideIndex === forcedNumSlides - 1 ? '' : `e "${slideCopy.body}"`}.
+2. Auditoria do Rodapé: Verifique se existe texto de rodapé: "${footerText}". Se sim, planeje sua posição discreta.
+3. Auditoria de Fundo: Garanta ZERO texto em objetos de cenário.
+4. Auditoria de Sizing: O bloco central não pode ultrapassar 40% da área.
 
-🏛️ IDENTIDADE: Designer de Elite. Seu estilo é Purista, Minimalista e Caro.
+🏛️ IDENTIDADE: Designer de Elite Minimalista.
 
 📐 REGRAS INEGOCIÁVEIS:
-• ZERO TEXTO EM OBJETOS: Proibido qualquer escrita em elementos de fundo (gavetas, livros, paredes). O único texto permitido é o Headline e o Body.
-• LUXURY SIZING: O bloco de texto DEVE ser pequeno e centralizado (ou alinhado), cercado por muito espaço vazio. Nunca ultrapasse 40% da área total.
-• PAGINAÇÃO EXATA: Escreva apenas "${slideIndex + 1} / ${forcedNumSlides}". Se o slide é o 4, escreva "4 / ${forcedNumSlides}". Nunca erre isso.
-• MARGENS: Mantenha 15% de margem limpa em toda a volta.
+• ZERO TEXTO EM OBJETOS: Apenas Headline, Body e Rodapé são permitidos.
+• LUXURY SIZING: Texto central pequeno (< 40%).
+• PAGINAÇÃO: ${paginationInstruction}
+• RODAPÉ (FOOTER): ${footerInstruction || 'Não disponível'}
+• MARGENS: 15% de área limpa.
 
 ${context.reviewerFeedback ? `🚨 CORRIGIR ESTE ERRO AGORA: "${context.reviewerFeedback}". Foque 100% nisso.` : ''}
 
@@ -881,12 +883,13 @@ Body: "${body.slideCopy?.body || '(sem body)'}"
 ${projectLearnings}
 
 📋 CRITÉRIOS DE AVALIAÇÃO (FOCO NO RESULTADO REAL):
-1. ✅ ORTOGRAFIA CRÍTICA: O texto central está correto e legível? Se houver erro de digitação bizarro ou palavras inventadas, REJEITE. Se estiver 100% correto, ignore pequenos detalhes de fonte ou cor se não ferirem a marca.
-2. 🚫 SEM LIXO VISUAL: O fundo está limpo? Se houver "letras fantasmas" ou gibberish que distraia a leitura, REJEITE.
-3. 📏 HARMONIA: O texto cabe no slide sem parecer "esmagado"? 
+1. ✅ ORTOGRAFIA CRÍTICA: O texto central está correto e legível?
+2. 🚫 SEM LIXO VISUAL: O fundo está limpo de textos fantasmas?
+3. 📏 HARMONIA: O texto cabe no slide? 
 4. 🔢 PAGINAÇÃO: O número ${slideIndex + 1} está visível corretamente?
+5. ⚓ RODAPÉ: Se o texto de rodapé "${footerText}" foi solicitado, ele está presente e discreto?
 
-${(body.retryCount || 0) > 0 ? `⚠️ Tentativa ${(body.retryCount || 0) + 1}. SEJA PRAGMÁTICO: Se o slide está bom para postar, aprove. Não busque perfeição milimétrica agora.` : 'Foque na qualidade profissional padrão.'}
+${(body.retryCount || 0) > 0 ? `⚠️ Tentativa ${(body.retryCount || 0) + 1}. SEJA PRAGMÁTICO: Se o slide está bom para postar, aprove.` : 'Foque na qualidade profissional padrão.'}
 
 🚨 REGRA MÁXIMA: Identifique TODOS os problemas encontrados e coloque-os no campo "feedback" em uma lista numerada. O Designer vai receber este feedback e corrigir TUDO DE UMA SÓ VEZ. Não deixe nenhum erro passar!
 
