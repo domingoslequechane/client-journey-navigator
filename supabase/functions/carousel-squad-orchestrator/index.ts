@@ -757,24 +757,22 @@ ${bgMode === 'dynamic'
   : '⚠️ MANTENHA O MESMO FUNDO EXATO DE TODOS OS OUTROS SLIDES. Consistência é a lei.'}
 Tema: "${context.orchestrator?.analysis?.background_theme || 'Fundo clean e profissional'}"
 
-📝 CONTEÚDO OBRIGATÓRIO (ESCREVA EXATAMENTE ASSIM):
+📝 CONTEÚDO PARA ESCREVER NA IMAGEM (PRECISÃO ABSOLUTA):
 Headline: "${slideCopy.headline}"
 Body Text: "${isCover || slideIndex === forcedNumSlides - 1 ? '' : slideCopy.body}"
 
-🚨 PRECISÃO ORTOGRÁFICA (VITAL):
-A sua missão número 1 é a ORTOGRAFIA. Erros de digitação ou letras trocadas tornarão o slide INÚTIL.
-- LEIA letra por letra antes de renderizar.
-- NÃO invente símbolos ou caracteres bizarros.
-- O texto deve ser legível, limpo e PERFEITAMENTE escrito em ${contentLanguage}.
+🚨 REGRAS DE OURO PARA TEXTO (ANTI-ALUCINAÇÃO):
+1. ORTOGRAFIA MILIMÉTRICA: Escreva o texto acima CARACTERE POR CARACTERE. Erros de digitação, letras trocadas ou palavras inventadas são inaceitáveis e causam a demissão da agência.
+2. ZERO "GIBBERISH": Não insira caracteres aleatórios, símbolos estranhos ou textos borrados que pareçam "IA tentando escrever". O texto deve ser nítido e humano.
+3. IDIOMA ÚNICO: Use APENAS "${contentLanguage}". Bloqueie qualquer tendência de escrever em Inglês ou misturar línguas no fundo.
 
 ${projectLearnings}
 
 🎯 ESPECIFICAÇÕES TÉCNICAS:
-• Idioma: Escreva EXCLUSIVAMENTE em ${contentLanguage}.
-• Sem Metadados: Nunca escreva "Slide", "Headline" ou "Body".
+• Sem Metadados: Nunca escreva "Slide", "Headline" ou "Body" na imagem.
 • Paleta: ${paletteColors.join(', ')}.
-• Logotipo: ${layoutStrategy.logo_position || 'Canto inferior'}.
-• Paginação: ${paginationStyle === 'none' ? 'Inexistente' : 'Canto superior direito'}.
+• Logotipo: ${layoutStrategy.logo_position || 'Canto inferior'} — Máximo de discrição.
+• Paginação: ${paginationStyle === 'none' ? 'Inexistente' : 'Canto superior direito (minimalista)'}.
 
 🎨 TOQUE FINAL DO DIRETOR:
 - Priorize CLAREZA e CONTRASTE.
