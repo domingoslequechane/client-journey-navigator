@@ -730,13 +730,10 @@ Canvas: Formato ${ratio} (${orientationInstruction}).
 A IMAGEM FINAL deve ter exatamente as proporções ${ratio}. Não gere uma imagem quadrada se o formato é vertical.
 ═══════════════════════════════════════════════════════
 
-🌍 IDIOMA DO CONTEÚDO (LEI MÁXIMA — TOLERÂNCIA ZERO):
-Todo texto visível neste slide DEVE estar EXCLUSIVAMENTE em: "${contentLanguage}".
-ABSOLUTAMENTE PROIBIDO qualquer caracter, palavra ou símbolo de outro idioma ou alfabeto.
-ISTO INCLUI: Japonês (日本語), Chinês (中文), Coreano (한국어), Árabe (العربية), Hebraico (עברית), ou qualquer outro.
-Fundo texturizado com texto ghosted? Esse texto TAMBÉM deve estar no idioma correto.
+🚨 PROCESSO DE PENSAMENTO (Obrigatório): 
+Antes de iniciar a renderização gráfica, realize uma auditoria interna do texto que você vai escrever: "${slideCopy.headline}" ${isCover || slideIndex === forcedNumSlides - 1 ? '' : `e "${slideCopy.body}"`}.
+Analise cada sílaba e cada letra. Visualize a escrita correta mentalmente para evitar erros de digitação. Só após esta verificação você deve gravar o texto na imagem.
 
-═══════════════════════════════════════════════════════
 🏛️ IDENTIDADE: Você é o Designer Chefe de uma agência de luxo. Seu trabalho é traduzir copy em arte visual minimalista, cara e sofisticada. Menos é mais.
 
 🏗️ TIPO DE SLIDE: ${isCover ? "🎯 CAPA (O Hook Visual — Deve ser impactante e limpo)" : slideIndex === forcedNumSlides - 1 ? "🏁 CTA (O Fecho — Call to Action com autoridade)" : "📄 CONTEÚDO (Desenvolvimento limpo e espaçoso)"}
@@ -748,6 +745,8 @@ ${refModeInstruction ? `🖼️ INSTRUÇÃO DE ESTILO: ${refModeInstruction}\n` 
 • HIERARQUIA: Headline em destaque, body text discreto e elegante.
 • TIPOGRAFIA: Use APENAS a fonte "${context.project?.primaryFont || 'Montserrat'}" com pesos variados (Bold para títulos, Regular para corpo).
 • MARGENS: Mantenha todos os elementos importantes longe das bordas (margem de segurança de 15%).
+${paginationInstruction}
+${footerInstruction}
 
 ${context.reviewerFeedback ? `🚨 FOCO TOTAL EM CORREÇÃO: Sua versão anterior foi REJEITADA. O erro foi: "${context.reviewerFeedback}". Sua missão agora é resolver este problema específico SEM ALTERAR a paleta ou o fundo base.` : ''}
 
