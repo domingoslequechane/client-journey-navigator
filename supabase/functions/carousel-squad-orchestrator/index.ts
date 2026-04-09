@@ -540,13 +540,13 @@ Retorne APENAS um JSON válido com esta estrutura exata:
               3. TOM: Sofisticado, direto e persuasivo de alto nível (estilo consultoria premium).
               4. LEGENDA CURTA: A "social_caption" deve ser impactante mas ter RIGOROSAMENTE no máximo 500 caracteres, incluindo hashtags.
               
-              🚨 ESTRUTURA DO CARROSSEL:
+              🚨 ESTRUTURA DO CARROSSEL (CONCISÃO É PODER):
               ${isAuto 
-                ? `- Determine o NÚMERO IDEAL DE SLIDES (entre 4 e 8) para explicar o assunto com profundidade. Retorne esse exato número de objetos no array "slides".` 
+                ? `- Determine o NÚMERO IDEAL DE SLIDES (entre 4 e 6). Menos cards com mais impacto são preferíveis a muitos cards genéricos. Retorne esse exato número de objetos no array "slides".` 
                 : `- Retorne RIGOROSAMENTE ${numSlides} slides. Adapte a profundidade do texto para encaixar perfeitamente em ${numSlides} partes lógicas.`}
               - SLIDE 1 (CAPA): Hook magnético e curto (máximo 6 palavras). Não pode ser genérico.
-              - SLIDES INTERMÉDIOS: "Headline" (máximo 8 p.) e "body" (máximo 4 frases contundentes, focadas num insight chave cada).
-              - ${isAuto ? 'ÚLTIMO SLIDE' : `SLIDE ${numSlides}`} (CTA): Dedicado 100% à Call to Action forte para os negócios/produto do cliente (ex: "Agende sua consultoria", "Clique no link", "Salve para aplicar na sua empresa").
+              - SLIDES INTERMÉDIOS: "Headline" (máximo 8 p.) e "body" (máximo 3-4 frases contundentes, focadas num insight chave cada).
+              - ${isAuto ? 'ÚLTIMO SLIDE' : `SLIDE ${numSlides}`} (CTA): Dedicado 100% à Call to Action forte para os negócios/produto do cliente.
               
               Retorne APENAS o JSON no formato abaixo:
               {
@@ -581,7 +581,7 @@ Retorne APENAS um JSON válido com esta estrutura exata:
             if (!parsed.slides || !Array.isArray(parsed.slides)) parsed.slides = [];
             
             if (isAuto) {
-                // Auto limits: min 3, max 8
+                // Auto limits: min 3, max 6
                 while(parsed.slides.length < 3) {
                    if (parsed.slides.length === 0) break;
                    parsed.slides.push({ slide_number: parsed.slides.length + 1, headline: "", body: "" });
@@ -592,8 +592,8 @@ Retorne APENAS um JSON válido com esta estrutura exata:
                       { slide_number: 2, headline: "Obrigado pela paciência", body: "Verifique os logs ou suas chaves de API." }
                     ];
                 }
-                if (parsed.slides.length > 8) {
-                   parsed.slides = parsed.slides.slice(0, 8);
+                if (parsed.slides.length > 6) {
+                   parsed.slides = parsed.slides.slice(0, 6);
                 }
             } else {
                 while(parsed.slides.length < numSlides) {
@@ -866,34 +866,34 @@ ${projectLearnings}
                 const creativeDirection = context.orchestrator?.creative_direction || '';
 
                 parts.push({ text: `
-Você é um Revisor de QA de agência de design. Sua missão é aprovar slides que estejam funcionais e entregáveis, e rejeitar apenas quando há erros GRAVES que tornam o slide inutilizável.
+Você é o Diretor de Arte Sênior focado em ESSENCIALISMO E CLAREZA. Sua missão é garantir que o carrossel seja profissional, legível e correto.
 
 Você está analisando o SLIDE ${slideIndex + 1} de um carrossel de ${numSlides}.
+Tipo de Slide: ${slideIndex === 0 ? "CAPA (Hook)" : slideIndex === numSlides - 1 ? "CTA FINAL" : "BODY (Conteúdo)"}.
 
-O DESIGNER DEVERIA TER ESCRITO:
+O DESIGNER DEVERIA TER ESCRITO EXATAMENTE:
 Headline: "${body.slideCopy?.headline || '(sem headline)'}"
 Body: "${body.slideCopy?.body || '(sem body)'}"
-Idioma: ${context.orchestrator?.copy_direction?.content_language || 'Português do Brasil'}
 
-📋 CRITÉRIOS DE REJEIÇÃO (APENAS ERROS GRAVES):
-1. 🔤 ORTOGRAFIA CRÍTICA: Há palavras completamente inventadas ou ilegíveis que distorcem o significado? (Pequenos erros tipográficos ou variações menores: IGNORE e aprove.)
-2. 🗑️ GIBBERISH GRAVE: O fundo tem texto completamente ilegível ou idioma errado que atrapalhe a leitura do slide?
+🎨 INSTRUÇÕES QUE O DESIGNER RECEBEU:
+- Direção Criativa: "${creativeDirection}"
+- Idioma Obrigatório: ${context.orchestrator?.copy_direction?.content_language || 'Português do Brasil'}
+${projectLearnings}
 
-⚠️ NÃO REJEITE POR:
-- Pequenas variações estéticas ou de proporção
-- Preferências pessoais de layout
-- Sizing ligeiramente maior que 40%
-- Paginação com pequenas diferenças de formatação
-- Estilo visual "diferente do esperado"
+📋 CRITÉRIOS DE AVALIAÇÃO (FOCO NO RESULTADO REAL):
+1. ✅ ORTOGRAFIA CRÍTICA: O texto central está correto e legível? Se houver erro de digitação bizarro ou palavras inventadas, REJEITE. Se estiver 100% correto, ignore pequenos detalhes de fonte ou cor se não ferirem a marca.
+2. 🚫 SEM LIXO VISUAL: O fundo está limpo? Se houver "letras fantasmas" ou gibberish que distraia a leitura, REJEITE.
+3. 📏 HARMONIA: O texto cabe no slide sem parecer "esmagado"? 
+4. 🔢 PAGINAÇÃO: O número ${slideIndex + 1} está visível corretamente?
 
-${(body.retryCount || 0) > 0 ? `🟡 Tentativa ${(body.retryCount || 0) + 1}. O Designer já tentou corrigir. Seja generoso — aprove se o slide for utilizável.` : ''}
+${(body.retryCount || 0) > 0 ? `⚠️ Tentativa ${(body.retryCount || 0) + 1}. SEJA PRAGMÁTICO: Se o slide está bom para postar, aprove. Não busque perfeição milimétrica agora.` : 'Foque na qualidade profissional padrão.'}
 
-Se há erros para corrigir, liste TODOS de uma vez no campo "feedback".
+🚨 REGRA MÁXIMA: Identifique TODOS os problemas encontrados e coloque-os no campo "feedback" em uma lista numerada. O Designer vai receber este feedback e corrigir TUDO DE UMA SÓ VEZ. Não deixe nenhum erro passar!
 
-Retorne APENAS um JSON:
+Retorne APENAS um JSON no formato EXATO:
 {
   "status": "approved" ou "rejected",
-  "feedback": "Se rejected: liste todos os erros de uma vez. Ex: '1. Palavra X escrita como Y. 2. Texto ilegível no fundo.'"
+  "feedback": "Se rejected: liste TODOS os erros encontrados. Ex: '1. Palavra escrita como X mas deve ser Y. 2. Paginação mostra 3/6 mas devia ser 2/6. 3. Fundo tem texto gibberish na gaveta esquerda.'"
 }
                 `});
             } else {
