@@ -9,12 +9,13 @@ const corsHeaders = {
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-// Configuração de Modelos Gemini (Architecture: Agentic Workflow)
-// ORCHESTRATOR/COPYWRITER/REVIEWER = gemini-3.1-pro-preview (texto, thinking, agentic)
-// DESIGNER = Nano Banana 2 = gemini-3.1-flash-image-preview (geração nativa de imagem)
+// Configuração de Modelos (Architecture: Agentic Workflow)
+// ORCHESTRATOR = gpt-4o (OpenAI — raciocínio estratégico e direção criativa)
+// COPYWRITER = claude-3-5-sonnet (Claude AI — copy cirúrgico e estruturado)
+// DESIGNER = gemini-3.1-flash-image-preview (Gemini — geração nativa de imagem)
 const MODELS = {
-    ORCHESTRATOR: "gemini-3.1-pro-preview",
-    COPYWRITER:   "gemini-3.1-pro-preview",
+    ORCHESTRATOR: "gemini-3.1-pro-preview", // Gemini with DeepThink enabled
+    COPYWRITER:   "claude-opus-4-6", // Claude AI
     DESIGNER:     "gemini-3.1-flash-image-preview",
     REVIEWER:     "gemini-3.1-pro-preview",
 };
@@ -61,6 +62,18 @@ async function fetchUrlContent(url: string): Promise<string> {
     }
 }
 
+// Converte o ratio da app (ex: "9:16") para o formato aceito pela API do Gemini
+function toGeminiAspectRatio(ratio?: string): string {
+    const map: Record<string, string> = {
+        "1:1": "1:1",
+        "9:16": "9:16",
+        "16:9": "16:9",
+        "4:5": "4:5",
+        "3:4": "3:4",
+    };
+    return map[ratio || "1:1"] || "1:1";
+}
+
 async function callGemini(parts: any[], model: string, generateImage = false, targetRatio?: string) {
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
     const url = `${GEMINI_API_BASE}/models/${model}:generateContent?key=${geminiKey}`;
@@ -71,6 +84,13 @@ async function callGemini(parts: any[], model: string, generateImage = false, ta
             responseModalities: generateImage ? ["IMAGE", "TEXT"] : ["TEXT"],
         }
     };
+
+    // Injeta o aspect ratio para geração de imagem — crítico para formatos não-quadrados
+    if (generateImage && targetRatio) {
+        body.generationConfig.imageConfig = {
+            aspectRatio: toGeminiAspectRatio(targetRatio)
+        };
+    }
 
     if (model.includes("pro-preview")) {
         body.generationConfig.thinkingConfig = {
@@ -116,6 +136,127 @@ async function callGemini(parts: any[], model: string, generateImage = false, ta
     }
 
     return data;
+}
+
+async function callOpenAI(parts: any[]) {
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiKey) throw new Error("OPENAI_API_KEY não configurada nas secrets da Edge Function");
+
+    // Converter parts do formato interno para formato OpenAI (multimodal)
+    const contentParts: any[] = [];
+    for (const p of parts) {
+        if (p.text) {
+            contentParts.push({ type: "text", text: p.text });
+        } else if (p.inlineData) {
+            const mimeType = p.inlineData.mimeType === "image/jpg" ? "image/jpeg" : p.inlineData.mimeType;
+            contentParts.push({
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${p.inlineData.data}`, detail: "high" }
+            });
+        }
+    }
+
+    const body = {
+        model: MODELS.ORCHESTRATOR,
+        max_tokens: 4096,
+        messages: [{ role: "user", content: contentParts }],
+    };
+
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${openaiKey}`
+        },
+        body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+        const err = await resp.text();
+        console.error("OpenAI API error response:", err);
+        throw new Error(`OpenAI Error (${resp.status}): ${err.substring(0, 500)}`);
+    }
+
+    const data = await resp.json();
+    const text = data.choices?.[0]?.message?.content || "";
+
+    // Normalizar para o mesmo formato interno do pipeline
+    return {
+        candidates: [{
+            content: { parts: [{ text }] },
+            role: "model"
+        }],
+        usageMetadata: {
+            promptTokenCount: data.usage?.prompt_tokens || 0,
+            candidatesTokenCount: data.usage?.completion_tokens || 0,
+            totalTokenCount: data.usage?.total_tokens || 0
+        }
+    };
+}
+
+async function callClaude(parts: any[]) {
+    const claudeKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!claudeKey) throw new Error("ANTHROPIC_API_KEY não configurada");
+
+    const content = parts.map(p => {
+        if (p.text) return { type: "text", text: p.text };
+        if (p.inlineData) {
+            const b64 = p.inlineData.data;
+            let mime = p.inlineData.mimeType === "image/jpg" ? "image/jpeg" : p.inlineData.mimeType;
+            
+            // Claude is extremely strict with media_type matching actual binary content.
+            // Detect from base64 magic bytes if possible:
+            if (b64.startsWith("/9j/")) mime = "image/jpeg";
+            else if (b64.startsWith("iVBORw0KGgo")) mime = "image/png";
+            else if (b64.startsWith("UklGR")) mime = "image/webp";
+            else if (b64.startsWith("R0lGOD")) mime = "image/gif";
+
+            return {
+                type: "image",
+                source: {
+                    type: "base64",
+                    media_type: mime,
+                    data: b64
+                }
+            };
+        }
+        return null;
+    }).filter(Boolean);
+
+    const body = {
+        model: "claude-opus-4-6",
+        max_tokens: 4000,
+        messages: [{ role: "user", content }],
+    };
+
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": claudeKey,
+            "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+        const err = await resp.text();
+        console.error("Claude API error response:", err);
+        throw new Error(`Claude Error (${resp.status}): ${err.substring(0, 500)}`);
+    }
+
+    const data = await resp.json();
+    return {
+        candidates: [{
+            content: { parts: [{ text: data.content?.[0]?.text || "" }] },
+            role: "model"
+        }],
+        usageMetadata: {
+            promptTokenCount: data.usage?.input_tokens || 0,
+            candidatesTokenCount: data.usage?.output_tokens || 0,
+            totalTokenCount: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0)
+        }
+    };
 }
 
 function normalizeUsage(data: any) {
@@ -361,6 +502,7 @@ Retorne APENAS um JSON válido com esta estrutura exata:
   }
 }
             `});
+            console.log("[Orchestrator] Chamando Gemini 3.1 Pro Preview (DeepThink)...");
             const data = await callGemini(parts, MODELS.ORCHESTRATOR, false);
             
             const content = data.candidates[0].content;
@@ -384,46 +526,51 @@ Retorne APENAS um JSON válido com esta estrutura exata:
             const isAuto = numSlides === 0;
 
             parts.push({ text: `
-              Você é o "Head of Copy". Sua missão é escrever copy cirúrgico para um CARROSSEL da empresa.
+              Você é o "Head of Copy" de uma agência premium estruturando um CARROSSEL DE ALTO VALOR.
               
-              BRIEFING: "${processedBriefing}"
-              ARCO NARRATIVO: "${context.orchestrator?.analysis?.carousel_narrative_arc || 'Crie um arco coerente.'}"
-              IDIOMA OBRIGATÓRIO: "${context.orchestrator?.copy_direction?.content_language || 'Português do Brasil'}" — TODO o texto deve estar neste idioma.
+              BRIEFING / CONTEÚDO BASE: "${processedBriefing}"
+              ARCO NARRATIVO: "${context.orchestrator?.analysis?.carousel_narrative_arc || 'Progressão lógica e persuasiva do problema à solução.'}"
+              IDIOMA OBRIGATÓRIO: "${context.orchestrator?.copy_direction?.content_language || 'Português do Brasil'}"
               ESTRUTURA EXTRA: "${context.orchestrator?.copy_direction?.instructions_for_copywriter || 'Nenhuma'}"
               ${projectLearnings}
               
-              🚨 LEIS DE COPY PARA CARROSSEL (ESTRUTURA OBRIGATÓRIA):
+              🚨 REGRAS CRÍTICAS DE COPY (NÃO SEJA GENÉRICO):
+              1. VALOR PROFUNDO: O conteúdo gerado na propriedade "body" deve ser TÉCNICO, ESPECÍFICO e INSIGHTFUL. Extraia os dados reais, exemplos e números do briefing. O leitor precisa aprender algo valioso.
+              2. PROIBIDO CLICHÊS: Não use frases óbvias ("A inteligência artificial ajuda empresas", "Conheça as vantagens"). Use ângulos provocativos e argumentos concretos (ex: "LLMs open-source reduzem custos de GTM em 40% se integrados via API").
+              3. TOM: Sofisticado, direto e persuasivo de alto nível (estilo consultoria premium).
+              
+              🚨 ESTRUTURA DO CARROSSEL:
               ${isAuto 
-                ? `- Tem de retornar um JSON contendo uma propriedade "slides" que é um array com exatamente a QUANTIDADE DE SLIDES QUE CONSIDERAR IDEAL para desenvolver este assunto (escolha o número total entre 3 a 8).` 
-                : `- Tem de retornar um JSON contendo uma propriedade "slides" que é um array com RIGOROSAMENTE ${numSlides} objetos.`}
-              - ESTRUTURA FIXA:
-                1. SLIDE 1 (CAPA/COVER): Título extremamente magnético e visual limpo (Hook). CURTO — máximo 6 palavras.
-                2. SLIDES INTERMÉDIOS: Desenvolvimento do conteúdo/valor. Headline: máx 8 palavras. Body: máx 2-3 frases concisas.
-                3. ${isAuto ? 'ÚLTIMO SLIDE' : `SLIDE ${numSlides}`} (CTA E ENGAJAMENTO): ESTE SLIDE É OBRIGATÓRIO e dedicado 100% à CALL TO ACTION. Você DEVE pedir interações sociais de forma direta e atrativa (ex: "Salve este post para não esquecer", "Compartilhe com um amigo que precisa ler isso", "Deixe um comentário se concorda", "Clique no link da nossa bio"). Não coloque matéria instrucional neste último slide.
-              - Cada slide deve ser extremamente conciso. Menos palavras, mais impacto.
-
-              Retorne APENAS o JSON no seguinte formato:
+                ? `- Determine o NÚMERO IDEAL DE SLIDES (entre 4 e 8) para explicar o assunto com profundidade. Retorne esse exato número de objetos no array "slides".` 
+                : `- Retorne RIGOROSAMENTE ${numSlides} slides. Adapte a profundidade do texto para encaixar perfeitamente em ${numSlides} partes lógicas.`}
+              - SLIDE 1 (CAPA): Hook magnético e curto (máximo 6 palavras). Não pode ser genérico.
+              - SLIDES INTERMÉDIOS: "Headline" (máximo 8 p.) e "body" (máximo 4 frases contundentes, focadas num insight chave cada).
+              - ${isAuto ? 'ÚLTIMO SLIDE' : `SLIDE ${numSlides}`} (CTA): Dedicado 100% à Call to Action forte para os negócios/produto do cliente (ex: "Agende sua consultoria", "Clique no link", "Salve para aplicar na sua empresa").
+              
+              Retorne APENAS o JSON no formato abaixo:
               {
-                "social_caption": "O texto para ir acompanhando o post no Instagram (NÃO VAI NA IMAGEM).",
+                "social_caption": "Caption para Instagram com hashtags. Profundo, retenha leitor com o insight principal (não vai na imagem).",
                 "slides": [
                   {
                     "slide_number": 1,
-                    "headline": "...",
-                    "body": "..."
+                    "headline": "O Paradoxo da IA no B2B",
+                    "body": ""
                   },
                   {
                     "slide_number": 2,
-                    "headline": "Uma frase de impacto",
-                    "body": "No máximo duas ou três frases curtas focando num conceito de cada vez"
+                    "headline": "Custo vs Privacidade",
+                    "body": "Enquanto soluções open-source exigem setup complexo, a segurança de dados sensíveis na nuvem pública ainda é o maior gargalo para adoção corporativa."
                   }
                 ]
               }
               
-              GARANTA ${isAuto ? "QUE O TAMANHO DO ARRAY SEJA ADEQUADO AO TEMA!" : `RIGOROSAMENTE A EXISTÊNCIA DE ${numSlides} ELEMENTOS NO ARRAY!`} A sua carreira depende da precisão estrutural do JSON.
+            GARANTA A PRECISÃO ESTRUTURAL DO JSON. O copy deve ser espetacular.
             `});
-            const data = await callGemini(parts, MODELS.COPYWRITER, false);
             
-            const content = data.candidates[0].content;
+            console.log("[Copywriter] Chamando Claude AI (claude-3-5-sonnet)...");
+            const data = await callClaude(parts);
+            
+            const content = data.candidates?.[0]?.content;
             const partsArray = content?.parts || [];
             const textPart = partsArray.find((p: any) => p.text && !p.thought);
             
@@ -440,8 +587,8 @@ Retorne APENAS um JSON válido com esta estrutura exata:
                 }
                 if (parsed.slides.length === 0) {
                     parsed.slides = [
-                      { slide_number: 1, headline: "Oops!", body: "Não conseguimos gerar o copy." },
-                      { slide_number: 2, headline: "Tentando novamente...", body: "" }
+                      { slide_number: 1, headline: "Algo deu errado", body: "Tivemos um problema provisório com a API de geração de copy." },
+                      { slide_number: 2, headline: "Obrigado pela paciência", body: "Verifique os logs ou suas chaves de API." }
                     ];
                 }
                 if (parsed.slides.length > 8) {
@@ -739,7 +886,7 @@ ${context.reviewerFeedback ? `🚨 ALERTA DE CORREÇÃO PENDENTE (TENTATIVA ANTE
             
             if (slideIndex !== undefined && imageUrl) {
                 // Single slide review
-                if (referenceEnabled && referenceImage) {
+                if (referenceImage) {
                     await addImage(parts, referenceImage, "image/png", "IMAGEM DE REFERÊNCIA (O DESIGNER FOI INSTRUÍDO A SEGUIR A FILOSOFIA DE DESIGN DESTA IMAGEM)");
                 }
                 await addImage(parts, imageUrl, "image/png", `SLIDE ${slideIndex + 1} GERADO (AVALIE ESTA IMAGEM)`);

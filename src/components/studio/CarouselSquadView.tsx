@@ -936,7 +936,25 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                 slideApproved = true;
               } else if (reviewData?.success && reviewData.result.status === 'rejected') {
                 reviewerFeedback = reviewData.result.feedback;
-                toast.warning(`Diretor exigiu correção no Slide ${i+1}: ${reviewerFeedback}`);
+                toast.error(
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>Revisão do Diretor de Arte • Slide {i+1}</span>
+                    </div>
+                    <p className="text-xs text-foreground/90 leading-relaxed font-medium">
+                      {reviewerFeedback}
+                    </p>
+                    <div className="text-[9px] text-muted-foreground mt-1 flex items-center gap-1.5">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      O Designer está a fazer as correções...
+                    </div>
+                  </div>,
+                  { 
+                    duration: 10000, 
+                    className: "!bg-[#0a0a0a]/95 !backdrop-blur-xl !border-l-4 !border-l-primary !border-y !border-r !border-white/5 !shadow-2xl !rounded-xl !p-4" 
+                  }
+                );
                 setLogs(prev => [...prev, {
                     agent: 'reviewer',
                     action: `⚠ Slide ${i+1} rejeitado. Motivo: ${reviewerFeedback}`,
@@ -2298,14 +2316,14 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
             </div>
 
             {/* Direita: Conteúdo e Legenda */}
-            <div className="w-full md:w-[400px] shrink-0 flex flex-col gap-6 bg-white/5 backdrop-blur-xl rounded-[32px] p-6 border border-white/10 shadow-2xl">
-              <div className="flex flex-col gap-4 flex-1 overflow-hidden">
+            <div className="w-full md:w-[400px] shrink-0 flex flex-col gap-6 bg-white/5 backdrop-blur-xl rounded-[32px] p-6 border border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto styled-scrollbar">
+              <div className="flex flex-col gap-4 flex-none">
                 <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-primary" />
                   Detalhes do Carrossel
                 </h3>
                 
-                <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+                <div className="space-y-4 pr-2">
                   {((activeTab === 'history' && (history[previewIndex!] as any)?.social_caption) || (activeTab === 'create' && resultCaption)) ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
@@ -2346,7 +2364,7 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                             <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Data</p>
                             <p className="text-xs font-bold text-white">
-                              {formatDistanceToNow(new Date(history[previewIndex!].created_at), { locale: ptBR })}
+                              {formatDistanceToNow(new Date(history[previewIndex!].created_at), { locale: ptBR, addSuffix: true })}
                             </p>
                          </div>
                       </div>
@@ -2355,7 +2373,7 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-white/10 flex flex-col gap-3">
+              <div className="pt-6 border-t border-white/10 flex flex-col gap-3 flex-none">
                 <Button 
                   className="rounded-xl w-full h-12 font-bold shadow-xl bg-primary hover:bg-primary/90 text-white"
                   onClick={() => handleDownload(currentCarouselImages[activeSlideIndex], `${activeSlideIndex + 1}.png`)}
@@ -2369,10 +2387,14 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                     className="rounded-xl w-full h-12 font-bold shadow-xl text-foreground"
                     onClick={() => handleBatchDownloadZip(currentCarouselImages, `carrossel-${project?.name || 'historico'}.zip`)}
                   >
-                    <Download className="mr-2 h-5 w-5" /> Baixar Carrossel Inteiro (ZIP)
+                    <Download className="mr-2 h-5 w-5" /> Baixar Inteiro (ZIP)
                   </Button>
                 )}
                 
+                <div className="my-2" onClick={(e) => e.stopPropagation()}>
+                   <CarouselQuickRating projectId={projectId!} carouselImages={currentCarouselImages} />
+                </div>
+
                 <Button 
                   variant="outline"
                   className="rounded-xl w-full h-12 font-bold border-white/10 text-white hover:bg-white/5"

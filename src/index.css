@@ -492,4 +492,23 @@ All colors MUST be HSL.
     background: hsl(var(--muted-foreground) / 0.7);
     background-clip: content-box;
   }
-}
+
+  .styled-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .styled-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .styled-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.15);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+  }
+
+  .styled-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.4);
+  }
+}

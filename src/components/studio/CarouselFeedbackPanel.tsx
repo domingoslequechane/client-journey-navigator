@@ -205,7 +205,17 @@ export function CarouselFeedbackPanel({ projectId, onFeedbackSubmitted }: Carous
   );
 }
 
-/** Compact quick-rating bar shown right after generation */
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
+
+/** Quick rating presented as a modal/dialog shown from a button */
 export function CarouselQuickRating({
   projectId,
   carouselImages,
@@ -216,15 +226,22 @@ export function CarouselQuickRating({
   onDone?: () => void;
 }) {
   const { addLearning, isAdding } = useProjectLearnings(projectId);
-  const [step, setStep] = useState<'rating' | 'comment' | 'done'>('rating');
+  const [open, setOpen] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [rating, setRating] = useState<'positive' | 'negative' | null>(null);
   const [comment, setComment] = useState('');
 
-  if (step === 'done') return null;
+  // If already submitted for this carousel, show disabled feedback button.
+  if (submitted) {
+    return (
+      <Button disabled variant="outline" className="w-full max-w-sm rounded-xl border-dashed bg-white/5 opacity-50">
+        <ThumbsUp className="h-4 w-4 mr-2" /> Feedback Registado
+      </Button>
+    );
+  }
 
   const handleRate = (r: 'positive' | 'negative') => {
     setRating(r);
-    setStep('comment');
   };
 
   const handleSubmit = () => {
@@ -232,76 +249,89 @@ export function CarouselQuickRating({
     const baseContent = rating === 'positive'
       ? 'Carrossel aprovado pelo cliente. ' + (comment.trim() || 'O resultado geral foi satisfatório.')
       : 'Carrossel rejeitado pelo cliente. ' + (comment.trim() || 'O resultado não agradou.');
-    addLearning({ type: rating, content: baseContent, context: 'Feedback rápido pós-geração' });
-    setStep('done');
+    addLearning({ type: rating, content: baseContent, context: 'Feedback final: Carrossel gerado' });
+    setSubmitted(true);
+    setOpen(false);
     onDone?.();
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-4 flex flex-col gap-3 animate-in slide-in-from-bottom-3 duration-300">
-      <div className="flex items-center gap-2">
-        <Brain className="h-4 w-4 text-violet-400" />
-        <p className="text-xs font-bold text-white">Como ficou este carrossel?</p>
-        <p className="text-[10px] text-white/30 ml-auto">A IA aprende com sua resposta</p>
-      </div>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="w-full max-w-sm rounded-xl py-6 font-bold shadow-xl transition-all hover:scale-105 bg-gradient-to-r from-violet-600 to-primary">
+          <Brain className="mr-2 h-5 w-5" /> Deixar Feedback sobre o Carrossel
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 text-white rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-black text-center flex items-center justify-center gap-2">
+            <Brain className="h-5 w-5 text-violet-400" />
+            Como ficou este carrossel?
+          </DialogTitle>
+          <DialogDescription className="text-center">
+            A IA aprende com o seu feedback para os próximos designs. O seu feedback fica memorizado e aplica-se automaticamente na próxima geração.
+          </DialogDescription>
+        </DialogHeader>
 
-      {step === 'rating' && (
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-4">
           <button
             onClick={() => handleRate('positive')}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold hover:bg-emerald-500/20 transition-all"
+            className={cn(
+              "flex-1 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border font-bold transition-all",
+              rating === 'positive' 
+                ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 scale-105" 
+                : "bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white"
+            )}
           >
-            <ThumbsUp className="h-4 w-4" />
+            <ThumbsUp className="h-6 w-6" />
             Aprovado!
           </button>
           <button
             onClick={() => handleRate('negative')}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm font-bold hover:bg-rose-500/20 transition-all"
+            className={cn(
+              "flex-1 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border font-bold transition-all",
+              rating === 'negative' 
+                ? "bg-rose-500/20 border-rose-500 text-rose-400 scale-105" 
+                : "bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white"
+            )}
           >
-            <ThumbsDown className="h-4 w-4" />
-            Pode melhorar
+            <ThumbsDown className="h-6 w-6" />
+            Precisa melhorar
           </button>
         </div>
-      )}
 
-      {step === 'comment' && (
-        <>
-          <div className={cn(
-            'flex items-center gap-2 text-xs font-bold',
+        <div className="mt-4 animate-in fade-in duration-300 transition-all" style={{ opacity: rating ? 1 : 0, pointerEvents: rating ? 'auto' : 'none' }}>
+           <div className={cn(
+            'flex items-center gap-2 text-xs font-bold mb-2',
             rating === 'positive' ? 'text-emerald-400' : 'text-rose-400'
           )}>
-            {rating === 'positive' ? <ThumbsUp className="h-3.5 w-3.5" /> : <ThumbsDown className="h-3.5 w-3.5" />}
-            {rating === 'positive' ? 'Que ótimo! O que ficou bom?' : 'O que precisa melhorar?'}
+            {rating === 'positive' ? 'O que ficou excelente?' : 'O que a IA falhou/deve mudar?'}
           </div>
           <Textarea
             value={comment}
             onChange={e => setComment(e.target.value)}
             placeholder={
               rating === 'positive'
-                ? 'Ex: Gostei muito da tipografia e do uso de espaço negativo.'
-                : 'Ex: As cores ficaram saturadas demais e o texto foi cortado.'
+                ? 'Ex: Gostei muito da tipografia laranja e das margens grandes.'
+                : 'Ex: As fontes nos slides 3 e 4 saíram brancas e ilegíveis sobre fundo claro.'
             }
-            className="bg-white/[0.05] border-white/10 text-white placeholder:text-white/20 text-sm rounded-xl resize-none min-h-[70px] focus:border-violet-500/50"
+            className="bg-white/[0.05] border-white/10 text-white placeholder:text-white/20 text-sm rounded-xl resize-none min-h-[90px] focus:border-violet-500/50"
           />
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setStep('rating')}
-              className="text-white/40 hover:text-white/70 text-xs"
-            >
-              Voltar
+        </div>
+
+        <DialogFooter className="mt-4 sm:justify-between">
+            <Button variant="ghost" onClick={() => setOpen(false)} className="text-white/50 hover:text-white/80">
+              Cancelar
             </Button>
-            <Button
-              className="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold h-9 rounded-xl text-sm"
-              onClick={handleSubmit}
-              disabled={isAdding}
+            <Button 
+              disabled={!rating || isAdding} 
+              onClick={handleSubmit} 
+              className="bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-xl"
             >
-              {isAdding ? 'Salvando...' : 'Enviar Feedback'}
+              {isAdding ? 'A Guardar...' : 'Guardar Feedback'}
             </Button>
-          </div>
-        </>
-      )}
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
