@@ -730,10 +730,10 @@ Canvas: Formato ${ratio} (${orientationInstruction}).
 A IMAGEM FINAL deve ter exatamente as proporções ${ratio}. Não gere uma imagem quadrada se o formato é vertical.
 ═══════════════════════════════════════════════════════
 
-🚨 PROCESSO DE PENSAMENTO (Obrigatório): 
-1. Auditoria de Texto: Visualize cada letra de "${slideCopy.headline}" ${isCover || slideIndex === forcedNumSlides - 1 ? '' : `e "${slideCopy.body}"`}. Planeje a tipografia perfeita sem erros.
-2. Auditoria de Fundo: Verifique se há objetos no cenário (livros, gavetas, etc). Garanta que eles tenham ZERO texto. Deixe-os lisos.
-3. Auditoria de Sizing: Planeje o texto para ocupar no máximo 40% da tela.
+🚨 PROCESSO DE PENSAMENTO (Obrigatório — EXECUTE ANTES DE RENDERIZAR):
+1. VERIFICAÇÃO DE PALAVRAS: Escreva mentalmente cada palavra da Headline "${slideCopy.headline}" ${isCover || slideIndex === forcedNumSlides - 1 ? '' : `e do Body "${slideCopy.body}"`}. Verifique a ortografia de cada termo. Use APENAS as palavras exatas fornecidas, sem inventar sinónimos ou abreviaturas.
+2. Auditoria de Fundo: Se o cenário de fundo tiver objetos (livros, gavetas, caixas), eles DEVEM estar com faces completamente limpas, sem qualquer texto.
+3. Auditoria de Sizing: O bloco de texto central (Headline + Body) não pode ultrapassar 40% da área total da imagem.
 
 🏛️ IDENTIDADE: Designer de Elite. Seu estilo é Purista, Minimalista e Caro.
 
@@ -866,35 +866,36 @@ ${projectLearnings}
                 const creativeDirection = context.orchestrator?.creative_direction || '';
 
                 parts.push({ text: `
-Você é o Diretor de Arte Sênior mais rigoroso da agência.
-Sua missão é atuar como "gatekeeper" da qualidade (Quality Assurance).
+Você é o Diretor de Arte Sênior mais rigoroso da agência. Sua missão é a REVISÃO COMPLETA E TOTAL de um slide.
 
 Você está analisando o SLIDE ${slideIndex + 1} de um carrossel de ${numSlides}.
 Tipo de Slide: ${slideIndex === 0 ? "CAPA (Hook)" : slideIndex === numSlides - 1 ? "CTA FINAL" : "BODY (Conteúdo)"}.
 
-O slide continha originalmente a seguinte instrução textual (O texto na imagem DEVE TER SIDO escrito NO NOSSO IDIOMA - ${context.orchestrator?.copy_direction?.content_language || 'Português do Brasil'}):
-${body.slideCopy ? `Headline: "${body.slideCopy.headline}"\nBody: "${body.slideCopy.body || '(sem body)'}"` : "(Não informado)"}
+O DESIGNER DEVERIA TER ESCRITO EXATAMENTE:
+Headline: "${body.slideCopy?.headline || '(sem headline)'}"
+Body: "${body.slideCopy?.body || '(sem body)'}"
 
-🎨 INSTRUÇÕES QUE O DESIGNER RECEBEU DA DIREÇÃO DE ARTE:
+🎨 INSTRUÇÕES QUE O DESIGNER RECEBEU:
 - Direção Criativa: "${creativeDirection}"
-- Regras de Escala: "${layoutStrategy.scaling_rule || 'Não definido'}"
-- Proporção de Elementos: "${layoutStrategy.element_proportion || 'Não definido'}"
+- Idioma Obrigatório: ${context.orchestrator?.copy_direction?.content_language || 'Português do Brasil'}
 ${projectLearnings}
 
-Critérios de avaliação INEGOCIÁVEIS (LEIA PALAVRA POR PALAVRA DO DESIGN):
-1. ✅ FIDELIDADE AO TEXTO E IDIOMA: O texto que a IA colocou no slide CORRESPONDE RIGOROSAMENTE à Headline e Body pedidas? Se houver UM ÚNICO erro ortográfico ou palavra inventada no texto central = REJECT.
-2. ✅ LIMPEZA: Há artefatos bizarros que destroem a estética (ex: rostos deformados, ícones ilegíveis)?
-3. ✅ REGRAS DA PAGINAÇÃO E LOGOTIPO: A paginação ou logotipo está visível?
+📋 FAÇA UMA AUDITORIA COMPLETA EM UMA SÓ ANÁLISE. Identifique TODOS os problemas de uma vez:
 
-${(body.retryCount || 0) > 1 ? `
-🚨 AVISO DE ECONOMIA DE CRÉDITOS: Esta é a tentativa número ${(body.retryCount || 0) + 1}. 
-O designer já tentou várias vezes. A menos que a imagem tenha um erro CRÍTICO de leitura ou idioma que a torne INUTILIZÁVEL, tente ser mais tolerante com detalhes estéticos menores para não desperdiçar créditos do cliente. Priorize a entrega do valor real.` : `
-VOCÊ É O DETETOR DE HALLUCINATIONS! NÃO SEJA LAÇO. Se vir erros, REJEITE IMEDIATAMENTE.`}
+1. 🔤 ORTOGRAFIA EXATA: Compare o texto que está na imagem com a Headline e Body acima. Liste todos os erros ortográficos encontrados (palavras erradas, letras trocadas, palavras inventadas, repetições).
+2. 🗑️ GIBBERISH NO FUNDO: Há texto inventado, caracteres aleatórios ou línguas estrangeiras em qualquer objeto de cenário (livros, etiquetas, etc)?
+3. 📏 SIZING: O bloco de texto central ocupa mais de 40% da tela?
+4. 🔢 PAGINAÇÃO: A paginação indica exatamente o número correto (${slideIndex + 1} / ${numSlides})?
+5. 🧩 LEGIBILIDADE: O texto está claro contra o fundo? Há sobreposição ou corte?
+
+${(body.retryCount || 0) > 1 ? `⚠️ Tentativa ${(body.retryCount || 0) + 1}. Seja prático: só rejeite por erros críticos (ortografia errada, gibberish, texto ilegível).` : ''}
+
+🚨 REGRA MÁXIMA: Identifique TODOS os problemas encontrados e coloque-os no campo "feedback" em uma lista numerada. O Designer vai receber este feedback e corrigir TUDO DE UMA SÓ VEZ. Não deixe nenhum erro passar!
 
 Retorne APENAS um JSON no formato EXATO:
 {
   "status": "approved" ou "rejected",
-  "feedback": "Opcional se approved. Se rejected, descreva o erro com uma frase curta."
+  "feedback": "Se rejected: liste TODOS os erros encontrados. Ex: '1. Palavra escrita como X mas deve ser Y. 2. Paginação mostra 3/6 mas devia ser 2/6. 3. Fundo tem texto gibberish na gaveta esquerda.'"
 }
                 `});
             } else {
