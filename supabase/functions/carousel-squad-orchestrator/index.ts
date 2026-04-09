@@ -731,54 +731,34 @@ A IMAGEM FINAL deve ter exatamente as proporções ${ratio}. Não gere uma image
 ═══════════════════════════════════════════════════════
 
 🚨 PROCESSO DE PENSAMENTO (Obrigatório): 
-Antes de iniciar a renderização gráfica, realize uma auditoria interna do texto que você vai escrever: "${slideCopy.headline}" ${isCover || slideIndex === forcedNumSlides - 1 ? '' : `e "${slideCopy.body}"`}.
-Analise cada sílaba e cada letra. Visualize a escrita correta mentalmente para evitar erros de digitação. Só após esta verificação você deve gravar o texto na imagem.
+1. Auditoria de Texto: Visualize cada letra de "${slideCopy.headline}" ${isCover || slideIndex === forcedNumSlides - 1 ? '' : `e "${slideCopy.body}"`}. Planeje a tipografia perfeita sem erros.
+2. Auditoria de Fundo: Verifique se há objetos no cenário (livros, gavetas, etc). Garanta que eles tenham ZERO texto. Deixe-os lisos.
+3. Auditoria de Sizing: Planeje o texto para ocupar no máximo 40% da tela.
 
-🏛️ IDENTIDADE: Você é o Designer Chefe de uma agência de luxo. Seu trabalho é traduzir copy em arte visual minimalista, cara e sofisticada. Menos é mais.
+🏛️ IDENTIDADE: Designer de Elite. Seu estilo é Purista, Minimalista e Caro.
 
-🏗️ TIPO DE SLIDE: ${isCover ? "🎯 CAPA (O Hook Visual — Deve ser impactante e limpo)" : slideIndex === forcedNumSlides - 1 ? "🏁 CTA (O Fecho — Call to Action com autoridade)" : "📄 CONTEÚDO (Desenvolvimento limpo e espaçoso)"}
+📐 REGRAS INEGOCIÁVEIS:
+• ZERO TEXTO EM OBJETOS: Proibido qualquer escrita em elementos de fundo (gavetas, livros, paredes). O único texto permitido é o Headline e o Body.
+• LUXURY SIZING: O bloco de texto DEVE ser pequeno e centralizado (ou alinhado), cercado por muito espaço vazio. Nunca ultrapasse 40% da área total.
+• PAGINAÇÃO EXATA: Escreva apenas "${slideIndex + 1} / ${forcedNumSlides}". Se o slide é o 4, escreva "4 / ${forcedNumSlides}". Nunca erre isso.
+• MARGENS: Mantenha 15% de margem limpa em toda a volta.
 
-${refModeInstruction ? `🖼️ INSTRUÇÃO DE ESTILO: ${refModeInstruction}\n` : ''}
-
-📐 PRINCÍPIOS DE DESIGN (OBRIGATÓRIO):
-• MINIMALISMO EXTREMO: Use o máximo de ESPAÇO NEGATIVO. O design deve "respirar". Nunca entulhe o slide.
-• HIERARQUIA: Headline em destaque, body text discreto e elegante.
-• TIPOGRAFIA: Use APENAS a fonte "${context.project?.primaryFont || 'Montserrat'}" com pesos variados (Bold para títulos, Regular para corpo).
-• MARGENS: Mantenha todos os elementos importantes longe das bordas (margem de segurança de 15%).
-${paginationInstruction}
-${footerInstruction}
-
-${context.reviewerFeedback ? `🚨 FOCO TOTAL EM CORREÇÃO: Sua versão anterior foi REJEITADA. O erro foi: "${context.reviewerFeedback}". Sua missão agora é resolver este problema específico SEM ALTERAR a paleta ou o fundo base.` : ''}
+${context.reviewerFeedback ? `🚨 CORRIGIR ESTE ERRO AGORA: "${context.reviewerFeedback}". Foque 100% nisso.` : ''}
 
 🖼️ FUNDO (${bgMode === 'dynamic' ? 'DINÂMICO' : 'ÚNICO'}):
-${bgMode === 'dynamic' 
-  ? '🌀 Crie um cenário visual novo que ilustre o conteúdo deste slide, mantendo a paleta.' 
-  : '⚠️ MANTENHA O MESMO FUNDO EXATO DE TODOS OS OUTROS SLIDES. Consistência é a lei.'}
-Tema: "${context.orchestrator?.analysis?.background_theme || 'Fundo clean e profissional'}"
+${bgMode === 'dynamic' ? '🌀 Crie um cenário novo e limpo.' : '⚠️ USE O FUNDO IDENTICO AOS ANTERIORES.'}
+Tema: "${context.orchestrator?.analysis?.background_theme || 'Clean'}"
 
-📝 CONTEÚDO PARA ESCREVER NA IMAGEM (PRECISÃO ABSOLUTA):
+📝 CONTEÚDO (CONFERIR 3 VEZES):
 Headline: "${slideCopy.headline}"
 Body Text: "${isCover || slideIndex === forcedNumSlides - 1 ? '' : slideCopy.body}"
 
-🚨 REGRAS DE OURO PARA TEXTO (ANTI-ALUCINAÇÃO):
-1. ORTOGRAFIA MILIMÉTRICA: Escreva o texto acima CARACTERE POR CARACTERE. Erros de digitação, letras trocadas ou palavras inventadas são inaceitáveis e causam a demissão da agência.
-2. ZERO "GIBBERISH": Não insira caracteres aleatórios, símbolos estranhos ou textos borrados que pareçam "IA tentando escrever". O texto deve ser nítido e humano.
-3. IDIOMA ÚNICO: Use APENAS "${contentLanguage}". Bloqueie qualquer tendência de escrever em Inglês ou misturar línguas no fundo.
+🚨 REGRAS ANTI-ESTUPIDEZ DA IA:
+1. ORTOGRAFIA: Use apenas "${contentLanguage}". Erro = Rejeição.
+2. SEM GIBBERISH: Nada de símbolos bizarros ou linguagens inventadas.
+3. SEM METADADOS: Nunca escreva "Slide", "Headline", "Body" ou "Footer".
 
 ${projectLearnings}
-
-🎯 ESPECIFICAÇÕES TÉCNICAS:
-• Sem Metadados: Nunca escreva "Slide", "Headline" ou "Body" na imagem.
-• Paleta: ${paletteColors.join(', ')}.
-• Logotipo: ${layoutStrategy.logo_position || 'Canto inferior'} — Máximo de discrição.
-• Paginação: ${paginationStyle === 'none' ? 'Inexistente' : 'Canto superior direito (minimalista)'}.
-
-🎨 TOQUE FINAL DO DIRETOR:
-- Priorize CLAREZA e CONTRASTE.
-- O texto deve ser legível à primeira vista.
-- Mantenha a elegância minimalista que definimos.
-
-REALIZE UM DESIGN QUE PAREÇA FEITO POR UM HUMANO ESPECIALISTA.
                 `;
 
                 parts.push({ text: fullPrompt });
