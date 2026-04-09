@@ -86,8 +86,6 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
     }) => {
       const current = queryClient.getQueryData<AtendeAIInstance>(['atende-ai-instance', instanceId]);
       const evolutionId = current?.evolution_instance_id;
-      const instanceToken = (current as any)?.instance_api_key;
-      const baseUrl = (import.meta.env.VITE_EVOLUTION_URL || '').replace(/\/$/, "");
 
       if (!evolutionId || !orgId) {
         console.error('[useAtendeAIDetail] Missing requirements:', { evolutionId, orgId });
@@ -231,10 +229,10 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
 // useAtendeAIConnectionPoller — polling automático enquanto desconectado
 //
 // Enquanto a aba Conexão estiver visível e o WhatsApp não estiver conectado,
-// este hook chama directamente a Evolution Go API (GET /instance/qr) a cada
-// 5 segundos e actualiza o cache/UI quando a conexão for estabelecida.
+// este hook faz polling na base de dados (Supabase) para verificar o estado
+// da conexão e obter o QR code. Nunca chama a Evolution Go API directamente
+// do frontend — tudo passa pelas Edge Functions e pelo webhook.
 // ─────────────────────────────────────────────────────────────────────────────
-const EVOLUTION_GO_URL = (import.meta.env.VITE_EVOLUTION_URL || '').replace(/\/$/, '');
 
 export function useAtendeAIConnectionPoller(
   instanceId: string | undefined,
@@ -248,7 +246,6 @@ export function useAtendeAIConnectionPoller(
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    // Limpar se: aba inactiva, sem instância, ou já conectado
     if (!active || !instanceId || !evolutionInstanceId || isConnected || !orgId) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -259,61 +256,17 @@ export function useAtendeAIConnectionPoller(
 
     const poll = async () => {
       try {
-        // Get the instance_api_key from the cached instance data
-        const cachedInstance = queryClient.getQueryData<AtendeAIInstance>(['atende-ai-instance', instanceId]);
-        const apikey = (cachedInstance as any)?.instance_api_key;
+        // Ler estado directamente da base de dados (actualizado pelo webhook)
+        const { data: instance } = await (supabase
+          .from('atende_ai_instances' as any)
+          .select('whatsapp_connected, qr_code_base64, connected_number, status')
+          .eq('id', instanceId)
+          .single() as any);
 
-        if (!apikey || !EVOLUTION_GO_URL) {
-          // Fallback: use Edge Function if no API key available
-          const { data } = await supabase.functions.invoke('whatsapp-agent-instance', {
-            body: { instance_id: evolutionInstanceId, action: 'status', organization_id: orgId },
-          });
+        if (!instance) return;
 
-          if (data?.isConnected) {
-            queryClient.setQueryData<AtendeAIInstance | null>(
-              ['atende-ai-instance', instanceId],
-              (prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      whatsapp_connected: true,
-                      status: 'active',
-                      connected_number: data.owner ?? prev.connected_number,
-                    }
-                  : prev
-            );
-            queryClient.invalidateQueries({ queryKey: ['atende-ai-instances'] });
-            toast.success('✅ WhatsApp conectado com sucesso!');
-
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-              intervalRef.current = null;
-            }
-          } else if (onStatusUpdate) {
-            onStatusUpdate(data);
-          }
-          return;
-        }
-
-        // Direct call to Evolution Go API - Check status first
-        const statusRes = await fetch(`${EVOLUTION_GO_URL}/instance/status`, {
-          method: 'GET',
-          headers: { apikey },
-        });
-
-        const statusData = await statusRes.json();
-        
-        // Check if the instance is connected (Evolution Go returns status info)
-        const isConnectedNow = 
-          statusData?.connected === true || 
-          statusData?.status === 'open' || 
-          statusData?.status === 'CONNECTED' ||
-          statusData?.instance?.status === 'open' ||
-          statusData?.instance?.state === 'open' ||
-          statusData?.state === 'open';
-        
-        if (isConnectedNow) {
-          console.log('✅ Connection detected via poller:', statusData);
+        // Se o webhook já marcou como conectado → actualizar cache e parar polling
+        if (instance.whatsapp_connected) {
           queryClient.setQueryData<AtendeAIInstance | null>(
             ['atende-ai-instance', instanceId],
             (prev) =>
@@ -322,12 +275,12 @@ export function useAtendeAIConnectionPoller(
                     ...prev,
                     whatsapp_connected: true,
                     status: 'active',
-                    connected_number: statusData?.owner ?? statusData?.instance?.owner ?? prev.connected_number,
+                    connected_number: instance.connected_number ?? prev.connected_number,
                   }
                 : prev
           );
           queryClient.invalidateQueries({ queryKey: ['atende-ai-instances'] });
-          toast.success('✅ WhatsApp conectado com sucesso!');
+          toast.success('WhatsApp conectado com sucesso!');
 
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
@@ -336,28 +289,17 @@ export function useAtendeAIConnectionPoller(
           return;
         }
 
-        // If not connected, get updated QR/Pairing code
-        const qrRes = await fetch(`${EVOLUTION_GO_URL}/instance/qr`, {
-          method: 'GET',
-          headers: { apikey },
-        });
-        const qrData = await qrRes.json();
-
-        if (onStatusUpdate) {
-          const qrBase64 = qrData?.data?.Qrcode || qrData?.qrcode || qrData?.base64 || qrData?.qr || qrData?.code;
-          const pairingCode = qrData?.data?.PairingCode || qrData?.pairingCode || qrData?.pairing_code;
-          if (qrBase64 || pairingCode) {
-            onStatusUpdate({ qrCode: qrBase64, pairingCode });
-          }
+        // QR code salvo pelo webhook → enviar para a UI
+        if (instance.qr_code_base64 && onStatusUpdate) {
+          onStatusUpdate({ qrCode: instance.qr_code_base64 });
         }
       } catch {
         // Silencioso — não interromper a UI com erros de polling
       }
     };
 
-    // Primeiro poll imediato
     poll();
-    intervalRef.current = setInterval(poll, 5000);
+    intervalRef.current = setInterval(poll, 4000);
 
     return () => {
       if (intervalRef.current) {
@@ -365,7 +307,7 @@ export function useAtendeAIConnectionPoller(
         intervalRef.current = null;
       }
     };
-  }, [active, instanceId, evolutionInstanceId, isConnected, queryClient]);
+  }, [active, instanceId, evolutionInstanceId, isConnected, queryClient, orgId]);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

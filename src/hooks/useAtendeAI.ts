@@ -73,7 +73,7 @@ export function useAtendeAI() {
         // Rollback: delete from Evolution Go since DB save failed
         if (instanceIdToStore) {
           await supabase.functions.invoke('whatsapp-agent-instance', {
-            body: { action: 'delete', instance_id: instanceIdToStore }
+            body: { action: 'delete', instance_id: instanceIdToStore, organization_id: orgId }
           });
         }
         throw dbErr;
@@ -162,7 +162,7 @@ export function useAtendeAI() {
   const syncInstance = useMutation({
     mutationFn: async (agentId: string) => {
       const { data, error } = await supabase.functions.invoke('whatsapp-agent-instance', {
-        body: { action: 'sync', organization_id: orgId },
+        body: { action: 'sync', instance_id: agentId, organization_id: orgId },
       });
       if (error) throw error;
       return data;

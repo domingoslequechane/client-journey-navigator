@@ -30,9 +30,6 @@ interface ConnectionTabProps {
   };
 }
 
-// ─── Evolution Go API URL from env ──────────────────────────────────────
-const EVOLUTION_GO_URL = (import.meta.env.VITE_EVOLUTION_URL || '').replace(/\/$/, '');
-
 // ─── Connected State ─────────────────────────────────────────────────────────
 function ConnectedView({ agent, onDisconnect, isPending }: {
   agent: AtendeAIInstance;

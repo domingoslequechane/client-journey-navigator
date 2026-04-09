@@ -4,12 +4,13 @@
  * Recebe eventos do Evolution Go (Go Edition) e processa mensagens via IA.
  * Autenticação: UUID secreto no path → /evolution-go-webhook/{secret}
  *
- * Eventos suportados (conforme manual oficial):
- *   - QRCode        → salva qr_code_base64 no banco
- *   - Connected     → marca instância como conectada
- *   - PairSuccess   → marca instância como conectada
- *   - LoggedOut     → marca instância como desconectada
- *   - Message       → processa mensagens e responde com IA
+ * Eventos suportados (conforme documentação Evolution Go):
+ *   - QRCODE / qrcode.updated    → salva qr_code_base64 no banco
+ *   - CONNECTION (status: open)   → marca instância como conectada
+ *   - CONNECTION (status: close)  → marca instância como desconectada
+ *   - LOGGEDOUT / DISCONNECTED    → marca instância como desconectada
+ *   - MESSAGE / MESSAGES_UPSERT   → processa mensagens e responde com IA
+ *   - OFFLINE_SYNC_COMPLETED      → marca instância como activa
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -39,7 +40,7 @@ async function sendTextMessage(
     console.warn("EVOLUTION_GO_BASE_URL não configurada — não pode enviar mensagem");
     return false;
   }
-  const res = await fetch(`${EVOLUTION_GO_BASE_URL}/message/sendText/${instanceName}`, {
+  const res = await fetch(`${EVOLUTION_GO_BASE_URL}/send/text`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -143,13 +144,16 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "JSON inválido" }), { status: 400 });
     }
 
-    // O event name vem no campo "event" conforme documentação oficial
-    const event = body.event as string || "";
-    console.log(`[Webhook] Evento recebido: "${event}" p/ instância: ${instance.id}`);
+    // O event name vem no campo "event" conforme documentação Evolution Go
+    // Eventos padrão: QRCODE, CONNECTION, MESSAGE, SEND_MESSAGE, MESSAGES_SET, etc.
+    // Normalizar para uppercase para lidar com variações
+    const rawEvent = (body.event as string) || "";
+    const event = rawEvent.toUpperCase().replace(/[.\-_]/g, "_");
+    console.log(`[Webhook] Evento recebido: "${rawEvent}" (normalizado: "${event}") p/ instância: ${instance.id}`);
 
-    // ─── QRCode: salvar no banco para o frontend fazer polling ───
-    if (event === "QRCode" || event === "qrcode.updated") {
-      const qrBase64 = body.data?.qrcode || body.data?.base64 || body.qrcode || body.code || null;
+    // ─── QRCODE: salvar no banco para o frontend fazer polling ───
+    if (event === "QRCODE" || event === "QRCODE_UPDATED") {
+      const qrBase64 = body.data?.qrcode || body.data?.base64 || body.data?.code || null;
       if (qrBase64) {
         await sb
           .from("atende_ai_instances")
@@ -159,58 +163,54 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
 
-    // ─── Connected / PairSuccess / Update: instância conectada ──────────
-    const isActuallyConnected = 
-      event === "Connected" || 
-      event === "PairSuccess" || 
-      event === "connection.update" ||
-      body.data?.status === "open" || 
-      body.data?.state === "open" ||
-      body.data?.Connected === true ||
-      body.data?.LoggedIn === true ||
-      body.status === "open" ||
-      body.state === "open";
+    // ─── CONNECTION: mudança de estado da conexão ──────────
+    // Evolution Go envia event "CONNECTION" com data.status ("open" | "close" | "connecting")
+    if (event === "CONNECTION" || event === "CONNECTION_UPDATE" || event === "CONNECTED" || event === "PAIRSUCCESS") {
+      const status = (body.data?.status || body.data?.state || "").toString().toLowerCase();
 
-    if (isActuallyConnected && (event === "connection.update" || event === "Connected" || event === "PairSuccess" || body.data?.status === "open" || body.status === "open")) {
-       const status = body.data?.status || body.status || body.data?.state || body.state || "open";
-       // Em connection.update, só procedemos se o status for "open"
-       if ((event === "connection.update") && status !== "open") {
-          // Ignorar se for "close", "connecting", etc.
-       } else {
-          console.log(`[Webhook] Conexão confirmada para: ${instance.id} (Evento: ${event}, Status: ${status})`);
-          const jid = body.data?.jid || body.data?.ID || body.data?.instance?.owner || body.data?.owner || body.owner || body.instance?.owner || null;
-          const number = jid ? normalizePhone(jid.toString()) : null;
-          const profileName = body.data?.instance?.instanceName || body.data?.name || body.data?.Name || null;
-          
-          const updates: any = {
-            whatsapp_connected: true,
-            status: "active",
-            qr_code_base64: null, 
-          };
+      if (status === "open" || event === "CONNECTED" || event === "PAIRSUCCESS") {
+        console.log(`[Webhook] Conexão confirmada para: ${instance.id} (Evento: ${rawEvent}, Status: ${status})`);
+        const jid = body.data?.jid || body.data?.owner || body.data?.instance?.owner || null;
+        const number = jid ? normalizePhone(jid.toString()) : null;
+        const profileName = body.data?.instance?.instanceName || body.data?.name || body.data?.pushName || null;
 
-          if (number) updates.connected_number = number;
-          if (profileName && (!instance.name || instance.name.includes("+"))) updates.name = profileName;
+        const updates: any = {
+          whatsapp_connected: true,
+          status: "active",
+          qr_code_base64: null,
+        };
 
-          await sb
-            .from("atende_ai_instances")
-            .update(updates)
-            .eq("id", instance.id);
-          return new Response(JSON.stringify({ ok: true, status: "connected" }), { status: 200 });
-       }
+        if (number) updates.connected_number = number;
+        if (profileName && (!instance.name || instance.name.includes("+"))) updates.name = profileName;
+
+        await sb
+          .from("atende_ai_instances")
+          .update(updates)
+          .eq("id", instance.id);
+        return new Response(JSON.stringify({ ok: true, status: "connected" }), { status: 200 });
+      }
+
+      if (status === "close") {
+        console.log(`[Webhook] Desconexão detectada para: ${instance.id} (Evento: ${rawEvent})`);
+        await sb
+          .from("atende_ai_instances")
+          .update({
+            whatsapp_connected: false,
+            status: "inactive",
+            connected_number: null,
+            qr_code_base64: null,
+          })
+          .eq("id", instance.id);
+        return new Response(JSON.stringify({ ok: true, status: "disconnected" }), { status: 200 });
+      }
+
+      // "connecting" ou outro estado — ignorar
+      return new Response(JSON.stringify({ ok: true, status }), { status: 200 });
     }
 
-    // ─── LoggedOut / Disconnected / close: instância desconectada ─────────────────────
-    const isDisconnected = 
-      event === "LoggedOut" || 
-      event === "Disconnected" || 
-      (event === "connection.update" && (body.data?.status === "close" || body.status === "close" || body.data?.state === "close" || body.state === "close")) ||
-      body.data?.status === "close" || 
-      body.data?.state === "close" ||
-      body.status === "close" ||
-      body.state === "close";
-
-    if (isDisconnected) {
-      console.log(`[Webhook] Desconexão detectada para: ${instance.id} (Evento: ${event})`);
+    // ─── LOGGEDOUT / DISCONNECTED: desconexão explícita ───
+    if (event === "LOGGEDOUT" || event === "DISCONNECTED") {
+      console.log(`[Webhook] Logout/Desconexão para: ${instance.id} (Evento: ${rawEvent})`);
       await sb
         .from("atende_ai_instances")
         .update({
@@ -223,8 +223,8 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ ok: true, status: "disconnected" }), { status: 200 });
     }
 
-    // ─── OfflineSyncCompleted: sincronização finalizada ────────
-    if (event === "OfflineSyncCompleted") {
+    // ─── OFFLINE_SYNC_COMPLETED: sincronização finalizada ────────
+    if (event === "OFFLINE_SYNC_COMPLETED" || event === "OFFLINESYNCCOMPLETED") {
       await sb
         .from("atende_ai_instances")
         .update({
@@ -236,35 +236,48 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
 
-    // ─── Message: processar e responder com IA ─────────────────
-    if (event === "Message") {
+    // ─── MESSAGE: processar e responder com IA ─────────────────
+    // Evolution Go: event "MESSAGE" com data.key (remoteJid, fromMe, id) e data.message
+    if (event === "MESSAGE" || event === "MESSAGES_UPSERT") {
       // Só responde se a instância estiver ativa
       if (instance.status !== "active") {
         return new Response(JSON.stringify({ ok: true, skipped: "instance_not_active" }), { status: 200 });
       }
 
-      const info = body.data?.Info as any;
-      const msgContent = body.data?.Message as any;
+      // Evolution Go webhook payload:
+      //   Formato documentado: { data: { key: { remoteJid, fromMe, id }, message: { conversation }, pushName } }
+      //   Formato whatsmeow:   { data: { Info: { Chat, IsFromMe, ID, PushName }, Message: { conversation } } }
+      // Suportamos ambos com fallback
+      const d = body.data || {};
+      const info = d.Info || d.key || d;
+      const msgContent = d.Message || d.message || {};
 
-      if (!info) {
-        return new Response(JSON.stringify({ ok: true, skipped: "no_info" }), { status: 200 });
+      // Extrair campos com fallback entre os dois formatos
+      const fromMe = info.IsFromMe ?? info.fromMe ?? false;
+      const chatJid = info.Chat || info.remoteJid || info.Sender || "";
+      const msgId = info.ID || info.id || "";
+      const pushName = info.PushName || d.pushName || "";
+      const isGroup = info.IsGroup === true || chatJid.includes("@g.us");
+
+      if (!chatJid) {
+        return new Response(JSON.stringify({ ok: true, skipped: "no_chat_jid" }), { status: 200 });
       }
 
       // Ignorar mensagens do próprio bot
-      if (info.IsFromMe === true) {
+      if (fromMe === true) {
         return new Response(JSON.stringify({ ok: true, skipped: "from_me" }), { status: 200 });
       }
 
       // Ignorar grupos
-      if (info.IsGroup === true || (info.Chat || "").includes("@g.us")) {
+      if (isGroup) {
         return new Response(JSON.stringify({ ok: true, skipped: "group" }), { status: 200 });
       }
 
-      const phone = normalizePhone(info.Chat || info.Sender || "");
-      const messageId = info.ID || "";
-      const senderName = info.PushName || phone;
+      const phone = normalizePhone(chatJid);
+      const messageId = msgId;
+      const senderName = pushName || phone;
 
-      // Extrair texto ou tipo de media recebido
+      // Extrair texto — suporta ambos os formatos de mensagem
       let text = (
         msgContent?.conversation ||
         msgContent?.extendedTextMessage?.text ||
@@ -274,7 +287,7 @@ serve(async (req: Request) => {
         ""
       ).trim();
 
-      const messageType = info.MediaType || info.Type || "text";
+      const messageType = info.MediaType || info.Type || d.messageType || "text";
 
       if (!text) {
         if (messageType === "audio") text = "[Áudio recebido]";

@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 const EVOLUTION_URL = Deno.env.get("EVOLUTION_GO_URL")?.replace(/\/$/, "") || Deno.env.get("EVOLUTION_GO_BASE_URL")?.replace(/\/$/, "") || "http://localhost:8080";
-const EVOLUTION_API_KEY = (Deno.env.get("EVOLUTION_GO_API_KEY") || "BXWlDFI5S3VubVswSHlgijVoCi0TQNYo").trim();
+const EVOLUTION_API_KEY = (Deno.env.get("EVOLUTION_GO_API_KEY") || "").trim();
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -201,27 +201,27 @@ serve(async (req) => {
 
         const technicalId = generateStrongToken(12);
         const instanceToken = generateStrongToken();
-        const createRes = await evolutionRequest("/instance/create", "POST", { name: technicalId, token: instanceToken });
-        
-        if (!createRes.ok) return json({ ok: false, error: createRes.error }, 200);
-        
-        const resData = createRes.data as any;
-        const evolutionId = resData?.id || resData?.data?.id || resData?.instance?.id;
         const webhook_secret = crypto.randomUUID();
         const webhookUrl = `${SUPABASE_URL}/functions/v1/evolution-go-webhook/${webhook_secret}`;
-        
-        try {
-          await evolutionRequest(`/webhook/instance/set`, "POST", {
-            url: webhookUrl,
-            webhook_by_events: false,
-            events: ["ALL"]
-          }, undefined, instanceToken);
-        } catch (e) { console.error("Webhook error", e); }
 
-        return json({ 
-          ok: true, 
-          evolution_instance_id: technicalId, 
-          evolution_id: evolutionId, 
+        // Criar instância já com webhook configurado (Evolution Go docs)
+        // Usar ALL para receber todos os eventos (MESSAGE, CONNECTION, QRCODE, etc.)
+        const createRes = await evolutionRequest("/instance/create", "POST", {
+          name: technicalId,
+          token: instanceToken,
+          webhook: webhookUrl,
+          webhookEvents: ["ALL"],
+        });
+
+        if (!createRes.ok) return json({ ok: false, error: createRes.error }, 200);
+
+        const resData = createRes.data as any;
+        const evolutionId = resData?.id || resData?.data?.id || resData?.instance?.id;
+
+        return json({
+          ok: true,
+          evolution_instance_id: technicalId,
+          evolution_id: evolutionId,
           instance_api_key: instanceToken,
           evolution_webhook_secret: webhook_secret
         });
@@ -390,6 +390,21 @@ serve(async (req) => {
           }
 
           return json({ ok: true, message: "Instância desconectada com sucesso localmente" });
+        }
+
+        if (action === "send-text") {
+          const { to, text } = body;
+          if (!to || !text) return json({ error: "to and text are required" }, 400);
+
+          const number = to.replace(/[^0-9]/g, "");
+          const res = await evolutionRequest("/send/text", "POST", {
+            number,
+            text,
+            delay: 1000,
+          }, undefined, apiKey);
+
+          if (!res.ok) return json({ ok: false, error: res.error }, 200);
+          return json({ ok: true, data: res.data });
         }
 
         if (action === "delete") {
