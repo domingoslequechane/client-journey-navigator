@@ -27,6 +27,7 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useHeader } from '@/contexts/HeaderContext';
 import { CheckCircle2 } from 'lucide-react';
+import { FreeLimitModal } from '@/components/subscription/FreeLimitModal';
 
 type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'inbox' | 'reports';
 
@@ -101,7 +102,10 @@ export default function SocialMedia() {
   const { posts, isLoading, deletePost, sendForApproval, publishPost, syncPosts, refetch: refetchPosts } = useSocialPosts();
   const { accounts, syncAccounts, connectPlatform, refetch: refetchAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
   const { unreadCount, refetch: refetchMessages } = useSocialMessages(selectedClient !== 'all' ? selectedClient : undefined);
-  const { limits, usage, canAddSocialAccount } = usePlanLimits();
+  const { limits, usage, canAddSocialAccount, planType, socialClientIds, canPublishSocialPost } = usePlanLimits();
+
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitDescription, setLimitDescription] = useState('');
 
   const [connectGuardOpen, setConnectGuardOpen] = useState(false);
   const [connectingPlatform, setConnectingPlatform] = useState<SocialPlatform | null>(null);
@@ -194,6 +198,28 @@ export default function SocialMedia() {
       setConnectGuardOpen(true);
       return;
     }
+
+    // Plan Limit Check for FREE users
+    const isRestricted = ['free', 'trial'].includes(planType as string);
+    if (isRestricted) {
+      // 1. Check posts count limit
+      if (!canPublishSocialPost) {
+        setLimitDescription('20 posts por mês no Social Media');
+        setShowLimitModal(true);
+        return;
+      }
+
+      // 2. Check distinct clients limit
+      if (selectedClient !== 'all') {
+        const isNewClient = !socialClientIds.includes(selectedClient);
+        if (isNewClient && socialClientIds.length >= 2) {
+          setLimitDescription('2 clientes distintos no Social Media');
+          setShowLimitModal(true);
+          return;
+        }
+      }
+    }
+
     saveNavState();
     const params = new URLSearchParams();
     if (selectedClient !== 'all') params.set('clientId', selectedClient);
@@ -758,6 +784,12 @@ export default function SocialMedia() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <FreeLimitModal
+        open={showLimitModal}
+        onOpenChange={setShowLimitModal}
+        limitDescription={limitDescription}
+      />
     </div>
   );
 }

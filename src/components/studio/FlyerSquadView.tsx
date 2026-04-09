@@ -840,7 +840,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           </h3>
           <Textarea 
             placeholder="Descreva o que deve constar no flyer, ofertas, chamadas para ação..."
-            className="min-h-[80px] max-h-[150px] resize-none border-primary/10 focus-visible:ring-primary/20 text-xs rounded-xl"
+            className="min-h-[160px] resize-y border-primary/10 focus-visible:ring-primary/20 text-xs rounded-xl"
             value={briefing}
             onChange={(e) => setBriefing(e.target.value)}
           />

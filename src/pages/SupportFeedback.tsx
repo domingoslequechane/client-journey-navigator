@@ -320,32 +320,34 @@ export default function SupportFeedback() {
   return (
     <div className="h-[calc(100vh-3.5rem)] md:h-full flex flex-col bg-background/50 overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        <header className="flex items-center justify-between p-4 border-b bg-card/30 backdrop-blur-md shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 p-2 rounded-xl">
-              <LifeBuoy className="h-5 w-5 text-primary" />
+        <header className="border-b bg-card/30 backdrop-blur-md shrink-0">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-xl">
+                <LifeBuoy className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="font-black text-lg tracking-tight">Suporte & Feedback</h1>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">
+                  Central de Atendimento
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="font-black text-lg tracking-tight">Suporte & Feedback</h1>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">
-                Central de Atendimento
-              </p>
+
+            <TabsList className="bg-muted/50 border-none p-1 h-10 rounded-xl">
+              <TabsTrigger value="support" className="rounded-lg px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Suporte
+              </TabsTrigger>
+              <TabsTrigger value="feedback" className="rounded-lg px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Feedback
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-green-500/10 text-green-500 border-none h-8 px-4 rounded-full font-bold">
+                Online
+              </Badge>
             </div>
-          </div>
-
-          <TabsList className="bg-muted/50 border-none p-1 h-10 rounded-xl">
-            <TabsTrigger value="support" className="rounded-lg px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Suporte
-            </TabsTrigger>
-            <TabsTrigger value="feedback" className="rounded-lg px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Feedback
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-green-500/10 text-green-500 border-none h-8 px-4 rounded-full font-bold">
-              Online
-            </Badge>
           </div>
         </header>
 

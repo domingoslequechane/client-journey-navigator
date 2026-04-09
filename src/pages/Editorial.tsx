@@ -19,6 +19,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { FreeLimitModal } from '@/components/subscription/FreeLimitModal';
 
 
 
@@ -78,6 +80,8 @@ export default function Editorial() {
   const [formContentType, setFormContentType] = useState('');
   const [formPlatform, setFormPlatform] = useState('');
   const [formStatus, setFormStatus] = useState('pending');
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const { planType, editorialClientIds, refetch: refetchLimits } = usePlanLimits();
 
   const { tasks, loading, createTask, updateTask, deleteTask, refetch } = useEditorialTasks({
     periodFilter: 'month',
@@ -158,6 +162,16 @@ export default function Editorial() {
   const handleSave = async () => {
     if (!formTitle.trim() || !formClientId) return;
 
+    // Plan Limit Check for FREE/TRIAL users
+    const isLimited = ['free', 'trial'].includes(planType as string);
+    if (isLimited && !editingTask) {
+      const isNewClient = !editorialClientIds.includes(formClientId);
+      if (isNewClient && editorialClientIds.length >= 2) {
+        setShowLimitModal(true);
+        return;
+      }
+    }
+
     if (editingTask) {
       await updateTask(editingTask.id, {
         title: formTitle,
@@ -182,6 +196,7 @@ export default function Editorial() {
       });
     }
     setTaskModalOpen(false);
+    refetchLimits();
   };
 
   const handleStatusToggle = async (task: EditorialTask) => {
@@ -200,6 +215,17 @@ export default function Editorial() {
 
   const handleAIGenerate = async () => {
     if (!aiClientId || !organizationId) return;
+
+    // Plan Limit Check for FREE/TRIAL users
+    const isLimited = ['free', 'trial'].includes(planType as string);
+    if (isLimited) {
+      const isNewClient = !editorialClientIds.includes(aiClientId);
+      if (isNewClient && editorialClientIds.length >= 2) {
+        setShowLimitModal(true);
+        return;
+      }
+    }
+
     setAiGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-editorial', {
@@ -221,6 +247,7 @@ export default function Editorial() {
       });
       setAiModalStep(null);
       refetch();
+      refetchLimits();
     } catch (err: any) {
       toast({
         title: 'Erro ao gerar linha editorial',
@@ -810,6 +837,12 @@ export default function Editorial() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <FreeLimitModal
+        open={showLimitModal}
+        onOpenChange={setShowLimitModal}
+        limitDescription="2 clientes na Linha Editorial"
+      />
     </div>
   );
 }

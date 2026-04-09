@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Building2, ArrowRight, Globe, LogOut, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { COUNTRIES } from '@/lib/currencies';
-import { CITIES_BY_COUNTRY } from '@/lib/locations';
+import { LOCATIONS_BY_COUNTRY } from '@/lib/locations';
 import { useDraft } from '@/hooks/useDraft';
 import { useState, useMemo } from 'react';
 import { PublicBackground } from '@/components/layout/PublicBackground';
@@ -18,7 +18,7 @@ import { PublicBackground } from '@/components/layout/PublicBackground';
 interface OnboardingFormData {
   agencyName: string;
   selectedCountry: string;
-  selectedCity: string;
+  selectedLocation: string;
 }
 
 export default function Onboarding() {
@@ -37,14 +37,14 @@ export default function Onboarding() {
     initialValue: { 
       agencyName: '', 
       selectedCountry: 'MZ',
-      selectedCity: ''
+      selectedLocation: ''
     },
     storage: 'local',
     lazy: true,
   });
 
-  const availableCities = useMemo(() => {
-    return CITIES_BY_COUNTRY[formData.selectedCountry] || [];
+  const availableLocations = useMemo(() => {
+    return LOCATIONS_BY_COUNTRY[formData.selectedCountry] || [];
   }, [formData.selectedCountry]);
 
   // Check if returning from successful payment
@@ -115,8 +115,8 @@ export default function Onboarding() {
       return;
     }
 
-    if (!formData.selectedCity) {
-      toast.error('Por favor, selecione a sua cidade/província');
+    if (!formData.selectedLocation) {
+      toast.error('Por favor, selecione a sua província ou estado');
       return;
     }
 
@@ -146,7 +146,7 @@ export default function Onboarding() {
 
       // Get country data
       const country = COUNTRIES.find(c => c.code === formData.selectedCountry);
-      const cityName = availableCities.find(c => c.code === formData.selectedCity)?.name || formData.selectedCity;
+      const locationName = availableLocations.find(c => c.code === formData.selectedLocation)?.name || formData.selectedLocation;
       const currency = country?.currency || 'MZN';
       const countryName = country?.name || formData.selectedCountry;
 
@@ -166,8 +166,8 @@ export default function Onboarding() {
             currency: currency,
             onboarding_completed: true,
             country: countryName,
-            city: cityName,
-            headquarters: `${cityName}, ${countryName}`,
+            city: locationName,
+            headquarters: `${locationName}, ${countryName}`,
             trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
           })
           .select()
@@ -220,8 +220,8 @@ export default function Onboarding() {
             currency: currency,
             onboarding_completed: true,
             country: countryName,
-            city: cityName,
-            headquarters: `${cityName}, ${countryName}`,
+            city: locationName,
+            headquarters: `${locationName}, ${countryName}`,
           })
           .eq('id', organizationId);
 
@@ -268,7 +268,33 @@ export default function Onboarding() {
       if (sub?.status === 'active' || sub?.status === 'trialing') {
         navigate('/app');
       } else {
-        navigate('/select-plan');
+        // Se nunca teve um plano ativo antes (agência nova ou trial expirado mas onboarding incompleto)
+        // Ativamos o plano "Catapulta" (agency) por 7 dias imediatamente!
+        const planKey = 'agency';
+        const newEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        
+        const { error: subError } = await supabase.from('subscriptions').upsert({
+          organization_id: organizationId,
+          status: 'trialing',
+          current_period_start: new Date().toISOString(),
+          current_period_end: newEnd,
+          lemonsqueezy_subscription_id: `trial_${planKey}_${Date.now()}`,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'organization_id' });
+
+        if (subError) throw subError;
+
+        await supabase.from('organizations').update({ plan_type: planKey }).eq('id', organizationId);
+        
+        // Limpar cache manual para forçar renovação das permissões
+        if (sessionUser) {
+          sessionStorage.removeItem(`sub_cache_${sessionUser.id}_${organizationId}`);
+        }
+        
+        toast.success('Agência configurada e 7 Dias Grátis do plano Catapulta iniciados!');
+        
+        // Redirecionamento forçado para limpar o estado em memória completamente
+        window.location.href = '/app';
       }
     } catch (error: any) {
       console.error('Error in onboarding:', error);
@@ -343,7 +369,7 @@ export default function Onboarding() {
                   onValueChange={(value) => setFormData({ 
                     ...formData, 
                     selectedCountry: value,
-                    selectedCity: '' // Reset city when country changes
+                    selectedLocation: '' // Reset location when country changes
                   })} 
                   disabled={isSubmitting}
                 >
@@ -364,22 +390,22 @@ export default function Onboarding() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="city" className="flex items-center gap-2">
+                <Label htmlFor="location" className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  Cidade/Província
+                  Província/Estado
                 </Label>
                 <Select 
-                  value={formData.selectedCity} 
-                  onValueChange={(value) => setFormData({ ...formData, selectedCity: value })} 
-                  disabled={isSubmitting || availableCities.length === 0}
+                  value={formData.selectedLocation} 
+                  onValueChange={(value) => setFormData({ ...formData, selectedLocation: value })} 
+                  disabled={isSubmitting || availableLocations.length === 0}
                 >
-                  <SelectTrigger id="city">
-                    <SelectValue placeholder={formData.selectedCountry ? "Selecione a sua cidade" : "Selecione o país primeiro"} />
+                  <SelectTrigger id="location">
+                    <SelectValue placeholder={formData.selectedCountry ? "Selecione a sua província ou estado" : "Selecione o país primeiro"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableCities.map((city) => (
-                      <SelectItem key={city.code} value={city.code}>
-                        {city.name}
+                    {availableLocations.map((location) => (
+                      <SelectItem key={location.code} value={location.code}>
+                        {location.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

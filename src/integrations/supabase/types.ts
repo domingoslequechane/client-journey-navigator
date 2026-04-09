@@ -3410,7 +3410,7 @@ export type Database = {
         | "retencao"
         | "fidelizacao"
       lead_qualification: "cold" | "warm" | "hot" | "qualified"
-      plan_type: "free" | "starter" | "pro" | "agency"
+      plan_type: "free" | "starter" | "pro" | "agency" | "trial"
       subscription_status:
         | "trialing"
         | "active"
@@ -3600,7 +3600,7 @@ export const Constants = {
         "fidelizacao",
       ],
       lead_qualification: ["cold", "warm", "hot", "qualified"],
-      plan_type: ["free", "starter", "pro", "agency"],
+      plan_type: ["free", "starter", "pro", "agency", "trial"],
       subscription_status: [
         "trialing",
         "active",

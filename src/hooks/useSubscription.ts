@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type PlanType = 'starter' | 'pro' | 'agency' | 'free' | null;
+export type PlanType = 'starter' | 'pro' | 'agency' | 'free' | 'trial' | null;
 
 interface SubscriptionData {
   id: string;

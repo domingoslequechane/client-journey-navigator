@@ -71,14 +71,16 @@ export default function SelectOrganization() {
         setOrganizations(data);
       }
 
-      // Check if user is an owner via their profile account_type
+      // Check if user is an owner via their profile account_type OR if they have an Owner role in any org
+      const hasOwnerRole = data?.some(org => org.role?.toLowerCase() === 'owner');
+      
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('account_type')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (!profileError && profile?.account_type === 'owner') {
+      if (hasOwnerRole || (!profileError && profile?.account_type === 'owner')) {
         setIsOwner(true);
       }
 
@@ -99,23 +101,37 @@ export default function SelectOrganization() {
 
     setSelecting(orgId);
     try {
-      // Use the database function to set current organization
+      // 1. Set current organization
       const { data, error } = await supabase.rpc('set_current_organization', {
         user_uuid: user.id,
         org_uuid: orgId
       });
 
       if (error) throw error;
+      if (!data) throw new Error('Não foi possível selecionar a organização');
 
-      if (!data) {
-        throw new Error('Não foi possível selecionar a organização');
-      }
+      // 2. Check subscription status BEFORE entering /app
+      const { data: subData } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('organization_id', orgId)
+        .maybeSingle();
 
-      // Clear the new login flag so user won't be redirected back here
+      const hasAccess = subData?.status === 'active' || subData?.status === 'trialing';
+      
       clearNewLoginFlag();
 
-      // Navigate to dashboard with full page reload to ensure clean workspace state
-      window.location.href = '/app';
+      // Always clear cache before navigation to prevent stale state loops
+      const cacheKey = `sub_cache_${user.id}_${orgId}`;
+      sessionStorage.removeItem(cacheKey);
+
+      if (!hasAccess) {
+        // Redirect directly to plan selection without going through ProtectedRoute
+        window.location.href = '/select-plan';
+      } else {
+        // Navigate to dashboard with full page reload to ensure clean workspace state
+        window.location.href = '/app';
+      }
     } catch (error) {
       console.error('Error selecting organization:', error);
       toast({

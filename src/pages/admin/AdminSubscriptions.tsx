@@ -11,6 +11,11 @@ import { Button } from '@/components/ui/button';
 import { CreditCard, TrendingUp, AlertCircle, Clock, History, Receipt, DollarSign } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface SubscriptionWithOrg {
   id: string;
@@ -42,6 +47,15 @@ export default function AdminSubscriptions() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+
+  // Manual Subscription State
+  const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [manualSaving, setManualSaving] = useState(false);
+  const [manualOrgId, setManualOrgId] = useState('');
+  const [manualPlan, setManualPlan] = useState('starter');
+  const [manualDays, setManualDays] = useState('30');
+  const [amountOverride, setAmountOverride] = useState('');
+  const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     const fetchSubscriptions = async () => {
@@ -76,6 +90,61 @@ export default function AdminSubscriptions() {
       setPayments(data || []);
     }
     setLoadingHistory(false);
+  };
+
+  const handleOpenManualModal = async () => {
+    setManualModalOpen(true);
+    const { data } = await supabase.from('organizations').select('id, name').order('name');
+    setAllOrgs(data || []);
+  };
+
+  const handleSaveManual = async () => {
+    if (!manualOrgId) return toast.error('Selecione uma agência');
+    setManualSaving(true);
+    try {
+      const newEnd = new Date(Date.now() + parseInt(manualDays) * 24 * 60 * 60 * 1000).toISOString();
+      
+      const { error } = await supabase.from('subscriptions').upsert({
+        organization_id: manualOrgId,
+        status: 'active',
+        current_period_start: new Date().toISOString(),
+        current_period_end: newEnd,
+        lemonsqueezy_subscription_id: 'manual_transfer',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'organization_id' });
+
+      if (error) throw error;
+      
+      await supabase.from('organizations').update({ plan_type: manualPlan as "starter" | "pro" | "agency" }).eq('id', manualOrgId);
+
+      const defaultAmount = manualPlan === 'starter' ? 19 : manualPlan === 'pro' ? 54 : 99;
+      const finalAmount = amountOverride ? parseFloat(amountOverride) : defaultAmount;
+
+      await supabase.from('payment_history').insert({
+        organization_id: manualOrgId,
+        amount: finalAmount,
+        currency: 'USD',
+        status: 'paid',
+        payment_date: new Date().toISOString(),
+        description: `Activação Manual - Plano ${manualPlan} (${manualDays} dias)`
+      });
+
+      toast.success('Assinatura ativada com sucesso');
+      setManualModalOpen(false);
+      setManualOrgId('');
+      
+      const { data: newSubs } = await supabase
+        .from('subscriptions')
+        .select(`id, organization_id, status, current_period_start, current_period_end, created_at, organization:organizations(name, trial_ends_at)`)
+        .order('created_at', { ascending: false });
+      setSubscriptions(newSubs || []);
+
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Erro ao ativar');
+    } finally {
+      setManualSaving(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -235,9 +304,15 @@ export default function AdminSubscriptions() {
   return (
     <div className="p-6 space-y-6">
       <AnimatedContainer animation="fade-up">
-        <div>
-          <h1 className="text-3xl font-bold">Assinaturas</h1>
-          <p className="text-muted-foreground">Monitorizar e gerir as assinaturas do sistema</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Assinaturas</h1>
+            <p className="text-muted-foreground">Monitorizar e gerir as assinaturas do sistema</p>
+          </div>
+          <Button onClick={handleOpenManualModal} className="shrink-0">
+            <Plus className="h-4 w-4 mr-2" />
+            Activação Manual
+          </Button>
         </div>
       </AnimatedContainer>
 
@@ -390,6 +465,82 @@ export default function AdminSubscriptions() {
                 <p className="text-stone-500 italic">Nenhum histórico de pagamentos encontrado para esta agência.</p>
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Subscription Dialog */}
+      <Dialog open={manualModalOpen} onOpenChange={setManualModalOpen}>
+        <DialogContent className="max-w-md bg-[#0F0F0F] border-stone-800">
+          <DialogHeader>
+            <DialogTitle>Activação Manual de Assinatura</DialogTitle>
+            <DialogDescription>
+              Aprova e ativa manualmente uma transferência M-Pesa ou Bancária.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Agência / Organização</Label>
+              <Select value={manualOrgId} onValueChange={setManualOrgId}>
+                <SelectTrigger className="border-stone-800 bg-stone-900/50">
+                  <SelectValue placeholder="Selecione a agência" />
+                </SelectTrigger>
+                <SelectContent className="border-stone-800 bg-[#0F0F0F] max-h-[250px]">
+                  {allOrgs.map(org => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Plano</Label>
+              <Select value={manualPlan} onValueChange={setManualPlan}>
+                <SelectTrigger className="border-stone-800 bg-stone-900/50">
+                  <SelectValue placeholder="Selecione o plano" />
+                </SelectTrigger>
+                <SelectContent className="border-stone-800 bg-[#0F0F0F]">
+                  <SelectItem value="starter">Lança ($19)</SelectItem>
+                  <SelectItem value="pro">Arco ($54)</SelectItem>
+                  <SelectItem value="agency">Catapulta ($99)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Dias de Acesso</Label>
+                <Input 
+                  type="number" 
+                  value={manualDays} 
+                  onChange={(e) => setManualDays(e.target.value)} 
+                  className="border-stone-800 bg-stone-900/50"
+                  min="1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Valor Específico ($)</Label>
+                <Input 
+                  type="number" 
+                  value={amountOverride} 
+                  onChange={(e) => setAmountOverride(e.target.value)} 
+                  placeholder="Opcional"
+                  className="border-stone-800 bg-stone-900/50"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setManualModalOpen(false)} className="border-stone-800">
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveManual} disabled={manualSaving || !manualOrgId}>
+              {manualSaving ? 'A guardar...' : 'Activar Assinatura'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

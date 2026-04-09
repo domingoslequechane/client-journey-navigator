@@ -113,11 +113,6 @@ export function usePermissions() {
         }
     });
 
-    // Update permission cache when fetch succeeds
-    const permissionsData = profile;
-    if (permissionsData && !isLoading) {
-      sessionStorage.setItem('cached_permissions', JSON.stringify(permissionsData));
-    }
 
     const permissions = useMemo(() => {
         const rawRole = profile?.role?.toLowerCase() || 'user';
@@ -130,28 +125,15 @@ export function usePermissions() {
         const emailLower = user?.email?.toLowerCase() || '';
         
         const isInternalAdmin = 
-            rawRole.includes('qfy') || 
-            globalRole.includes('qfy') || 
-            rawRole.includes('qualify') ||
-            emailLower.includes('qfy') ||
-            emailLower.includes('qualify') ||
-            rawRole === 'admin' || 
-            rawRole === 'administrator' || 
-            globalRole === 'admin' || 
+            rawRole === 'qfy-admin' || 
+            rawRole === 'qfy_admin' ||
+            globalRole === 'qfy-admin' || 
+            globalRole === 'qfy_admin' ||
             globalRole === 'administrator';
 
         const isAdmin = isOrgOwner || isProprietor || rawRole === 'owner' || rawRole === 'Owner' || isInternalAdmin;
         const isOwner = isOrgOwner || isProprietor || rawRole === 'owner' || rawRole === 'Owner' || isAdmin;
 
-        console.log('usePermissions: Final calculation', {
-            email: emailLower,
-            profileRole: rawRole,
-            globalRole: globalRole,
-            isInternalAdmin,
-            isAdmin,
-            isOwner,
-            orgId
-        });
 
         const hasPrivilege = (key: PrivilegeKey): boolean => {
             if (isAdmin) return true;

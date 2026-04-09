@@ -5,6 +5,8 @@ import { ToolCard } from './ToolCard';
 import { cn } from '@/lib/utils';
 import { STUDIO_TOOLS, STUDIO_TOOL_CATEGORIES } from '@/types/studio';
 import type { StudioToolCategory } from '@/types/studio';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { FreeLimitModal } from '@/components/subscription/FreeLimitModal';
 
 interface StudioToolsHubProps {
     className?: string;
@@ -13,6 +15,40 @@ interface StudioToolsHubProps {
 export function StudioToolsHub({ className }: StudioToolsHubProps) {
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState<StudioToolCategory | 'all'>('all');
+    const { limits, usage, planType } = usePlanLimits();
+    const [showLimitModal, setShowLimitModal] = useState(false);
+    const [limitDesc, setLimitDesc] = useState('');
+
+    const getToolStatus = (toolId: string) => {
+        const isLimited = ['free', 'trial'].includes(planType as string);
+        // Fallback limits if not provided by the hook for some reason
+        const defaultLimit = 5;
+        
+        switch (toolId) {
+            case 'studio_flyer': {
+                const max = limits.maxStudioFlyer ?? (isLimited ? defaultLimit : null);
+                return { usage: usage.studioFlyerCount, max, isLocked: isLimited && usage.studioFlyerCount >= (max ?? 0), label: '5 Flyers no Studio' };
+            }
+            case 'studio_carousel': {
+                const max = limits.maxStudioCarousel ?? (isLimited ? defaultLimit : null);
+                return { usage: usage.studioCarouselCount, max, isLocked: isLimited && usage.studioCarouselCount >= (max ?? 0), label: '5 Carrosséis no Studio' };
+            }
+            case 'studio_recolor': {
+                const max = limits.maxStudioRecolor ?? (isLimited ? defaultLimit : null);
+                return { usage: usage.studioRecolorCount, max, isLocked: isLimited && usage.studioRecolorCount >= (max ?? 0), label: '5 Recolorações no Studio' };
+            }
+            case 'studio_product_beauty': {
+                const max = limits.maxStudioProductBeauty ?? (isLimited ? defaultLimit : null);
+                return { usage: usage.studioProductBeautyCount, max, isLocked: isLimited && usage.studioProductBeautyCount >= (max ?? 0), label: '5 Produtos Embelezados no Studio' };
+            }
+            case 'studio_product_scene': {
+                const max = limits.maxStudioProductScene ?? (isLimited ? defaultLimit : null);
+                return { usage: usage.studioProductSceneCount, max, isLocked: isLimited && usage.studioProductSceneCount >= (max ?? 0), label: '5 Cenários de Produto no Studio' };
+            }
+            default:
+                return { usage: 0, max: null, isLocked: false, label: '' };
+        }
+    };
 
     const filtered = STUDIO_TOOLS.filter((tool) => {
         const matchesSearch =
@@ -97,13 +133,32 @@ export function StudioToolsHub({ className }: StudioToolsHubProps) {
                         <span className="text-xs text-muted-foreground">({group.tools.length})</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {group.tools.map((tool) => (
-                                <ToolCard key={tool.id} tool={tool} />
-                            ))}
+                            {group.tools.map((tool) => {
+                                const status = getToolStatus(tool.id);
+                                return (
+                                    <ToolCard 
+                                        key={tool.id} 
+                                        tool={tool} 
+                                        isLocked={status.isLocked}
+                                        usageCount={status.usage}
+                                        maxCount={status.max}
+                                        onClick={status.isLocked ? () => {
+                                            setLimitDesc(status.label);
+                                            setShowLimitModal(true);
+                                        } : undefined}
+                                    />
+                                );
+                            })}
                         </div>
                     </section>
                 ))
             )}
+
+            <FreeLimitModal
+                open={showLimitModal}
+                onOpenChange={setShowLimitModal}
+                limitDescription={limitDesc}
+            />
         </div>
     );
 }

@@ -9,7 +9,7 @@ interface QualifySplashScreenProps {
 export function QualifySplashScreen({ message = "Verificando acesso...", className }: QualifySplashScreenProps) {
   return (
     <div className={cn(
-      "fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background animate-in fade-in duration-500",
+      "fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background animate-in fade-in duration-200",
       className
     )}>
       <div className="relative mb-8">

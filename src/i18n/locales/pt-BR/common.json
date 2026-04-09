@@ -74,6 +74,7 @@
   },
   "status": {
     "loading": "Carregando...",
+    "trialBanner": "Aproveite para explorar todas as funções disponíveis no sistema.",
     "saving": "Salvando...",
     "deleting": "Excluindo...",
     "processing": "Processando...",
@@ -165,6 +166,7 @@
     "lance": "Lança",
     "bow": "Arco",
     "catapult": "Catapulta",
+    "trial": "Período de Teste",
     "plan": "Plano"
   }
 }

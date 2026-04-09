@@ -70,6 +70,8 @@ export default function SelectPlan() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [hasHadPlan, setHasHadPlan] = useState(false);
+  const [agencyCurrency, setAgencyCurrency] = useState<string>('USD');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -101,7 +103,18 @@ export default function SelectPlan() {
             return;
           }
 
+          const { data: orgData } = await supabase
+            .from('organizations')
+            .select('currency')
+            .eq('id', orgId)
+            .maybeSingle();
+
+          if (orgData?.currency) {
+            setAgencyCurrency(orgData.currency);
+          }
+
           setOrganizationId(orgId);
+          setHasHadPlan(!!subscription);
         } else {
           const { data: slugData } = await supabase.rpc('generate_slug', {
             name: `temp-${user.id.substring(0, 8)}`
@@ -114,6 +127,7 @@ export default function SelectPlan() {
               slug: slugData || `temp-${Date.now()}`,
               owner_id: user.id,
               plan_type: null,
+              trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
             })
             .select()
             .single();
@@ -126,6 +140,7 @@ export default function SelectPlan() {
             .eq('id', user.id);
 
           setOrganizationId(newOrg.id);
+          setHasHadPlan(false);
         }
       } catch (error) {
         console.error('Error checking user status:', error);
@@ -145,57 +160,50 @@ export default function SelectPlan() {
       toast.error('Erro: organização não encontrada');
       return;
     }
+    navigate(`/checkout?plan=${planKey}`);
+  };
 
-    setLoadingPlan(planKey);
+  const handleStartTrial = async (clickedPlanKey: string) => {
+    if (!organizationId || !user) {
+      toast.error('Erro: organização não encontrada');
+      return;
+    }
+
+    // O utilizador pediu: "Todo teste deve ser no plano mais alto" (Catapulta/agency)
+    const planKey = 'agency';
+    
+    setLoadingPlan(`trial-${clickedPlanKey}`); // Manter o ID clicado para o loading spinner funcionar na UI
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const newEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      
+      const { error } = await supabase.from('subscriptions').upsert({
+        organization_id: organizationId,
+        status: 'trialing',
+        current_period_start: new Date().toISOString(),
+        current_period_end: newEnd,
+        lemonsqueezy_subscription_id: `trial_${planKey}_${Date.now()}`,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'organization_id' });
 
-      if (!session) {
-        toast.error('Sessão expirada. Faça login novamente.');
-        navigate('/auth');
-        return;
+      if (error) throw error;
+
+      await supabase.from('organizations').update({ plan_type: planKey as any }).eq('id', organizationId);
+
+      // CRITICAL: Clear the subscription sessionStorage cache so the ProtectedRoute
+      // re-fetches fresh data and doesn't see the old null subscription, which
+      // would cause an infinite redirect loop back to /select-plan.
+      if (user) {
+        const cacheKey = `sub_cache_${user.id}_${organizationId}`;
+        sessionStorage.removeItem(cacheKey);
       }
 
-      const response = await fetch(
-        'https://hrarkpjuchrbffnrhzcy.supabase.co/functions/v1/create-checkout',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            organizationId,
-            planType: planKey,
-            userEmail: user.email,
-            userName: user.user_metadata?.full_name,
-          }),
-        }
-      );
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
-        const textResponse = await response.text();
-        console.error('Non-JSON response from checkout:', textResponse.substring(0, 200));
-        throw new Error('Erro inesperado ao criar checkout. Tente novamente.');
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao criar checkout');
-      }
-
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        throw new Error('URL de checkout não encontrada');
-      }
+      toast.success('Período de teste iniciado! Bem-vindo ao Qualify!');
+      // Use full page reload to ensure all React state (including useSubscription) is reset fresh.
+      window.location.href = '/app/onboarding';
     } catch (error: any) {
-      console.error('Error creating checkout:', error);
-      toast.error(error.message || 'Erro ao processar pagamento');
-    } finally {
+      console.error('Error starting trial:', error);
+      toast.error('Erro ao iniciar período de teste. Tente novamente.');
       setLoadingPlan(null);
     }
   };
@@ -234,7 +242,7 @@ export default function SelectPlan() {
             Escolha seu plano
           </h1>
           <p className="text-muted-foreground text-lg">
-            Selecione um plano para começar a usar o Qualify. Informações de cartão são obrigatórias.
+            Selecione um plano para começar a usar o Qualify e escolha o formato de pagamento mais cômodo (Cartão ou Transferência/M-Pesa).
           </p>
         </div>
 
@@ -250,6 +258,18 @@ export default function SelectPlan() {
               {plans.map((plan) => {
                 const colors = getPlanColors(plan.key);
                 const isLoading = loadingPlan === plan.key;
+                
+                // Conversão de moeda aproximada
+                const conversionRates: Record<string, number> = {
+                  'USD': 1, 'MZN': 64, 'BRL': 5.0, 'EUR': 0.9, 'AOA': 850, 'GBP': 0.8, 'ZAR': 19, 'CVE': 100
+                };
+                const symbols: Record<string, string> = {
+                  'USD': '$', 'MZN': 'MT', 'BRL': 'R$', 'EUR': '€', 'AOA': 'Kz', 'GBP': '£', 'ZAR': 'R', 'CVE': '$'
+                };
+                
+                const rate = conversionRates[agencyCurrency] || 1;
+                const symbol = symbols[agencyCurrency] || '$';
+                const convertedPrice = Math.round(plan.price * rate).toLocaleString();
 
                 return (
                   <Card
@@ -282,13 +302,11 @@ export default function SelectPlan() {
                       <div className="text-center mb-4">
                         <div className="flex items-baseline justify-center gap-1">
                           <span className="text-4xl font-bold" style={{ color: colors.primary }}>
-                            ${plan.price}
+                            {symbol}{convertedPrice}
                           </span>
                           <span className="text-muted-foreground">{plan.period}</span>
                         </div>
-                        <p className="text-sm text-primary font-medium mt-1">
-                          Cartão obrigatório
-                        </p>
+
                       </div>
 
                       <ul className="space-y-2 mb-6 flex-1">
@@ -303,27 +321,48 @@ export default function SelectPlan() {
                         ))}
                       </ul>
 
-                      <Button
-                        className="w-full"
-                        style={{
-                          backgroundColor: colors.primary,
-                          color: 'white',
-                        }}
-                        onClick={() => handleSelectPlan(plan.key)}
-                        disabled={!!loadingPlan}
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Processando...
-                          </>
-                        ) : (
-                          <>
-                            Assinar Agora
-                            <ArrowRight className="h-4 w-4 ml-2" />
-                          </>
-                        )}
-                      </Button>
+                      {hasHadPlan ? (
+                        <Button
+                          className="w-full"
+                          style={{
+                            backgroundColor: colors.primary,
+                            color: 'white',
+                          }}
+                          onClick={() => handleSelectPlan(plan.key)}
+                          disabled={!!loadingPlan}
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Processando...
+                            </>
+                          ) : (
+                            <>
+                              Assinar Agora
+                              <ArrowRight className="h-4 w-4 ml-2" />
+                            </>
+                          )}
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full"
+                          style={{
+                            backgroundColor: colors.primary,
+                            color: 'white',
+                          }}
+                          onClick={() => handleStartTrial(plan.key)}
+                          disabled={!!loadingPlan}
+                        >
+                          {loadingPlan === `trial-${plan.key}` ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Processando...
+                            </>
+                          ) : (
+                            'Testar grátis por 7 dias'
+                          )}
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 );

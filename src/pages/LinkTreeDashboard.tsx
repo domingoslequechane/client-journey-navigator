@@ -38,6 +38,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { useHeader } from '@/contexts/HeaderContext';
+import { FreeLimitModal } from '@/components/subscription/FreeLimitModal';
 
 export default function LinkTreeDashboard() {
   const { t } = useTranslation('clients');
@@ -45,8 +46,9 @@ export default function LinkTreeDashboard() {
   const { organizationId } = useOrganization();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectClientOpen, setSelectClientOpen] = useState(false);
-  const { limits, usage } = usePlanLimits();
+  const { limits, usage, planType } = usePlanLimits();
   const { setCustomTitle, setCustomIcon } = useHeader();
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // Update header title
   useEffect(() => {
@@ -327,12 +329,28 @@ export default function LinkTreeDashboard() {
               className="pl-10"
             />
           </div>
-          <Button onClick={() => setSelectClientOpen(true)} className="gap-2 shrink-0">
+          <Button 
+            onClick={() => {
+              const isRestricted = ['free', 'trial', null].includes(planType as string);
+              if (isRestricted && usage.linkPagesCount >= (limits.maxLinkPages ?? 2)) {
+                setShowLimitModal(true);
+              } else {
+                setSelectClientOpen(true);
+              }
+            }} 
+            className="gap-2 shrink-0"
+          >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">{t('linkTree.newLink')}</span>
           </Button>
         </div>
       </div>
+
+      <FreeLimitModal
+        open={showLimitModal}
+        onOpenChange={setShowLimitModal}
+        limitDescription="2 árvores de links no Link23"
+      />
 
       {/* Select Client Dialog */}
       <Dialog open={selectClientOpen} onOpenChange={setSelectClientOpen}>

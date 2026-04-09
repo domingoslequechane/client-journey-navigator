@@ -31,7 +31,11 @@ import {
   Layout,
   Layers,
   Copy,
-  RotateCcw
+  RotateCcw,
+  Link,
+  Globe,
+  Trash2,
+  GripVertical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -58,13 +62,16 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from '@/lib/utils';
 import { StudioQuickMenu } from './StudioQuickMenu';
+import { CarouselFeedbackPanel, CarouselQuickRating } from './CarouselFeedbackPanel';
+import { useProjectLearnings } from '@/hooks/useProjectLearnings';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/hooks/useOrganization';
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
-import { renderCarouselSlide, getSlideDimensions, getRatioKey, dataUrlToBlob } from '@/lib/carouselCanvasRenderer';
+import { renderCarouselSlide, getSlideDimensions, getRatioKey, dataUrlToBlob, type PaginationStyle } from '@/lib/carouselCanvasRenderer';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { StudioTool, FlyerSquadAgent, SquadLog } from '@/types/studio';
@@ -112,6 +119,19 @@ const CAROUSEL_SIZES = [
   { id: 'portrait', label: 'Retrato (4:5)', icon: RectangleVertical, ratio: '4:5', dimensions: '1080x1350' },
 ];
 
+const BACKGROUND_MODES: { id: 'single' | 'dynamic'; label: string; desc: string }[] = [
+  { id: 'single', label: 'Fundo Único / Contínuo', desc: 'Mantém exatamente o mesmo fundo em todos os slides (ideal para carrossel contínuo)' },
+  { id: 'dynamic', label: 'Fundos Dinâmicos AI', desc: 'A IA cria cenários variados e contextos visuais adaptados ao longo dos slides' },
+];
+
+const PAGINATION_STYLES: { id: PaginationStyle; label: string; preview: string; desc: string }[] = [
+  { id: 'numbers', label: 'Numérico', preview: '01  •02•  03', desc: 'Sequência linear com destaque' },
+  { id: 'dots',    label: 'Bolinhas', preview: '●  ○  ○  ○', desc: 'Indicador de pontos minimalista' },
+  { id: 'fraction', label: 'Fração',  preview: '02 / 05',    desc: 'Formato 2/5 compacto' },
+  { id: 'line',    label: 'Barra',    preview: '▬▬▬░░░░',   desc: 'Barra de progresso contínua' },
+  { id: 'none',    label: 'Nenhuma',  preview: '—',          desc: 'Sem indicador de página' },
+];
+
 const resizeImage = (base64Str: string, maxWidth: number = 1536, maxHeight: number = 1536): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -155,8 +175,16 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
   const [productImages, setProductImages] = useState<string[]>([]);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [approvedTemplateImage, setApprovedTemplateImage] = useState<string | null>(null);
+  const [referenceEnabled, setReferenceEnabled] = useState<boolean>(true);
+  const [templateEnabled, setTemplateEnabled] = useState<boolean>(true);
   const [allowImageManipulation, setAllowImageManipulation] = useState<boolean>(true);
   const [briefing, setBriefing] = useState('');
+  const [footerText, setFooterText] = useState('');
+  const [paginationStyle, setPaginationStyle] = useState<PaginationStyle>('numbers');
+  const [backgroundMode, setBackgroundMode] = useState<'single' | 'dynamic'>('single');
+  const [scrapedUrl, setScrapedUrl] = useState('');
+  const [scrapedContent, setScrapedContent] = useState<{ title: string; description: string; content: string; ogImage?: string } | null>(null);
+  const [isScraping, setIsScraping] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [logs, setLogs] = useState<SquadLog[]>([]);
@@ -195,6 +223,61 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
   });
   const [showCostSummary, setShowCostSummary] = useState(false);
   const ITEMS_PER_PAGE = 9;
+
+  const { buildLearningsPrompt } = useProjectLearnings(projectId);
+
+  const isCancelledRef = useRef(false);
+
+  const cancelSquad = () => {
+    if (!isProcessing) return;
+    isCancelledRef.current = true;
+    setIsProcessing(false);
+    toast.error('Geração cancelada pelo usuário', { icon: '🛑' });
+    setLogs(prev => [...prev, {
+      agent: 'orchestrator',
+      action: '🛑 Processo cancelado manualmente.',
+      status: 'error',
+      timestamp: new Date().toISOString()
+    }]);
+  };
+  
+  // --- Drag and Drop Logic (@hello-pangea/dnd) ---
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    
+    if (editableCopy?.slides) {
+        const _slides = Array.from(editableCopy.slides);
+        const [reorderedItem] = _slides.splice(result.source.index, 1);
+        _slides.splice(result.destination.index, 0, reorderedItem);
+        
+        setEditableCopy({ ...editableCopy, slides: _slides });
+        setNumberOfSlides(_slides.length);
+    }
+  };
+
+  const handleDeleteSlide = (idx: number) => {
+    if (editableCopy?.slides) {
+        const _slides = [...editableCopy.slides];
+        _slides.splice(idx, 1);
+        setEditableCopy({ ...editableCopy, slides: _slides });
+        setNumberOfSlides(_slides.length);
+    }
+  };
+
+  const handleAddSlide = () => {
+    if (editableCopy?.slides) {
+        const _slides = [...editableCopy.slides];
+        if (_slides.length > 1) {
+             const cta = _slides.pop();
+             _slides.push({ headline: "Novo Slide", body: "Descreva o conteúdo aqui" });
+             if (cta) _slides.push(cta);
+        } else {
+             _slides.push({ headline: "Novo Slide", body: "Descreva o conteúdo aqui" });
+        }
+        setEditableCopy({ ...editableCopy, slides: _slides });
+        setNumberOfSlides(_slides.length);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('carousel_specialist_mode', JSON.stringify(isSpecialistMode));
@@ -247,11 +330,18 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
       if (settings.aspectRatio) setAspectRatio(settings.aspectRatio);
       if (settings.numberOfSlides) setNumberOfSlides(settings.numberOfSlides);
       if (settings.briefing) setBriefing(settings.briefing);
+      if (settings.footerText) setFooterText(settings.footerText);
       if (settings.hasOwnProperty('allowImageManipulation')) setAllowImageManipulation(settings.allowImageManipulation);
       if (settings.productImages) setProductImages(settings.productImages);
       else if (settings.productImage) setProductImages([settings.productImage]);
       if (settings.referenceImage) setReferenceImage(settings.referenceImage);
       if (settings.approvedTemplateImage) setApprovedTemplateImage(settings.approvedTemplateImage);
+      if (settings.hasOwnProperty('referenceEnabled')) setReferenceEnabled(settings.referenceEnabled);
+      if (settings.hasOwnProperty('templateEnabled')) setTemplateEnabled(settings.templateEnabled);
+      if (settings.scrapedUrl) setScrapedUrl(settings.scrapedUrl);
+      if (settings.scrapedContent) setScrapedContent(settings.scrapedContent);
+      if (settings.paginationStyle) setPaginationStyle(settings.paginationStyle as PaginationStyle);
+      if (settings.backgroundMode) setBackgroundMode(settings.backgroundMode);
       isInitialLoad.current = false;
     } else if (!loadingProject && !project?.settings) {
       isInitialLoad.current = false;
@@ -296,6 +386,17 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
     }, 2000);
     return () => clearTimeout(timer);
   }, [briefing, project]);
+
+  // Debounced footerText save
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentFooterText = (project?.settings as any)?.footerText;
+      if (!isInitialLoad.current && currentFooterText !== footerText) {
+        saveSettings({ footerText });
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [footerText, project]);
 
   // Fetch Carousel History
   const { data: history = [], refetch: refetchHistory, isRefetching: isRefreshingHistory } = useQuery({
@@ -493,13 +594,54 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
     }
   };
 
+  const handleScrapeUrl = async () => {
+    if (!scrapedUrl.trim()) {
+      toast.error('Insira uma URL válida');
+      return;
+    }
+    setIsScraping(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-url', {
+        body: { url: scrapedUrl.trim() }
+      });
+      if (error) throw new Error(error.message);
+      if (data.error) throw new Error(data.error);
+      
+      setScrapedContent(data);
+      saveSettings({ scrapedUrl: scrapedUrl.trim(), scrapedContent: data });
+      
+      if (data.images && data.images.length > 0) { // Extract illustrative images
+         setProductImages(prev => {
+            const newImages = [...prev];
+            data.images.forEach((img: string) => {
+                if (!newImages.includes(img)) newImages.push(img);
+            });
+            return newImages;
+         });
+         toast.success(`Conteúdo e ${data.images.length} imagens extraídos!`);
+      } else {
+         toast.success(`Conteúdo extraído: "${data.title || 'Sem título'}"`);
+      }
+    } catch (e: any) {
+      toast.error(`Erro ao raspar URL: ${e.message}`);
+    } finally {
+      setIsScraping(false);
+    }
+  };
+
+  const clearScrapedContent = () => {
+    setScrapedContent(null);
+    setScrapedUrl('');
+    saveSettings({ scrapedUrl: '', scrapedContent: null });
+  };
+
   const startSquad = async () => {
     if (!projectId || !project) {
       toast.error('Projeto não identificado');
       return;
     }
-    if (!briefing.trim()) {
-      toast.error('Informe os detalhes/briefing para o Carrossel');
+    if (!briefing.trim() && !scrapedContent) {
+      toast.error('Informe os detalhes/briefing ou cole um link de publicação');
       return;
     }
     if (!orgId) {
@@ -507,6 +649,7 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
       return;
     }
 
+    isCancelledRef.current = false;
     setIsProcessing(true);
     setResultImages([]);
     setLogs([]);
@@ -547,7 +690,12 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
         dimensions: CAROUSEL_SIZES.find(s => s.id === aspectRatio)?.dimensions || '1080x1080',
         ratio: CAROUSEL_SIZES.find(s => s.id === aspectRatio)?.ratio || '1:1',
         numberOfSlides,
-        primaryFont: (project.settings as any)?.primary_font || null
+        footerText,
+        primaryFont: (project.settings as any)?.primary_font || null,
+        scrapedContent: scrapedContent ? `CONTEÚDO EXTRAÍDO DO LINK (${scrapedUrl}):\nTítulo: ${scrapedContent.title}\nDescrição: ${scrapedContent.description}\nConteúdo: ${scrapedContent.content}` : null,
+        paginationStyle,
+        backgroundMode,
+        projectLearnings: buildLearningsPrompt(),
       }
     };
 
@@ -565,6 +713,7 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
       let accumulatedUsage = { prompt: 0, candidates: 0 };
 
       while (currentStepIdx < AGENTS.length && retryCount <= MAX_RETRIES) {
+        if (isCancelledRef.current) break;
         setCurrentStep(currentStepIdx);
         const agent = AGENTS[currentStepIdx];
         
@@ -599,6 +748,10 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
             const ratioKey = getRatioKey(aspectRatio);
 
             for (let i = 0; i < totalSlides; i++) {
+              if (isCancelledRef.current) {
+                setLogs(prev => [...prev, { agent: 'designer', action: 'Processo cancelado.', status: 'error', timestamp: new Date().toISOString() }]);
+                break;
+              }
               setLogs(prev => [...prev, {
                 agent: 'designer',
                 action: `🖌️ Renderizando slide ${i + 1}/${totalSlides}...`,
@@ -641,6 +794,8 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                 body: slides[i]?.body || '',
                 slideIndex: i,
                 totalSlides,
+                paginationStyle,
+                footerText: currentContext.project?.footerText,
               });
 
               // Upload to Supabase Storage
@@ -678,105 +833,132 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
           let previousSlideUrl: string | null = null;
 
           for (let i = 0; i < totalSlides; i++) {
-            setCurrentStep(2); // Muda UI para Designer
-            setLogs(prev => [...prev, {
-              agent: 'designer',
-              action: `Criando painel ${i + 1} de ${totalSlides}...`,
-              status: 'working',
-              timestamp: new Date().toISOString()
-            }]);
-
-            const designRes = await supabase.functions.invoke('carousel-squad-orchestrator', {
-              body: { 
-                agent: 'designer', 
-                productImages, 
-                referenceImage, 
-                approvedTemplateImage, 
-                refMode, 
-                allowImageManipulation, 
-                briefing, 
-                organizationId: orgId, 
-                projectId: projectId, 
-                numSlides: numberOfSlides, 
-                context: { 
-                  ...currentContext, 
-                  slideIndex: i, 
-                  slideCopy: slides[i],
-                  previousSlideUrl // Passa a imagem anterior como guia visual!
-                } 
-              }
-            });
-
-            if (designRes.error) {
-               console.error(`Slide ${i+1} Edge Error:`, designRes.error);
-               throw new Error(`Designer falhou no slide ${i + 1}: Edge Function Error (${designRes.error.message})`);
+            if (isCancelledRef.current) {
+              setLogs(prev => [...prev, { agent: 'designer', action: 'Processo cancelado.', status: 'error', timestamp: new Date().toISOString() }]);
+              break;
             }
+            
+            let slideApproved = false;
+            let slideRetryCount = 0;
+            const MAX_SLIDE_RETRIES = 30; // Removido o limite rígido, agora itera praticamente de forma ilimitada até à perfeição
+            let currentImageUrl: string | null = null;
+            let reviewerFeedback: string | null = null;
 
-            if (!designRes.data?.success) {
-               const serverError = designRes.data?.error || 'Erro interno da IA';
-               throw new Error(`Designer falhou no slide ${i + 1}: ${serverError}`);
-            }
-
-            const imageUrl = designRes.data.result.imageUrl;
-            finalImages[i] = imageUrl;
-
-            setLogs(prev => [...prev, {
+            while (!slideApproved && slideRetryCount <= MAX_SLIDE_RETRIES) {
+              if (isCancelledRef.current) break;
+              
+              setCurrentStep(2); // Muda UI para Designer
+              setLogs(prev => [...prev, {
                 agent: 'designer',
-                action: `✓ Slide ${i+1} renderizado.`,
-                status: 'completed',
-                timestamp: new Date().toISOString()
-            }]);
-
-            const visibleImages = finalImages.filter(img => img !== null);
-            setResultImages([...visibleImages]);
-            lastImageUrls = [...visibleImages];
-
-            // Trigger Reviewer synchronously before moving to next slide
-            setCurrentStep(3); // Animates UI back to Reviewer
-            setLogs(prev => [...prev, {
-                agent: 'reviewer',
-                action: `Analisando alinhamento do slide ${i + 1}...`,
+                action: slideRetryCount === 0 ? `Criando painel ${i + 1} de ${totalSlides}...` : `Refinando painel ${i + 1} em busca da perfeição (Tentativa ${slideRetryCount})...`,
                 status: 'working',
                 timestamp: new Date().toISOString()
-            }]);
+              }]);
 
-            const { data: reviewData } = await supabase.functions.invoke('carousel-squad-orchestrator', {
-              body: {
-                agent: 'reviewer',
-                organizationId: orgId,
-                projectId: projectId,
-                numSlides: numberOfSlides,
-                context: { ...currentContext, slideIndex: i, imageUrl }
+              const designRes = await supabase.functions.invoke('carousel-squad-orchestrator', {
+                body: { 
+                  agent: 'designer', 
+                  productImages, 
+                  referenceImage: referenceEnabled ? referenceImage : null, 
+                  approvedTemplateImage: templateEnabled ? approvedTemplateImage : null, 
+                  refMode, 
+                  allowImageManipulation, 
+                  briefing, 
+                  organizationId: orgId, 
+                  projectId: projectId, 
+                  numSlides: numberOfSlides, 
+                  context: { 
+                    ...currentContext, 
+                    slideIndex: i, 
+                    slideCopy: slides[i],
+                    previousSlideUrl, // Passa a imagem anterior como guia visual!
+                    reviewerFeedback // Feedback from a rejected attempt
+                  } 
+                }
+              });
+
+              if (designRes.error) {
+                 console.error(`Slide ${i+1} Edge Error:`, designRes.error);
+                 throw new Error(`Designer falhou no slide ${i + 1}: Edge Function Error (${designRes.error.message})`);
               }
-            });
 
-            if (reviewData?.success && reviewData.result.status === 'approved') {
+              if (!designRes.data?.success) {
+                 const serverError = designRes.data?.error || 'Erro interno da IA';
+                 throw new Error(`Designer falhou no slide ${i + 1}: ${serverError}`);
+              }
+
+              const imageUrl = designRes.data.result.imageUrl;
+              currentImageUrl = imageUrl;
+              finalImages[i] = imageUrl;
+
               setLogs(prev => [...prev, {
-                  agent: 'reviewer',
-                  action: `✓ Slide ${i+1} aprovado pelo Diretor!`,
+                  agent: 'designer',
+                  action: slideRetryCount === 0 ? `✓ Slide ${i+1} renderizado.` : `✓ Slide ${i+1} corrigido.`,
                   status: 'completed',
                   timestamp: new Date().toISOString()
               }]);
-              // Guarda este slide perfeito como contexto visual para o próximo!
-              previousSlideUrl = imageUrl;
-            } else if (reviewData?.success && reviewData.result.status === 'rejected') {
-              toast.warning(`Diretor de Arte sugeriu ajuste no Slide ${i+1}: ${reviewData.result.feedback}`);
+
+              const visibleImages = finalImages.filter(img => img !== null);
+              setResultImages([...visibleImages]);
+              lastImageUrls = [...visibleImages];
+
+              // Trigger Reviewer synchronously before moving to next slide
+              setCurrentStep(3); // Animates UI back to Reviewer
               setLogs(prev => [...prev, {
                   agent: 'reviewer',
-                  action: `⚠ Slide ${i+1} sugerido ajuste: ${reviewData.result.feedback}`,
-                  status: 'failed',
+                  action: `Analisando alinhamento do slide ${i + 1}...`,
+                  status: 'working',
                   timestamp: new Date().toISOString()
               }]);
-              // Even if rejected, we use it as context so the next slide doesn't drift away
-              previousSlideUrl = imageUrl;
-            } else {
-              previousSlideUrl = imageUrl;
+
+              const { data: reviewData } = await supabase.functions.invoke('carousel-squad-orchestrator', {
+                body: {
+                  agent: 'reviewer',
+                  organizationId: orgId,
+                  projectId: projectId,
+                  numSlides: numberOfSlides,
+                  context: { ...currentContext, slideIndex: i, imageUrl }
+                }
+              });
+
+              if (designRes.data.usageMetadata) {
+                  accumulatedUsage.prompt += designRes.data.usageMetadata.promptTokens || 0;
+                  accumulatedUsage.candidates += designRes.data.usageMetadata.candidatesTokens || 0;
+              }
+
+              if (reviewData?.success && reviewData.result.status === 'approved') {
+                setLogs(prev => [...prev, {
+                    agent: 'reviewer',
+                    action: `✓ Slide ${i+1} aprovado pelo Diretor!`,
+                    status: 'completed',
+                    timestamp: new Date().toISOString()
+                }]);
+                slideApproved = true;
+              } else if (reviewData?.success && reviewData.result.status === 'rejected') {
+                reviewerFeedback = reviewData.result.feedback;
+                toast.warning(`Diretor exigiu correção no Slide ${i+1}: ${reviewerFeedback}`);
+                setLogs(prev => [...prev, {
+                    agent: 'reviewer',
+                    action: `⚠ Slide ${i+1} rejeitado. Motivo: ${reviewerFeedback}`,
+                    status: 'failed',
+                    timestamp: new Date().toISOString()
+                }]);
+                slideRetryCount++;
+                if (slideRetryCount > MAX_SLIDE_RETRIES) {
+                  setLogs(prev => [...prev, {
+                      agent: 'reviewer',
+                      action: `⚠ Máximo de tentativas atingido. Avançando...`,
+                      status: 'failed',
+                      timestamp: new Date().toISOString()
+                  }]);
+                }
+              } else {
+                slideApproved = true;
+              }
             }
 
-            if (designRes.data.usageMetadata) {
-                accumulatedUsage.prompt += designRes.data.usageMetadata.promptTokens || 0;
-                accumulatedUsage.candidates += designRes.data.usageMetadata.candidatesTokens || 0;
-            }
+            // Guarda este slide aprovado/final como contexto visual para o próximo!
+            previousSlideUrl = currentImageUrl;
           }
 
           // Complete Designer Step in Context
@@ -789,8 +971,8 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
           body: {
             agent: agent.id,
             productImages,
-            referenceImage,
-            approvedTemplateImage,
+            referenceImage: referenceEnabled ? referenceImage : null,
+            approvedTemplateImage: templateEnabled ? approvedTemplateImage : null,
             refMode,
             allowImageManipulation,
             briefing,
@@ -1161,25 +1343,176 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
           </div>
         </div>
 
+        {/* Pagination Style */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+              4. Paginação dos Slides
+            </h3>
+            <span className="text-[9px] text-primary/60 font-bold uppercase tracking-wide bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+              Capa e CTA sem paginação
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-1.5">
+            {PAGINATION_STYLES.map((ps) => (
+              <button
+                key={ps.id}
+                onClick={() => {
+                  setPaginationStyle(ps.id);
+                  saveSettings({ paginationStyle: ps.id });
+                }}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all",
+                  paginationStyle === ps.id
+                    ? "bg-primary/10 border-primary/50 ring-1 ring-primary/20 text-foreground"
+                    : "bg-background border-primary/10 text-muted-foreground hover:border-primary/30 hover:bg-primary/5"
+                )}
+              >
+                <span className={cn(
+                  "font-mono text-[11px] font-bold w-16 shrink-0 text-center tracking-tight",
+                  paginationStyle === ps.id ? "text-primary" : "text-muted-foreground/70"
+                )}>
+                  {ps.preview}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className={cn("text-[11px] font-bold leading-none mb-0.5", paginationStyle === ps.id ? "text-foreground" : "text-muted-foreground")}>
+                    {ps.label}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground/60 leading-none">{ps.desc}</p>
+                </div>
+                {paginationStyle === ps.id && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                )}
+              </button>
+            ))}
+          </div>
+          {paginationStyle !== 'none' && (
+            <p className="text-[9px] text-muted-foreground/50 pl-1 leading-relaxed">
+              ⚡ A capa (1.º slide) e o slide de call-to-action (último) nunca mostram paginação.
+            </p>
+          )}
+        </div>
+
+        {/* Background Mode */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+              5. Estratégia de Fundo Visual
+            </h3>
+            {generationMode === 'js' && (
+              <span className="text-[9px] text-primary/60 font-bold uppercase tracking-wide bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+                Apenas para IA Designer
+              </span>
+            )}
+          </div>
+          <div className={cn("grid grid-cols-2 gap-2", generationMode === 'js' && "opacity-50 pointer-events-none")}>
+            {BACKGROUND_MODES.map((mode) => (
+              <button
+                key={mode.id}
+                onClick={() => {
+                  setBackgroundMode(mode.id);
+                  saveSettings({ backgroundMode: mode.id });
+                }}
+                className={cn(
+                  "flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all",
+                  backgroundMode === mode.id
+                    ? "bg-primary/10 border-primary shadow-sm text-foreground"
+                    : "bg-background border-primary/10 text-muted-foreground hover:border-primary/30 hover:bg-primary/5"
+                )}
+              >
+                <span className={cn("text-xs font-bold leading-tight", backgroundMode === mode.id ? "text-primary" : "text-foreground")}>
+                  {mode.label}
+                </span>
+                <span className="text-[9px] leading-snug">
+                  {mode.desc}
+                </span>
+              </button>
+            ))}
+          </div>
+          {generationMode === 'js' && (
+             <p className="text-[9px] text-muted-foreground/50 pl-1 italic">Para alterar ou fixar fundos quando utilizar a renderização por código (V2), use diretamente imagens diferentes nas telas abaixo.</p>
+          )}
+        </div>
+
         {/* Briefing */}
         <div className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-            4. Detalhes do Conteúdo (Briefing)
+            6. Detalhes do Conteúdo (Briefing)
           </h3>
-          <Textarea 
-            placeholder="Descreva o que deve constar no carrossel, ofertas, chamadas para ação..."
-            className="min-h-[80px] max-h-[150px] resize-none border-primary/10 focus-visible:ring-primary/20 text-xs rounded-xl"
-            value={briefing}
-            onChange={(e) => setBriefing(e.target.value)}
-          />
+
+          {/* URL Scraper */}
+          <div className="space-y-2">
+            <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1.5">
+              <Link className="h-3 w-3 text-primary" />
+              Cole um link de publicação para a IA extrair o conteúdo automaticamente
+            </p>
+            {scrapedContent ? (
+              <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-1 relative">
+                <button
+                  onClick={clearScrapedContent}
+                  className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+                <div className="flex items-center gap-2 pr-4">
+                  <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <p className="text-[11px] font-bold text-foreground truncate">{scrapedContent.title || 'Sem título'}</p>
+                </div>
+                {scrapedContent.description && (
+                  <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2">{scrapedContent.description}</p>
+                )}
+                <p className="text-[9px] text-primary/60 font-medium">✅ Conteúdo extraído — a IA irá usar como referência do briefing</p>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="https://exemplo.com/post/..."
+                  value={scrapedUrl}
+                  onChange={(e) => setScrapedUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleScrapeUrl()}
+                  className="h-9 text-xs rounded-xl bg-muted/20 border-primary/10 focus-visible:ring-primary/20 flex-1"
+                  disabled={isScraping}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 px-3 rounded-xl border-primary/20 text-primary hover:bg-primary/5 shrink-0"
+                  onClick={handleScrapeUrl}
+                  disabled={isScraping || !scrapedUrl.trim()}
+                >
+                  {isScraping ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Textarea 
+              placeholder="Descreva o que deve constar no carrossel, ofertas, chamadas para ação... (opcional se usou o link acima)"
+              className="min-h-[120px] resize-y border-primary/10 focus-visible:ring-primary/20 text-xs rounded-xl"
+              value={briefing}
+              onChange={(e) => setBriefing(e.target.value)}
+            />
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Conteúdo do Rodapé (Opcional)</label>
+              <Textarea 
+                placeholder="Ex: @seunome • www.seunome.com\nOu digite múltiplas linhas para o rodapé."
+                className="min-h-[80px] resize-y text-xs rounded-xl bg-muted/20 border-primary/10 focus-visible:ring-primary/20"
+                value={footerText}
+                onChange={(e) => setFooterText(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-              5. Elementos Visuais (Max 4)
+              7. Elementos Visuais (Max 4)
             </h3>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => {
               const val = !allowImageManipulation;
@@ -1246,13 +1579,25 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-              6. Referência
+              <div className={cn("w-1.5 h-1.5 rounded-full transition-colors", referenceEnabled ? "bg-primary" : "bg-muted-foreground/40")} />
+              8. Referência
             </h3>
-            <span className="text-[10px] text-muted-foreground font-medium">Opcional</span>
+            <div className="flex items-center gap-2">
+              <span className={cn("text-[10px] font-bold transition-colors", referenceEnabled ? "text-primary" : "text-muted-foreground/50")}>
+                {referenceEnabled ? 'Ativa' : 'Inativa'}
+              </span>
+              <Switch
+                checked={referenceEnabled}
+                onCheckedChange={(val) => {
+                  setReferenceEnabled(val);
+                  saveSettings({ referenceEnabled: val });
+                }}
+                className="scale-75 origin-right"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
+          <div className={cn("space-y-2 transition-opacity duration-200", !referenceEnabled && "opacity-40 pointer-events-none")}>
              <div 
               className={cn(
                 "relative aspect-square rounded-2xl border-2 border-dashed transition-all group flex flex-col items-center justify-center gap-2 overflow-hidden",
@@ -1312,13 +1657,25 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-              7. Template Aprovado
+              <div className={cn("w-1.5 h-1.5 rounded-full transition-colors", templateEnabled ? "bg-primary" : "bg-muted-foreground/40")} />
+              9. Template Aprovado
             </h3>
-            <span className="text-[10px] text-muted-foreground font-medium">Opcional</span>
+            <div className="flex items-center gap-2">
+              <span className={cn("text-[10px] font-bold transition-colors", templateEnabled ? "text-primary" : "text-muted-foreground/50")}>
+                {templateEnabled ? 'Ativo' : 'Inativo'}
+              </span>
+              <Switch
+                checked={templateEnabled}
+                onCheckedChange={(val) => {
+                  setTemplateEnabled(val);
+                  saveSettings({ templateEnabled: val });
+                }}
+                className="scale-75 origin-right"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
+          <div className={cn("space-y-2 transition-opacity duration-200", !templateEnabled && "opacity-40 pointer-events-none")}>
              <div 
               className={cn(
                 "relative aspect-square rounded-2xl border-2 border-dashed transition-all group flex flex-col items-center justify-center gap-2 overflow-hidden",
@@ -1350,23 +1707,23 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
           </div>
         </div>
 
-        <Button 
-          className="w-full h-12 text-sm font-bold rounded-xl shadow-md transition-all mt-4"
-          onClick={startSquad}
-          disabled={isProcessing}
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Gerando...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Gerar Carrossel Profissional
-            </>
-          )}
-        </Button>
+        {isProcessing ? (
+          <Button 
+            className="w-full h-12 text-sm font-bold rounded-xl shadow-md transition-all mt-4 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-400 border border-red-500/20"
+            onClick={cancelSquad}
+          >
+            <X className="mr-2 h-4 w-4" />
+            Cancelar Geração
+          </Button>
+        ) : (
+          <Button 
+            className="w-full h-12 text-sm font-bold rounded-xl shadow-md transition-all mt-4"
+            onClick={startSquad}
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            Gerar Carrossel Profissional
+          </Button>
+        )}
       </div>
 
       {/* ── Main Production Area ── */}
@@ -1576,39 +1933,87 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                       />
                     </div>
                     
-                    <div className="space-y-4">
-                      {editableCopy.slides?.map((slide: any, idx: number) => (
-                        <div key={idx} className="p-4 border rounded-xl space-y-3 bg-muted/20">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="outline" className="font-mono text-[10px] bg-background">Slide {idx + 1}</Badge>
+                    <DragDropContext onDragEnd={handleDragEnd}>
+                      <Droppable droppableId="slides-list">
+                        {(provided) => (
+                          <div 
+                            className="space-y-4"
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
+                          >
+                            {editableCopy.slides?.map((slide: any, idx: number) => (
+                              <Draggable key={`slide-${idx}`} draggableId={`slide-${idx}`} index={idx}>
+                                {(provided, snapshot) => (
+                                  <div 
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    className={cn(
+                                      "p-4 border rounded-xl space-y-3 relative group transition-all",
+                                      snapshot.isDragging ? "bg-background shadow-2xl border-primary scale-[1.02] z-50" : "bg-muted/20"
+                                    )}
+                                    style={provided.draggableProps.style}
+                                  >
+                                    <div className="absolute right-4 top-4 flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                                      <button 
+                                         onClick={() => handleDeleteSlide(idx)}
+                                         className="p-1.5 text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-destructive/10"
+                                         title="Excluir slide"
+                                      >
+                                         <Trash2 className="h-4 w-4" />
+                                      </button>
+                                      <div 
+                                         {...provided.dragHandleProps}
+                                         className="p-1.5 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+                                         title="Segure e arraste para reordenar"
+                                      >
+                                         <GripVertical className="h-4 w-4" />
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Badge variant="outline" className="font-mono text-[10px] bg-background">Slide {idx + 1}</Badge>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-[11px] font-bold">Headline (Título Forte)</Label>
+                                      <Input 
+                                        value={slide.headline || ''}
+                                        onChange={(e) => {
+                                          const newSlides = [...editableCopy.slides];
+                                          newSlides[idx] = { ...slide, headline: e.target.value };
+                                          setEditableCopy({ ...editableCopy, slides: newSlides });
+                                        }}
+                                        className="text-sm font-bold h-10 border-primary/20"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-[11px] font-bold">Body (Corpo de Texto)</Label>
+                                      <Textarea 
+                                        value={slide.body || ''}
+                                        onChange={(e) => {
+                                          const newSlides = [...editableCopy.slides];
+                                          newSlides[idx] = { ...slide, body: e.target.value };
+                                          setEditableCopy({ ...editableCopy, slides: newSlides });
+                                        }}
+                                        className="text-xs min-h-[60px] resize-y border-primary/20"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
                           </div>
-                          <div className="space-y-2">
-                            <Label className="text-[11px] font-bold">Headline (Título Forte)</Label>
-                            <Input 
-                              value={slide.headline || ''}
-                              onChange={(e) => {
-                                const newSlides = [...editableCopy.slides];
-                                newSlides[idx] = { ...slide, headline: e.target.value };
-                                setEditableCopy({ ...editableCopy, slides: newSlides });
-                              }}
-                              className="text-sm font-bold h-10 border-primary/20"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-[11px] font-bold">Body (Corpo de Texto)</Label>
-                            <Textarea 
-                              value={slide.body || ''}
-                              onChange={(e) => {
-                                const newSlides = [...editableCopy.slides];
-                                newSlides[idx] = { ...slide, body: e.target.value };
-                                setEditableCopy({ ...editableCopy, slides: newSlides });
-                              }}
-                              className="text-xs min-h-[60px] resize-y border-primary/20"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
+
+                    <Button 
+                      variant="outline" 
+                      className="w-full h-12 rounded-xl text-xs font-bold border-dashed border-2 border-primary/20 text-muted-foreground hover:text-primary hover:border-primary/50 transition-all"
+                      onClick={() => handleAddSlide()}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Novo Slide
+                    </Button>
 
                     <Button 
                       className="w-full h-12 rounded-xl text-xs font-black tracking-tight mt-6" 
@@ -1659,6 +2064,14 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                         </div>
                       </div>
                   </div>
+                  
+                  {/* Quick Rating Block */}
+                  <div className="flex justify-center w-full my-6">
+                    <div className="w-full max-w-lg">
+                      <CarouselQuickRating projectId={projectId!} carouselImages={resultImages} />
+                    </div>
+                  </div>
+
                   <div className="flex justify-center">
                       <Button variant="outline" className="rounded-xl" onClick={() => {
                         setResultImages([]);

@@ -22,9 +22,9 @@ import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
 import planCatapulta from '@/assets/plans/plan-catapulta.png';
 
-type PlanType = 'free' | 'starter' | 'pro' | 'agency';
+type PlanType = 'free' | 'starter' | 'pro' | 'agency' | 'trial';
 
-const PLAN_ORDER: PlanType[] = ['free', 'starter', 'pro', 'agency'];
+const PLAN_ORDER: PlanType[] = ['free', 'trial', 'starter', 'pro', 'agency'];
 
 const getButtonLabel = (targetPlan: PlanType, currentPlan: PlanType): string => {
   const currentIndex = PLAN_ORDER.indexOf(currentPlan);
@@ -60,6 +60,12 @@ export const planColors: Record<PlanType, { primary: string; bg: string; border:
     border: 'hsl(25, 95%, 53%, 0.3)',
     text: 'hsl(25, 95%, 43%)',
   },
+  trial: {
+    primary: 'hsl(142, 71%, 45%)',
+    bg: 'hsl(142, 71%, 45%, 0.1)',
+    border: 'hsl(142, 71%, 45%, 0.3)',
+    text: 'hsl(142, 71%, 35%)',
+  },
 };
 
 export const planImages: Record<string, string> = {
@@ -73,6 +79,7 @@ export const planNames: Record<PlanType, { name: string; codename: string; tagli
   starter: { name: 'Pequena Agência', codename: 'Lança', tagline: 'Profissionalize sua prospecção e fechamento.' },
   pro: { name: 'Agência em Crescimento', codename: 'Arco', tagline: 'Ferramentas para escalar seus resultados.' },
   agency: { name: 'Agência Consolidada', codename: 'Catapulta', tagline: 'Poder total para dominar o mercado.' },
+  trial: { name: 'Período de Teste', codename: 'Trial', tagline: 'Aproveite o período de teste com todas as funções.' },
 };
 
 interface PlanConfig {

@@ -62,6 +62,7 @@ const PLAN_CONFIG = {
   starter: { name: 'plans.lance', icon: Target },
   pro: { name: 'plans.bow', icon: TrendingUp },
   agency: { name: 'plans.catapult', icon: Rocket },
+  trial: { name: 'plans.trial', icon: Zap },
 };
 
 export function Sidebar() {
@@ -88,8 +89,11 @@ export function Sidebar() {
 
 
   const isNoPlan = !subLoading && (!planType || (planType as string) === 'free') && !hasActiveSubscription;
-  const currentPlan = planType && planType !== 'free' ? PLAN_CONFIG[planType as keyof typeof PLAN_CONFIG] : { name: 'Escolher um Plano', icon: Target };
-  const PlanIcon = isNoPlan ? Target : currentPlan.icon;
+  const currentPlan = planType && planType !== 'free' 
+    ? (PLAN_CONFIG[planType as keyof typeof PLAN_CONFIG] || { name: 'Escolher um Plano', icon: Target })
+    : { name: 'Escolher um Plano', icon: Target };
+  
+  const PlanIcon = (isNoPlan || !currentPlan.icon) ? Target : currentPlan.icon;
 
   const [manualCollapsed, setManualCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
@@ -289,14 +293,16 @@ export function Sidebar() {
         "flex h-screen flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
         collapsed ? "w-16" : "w-64"
       )}>
-        <div className={cn(
-          "flex h-16 items-center gap-2 px-4 border-b border-border my-2 shrink-0",
-          collapsed && "justify-center px-2"
-        )}>
+        <div className="border-b border-border shrink-0">
+          <div className={cn(
+            "flex h-14 items-center gap-2 px-4 shadow-sm",
+            collapsed && "justify-center px-2"
+          )}>
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
             <span className="text-primary-foreground font-bold text-lg">Q</span>
           </div>
-          {!collapsed && <span className="font-bold text-xl">Qualify</span>}
+            {!collapsed && <span className="font-bold text-xl">Qualify</span>}
+          </div>
         </div>
 
         {/* Organization Name with Plan Color */}
@@ -304,29 +310,33 @@ export function Sidebar() {
           collapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="px-2 py-3 border-b border-border flex justify-center shrink-0">
-                  <PlanIcon
-                    className={cn("h-5 w-5", isNoPlan ? "text-destructive animate-pulse" : "")}
-                    style={!isNoPlan ? { color: `hsl(var(--plan-${planType}-primary, var(--primary)))` } : {}}
-                  />
+                <div className="border-b border-border flex justify-center shrink-0">
+                  <div className="px-2 py-3">
+                    <PlanIcon
+                      className={cn("h-5 w-5", isNoPlan ? "text-destructive animate-pulse" : "")}
+                      style={!isNoPlan ? { color: `hsl(var(--plan-${planType}-primary, var(--primary)))` } : {}}
+                    />
+                  </div>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right">{organization.name}</TooltipContent>
             </Tooltip>
           ) : (
-            <div className="px-4 py-3 border-b border-border shrink-0">
-              <p
-                className={cn("text-sm font-medium truncate", isNoPlan ? "text-destructive" : "")}
-                style={!isNoPlan ? { color: `hsl(var(--plan-${planType}-primary, var(--primary)))` } : {}}
-              >
-                {organization.name}
-              </p>
-              {!collapsed && !isNoPlan && daysRemaining > 0 && (
-                <p className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1 mt-1">
-                  <CalendarDays className="h-3 w-3" />
-                  {daysRemaining} {daysRemaining === 1 ? 'dia restante' : 'dias restantes'}
+            <div className="border-b border-border shrink-0">
+              <div className="px-4 py-3">
+                <p
+                  className={cn("text-sm font-medium truncate", isNoPlan ? "text-destructive" : "")}
+                  style={!isNoPlan ? { color: `hsl(var(--plan-${planType}-primary, var(--primary)))` } : {}}
+                >
+                  {organization.name}
                 </p>
-              )}
+                {!collapsed && !isNoPlan && daysRemaining > 0 && (
+                  <p className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1 mt-1">
+                    <CalendarDays className="h-3 w-3" />
+                    {daysRemaining} {daysRemaining === 1 ? 'dia restante' : 'dias restantes'}
+                  </p>
+                )}
+              </div>
             </div>
           )
         )}
@@ -369,7 +379,8 @@ export function Sidebar() {
           )}
         </div>
 
-        <div className="p-2 border-t border-border space-y-1 shrink-0">
+        <div className="border-t border-border shrink-0">
+          <div className="p-2 space-y-1">
           {/* Theme Toggle & Language Selector */}
           {collapsed ? (
             <div className="flex flex-col items-center gap-1 py-1">
@@ -675,6 +686,7 @@ export function Sidebar() {
           </Button>
         </div>
       </div>
+    </div>
 
       {/* Module Locked Modal */}
       <ModuleLockedModal

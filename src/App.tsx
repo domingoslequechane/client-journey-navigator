@@ -43,6 +43,7 @@ import Upgrade from "./pages/Upgrade";
 import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/Onboarding";
 import SelectPlan from "./pages/SelectPlan";
+import Checkout from "./pages/Checkout";
 import SelectOrganization from "./pages/SelectOrganization";
 import Subscription from "./pages/Subscription";
 import Notifications from "./pages/Notifications";
@@ -121,6 +122,7 @@ const App = () => {
                       <Route path="/set-password" element={<SetPassword />} />
                       <Route path="/reset-password" element={<ResetPassword />} />
                       <Route path="/select-plan" element={<SelectPlan />} />
+                      <Route path="/checkout" element={<Checkout />} />
                       <Route path="/accept-invite" element={<AcceptInvite />} />
                       <Route path="/approve/:token" element={<SocialApproval />} />
                       {/* Public Link23 page (handle includes the leading @) */}

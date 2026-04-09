@@ -21,6 +21,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 import { formatPhoneNumber } from '@/lib/phone-utils';
+import { FreeLimitModal } from '@/components/subscription/FreeLimitModal';
+import { useState } from 'react';
 
 
 const salesStageIcons: Record<string, typeof Search> = { prospecting: Search, qualification: Target, closing: FileCheck };
@@ -36,7 +38,8 @@ export default function Pipeline() {
   const { user } = useAuth();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
   const { hasPrivilege } = usePermissions();
-  const { limits, usage } = usePlanLimits();
+  const { limits, usage, planType } = usePlanLimits();
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // Determine available tabs based on role
   const availableTabs = useMemo(() => {
@@ -129,14 +132,32 @@ export default function Pipeline() {
           </p>
         </div>
         {hasPrivilege('sales') && (
-          <Link to="/app/new-client">
-            <Button className="gap-2 w-full sm:w-auto">
-              <Plus className="h-4 w-4" />
-              {t('actions.newClient')}
-            </Button>
-          </Link>
+          <div className="w-full sm:w-auto">
+            {['free', 'trial'].includes(planType as string) && usage.clientsCount >= (limits.maxClients ?? 2) ? (
+              <Button 
+                className="gap-2 w-full sm:w-auto" 
+                onClick={() => setShowLimitModal(true)}
+              >
+                <Plus className="h-4 w-4" />
+                {t('actions.newClient')}
+              </Button>
+            ) : (
+              <Link to="/app/new-client">
+                <Button className="gap-2 w-full sm:w-auto">
+                  <Plus className="h-4 w-4" />
+                  {t('actions.newClient')}
+                </Button>
+              </Link>
+            )}
+          </div>
         )}
       </AnimatedContainer>
+
+      <FreeLimitModal
+        open={showLimitModal}
+        onOpenChange={setShowLimitModal}
+        limitDescription="2 clientes no Pipeline"
+      />
 
       {/* Tabs - only show if user has access to both flows */}
       {availableTabs.length > 1 && (

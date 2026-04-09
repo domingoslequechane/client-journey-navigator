@@ -1,15 +1,18 @@
 /**
- * carouselCanvasRenderer.ts — v2 (Professional Edition)
+ * carouselCanvasRenderer.ts — v3 (Pagination Templates Edition)
  *
- * Design principles extracted from reference images:
+ * Design principles:
  * - Full-bleed product image as background (cover mode)
  * - Dark gradient overlay for text legibility
  * - Large editorial typography with accent color words
  * - Geometric accent shape (circle arc) bleeding off canvas edge
- * - Linear pagination sequence (01  •02•  03  04)
+ * - 5 Pagination templates: dots | numbers | fraction | line | none
+ * - Cover (slide 0) and CTA (last slide) NEVER show pagination
  * - Pill-shaped CTA element
  * - Subtle vertical stripe texture when no image
  */
+
+export type PaginationStyle = 'dots' | 'numbers' | 'fraction' | 'line' | 'none';
 
 export interface SlideRenderConfig {
   width: number;
@@ -20,11 +23,13 @@ export interface SlideRenderConfig {
   fontFamily: string;
   logoBlob?: Blob | null;
   productBlob?: Blob | null;
-  templateBlob?: Blob | null; // <--- The completely custom base template
+  templateBlob?: Blob | null;
   headline: string;
   body: string;
   slideIndex: number;
   totalSlides: number;
+  paginationStyle?: PaginationStyle; // default 'numbers'
+  footerText?: string;
 }
 
 // ── Colour helpers ─────────────────────────────────────────────────────────────
@@ -73,26 +78,14 @@ async function drawCoverImage(
     const url = URL.createObjectURL(blob);
     const img = new Image();
     img.onload = () => {
-      // Base scale to cover the canvas
       let scale = Math.max(w / img.width, h / img.height);
-      
-      // DYNAMIC PARALLAX: Zoom in by 18% to create panning room
       const zoom = 1.18;
       const sw = img.width * scale * zoom;
       const sh = img.height * scale * zoom;
-
-      // Calculate maximum horizontal pan distance
       const maxPanX = sw - w;
-      
-      // Calculate slide progress ratio (0.0 to 1.0)
       const progress = totalSlides > 1 ? slideIndex / (totalSlides - 1) : 0;
-      
-      // Pan from left (0) to right (maxPanX) as progression increases
       const sx = x - (maxPanX * progress);
-      
-      // Center vertically 
       const sy = y - (sh - h) / 2;
-
       ctx.drawImage(img, sx, sy, sw, sh);
       URL.revokeObjectURL(url);
       resolve();
@@ -154,14 +147,13 @@ function drawRoundedRect(
 // ── Layout config ──────────────────────────────────────────────────────────────
 
 function getScale(width: number) {
-  // Normalise around 1080 wide
   return width / 1080;
 }
 
 interface Layout {
   pad: number;
   topBarY: number;
-  textZoneY: number; // top of headline zone
+  textZoneY: number;
   headlineFS: number;
   headlineLH: number;
   bodyFS: number;
@@ -172,7 +164,7 @@ interface Layout {
 
 function getLayout(w: number, h: number, ratio: string): Layout {
   const sc = getScale(w);
-  const base = {
+  return {
     pad: Math.round(56 * sc),
     topBarY: Math.round(60 * sc),
     textZoneY: Math.round(h * (ratio === '16:9' ? 0.36 : 0.52)),
@@ -183,7 +175,155 @@ function getLayout(w: number, h: number, ratio: string): Layout {
     maxTextW: Math.round((ratio === '16:9' ? w * 0.55 : w - 56 * sc * 2)),
     circleRadius: Math.round((ratio === '16:9' ? h * 0.55 : h * 0.42) * sc),
   };
-  return base;
+}
+
+// ── Pagination Renderers ───────────────────────────────────────────────────────
+// Rule: Cover (index 0) and CTA (index totalSlides-1) NEVER show pagination.
+
+function isCoverOrCTA(slideIndex: number, totalSlides: number): boolean {
+  return slideIndex === 0 || slideIndex === totalSlides - 1;
+}
+
+function drawPagination(
+  ctx: CanvasRenderingContext2D,
+  style: PaginationStyle,
+  slideIndex: number,
+  totalSlides: number,
+  width: number,
+  height: number,
+  pad: number,
+  topBarY: number,
+  sc: number,
+  primaryColor: string,
+  fontFamily: string
+) {
+  // ✅ MANDATORY: Cover and CTA slides NEVER get pagination
+  if (isCoverOrCTA(slideIndex, totalSlides) || style === 'none') return;
+
+  // The "inner" slides are those between cover and CTA
+  // Their visible index within the inner set (1-based)
+  const innerSlides = Math.max(1, totalSlides - 2); // total minus cover and CTA
+  const innerIndex = Math.max(0, Math.min(innerSlides - 1, slideIndex - 1)); // 0-based within inner slides
+
+  switch (style) {
+
+    // ─── DOTS ────────────────────────────────────────────────────────────────
+    case 'dots': {
+      const dotR = Math.round(5 * sc);
+      const dotGap = Math.round(16 * sc);
+      const totalW = innerSlides * (dotR * 2) + (innerSlides - 1) * dotGap;
+      let dx = width / 2 - totalW / 2;
+      const dy = Math.round(topBarY + dotR);
+
+      for (let i = 0; i < innerSlides; i++) {
+        ctx.beginPath();
+        ctx.arc(dx + dotR, dy, i === innerIndex ? dotR * 1.5 : dotR, 0, Math.PI * 2);
+        ctx.fillStyle = i === innerIndex ? primaryColor : 'rgba(255,255,255,0.35)';
+        ctx.fill();
+        dx += dotR * 2 + dotGap;
+      }
+      break;
+    }
+
+    // ─── NUMBERS (linear: 01  •02•  03) ─────────────────────────────────────
+    case 'numbers': {
+      const pageFS = Math.round(15 * sc);
+      const pageGap = Math.round(22 * sc);
+      ctx.font = `600 ${pageFS}px "${fontFamily}", monospace`;
+      ctx.textAlign = 'right';
+
+      const labels = Array.from({ length: innerSlides }, (_, i) =>
+        String(i + 1).padStart(2, '0')
+      );
+      let px = width - pad;
+
+      for (let i = innerSlides - 1; i >= 0; i--) {
+        const lbl = labels[i];
+        const isActive = i === innerIndex;
+        const lw = ctx.measureText(lbl).width;
+        ctx.textAlign = 'left';
+        if (isActive) {
+          ctx.font = `800 ${pageFS}px "${fontFamily}", monospace`;
+          ctx.fillStyle = primaryColor;
+        } else {
+          ctx.font = `500 ${pageFS}px "${fontFamily}", sans-serif`;
+          ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        }
+        ctx.fillText(lbl, px - lw, topBarY + pageFS + 2);
+        px -= lw + pageGap;
+      }
+      ctx.textAlign = 'left';
+      break;
+    }
+
+    // ─── FRACTION (2 / 5) ────────────────────────────────────────────────────
+    case 'fraction': {
+      const fs = Math.round(18 * sc);
+      const smallFS = Math.round(13 * sc);
+      const current = String(innerIndex + 1).padStart(2, '0');
+      const total = String(innerSlides).padStart(2, '0');
+      const separator = '  /  ';
+      const fullText = `${current}${separator}${total}`;
+
+      ctx.textAlign = 'right';
+      ctx.font = `700 ${fs}px "${fontFamily}", monospace`;
+      const totalW = ctx.measureText(fullText).width;
+      const startX = width - pad - totalW;
+      const baseY = topBarY + fs + 2;
+
+      // Current number — highlighted
+      ctx.fillStyle = primaryColor;
+      ctx.fillText(current, startX + ctx.measureText(current).width, baseY);
+
+      // Separator — dim
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = `400 ${smallFS}px "${fontFamily}", sans-serif`;
+      const sepX = startX + ctx.measureText(current).width;
+      ctx.fillText(separator, sepX + ctx.measureText(separator).width / 2, baseY);
+
+      // Total — dim
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = `500 ${smallFS}px "${fontFamily}", monospace`;
+      ctx.fillText(fullText, width - pad, baseY);
+
+      ctx.textAlign = 'left';
+      break;
+    }
+
+    // ─── LINE (progress bar) ─────────────────────────────────────────────────
+    case 'line': {
+      const barH = Math.round(3 * sc);
+      const barY = Math.round(topBarY / 2 - barH / 2);
+      const barX = pad;
+      const barW = width - pad * 2;
+      const progress = innerSlides > 1 ? innerIndex / (innerSlides - 1) : 1;
+      const filledW = Math.round(barW * progress);
+
+      // Background track
+      drawRoundedRect(ctx, barX, barY, barW, barH, barH / 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.fill();
+
+      // Filled portion
+      if (filledW > 0) {
+        const grad = ctx.createLinearGradient(barX, 0, barX + filledW, 0);
+        grad.addColorStop(0, hexToRgba(primaryColor, 0.6));
+        grad.addColorStop(1, primaryColor);
+        drawRoundedRect(ctx, barX, barY, filledW, barH, barH / 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      // Step number below bar (small)
+      const fs = Math.round(11 * sc);
+      ctx.font = `700 ${fs}px "${fontFamily}", sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillText(`${innerIndex + 1}/${innerSlides}`, width - pad, barY + barH + fs + Math.round(4 * sc));
+      ctx.textAlign = 'left';
+      break;
+    }
+  }
 }
 
 // ── Main render ────────────────────────────────────────────────────────────────
@@ -191,7 +331,7 @@ function getLayout(w: number, h: number, ratio: string): Layout {
 export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob> {
   const { width, height, ratio, primaryColor, secondaryColor,
     fontFamily, logoBlob, productBlob, templateBlob, headline, body,
-    slideIndex, totalSlides } = cfg;
+    slideIndex, totalSlides, paginationStyle = 'numbers', footerText } = cfg;
 
   await loadFont(fontFamily);
 
@@ -205,14 +345,10 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
   // ── 1. BACKGROUND ──────────────────────────────────────────────────────────
 
   if (templateBlob) {
-    // TEMPLATE MODE: The user provided a raw Canva/Figma template!
-    // We draw it directly without any dark overlays or animations, granting 100% customizability.
     await drawCoverImage(ctx, templateBlob, 0, 0, width, height, slideIndex, totalSlides);
   } else if (productBlob) {
-    // Full-bleed product photo with dynamic Parallax panning
     await drawCoverImage(ctx, productBlob, 0, 0, width, height, slideIndex, totalSlides);
 
-    // Strong dark overlay — bottom heavy for text readability
     const overlay = ctx.createLinearGradient(0, 0, 0, height);
     overlay.addColorStop(0, 'rgba(0,0,0,0.55)');
     overlay.addColorStop(0.35, 'rgba(0,0,0,0.25)');
@@ -221,11 +357,9 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
     ctx.fillStyle = overlay;
     ctx.fillRect(0, 0, width, height);
   } else {
-    // Clean dark background
     ctx.fillStyle = '#0a0a0a';
     ctx.fillRect(0, 0, width, height);
 
-    // Subtle vertical stripe texture
     ctx.strokeStyle = 'rgba(255,255,255,0.03)';
     ctx.lineWidth = 1;
     const stripeW = Math.round(60 * sc);
@@ -233,7 +367,6 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
     }
 
-    // Top-left primary colour radial glow — subtle
     const glow = ctx.createRadialGradient(0, 0, 0, width * 0.25, height * 0.2, width * 0.7);
     glow.addColorStop(0, hexToRgba(primaryColor, 0.14));
     glow.addColorStop(1, 'transparent');
@@ -242,14 +375,10 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
   }
 
   // ── 2. GEOMETRIC ACCENT SHAPE ──────────────────────────────────────────────
-  // Only draw our hardcoded aesthetic shapes if the user didn't provide a custom template
   if (!templateBlob) {
     const progress = totalSlides > 1 ? slideIndex / (totalSlides - 1) : 0;
-    
-    // Dynamic X/Y so the shape feels like it's rotating/moving as the user swipes
     const cx = width + L.circleRadius * 0.05 + (L.circleRadius * 0.15 * progress);
     const cy = height - L.circleRadius * 0.4 + (L.circleRadius * 0.6 * progress);
-    
     const r = L.circleRadius;
     const grad = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
     grad.addColorStop(0, hexToRgba(primaryColor, 0.9));
@@ -260,13 +389,11 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Inner ring (filled solid)
     ctx.beginPath();
     ctx.arc(cx, cy, r * 0.72, 0, Math.PI * 2);
     ctx.fillStyle = primaryColor;
     ctx.fill();
 
-    // Punch-out centre hole for ring effect
     ctx.beginPath();
     ctx.arc(cx, cy, r * 0.46, 0, Math.PI * 2);
     ctx.fillStyle = productBlob ? 'rgba(0,0,0,0.82)' : '#0a0a0a';
@@ -287,53 +414,26 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
       ctx.restore();
     }
 
-    // Linear pagination: 01  02  •03•  04  05
-    const pageFS = Math.round(15 * sc);
-    const pageGap = Math.round(22 * sc);
-    ctx.font = `600 ${pageFS}px "${fontFamily}", monospace`;
-    ctx.textAlign = 'right';
-
-    // Measure total width to right-align
-    const labels = Array.from({ length: totalSlides }, (_, i) =>
-      String(i + 1).padStart(2, '0')
+    // ✅ Pagination — delegates to template renderer (respects cover/CTA rule internally)
+    drawPagination(
+      ctx, paginationStyle,
+      slideIndex, totalSlides,
+      width, height, pad, topY, sc,
+      primaryColor, fontFamily
     );
-    const totalPagW = labels.reduce((sum, lbl) => sum + ctx.measureText(lbl).width + pageGap, 0);
-    let px = width - pad;
-
-    for (let i = totalSlides - 1; i >= 0; i--) {
-      const lbl = labels[i];
-      const isActive = i === slideIndex;
-      const lw = ctx.measureText(lbl).width;
-      ctx.textAlign = 'left';
-      if (isActive) {
-        ctx.font = `800 ${pageFS}px "${fontFamily}", monospace`;
-        ctx.fillStyle = primaryColor;
-      } else {
-        ctx.font = `500 ${pageFS}px "${fontFamily}", sans-serif`;
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      }
-      ctx.fillText(lbl, px - lw, topY + pageFS + 2);
-      px -= lw + pageGap;
-    }
   }
 
-  // ── 4. HEADLINE (large, editorial, accent on key word) ─────────────────────
+  // ── 4. HEADLINE ─────────────────────────────────────────────────────────────
   {
     const pad = L.pad;
     const maxW = L.maxTextW;
     let textY = L.textZoneY;
 
-    // Split headline: detect if there's a key phrase to highlight
-    // Heuristic: highlight first "strong" segment (before comma or colon if exists,
-    // otherwise highlight last 1-2 words IF they're short)
     const headWords = headline.split(' ');
-
-    // Find a pivot point for colour split — roughly 40% through
     const pivot = Math.max(1, Math.floor(headWords.length * 0.45));
     const part1 = headWords.slice(0, pivot).join(' ');
     const part2 = headWords.slice(pivot).join(' ');
 
-    // Part 1 — muted white
     ctx.font = `800 ${L.headlineFS}px "${fontFamily}", sans-serif`;
     ctx.textAlign = 'left';
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
@@ -343,7 +443,6 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
       textY += L.headlineLH;
     });
 
-    // Part 2 — brand primary colour (bold accent)
     ctx.fillStyle = primaryColor;
     const lines2 = wrapText(ctx, part2, maxW);
     lines2.slice(0, 3).forEach((line) => {
@@ -363,9 +462,8 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
 
     textY += bodyLines.slice(0, 3).length * L.bodyLH + Math.round(32 * sc);
 
-    // ── 6. PILL CTA ─────────────────────────────────────────────────────────
+    // ── 6. PILL CTA ──────────────────────────────────────────────────────────
     if (slideIndex === 0) {
-      // Cover slide: "ARRASTE →" pill
       const ctaLabel = 'ARRASTE →';
       const ctaFS = Math.round(14 * sc);
       ctx.font = `600 ${ctaFS}px "${fontFamily}", sans-serif`;
@@ -374,7 +472,6 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
       const ctaX = pad;
       const ctaY = textY;
 
-      // Pill outline
       drawRoundedRect(ctx, ctaX, ctaY, ctaW, ctaH, ctaH / 2);
       ctx.strokeStyle = hexToRgba(primaryColor, 0.7);
       ctx.lineWidth = Math.round(1.5 * sc);
@@ -389,7 +486,6 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
       ctx.fillText(ctaLabel, ctaX + ctaW / 2, ctaY + ctaH / 2 + ctaFS * 0.38);
       ctx.textAlign = 'left';
     } else if (slideIndex === totalSlides - 1) {
-      // CTA slide: filled pill
       const ctaLabel = 'QUERO SABER MAIS →';
       const ctaFS = Math.round(14 * sc);
       ctx.font = `700 ${ctaFS}px "${fontFamily}", sans-serif`;
@@ -409,7 +505,7 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
     }
   }
 
-  // ── 7. BOTTOM ACCENT LINE ──────────────────────────────────────────────────
+  // ── 7. BOTTOM ACCENT LINE E FOOTER ──────────────────────────────────────────
   if (!templateBlob) {
     const lineH = Math.round(4 * sc);
     const lineY = height - L.pad - lineH;
@@ -420,6 +516,15 @@ export async function renderCarouselSlide(cfg: SlideRenderConfig): Promise<Blob>
     ctx.fillStyle = grad;
     drawRoundedRect(ctx, L.pad, lineY, lineW, lineH, lineH / 2);
     ctx.fill();
+
+    if (footerText) {
+      const footerFS = Math.round(11 * sc);
+      ctx.font = `600 ${footerFS}px "${fontFamily}", sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.fillText(footerText, width - L.pad, lineY + Math.round(4 * sc));
+      ctx.textAlign = 'left';
+    }
   }
 
   // ── EXPORT ────────────────────────────────────────────────────────────────
