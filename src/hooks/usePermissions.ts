@@ -65,7 +65,7 @@ export function usePermissions() {
 
             // If we have an organization ID, fetch org-specific permissions
             if (orgId) {
-                const [{ data: memberData }, { data: isOrgOwnerResult }] = await Promise.all([
+                const [{ data: memberData }, { data: isOrgOwnerResult }, { data: orgData }] = await Promise.all([
                     supabase
                         .from('organization_members')
                         .select('role, privileges')
@@ -76,7 +76,12 @@ export function usePermissions() {
                     (supabase as any).rpc('is_org_owner', {
                         user_uuid: user.id,
                         org_uuid: orgId
-                    })
+                    }),
+                    supabase
+                        .from('organizations')
+                        .select('plan_type')
+                        .eq('id', orgId)
+                        .maybeSingle()
                 ]);
 
                 // isOrgOwner is reliably determined via the server-side function
@@ -88,12 +93,14 @@ export function usePermissions() {
                     global_role: roleData?.role,
                     is_org_owner: isOrgOwner,
                     role: memberData.role,
-                    privileges: memberData.privileges
+                    privileges: memberData.privileges,
+                    plan_type: orgData?.plan_type
                 } : {
                     ...profileData,
                     is_proprietor: !!roleData,
                     global_role: roleData?.role,
                     is_org_owner: isOrgOwner,
+                    plan_type: orgData?.plan_type
                 };
 
                 return result;
@@ -148,7 +155,7 @@ export function usePermissions() {
                 case 'pipeline':
                     return privileges.includes('sales') || privileges.includes('designer');
                 case 'finances':
-                    return privileges.includes('finance');
+                    return privileges.includes('finance') || (profile as any)?.plan_type === 'trial';
                 case 'social':
                     return privileges.includes('social_media');
                 case 'link23':

@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -245,21 +247,44 @@ export default function LinkTreeDashboard() {
   return (
     <AnimatedContainer animation="fade-in" className="p-4 md:p-6 pt-4 md:pt-6">
       {/* Header */}
-      <div className="hidden md:block mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Link2 className="h-7 w-7 md:h-8 md:w-8 text-primary" />
-            Link23
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Link2 className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+                Link23
+              </div>
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Crie e gerencie páginas de links para seus clientes
+            </p>
           </div>
           {limits.maxLinkPages !== null && (
-            <Badge variant="outline" className="font-mono">
-              Páginas: {usage.linkPagesCount}/{limits.maxLinkPages}
-            </Badge>
+            <div className="w-full sm:w-64 space-y-1.5 order-last sm:order-none sm:mx-4">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground font-medium">Páginas</span>
+                <span className={cn("font-bold", usage.linkPagesCount >= limits.maxLinkPages ? "text-destructive" : "text-primary")}>
+                  {usage.linkPagesCount} / {limits.maxLinkPages}
+                </span>
+              </div>
+              <Progress 
+                value={(usage.linkPagesCount / limits.maxLinkPages) * 100} 
+                className={cn("h-1.5", usage.linkPagesCount >= limits.maxLinkPages && "bg-destructive/20")} 
+              />
+            </div>
           )}
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Crie e gerencie páginas de links para seus clientes
-        </p>
+          <div className="w-full sm:w-auto">
+            <Button
+              className="w-full sm:w-auto gap-2 text-sm font-bold"
+              onClick={handleCreatePage}
+              disabled={isCreating}
+            >
+              <Plus className="h-4 w-4" />
+              Criar Página
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-6">

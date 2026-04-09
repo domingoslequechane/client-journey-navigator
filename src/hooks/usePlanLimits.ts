@@ -365,7 +365,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     canAddClient: canUnlimited(limits.maxClients, usage.clientsCount),
     canGenerateContract: canUnlimited(limits.maxContractsPerMonth, usage.contractsThisMonth),
     canAccessAI: limits.maxAIMessagesPerMonth === null || usage.aiMessagesThisMonth < limits.maxAIMessagesPerMonth,
-    canAccessFinance: limits.has_finance_module,
+    canAccessFinance: limits.has_finance_module || planType === 'trial',
     canAccessStudio: limits.has_studio_module,
     canAccessLinkTree: limits.has_linktree_module,
     canAccessEditorial: limits.has_editorial_module,

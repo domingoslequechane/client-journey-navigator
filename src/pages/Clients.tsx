@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
+
 import { ClientListSkeleton } from '@/components/ui/loading-skeleton';
 import {
   Search,
@@ -115,20 +116,29 @@ export default function Clients() {
   return (
     <div className="p-4 md:p-8">
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="hidden md:block">
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 flex-wrap">
             <Building2 className="h-7 w-7 md:h-8 md:w-8 text-primary" />
             {t('title')}
-            {limits.maxClients !== null && (
-              <Badge variant="outline" className="font-mono">
-                {usage.clientsCount}/{limits.maxClients}
-              </Badge>
-            )}
           </h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">
             {t('subtitle', { count: filteredClients.length, total: clients.length })}
           </p>
         </div>
+        {limits.maxClients !== null && (
+          <div className="w-full sm:w-64 space-y-1.5 order-last sm:order-none sm:mx-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground font-medium">Clientes Ativos</span>
+              <span className={cn("font-bold", usage.clientsCount >= limits.maxClients ? "text-destructive" : "text-primary")}>
+                {usage.clientsCount} / {limits.maxClients}
+              </span>
+            </div>
+            <Progress 
+              value={(usage.clientsCount / limits.maxClients) * 100} 
+              className={cn("h-1.5", usage.clientsCount >= limits.maxClients && "bg-destructive/20")} 
+            />
+          </div>
+        )}
         <div className="flex gap-2 w-full sm:w-auto">
           <TooltipProvider>
             <Tooltip>

@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw, Lock, Ban, Info, Users, UsersRound } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
+
 import { z } from 'zod';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
@@ -502,18 +503,27 @@ export default function Team() {
         />
       )}
       <AnimatedContainer animation="fade-up" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="hidden md:block">
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <UsersRound className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 flex-wrap text-left">
+            <UsersRound className="h-7 w-7 md:h-8 md:w-8 text-primary shrink-0" />
             {t('title', 'Equipe')}
-            {limits.maxTeamMembers !== null && (
-              <Badge variant="outline" className="font-mono">
-                {usage.teamMembersCount}/{limits.maxTeamMembers}
-              </Badge>
-            )}
           </h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">{t('subtitle', 'Gerencie os membros da sua equipe')}</p>
+          <p className="text-sm md:text-base text-muted-foreground mt-1 text-left">{t('subtitle', 'Gerencie os membros da sua equipe')}</p>
         </div>
+        {limits.maxTeamMembers !== null && (
+          <div className="w-full sm:w-64 space-y-1.5 order-last sm:order-none sm:mx-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground font-medium">Membros da Equipe</span>
+              <span className={cn("font-bold", usage.teamMembersCount >= limits.maxTeamMembers ? "text-destructive" : "text-primary")}>
+                {usage.teamMembersCount} / {limits.maxTeamMembers}
+              </span>
+            </div>
+            <Progress 
+              value={(usage.teamMembersCount / limits.maxTeamMembers) * 100} 
+              className={cn("h-1.5", usage.teamMembersCount >= limits.maxTeamMembers && "bg-destructive/20")} 
+            />
+          </div>
+        )}
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <DialogTrigger asChild>
             <Button

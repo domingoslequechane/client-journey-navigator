@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { SalesFunnelSkeleton } from '@/components/ui/loading-skeleton';
 import { useOrganization } from '@/hooks/useOrganization';
@@ -117,20 +118,29 @@ export default function Pipeline() {
   return (
     <div className="p-4 md:p-8 h-full flex flex-col">
       <AnimatedContainer animation="fade-up" delay={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="hidden md:block">
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 flex-wrap">
             <Kanban className="h-7 w-7 md:h-8 md:w-8 text-primary" />
             {tCommon('navigation.pipeline')}
-            {limits.maxClients !== null && (
-              <Badge variant="outline" className="font-mono">
-                {t('stats.activeClients')}: {usage.clientsCount}/{limits.maxClients}
-              </Badge>
-            )}
           </h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">
             {currentTab === 'sales' ? t('subtitle') : t('operationalFlow.subtitle')}
           </p>
         </div>
+        {limits.maxClients !== null && (
+          <div className="w-full sm:w-64 space-y-1.5 order-last sm:order-none sm:mx-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground font-medium">{t('stats.activeClients', 'Clientes Ativos')}</span>
+              <span className={cn("font-bold", usage.clientsCount >= limits.maxClients ? "text-destructive" : "text-primary")}>
+                {usage.clientsCount} / {limits.maxClients}
+              </span>
+            </div>
+            <Progress 
+              value={(usage.clientsCount / limits.maxClients) * 100} 
+              className={cn("h-1.5", usage.clientsCount >= limits.maxClients && "bg-destructive/20")} 
+            />
+          </div>
+        )}
         {hasPrivilege('sales') && (
           <div className="w-full sm:w-auto">
             {['free', 'trial'].includes(planType as string) && usage.clientsCount >= (limits.maxClients ?? 2) ? (
