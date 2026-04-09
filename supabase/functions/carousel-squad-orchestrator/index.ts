@@ -757,18 +757,24 @@ ${bgMode === 'dynamic'
   : '⚠️ MANTENHA O MESMO FUNDO EXATO DE TODOS OS OUTROS SLIDES. Consistência é a lei.'}
 Tema: "${context.orchestrator?.analysis?.background_theme || 'Fundo clean e profissional'}"
 
-📝 CONTEÚDO PARA ESCREVER NA IMAGEM:
+📝 CONTEÚDO OBRIGATÓRIO (ESCREVA EXATAMENTE ASSIM):
 Headline: "${slideCopy.headline}"
 Body Text: "${isCover || slideIndex === forcedNumSlides - 1 ? '' : slideCopy.body}"
+
+🚨 PRECISÃO ORTOGRÁFICA (VITAL):
+A sua missão número 1 é a ORTOGRAFIA. Erros de digitação ou letras trocadas tornarão o slide INÚTIL.
+- LEIA letra por letra antes de renderizar.
+- NÃO invente símbolos ou caracteres bizarros.
+- O texto deve ser legível, limpo e PERFEITAMENTE escrito em ${contentLanguage}.
 
 ${projectLearnings}
 
 🎯 ESPECIFICAÇÕES TÉCNICAS:
 • Idioma: Escreva EXCLUSIVAMENTE em ${contentLanguage}.
-• Sem Metadados: Nunca escreva "Slide", "Headline" ou "Body" na imagem.
+• Sem Metadados: Nunca escreva "Slide", "Headline" ou "Body".
 • Paleta: ${paletteColors.join(', ')}.
-• Logotipo: ${layoutStrategy.logo_position || 'Canto inferior'} — Máximo de discrição.
-• Paginação: ${paginationStyle === 'none' ? 'Inexistente' : 'Canto superior direito (minimalista)'}.
+• Logotipo: ${layoutStrategy.logo_position || 'Canto inferior'}.
+• Paginação: ${paginationStyle === 'none' ? 'Inexistente' : 'Canto superior direito'}.
 
 🎨 TOQUE FINAL DO DIRETOR:
 - Priorize CLAREZA e CONTRASTE.
