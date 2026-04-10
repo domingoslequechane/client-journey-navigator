@@ -274,16 +274,6 @@ export default function LinkTreeDashboard() {
               />
             </div>
           )}
-          <div className="w-full sm:w-auto">
-            <Button
-              className="w-full sm:w-auto gap-2 text-sm font-bold"
-              onClick={handleCreatePage}
-              disabled={isCreating}
-            >
-              <Plus className="h-4 w-4" />
-              Criar Página
-            </Button>
-          </div>
         </div>
       </div>
 
