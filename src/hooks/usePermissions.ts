@@ -174,6 +174,8 @@ export function usePermissions() {
                 case 'notifications':
                 case 'settings':
                     return hasPrivilege(module.toLowerCase() as PrivilegeKey);
+                case 'ai_agents':
+                    return privileges.includes('ai_agents') || isOwner || isAdmin;
                 case 'plans':
                     return isAdmin;
                 default:
