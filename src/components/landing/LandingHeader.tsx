@@ -9,7 +9,7 @@ export function LandingHeader({ t, isScrolled }: { t: any, isScrolled: boolean }
 
   return (
     <header 
-      className={`w-full z-[100] transition-all duration-300 sticky top-0 ${
+      className={`w-full z-[100] transition-all duration-300 fixed top-0 left-0 right-0 ${
         isScrolled || isMenuOpen
           ? 'bg-background border-b border-border shadow-md py-3' 
           : 'bg-transparent py-5 md:py-8'

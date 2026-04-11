@@ -296,13 +296,40 @@ export function AdminLayout() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden bg-background font-sans overflow-visible">
+      <div className="flex flex-col md:flex-row bg-background font-sans min-h-screen">
+        
+        {/* Mobile Header (Fixed) */}
+        <div className="fixed top-0 left-0 right-0 z-[110] md:hidden h-14 bg-card/95 backdrop-blur-md border-b border-border flex items-center justify-between px-4 shrink-0 transition-all duration-300">
+          <div className="flex items-center gap-2.5">
+            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <span className="text-primary-foreground font-bold text-base">Q</span>
+            </div>
+            <span className="font-bold text-lg whitespace-nowrap">Qualify - Admin</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle variant="ghost" size="icon" className="h-9 w-9" />
+            <button
+              onClick={() => setMobileDrawerOpen(true)}
+              className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
+              aria-label="Abrir menu"
+            >
+              <Menu className="h-5 w-5" />
+              {totalBadges > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
+                  {totalBadges > 9 ? '9+' : totalBadges}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+        
+
         
 
 
         {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
         <div className={cn(
-          "hidden md:flex h-full flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
+          "hidden md:flex h-screen sticky top-0 flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
           collapsed ? "w-16" : "w-64"
         )}>
           <div className={cn(
@@ -427,34 +454,9 @@ export function AdminLayout() {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col md:overflow-hidden overflow-visible">
-          {/* Main Content */}
-          <main className="w-full md:flex-1 md:overflow-y-auto relative overflow-visible">
-            {/* Mobile Header (Sticky inside content) */}
-            <div className="md:hidden h-14 bg-card border-b border-border flex items-center justify-between px-4 shrink-0 transition-all duration-300 sticky top-0 z-40">
-              <div className="flex items-center gap-2.5">
-                <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                  <span className="text-primary-foreground font-bold text-base">Q</span>
-                </div>
-                <span className="font-bold text-lg whitespace-nowrap">Qualify - Admin</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ThemeToggle variant="ghost" size="icon" className="h-9 w-9" />
-                <button
-                  onClick={() => setMobileDrawerOpen(true)}
-                  className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
-                  aria-label="Abrir menu"
-                >
-                  <Menu className="h-5 w-5" />
-                  {totalBadges > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
-                      {totalBadges > 9 ? '9+' : totalBadges}
-                    </span>
-                  )}
-                </button>
-              </div>
-            </div>
-
+        <div className="flex-1 flex flex-col pt-32 md:pt-0">
+          {/* Main Content Sub-session */}
+          <main className="w-full relative px-4 md:px-0">
             <Outlet />
             <AdminAIChat />
           </main>

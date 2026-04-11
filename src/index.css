@@ -156,20 +156,21 @@ All colors MUST be HSL.
   }
 
   html, body {
-    overflow-x: hidden;
+    min-height: 100%;
     width: 100%;
     position: relative;
     -webkit-overflow-scrolling: touch;
   }
 
+  body {
+    @apply bg-background text-foreground;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
   /* Allow horizontal scroll only for tables and specific containers */
   table, .overflow-x-auto, [role="table"] {
     overflow-x: auto !important;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 

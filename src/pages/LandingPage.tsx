@@ -103,21 +103,25 @@ export default function LandingPage() {
   const { canInstall, isInstalled, install } = usePWAInstall();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const scrollTop = e.currentTarget.scrollTop;
-    setIsScrolled(scrollTop > 20);
-    setShowScrollTop(scrollTop > 500);
-  };
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollTop = window.scrollY;
+      setIsScrolled(scrollTop > 20);
+      setShowScrollTop(scrollTop > 500);
+    };
+    
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const scrollToTop = () => {
-    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <div 
       ref={scrollContainerRef}
-      className="h-screen w-full bg-background text-foreground font-sans relative overflow-x-hidden overflow-y-auto custom-scrollbar scroll-smooth"
-      onScroll={handleScroll}
+      className="w-full bg-background text-foreground font-sans relative overflow-x-hidden scroll-smooth"
     >
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] mix-blend-screen" />
@@ -126,7 +130,7 @@ export default function LandingPage() {
 
       <LandingHeader t={t} isScrolled={isScrolled} />
 
-      <main className="relative z-10 pt-20 lg:pt-32">
+      <main className="relative z-10 pt-44 lg:pt-56">
         
         {/* HERO SECTION */}
         <section className="container mx-auto px-6 mb-24 md:mb-32">
