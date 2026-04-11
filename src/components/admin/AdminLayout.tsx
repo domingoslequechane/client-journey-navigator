@@ -452,7 +452,7 @@ export function AdminLayout() {
 
         <div className="flex-1 flex flex-col md:overflow-hidden">
           {/* Main Content */}
-          <main className="flex-1 w-full md:overflow-y-auto relative scrollbar-none">
+          <main className="flex-1 w-full md:overflow-y-auto relative">
             <Outlet />
             <AdminAIChat />
           </main>

@@ -36,7 +36,7 @@ export function AppLayout() {
         {/* Main Content Area - Keyed to path trigger blurIn on navigation */}
         <main 
           ref={mainContentRef}
-          className="flex flex-col flex-1 w-full md:overflow-y-auto relative scrollbar-none"
+          className="flex flex-col flex-1 w-full md:overflow-y-auto relative"
         >
           <TrialStatusBanner />
           <div className="flex-1 w-full">
