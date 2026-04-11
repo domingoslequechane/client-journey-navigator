@@ -296,11 +296,36 @@ export function AdminLayout() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-screen h-dvh bg-background overflow-hidden font-sans">
+      <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden bg-background font-sans">
+        
+        {/* Mobile Header (Sticky) */}
+        <div className="fixed top-0 left-0 right-0 z-40 md:hidden h-14 bg-card border-b border-border flex items-center justify-between px-4 shrink-0 transition-all duration-300 sticky">
+          <div className="flex items-center gap-2.5">
+            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <span className="text-primary-foreground font-bold text-base">Q</span>
+            </div>
+            <span className="font-bold text-lg whitespace-nowrap">Qualify - Admin</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle variant="ghost" size="icon" className="h-9 w-9" />
+            <button
+              onClick={() => setMobileDrawerOpen(true)}
+              className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
+              aria-label="Abrir menu"
+            >
+              <Menu className="h-5 w-5" />
+              {totalBadges > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
+                  {totalBadges > 9 ? '9+' : totalBadges}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
 
         {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
         <div className={cn(
-          "hidden md:flex h-screen flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
+          "hidden md:flex h-full flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
           collapsed ? "w-16" : "w-64"
         )}>
           <div className={cn(
@@ -425,48 +450,15 @@ export function AdminLayout() {
           </div>
         </div>
 
-        {/* ── Mobile Full-Screen Layout ──────────────────────────────────── */}
-        <div className="flex flex-col flex-1 min-w-0 md:hidden">
-
-          {/* Mobile Top Header (Fixed) */}
-          <div className="fixed top-0 left-0 right-0 z-40 md:hidden h-14 bg-card border-b border-border flex items-center justify-between px-4 shrink-0 transition-all duration-300">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                <span className="text-primary-foreground font-bold text-base">Q</span>
-              </div>
-              <span className="font-bold text-lg whitespace-nowrap">Qualify - Admin</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ThemeToggle variant="ghost" size="icon" className="h-9 w-9" />
-              <button
-                onClick={() => setMobileDrawerOpen(true)}
-                className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
-                aria-label="Abrir menu"
-              >
-                <Menu className="h-5 w-5" />
-                {totalBadges > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
-                    {totalBadges > 9 ? '9+' : totalBadges}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 pt-14 flex flex-col overflow-hidden">
-            {/* Mobile Main Content */}
-            <main className="flex-1 overflow-y-auto relative scrollbar-none">
-              <Outlet />
-              <AdminAIChat />
-            </main>
-          </div>
+        <div className="flex-1 flex flex-col md:overflow-hidden">
+          {/* Main Content */}
+          <main className="flex-1 w-full md:overflow-y-auto relative scrollbar-none">
+            <Outlet />
+            <AdminAIChat />
+          </main>
         </div>
 
-        {/* ── Desktop Main Content ──────────────────────────────────────── */}
-        <main className="hidden md:flex flex-1 overflow-y-auto relative flex-col scrollbar-none">
-          <Outlet />
-          <AdminAIChat />
-        </main>
+
 
         {/* ── Mobile Drawer ────────────────────────────────────────────── */}
         {mobileDrawerOpen && (

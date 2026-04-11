@@ -156,10 +156,16 @@ All colors MUST be HSL.
   }
 
   html, body {
-    overflow: hidden;
+    overflow-x: hidden;
     width: 100%;
     position: relative;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar, body::-webkit-scrollbar {
+    display: none;
   }
 
   /* Allow horizontal scroll only for tables and specific containers */

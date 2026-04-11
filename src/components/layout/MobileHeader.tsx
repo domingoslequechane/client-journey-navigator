@@ -201,7 +201,7 @@ export function MobileHeader() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[100] bg-background/95 backdrop-blur-md border-b border-border h-14 flex items-center justify-between px-4 md:hidden pb-safe transition-all duration-300">
+      <header className="sticky top-0 left-0 right-0 z-[100] bg-background/95 backdrop-blur-md border-b border-border h-14 flex items-center justify-between px-4 md:hidden pb-safe transition-all duration-300">
         <div className="flex items-center gap-2 overflow-hidden">
           {backAction && (
             <Button 
