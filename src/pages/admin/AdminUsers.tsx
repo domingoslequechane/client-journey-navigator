@@ -259,7 +259,7 @@ export default function AdminUsers() {
   const suspendedCount = users.filter(u => u.suspended).length;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-5 md:space-y-6">
       <AnimatedContainer animation="fade-up">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

@@ -163,7 +163,7 @@ export default function AdminFeedbacks() {
   );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-5 md:space-y-6">
       <AnimatedContainer animation="fade-up">
         <div>
           <h1 className="text-3xl font-bold">Feedbacks</h1>

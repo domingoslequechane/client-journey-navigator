@@ -290,25 +290,25 @@ export default function AdminDashboard() {
   const now = new Date();
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-4 md:p-6 space-y-6 md:space-y-8">
 
       {/* Header */}
       <AnimatedContainer animation="fade-up">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Painel Administrativo</h1>
-            <p className="text-muted-foreground mt-1">
-              {format(now, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })} • Visão geral do sistema
+            <h1 className="text-2xl md:text-3xl font-bold">Painel Administrativo</h1>
+            <p className="text-muted-foreground mt-1 text-xs md:text-sm">
+              {format(now, "EEEE, dd 'de' MMMM", { locale: ptBR })} &bull; Visão geral
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <NotificationCreator />
           </div>
         </div>
       </AnimatedContainer>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
         {statCards.slice(0, 4).map((card, index) => {
           const trend = getTrend(card.value, card.prev);
           return (
@@ -327,10 +327,10 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   {loading ? (
-                    <Skeleton className="h-8 w-20" />
+                    <Skeleton className="h-7 md:h-8 w-20" />
                   ) : (
                     <div className="flex items-end justify-between">
-                      <p className="text-3xl font-bold">{card.displayValue}</p>
+                      <p className="text-xl md:text-3xl font-bold">{card.displayValue}</p>
                       {trend && (
                         <div className={`flex items-center gap-1 text-xs font-medium ${trend.color}`}>
                           <trend.icon className="h-3.5 w-3.5" />
@@ -347,7 +347,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Secondary KPI Row */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-3">
         {statCards.slice(4).map((card, index) => {
           const trend = getTrend(card.value, card.prev);
           return (
@@ -386,7 +386,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Growth Chart + Activity Feed */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-3">
 
         {/* Growth Chart */}
         <AnimatedContainer animation="fade-up" delay={0.3} className="lg:col-span-2">
@@ -489,10 +489,10 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="space-y-2">
                 {recentTickets.map(ticket => (
-                  <div key={ticket.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors">
-                    <div className="min-w-0">
+                  <div key={ticket.id} className="flex items-start xs:items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors gap-2">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{ticket.subject}</p>
-                      <p className="text-xs text-muted-foreground">{ticket.user_name} • {format(new Date(ticket.created_at), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}</p>
+                      <p className="text-xs text-muted-foreground">{ticket.user_name} &bull; {format(new Date(ticket.created_at), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}</p>
                     </div>
                     <Badge
                       className={ticket.status === 'open'

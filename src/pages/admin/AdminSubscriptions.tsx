@@ -705,16 +705,16 @@ export default function AdminSubscriptions() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-5 md:space-y-6">
       {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Assinaturas</h1>
-          <p className="text-muted-foreground">Gerir assinaturas e pedidos de pagamento manual</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Assinaturas</h1>
+          <p className="text-muted-foreground text-sm">Gerir assinaturas e pedidos de pagamento manual</p>
         </div>
         <Button
           onClick={() => setShowManualPanel(true)}
-          className="shrink-0 gap-2"
+          className="shrink-0 gap-2 w-full sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Activação Manual
@@ -722,7 +722,7 @@ export default function AdminSubscriptions() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {[
           { label: 'Total', value: subscriptions.length, icon: CreditCard, color: 'text-blue-400', bg: 'bg-blue-500/10' },
           { label: 'Activas', value: filterByStatus('active').length + filterByStatus('canceling').length, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
@@ -746,111 +746,157 @@ export default function AdminSubscriptions() {
       {/* Main card with custom tabs */}
       <Card>
         <CardContent className="p-6">
-          {/* Tab bar */}
-          <div className="flex flex-wrap gap-1 mb-6 p-1 bg-muted/30 rounded-lg">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  position: 'relative',
-                  padding: '6px 14px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '14px',
-                  fontWeight: activeTab === tab.id ? 600 : 400,
-                  background: activeTab === tab.id ? 'hsl(var(--background))' : 'transparent',
-                  color: activeTab === tab.id ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
-                  cursor: 'pointer',
-                  boxShadow: activeTab === tab.id ? '0 1px 3px rgba(0,0,0,0.2)' : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {tab.id === 'transfers' && <Smartphone className="h-3.5 w-3.5" />}
-                {tab.label}
-                {'badge' in tab && tab.badge > 0 && (
-                  <span style={{ background: '#ef4444', color: '#fff', borderRadius: '100px', fontSize: '11px', fontWeight: 700, padding: '1px 6px', minWidth: '18px', textAlign: 'center', lineHeight: '16px' }}>
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            ))}
+          {/* Tab bar — scrollable on mobile */}
+          <div className="overflow-x-auto -mx-1 px-1 mb-5">
+            <div className="flex gap-1 p-1 bg-muted/30 rounded-lg w-max min-w-full">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    position: 'relative',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '13px',
+                    fontWeight: activeTab === tab.id ? 600 : 400,
+                    background: activeTab === tab.id ? 'hsl(var(--background))' : 'transparent',
+                    color: activeTab === tab.id ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+                    cursor: 'pointer',
+                    boxShadow: activeTab === tab.id ? '0 1px 3px rgba(0,0,0,0.2)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {tab.id === 'transfers' && <Smartphone className="h-3.5 w-3.5" />}
+                  {tab.label}
+                  {'badge' in tab && tab.badge > 0 && (
+                    <span style={{ background: '#ef4444', color: '#fff', borderRadius: '100px', fontSize: '11px', fontWeight: 700, padding: '1px 6px', minWidth: '18px', textAlign: 'center', lineHeight: '16px' }}>
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Tab content */}
           {activeTab !== 'transfers' ? (
-            /* Subscriptions table */
+            /* Subscriptions - table on desktop, cards on mobile */
             loadingSubs ? (
               <div className="space-y-3">
-                {[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-muted/30 rounded animate-pulse" />)}
+                {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-muted/30 rounded animate-pulse" />)}
+              </div>
+            ) : filteredSubs.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <CreditCard className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                <p>Nenhuma assinatura encontrada</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Organização</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Início</TableHead>
-                      <TableHead>Expiração</TableHead>
-                      <TableHead>Criada em</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSubs.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
-                          Nenhuma assinatura encontrada
-                        </TableCell>
-                      </TableRow>
-                    ) : filteredSubs.map((sub) => {
-                      const expiry = getExpiry(sub);
-                      return (
-                        <TableRow
-                          key={sub.id}
-                          className={`cursor-pointer hover:bg-muted/40 transition-colors ${expiry.urgent ? 'bg-red-500/5' : ''}`}
-                          onClick={() => openHistory({ id: sub.organization_id, name: sub.organization?.name ?? 'Agência' })}
-                        >
-                          <TableCell className="font-medium">{sub.organization?.name ?? '—'}</TableCell>
-                          <TableCell>
-                            <span className="text-sm">
-                              {sub.organization?.plan_type ? (PLAN_LABELS[sub.organization.plan_type] ?? (sub.organization.plan_type.charAt(0).toUpperCase() + sub.organization.plan_type.slice(1))) : '—'}
-                            </span>
-                          </TableCell>
-                          <TableCell><StatusBadge status={getComputedStatus(sub)} /></TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {sub.current_period_start ? format(new Date(sub.current_period_start), 'dd/MM/yyyy', { locale: ptBR }) : '—'}
-                          </TableCell>
-                          <TableCell>
+              <>
+                {/* Mobile card list */}
+                <div className="md:hidden space-y-3">
+                  {filteredSubs.map((sub) => {
+                    const expiry = getExpiry(sub);
+                    const computedStatus = getComputedStatus(sub);
+                    return (
+                      <div
+                        key={sub.id}
+                        className={`rounded-xl border p-4 cursor-pointer transition-colors hover:bg-muted/40 ${
+                          expiry.urgent ? 'border-red-500/30 bg-red-500/5' : 'border-border'
+                        }`}
+                        onClick={() => openHistory({ id: sub.organization_id, name: sub.organization?.name ?? 'Agência' })}
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold truncate">{sub.organization?.name ?? '—'}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {sub.organization?.plan_type
+                                ? (PLAN_LABELS[sub.organization.plan_type] ?? (sub.organization.plan_type.charAt(0).toUpperCase() + sub.organization.plan_type.slice(1)))
+                                : 'Plano desconhecido'}
+                            </p>
+                          </div>
+                          <StatusBadge status={computedStatus} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                          <div>
+                            <p className="text-[10px] uppercase font-medium mb-0.5 opacity-60">Início</p>
+                            <p>{sub.current_period_start ? format(new Date(sub.current_period_start), 'dd/MM/yyyy', { locale: ptBR }) : '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase font-medium mb-0.5 opacity-60">Expiração</p>
                             {expiry.urgent ? (
-                              <span className="flex items-center gap-1.5 text-red-400 font-medium text-sm">
-                                <AlertCircle className="h-3.5 w-3.5" />
-                                {expiry.label} ({expiry.daysLeft}d)
-                              </span>
+                              <p className="text-red-400 font-medium">{expiry.label} ({expiry.daysLeft}d)</p>
                             ) : (
-                              <span className="text-sm text-muted-foreground">{expiry.label}</span>
+                              <p>{expiry.label}</p>
                             )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(sub.created_at), 'dd/MM/yyyy', { locale: ptBR })}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Organização</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Início</TableHead>
+                        <TableHead>Expiração</TableHead>
+                        <TableHead>Criada em</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredSubs.map((sub) => {
+                        const expiry = getExpiry(sub);
+                        return (
+                          <TableRow
+                            key={sub.id}
+                            className={`cursor-pointer hover:bg-muted/40 transition-colors ${expiry.urgent ? 'bg-red-500/5' : ''}`}
+                            onClick={() => openHistory({ id: sub.organization_id, name: sub.organization?.name ?? 'Agência' })}
+                          >
+                            <TableCell className="font-medium">{sub.organization?.name ?? '—'}</TableCell>
+                            <TableCell>
+                              <span className="text-sm">
+                                {sub.organization?.plan_type ? (PLAN_LABELS[sub.organization.plan_type] ?? (sub.organization.plan_type.charAt(0).toUpperCase() + sub.organization.plan_type.slice(1))) : '—'}
+                              </span>
+                            </TableCell>
+                            <TableCell><StatusBadge status={getComputedStatus(sub)} /></TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {sub.current_period_start ? format(new Date(sub.current_period_start), 'dd/MM/yyyy', { locale: ptBR }) : '—'}
+                            </TableCell>
+                            <TableCell>
+                              {expiry.urgent ? (
+                                <span className="flex items-center gap-1.5 text-red-400 font-medium text-sm">
+                                  <AlertCircle className="h-3.5 w-3.5" />
+                                  {expiry.label} ({expiry.daysLeft}d)
+                                </span>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">{expiry.label}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {format(new Date(sub.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )
           ) : (
-            /* Transfers tab */
+            /* Transfers - mobile cards + desktop table */
             loadingTransfers ? (
               <div className="space-y-3">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-muted/30 rounded animate-pulse" />)}
+                {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-muted/30 rounded animate-pulse" />)}
               </div>
             ) : pendingPayments.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
@@ -859,65 +905,111 @@ export default function AdminSubscriptions() {
                 <p className="text-sm mt-1">Os pedidos de pagamento manual aparecem aqui quando os clientes submetem comprovativos.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Agência</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Método</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Acção</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pendingPayments.map((req) => (
-                      <TableRow key={req.id} className="hover:bg-muted/30">
-                        <TableCell className="font-medium">{req.organization?.name ?? '—'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">{PLAN_LABELS[req.plan_type] ?? req.plan_type}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{METHOD_LABELS[req.payment_method] ?? req.payment_method}</TableCell>
-                        <TableCell className="font-semibold text-emerald-400">${req.amount_usd}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(req.created_at), 'dd/MM/yy HH:mm', { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>
-                          {req.status === 'pending' && <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 border text-xs">Pendente</Badge>}
+              <>
+                {/* Mobile cards */}
+                <div className="md:hidden space-y-3">
+                  {pendingPayments.map((req) => (
+                    <div key={req.id} className="rounded-xl border border-border p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{req.organization?.name ?? '—'}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{PLAN_LABELS[req.plan_type] ?? req.plan_type} &bull; {METHOD_LABELS[req.payment_method] ?? req.payment_method}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          {req.status === 'pending' && <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 border text-xs whitespace-nowrap">Pendente</Badge>}
                           {req.status === 'approved' && <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 border text-xs">Aprovado</Badge>}
                           {req.status === 'rejected' && <Badge className="bg-red-500/10 text-red-400 border-red-500/20 border text-xs">Rejeitado</Badge>}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <button
-                            type="button"
-                            onClick={() => setReviewRequest(req)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '6px 12px',
-                              borderRadius: '6px',
-                              border: '1px solid',
-                              borderColor: req.status === 'pending' ? 'rgba(99,102,241,0.4)' : 'rgba(100,100,100,0.3)',
-                              background: req.status === 'pending' ? 'rgba(99,102,241,0.08)' : 'transparent',
-                              color: req.status === 'pending' ? '#818cf8' : '#78716c',
-                              cursor: 'pointer',
-                              fontSize: '13px',
-                              fontWeight: 500,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            {req.status === 'pending' ? 'Rever' : 'Ver Detalhes'}
-                          </button>
-                        </TableCell>
+                          <span className="font-bold text-emerald-400 text-sm">${req.amount_usd}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">{format(new Date(req.created_at), 'dd/MM/yy HH:mm', { locale: ptBR })}</p>
+                        <button
+                          type="button"
+                          onClick={() => setReviewRequest(req)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            border: '1px solid',
+                            borderColor: req.status === 'pending' ? 'rgba(99,102,241,0.4)' : 'rgba(100,100,100,0.3)',
+                            background: req.status === 'pending' ? 'rgba(99,102,241,0.08)' : 'transparent',
+                            color: req.status === 'pending' ? '#818cf8' : '#78716c',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                          }}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          {req.status === 'pending' ? 'Rever' : 'Ver Detalhes'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Agência</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Método</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead className="text-right">Acção</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingPayments.map((req) => (
+                        <TableRow key={req.id} className="hover:bg-muted/30">
+                          <TableCell className="font-medium">{req.organization?.name ?? '—'}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">{PLAN_LABELS[req.plan_type] ?? req.plan_type}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{METHOD_LABELS[req.payment_method] ?? req.payment_method}</TableCell>
+                          <TableCell className="font-semibold text-emerald-400">${req.amount_usd}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(new Date(req.created_at), 'dd/MM/yy HH:mm', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell>
+                            {req.status === 'pending' && <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 border text-xs">Pendente</Badge>}
+                            {req.status === 'approved' && <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 border text-xs">Aprovado</Badge>}
+                            {req.status === 'rejected' && <Badge className="bg-red-500/10 text-red-400 border-red-500/20 border text-xs">Rejeitado</Badge>}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <button
+                              type="button"
+                              onClick={() => setReviewRequest(req)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                border: '1px solid',
+                                borderColor: req.status === 'pending' ? 'rgba(99,102,241,0.4)' : 'rgba(100,100,100,0.3)',
+                                background: req.status === 'pending' ? 'rgba(99,102,241,0.08)' : 'transparent',
+                                color: req.status === 'pending' ? '#818cf8' : '#78716c',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                fontWeight: 500,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              {req.status === 'pending' ? 'Rever' : 'Ver Detalhes'}
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )
           )}
         </CardContent>

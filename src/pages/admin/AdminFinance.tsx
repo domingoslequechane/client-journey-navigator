@@ -147,11 +147,11 @@ export default function AdminFinance() {
   ];
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-4 md:p-6 space-y-6 md:space-y-8">
       <AnimatedContainer animation="fade-up">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Controlo Financeiro SaaS</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Controlo Financeiro SaaS</h1>
             <p className="text-muted-foreground mt-1">Visão geral do desempenho financeiro do software e métricas críticas.</p>
           </div>
           <div className="flex items-center gap-2">
@@ -169,7 +169,7 @@ export default function AdminFinance() {
       </AnimatedContainer>
 
       {/* KPI Section */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi, i) => (
           <AnimatedContainer key={kpi.title} animation="fade-up" delay={0.05 * (i + 1)}>
             <Card className="hover:border-primary/20 transition-all cursor-default">
@@ -188,7 +188,7 @@ export default function AdminFinance() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-7">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-7">
         {/* Main Chart */}
         <AnimatedContainer animation="fade-up" delay={0.3} className="lg:col-span-4">
           <Card>

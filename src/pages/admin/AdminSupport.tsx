@@ -90,6 +90,7 @@ export default function AdminSupport() {
   const [showUserInfo, setShowUserInfo] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
 
   useEffect(() => {
     fetchTickets();
@@ -360,7 +361,145 @@ export default function AdminSupport() {
 
   return (
     <div className="h-full flex flex-col bg-background/50">
-      <div className="flex-1 flex overflow-hidden">
+
+      {/* ── MOBILE LAYOUT ──────────────────────────────────────────── */}
+      <div className="md:hidden flex-1 flex flex-col overflow-hidden">
+        {mobileView === 'list' || !selectedTicket ? (
+          // LIST VIEW
+          <div className="flex flex-col h-full">
+            <div className="p-4 border-b space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  Suporte
+                </h2>
+                <Badge variant="outline" className="font-mono">{tickets.length}</Badge>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input className="w-full pl-9 pr-4 py-2 rounded-lg bg-muted/50 text-sm outline-none" placeholder="Buscar tickets..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              </div>
+              <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+                {(['all', 'open', 'closed'] as const).map((f) => (
+                  <button key={f} onClick={() => setFilter(f)} className={`flex-1 text-xs h-8 rounded-md font-medium transition-colors ${filter === f ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground'}`}>
+                    {f === 'all' ? 'Todos' : f === 'open' ? 'Abertos' : 'Finalizados'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {loading ? (
+                <div className="p-8 text-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" /></div>
+              ) : filteredTickets.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground"><p className="text-sm">Nenhum ticket encontrado</p></div>
+              ) : (
+                <div className="divide-y divide-border/50">
+                  {filteredTickets.map(ticket => (
+                    <div key={ticket.id} onClick={() => { setSelectedTicket(ticket); setMobileView('chat'); }} className={`p-4 cursor-pointer transition-all hover:bg-accent/50 border-l-2 ${selectedTicket?.id === ticket.id ? 'bg-accent border-l-primary' : 'border-l-transparent'}`}>
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10 border-2 border-background shadow-sm shrink-0">
+                          <AvatarImage src={ticket.user_avatar} />
+                          <AvatarFallback className="bg-primary/10 text-primary uppercase">{ticket.user_name?.substring(0, 2)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <p className="font-semibold text-sm truncate">{ticket.subject}</p>
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{format(new Date(ticket.updated_at), 'HH:mm')}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate mb-1">{ticket.user_name}</p>
+                          <div className="flex items-center justify-between">
+                            <Badge variant="secondary" className={`text-[9px] px-1.5 h-4 font-bold uppercase ${ticket.status === 'open' ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
+                              {ticket.status === 'open' ? 'Aberto' : 'Finalizado'}
+                            </Badge>
+                            {ticket.status === 'open' && <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          // CHAT VIEW
+          <div className="flex flex-col h-full">
+            <header className="h-14 px-4 border-b flex items-center justify-between bg-card/20 backdrop-blur-sm z-10 gap-2 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <button onClick={() => setMobileView('list')} className="p-2 rounded-lg hover:bg-accent transition-colors shrink-0">
+                  <ChevronRight className="h-4 w-4 rotate-180" />
+                </button>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm truncate">{selectedTicket!.subject}</h3>
+                  <p className="text-xs text-muted-foreground truncate">{selectedTicket!.user_name}</p>
+                </div>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0"><MoreVertical className="h-5 w-5" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {selectedTicket!.status === 'open' ? (
+                    <DropdownMenuItem onClick={closeTicket} className="text-green-500">
+                      <CheckCircle2 className="h-4 w-4 mr-2" />Finalizar Ticket
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={reopenTicket}>
+                      <RotateCcw className="h-4 w-4 mr-2" />Reabrir Ticket
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </header>
+            <div className="flex-1 overflow-y-auto bg-[url('/grid.svg')] bg-repeat">
+              <ScrollArea className="h-full" ref={scrollRef}>
+                <div className="p-4 space-y-4">
+                  {messages.map((msg, index) => (
+                    <div key={msg.id}>
+                      {index > 0 && getMessageDateHeader(messages[index-1].created_at, msg.created_at)}
+                      <div className={`flex ${msg.is_admin ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] flex flex-col gap-1 ${msg.is_admin ? 'items-end' : 'items-start'}`}>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-1">{msg.is_admin ? 'Suporte' : (selectedTicket!.user_name || 'Cliente')}</span>
+                          <div className={`px-4 py-3 rounded-2xl text-sm shadow-sm ${msg.is_admin ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-card border rounded-bl-none'}`}>
+                            <p className="whitespace-pre-wrap leading-relaxed">{msg.message}</p>
+                          </div>
+                          <span className="text-[9px] text-muted-foreground/40 px-1">{format(new Date(msg.created_at), 'HH:mm')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} className="h-4" />
+                </div>
+              </ScrollArea>
+            </div>
+            <footer className="p-3 bg-card/30 backdrop-blur-md border-t shrink-0">
+              {selectedTicket!.status === 'open' ? (
+                <div className="flex gap-2 items-end">
+                  <textarea
+                    value={newMessage}
+                    onChange={e => setNewMessage(e.target.value)}
+                    placeholder="Digite sua resposta..."
+                    className="flex-1 bg-background/80 border rounded-xl p-3 text-sm outline-none resize-none min-h-[44px] max-h-[120px] focus:ring-2 focus:ring-primary/20"
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                    rows={1}
+                  />
+                  <Button onClick={sendMessage} disabled={sendingMessage || !newMessage.trim()} className="h-11 w-11 p-0 rounded-full shrink-0">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-xl border-2 border-dashed">
+                  <p className="text-xs text-muted-foreground">Ticket finalizado</p>
+                  <Button variant="link" onClick={reopenTicket} className="text-primary h-auto p-0 text-xs">Reabrir</Button>
+                </div>
+              )}
+            </footer>
+          </div>
+        )}
+      </div>
+
+      {/* ── DESKTOP LAYOUT (3-panel resizable) ─────────────────────── */}
+      <div className="hidden md:flex flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal">
           
           {/* TICKET LIST PANEL */}

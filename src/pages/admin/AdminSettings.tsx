@@ -117,7 +117,7 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 md:space-y-8">
       <AnimatedContainer animation="fade-up">
         <div className="flex items-center justify-between">
           <div>
