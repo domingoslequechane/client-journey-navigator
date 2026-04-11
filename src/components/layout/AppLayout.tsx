@@ -25,7 +25,6 @@ export function AppLayout() {
       <OfflineIndicator pendingCount={queueLength} isSyncing={isSyncing} />
       <AccessChangeNotification />
       <TrialStartedModal />
-      <MobileHeader />
       <div className="flex flex-col md:flex-row flex-1 md:overflow-hidden overflow-visible">
         {/* Desktop Sidebar */}
         <div className="hidden md:block shrink-0">
@@ -37,6 +36,7 @@ export function AppLayout() {
           ref={mainContentRef}
           className="w-full md:flex-1 md:overflow-y-auto relative overflow-visible"
         >
+          <MobileHeader />
           <TrialStatusBanner />
           <div className="flex-1 w-full">
             <Outlet />
