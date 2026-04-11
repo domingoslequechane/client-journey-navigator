@@ -177,7 +177,7 @@ export function AdminAIChat() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 pointer-events-none" ref={containerRef}>
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end gap-4 pointer-events-none" ref={containerRef}>
       {/* Painel do Chat com Animação Slide-up */}
       <div 
         className={cn(
@@ -186,8 +186,8 @@ export function AdminAIChat() {
             ? "scale-100 opacity-100 translate-y-0 pointer-events-auto" 
             : "scale-90 opacity-0 translate-y-10 pointer-events-none disabled shadow-none",
           isExpanded 
-            ? "w-[600px] h-[80vh] sm:w-[70vw]" 
-            : "w-[380px] h-[600px] sm:w-[400px]"
+            ? "w-[calc(100vw-32px)] sm:w-[600px] h-[80vh]" 
+            : "w-[calc(100vw-32px)] sm:w-[380px] h-[70vh] sm:h-[600px]"
         )}
       >
         {/* Header */}
@@ -246,7 +246,7 @@ export function AdminAIChat() {
 
                 <div 
                   className={cn(
-                    "rounded-2xl px-4 py-3 max-w-[85%] text-sm shadow-sm",
+                    "rounded-2xl px-3 py-2 sm:px-4 sm:py-3 max-w-[85%] text-sm shadow-sm break-words",
                     msg.role === 'user' 
                       ? "bg-primary text-primary-foreground rounded-tr-sm" 
                       : "bg-muted text-foreground rounded-tl-sm border"
