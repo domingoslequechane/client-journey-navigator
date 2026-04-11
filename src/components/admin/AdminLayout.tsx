@@ -310,7 +310,7 @@ export function AdminLayout() {
             <div className="h-8 w-8 rounded-lg bg-destructive flex items-center justify-center shrink-0">
               <Shield className="h-5 w-5 text-destructive-foreground" />
             </div>
-            {!collapsed && <span className="font-bold text-xl">Admin</span>}
+            {!collapsed && <span className="font-bold text-xl whitespace-nowrap">Qualify - Admin</span>}
           </div>
 
           <div className="flex-1 relative flex flex-col overflow-hidden">
@@ -434,7 +434,7 @@ export function AdminLayout() {
               <div className="h-7 w-7 rounded-lg bg-destructive flex items-center justify-center shrink-0">
                 <Shield className="h-4 w-4 text-destructive-foreground" />
               </div>
-              <span className="font-bold text-lg">Admin</span>
+              <span className="font-bold text-lg whitespace-nowrap">Qualify - Admin</span>
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle variant="ghost" size="icon" className="h-9 w-9" />
@@ -482,7 +482,7 @@ export function AdminLayout() {
                   <div className="h-7 w-7 rounded-lg bg-destructive flex items-center justify-center">
                     <Shield className="h-4 w-4 text-destructive-foreground" />
                   </div>
-                  <span className="font-bold">Menu Admin</span>
+                  <span className="font-bold">Qualify - Admin</span>
                 </div>
                 <button
                   onClick={() => setMobileDrawerOpen(false)}
