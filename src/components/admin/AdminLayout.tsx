@@ -296,10 +296,10 @@ export function AdminLayout() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden bg-background font-sans">
+      <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden bg-background font-sans overflow-visible">
         
         {/* Mobile Header (Sticky) */}
-        <div className="fixed top-0 left-0 right-0 z-40 md:hidden h-14 bg-card border-b border-border flex items-center justify-between px-4 shrink-0 transition-all duration-300 sticky">
+        <div className="md:hidden h-14 bg-card border-b border-border flex items-center justify-between px-4 shrink-0 transition-all duration-300 sticky top-0 z-40">
           <div className="flex items-center gap-2.5">
             <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
               <span className="text-primary-foreground font-bold text-base">Q</span>
@@ -450,9 +450,9 @@ export function AdminLayout() {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col md:overflow-hidden">
+        <div className="flex-1 flex flex-col md:overflow-hidden overflow-visible">
           {/* Main Content */}
-          <main className="w-full md:flex-1 md:overflow-y-auto relative">
+          <main className="w-full md:flex-1 md:overflow-y-auto relative overflow-visible">
             <Outlet />
             <AdminAIChat />
           </main>
