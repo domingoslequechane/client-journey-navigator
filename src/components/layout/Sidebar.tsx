@@ -387,7 +387,7 @@ export function Sidebar() {
           <nav
             ref={navRef}
             onScroll={handleScroll}
-            className="flex-1 px-2 py-4 space-y-1 overflow-y-auto custom-scrollbar"
+            className="flex-1 px-2 py-4 space-y-1 overflow-y-auto"
           >
             {subLoading ? (
               // Navigation Skeletons

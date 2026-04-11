@@ -319,7 +319,7 @@ export function AdminLayout() {
             <nav
               ref={navRef}
               onScroll={handleScroll}
-              className="flex-1 px-2 py-4 space-y-1 overflow-y-auto custom-scrollbar"
+              className="flex-1 px-2 py-4 space-y-1 overflow-y-auto"
             >
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href ||
