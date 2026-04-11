@@ -21,15 +21,17 @@ export function AppLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-background overflow-hidden font-sans">
+    <div className="flex flex-col md:flex-row h-screen h-dvh bg-background overflow-hidden font-sans">
       <OfflineIndicator pendingCount={queueLength} isSyncing={isSyncing} />
       <AccessChangeNotification />
       <TrialStartedModal />
 
-      {/* Mobile Header (Fixed/Sticky) */}
-      <MobileHeader />
+      {/* Mobile Header (Fixed) */}
+      <div className="md:hidden contents">
+        <MobileHeader />
+      </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden pt-14 md:pt-0">
         {/* Desktop Sidebar */}
         <div className="hidden md:block shrink-0">
           <Sidebar />
@@ -38,10 +40,12 @@ export function AppLayout() {
         {/* Main Content Area - Keyed to path trigger blurIn on navigation */}
         <main 
           ref={mainContentRef}
-          className="flex flex-col flex-1 overflow-y-auto w-full md:pt-0 relative"
+          className="flex flex-col flex-1 overflow-y-auto w-full md:pt-0 relative scrollbar-none scroll-smooth"
         >
           <TrialStatusBanner />
-          <Outlet />
+          <div className="flex-1 w-full">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

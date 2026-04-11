@@ -296,7 +296,7 @@ export function AdminLayout() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-screen bg-background overflow-hidden">
+      <div className="flex h-screen h-dvh bg-background overflow-hidden font-sans">
 
         {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
         <div className={cn(
@@ -428,8 +428,8 @@ export function AdminLayout() {
         {/* ── Mobile Full-Screen Layout ──────────────────────────────────── */}
         <div className="flex flex-col flex-1 min-w-0 md:hidden">
 
-          {/* Mobile Top Header */}
-          <header className="h-14 bg-card border-b border-border flex items-center justify-between px-4 shrink-0 z-40">
+          {/* Mobile Top Header (Fixed) */}
+          <div className="fixed top-0 left-0 right-0 z-40 md:hidden h-14 bg-card border-b border-border flex items-center justify-between px-4 shrink-0 transition-all duration-300">
             <div className="flex items-center gap-2.5">
               <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
                 <span className="text-primary-foreground font-bold text-base">Q</span>
@@ -451,17 +451,19 @@ export function AdminLayout() {
                 )}
               </button>
             </div>
-          </header>
+          </div>
 
-          {/* Mobile Main Content */}
-          <main className="flex-1 overflow-y-auto relative">
-            <Outlet />
-            <AdminAIChat />
-          </main>
+          <div className="flex-1 pt-14 flex flex-col overflow-hidden">
+            {/* Mobile Main Content */}
+            <main className="flex-1 overflow-y-auto relative scrollbar-none">
+              <Outlet />
+              <AdminAIChat />
+            </main>
+          </div>
         </div>
 
         {/* ── Desktop Main Content ──────────────────────────────────────── */}
-        <main className="hidden md:flex flex-1 overflow-y-auto relative flex-col">
+        <main className="hidden md:flex flex-1 overflow-y-auto relative flex-col scrollbar-none">
           <Outlet />
           <AdminAIChat />
         </main>
