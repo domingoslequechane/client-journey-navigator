@@ -27,7 +27,7 @@ interface SubscriptionWithOrg {
   current_period_start: string | null;
   current_period_end: string | null;
   created_at: string;
-  organization: { name: string; trial_ends_at: string } | null;
+  organization: { name: string; plan_type: string | null; trial_ends_at: string } | null;
 }
 
 interface PaymentRecord {
@@ -73,12 +73,24 @@ const METHOD_LABELS: Record<string, string> = {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+function getComputedStatus(sub: SubscriptionWithOrg) {
+  const endDate = sub.current_period_end 
+    ? new Date(sub.current_period_end).getTime() 
+    : (sub.organization?.trial_ends_at ? new Date(sub.organization.trial_ends_at).getTime() : 0);
+  
+  const isPast = endDate > 0 && endDate < Date.now();
+
+  if (sub.status === 'past_due' || sub.status === 'paused') return isPast ? 'expired' : 'suspended';
+  if (sub.status === 'cancelled' || sub.status === 'expired') return 'canceling';
+  
+  return 'active';
+}
+
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { className: string; label: string }> = {
     active: { className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: 'Activa' },
-    trialing: { className: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20', label: 'Em Teste' },
-    past_due: { className: 'bg-orange-500/10 text-orange-400 border-orange-500/20', label: 'Atrasada' },
-    cancelled: { className: 'bg-red-500/10 text-red-400 border-red-500/20', label: 'Cancelada' },
+    suspended: { className: 'bg-orange-500/10 text-orange-400 border-orange-500/20', label: 'Desativada' },
+    canceling: { className: 'bg-amber-500/10 text-amber-400 border-amber-500/20', label: 'Cancelada (Termina em Breve)' },
     expired: { className: 'bg-stone-500/10 text-stone-400 border-stone-500/20', label: 'Expirada' },
   };
   const v = map[status] ?? map.expired;
@@ -586,7 +598,7 @@ export default function AdminSubscriptions() {
     setLoadingSubs(true);
     const { data, error } = await supabase
       .from('subscriptions')
-      .select('id, organization_id, status, current_period_start, current_period_end, created_at, organization:organizations(name, trial_ends_at)')
+      .select('id, organization_id, status, current_period_start, current_period_end, created_at, organization:organizations(name, plan_type, trial_ends_at)')
       .order('created_at', { ascending: false });
     if (error) console.error('Subscriptions error:', error);
     setSubscriptions(data ?? []);
@@ -644,10 +656,10 @@ export default function AdminSubscriptions() {
 
   // ── Stats ──────────────────────────────────────────────────────────────────
 
-  const filterByStatus = (status: string) => subscriptions.filter((s) => s.status === status);
+  const filterByStatus = (status: string) => subscriptions.filter((s) => getComputedStatus(s) === status);
   const expiringCount = subscriptions.filter((s) => {
     const end = s.current_period_end ? new Date(s.current_period_end) : null;
-    return end && s.status === 'active' && differenceInDays(end, new Date()) <= 7;
+    return end && getComputedStatus(s) === 'active' && differenceInDays(end, new Date()) <= 7;
   }).length;
   const pendingCount = pendingPayments.filter((p) => p.status === 'pending').length;
 
@@ -661,7 +673,7 @@ export default function AdminSubscriptions() {
     const daysLeft = differenceInDays(endDate, new Date());
     return {
       label: format(endDate, 'dd/MM/yyyy', { locale: ptBR }),
-      urgent: sub.status === 'active' && daysLeft >= 0 && daysLeft <= 7,
+      urgent: getComputedStatus(sub) === 'active' && daysLeft >= 0 && daysLeft <= 7,
       daysLeft,
     };
   };
@@ -669,9 +681,9 @@ export default function AdminSubscriptions() {
   // ── Filtered subscriptions ─────────────────────────────────────────────────
 
   const filteredSubs = (() => {
-    if (activeTab === 'active') return filterByStatus('active');
-    if (activeTab === 'trialing') return filterByStatus('trialing');
-    if (activeTab === 'expired') return [...filterByStatus('expired'), ...filterByStatus('cancelled')];
+    if (activeTab === 'active') return [...filterByStatus('active'), ...filterByStatus('canceling')];
+    if (activeTab === 'suspended') return filterByStatus('suspended');
+    if (activeTab === 'expired') return filterByStatus('expired');
     return subscriptions;
   })();
 
@@ -679,9 +691,9 @@ export default function AdminSubscriptions() {
 
   const tabs = [
     { id: 'all', label: `Todas (${subscriptions.length})` },
-    { id: 'active', label: `Activas (${filterByStatus('active').length})` },
-    { id: 'trialing', label: `Em Teste (${filterByStatus('trialing').length})` },
-    { id: 'expired', label: `Expiradas (${filterByStatus('expired').length + filterByStatus('cancelled').length})` },
+    { id: 'active', label: `Activas (${filterByStatus('active').length + filterByStatus('canceling').length})` },
+    { id: 'suspended', label: `Desativadas (${filterByStatus('suspended').length})` },
+    { id: 'expired', label: `Expiradas (${filterByStatus('expired').length})` },
     { id: 'transfers', label: 'Transferências', badge: pendingCount },
   ] as const;
 
@@ -713,8 +725,8 @@ export default function AdminSubscriptions() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: 'Total', value: subscriptions.length, icon: CreditCard, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { label: 'Activas', value: filterByStatus('active').length, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-          { label: 'Em Teste', value: filterByStatus('trialing').length, icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+          { label: 'Activas', value: filterByStatus('active').length + filterByStatus('canceling').length, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+          { label: 'Desativadas', value: filterByStatus('suspended').length, icon: Ban, color: 'text-orange-400', bg: 'bg-orange-500/10' },
           { label: 'Transferências Pendentes', value: pendingCount, icon: Smartphone, color: pendingCount > 0 ? 'text-amber-400' : 'text-muted-foreground', bg: pendingCount > 0 ? 'bg-amber-500/10' : 'bg-muted/30' },
         ].map((s) => (
           <Card key={s.label}>
@@ -782,6 +794,7 @@ export default function AdminSubscriptions() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Organização</TableHead>
+                      <TableHead>Plano</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Início</TableHead>
                       <TableHead>Expiração</TableHead>
@@ -804,7 +817,12 @@ export default function AdminSubscriptions() {
                           onClick={() => openHistory({ id: sub.organization_id, name: sub.organization?.name ?? 'Agência' })}
                         >
                           <TableCell className="font-medium">{sub.organization?.name ?? '—'}</TableCell>
-                          <TableCell><StatusBadge status={sub.status} /></TableCell>
+                          <TableCell>
+                            <span className="text-sm">
+                              {sub.organization?.plan_type ? (PLAN_LABELS[sub.organization.plan_type] ?? (sub.organization.plan_type.charAt(0).toUpperCase() + sub.organization.plan_type.slice(1))) : '—'}
+                            </span>
+                          </TableCell>
+                          <TableCell><StatusBadge status={getComputedStatus(sub)} /></TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {sub.current_period_start ? format(new Date(sub.current_period_start), 'dd/MM/yyyy', { locale: ptBR }) : '—'}
                           </TableCell>
