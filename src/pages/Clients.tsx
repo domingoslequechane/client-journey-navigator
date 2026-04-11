@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
+import { Progress } from '@/components/ui/progress';
 
 import { ClientListSkeleton } from '@/components/ui/loading-skeleton';
 import {
@@ -33,6 +34,7 @@ import { LimitReachedCard } from '@/components/subscription/LimitReachedCard';
 import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 import { useTranslatedLabels } from '@/hooks/useTranslatedLabels';
 import { useOrganization } from '@/hooks/useOrganization';
+import { cn } from '@/lib/utils';
 
 type Client = Tables<'clients'>;
 
@@ -341,7 +343,7 @@ export default function Clients() {
 
         {filteredClients.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
-            {t('empty')}
+            {searchTerm || filterStage || filterQualification ? t('search.noResults') : t('empty.title')}
           </div>
         )}
       </AnimatedContainer>

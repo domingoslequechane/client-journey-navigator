@@ -251,12 +251,32 @@ serve(async (req) => {
           throw searchError;
         }
 
-        if (!atendeInstance) {
+        let targetInstance: any = null;
+        let isLegacyAgent = false;
+
+        if (atendeInstance) {
+          targetInstance = atendeInstance;
+        } else {
+          // Fallback para tabela ai_agents
+          let legacyQuery = supabase.from("ai_agents").select("*").eq("organization_id", organization_id);
+          if (isUuid) {
+            legacyQuery = legacyQuery.or(`id.eq.${instanceId},uazapi_instance_id.eq.${instanceId},evolution_instance_id.eq.${instanceId}`);
+          } else {
+            legacyQuery = legacyQuery.or(`evolution_instance_id.eq.${instanceId},name.eq.${instanceId}`);
+          }
+          const { data: legacyInstance } = await legacyQuery.maybeSingle();
+          if (legacyInstance) {
+            targetInstance = legacyInstance;
+            isLegacyAgent = true;
+          }
+        }
+
+        if (!targetInstance) {
           console.error(`[Error] Instance NOT found for: ${instanceId} in Org: ${organization_id}`);
           return json({ error: "Instância não encontrada no banco de dados local" }, 404);
         }
 
-        const apiKey = atendeInstance.instance_api_key || atendeInstance.evolution_instance_token || EVOLUTION_API_KEY;
+        const apiKey = targetInstance.instance_api_key || targetInstance.evolution_instance_token || targetInstance.evolution_apikey || targetInstance.uazapi_instance_token || EVOLUTION_API_KEY;
 
         if (action === "status" || action === "sync") {
           const res = await evolutionRequest(`/instance/status`, "GET", undefined, undefined, apiKey);
@@ -277,24 +297,24 @@ serve(async (req) => {
                 if (connectedNumber) updatePayload.connected_number = connectedNumber;
                 if (profilePic) updatePayload.profile_picture = profilePic;
 
-                await supabase.from("atende_ai_instances").update(updatePayload).eq("id", atendeInstance.id);
-                return json({ ok: true, isConnected });
-             } else {
-                // Not found even in fallback. Mark as disconnected.
-                await supabase.from("atende_ai_instances").update({
-                  whatsapp_connected: false,
-                  status: "inactive",
-                  updated_at: new Date().toISOString()
-                }).eq("id", atendeInstance.id);
+                 await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
+                 return json({ ok: true, isConnected });
+              } else {
+                 // Not found even in fallback. Mark as disconnected.
+                 await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update({
+                   whatsapp_connected: false,
+                   status: "inactive",
+                   updated_at: new Date().toISOString()
+                 }).eq("id", targetInstance.id);
                 return json({ ok: true, isConnected: false });
              }
           } else if (!res.ok) {
              // Other error, mark disconnected.
-             await supabase.from("atende_ai_instances").update({
+             await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update({
                 whatsapp_connected: false,
                 status: "inactive",
                 updated_at: new Date().toISOString()
-             }).eq("id", atendeInstance.id);
+             }).eq("id", targetInstance.id);
              return json({ ok: false, isConnected: false, error: res.error });
           }
 
@@ -309,24 +329,67 @@ serve(async (req) => {
           if (connectedNumber) updatePayload.connected_number = connectedNumber;
           if (profilePic) updatePayload.profile_picture = profilePic;
 
-          await supabase.from("atende_ai_instances").update(updatePayload).eq("id", atendeInstance.id);
+          await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
 
           return json({ ok: true, isConnected });
         }
 
         if (action === "connect") {
-          const digits = body.phone ? body.phone.replace(/\D/g, "") : null;
-          
-          // Documentation POST /instance/connect supports webhookUrl and subscribe
-          const webhookSecret = atendeInstance.evolution_webhook_secret || crypto.randomUUID();
-          const webhookUrl = `${SUPABASE_URL}/functions/v1/evolution-go-webhook/${webhookSecret}`;
-          
-          if (!atendeInstance.evolution_webhook_secret) {
-            await supabase
-              .from("atende_ai_instances")
-              .update({ evolution_webhook_secret: webhookSecret })
-              .eq("id", atendeInstance.id);
+          let currentApiKey = apiKey;
+          let currentTechnicalId = targetInstance.evolution_instance_id || targetInstance.uazapi_instance_id || targetInstance.evolution_id;
+          let webhookSecret = targetInstance.evolution_webhook_secret || targetInstance.uazapi_webhook_secret || crypto.randomUUID();
+
+          // Lazy Create se não existir na Evolution
+          if (!currentTechnicalId || currentApiKey === EVOLUTION_API_KEY) {
+            console.log(`[Connect] Instance not found in Evolution. Creating lazily for ${targetInstance.name}...`);
+            const technicalId = generateStrongToken(12);
+            const instanceToken = generateStrongToken();
+            const webhookUrl = `${SUPABASE_URL}/functions/v1/evolution-go-webhook/${webhookSecret}`;
+
+            const createRes = await evolutionRequest("/instance/create", "POST", {
+              name: technicalId,
+              token: instanceToken,
+              webhook: webhookUrl,
+              webhookEvents: ["ALL"],
+            }, undefined, EVOLUTION_API_KEY);
+
+            if (!createRes.ok) return json({ ok: false, error: "Falha ao registrar agente na API externa: " + createRes.error }, 200);
+
+            const resData = createRes.data as any;
+            currentApiKey = instanceToken;
+
+            // Compatibilidade com ambos sistemas (Legacy e Atende)
+            const updateDB: any = {
+              evolution_instance_id: technicalId,
+              evolution_id: resData?.id || resData?.data?.id || resData?.instance?.id || technicalId
+            };
+
+            if (isLegacyAgent) {
+              updateDB.uazapi_instance_id = technicalId;
+              updateDB.uazapi_instance_token = instanceToken;
+              updateDB.evolution_instance_token = instanceToken;
+              updateDB.evolution_apikey = instanceToken;
+              if (!targetInstance.uazapi_webhook_secret && !targetInstance.evolution_webhook_secret) updateDB.uazapi_webhook_secret = webhookSecret;
+            } else {
+              updateDB.instance_api_key = instanceToken;
+              if (!targetInstance.evolution_webhook_secret) updateDB.evolution_webhook_secret = webhookSecret;
+            }
+
+            await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updateDB).eq("id", targetInstance.id);
+            // Reatribui targetInstance modificado pra garantir que continue preenchido
+            targetInstance = { ...targetInstance, ...updateDB };
+          } else {
+            // Se já existia mas webhookSecret era nulo
+            if (!targetInstance.evolution_webhook_secret && !targetInstance.uazapi_webhook_secret) {
+              await supabase
+                .from(isLegacyAgent ? "ai_agents" : "atende_ai_instances")
+                .update(isLegacyAgent ? { uazapi_webhook_secret: webhookSecret } : { evolution_webhook_secret: webhookSecret })
+                .eq("id", targetInstance.id);
+            }
           }
+
+          const digits = body.phone ? body.phone.replace(/\D/g, "") : null;
+          const webhookUrl = `${SUPABASE_URL}/functions/v1/evolution-go-webhook/${webhookSecret}`;
           
           const payload: any = { 
             webhookUrl: webhookUrl,
@@ -347,14 +410,20 @@ serve(async (req) => {
             payload.phone = digits;
           }
 
-          const res = await evolutionRequest(`/instance/connect`, "POST", payload, undefined, apiKey);
+          const res = await evolutionRequest(`/instance/connect`, "POST", payload, undefined, currentApiKey);
+          
+          console.log(`[Connect] Evolution returned:`, JSON.stringify(res.data).substring(0, 500));
+          
           if (!res.ok) return json({ ok: false, error: res.error }, 200);
 
-          // Evolution returns base64 for QR or pairingCode for Pairing
+          let qr = res.data?.base64 || res.data?.qrcode || res.data?.data?.qrcode || res.data?.data?.base64 || res.data?.instance?.qrcode;
+          let code = res.data?.pairingCode || res.data?.code || res.data?.data?.code || res.data?.instance?.code;
+
           return json({ 
             ok: true, 
-            qrCode: res.data?.base64 || res.data?.qrcode, 
-            pairingCode: res.data?.pairingCode || res.data?.code 
+            qrcode: qr, 
+            paircode: code,
+            debug: res.data
           });
         }
 
@@ -372,17 +441,16 @@ serve(async (req) => {
             console.error(`[Disconnect] Failed to call Evolution API:`, e);
           }
           
-          console.log(`[Disconnect] Cleaning up local database for ${atendeInstance.id}`);
+          console.log(`[Disconnect] Cleaning up local database for ${targetInstance.id}`);
           // Garantimos que o estado local seja limpo
           const { error: updateError } = await supabase
-            .from("atende_ai_instances")
+            .from(isLegacyAgent ? "ai_agents" : "atende_ai_instances")
             .update({
               whatsapp_connected: false,
               status: "inactive",
-              qr_code_base64: null,
               updated_at: new Date().toISOString()
             })
-            .eq("id", atendeInstance.id);
+            .eq("id", targetInstance.id);
             
           if (updateError) {
             console.error(`[Disconnect] Database update failed:`, updateError);
@@ -408,9 +476,9 @@ serve(async (req) => {
         }
 
         if (action === "delete") {
-          const deleteId = atendeInstance.evolution_instance_id || atendeInstance.evolution_id || atendeInstance.name;
+          const deleteId = targetInstance.evolution_instance_id || targetInstance.evolution_id || targetInstance.name;
           await evolutionRequest(`/instance/delete/${deleteId}`, "DELETE", undefined, undefined, apiKey);
-          await supabase.from("atende_ai_instances").delete().eq("id", atendeInstance.id);
+          await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").delete().eq("id", targetInstance.id);
           return json({ ok: true });
         }
 

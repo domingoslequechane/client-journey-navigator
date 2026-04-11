@@ -44,7 +44,7 @@ const navigation: NavItem[] = [
   { name: 'Análise', href: '/admin/analytics', icon: BarChart2 },
   { name: 'Agências', href: '/admin/agencies', icon: Building2 },
   { name: 'Utilizadores', href: '/admin/users', icon: Users },
-  { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
+  { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard, badgeKey: 'transfers' },
   { name: 'Feedbacks', href: '/admin/feedbacks', icon: MessageSquare, badgeKey: 'feedbacks' },
   { name: 'Suporte', href: '/admin/support', icon: HeadphonesIcon, badgeKey: 'tickets' },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },
@@ -61,7 +61,7 @@ export function AdminLayout() {
   });
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
-  const [badges, setBadges] = useState<Record<string, number>>({ feedbacks: 0, tickets: 0 });
+  const [badges, setBadges] = useState<Record<string, number>>({ feedbacks: 0, tickets: 0, transfers: 0 });
   const navRef = useRef<HTMLElement>(null);
 
   const handleScroll = () => {
@@ -73,11 +73,12 @@ export function AdminLayout() {
 
   // Fetch badge counts
   const fetchBadges = async () => {
-    const [{ count: feedbacks }, { count: tickets }] = await Promise.all([
+    const [{ count: feedbacks }, { count: tickets }, { count: transfers }] = await Promise.all([
       supabase.from('feedbacks').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+      supabase.from('manual_payment_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     ]);
-    setBadges({ feedbacks: feedbacks || 0, tickets: tickets || 0 });
+    setBadges({ feedbacks: feedbacks || 0, tickets: tickets || 0, transfers: transfers || 0 });
   };
 
   useEffect(() => {
@@ -146,6 +147,46 @@ export function AdminLayout() {
 
     return () => {
       supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Real-time listener for manual payment requests
+  useEffect(() => {
+    const paymentChannel = supabase
+      .channel('admin-payments-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'manual_payment_requests',
+        },
+        async (payload) => {
+          const soundEnabled = localStorage.getItem('admin-sound-enabled') !== 'false';
+          const notificationsEnabled = localStorage.getItem('admin-notifications-enabled') !== 'false';
+
+          if (soundEnabled) {
+            const audio = new Audio('/universfield-notification.mp3');
+            audio.play().catch(e => console.log('Audio play failed:', e));
+          }
+
+          if (notificationsEnabled) {
+            toast.info('Novo Comprovativo de Pagamento!', {
+              description: `A agência enviou um comprovativo no valor de $${payload.new.amount_usd}. Clique para rever.`,
+              action: {
+                label: 'Rever',
+                onClick: () => navigate('/admin/subscriptions')
+              }
+            });
+          }
+          
+          fetchBadges();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(paymentChannel);
     };
   }, []);
 

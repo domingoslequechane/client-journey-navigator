@@ -19,6 +19,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { UserPlus, Loader2, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, CheckCircle, XCircle, ShieldAlert, RefreshCw, Lock, Ban, Info, Users, UsersRound } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AnimatedContainer } from '@/components/ui/animated-container';
+import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 import { z } from 'zod';
 import { usePlanLimits } from '@/hooks/usePlanLimits';

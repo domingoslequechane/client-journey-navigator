@@ -234,6 +234,7 @@ export default function AdminUsers() {
     const map: Record<string, { label: string; className: string }> = {
       admin: { label: 'Administrador', className: 'bg-purple-500/10 text-purple-500' },
       owner: { label: 'Proprietário', className: 'bg-amber-500/10 text-amber-600' },
+      trial: { label: 'Período de Teste', className: 'bg-yellow-500/10 text-yellow-500' },
       sales: { label: 'Colaborador (Vendas)', className: 'bg-blue-500/10 text-blue-500' },
       operations: { label: 'Colaborador (Ops)', className: 'bg-green-500/10 text-green-500' },
       campaign_management: { label: 'Colaborador (Campanhas)', className: 'bg-orange-500/10 text-orange-500' },

@@ -24,6 +24,16 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Finances() {
   const currentYear = new Date().getFullYear();
@@ -36,6 +46,7 @@ export default function Finances() {
   const [activeTab, setActiveTab] = useState('overview');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<FinanceTransaction | undefined>();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { useTransactionsQuery, deleteTransaction } = useFinances();
   
@@ -65,9 +76,14 @@ export default function Finances() {
     setModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este lançamento?')) {
-      await deleteTransaction.mutateAsync(id);
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingId) {
+      await deleteTransaction.mutateAsync(deletingId);
+      setDeletingId(null);
     }
   };
 
@@ -258,6 +274,23 @@ export default function Finances() {
           onOpenChange={setModalOpen} 
           transaction={editingTransaction} 
         />
+
+        <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir Lançamento</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita e os dados serão removidos permanentemente do seu fluxo de caixa.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Confirmar Exclusão
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AnimatedContainer>
   );

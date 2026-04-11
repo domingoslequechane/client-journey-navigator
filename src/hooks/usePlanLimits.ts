@@ -150,8 +150,9 @@ export function usePlanLimits(): UsePlanLimitsReturn {
       const currentPlanType = (organization?.plan_type as PlanType) || null;
       setPlanType(currentPlanType);
 
-      // Force trial to be restricted if not already
+      // Trial is its own independent plan - NOT treated as paid, but has its own limits from DB
       const isPaid = ['starter', 'pro', 'agency'].includes(currentPlanType as string);
+      const isTrial = currentPlanType === 'trial';
 
       const socialAccountLimits: Record<string, number> = {
         'starter': 5,
@@ -216,33 +217,40 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           maxTeamMembers: d.max_team_members,
           maxContractTemplates: d.max_contract_templates,
           maxStudioGenerations: d.max_studio_generations,
-          dailyStudioLimit: getLimitValue(dailyStudioLimits, currentPlanType),
+          // Trial has 5/day per tool limit; paid plans use their tier-based limits
+          dailyStudioLimit: isTrial ? 5 : getLimitValue(dailyStudioLimits, currentPlanType),
           maxSocialPostsPerMonth: d.max_social_posts_per_month,
           maxLinkPages: d.max_link_pages,
           can_export_data: d.can_export_data ?? false,
           has_finance_module: d.has_finance_module ?? false,
-          has_studio_module: d.has_studio_module ?? false,
-          has_linktree_module: d.has_linktree_module ?? false,
-          has_editorial_module: d.has_editorial_module ?? false,
-          has_social_module: d.has_social_module ?? false,
+          has_studio_module: d.has_studio_module ?? isTrial,
+          has_linktree_module: d.has_linktree_module ?? isTrial,
+          has_editorial_module: d.has_editorial_module ?? isTrial,
+          has_social_module: d.has_social_module ?? isTrial,
           has_social_inbox: d.has_social_inbox ?? false,
-          has_atende_ai_module: d.has_atende_ai_module ?? true,
-          maxStudioFlyer: d.max_studio_flyer ?? (isPaid ? null : 5),
-          maxStudioCarousel: d.max_studio_carousel ?? (isPaid ? null : 5),
-          maxStudioRecolor: d.max_studio_recolor ?? (isPaid ? null : 5),
-          maxStudioProductBeauty: d.max_studio_product_beauty ?? (isPaid ? null : 5),
-          maxStudioProductScene: d.max_studio_product_scene ?? (isPaid ? null : 5),
-          maxEditorialClients: d.max_editorial_clients ?? (isPaid ? null : 2),
-          maxSocialClients: d.max_social_clients ?? (isPaid ? null : 2),
-          maxAiAgents: d.max_ai_agents ?? (isPaid ? null : 2),
+          has_atende_ai_module: true,
+          // Trial: 5 per day per tool (from DB). Paid plans: unlimited (null). Others: 0.
+          maxStudioFlyer: d.max_studio_flyer ?? (isPaid ? null : (isTrial ? 5 : 0)),
+          maxStudioCarousel: d.max_studio_carousel ?? (isPaid ? null : (isTrial ? 5 : 0)),
+          maxStudioRecolor: d.max_studio_recolor ?? (isPaid ? null : (isTrial ? 5 : 0)),
+          maxStudioProductBeauty: d.max_studio_product_beauty ?? (isPaid ? null : (isTrial ? 5 : 0)),
+          maxStudioProductScene: d.max_studio_product_scene ?? (isPaid ? null : (isTrial ? 5 : 0)),
+          maxEditorialClients: d.max_editorial_clients ?? (isPaid ? null : (isTrial ? 2 : 0)),
+          maxSocialClients: d.max_social_clients ?? (isPaid ? null : (isTrial ? 2 : 0)),
+          maxAiAgents: d.max_ai_agents ?? (isPaid ? null : (isTrial ? 2 : 0)),
         });
       } else {
         // Fallback for NULL or undefined plan
         setLimits({
           ...DEFAULT_LIMITS,
-          maxClients: getLimitValue(clientLimits, currentPlanType),
-          maxSocialAccounts: getLimitValue(socialAccountLimits, currentPlanType),
-          dailyStudioLimit: getLimitValue(dailyStudioLimits, currentPlanType),
+          maxClients: isTrial ? 2 : getLimitValue(clientLimits, currentPlanType),
+          maxSocialAccounts: isTrial ? 2 : getLimitValue(socialAccountLimits, currentPlanType),
+          dailyStudioLimit: isTrial ? 5 : getLimitValue(dailyStudioLimits, currentPlanType),
+          has_studio_module: isTrial,
+          has_linktree_module: isTrial,
+          has_editorial_module: isTrial,
+          has_social_module: isTrial,
+          has_finance_module: isTrial,
           can_export_data: isPaid,
         });
       }
@@ -344,14 +352,23 @@ export function usePlanLimits(): UsePlanLimitsReturn {
   const canUnlimited = (max: number | null, current: number) => max === null || current < max;
   
   const isPaid = planType && ['starter', 'pro', 'agency'].includes(planType as string);
+  const isTrial = planType === 'trial';
 
-  // Studio limits with explicit trial fallbacks to ensure UI consistency
+  // Studio limits: trial and free use DB values (5/day each). Paid: unlimited (null).
   const studioLimits = {
-    maxStudioFlyer: limits.maxStudioFlyer ?? (planType === 'trial' ? 5 : (isPaid ? null : 5)),
-    maxStudioCarousel: limits.maxStudioCarousel ?? (planType === 'trial' ? 5 : (isPaid ? null : 5)),
-    maxStudioRecolor: limits.maxStudioRecolor ?? (planType === 'trial' ? 5 : (isPaid ? null : 5)),
-    maxStudioProductBeauty: limits.maxStudioProductBeauty ?? (planType === 'trial' ? 5 : (isPaid ? null : 5)),
-    maxStudioProductScene: limits.maxStudioProductScene ?? (planType === 'trial' ? 5 : (isPaid ? null : 5)),
+    maxStudioFlyer: limits.maxStudioFlyer ?? (isPaid ? null : (isTrial ? 5 : 0)),
+    maxStudioCarousel: limits.maxStudioCarousel ?? (isPaid ? null : (isTrial ? 5 : 0)),
+    maxStudioRecolor: limits.maxStudioRecolor ?? (isPaid ? null : (isTrial ? 5 : 0)),
+    maxStudioProductBeauty: limits.maxStudioProductBeauty ?? (isPaid ? null : (isTrial ? 5 : 0)),
+    maxStudioProductScene: limits.maxStudioProductScene ?? (isPaid ? null : (isTrial ? 5 : 0)),
+  };
+
+  // Trial: studio is accessible and limited by per-tool counts from DB
+  // Paid: unlimited studio access
+  // Free: no studio access
+  const canGenerateStudio = (max: number | null, current: number) => {
+    if (max === null) return true; // unlimited (paid)
+    return current < max;
   };
 
   const result = {
@@ -365,7 +382,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     canAddClient: canUnlimited(limits.maxClients, usage.clientsCount),
     canGenerateContract: canUnlimited(limits.maxContractsPerMonth, usage.contractsThisMonth),
     canAccessAI: limits.maxAIMessagesPerMonth === null || usage.aiMessagesThisMonth < limits.maxAIMessagesPerMonth,
-    canAccessFinance: limits.has_finance_module || planType === 'trial',
+    canAccessFinance: limits.has_finance_module,
     canAccessStudio: limits.has_studio_module,
     canAccessLinkTree: limits.has_linktree_module,
     canAccessEditorial: limits.has_editorial_module,
@@ -379,13 +396,15 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     canAddAiAgent: canUnlimited(limits.maxAiAgents, usage.aiAgentsCount),
     canPublishSocialPost: canUnlimited(limits.maxSocialPostsPerMonth, usage.socialPostsThisMonth),
     canAddLinkPage: canUnlimited(limits.maxLinkPages, usage.linkPagesCount),
-    canAccessEditorialForNewClient: !['free', 'trial'].includes(planType as string) || usage.editorialClientsCount < (limits.maxEditorialClients ?? 2),
-    canAccessSocialForNewClient: !['free', 'trial'].includes(planType as string) || usage.socialClientsCount < (limits.maxSocialClients ?? 2),
-    canGenerateStudioFlyer: !isPaid || (studioLimits.maxStudioFlyer !== null && usage.studioFlyerCount < studioLimits.maxStudioFlyer),
-    canGenerateStudioCarousel: !isPaid || (studioLimits.maxStudioCarousel !== null && usage.studioCarouselCount < studioLimits.maxStudioCarousel),
-    canGenerateStudioRecolor: !isPaid || (studioLimits.maxStudioRecolor !== null && usage.studioRecolorCount < studioLimits.maxStudioRecolor),
-    canGenerateStudioProductBeauty: !isPaid || (studioLimits.maxStudioProductBeauty !== null && usage.studioProductBeautyCount < studioLimits.maxStudioProductBeauty),
-    canGenerateStudioProductScene: !isPaid || (studioLimits.maxStudioProductScene !== null && usage.studioProductSceneCount < studioLimits.maxStudioProductScene),
+    // Editorial/Social: trial and free have client limits; paid plans are unlimited
+    canAccessEditorialForNewClient: isPaid || usage.editorialClientsCount < (limits.maxEditorialClients ?? 2),
+    canAccessSocialForNewClient: isPaid || usage.socialClientsCount < (limits.maxSocialClients ?? 2),
+    // Studio generation: trial has per-tool limits; paid = unlimited; free = no access (module locked)
+    canGenerateStudioFlyer: limits.has_studio_module && canGenerateStudio(studioLimits.maxStudioFlyer, usage.studioFlyerCount),
+    canGenerateStudioCarousel: limits.has_studio_module && canGenerateStudio(studioLimits.maxStudioCarousel, usage.studioCarouselCount),
+    canGenerateStudioRecolor: limits.has_studio_module && canGenerateStudio(studioLimits.maxStudioRecolor, usage.studioRecolorCount),
+    canGenerateStudioProductBeauty: limits.has_studio_module && canGenerateStudio(studioLimits.maxStudioProductBeauty, usage.studioProductBeautyCount),
+    canGenerateStudioProductScene: limits.has_studio_module && canGenerateStudio(studioLimits.maxStudioProductScene, usage.studioProductSceneCount),
     editorialClientIds: usage.editorialClientIds,
     socialClientIds: usage.socialClientIds,
     remainingClients: remaining(limits.maxClients, usage.clientsCount),

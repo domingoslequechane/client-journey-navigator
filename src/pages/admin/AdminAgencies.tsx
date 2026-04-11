@@ -55,46 +55,19 @@ export default function AdminAgencies() {
   const fetchAgencies = async () => {
     setLoading(true);
     try {
-      const { data: orgs, error: orgsError } = await supabase
-        .from('organizations')
-        .select('id, name, created_at, representative_name, phone')
-        .order('created_at', { ascending: false });
+      // @ts-expect-error - RPC types not yet generated
+      const { data, error } = await supabase.rpc('admin_get_agencies_stats');
+      if (error) throw error;
 
-      if (orgsError) throw orgsError;
-
-      if (!orgs || orgs.length === 0) {
-        setAgencies([]);
-        return;
-      }
-
-      const orgIds = orgs.map(o => o.id);
-
-      const [{ data: members }, { data: clients }, { data: subs }] = await Promise.all([
-        supabase.from('organization_members').select('organization_id').in('organization_id', orgIds).eq('is_active', true),
-        supabase.from('clients').select('organization_id').in('organization_id', orgIds),
-        supabase.from('subscriptions').select('organization_id, status').in('organization_id', orgIds)
-      ]);
-
-      const memberCounts = (members || []).reduce((acc, m) => {
-        acc[m.organization_id] = (acc[m.organization_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const clientCounts = (clients || []).reduce((acc, c) => {
-        acc[c.organization_id] = (acc[c.organization_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const subStatus = (subs || []).reduce((acc, s) => {
-        acc[s.organization_id] = s.status;
-        return acc;
-      }, {} as Record<string, string>);
-
-      const mappedAgencies = orgs.map(org => ({
-        ...org,
-        members_count: memberCounts[org.id] || 0,
-        clients_count: clientCounts[org.id] || 0,
-        status: subStatus[org.id] || 'none'
+      const mappedAgencies = (data || []).map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        created_at: row.created_at,
+        representative_name: row.representative_name,
+        phone: row.phone,
+        members_count: Number(row.members_count) || 0,
+        clients_count: Number(row.clients_count) || 0,
+        status: row.subscription_status || 'none',
       }));
 
       setAgencies(mappedAgencies);

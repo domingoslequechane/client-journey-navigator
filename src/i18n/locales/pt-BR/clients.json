@@ -11,6 +11,7 @@
   },
   "filters": {
     "all": "Todos",
+    "allStages": "Todas as Etapas",
     "active": "Ativos",
     "paused": "Pausados",
     "byStage": "Por etapa",
@@ -94,6 +95,10 @@
     "download": "Baixar Fatura"
   },
   "actions": {
+    "export": "Exportar",
+    "exportTooltip": "Exportar para CSV",
+    "newClient": "Novo Cliente",
+    "limit": "Limite Atingido",
     "pause": "Pausar Cliente",
     "resume": "Reativar Cliente",
     "moveStage": "Mover Etapa",
@@ -107,6 +112,14 @@
     "clientResumed": "Cliente reativado",
     "confirmDelete": "Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.",
     "stageMoved": "Cliente movido para {{stage}}"
+  },
+  "table": {
+    "company": "Empresa",
+    "contact": "Contato",
+    "stage": "Etapa",
+    "qualification": "Qualificação",
+    "bantScore": "Score BANT",
+    "createdAt": "Registado a"
   },
   "empty": {
     "title": "Nenhum cliente cadastrado",

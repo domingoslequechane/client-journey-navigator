@@ -169,10 +169,7 @@ export default function SelectPlan() {
       return;
     }
 
-    // O utilizador pediu: "Todo teste deve ser no plano mais alto" (Catapulta/agency)
-    const planKey = 'agency';
-    
-    setLoadingPlan(`trial-${clickedPlanKey}`); // Manter o ID clicado para o loading spinner funcionar na UI
+    setLoadingPlan(`trial-${clickedPlanKey}`);
 
     try {
       const newEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -182,24 +179,20 @@ export default function SelectPlan() {
         status: 'trialing',
         current_period_start: new Date().toISOString(),
         current_period_end: newEnd,
-        lemonsqueezy_subscription_id: `trial_${planKey}_${Date.now()}`,
+        lemonsqueezy_subscription_id: `trial_${Date.now()}`,
         updated_at: new Date().toISOString()
       }, { onConflict: 'organization_id' });
 
       if (error) throw error;
 
-      await supabase.from('organizations').update({ plan_type: planKey as any }).eq('id', organizationId);
+      // Always set plan_type='trial' — the dedicated trial plan with its own limits
+      await supabase.from('organizations').update({ plan_type: 'trial' }).eq('id', organizationId);
 
-      // CRITICAL: Clear the subscription sessionStorage cache so the ProtectedRoute
-      // re-fetches fresh data and doesn't see the old null subscription, which
-      // would cause an infinite redirect loop back to /select-plan.
-      if (user) {
-        const cacheKey = `sub_cache_${user.id}_${organizationId}`;
-        sessionStorage.removeItem(cacheKey);
-      }
+      // Clear the subscription sessionStorage cache so hooks re-fetch fresh data
+      const cacheKey = `sub_cache_${user.id}_${organizationId}`;
+      sessionStorage.removeItem(cacheKey);
 
       toast.success('Período de teste iniciado! Bem-vindo ao Qualify!');
-      // Use full page reload to ensure all React state (including useSubscription) is reset fresh.
       window.location.href = '/app/onboarding';
     } catch (error: any) {
       console.error('Error starting trial:', error);

@@ -65,8 +65,9 @@ export default function SelectOrganization() {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        // No organizations - still show the screen so they can click "Create New Agency"
-        setOrganizations([]);
+        // No organizations - skip this screen and go straight to onboarding
+        navigate('/app/onboarding');
+        return;
       } else {
         setOrganizations(data);
       }

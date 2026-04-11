@@ -68,8 +68,8 @@ export default function VerifyEmail() {
         toast({ title: 'Conta criada', description: 'Faça login para continuar' });
         setTimeout(() => navigate('/auth'), 2000);
       } else {
-        // Redirect to plan selection after email verification
-        setTimeout(() => navigate('/select-plan'), 1500);
+        // Redirect to onboarding to setup agency and start trial
+        setTimeout(() => navigate('/app/onboarding'), 1500);
       }
     } catch (error: any) {
       console.error('Verification error:', error);

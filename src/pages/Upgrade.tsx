@@ -348,10 +348,59 @@ export default function Upgrade() {
           
           <h1 className="text-3xl font-bold">Escolha o plano ideal para sua agência</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Escale suas operações com o plano que melhor se adapta à sua agência. Informações de cartão são obrigatórias.
+            Escale suas operações com o plano que melhor se adapta à sua agência.
           </p>
         </div>
 
+        {/* Trial Upgrade Banner */}
+        {currentPlan === 'trial' && (
+          <div className="relative overflow-hidden rounded-xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent p-6">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full -translate-y-32 translate-x-32 pointer-events-none" />
+            <div className="relative">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="h-5 w-5 text-amber-500" />
+                    <span className="text-sm font-semibold text-amber-600 uppercase tracking-wider">Período de Teste Ativo</span>
+                  </div>
+                  <h2 className="text-xl font-bold">
+                    {trialDaysLeft > 0
+                      ? <>Você tem <span className="text-amber-500">{trialDaysLeft} {trialDaysLeft === 1 ? 'dia' : 'dias'} restantes</span> no trial</>
+                      : <span className="text-destructive">Seu trial expirou</span>
+                    }
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Faça upgrade agora e desbloqueie todo o potencial do Qualify
+                  </p>
+                </div>
+                <Link to="/app/upgrade">
+                  <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white shrink-0" size="lg">
+                    <Crown className="h-4 w-4" />
+                    Ver Planos Pagos
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Trial vs Paid comparison chips */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'Clientes', trial: '2', paid: '5–30' },
+                  { label: 'Equipe', trial: '1 membro', paid: '5–20' },
+                  { label: 'Studio AI', trial: '5/dia', paid: '5–30/dia' },
+                  { label: 'Suporte', trial: 'Standard', paid: 'Prioritário' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-lg border border-border bg-card/50 p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
+                    <p className="text-xs line-through text-muted-foreground/60">{item.trial}</p>
+                    <p className="text-sm font-semibold text-amber-500">{item.paid}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Current Plan Badge */}
         <Card 
           className="border-2"
           style={{ 
@@ -515,7 +564,7 @@ export default function Upgrade() {
                       ) : (
                         <>
                           <Sparkles className="h-4 w-4" />
-                          Iniciar Minha Transformação
+                          {currentPlan === 'trial' ? 'Fazer Upgrade' : 'Iniciar Minha Transformação'}
                         </>
                       )}
                     </Button>
@@ -539,6 +588,7 @@ export default function Upgrade() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">Recurso</th>
+                    <th className="text-center py-3 px-4 font-medium text-amber-500">Trial</th>
                     <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.starter.text }}>Lança</th>
                     <th className="text-center py-3 px-4 font-medium" style={{ backgroundColor: planColors.pro.bg, color: planColors.pro.text }}>Arco</th>
                     <th className="text-center py-3 px-4 font-medium" style={{ color: planColors.agency.text }}>Catapulta</th>
@@ -546,31 +596,36 @@ export default function Upgrade() {
                 </thead>
                 <tbody>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Marcas (Clientes)</td>
-                    <td className="text-center py-3 px-4">5 ativos</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>15 ativos</td>
-                    <td className="text-center py-3 px-4">30 ativos</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-3 px-4">Studio AI (Créditos / dia)</td>
+                    <td className="py-3 px-4">Clientes Ativos</td>
+                    <td className="text-center py-3 px-4 text-muted-foreground">2</td>
                     <td className="text-center py-3 px-4">5</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>15</td>
                     <td className="text-center py-3 px-4">30</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Redes Sociais</td>
-                    <td className="text-center py-3 px-4">Ilimitado</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>Ilimitado</td>
-                    <td className="text-center py-3 px-4">Ilimitado</td>
+                    <td className="py-3 px-4">Studio AI (por ferramenta/dia)</td>
+                    <td className="text-center py-3 px-4 text-muted-foreground">5</td>
+                    <td className="text-center py-3 px-4">5</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>15</td>
+                    <td className="text-center py-3 px-4">30</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Postagens</td>
-                    <td className="text-center py-3 px-4">Ilimitado</td>
-                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>Ilimitado</td>
+                    <td className="py-3 px-4">Membros da Equipe</td>
+                    <td className="text-center py-3 px-4 text-muted-foreground">1</td>
+                    <td className="text-center py-3 px-4">5</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>10</td>
+                    <td className="text-center py-3 px-4">20</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Link23 (árvores)</td>
+                    <td className="text-center py-3 px-4 text-muted-foreground">2</td>
+                    <td className="text-center py-3 px-4">1</td>
+                    <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>5</td>
                     <td className="text-center py-3 px-4">Ilimitado</td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4">Módulos Extras</td>
+                    <td className="text-center py-3 px-4 text-muted-foreground">Todos (limitado)</td>
                     <td className="text-center py-3 px-4">Básico</td>
                     <td className="text-center py-3 px-4" style={{ backgroundColor: planColors.pro.bg }}>Inbox/Analytics</td>
                     <td className="text-center py-3 px-4">Suporte VIP</td>
@@ -583,7 +638,7 @@ export default function Upgrade() {
 
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            7 dias grátis em qualquer plano. Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
+            Pagamento seguro via LemonSqueezy. Cancele a qualquer momento.
           </p>
         </div>
 

@@ -76,10 +76,17 @@ export function useSubscription(): UseSubscriptionReturn {
         if (cached) {
           try {
             const { subscription: cachedSub, organization: cachedOrg } = JSON.parse(cached);
-            setSubscription(cachedSub);
-            setOrganization(cachedOrg);
-            setLoading(false);
-            return;
+            // Invalidate stale cache: legacy entries had plan_type='agency' for trial users.
+            // If cache has agency+trialing, it's corrupted — discard and fetch fresh.
+            const isStaleLegacyEntry = cachedOrg?.planType === 'agency' && cachedSub?.status === 'trialing';
+            if (!isStaleLegacyEntry) {
+              setSubscription(cachedSub);
+              setOrganization(cachedOrg);
+              setLoading(false);
+              return;
+            }
+            // Remove the stale cache entry
+            sessionStorage.removeItem(cacheKey);
           } catch (e) {
             console.error('Error parsing subscription cache:', e);
           }

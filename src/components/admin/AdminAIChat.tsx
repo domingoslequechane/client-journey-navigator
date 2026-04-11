@@ -177,7 +177,7 @@ export function AdminAIChat() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4" ref={containerRef}>
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 pointer-events-none" ref={containerRef}>
       {/* Painel do Chat com Animação Slide-up */}
       <div 
         className={cn(
@@ -325,7 +325,7 @@ export function AdminAIChat() {
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "h-14 w-14 rounded-full shadow-2xl p-0 hover:scale-110 active:scale-90 transition-all duration-300 z-50 flex items-center justify-center",
+          "h-14 w-14 rounded-full shadow-2xl p-0 hover:scale-110 active:scale-90 transition-all duration-300 z-50 flex items-center justify-center pointer-events-auto",
           isOpen ? "bg-muted text-muted-foreground rotate-90" : "bg-primary text-white"
         )}
       >

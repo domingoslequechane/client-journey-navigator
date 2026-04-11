@@ -268,9 +268,8 @@ export default function Onboarding() {
       if (sub?.status === 'active' || sub?.status === 'trialing') {
         navigate('/app');
       } else {
-        // Se nunca teve um plano ativo antes (agência nova ou trial expirado mas onboarding incompleto)
-        // Ativamos o plano "Catapulta" (agency) por 7 dias imediatamente!
-        const planKey = 'agency';
+        // Activate the official 'trial' plan for 7 days
+        const planKey = 'trial';
         const newEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
         
         const { error: subError } = await supabase.from('subscriptions').upsert({
@@ -286,14 +285,14 @@ export default function Onboarding() {
 
         await supabase.from('organizations').update({ plan_type: planKey }).eq('id', organizationId);
         
-        // Limpar cache manual para forçar renovação das permissões
+        // Clear manual cache to force renewal of permissions
         if (sessionUser) {
           sessionStorage.removeItem(`sub_cache_${sessionUser.id}_${organizationId}`);
         }
         
-        toast.success('Agência configurada e 7 Dias Grátis do plano Catapulta iniciados!');
+        toast.success(`Agência configurada e 7 Dias de Período de Teste iniciados!`);
         
-        // Redirecionamento forçado para limpar o estado em memória completamente
+        // Forced redirect to clear in-memory state completely
         window.location.href = '/app';
       }
     } catch (error: any) {
