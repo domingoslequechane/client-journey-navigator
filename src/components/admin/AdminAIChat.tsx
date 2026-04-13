@@ -54,7 +54,7 @@ export function AdminAIChat() {
             setMessages([
               {
                 role: 'assistant',
-                content: 'Olá! Sou a sua IA Especialista em SaaS, Finanças e Economia.\nAcedi ao contexto do painel.\n\nComo posso ajudar a escalar o seu negócio hoje?'
+                content: 'Olá! Sou a sua IA Especialista do Qualify, com domínio em SaaS, Marketing e Finanças.\nAcedi ao contexto do painel e aos dados da plataforma.\n\nComo posso ajudar hoje com estratégias de divulgação, crescimento ou resolução de problemas no nosso SaaS?'
               }
             ]);
           }
@@ -197,7 +197,7 @@ export function AdminAIChat() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm truncate">CEO Board IA</h3>
-            <p className="text-[11px] text-primary-foreground/80 truncate">Especialista SaaS e Negócios</p>
+            <p className="text-[11px] text-primary-foreground/80 truncate">Especialista Qualify & Growth</p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <Button 
