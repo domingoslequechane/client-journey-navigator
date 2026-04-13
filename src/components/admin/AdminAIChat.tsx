@@ -45,13 +45,13 @@ export function AdminAIChat() {
             .from('admin_chat_messages' as any)
             .select('role, content')
             .eq('user_id', user.id)
-            .order('created_at', { ascending: true })
+            .order('created_at', { ascending: false })
             .limit(50) as any);
 
           if (error) throw error;
           
           if (data && data.length > 0) {
-            setMessages(data as any as Message[]);
+            setMessages((data as any as Message[]).reverse());
           } else {
             setMessages([
               {

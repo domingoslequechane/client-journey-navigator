@@ -30,7 +30,39 @@ serve(async (req: Request) => {
 
     const { messages } = await req.json();
     const lastUserMessage = messages[messages.length - 1];
+    if (!lastUserMessage?.content) throw new Error("Mensagem vazia.");
 
+    // 1. Guardar a mensagem do utilizador
+    await supabaseClient.from('admin_chat_messages').insert({
+      user_id: user.id,
+      role: 'user',
+      content: lastUserMessage.content
+    });
+
+    // --- PROTOCOLO DE LIMPEZA (Máximo 100 mensagens) ---
+    try {
+      // Buscar ID da 100ª mensagem mais recente
+      const { data: cutoffMsg } = await supabaseClient
+        .from('admin_chat_messages')
+        .select('created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(100, 100)
+        .maybeSingle();
+
+      if (cutoffMsg) {
+        // Apagar tudo o que for mais antigo que a 100ª mensagem
+        await supabaseClient
+          .from('admin_chat_messages')
+          .delete()
+          .eq('user_id', user.id)
+          .lt('created_at', cutoffMsg.created_at);
+      }
+    } catch (e) {
+      console.error("Erro na limpeza de histórico:", e);
+    }
+
+    // 2. Obter Estatísticas
     const stats = await Promise.all([
       supabaseClient.from('organizations').select('*', { count: 'exact', head: true }),
       supabaseClient.from('subscriptions').select('*', { count: 'exact', head: true }).in('status', ['active', 'trialing']),
@@ -38,6 +70,20 @@ serve(async (req: Request) => {
     ]);
     const dataContext = `DADOS REAIS: Agências: ${stats[0].count}, Ativas: ${stats[1].count}, Utilizadores: ${stats[2].count}.`;
 
+    // 3. Obter histórico RECENTE
+    const { data: recentHistory } = await supabaseClient
+      .from('admin_chat_messages')
+      .select('role, content')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    const historyForAi = (recentHistory || []).reverse().map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.content
+    }));
+
+    // --- AGENTE 1: O ESTRATEGISTA ---
     const strategistResponse = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -45,7 +91,7 @@ serve(async (req: Request) => {
         model: "gpt-4o",
         messages: [
           { role: "system", content: `Você é o Estrategista Principal do Qualify. Foco: Negócios e Growth. ${dataContext}` },
-          { role: "user", content: lastUserMessage.content }
+          ...historyForAi
         ],
         temperature: 0.7
       }),
@@ -53,23 +99,17 @@ serve(async (req: Request) => {
 
     const strategistData = await strategistResponse.json();
     const rawContent = strategistData.choices?.[0]?.message?.content;
-    if (!rawContent) throw new Error("Falha ao gerar rascunho.");
+    if (!rawContent) throw new Error("Erro ao gerar resposta.");
 
-    const editorSystemPrompt = `Você é o Editor de Elite do Qualify. Sua função é formatar e corrigir o texto.
-REGRAS:
-1. Português de Portugal (PT-PT) impecável.
-2. Use Markdown (Títulos, Listas, Negritos). Adicione espaços após números de lista.
-3. ADICIONE ESPAÇOS E LINHAS EM BRANCO para legibilidade.
-4. NUNCA COLE PALAVRAS. Se houver erro no rascunho, corrija-o.`;
-
+    // --- AGENTE 2: O EDITOR ---
     const editorResponse = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gpt-4o",
         messages: [
-          { role: "system", content: editorSystemPrompt },
-          { role: "user", content: `Refine este texto:\n\n${rawContent}` }
+          { role: "system", content: "Você é o Editor Profissional do Qualify. Formate o texto em PT-PT impecável, estruturado em Markdown e com espaçamento generoso. Entregue apenas o texto revisado." },
+          { role: "user", content: `Revisa este texto:\n\n${rawContent}` }
         ],
         stream: true
       }),
@@ -83,21 +123,17 @@ REGRAS:
 
     (async () => {
       let fullContent = "";
-      let buffer = ""; // Buffer para lidar com fragmentos de SSE
+      let buffer = "";
       try {
         while (true) {
           const { done, value } = await reader!.read();
           if (done) break;
-          
           buffer += decoder.decode(value, { stream: true });
           const parts = buffer.split("\n\n");
-          buffer = parts.pop() || ""; // Mantém o último fragmento incompleto
-
+          buffer = parts.pop() || "";
           for (const part of parts) {
             const line = part.trim();
-            if (!line || line === "data: [DONE]") continue;
-            
-            if (line.startsWith("data: ")) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
               try {
                 const data = JSON.parse(line.substring(6));
                 const text = data.choices?.[0]?.delta?.content;
@@ -105,20 +141,18 @@ REGRAS:
                   fullContent += text;
                   await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
                 }
-              } catch (e) {
-                // Se falhar, reincorpora no buffer para a próxima tentativa
-                buffer = line + "\n\n" + buffer;
-              }
+              } catch (e) {}
             }
           }
         }
         await writer.write(encoder.encode("data: [DONE]\n\n"));
-        
-        // Logs e BD
-        await supabaseClient.from('admin_chat_messages').insert([
-          { user_id: user.id, role: 'user', content: lastUserMessage.content },
-          { user_id: user.id, role: 'assistant', content: fullContent }
-        ]);
+        if (fullContent) {
+          await supabaseClient.from('admin_chat_messages').insert({
+            user_id: user.id,
+            role: 'assistant',
+            content: fullContent
+          });
+        }
       } finally {
         writer.close();
       }
