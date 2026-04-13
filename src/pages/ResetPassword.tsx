@@ -140,8 +140,8 @@ export default function ResetPassword() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-xl">Q</span>
+              <div className="h-12 w-12 bg-primary text-primary-foreground rounded-xl flex items-center justify-center font-black text-2xl shadow-xl border-2 border-primary/20">
+                Q
               </div>
             </div>
             <CardTitle className="text-2xl font-bold">Redefinir Senha</CardTitle>

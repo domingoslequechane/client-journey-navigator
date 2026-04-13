@@ -4,7 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Check, X, ArrowLeft, Star, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { PublicBackground } from '@/components/layout/PublicBackground';
+import { LandingHeader } from '@/components/landing/LandingHeader';
+import { LandingFooter } from '@/components/landing/LandingFooter';
+import { BackToTop } from '@/components/BackToTop';
+import { useTranslation } from 'react-i18next';
+import { useEffect, useState } from 'react';
 
 import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
@@ -96,6 +100,17 @@ const comparisonFeatures = [
 ];
 
 const Pricing = () => {
+  const { t } = useTranslation('landing');
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const renderValue = (value: boolean | string, plan: typeof plans[0]) => {
     if (typeof value === 'boolean') {
       return value ? (
@@ -108,26 +123,15 @@ const Pricing = () => {
   };
 
   return (
-    <PublicBackground>
-      <div className="h-screen overflow-y-auto custom-scrollbar">
-        <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <Link to="/" className="flex items-center gap-2">
-                <ArrowLeft className="h-5 w-5" />
-                <span className="font-bold text-xl">Qualify</span>
-              </Link>
-              <div className="flex items-center gap-4">
-                <ThemeToggle />
-                <Link to="/auth">
-                  <Button>Começar Agora</Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </header>
+    <div className="flex flex-col min-h-screen bg-background">
+      <LandingHeader t={t} isScrolled={isScrolled} />
+      
+      <div className="flex-1 w-full relative overflow-x-hidden pt-36 lg:pt-48 pb-24">
+        {/* Background Decorative elements */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] mix-blend-screen pointer-events-none" />
+        <div className="absolute top-1/3 left-0 w-[400px] h-[400px] bg-violet-500/5 rounded-full blur-[100px] mix-blend-screen pointer-events-none" />
 
-        <main className="container mx-auto px-4 pt-24 pb-16">
+        <main className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-8">
             <Badge variant="outline" className="mb-4">Planos & Preços</Badge>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -142,7 +146,7 @@ const Pricing = () => {
             {plans.map((plan) => (
               <Card 
                 key={plan.key} 
-                className={`relative overflow-hidden ${plan.borderColor} ${plan.popular ? 'ring-2 ring-primary shadow-xl' : ''}`}
+                className={`relative overflow-hidden rounded-3xl ${plan.borderColor} ${plan.popular ? 'ring-2 ring-primary shadow-[0_0_50px_-12px_hsla(var(--primary),0.3)]' : 'shadow-sm'}`}
                 style={{ backgroundColor: plan.bgColor }}
               >
                 {plan.popular && (
@@ -181,7 +185,7 @@ const Pricing = () => {
 
                   <Link to="/auth">
                     <Button
-                      className="w-full gap-2"
+                      className="w-full gap-2 rounded-xl h-12 font-bold"
                       style={{
                         backgroundColor: plan.color,
                         color: 'white'
@@ -200,7 +204,7 @@ const Pricing = () => {
             <h2 className="text-2xl font-bold text-center mb-8">Comparação Detalhada</h2>
             
             {comparisonFeatures.map((category) => (
-              <Card key={category.category} className="overflow-hidden">
+              <Card key={category.category} className="overflow-hidden rounded-3xl border-border/50 shadow-sm">
                 <CardHeader className="bg-muted/50">
                   <CardTitle className="text-lg">{category.category}</CardTitle>
                 </CardHeader>
@@ -255,7 +259,10 @@ const Pricing = () => {
           </div>
         </main>
       </div>
-    </PublicBackground>
+
+      <LandingFooter />
+      <BackToTop />
+    </div>
   );
 };
 

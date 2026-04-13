@@ -19,6 +19,7 @@ import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { SocialAuth } from '@/components/auth/SocialAuth';
 import { SuspendedDialog } from '@/components/auth/SuspendedDialog';
 import { AnimatedContainer } from '@/components/ui/animated-container';
+import { ScrollToTop } from '@/components/ScrollToTop';
 
 const createAuthSchema = (t: (key: string) => string) => z.object({
   email: z.string().email({ message: t('validation.invalidEmail') }),
@@ -304,21 +305,22 @@ export default function Auth() {
 
   return (
     <PublicBackground>
-      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+      <ScrollToTop />
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-background/80 backdrop-blur-lg border border-border/50 shadow-xl py-2 px-4 rounded-2xl flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          {t('backToSite')}
+        </Link>
         <ThemeToggle />
       </div>
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4 pt-20">
         <AnimatedContainer className="w-full max-w-md">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            {t('backToSite')}
-          </Link>
           
           <Card>
             <CardHeader className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-xl">Q</span>
+                <div className="h-12 w-12 bg-primary text-primary-foreground rounded-xl flex items-center justify-center font-black text-2xl shadow-xl border-2 border-primary/20">
+                  Q
                 </div>
               </div>
               <CardTitle className="text-2xl font-bold">Qualify</CardTitle>

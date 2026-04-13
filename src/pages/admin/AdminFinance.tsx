@@ -205,25 +205,26 @@ export default function AdminFinance() {
                   <Skeleton className="h-full w-full" />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={revenueHistory} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <AreaChart data={revenueHistory} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#f97316" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                      <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                      <YAxis axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
+                      <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(val) => `$${val}`} width={55} />
                       <Tooltip 
-                        contentStyle={{ backgroundColor: '#1C1C1C', border: '1px solid #333', borderRadius: '8px' }}
-                        itemStyle={{ color: '#10b981' }}
+                        contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
+                        labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
+                        itemStyle={{ color: '#f97316', fontWeight: 'bold' }}
                       />
                       <Area 
                         type="monotone" 
                         dataKey="revenue" 
                         name="Receita" 
-                        stroke="#10b981" 
+                        stroke="#f97316" 
                         fillOpacity={1} 
                         fill="url(#colorRevenue)" 
                         strokeWidth={3}
@@ -252,7 +253,7 @@ export default function AdminFinance() {
                   <span className="text-muted-foreground">ARPU (Médio por Agência)</span>
                   <span className="font-bold">${(stats?.avgRevenuePerOrg || 0).toFixed(2)}</span>
                 </div>
-                <div className="h-2 w-full bg-stone-900 rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500" style={{ width: '65%' }} />
                 </div>
               </div>
@@ -262,7 +263,7 @@ export default function AdminFinance() {
                   <span className="text-muted-foreground">Retenção de Receita (Net)</span>
                   <span className="font-bold">94.2%</span>
                 </div>
-                <div className="h-2 w-full bg-stone-900 rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                   <div className="h-full bg-emerald-500" style={{ width: '94.2%' }} />
                 </div>
               </div>
@@ -272,20 +273,20 @@ export default function AdminFinance() {
                   <span className="text-muted-foreground">Volume de Reembolsos</span>
                   <span className="font-bold">${(stats?.totalRefunds || 0).toFixed(2)}</span>
                 </div>
-                <div className="h-2 w-full bg-stone-900 rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                   <div className="h-full bg-red-400" style={{ width: stats?.totalRevenue ? `${(stats.totalRefunds / stats.totalRevenue) * 100}%` : '0%' }} />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-stone-800">
+              <div className="pt-4 border-t border-border">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-emerald-500" />
-                    <span className="text-xs text-stone-500">Lucro Bruto</span>
+                    <span className="text-xs text-muted-foreground">Lucro Bruto</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-stone-700" />
-                    <span className="text-xs text-stone-500">Custo Infra</span>
+                    <div className="h-3 w-3 rounded-full bg-muted-foreground/30" />
+                    <span className="text-xs text-muted-foreground">Custo Infra</span>
                   </div>
                 </div>
               </div>
@@ -315,23 +316,23 @@ export default function AdminFinance() {
                 Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
               ) : recentTransactions.length > 0 ? (
                 recentTransactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center justify-between p-4 rounded-xl border border-stone-800 bg-stone-900/10">
+                  <div key={tx.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-card/50 hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-4">
-                      <div className={`p-2 rounded-full ${tx.status === 'confirmed' || tx.status === 'paid' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-stone-800 text-stone-400'}`}>
+                      <div className={`p-2 rounded-full ${tx.status === 'confirmed' || tx.status === 'paid' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
                         <Receipt className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="font-semibold text-stone-200">{tx.description || 'Assinatura SaaS'}</p>
-                        <p className="text-xs text-stone-500">{format(new Date(tx.payment_date), 'dd/MM/yyyy HH:mm')}</p>
+                        <p className="font-semibold text-foreground">{tx.description || 'Assinatura SaaS'}</p>
+                        <p className="text-xs text-muted-foreground">{format(new Date(tx.payment_date), 'dd/MM/yyyy HH:mm')}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-stone-100">${Number(tx.amount).toFixed(2)} {tx.currency}</p>
+                      <p className="font-bold text-foreground">${Number(tx.amount).toFixed(2)} {tx.currency}</p>
                       <Badge 
                         variant="outline" 
                         className={`text-[10px] uppercase border-0 ${
                           tx.status === 'confirmed' || tx.status === 'paid' 
-                            ? 'bg-emerald-500/10 text-emerald-500' 
+                            ? 'bg-primary/10 text-primary' 
                             : 'bg-destructive/10 text-destructive'
                         }`}
                       >
@@ -341,7 +342,7 @@ export default function AdminFinance() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-10 text-stone-600 italic">Sem transações recentes</div>
+                <div className="text-center py-10 text-muted-foreground italic">Sem transações recentes</div>
               )}
             </div>
           </CardContent>

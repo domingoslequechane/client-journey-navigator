@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileHeader } from './MobileHeader';
+import { ScrollToTop } from '@/components/ScrollToTop';
 import { OfflineIndicator } from '@/components/ui/offline-indicator';
 import { useSyncQueue } from '@/hooks/useSyncQueue';
 import { AccessChangeNotification } from '@/components/auth/AccessChangeNotification';
@@ -26,13 +27,14 @@ export function AppLayout() {
       <AccessChangeNotification />
       <TrialStartedModal />
       <MobileHeader />
-      <div className="flex flex-col md:flex-row flex-1">
+      <ScrollToTop />
+      <div className="flex flex-col md:flex-row min-h-screen">
         {/* Desktop Sidebar */}
         <div className="hidden md:block shrink-0 sticky top-0 h-screen overflow-hidden">
           <Sidebar />
         </div>
 
-        <div className="flex-1 flex flex-col pt-32 md:pt-0">
+        <div className="flex-1 flex flex-col pt-20 md:pt-0">
           {/* Main Content Area - Keyed to path trigger blurIn on navigation */}
           <main 
             ref={mainContentRef}

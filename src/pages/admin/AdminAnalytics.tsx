@@ -88,11 +88,13 @@ export default function AdminAnalytics() {
             { count: social_posts },
             { count: studio_images },
             { count: studio_flyers },
-            { count: ai_conversations },
-            { count: ai_messages },
+            { count: legacy_ai_msgs },
+            { count: atende_ai_msgs },
+            { count: atende_ai_convs },
             { count: editorial_tasks },
             { count: transactions },
-            { data: flyerTokenData },
+            { data: rawImagesData },
+            { data: rawFlyersData },
           ] = await Promise.all([
             supabase.from('clients').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
             supabase.from('link_pages').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
@@ -100,19 +102,25 @@ export default function AdminAnalytics() {
             supabase.from('social_posts').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
             supabase.from('studio_images').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
             supabase.from('studio_flyers').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
-            supabase.from('ai_conversations').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
-            supabase.from('ai_messages').select('*', { count: 'exact', head: true })
-              .in('conversation_id', (await supabase.from('ai_conversations').select('id').eq('organization_id', oid)).data?.map(c => c.id) || []),
+            supabase.from('ai_agent_messages').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
+            supabase.from('atende_ai_messages').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
+            supabase.from('atende_ai_conversations').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
             supabase.from('editorial_tasks').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
             supabase.from('financial_transactions').select('*', { count: 'exact', head: true }).eq('organization_id', oid),
-            // Use usage_tracking for token counts
-            supabase.from('usage_tracking').select('usage_count').eq('organization_id', oid).eq('feature_type', 'ai_messages'),
+            supabase.from('studio_images').select('usage_prompt, usage_candidates').eq('organization_id', oid),
+            supabase.from('studio_flyers').select('usage_prompt, usage_candidates').eq('organization_id', oid),
           ]);
 
-          const flyer_tokens = (flyerTokenData || []).reduce(
-            (acc: number, f: Record<string, number | null>) => acc + (f.usage_prompt || 0) + (f.usage_candidates || 0),
-            0
+          const tokensImages = (rawImagesData || []).reduce(
+            (acc: number, f: any) => acc + (f.usage_prompt || 0) + (f.usage_candidates || 0), 0
           );
+          const tokensFlyers = (rawFlyersData || []).reduce(
+            (acc: number, f: any) => acc + (f.usage_prompt || 0) + (f.usage_candidates || 0), 0
+          );
+          
+          const ai_messages = (legacy_ai_msgs || 0) + (atende_ai_msgs || 0);
+          const ai_conversations = (atende_ai_convs || 0);
+          const flyer_tokens = tokensImages + tokensFlyers;
 
           return {
             org_id: oid,

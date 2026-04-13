@@ -23,6 +23,7 @@ import {
   Settings,
   Menu,
   X,
+  Newspaper,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -30,6 +31,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Skeleton } from '@/components/ui/skeleton';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { AdminAIChat } from './AdminAIChat';
+import { ScrollToTop } from '@/components/ScrollToTop';
 
 const ADMIN_SIDEBAR_COLLAPSED_KEY = 'qualify-admin-sidebar-collapsed';
 
@@ -49,6 +51,7 @@ const navigation: NavItem[] = [
   { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard, badgeKey: 'transfers' },
   { name: 'Feedbacks', href: '/admin/feedbacks', icon: MessageSquare, badgeKey: 'feedbacks' },
   { name: 'Suporte', href: '/admin/support', icon: HeadphonesIcon, badgeKey: 'tickets' },
+  { name: 'Insights', href: '/admin/insights', icon: Newspaper },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },
 ];
 
@@ -58,6 +61,7 @@ const bottomNavItems = [
   { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard, badgeKey: 'transfers' },
   { name: 'Suporte', href: '/admin/support', icon: HeadphonesIcon, badgeKey: 'tickets' },
   { name: 'Agências', href: '/admin/agencies', icon: Building2 },
+  { name: 'Insights', href: '/admin/insights', icon: Newspaper },
 ];
 
 export function AdminLayout() {
@@ -296,32 +300,123 @@ export function AdminLayout() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex flex-col md:flex-row bg-background font-sans min-h-screen">
-        
-        {/* Mobile Header (Fixed) */}
-        <div className="fixed top-0 left-0 right-0 z-[110] md:hidden h-14 bg-card/95 backdrop-blur-md border-b border-border flex items-center justify-between px-4 shrink-0 transition-all duration-300">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <span className="text-primary-foreground font-bold text-base">Q</span>
+      <div className="bg-background font-sans min-h-screen relative">
+        <ScrollToTop />
+        {/* Mobile Header (Floating) */}
+        <div className={cn(
+          "fixed top-3 left-1/2 -translate-x-1/2 z-[200] md:hidden w-[calc(100%-2rem)] max-w-lg transition-all duration-300 border rounded-2xl flex flex-col overflow-hidden",
+          mobileDrawerOpen ? "shadow-2xl border-border/50 bg-background/95 backdrop-blur-xl" : "shadow-xl border-primary/20 bg-primary backdrop-blur-lg"
+        )}>
+          <div className={cn(
+            "flex items-center justify-between py-2 px-4 w-full transition-colors",
+            mobileDrawerOpen ? "bg-primary text-primary-foreground" : "text-primary-foreground"
+          )}>
+            <div className="flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-lg bg-white flex items-center justify-center shrink-0">
+                <span className="text-primary font-extrabold text-base">Q</span>
+              </div>
+              <span className="font-bold text-lg whitespace-nowrap">Qualify - Admin</span>
             </div>
-            <span className="font-bold text-lg whitespace-nowrap">Qualify - Admin</span>
+            <div className="flex items-center gap-2">
+              <ThemeToggle variant="ghost" size="icon" className="h-9 w-9 text-current hover:bg-black/10 hover:text-white" />
+              <button
+                onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
+                className="relative h-9 w-9 flex items-center justify-center rounded-lg text-current hover:bg-black/10 hover:text-white transition-colors"
+                aria-label="Abrir menu"
+              >
+                {mobileDrawerOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {totalBadges > 0 && !mobileDrawerOpen && (
+                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white shadow">
+                    {totalBadges > 9 ? '9+' : totalBadges}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle variant="ghost" size="icon" className="h-9 w-9" />
-            <button
-              onClick={() => setMobileDrawerOpen(true)}
-              className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
-              aria-label="Abrir menu"
-            >
-              <Menu className="h-5 w-5" />
-              {totalBadges > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
-                  {totalBadges > 9 ? '9+' : totalBadges}
-                </span>
-              )}
-            </button>
-          </div>
+          
+          {/* Mobile Navigation Dropdown */}
+          {mobileDrawerOpen && (
+            <div className="w-full bg-transparent animate-in slide-in-from-top-4 duration-300 border-t border-border/10">
+              <div className="overflow-y-auto max-h-[70vh] px-2 py-4 space-y-4">
+                <nav className="space-y-1">
+                  {navigation.map((item) => {
+                    const isActive = location.pathname === item.href ||
+                      (item.href !== '/admin' && location.pathname.startsWith(item.href));
+                    const badgeCount = item.badgeKey ? badges[item.badgeKey] || 0 : 0;
+                    return (
+                      <Link
+                        key={item.href}
+                        to={item.href}
+                        onClick={() => setMobileDrawerOpen(false)}
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors',
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                        )}
+                      >
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        <span className="flex-1">{item.name}</span>
+                        {badgeCount > 0 && (
+                          <span className={cn(
+                            'text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center',
+                            isActive ? 'bg-white/20 text-white' : 'bg-destructive/15 text-destructive'
+                          )}>
+                            {badgeCount > 99 ? '99+' : badgeCount}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </nav>
+
+                <div className="pt-4 border-t border-border/50 space-y-1">
+                  {!isInstalled && deferredPrompt ? (
+                    <button
+                      onClick={handleInstallApp}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent transition-colors text-left"
+                    >
+                      <Download className="h-5 w-5" />
+                      Instalar App
+                    </button>
+                  ) : (
+                    <a
+                      href="/"
+                      target="_blank"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
+                    >
+                      <LayoutDashboard className="h-5 w-5" />
+                      Abrir App
+                    </a>
+                  )}
+                  <Link
+                    to="/app"
+                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
+                    onClick={() => setMobileDrawerOpen(false)}
+                  >
+                    <Download className="h-5 w-5" />
+                    Voltar ao App
+                  </Link>
+                  {user && (
+                    <>
+                      <p className="px-3 py-2 text-xs text-muted-foreground truncate">{user.email}</p>
+                      <button
+                        onClick={() => { setMobileDrawerOpen(false); setLogoutDialogOpen(true); }}
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      >
+                        <LogOut className="h-5 w-5" />
+                        Sair
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
+
+        <div className="flex flex-col md:flex-row min-h-screen">
         
 
         
@@ -454,9 +549,9 @@ export function AdminLayout() {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col pt-32 md:pt-0">
+        <div className="flex-1 flex flex-col pt-20 md:pt-0 overflow-y-auto">
           {/* Main Content Sub-session */}
-          <main className="w-full relative px-4 md:px-0">
+          <main className="flex-1 w-full relative px-4 md:px-0 flex flex-col">
             <Outlet />
             <AdminAIChat />
           </main>
@@ -464,107 +559,7 @@ export function AdminLayout() {
 
 
 
-        {/* ── Mobile Drawer ────────────────────────────────────────────── */}
-        {mobileDrawerOpen && (
-          <div className="fixed inset-0 z-[100] md:hidden">
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setMobileDrawerOpen(false)}
-            />
-            {/* Drawer Panel */}
-            <div className="absolute right-0 top-0 bottom-0 w-72 bg-card border-l border-border flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
-              {/* Drawer Header */}
-              <div className="flex items-center justify-between px-4 h-14 border-b border-border shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-                    <span className="text-primary-foreground font-bold text-base">Q</span>
-                  </div>
-                  <span className="font-bold">Qualify - Admin</span>
-                </div>
-                <button
-                  onClick={() => setMobileDrawerOpen(false)}
-                  className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
 
-              {/* Drawer Nav Links */}
-              <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-                {navigation.map((item) => {
-                  const isActive = location.pathname === item.href ||
-                    (item.href !== '/admin' && location.pathname.startsWith(item.href));
-                  const badgeCount = item.badgeKey ? badges[item.badgeKey] || 0 : 0;
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors',
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                      )}
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      <span className="flex-1">{item.name}</span>
-                      {badgeCount > 0 && (
-                        <span className={cn(
-                          'text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center',
-                          isActive ? 'bg-white/20 text-white' : 'bg-destructive/15 text-destructive'
-                        )}>
-                          {badgeCount > 99 ? '99+' : badgeCount}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
-
-              {/* Drawer Footer */}
-              <div className="border-t border-border p-3 space-y-1 shrink-0">
-                {!isInstalled && deferredPrompt ? (
-                  <button
-                    onClick={handleInstallApp}
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent transition-colors text-left"
-                  >
-                    <Download className="h-5 w-5" />
-                    Instalar App
-                  </button>
-                ) : (
-                  <a
-                    href="/"
-                    target="_blank"
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
-                  >
-                    <LayoutDashboard className="h-5 w-5" />
-                    Abrir App
-                  </a>
-                )}
-                <Link
-                  to="/app"
-                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
-                >
-                  <Download className="h-5 w-5" />
-                  Voltar ao App
-                </Link>
-                {user && (
-                  <>
-                    <p className="px-3 py-1 text-xs text-muted-foreground truncate">{user.email}</p>
-                    <button
-                      onClick={() => { setMobileDrawerOpen(false); setLogoutDialogOpen(true); }}
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    >
-                      <LogOut className="h-5 w-5" />
-                      Sair
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Logout Dialog (shared) */}
         <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>

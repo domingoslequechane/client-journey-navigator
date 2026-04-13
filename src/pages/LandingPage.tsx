@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { LandingHeader } from '@/components/landing/LandingHeader';
+import { LandingFooter } from '@/components/landing/LandingFooter';
 import DOMPurify from 'dompurify';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,7 @@ import { AnimatedIllustration } from '@/components/landing/AnimatedIllustration'
 import { useEffect, useState, useRef } from 'react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { BackToTop } from '@/components/BackToTop';
 
 // Images
 import planLanca from '@/assets/plans/plan-lanca.png';
@@ -99,38 +101,28 @@ const planConfig = {
 export default function LandingPage() {
   const { t } = useTranslation('landing');
   const [isScrolled, setIsScrolled] = useState(false);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const { canInstall, isInstalled, install } = usePWAInstall();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const onScroll = () => {
-      const scrollTop = window.scrollY;
-      setIsScrolled(scrollTop > 20);
-      setShowScrollTop(scrollTop > 500);
+      setIsScrolled(window.scrollY > 20);
     };
     
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   return (
-    <div 
-      ref={scrollContainerRef}
-      className="w-full bg-background text-foreground font-sans relative overflow-x-hidden scroll-smooth"
-    >
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] mix-blend-screen" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] mix-blend-screen" />
-      </div>
-
+    <>
       <LandingHeader t={t} isScrolled={isScrolled} />
 
-      <main className="relative z-10 pt-44 lg:pt-56">
+      <div 
+        className="w-full bg-background text-foreground font-sans relative overflow-x-hidden scroll-smooth"
+      >
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] mix-blend-screen" />
+          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] mix-blend-screen" />
+        </div>
+
+        <main className="relative z-10 pt-36 lg:pt-48">
         
         {/* HERO SECTION */}
         <section className="container mx-auto px-6 mb-24 md:mb-32">
@@ -681,11 +673,7 @@ export default function LandingPage() {
               })}
               </div>
 
-              {/* NEW: Price bottom info */}
-              <div className="mt-28 text-center space-y-12 pb-12">
-                <p className="text-muted-foreground font-medium text-lg">
-                  {t('pricing.cancelAnytime')}
-                </p>
+              <div className="mt-16 text-center pb-12">
                 <Link to="/pricing">
                   <Button 
                     variant="outline" 
@@ -732,41 +720,11 @@ export default function LandingPage() {
 
       </main>
 
-      <footer className="bg-muted text-muted-foreground py-12 border-t border-border mt-auto">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="h-6 w-6 bg-primary/20 text-primary rounded flex items-center justify-center font-bold text-xs ring-1 ring-primary/50">
-                Q
-              </div>
-              <span className="font-semibold text-foreground">Qualify</span>
-            </div>
-            
-            <div className="flex gap-8 text-sm font-medium">
-              <a href="#" className="hover:text-foreground transition-colors">Termos & Condições</a>
-              <a href="#" className="hover:text-foreground transition-colors">Política de Privacidade</a>
-              <a href="#" className="hover:text-foreground transition-colors">Contato</a>
-            </div>
-            
-            <p className="text-sm">
-              &copy; {new Date().getFullYear()} Qualify Marketing. Direitos reservados.
-            </p>
-          </div>
-        </div>
-      </footer>
-
-      {/* FLOATING BACK TO TOP BUTTON */}
-      <Button
-        variant="secondary"
-        size="icon"
-        className={`fixed bottom-8 right-8 z-[110] rounded-full w-12 h-12 shadow-2xl transition-all duration-300 transform border border-border/50 bg-background/80 backdrop-blur-md ${
-          showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
-        } hover:bg-primary hover:text-primary-foreground group`}
-        onClick={scrollToTop}
-        aria-label="Voltar ao topo"
-      >
-        <ArrowRight className="h-6 w-6 -rotate-90 group-hover:-translate-y-1 transition-transform" />
-      </Button>
+      <LandingFooter />
     </div>
-  );
+
+    {/* FLOATING BACK TO TOP BUTTON */}
+    <BackToTop />
+  </>
+);
 }

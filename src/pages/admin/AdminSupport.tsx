@@ -360,7 +360,7 @@ export default function AdminSupport() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-background/50">
+    <div className="flex-1 w-full flex flex-col bg-background/50 -mx-4 px-4 md:mx-0 md:px-0">
 
       {/* ── MOBILE LAYOUT ──────────────────────────────────────────── */}
       <div className="md:hidden flex-1 flex flex-col overflow-hidden">

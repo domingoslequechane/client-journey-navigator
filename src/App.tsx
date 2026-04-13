@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { PlanThemeProvider } from "@/components/theme/PlanThemeProvider";
@@ -71,6 +72,14 @@ import AtendeAI from "./pages/AtendeAI";
 import AtendeAIDetail from "./pages/AtendeAIDetail";
 import AIAgentDetail from "./pages/AIAgentDetail";
 import AIAgentConversation from "./pages/AIAgentConversation";
+import Terms from "./pages/Terms";
+import PrivacyPolicy from "./pages/Privacy";
+import Contact from "./pages/Contact";
+import About from "./pages/About";
+import Insights from "./pages/Insights";
+import InsightDetail from "./pages/InsightDetail";
+import AdminInsights from "./pages/admin/AdminInsights";
+import Features from "./pages/Features";
 
 import { HeaderProvider } from "@/contexts/HeaderContext";
 
@@ -91,6 +100,7 @@ const App = () => {
   console.log("App component rendering...");
   return (
     <QueryClientProvider client={queryClient}>
+      <HelmetProvider>
       <ThemeProvider
         attribute="class"
         defaultTheme="system"
@@ -114,8 +124,15 @@ const App = () => {
                     <ErrorBoundary>
                       <Routes>
                       <Route path="/" element={<LandingPage />} />
+                      <Route path="/terms" element={<Terms />} />
+                      <Route path="/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/insights" element={<Insights />} />
+                      <Route path="/insights/:slug" element={<InsightDetail />} />
                       <Route path="/demo/*" element={<Demo />} />
                       <Route path="/pricing" element={<Pricing />} />
+                      <Route path="/features" element={<Features />} />
                       <Route path="/parcerias" element={<PartnerProgram />} />
                       <Route path="/auth" element={<Auth />} />
                       <Route path="/verify-email" element={<VerifyEmail />} />
@@ -259,6 +276,7 @@ const App = () => {
                         <Route path="finance" element={<AdminFinance />} />
                         <Route path="feedbacks" element={<AdminFeedbacks />} />
                         <Route path="support" element={<AdminSupport />} />
+                        <Route path="insights" element={<AdminInsights />} />
                         <Route path="settings" element={<AdminSettings />} />
                       </Route>
                       <Route path="/not-found" element={<NotFound />} />
@@ -272,6 +290,7 @@ const App = () => {
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>
+      </HelmetProvider>
     </QueryClientProvider>
   );
 };

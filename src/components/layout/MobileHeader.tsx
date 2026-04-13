@@ -9,6 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from 'next-themes';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+
 import {
   LayoutDashboard,
   Kanban,
@@ -34,17 +36,12 @@ import {
   ChevronRight,
   Rocket,
   Headset,
-  Download
+  Download,
+  X
 } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { Badge } from '@/components/ui/badge';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+
 import {
   Dialog,
   DialogContent,
@@ -201,46 +198,57 @@ export function MobileHeader() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[100] bg-background/95 backdrop-blur-md border-b border-border h-14 flex items-center justify-between px-4 md:hidden pb-safe transition-all duration-300">
-        <div className="flex items-center gap-2 overflow-hidden">
-          {backAction && (
+      <header 
+        className={cn(
+          "fixed top-3 left-1/2 -translate-x-1/2 z-[200] transition-all duration-300 md:hidden w-[calc(100%-2rem)] max-w-lg rounded-2xl flex flex-col overflow-hidden border",
+          open ? "shadow-2xl border-border/50 bg-background/95 backdrop-blur-xl" : "shadow-xl border-primary/20 bg-primary backdrop-blur-lg"
+        )}
+      >
+        <div className={cn(
+          "flex items-center justify-between py-2 px-4 transition-colors",
+          open ? "bg-primary text-primary-foreground" : "text-primary-foreground"
+        )}>
+
+          <div className="flex items-center gap-2 overflow-hidden">
+            {backAction && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={backAction}
+                className="shrink-0 -ml-2 text-primary-foreground hover:bg-black/10 hover:text-white"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Button>
+            )}
+            {activePageInfo.icon && (
+              <activePageInfo.icon className={cn("h-5 w-5 text-current shrink-0 animate-in fade-in scale-in duration-500", backAction && "ml-1")} />
+            )}
+            <h1 className="font-bold text-2xl truncate animate-in fade-in slide-in-from-left-2 duration-300">
+              {activePageInfo.title}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <ThemeToggle variant="ghost" size="icon" className="h-9 w-9 text-current hover:bg-black/10 hover:text-white" />
+            {rightAction && <div className="animate-in fade-in zoom-in duration-300 text-current">{rightAction}</div>}
+
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={backAction}
-              className="shrink-0 -ml-2"
+              className="relative text-current hover:bg-black/10 hover:text-white"
+              onClick={() => setOpen(!open)}
             >
-              <ArrowLeft className="h-6 w-6" />
+              {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
-          )}
-          {activePageInfo.icon && (
-            <activePageInfo.icon className={cn("h-5 w-5 text-primary shrink-0 animate-in fade-in scale-in duration-500", backAction && "ml-1")} />
-          )}
-          <h1 className="font-bold text-2xl truncate animate-in fade-in slide-in-from-left-2 duration-300">
-            {activePageInfo.title}
-          </h1>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          {rightAction && <div className="animate-in fade-in zoom-in duration-300">{rightAction}</div>}
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[85%] sm:w-[350px] p-0 flex flex-col h-full bg-background border-l">
-              <SheetHeader className="p-4 border-b shrink-0 text-left bg-muted/30">
-                <SheetTitle className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">Q</span>
-                </div>
-                Qualify
-              </SheetTitle>
-            </SheetHeader>
+        {/* Mobile Navigation Dropdown */}
+        {open && (
+          <div className="w-full bg-transparent animate-in slide-in-from-top-4 duration-300 border-t border-border/10">
 
-            <ScrollArea className="flex-1 px-2 pt-4">
-              <div className="space-y-6 pb-20">
+            <div className="overflow-y-auto max-h-[70vh] px-2 py-4 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+              <div className="space-y-6">
                 {/* Main Menu */}
                 <div className="space-y-1">
                   {menuItems.map((item) => {
@@ -285,16 +293,6 @@ export function MobileHeader() {
 
                 {/* Bottom Menu */}
                 <div className="space-y-1">
-                  {/* Theme Switcher as an Item */}
-                  <button
-                    onClick={handleToggleTheme}
-                    className="w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all hover:bg-muted text-foreground/80 hover:text-foreground group"
-                  >
-                    <div className="flex items-center gap-3 text-sm">
-                      {theme === 'dark' ? <Sun className="h-4 w-4 text-yellow-500" /> : <Moon className="h-4 w-4 text-blue-500" />}
-                      <span className="font-medium uppercase tracking-wider text-[10px] opacity-70">Tema</span>
-                    </div>
-                  </button>
 
                   {bottomItems.map((item) => {
                     const isActive = location.pathname === item.href;
@@ -329,30 +327,30 @@ export function MobileHeader() {
                     </button>
                   )}
                 </div>
-              </div>
-            </ScrollArea>
 
-            {/* Footer Actions */}
-            <div className="p-4 border-t bg-muted/10 shrink-0 space-y-4">
-              <div className="px-3">
-                <p className="text-[11px] text-muted-foreground font-medium truncate">
-                  {user?.email}
-                </p>
-              </div>
+                <Separator className="mx-2 opacity-50" />
 
-              <Button
-                variant="ghost"
-                className="w-full h-10 justify-start gap-4 px-3 text-foreground/80 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all group"
-                onClick={handleOpenLogoutDialog}
-              >
-                <LogOut className="h-5 w-5 text-muted-foreground group-hover:text-destructive" />
-                <span className="font-bold text-sm">{t('navigation.logout')}</span>
-              </Button>
+                {/* Desktop Logout simulation inside Menu */}
+                <div className="space-y-1">
+                  <div className="px-3 pb-2 pt-1">
+                    <p className="text-[11px] text-muted-foreground font-medium truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-4 px-3 text-foreground/80 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all group"
+                    onClick={handleOpenLogoutDialog}
+                  >
+                    <LogOut className="h-5 w-5 text-muted-foreground group-hover:text-destructive" />
+                    <span className="font-medium text-sm">{t('navigation.logout')}</span>
+                  </Button>
+                </div>
+              </div>
             </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-    </header>
+          </div>
+        )}
+      </header>
 
       {/* Logout Confirmation Dialog */}
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>

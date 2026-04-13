@@ -1,35 +1,55 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 export function LandingHeader({ t, isScrolled }: { t: any, isScrolled: boolean }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+
+  const isActive = (path: string) => {
+    if (path === '/' && location.pathname !== '/') return false;
+    return location.pathname.startsWith(path);
+  };
+
+  const linkClass = (path: string) => cn(
+    "text-sm font-medium transition-colors hover:text-primary",
+    isActive(path) ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+  );
+
+  const mobileLinkClass = (path: string) => cn(
+    "text-lg font-bold transition-colors border-l-4 pl-4",
+    isActive(path) 
+      ? "text-primary border-primary" 
+      : "text-foreground hover:text-primary border-transparent hover:border-primary"
+  );
 
   return (
     <header 
-      className={`w-full z-[100] transition-all duration-300 fixed top-0 left-0 right-0 ${
-        isScrolled || isMenuOpen
-          ? 'bg-background border-b border-border shadow-md py-3' 
-          : 'bg-transparent py-5 md:py-8'
-      }`}
+      className={cn(
+        "z-[250] transition-all duration-300 fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[1355px] border border-border/50 shadow-xl py-3 rounded-2xl",
+        isMenuOpen ? "bg-background/80 backdrop-blur-lg shadow-2xl" : "bg-background/80 backdrop-blur-lg shadow-xl"
+      )}
     >
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 bg-primary text-primary-foreground rounded-lg flex items-center justify-center font-bold text-lg shadow-lg border border-primary/20">
+          <Link to="/" className="flex items-center gap-3 group transition-opacity hover:opacity-80">
+            <div className="h-9 w-9 bg-primary text-primary-foreground rounded-xl flex items-center justify-center font-black text-xl shadow-lg border-2 border-primary/20 ring-4 ring-primary/5">
               Q
             </div>
-            <span className="text-xl font-bold tracking-tight">Qualify</span>
-          </div>
+            <span className="text-2xl font-black tracking-tighter text-foreground">Qualify</span>
+          </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#problema" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Desafio</a>
-            <a href="#solucao" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Solução</a>
-            <a href="#funcionalidades" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</a>
-            <a href="#planos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Planos</a>
+            <nav className="hidden md:flex items-center gap-8">
+            <Link to="/" className={linkClass('/')}>Home</Link>
+            <Link to="/features" className={linkClass('/features')}>Funcionalidades</Link>
+            <Link to="/about" className={linkClass('/about')}>Sobre</Link>
+            <Link to="/pricing" className={linkClass('/pricing')}>Planos</Link>
+            <Link to="/insights" className={linkClass('/insights')}>Insights</Link>
+            <Link to="/contact" className={linkClass('/contact')}>Contato</Link>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -62,36 +82,50 @@ export function LandingHeader({ t, isScrolled }: { t: any, isScrolled: boolean }
 
         {/* Mobile Navigation Overlay */}
         {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-background/98 backdrop-blur-xl border-b border-border animate-in slide-in-from-top duration-300">
+          <div className="md:hidden w-full bg-transparent animate-in slide-in-from-top duration-300">
             <nav className="flex flex-col p-6 gap-6">
-              <a 
-                href="#problema" 
+              <Link 
+                to="/" 
                 onClick={() => setIsMenuOpen(false)}
-                className="text-lg font-bold text-foreground hover:text-primary transition-colors border-l-4 border-transparent hover:border-primary pl-4"
+                className={mobileLinkClass('/')}
               >
-                Desafio
-              </a>
-              <a 
-                href="#solucao" 
+                Home
+              </Link>
+              <Link 
+                to="/features" 
                 onClick={() => setIsMenuOpen(false)}
-                className="text-lg font-bold text-foreground hover:text-primary transition-colors border-l-4 border-transparent hover:border-primary pl-4"
-              >
-                Solução
-              </a>
-              <a 
-                href="#funcionalidades" 
-                onClick={() => setIsMenuOpen(false)}
-                className="text-lg font-bold text-foreground hover:text-primary transition-colors border-l-4 border-transparent hover:border-primary pl-4"
+                className={mobileLinkClass('/features')}
               >
                 Funcionalidades
-              </a>
-              <a 
-                href="#planos" 
+              </Link>
+              <Link 
+                to="/about" 
                 onClick={() => setIsMenuOpen(false)}
-                className="text-lg font-bold text-foreground hover:text-primary transition-colors border-l-4 border-transparent hover:border-primary pl-4"
+                className={mobileLinkClass('/about')}
+              >
+                Sobre
+              </Link>
+              <Link 
+                to="/pricing" 
+                onClick={() => setIsMenuOpen(false)}
+                className={mobileLinkClass('/pricing')}
               >
                 Planos
-              </a>
+              </Link>
+              <Link 
+                to="/insights" 
+                onClick={() => setIsMenuOpen(false)}
+                className={mobileLinkClass('/insights')}
+              >
+                Insights
+              </Link>
+              <Link 
+                to="/contact" 
+                onClick={() => setIsMenuOpen(false)}
+                className={mobileLinkClass('/contact')}
+              >
+                Contato
+              </Link>
               <div className="pt-6 border-t border-border flex flex-col gap-4">
                 <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="outline" className="w-full text-base font-bold rounded-xl h-12">

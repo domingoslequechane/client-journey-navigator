@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Loader2, Building2, ChevronRight, LogOut } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { PublicBackground } from '@/components/layout/PublicBackground';
+import { ScrollToTop } from '@/components/ScrollToTop';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 interface Organization {
   organization_id: string;
@@ -159,7 +161,18 @@ export default function SelectOrganization() {
 
   return (
     <PublicBackground>
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <ScrollToTop />
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-background/80 backdrop-blur-lg border border-border/50 shadow-xl py-2 px-4 rounded-2xl flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-xs">Q</span>
+          </div>
+          <span className="text-sm font-bold">Qualify</span>
+        </div>
+        <ThemeToggle />
+      </div>
+
+      <div className="min-h-screen flex items-center justify-center p-4 pt-20">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">

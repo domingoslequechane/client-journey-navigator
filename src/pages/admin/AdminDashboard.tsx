@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { NotificationCreator } from '@/components/admin/NotificationCreator';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -403,11 +403,11 @@ export default function AdminDashboard() {
                 <Skeleton className="h-[220px] w-full" />
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={growthData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                  <AreaChart data={growthData} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
                     <defs>
                       <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="colorOrgs" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2} />
@@ -416,11 +416,13 @@ export default function AdminDashboard() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.2} />
                     <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} width={40} />
                     <Tooltip
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
+                      contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
+                      labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
                     />
-                    <Area type="monotone" dataKey="users" name="Utilizadores" stroke="#3b82f6" strokeWidth={2} fill="url(#colorUsers)" dot={{ r: 4, fill: '#3b82f6' }} />
+                    <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                    <Area type="monotone" dataKey="users" name="Utilizadores" stroke="#f97316" strokeWidth={2} fill="url(#colorUsers)" dot={{ r: 4, fill: '#f97316' }} />
                     <Area type="monotone" dataKey="organizations" name="Organizações" stroke="#8b5cf6" strokeWidth={2} fill="url(#colorOrgs)" dot={{ r: 4, fill: '#8b5cf6' }} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -449,7 +451,7 @@ export default function AdminDashboard() {
                 recentUsers.map(user => (
                   <div key={user.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/40 transition-colors">
                     <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarFallback className="text-xs bg-blue-500/10 text-blue-600">
+                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
                         {user.full_name ? user.full_name.charAt(0).toUpperCase() : (user.email?.charAt(0).toUpperCase() || '?')}
                       </AvatarFallback>
                     </Avatar>
@@ -461,7 +463,7 @@ export default function AdminDashboard() {
                           : '—'}
                       </p>
                     </div>
-                    <Badge className="text-[9px] bg-blue-500/10 text-blue-500 border-0 shrink-0">Novo</Badge>
+                    <Badge className="text-[9px] bg-primary/10 text-primary border-0 shrink-0">Novo</Badge>
                   </div>
                 ))
               )}
