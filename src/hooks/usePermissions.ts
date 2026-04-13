@@ -48,7 +48,7 @@ export function usePermissions() {
                     .from('user_roles')
                     .select('role')
                     .eq('user_id', user.id)
-                    .in('role', ['proprietor', 'Owner', 'qfy-admin', 'qfy_admin', 'admin', 'administrator'] as any)
+                    .eq('role', 'qfy-admin')
                     .maybeSingle()
             ]);
 
@@ -133,12 +133,9 @@ export function usePermissions() {
         
         const isInternalAdmin = 
             rawRole === 'qfy-admin' || 
-            rawRole === 'qfy_admin' ||
-            globalRole === 'qfy-admin' || 
-            globalRole === 'qfy_admin' ||
-            globalRole === 'administrator';
+            globalRole === 'qfy-admin';
 
-        const isAdmin = isOrgOwner || isProprietor || rawRole === 'owner' || rawRole === 'Owner' || isInternalAdmin;
+        const isAdmin = isInternalAdmin;
         const isOwner = isOrgOwner || isProprietor || rawRole === 'owner' || rawRole === 'Owner' || isAdmin;
 
 

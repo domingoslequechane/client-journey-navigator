@@ -261,16 +261,9 @@ export function AdminAIChat() {
                       prose-li:my-1 prose-ul:my-2
                       prose-strong:text-primary/90
                       break-words">
-                      {msg.content.includes('<pensa>') && !msg.content.includes('</pensa>') ? (
-                        <div className="flex items-center gap-2 text-xs text-primary/60 italic animate-pulse py-2">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          <span>A realizar análise estratégica profunda...</span>
-                        </div>
-                      ) : (
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {msg.content.replace(/<pensa>[\s\S]*?<\/pensa>/g, '').trim()}
-                        </ReactMarkdown>
-                      )}
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.content}
+                      </ReactMarkdown>
                     </div>
                   )}
                 </div>

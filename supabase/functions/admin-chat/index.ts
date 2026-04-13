@@ -38,16 +38,20 @@ serve(async (req: Request) => {
     }
 
     // Verificar se é proprietário/admin interno
-    const isInternalAdmin = user.email?.toLowerCase().includes('qfy-admin');
+    const emailLower = user.email?.toLowerCase() || '';
+    const isInternalAdminEmail =
+      emailLower.includes('qfy-admin') ||
+      (emailLower.startsWith('admin@') && emailLower.includes('onixagence.com'));
     
-    let isAdminUser = isInternalAdmin;
+    let isAdminUser = isInternalAdminEmail;
+    
     if (!isAdminUser) {
       const { data: roleData } = await supabaseClient
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .eq('role', 'proprietor')
-        .single();
+        .eq('role', 'qfy-admin')
+        .maybeSingle();
         
       if (roleData) {
         isAdminUser = true;
@@ -55,6 +59,7 @@ serve(async (req: Request) => {
     }
 
     if (!isAdminUser) {
+      console.error(`[admin-chat] Acesso negado para o utilizador: ${user.email} (${user.id})`);
       return new Response(JSON.stringify({ error: "Apenas administradores podem aceder a este assistente." }), {
         status: 403,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" }
@@ -131,14 +136,20 @@ Sua missão principal é ajudar os administradores e proprietários do Qualify a
 
 Regras:
 1. Responda num tom direto, consultivo e profissional, em português de Portugal (PT-PT).
-2. Assuma sempre o papel de Especialista Maior do Qualify. Sempre associe as suas ideias de marketing ao valor que entregamos (SaaS B2B).
-3. Seja proativo ao sugerir táticas práticas de divulgação ou melhorias de produto.
-4. Formate com markdown rico e estruturado:
+2. PROTOCOLO DE QUALIDADE E AUTO-REVISÃO:
+   Antes de emitir qualquer resposta, você DEVE realizar um processo interno e silencioso de revisão:
+   - Analise os dados da plataforma sob o perfil de Growth/Marketing.
+   - Verifique se a sua resposta contém erros gramaticais, técnicos ou de tom.
+   - Refine a estrutura para garantir que apenas o conteúdo pronto, correto e ultra-profissional seja entregue.
+   - É terminantemente proibido o uso de tags de "pensamento" (como <pensa>) ou qualquer exposição do seu processo de raciocínio interno. Entregue apenas a resposta final lapidada.
+3. Assuma sempre o papel de Especialista Maior do Qualify. Sempre associe as suas ideias de marketing ao valor que entregamos (SaaS B2B).
+4. Seja proativo ao sugerir táticas práticas de divulgação ou melhorias de produto.
+5. Formate com markdown rico e estruturado:
    - Use Títulos (###) para separar secções.
    - Use Listas com Marcadores para clareza.
    - Use **Negrito** para destacar áreas cruciais.
-5. O utilizador com quem está a falar é a equipa criadora / proprietária / CEO do Qualify.
-6. Você tem acesso ao histórico de conversas dos últimos 3 meses para manter contexto em longas sessões.
+6. O utilizador com quem está a falar é a equipa criadora / proprietária / CEO do Qualify.
+7. Você tem acesso ao histórico de conversas dos últimos 3 meses para manter contexto em longas sessões.
 `;
 
     // Preparar mensagens para OpenAI com o histórico da BD

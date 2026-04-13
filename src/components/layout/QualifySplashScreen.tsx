@@ -34,7 +34,7 @@ export function QualifySplashScreen({ message = "Verificando acesso...", classNa
 
       {/* Footer Branding */}
       <div className="absolute bottom-8 text-muted-foreground/40 text-[10px] font-bold uppercase tracking-[0.2em]">
-        Agência Qualify &copy; {new Date().getFullYear()}
+        ONIX AGENCE &copy; {new Date().getFullYear()}
       </div>
     </div>
   );
