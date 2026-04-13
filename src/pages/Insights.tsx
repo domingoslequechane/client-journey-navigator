@@ -45,7 +45,7 @@ export default function Insights() {
 
   useEffect(() => {
     const fetchInsights = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('insights')
         .select('id, title, slug, excerpt, cover_image, created_at')
         .eq('status', 'published')
@@ -54,7 +54,7 @@ export default function Insights() {
       if (error) {
         console.error('Error fetching insights:', error);
       } else {
-        setInsights(data || []);
+        setInsights((data as Insight[]) || []);
       }
       setIsLoading(false);
     };

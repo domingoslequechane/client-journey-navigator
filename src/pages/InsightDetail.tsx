@@ -55,7 +55,7 @@ export default function InsightDetail() {
 
   useEffect(() => {
     const fetchInsight = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('insights')
         .select('*')
         .eq('slug', slug)
@@ -65,7 +65,7 @@ export default function InsightDetail() {
       if (error) {
         console.error('Error fetching insight:', error);
       } else {
-        setInsight(data);
+        setInsight(data as Insight);
       }
       setIsLoading(false);
     };

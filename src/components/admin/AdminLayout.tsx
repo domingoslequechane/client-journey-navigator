@@ -142,9 +142,9 @@ export function AdminLayout() {
 
   const fetchBadges = async () => {
     const [{ count: feedbacks }, { count: tickets }, { count: transfers }] = await Promise.all([
-      supabase.from('feedbacks').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-      supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open'),
-      supabase.from('manual_payment_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      (supabase as any).from('feedbacks').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      (supabase as any).from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+      (supabase as any).from('manual_payment_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     ]);
     setBadges({ feedbacks: feedbacks || 0, tickets: tickets || 0, transfers: transfers || 0 });
   };
@@ -177,10 +177,10 @@ export function AdminLayout() {
 
   // Real-time listener for support messages
   useEffect(() => {
-    const channel = supabase
+    const channel = (supabase as any)
       .channel('admin-support-notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: 'is_admin=eq.false' },
-        async (payload) => {
+        async (payload: any) => {
           const soundEnabled = localStorage.getItem('admin-sound-enabled') !== 'false';
           const notificationsEnabled = localStorage.getItem('admin-notifications-enabled') !== 'false';
           if (soundEnabled) {
@@ -196,14 +196,14 @@ export function AdminLayout() {
           fetchBadges();
         }
       ).subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { (supabase as any).removeChannel(channel); };
   }, []);
 
   useEffect(() => {
-    const paymentChannel = supabase
+    const paymentChannel = (supabase as any)
       .channel('admin-payments-notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'manual_payment_requests' },
-        async (payload) => {
+        async (payload: any) => {
           const soundEnabled = localStorage.getItem('admin-sound-enabled') !== 'false';
           const notificationsEnabled = localStorage.getItem('admin-notifications-enabled') !== 'false';
           if (soundEnabled) {
@@ -219,7 +219,7 @@ export function AdminLayout() {
           fetchBadges();
         }
       ).subscribe();
-    return () => { supabase.removeChannel(paymentChannel); };
+    return () => { (supabase as any).removeChannel(paymentChannel); };
   }, []);
 
   if (permissionsLoading) {
@@ -415,153 +415,131 @@ export function AdminLayout() {
           )}
         </div>
 
-
         <div className="flex flex-col md:flex-row min-h-screen">
-        
-
-        
-
-
-        {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
-        <div className={cn(
-          "hidden md:flex h-screen sticky top-0 flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
-          collapsed ? "w-16" : "w-64"
-        )}>
+          {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
           <div className={cn(
-            "flex h-16 items-center gap-2 px-4 border-b border-border shrink-0",
-            collapsed && "justify-center px-2"
+            "hidden md:flex h-screen sticky top-0 flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
+            collapsed ? "w-16" : "w-64"
           )}>
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <span className="text-primary-foreground font-bold text-lg">Q</span>
-            </div>
-            {!collapsed && <span className="font-bold text-xl whitespace-nowrap">Qualify - Admin</span>}
-          </div>
-
-          <div className="flex-1 relative flex flex-col overflow-hidden">
-            <nav
-              ref={navRef}
-              onScroll={handleScroll}
-              className="flex-1 px-2 py-4 space-y-1 overflow-y-auto"
-            >
-              {navigation.map((item) => {
-                const isActive = location.pathname === item.href ||
-                  (item.href !== '/admin' && location.pathname.startsWith(item.href));
-                return <NavItem key={item.name} item={item} isActive={isActive} />;
-              })}
-            </nav>
-            {showScrollIndicator && (
-              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-card to-transparent pointer-events-none flex items-end justify-center pb-2">
-                <ChevronDown className="h-4 w-4 text-muted-foreground animate-bounce" />
+            <div className={cn(
+              "flex h-16 items-center gap-2 px-4 border-b border-border shrink-0",
+              collapsed && "justify-center px-2"
+            )}>
+              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+                <span className="text-primary-foreground font-bold text-lg">Q</span>
               </div>
-            )}
-          </div>
+              {!collapsed && <span className="font-bold text-xl whitespace-nowrap">Qualify - Admin</span>}
+            </div>
 
-          <div className="p-2 border-t border-border space-y-1 shrink-0">
-            <div className={cn("flex flex-col gap-1", collapsed && "items-center")}>
-              {collapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="w-full flex justify-center">
-                      <ThemeToggle variant="ghost" size="icon" className="h-10 w-10" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Alternar Tema</TooltipContent>
-                </Tooltip>
-              ) : (
-                <div className="flex items-center gap-3 px-3 py-1">
-                  <ThemeToggle />
-                  <span className="text-sm font-medium text-muted-foreground">Alternar Tema</span>
+            <div className="flex-1 relative flex flex-col overflow-hidden">
+              <nav
+                ref={navRef}
+                onScroll={handleScroll}
+                className="flex-1 px-2 py-4 space-y-1 overflow-y-auto"
+              >
+                {navigation.map((item) => {
+                  const isActive = location.pathname === item.href ||
+                    (item.href !== '/admin' && location.pathname.startsWith(item.href));
+                  return <NavItem key={item.name} item={item} isActive={isActive} />;
+                })}
+              </nav>
+              {showScrollIndicator && (
+                <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-card to-transparent pointer-events-none flex items-end justify-center pb-2">
+                  <ChevronDown className="h-4 w-4 text-muted-foreground animate-bounce" />
                 </div>
               )}
-
-              {collapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link to="/app" className="flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all">
-                      <Download className="h-5 w-5" />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Voltar ao App</TooltipContent>
-                </Tooltip>
-              ) : (
-                <Link to="/app" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all">
-                  <Download className="h-5 w-5" />
-                  Voltar ao App
-                </Link>
-              )}
             </div>
 
-            {user && (
-              <div className={cn("pt-2 border-t border-border mt-2", collapsed && "px-1")}>
-                {!collapsed && (
-                  <p className="px-3 py-1 text-xs text-muted-foreground truncate">{user.email}</p>
-                )}
+            <div className="p-2 border-t border-border space-y-1 shrink-0">
+              <div className={cn("flex flex-col gap-1", collapsed && "items-center")}>
                 {collapsed ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-center px-2 py-2.5 h-auto text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => setLogoutDialogOpen(true)}
-                      >
-                        <LogOut className="h-5 w-5" />
-                      </Button>
+                      <div className="w-full flex justify-center">
+                        <ThemeToggle variant="ghost" size="icon" className="h-10 w-10" />
+                      </div>
                     </TooltipTrigger>
-                    <TooltipContent side="right">Sair</TooltipContent>
+                    <TooltipContent side="right">Alternar Tema</TooltipContent>
                   </Tooltip>
                 ) : (
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 px-3 py-2.5 h-auto text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => setLogoutDialogOpen(true)}
-                  >
-                    <LogOut className="h-5 w-5" />
-                    Sair
-                  </Button>
+                  <div className="flex items-center gap-3 px-3 py-1">
+                    <ThemeToggle />
+                    <span className="text-sm font-medium text-muted-foreground">Alternar Tema</span>
+                  </div>
+                )}
+
+                {collapsed ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link to="/app" className="flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all">
+                        <Download className="h-5 w-5" />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Voltar ao App</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Link to="/app" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all">
+                    <Download className="h-5 w-5" />
+                    Voltar ao App
+                  </Link>
                 )}
               </div>
-            )}
 
-            <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Confirmar Saída</DialogTitle>
-                  <DialogDescription>Tem certeza que deseja sair da sua conta?</DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>Cancelar</Button>
-                  <Button variant="destructive" onClick={handleSignOut}>Sair</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCollapsed(!collapsed)}
-              className={cn(
-                "w-full mt-2 text-muted-foreground hover:bg-accent",
-                collapsed ? "justify-center px-2" : "justify-start gap-3 px-3"
+              {user && (
+                <div className={cn("pt-2 border-t border-border mt-2", collapsed && "px-1")}>
+                  {!collapsed && (
+                    <p className="px-3 py-1 text-xs text-muted-foreground truncate">{user.email}</p>
+                  )}
+                  {collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-center px-2 py-2.5 h-auto text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setLogoutDialogOpen(true)}
+                        >
+                          <LogOut className="h-5 w-5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Sair</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start gap-3 px-3 py-2.5 h-auto text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setLogoutDialogOpen(true)}
+                    >
+                      <LogOut className="h-5 w-5" />
+                      Sair
+                    </Button>
+                  )}
+                </div>
               )}
-            >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : <><ChevronLeft className="h-4 w-4" />Recolher Menu</>}
-            </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCollapsed(!collapsed)}
+                className={cn(
+                  "w-full mt-2 text-muted-foreground hover:bg-accent",
+                  collapsed ? "justify-center px-2" : "justify-start gap-3 px-3"
+                )}
+              >
+                {collapsed ? <ChevronRight className="h-4 w-4" /> : <><ChevronLeft className="h-4 w-4" />Recolher Menu</>}
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col pt-20 md:pt-0 overflow-y-auto">
+            {/* Main Content Area */}
+            <main className="flex-1 w-full relative px-4 md:px-0 flex flex-col">
+              <Outlet />
+              <AdminAIChat />
+            </main>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col pt-20 md:pt-0 overflow-y-auto">
-          {/* Main Content Sub-session */}
-          <main className="flex-1 w-full relative px-4 md:px-0 flex flex-col">
-            <Outlet />
-            <AdminAIChat />
-          </main>
-        </div>
-
-
-
-
-
-        {/* Logout Dialog (shared) */}
+        {/* Global Logout Dialog */}
         <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
           <DialogContent>
             <DialogHeader>
