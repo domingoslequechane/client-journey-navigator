@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, Maximize2, Minimize2, Loader2, PlaySquare } from 'lucide-react';
+import { Bot, X, Send, Maximize2, Minimize2, Loader2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,9 +23,11 @@ export function AdminAIChat() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -99,6 +101,12 @@ export function AdminAIChat() {
     const userMessage: Message = { role: 'user', content: input.trim() };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
     setIsLoading(true);
 
     try {
@@ -133,23 +141,23 @@ export function AdminAIChat() {
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
         if (value) {
-          streamBuffer += decoder.decode(value, { stream: true });
-          const lines = streamBuffer.split('\n');
-          // Mantém a última linha (que pode estar incompleta) no buffer
-          streamBuffer = lines.pop() || '';
+          const chunk = decoder.decode(value, { stream: true });
+          streamBuffer += chunk;
+          
+          const parts = streamBuffer.split('\n\n');
+          // Manter o último fragmento (que pode estar incompleto) para a próxima volta
+          streamBuffer = parts.pop() || '';
 
-          for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (!trimmedLine || trimmedLine === 'data: [DONE]') continue;
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line || line === 'data: [DONE]') continue;
 
-            if (trimmedLine.startsWith('data: ')) {
+            if (line.startsWith('data: ')) {
               try {
-                const dataStr = trimmedLine.slice(6);
-                const data = JSON.parse(dataStr);
-                const deltaContent = data.choices?.[0]?.delta?.content;
-                if (deltaContent) {
-                  aiResponseText += deltaContent;
-                  
+                const json = JSON.parse(line.substring(6));
+                const content = json.choices?.[0]?.delta?.content;
+                if (content) {
+                  aiResponseText += content;
                   setMessages((prev) => {
                     const newMessages = [...prev];
                     const lastIndex = newMessages.length - 1;
@@ -160,8 +168,8 @@ export function AdminAIChat() {
                   });
                 }
               } catch (e) {
-                // Se falhar o parse, a linha pode estar incompleta, volta para o buffer
-                streamBuffer = line + '\n' + streamBuffer;
+                // Se o JSON falhar nesta parte, tentamos novamente no próximo loop
+                streamBuffer = part + '\n\n' + streamBuffer;
               }
             }
           }
@@ -169,10 +177,26 @@ export function AdminAIChat() {
       }
     } catch (err: any) {
       console.error('Chat error:', err);
-      toast.error(err.message || 'Erro ao processar a mensagem.');
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Desculpe, ocorreu um erro de comunicação ou o serviço não está devidamente configurado.' }]);
+      // Tentar extrair detalhes do erro se for um JSON do servidor
+      let errorMessage = err.message || 'Erro ao processar a mensagem.';
+      
+      setMessages((prev) => [...prev, { 
+        role: 'assistant', 
+        content: `### ⚠️ Erro de Comunicação\n${errorMessage}\n\n*Certifique-se de que a ANTHROPIC_API_KEY está correta no Supabase.*` 
+      }]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCopy = async (content: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedIndex(index);
+      toast.success('Conversa copiada!');
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch (err) {
+      toast.error('Erro ao copiar texto.');
     }
   };
 
@@ -244,26 +268,52 @@ export function AdminAIChat() {
                   )}
                 </Avatar>
 
-                <div 
-                  className={cn(
-                    "rounded-2xl px-3 py-2 sm:px-4 sm:py-3 max-w-[85%] text-sm shadow-sm break-words",
-                    msg.role === 'user' 
-                      ? "bg-primary text-primary-foreground rounded-tr-sm" 
-                      : "bg-muted text-foreground rounded-tl-sm border"
-                  )}
-                >
-                  {msg.role === 'user' ? (
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                  ) : (
-                    <div className="prose prose-sm dark:prose-invert max-w-none 
-                      prose-p:leading-relaxed prose-p:my-2 
-                      prose-headings:text-primary prose-headings:mb-2 prose-headings:mt-4
-                      prose-li:my-1 prose-ul:my-2
-                      prose-strong:text-primary/90
-                      break-words">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {msg.content}
-                      </ReactMarkdown>
+                <div className={cn("flex flex-col gap-1 max-w-[85%]", msg.role === 'user' ? "items-end" : "items-start")}>
+                  <div 
+                    className={cn(
+                      "rounded-2xl px-3 py-2 sm:px-4 sm:py-3 text-sm shadow-sm break-words relative",
+                      msg.role === 'user' 
+                        ? "bg-primary text-primary-foreground rounded-tr-sm" 
+                        : "bg-muted text-foreground rounded-tl-sm border"
+                    )}
+                  >
+                    {msg.role === 'user' ? (
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                    ) : (
+                      <div className="prose prose-sm dark:prose-invert max-w-none 
+                        prose-p:leading-relaxed prose-p:my-3 
+                        prose-headings:text-primary prose-headings:mb-3 prose-headings:mt-5
+                        prose-li:my-1.5 prose-ul:my-3 prose-ol:my-3
+                        prose-strong:text-primary prose-strong:font-bold
+                        prose-code:bg-muted prose-code:px-1 prose-code:rounded
+                        break-words">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Message Actions (ChatGPT style) - Apenas para mensagens da IA */}
+                  {msg.role === 'assistant' && msg.content && (
+                    <div className="flex items-center gap-2 mt-1 px-1 flex-row">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-md hover:bg-muted text-muted-foreground/60 hover:text-primary transition-colors"
+                        onClick={() => handleCopy(msg.content, index)}
+                      >
+                        {copiedIndex === index ? (
+                          <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                      {copiedIndex === index && (
+                        <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">
+                          Copiado!
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -289,18 +339,34 @@ export function AdminAIChat() {
 
         {/* Input Area */}
         <div className="p-3 border-t bg-background/50 shrink-0">
-          <form onSubmit={handleSubmit} className="flex items-center gap-2 bg-muted/50 rounded-full p-1 border focus-within:border-primary/30 transition-colors">
-            <Input 
+          <form 
+            onSubmit={handleSubmit} 
+            className="flex items-end gap-2 bg-muted/50 rounded-2xl p-2 border focus-within:border-primary/30 transition-colors"
+          >
+            <textarea
+              ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Pergunte sobre receitas, agências ativas..."
-              className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50 h-10 px-4 shadow-none"
+              onChange={(e) => {
+                setInput(e.target.value);
+                // Auto-resize
+                e.target.style.height = 'auto';
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+              placeholder="Escreva aqui..."
+              className="flex-1 border-none bg-transparent focus:ring-0 focus:outline-none outline-none resize-none py-2 px-3 text-sm min-h-[40px] max-h-[150px] scrollbar-hide appearance-none shadow-none"
               disabled={isLoading}
+              rows={1}
             />
             <Button 
               type="submit" 
               size="icon" 
-              className="rounded-full shrink-0 h-10 w-10 transition-all hover:scale-110 active:scale-95 shadow-lg"
+              className="rounded-full shrink-0 h-10 w-10 transition-all hover:scale-110 active:scale-95 shadow-lg mb-0.5"
               disabled={!input.trim() || isLoading}
             >
               <Send className="h-4 w-4" />
