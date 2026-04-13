@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
 
 serve(async (req: Request) => {
   const corsResponse = handleCors(req);
@@ -16,7 +16,7 @@ serve(async (req: Request) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
         status: 401,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" }
       });
@@ -31,7 +31,7 @@ serve(async (req: Request) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
         status: 401,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" }
       });
@@ -66,9 +66,9 @@ serve(async (req: Request) => {
       });
     }
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      return new Response(JSON.stringify({ error: "Chave do OpenAI (Chat GPT) não está configurada no Supabase." }), {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) {
+      return new Response(JSON.stringify({ error: "Chave do Claude AI não está configurada no Supabase." }), {
         status: 500,
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" }
       });
@@ -104,9 +104,9 @@ serve(async (req: Request) => {
       .eq('user_id', user.id)
       .gte('created_at', threeMonthsAgo.toISOString())
       .order('created_at', { ascending: true })
-      .limit(20); // Limitar a 20 para não sobrecarregar o prompt inicial
+      .limit(30);
 
-    // 3. Obter contexto da B.D. (estatísticas rápidas para injetar no bot)
+    // 3. Obter contexto da B.D.
     const [
       { count: totalAgencies },
       { count: activeAgencies },
@@ -119,140 +119,83 @@ serve(async (req: Request) => {
       supabaseClient.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active')
     ]);
 
-    const systemPromptText = `
-Você é o Assistente Executivo e Especialista de IA para o painel de Administração da nossa própria plataforma SaaS: o Qualify.
-Você é um especialista absoluto na ferramenta Qualify, conhecendo todas as suas funcionalidades, arquitetura e potenciais casos de uso.
-Além disso, você é um especialista de alto nível em SaaS, Finanças, Marketing e Growth.
-Sua missão principal é ajudar os administradores e proprietários do Qualify a:
-1. Entender os dados da plataforma e tirar insights acionáveis.
-2. Traçar estratégias altamente eficientes de marketing, divulgação e crescimento para adquirir mais agências e utilizadores.
-3. Solucionar problemas (troubleshooting) e atuar como um conselheiro estratégico para melhorar a retenção.
+    const systemPromptText = `Você é o Especialista Qualify & Growth, o braço direito estratégico do CEO.
+Sua missão é ajudar a gerir o SaaS Qualify com inteligência competitiva e estratégias de marketing B2B.
 
-[CONTEXTO DE DADOS ATUAL - PLATAFORMA]
-- Total de Agências cadastradas: ${totalAgencies || 0}
-- Agências com Plano Ativo/Trial: ${activeAgencies || 0}
-- Total de Utilizadores na plataforma: ${totalUsers || 0}
-- Subscrições Ativas e Pagas: ${activeSubscriptions || 0}
+DADOS DA PLATAFORMA ATUALIZADOS:
+- Agências: ${totalAgencies || 0} (Ativas/Trial: ${activeAgencies || 0})
+- Utilizadores Totais: ${totalUsers || 0}
+- Subscrições Pagas: ${activeSubscriptions || 0}
 
-Regras:
-1. Responda num tom direto, consultivo e profissional, em português de Portugal (PT-PT).
-2. PROTOCOLO DE QUALIDADE E AUTO-REVISÃO:
-   Antes de emitir qualquer resposta, você DEVE realizar um processo interno e silencioso de revisão:
-   - Analise os dados da plataforma sob o perfil de Growth/Marketing.
-   - Verifique se a sua resposta contém erros gramaticais, técnicos ou de tom.
-   - Refine a estrutura para garantir que apenas o conteúdo pronto, correto e ultra-profissional seja entregue.
-   - É terminantemente proibido o uso de tags de "pensamento" (como <pensa>) ou qualquer exposição do seu processo de raciocínio interno. Entregue apenas a resposta final lapidada.
-3. Assuma sempre o papel de Especialista Maior do Qualify. Sempre associe as suas ideias de marketing ao valor que entregamos (SaaS B2B).
-4. Seja proativo ao sugerir táticas práticas de divulgação ou melhorias de produto.
-5. Formate com markdown rico e estruturado:
-   - Use Títulos (###) para separar secções.
-   - Use Listas com Marcadores para clareza.
-   - Use **Negrito** para destacar áreas cruciais.
-6. O utilizador com quem está a falar é a equipa criadora / proprietária / CEO do Qualify.
-7. Você tem acesso ao histórico de conversas dos últimos 3 meses para manter contexto em longas sessões.
+REGRAS DE OURO:
+1. IDIOMA: Responda SEMPRE em Português de Portugal (PT-PT) impecável.
+2. TOM: Consultivo, estratégico e focado em resultados.
+3. ESTILO: Evite marcações excessivas (como **). Use negrito apenas para conceitos cruciais. Mantenha o texto limpo e legível.
+4. PROIBIÇÃO ABSOLUTA: Nunca entregue "pensamentos" ou rascunhos. Entregue apenas a resposta final pronta.
 `;
 
-    // Preparar mensagens para OpenAI com o histórico da BD
-    const openAiMessages = [
-      { role: "system", content: systemPromptText },
-      ...(history || []).map((h: any) => ({
-        role: h.role,
-        content: h.content
-      }))
-    ];
-
-    // Se a última mensagem do prompt (vinda do front) não for igual à última do histórico, adicionamos
-    // (Pode acontecer se o insert falhou ou se o front enviou algo diferente)
-    if (history && history.length > 0 && history[history.length - 1].content !== lastUserMessage.content) {
-       openAiMessages.push({ role: "user", content: lastUserMessage.content });
-    } else if (!history || history.length === 0) {
-       openAiMessages.push({ role: "user", content: lastUserMessage.content });
-    }
-
-    const response = await fetch(OPENAI_API_URL, {
+    // PASSO 1: Gerar o rascunho (Draft)
+    const draftResponse = await fetch(CLAUDE_API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: openAiMessages,
-        temperature: 0.7,
-        stream: true
+        model: "claude-3-5-sonnet-20240620",
+        max_tokens: 1500,
+        system: systemPromptText,
+        messages: [
+          ...(history || []).map((h: any) => ({
+            role: h.role,
+            content: h.content
+          })),
+          { role: "user", content: lastUserMessage.content }
+        ],
       }),
     });
 
-    if (!response.ok) {
-        const errorData = await response.text();
-        console.error("OpenAI API error:", errorData);
-        return new Response(JSON.stringify({ error: "Erro de IA (OpenAI)." }), {
-            status: 500,
-            headers: { ...getCorsHeaders(req), "Content-Type": "application/json" }
-        });
-    }
+    if (!draftResponse.ok) throw new Error("Erro na geração do rascunho com Claude.");
+    const draftData = await draftResponse.json();
+    const draftText = draftData.content[0].text;
 
-    // Processar o stream e guardar a resposta final na B.D. de forma assíncrona
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    const encoder = new TextEncoder();
+    // PASSO 2: Auto-Revisão e Refinamento Silencioso
+    const finalResponse = await fetch(CLAUDE_API_URL, {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-3-5-sonnet-20240620",
+        max_tokens: 1500,
+        system: "Você é um revisor de elite. Sua tarefa é pegar a resposta abaixo e melhorá-la. Remova redundâncias, corrija a gramática para PT-PT, elimine marcações desnecessárias e garanta um tom profissional. ENTREGUE APENAS O TEXTO FINAL REFINADO. NADA DE COMENTÁRIOS.",
+        messages: [{ role: "user", content: `Refine e corrija esta resposta para o CEO do Qualify:\n\n${draftText}` }],
+      }),
+    });
 
-    (async () => {
-      let fullAssistantContent = "";
-      try {
-        while (true) {
-          const { done, value } = await reader!.read();
-          if (done) break;
+    if (!finalResponse.ok) throw new Error("Erro na revisão com Claude.");
+    const finalData = await finalResponse.json();
+    const cleanContent = finalData.content[0].text;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
+    // 4. Guardar a resposta final e retornar
+    await supabaseClient.from('admin_chat_messages').insert({
+      user_id: user.id,
+      role: 'assistant',
+      content: cleanContent
+    });
 
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const dataStr = line.slice(6).trim();
-              if (dataStr === "[DONE]") {
-                await writer.write(encoder.encode("data: [DONE]\n\n"));
-                continue;
-              }
-              try {
-                const data = JSON.parse(dataStr);
-                const text = data.choices?.[0]?.delta?.content;
-                if (text) {
-                  fullAssistantContent += text;
-                  await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-                }
-              } catch (e) { /* ignore */ }
-            }
-          }
-        }
-        
-        // Guardar a resposta da IA na BD
-        if (fullAssistantContent) {
-          await supabaseClient.from('admin_chat_messages').insert({
-            user_id: user.id,
-            role: 'assistant',
-            content: fullAssistantContent
-          });
-        }
-      } catch (err) {
-        console.error("[admin-chat] Stream processing error:", err);
-      } finally {
-        writer.close();
-      }
-    })();
-
-    return new Response(readable, {
-      headers: { ...getCorsHeaders(req), "Content-Type": "text/event-stream" },
+    return new Response(JSON.stringify({ choices: [{ delta: { content: cleanContent } }] }), {
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" }
     });
 
   } catch (err: any) {
     console.error("Request error:", err);
-    return new Response(JSON.stringify({ error: "Erro interno do servidor." }), {
+    return new Response(JSON.stringify({ error: "Erro interno do servidor ou falha na API do Claude." }), {
       status: 500,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" }
     });
   }
 });
-
