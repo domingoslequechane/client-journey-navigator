@@ -415,7 +415,7 @@ export function AdminLayout() {
           )}
         </div>
 
-        <div className="flex flex-col md:flex-row min-h-screen">
+        <div className="flex flex-col md:flex-row min-h-screen w-full">
           {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
           <div className={cn(
             "hidden md:flex h-screen sticky top-0 flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
