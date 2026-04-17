@@ -57,24 +57,24 @@ const STATUS_CONFIG: Record<string, { labelKey: string; color: string; icon: any
 };
 
 const PRIVILEGES = [
-  { id: 'sales', labelKey: 'navigation.salesFunnel', descriptionKey: 'roles.sales.description' },
-  { id: 'designer', labelKey: 'navigation.operationalFlow', descriptionKey: 'roles.operations.description' },
-  { id: 'finance', labelKey: 'navigation.finance', descriptionKey: 'finance.title' },
-  { id: 'link23', labelKey: 'navigation.link23', descriptionKey: 'navigation.link23' },
-  { id: 'editorial', labelKey: 'navigation.editorial', descriptionKey: 'navigation.editorial' },
-  { id: 'social_media', labelKey: 'navigation.socialMedia', descriptionKey: 'navigation.socialMedia' },
-  { id: 'studio', labelKey: 'navigation.studio', descriptionKey: 'navigation.studio' },
-  { id: 'clients', labelKey: 'navigation.clients', descriptionKey: 'navigation.clients' },
-  { id: 'team', labelKey: 'navigation.team', descriptionKey: 'navigation.team' },
-  { id: 'qia', labelKey: 'navigation.qia', descriptionKey: 'navigation.qia' },
-  { id: 'ai_agents', labelKey: 'navigation.aiAgents', descriptionKey: 'navigation.aiAgents' },
+  { id: 'sales', labelKey: 'navigation.salesFunnel', descriptionKey: 'privileges.sales' },
+  { id: 'designer', labelKey: 'navigation.operationalFlow', descriptionKey: 'privileges.designer' },
+  { id: 'finance', labelKey: 'navigation.finance', descriptionKey: 'privileges.finance' },
+  { id: 'link23', labelKey: 'navigation.link23', descriptionKey: 'privileges.link23' },
+  { id: 'editorial', labelKey: 'navigation.editorial', descriptionKey: 'privileges.editorial' },
+  { id: 'social_media', labelKey: 'navigation.socialMedia', descriptionKey: 'privileges.social_media' },
+  { id: 'studio', labelKey: 'navigation.studio', descriptionKey: 'privileges.studio' },
+  { id: 'clients', labelKey: 'navigation.clients', descriptionKey: 'privileges.clients' },
+  { id: 'team', labelKey: 'navigation.team', descriptionKey: 'privileges.team' },
+  { id: 'qia', labelKey: 'navigation.qia', descriptionKey: 'privileges.qia' },
+  { id: 'ai_agents', labelKey: 'navigation.aiAgents', descriptionKey: 'privileges.ai_agents' },
 ] as const;
 
 const UNIVERSAL_PRIVILEGES = [
-  { id: 'academy', labelKey: 'navigation.academy' },
-  { id: 'support', labelKey: 'navigation.support' },
-  { id: 'notifications', labelKey: 'navigation.notifications' },
-  { id: 'settings', labelKey: 'navigation.settings' },
+  { id: 'academy', labelKey: 'navigation.academy', descriptionKey: 'privileges.academy' },
+  { id: 'support', labelKey: 'navigation.support', descriptionKey: 'privileges.support' },
+  { id: 'notifications', labelKey: 'navigation.notifications', descriptionKey: 'privileges.notifications' },
+  { id: 'settings', labelKey: 'navigation.settings', descriptionKey: 'privileges.settings' },
 ];
 
 const inviteSchema = z.object({
@@ -516,7 +516,7 @@ export default function Team() {
         {limits.maxTeamMembers !== null && (
           <div className="w-full sm:w-64 space-y-1.5 order-last sm:order-none sm:mx-4">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground font-medium">Membros da Equipe</span>
+              <span className="text-muted-foreground font-medium">{t('members.label')}</span>
               <span className={cn("font-bold", usage.teamMembersCount >= limits.maxTeamMembers ? "text-destructive" : "text-primary")}>
                 {usage.teamMembersCount} / {limits.maxTeamMembers}
               </span>
@@ -536,7 +536,7 @@ export default function Team() {
               {!canManageTeam ? (
                 <>
                   <Lock className="h-4 w-4" />
-                  <span>Restrito</span>
+                  <span>{t('invite.restricted')}</span>
                 </>
               ) : !canInviteTeamMember ? (
                 <>
@@ -610,7 +610,7 @@ export default function Team() {
                                 <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary transition-colors" />
                               </TooltipTrigger>
                               <TooltipContent side="right" className="max-w-[220px]">
-                                <p className="text-xs">{privilege.descriptionKey.includes('.') ? t(privilege.descriptionKey) : tCommon(privilege.descriptionKey)}</p>
+                                <p className="text-xs">{t(privilege.descriptionKey)}</p>
                               </TooltipContent>
                             </Tooltip>
                           </label>
@@ -620,9 +620,9 @@ export default function Team() {
                   </TooltipProvider>
                 </div>
                 <div className="flex items-center gap-2 px-1">
-                  <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">Universal</Badge>
+                  <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">{t('invite.universalLabel')}</Badge>
                   <p className="text-[11px] text-muted-foreground italic">
-                    Academia, Suporte, Notificações e Configurações são liberados para todos os membros.
+                    {t('invite.universalDescription')}
                   </p>
                 </div>
               </div>
