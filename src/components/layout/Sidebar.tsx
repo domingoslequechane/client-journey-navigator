@@ -187,7 +187,7 @@ export function Sidebar() {
   // Filter navigation items based on role + module access
   const navigation = useMemo(() => {
     const allItems: Array<{ 
-      name: React.ReactNode; 
+      name: string; 
       href: string; 
       icon: any; 
       tutorialId: string; 
@@ -565,7 +565,7 @@ export function Sidebar() {
                   : location.pathname.startsWith(item.href);
                 return (
                   <AnimatedContainer 
-                    key={item.name} 
+                    key={item.href} 
                     delay={index * 0.03} 
                     duration={0.4}
                   >
