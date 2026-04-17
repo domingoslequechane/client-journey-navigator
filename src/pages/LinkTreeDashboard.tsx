@@ -347,7 +347,7 @@ export default function LinkTreeDashboard() {
           <Button 
             onClick={() => {
               const isRestricted = ['free', 'trial', null].includes(planType as string);
-              if (isRestricted && usage.linkPagesCount >= (limits.maxLinkPages ?? 2)) {
+              if (isRestricted && limits.maxLinkPages !== null && usage.linkPagesCount >= limits.maxLinkPages) {
                 setShowLimitModal(true);
               } else {
                 setSelectClientOpen(true);
@@ -364,7 +364,7 @@ export default function LinkTreeDashboard() {
       <FreeLimitModal
         open={showLimitModal}
         onOpenChange={setShowLimitModal}
-        limitDescription="2 árvores de links no Link23"
+        limitDescription={`${limits.maxLinkPages || 2} árvores de links no Link23`}
       />
 
       {/* Select Client Dialog */}
