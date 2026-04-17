@@ -208,9 +208,11 @@ export function usePlanLimits(): UsePlanLimitsReturn {
       
       if (plan_limits) {
         const d = plan_limits as any;
+        const calculatedMaxClients = d.max_clients ?? getLimitValue(clientLimits, currentPlanType);
+        
         setLimits({
           // Use DB value if present, otherwise use restrictive fallback
-          maxClients: d.max_clients ?? getLimitValue(clientLimits, currentPlanType),
+          maxClients: calculatedMaxClients,
           maxSocialAccounts: d.max_social_accounts ?? getLimitValue(socialAccountLimits, currentPlanType),
           maxContractsPerMonth: d.max_contracts_per_month,
           maxAIMessagesPerMonth: d.max_ai_messages_per_month,
@@ -220,7 +222,8 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           // Trial has 5/day per tool limit; paid plans use their tier-based limits
           dailyStudioLimit: isTrial ? 5 : getLimitValue(dailyStudioLimits, currentPlanType),
           maxSocialPostsPerMonth: d.max_social_posts_per_month,
-          maxLinkPages: d.max_link_pages,
+          // Link23 limit equals the client limit of the plan
+          maxLinkPages: d.max_link_pages ?? calculatedMaxClients,
           can_export_data: d.can_export_data ?? false,
           has_finance_module: d.has_finance_module ?? false,
           has_studio_module: d.has_studio_module ?? isTrial,
@@ -241,11 +244,13 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         });
       } else {
         // Fallback for NULL or undefined plan
+        const calculatedMaxClients = isTrial ? 2 : getLimitValue(clientLimits, currentPlanType);
         setLimits({
           ...DEFAULT_LIMITS,
-          maxClients: isTrial ? 2 : getLimitValue(clientLimits, currentPlanType),
+          maxClients: calculatedMaxClients,
           maxSocialAccounts: isTrial ? 2 : getLimitValue(socialAccountLimits, currentPlanType),
           dailyStudioLimit: isTrial ? 5 : getLimitValue(dailyStudioLimits, currentPlanType),
+          maxLinkPages: calculatedMaxClients, // Sync with clients
           has_studio_module: isTrial,
           has_linktree_module: isTrial,
           has_editorial_module: isTrial,
