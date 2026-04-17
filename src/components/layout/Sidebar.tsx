@@ -102,7 +102,7 @@ export function Sidebar() {
 
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [lockedModule, setLockedModule] = useState<{ name: string; plan: string; type: 'plan' | 'privilege' } | null>(null);
+  const [lockedModule, setLockedModule] = useState<{ name: string; plan: string; type: 'plan' | 'privilege' | 'development' } | null>(null);
 
   // Detect tablet viewport
   useEffect(() => {
@@ -193,7 +193,7 @@ export function Sidebar() {
       tutorialId: string; 
       show: boolean; 
       locked: boolean; 
-      lockType: 'plan' | 'privilege' | null;
+      lockType: 'plan' | 'privilege' | 'development' | null;
       requiredPlan: string; 
       badge?: React.ReactNode; 
     }> = [
