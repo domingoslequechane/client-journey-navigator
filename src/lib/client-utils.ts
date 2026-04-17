@@ -90,5 +90,6 @@ export function mapDbClientToUiClient(
         paused: dbClient.paused || false,
         pausedAt: dbClient.paused_at || undefined,
         pausedBy: dbClient.paused_by || undefined,
+        slug: dbClient.slug || '',
     };
 }

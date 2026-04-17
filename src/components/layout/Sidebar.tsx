@@ -102,7 +102,7 @@ export function Sidebar() {
 
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [lockedModule, setLockedModule] = useState<{ name: string; plan: string } | null>(null);
+  const [lockedModule, setLockedModule] = useState<{ name: string; plan: string; type: 'plan' | 'privilege' } | null>(null);
 
   // Detect tablet viewport
   useEffect(() => {
@@ -193,20 +193,130 @@ export function Sidebar() {
       tutorialId: string; 
       show: boolean; 
       locked: boolean; 
+      lockType: 'plan' | 'privilege' | null;
       requiredPlan: string; 
       badge?: React.ReactNode; 
     }> = [
-      { name: t('navigation.dashboard'), href: '/app', icon: LayoutDashboard, tutorialId: 'sidebar-dashboard', show: true, locked: isNoPlan, requiredPlan: 'Lança' },
-      { name: t('navigation.pipeline'), href: '/app/pipeline', icon: Kanban, tutorialId: 'sidebar-pipeline', show: canAccessModule('pipeline'), locked: isNoPlan, requiredPlan: 'Lança' },
-      { name: t('navigation.finance'), href: '/app/finance', icon: Wallet, tutorialId: 'sidebar-finance', show: canAccessModule('finances'), locked: !canAccessFinance, requiredPlan: 'Lança' },
-      { name: t('navigation.link23'), href: '/app/link-trees', icon: Link2, tutorialId: 'sidebar-linktree', show: canAccessModule('link23'), locked: !canAccessLinkTree, requiredPlan: 'Lança' },
-      { name: t('navigation.editorial'), href: '/app/editorial', icon: CalendarDays, tutorialId: 'sidebar-editorial', show: canAccessModule('editorial'), locked: !canAccessEditorial, requiredPlan: 'Lança' },
-      { name: t('navigation.socialMedia'), href: '/app/social-media', icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, tutorialId: 'sidebar-social-media', show: canAccessModule('social'), locked: !canAccessSocialMedia, requiredPlan: 'Lança' },
-      { name: t('navigation.qia'), href: '/app/ai-assistant', icon: MessagesSquare, tutorialId: 'sidebar-ai', show: canAccessModule('qia'), locked: isNoPlan, requiredPlan: 'Lança' },
-      { name: t('navigation.studio'), href: '/app/studio', icon: PenTool, tutorialId: 'sidebar-studio', show: canAccessModule('studio'), locked: !canAccessStudio || isNoPlan, requiredPlan: 'Lança' },
-      { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, tutorialId: 'sidebar-academia', show: canAccessModule('academy'), locked: isNoPlan, requiredPlan: 'Lança' },
-      { name: t('navigation.clients'), href: '/app/clients', icon: Building2, tutorialId: 'sidebar-clients', show: canAccessModule('clients'), locked: isNoPlan, requiredPlan: 'Lança' },
-      { name: t('navigation.team'), href: '/app/team', icon: UsersRound, tutorialId: 'sidebar-team', show: canAccessModule('team'), locked: isNoPlan, requiredPlan: 'Lança' },
+      { 
+        name: t('navigation.dashboard'), 
+        href: '/app', 
+        icon: LayoutDashboard, 
+        tutorialId: 'sidebar-dashboard', 
+        show: true, 
+        locked: isNoPlan, 
+        lockType: isNoPlan ? 'plan' : null,
+        requiredPlan: 'Lança' 
+      },
+      { 
+        name: t('navigation.pipeline'), 
+        href: '/app/pipeline', 
+        icon: Kanban, 
+        tutorialId: 'sidebar-pipeline', 
+        show: true, 
+        locked: !canAccessModule('pipeline') || isNoPlan, 
+        lockType: isNoPlan ? 'plan' : (!canAccessModule('pipeline') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
+      { 
+        name: t('navigation.finance'), 
+        href: '/app/finance', 
+        icon: Wallet, 
+        tutorialId: 'sidebar-finance', 
+        show: true, 
+        locked: !canAccessModule('finances') || !canAccessFinance, 
+        lockType: !canAccessFinance ? 'plan' : (!canAccessModule('finances') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
+      { 
+        name: t('navigation.link23'), 
+        href: '/app/link-trees', 
+        icon: Link2, 
+        tutorialId: 'sidebar-linktree', 
+        show: true, 
+        locked: !canAccessModule('link23') || !canAccessLinkTree, 
+        lockType: !canAccessLinkTree ? 'plan' : (!canAccessModule('link23') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
+      { 
+        name: t('navigation.editorial'), 
+        href: '/app/editorial', 
+        icon: CalendarDays, 
+        tutorialId: 'sidebar-editorial', 
+        show: true, 
+        locked: !canAccessModule('editorial') || !canAccessEditorial, 
+        lockType: !canAccessEditorial ? 'plan' : (!canAccessModule('editorial') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
+      { 
+        name: t('navigation.socialMedia'), 
+        href: '/app/social-media', 
+        icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, 
+        tutorialId: 'sidebar-social-media', 
+        show: true, 
+        locked: !canAccessModule('social') || !canAccessSocialMedia, 
+        lockType: !canAccessSocialMedia ? 'plan' : (!canAccessModule('social') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
+      { 
+        name: t('navigation.qia'), 
+        href: '/app/ai-assistant', 
+        icon: MessagesSquare, 
+        tutorialId: 'sidebar-ai', 
+        show: true, 
+        locked: !canAccessModule('qia') || isNoPlan, 
+        lockType: isNoPlan ? 'plan' : (!canAccessModule('qia') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
+      { 
+        name: t('navigation.aiAgents'), 
+        href: '/app/ai-agents', 
+        icon: Bot, 
+        tutorialId: 'sidebar-ai-agents', 
+        show: true, 
+        locked: true, 
+        lockType: 'development',
+        requiredPlan: 'arco' 
+      },
+      { 
+        name: t('navigation.studio'), 
+        href: '/app/studio', 
+        icon: PenTool, 
+        tutorialId: 'sidebar-studio', 
+        show: true, 
+        locked: !canAccessModule('studio') || !canAccessStudio || isNoPlan, 
+        lockType: (!canAccessStudio || isNoPlan) ? 'plan' : (!canAccessModule('studio') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
+      { 
+        name: t('navigation.academy'), 
+        href: '/app/academia', 
+        icon: GraduationCap, 
+        tutorialId: 'sidebar-academia', 
+        show: true, 
+        locked: !canAccessModule('academy') || isNoPlan, 
+        lockType: isNoPlan ? 'plan' : (!canAccessModule('academy') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
+      { 
+        name: t('navigation.clients'), 
+        href: '/app/clients', 
+        icon: Building2, 
+        tutorialId: 'sidebar-clients', 
+        show: true, 
+        locked: !canAccessModule('clients') || isNoPlan, 
+        lockType: isNoPlan ? 'plan' : (!canAccessModule('clients') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
+      { 
+        name: t('navigation.team'), 
+        href: '/app/team', 
+        icon: UsersRound, 
+        tutorialId: 'sidebar-team', 
+        show: true, 
+        locked: !canAccessModule('team') || isNoPlan, 
+        lockType: isNoPlan ? 'plan' : (!canAccessModule('team') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
       { 
         name: 'Administração', 
         href: '/admin', 
@@ -214,6 +324,7 @@ export function Sidebar() {
         tutorialId: 'sidebar-admin', 
         show: !!isInternalAdmin, 
         locked: false, 
+        lockType: null,
         requiredPlan: '',
         badge: pendingPaymentsCount > 0 ? (
           <span className="flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold">
@@ -221,7 +332,16 @@ export function Sidebar() {
           </span>
         ) : undefined
       },
-      { name: 'Financeiro', href: '/admin/finance', icon: Wallet, tutorialId: 'sidebar-admin-finance', show: !!isInternalAdmin, locked: false, requiredPlan: '' },
+      { 
+        name: 'Financeiro', 
+        href: '/admin/finance', 
+        icon: Wallet, 
+        tutorialId: 'sidebar-admin-finance', 
+        show: !!isInternalAdmin, 
+        locked: false, 
+        lockType: null,
+        requiredPlan: '' 
+      },
     ];
     return allItems.filter(item => item.show);
   }, [canAccessModule, canAccessFinance, canAccessStudio, canAccessLinkTree, canAccessEditorial, canAccessSocialMedia, t, isNoPlan, isInternalAdmin, pendingPaymentsCount]);
@@ -249,10 +369,51 @@ export function Sidebar() {
   };
 
   const NavItem = ({ item, isActive }: { item: typeof navigation[0]; isActive: boolean }) => {
+    // Items in development will navigate to their pages directly to show the splash screen
+    if (item.locked && item.lockType === 'development') {
+      const devContent = (
+        <Link
+          to={item.href}
+          data-tutorial={item.tutorialId}
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left',
+            isActive 
+              ? 'bg-accent/30 text-foreground' 
+              : 'text-muted-foreground/70 hover:bg-accent/50 cursor-pointer',
+            collapsed && 'justify-center px-2'
+          )}
+        >
+          <item.icon className="h-5 w-5 shrink-0 opacity-70" />
+          {!collapsed && (
+            <>
+              <span className="flex-1 opacity-80">{item.name}</span>
+              <Lock className="h-3.5 w-3.5 opacity-60" />
+            </>
+          )}
+        </Link>
+      );
+
+      if (collapsed) {
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>{devContent}</TooltipTrigger>
+            <TooltipContent side="right">
+              🚧 {item.name} (Brevemente)
+            </TooltipContent>
+          </Tooltip>
+        );
+      }
+      return devContent;
+    }
+
     if (item.locked) {
       const lockedContent = (
         <button
-          onClick={() => setLockedModule({ name: item.name, plan: item.requiredPlan })}
+          onClick={() => setLockedModule({ 
+            name: item.name as string, 
+            plan: item.requiredPlan,
+            type: item.lockType || 'plan'
+          })}
           data-tutorial={item.tutorialId}
           className={cn(
             'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left',
@@ -332,7 +493,7 @@ export function Sidebar() {
   return (
     <TooltipProvider delayDuration={0}>
       <div className={cn(
-        "flex h-screen flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
+        "flex h-full flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
         collapsed ? "w-16" : "w-64"
       )}>
         <div className="border-b border-border shrink-0">
@@ -387,7 +548,7 @@ export function Sidebar() {
           <nav
             ref={navRef}
             onScroll={handleScroll}
-            className="flex-1 px-2 py-4 space-y-1 overflow-y-auto"
+            className="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden"
           >
             {subLoading ? (
               // Navigation Skeletons
@@ -736,6 +897,7 @@ export function Sidebar() {
         onOpenChange={(open) => !open && setLockedModule(null)}
         moduleName={lockedModule?.name || ''}
         requiredPlan={lockedModule?.plan}
+        type={lockedModule?.type}
       />
     </TooltipProvider>
   );

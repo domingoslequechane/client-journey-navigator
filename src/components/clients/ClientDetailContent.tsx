@@ -477,15 +477,17 @@ export function ClientDetailContent({ client, onUpdate, userId }: ClientDetailCo
         <h4 className="font-semibold text-sm">Informações do Cliente</h4>
         <div className="flex flex-wrap items-center gap-2">
           {/* Link Tree Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 flex-1 sm:flex-none"
-            onClick={() => navigate(`/app/clients/${client.id}/links`)}
-          >
-            <Link className="h-3 w-3" />
-            Links
-          </Button>
+          {hasPrivilege('link23') && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 flex-1 sm:flex-none"
+              onClick={() => navigate(`/app/clients/${client.slug || client.id}/links`)}
+            >
+              <Link className="h-3 w-3" />
+              Links
+            </Button>
+          )}
 
           {canEditClient && (
             <Button
@@ -493,7 +495,7 @@ export function ClientDetailContent({ client, onUpdate, userId }: ClientDetailCo
               size="sm"
               className="gap-2 flex-1 sm:flex-none"
               disabled={isPaused}
-              onClick={() => navigate(`/app/clients/edit/${client.id}`)}
+              onClick={() => navigate(`/app/clients/edit/${client.slug || client.id}`)}
             >
               {isPaused ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
               Editar

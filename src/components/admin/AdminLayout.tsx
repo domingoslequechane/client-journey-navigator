@@ -415,10 +415,10 @@ export function AdminLayout() {
           )}
         </div>
 
-        <div className="flex flex-col md:flex-row min-h-screen w-full">
+        <div className="flex flex-col md:flex-row h-[100dvh] w-full overflow-hidden">
           {/* ── Desktop Sidebar ───────────────────────────────────────────── */}
           <div className={cn(
-            "hidden md:flex h-screen sticky top-0 flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
+            "hidden md:flex h-full flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden sticky top-0",
             collapsed ? "w-16" : "w-64"
           )}>
             <div className={cn(
@@ -435,7 +435,7 @@ export function AdminLayout() {
               <nav
                 ref={navRef}
                 onScroll={handleScroll}
-                className="flex-1 px-2 py-4 space-y-1 overflow-y-auto"
+                className="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden"
               >
                 {navigation.map((item) => {
                   const isActive = location.pathname === item.href ||
@@ -530,7 +530,7 @@ export function AdminLayout() {
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col pt-20 md:pt-0 overflow-y-auto">
+          <div className="flex-1 flex flex-col pt-16 md:pt-0 overflow-y-auto relative h-full">
             {/* Main Content Area */}
             <main className="flex-1 w-full relative px-4 md:px-0 flex flex-col">
               <Outlet />

@@ -99,7 +99,7 @@ serve(async (req) => {
     if (!isAdmin) {
       console.error(`User ${user.id} (${user.email}) attempted to invite without admin privileges. Role: ${profileData?.role}, AccountType: ${profileData?.account_type}, Privileges: ${profileData?.privileges?.join(', ')}`);
       return new Response(
-        JSON.stringify({ error: "Apenas administradores podem convidar novos membros" }),
+        JSON.stringify({ error: "Apenas o dono da agência pode convidar novos membros" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -109,7 +109,7 @@ serve(async (req) => {
     if (!adminOrgId) {
       console.error(`Admin ${user.id} has no organization_id`);
       return new Response(
-        JSON.stringify({ error: "Administrador não está associado a uma organização" }),
+        JSON.stringify({ error: "O Dono não está associado a uma organização" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -140,7 +140,7 @@ serve(async (req) => {
     }
 
     const { email, fullName, privileges = [], resend: isResend } = validationResult.data;
-    const role = privileges.includes('admin') ? 'admin' : 'sales';
+    const role = privileges.includes('admin') || privileges.includes('owner') ? 'Owner' : 'User';
 
     console.log(`Admin ${user.id} ${isResend ? 'resending invite to' : 'inviting user'}: ${email}, ${fullName}, role: ${role}, privileges: ${privileges.join(', ')}`);
 

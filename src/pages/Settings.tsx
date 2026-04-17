@@ -408,7 +408,7 @@ export default function Settings() {
   };
 
   const roleLabel: Record<string, string> = {
-    admin: 'Administrador', sales: 'Vendas',
+    owner: 'Dono (Owner)', sales: 'Vendas',
     operations: 'Operações', campaign_management: 'Gestor de Campanhas',
   };
 

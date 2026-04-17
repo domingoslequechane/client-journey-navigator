@@ -6,14 +6,16 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientFormView, ClientFormData, initialFormData } from '@/components/clients/ClientFormView';
 import { useOrganization } from '@/hooks/useOrganization';
+import { slugify } from '@/lib/utils';
 
 export default function EditClient() {
   const navigate = useNavigate();
-  const { clientId } = useParams<{ clientId: string }>();
+  const { clientIdOrSlug } = useParams<{ clientIdOrSlug: string }>();
 
   const [formData, setFormData] = useState<ClientFormData>(initialFormData);
   const [saving, setSaving] = useState(false);
   const [loadingClient, setLoadingClient] = useState(true);
+  const [actualClientId, setActualClientId] = useState<string | null>(null);
   const { organizationId } = useOrganization();
 
   // Update form data helpers - use functional updates to avoid stale state
@@ -36,26 +38,35 @@ export default function EditClient() {
 
   // Load client data on mount
   useEffect(() => {
-    if (clientId && organizationId) {
-      loadClientData(clientId);
-    } else if (!clientId) {
+    if (clientIdOrSlug && organizationId) {
+      loadClientData(clientIdOrSlug);
+    } else if (!clientIdOrSlug) {
       navigate('/app/clients');
     }
-  }, [clientId, organizationId, navigate]);
+  }, [clientIdOrSlug, organizationId, navigate]);
 
-  const loadClientData = async (id: string) => {
+  const loadClientData = async (identifier: string) => {
     setLoadingClient(true);
     try {
-      const { data: client, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', id)
+      // Check if identifier is a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+
+      let query = supabase.from('clients').select('*');
+      
+      if (isUUID) {
+        query = query.eq('id', identifier);
+      } else {
+        query = query.eq('slug', identifier);
+      }
+
+      const { data: client, error } = await query
         .eq('organization_id', organizationId)
         .single();
 
       if (error) throw error;
 
       if (client) {
+        setActualClientId(client.id);
         // Set form data directly from database - no draft interference
         setFormData({
           companyName: client.company_name || '',
@@ -96,8 +107,8 @@ export default function EditClient() {
       toast({ title: 'Erro', description: 'Preencha os campos obrigatórios', variant: 'destructive' });
       return;
     }
-
-    if (!clientId) return;
+    
+    if (!actualClientId) return;
 
     setSaving(true);
     try {
@@ -118,18 +129,19 @@ export default function EditClient() {
         bant_authority: formData.bant.authority,
         bant_need: formData.bant.need,
         bant_timeline: formData.bant.timeline,
+        slug: slugify(formData.companyName),
       };
 
       const { error } = await supabase
         .from('clients')
         .update(clientData)
-        .eq('id', clientId)
+        .eq('id', actualClientId)
         .eq('organization_id', organizationId);
 
       if (error) throw error;
 
       toast({ title: 'Sucesso!', description: 'Cliente atualizado com sucesso' });
-      navigate(`/app/clients/${clientId}`);
+      navigate(`/app/clients/${clientIdOrSlug}`);
     } catch (error) {
       console.error('Error updating client:', error);
       toast({ title: 'Erro', description: 'Não foi possível atualizar o cliente', variant: 'destructive' });
@@ -155,7 +167,7 @@ export default function EditClient() {
       onSubmit={handleSubmit}
       saving={saving}
       isEditMode={true}
-      backLink={`/app/clients/${clientId}`}
+      backLink={`/app/clients/${clientIdOrSlug}`}
     />
   );
 }

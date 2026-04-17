@@ -70,6 +70,7 @@ export function AISuggestionCard({ clients }: AISuggestionCardProps) {
   }
 
   const Icon = SUGGESTION_ICONS[suggestion.type] || ArrowRight;
+  const clientSlug = clients.find(c => c.id === suggestion.clientId)?.slug;
 
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border/50 bg-gradient-to-br from-primary/10 to-card/80">
@@ -109,7 +110,7 @@ export function AISuggestionCard({ clients }: AISuggestionCardProps) {
               Prioridade {suggestion.priority === 'high' ? 'alta' : suggestion.priority === 'medium' ? 'média' : 'baixa'}
             </span>
           </div>
-          <Link to={`/app/clients/${suggestion.clientId}`}>
+          <Link to={`/app/clients/${clientSlug || suggestion.clientId}`}>
             <Button size="sm" className="gap-1">
               {suggestion.action}
               <ArrowRight className="h-4 w-4" />

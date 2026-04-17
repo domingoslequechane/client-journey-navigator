@@ -84,7 +84,8 @@ export function useTranslatedLabels() {
   };
 
   const roleLabels: Record<string, string> = {
-    admin: tTeam('roles.admin.name'),
+    owner: tTeam('roles.owner.name', 'Owner (Dono)'),
+    user: tTeam('roles.user.name', 'User (Colaborador)'),
     sales: tTeam('roles.sales.name'),
     operations: tTeam('roles.operations.name'),
     campaign_management: tTeam('roles.campaign_management.name'),

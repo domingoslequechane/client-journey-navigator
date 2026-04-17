@@ -14,6 +14,7 @@ import { useDraft } from '@/hooks/useDraft';
 import { useOrganization } from '@/hooks/useOrganization';
 import { ClientFormView, ClientFormData, initialFormData } from '@/components/clients/ClientFormView';
 import { useHeader } from '@/contexts/HeaderContext';
+import { slugify } from '@/lib/utils';
 
 export default function NewClient() {
   const navigate = useNavigate();
@@ -105,6 +106,7 @@ export default function NewClient() {
         user_id: user.id,
         organization_id: organizationId,
         current_stage: 'prospeccao' as const,
+        slug: slugify(formData.companyName),
       };
 
       const { error } = await supabase

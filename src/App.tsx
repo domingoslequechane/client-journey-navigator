@@ -163,7 +163,11 @@ const App = () => {
                         }
                       >
                         <Route index element={<Dashboard />} />
-                        <Route path="pipeline" element={<Pipeline />} />
+                        <Route path="pipeline" element={
+                          <RoleProtectedRoute privilege="sales">
+                            <Pipeline />
+                          </RoleProtectedRoute>
+                        } />
                         <Route path="sales-funnel" element={<Navigate to="/app/pipeline?tab=sales" replace />} />
                         <Route path="operational-flow" element={<Navigate to="/app/pipeline?tab=operations" replace />} />
                         <Route path="clients" element={
@@ -171,38 +175,70 @@ const App = () => {
                             <Clients />
                           </RoleProtectedRoute>
                         } />
-                        <Route path="clients/:clientId" element={<ClientDetail />} />
-                        <Route path="clients/edit/:clientId" element={
-                          <RoleProtectedRoute allowedRoles={['Owner', 'sales', 'owner']}>
+                        <Route path="clients/:clientIdOrSlug" element={<ClientDetail />} />
+                        <Route path="clients/edit/:clientIdOrSlug" element={
+                          <RoleProtectedRoute requireClients>
                             <EditClient />
                           </RoleProtectedRoute>
                         } />
                         <Route path="new-client" element={
-                          <RoleProtectedRoute allowedRoles={['Owner', 'sales', 'owner']}>
+                          <RoleProtectedRoute requireClients>
                             <NewClient />
                           </RoleProtectedRoute>
                         } />
-                        <Route path="academia" element={<Academia />} />
+                        <Route path="academia" element={
+                          <RoleProtectedRoute privilege="academy">
+                            <Academia />
+                          </RoleProtectedRoute>
+                        } />
                         <Route path="team" element={
                           <RoleProtectedRoute requireTeam>
                             <Team />
                           </RoleProtectedRoute>
                         } />
-                        <Route path="ai-assistant" element={<AgenteQIA />} />
-                        <Route path="ai-agents" element={<AIAgents />} />
-                        <Route path="ai-agents/:agentId" element={<AIAgentDetail />} />
-                        <Route path="ai-agents/:agentId/conversations/:conversationId" element={<AIAgentConversation />} />
+                        <Route path="ai-assistant" element={
+                          <RoleProtectedRoute privilege="qia">
+                            <AgenteQIA />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="ai-agents" element={
+                          <RoleProtectedRoute privilege="ai_agents">
+                            <AIAgents />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="ai-agents/:agentId" element={
+                          <RoleProtectedRoute privilege="ai_agents">
+                            <AIAgentDetail />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="ai-agents/:agentId/conversations/:conversationId" element={
+                          <RoleProtectedRoute privilege="ai_agents">
+                            <AIAgentConversation />
+                          </RoleProtectedRoute>
+                        } />
                         
                         {/* Atende AI Module */}
-                        <Route path="atende-ai" element={<AtendeAI />} />
-                        <Route path="atende-ai/:agentNameSlug" element={<AtendeAIDetail />} />
-                        <Route path="atende-ai/:agentNameSlug/conversations/:conversationId" element={<AIAgentConversation />} />
+                        <Route path="atende-ai" element={
+                          <RoleProtectedRoute privilege="social_media">
+                            <AtendeAI />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="atende-ai/:agentNameSlug" element={
+                          <RoleProtectedRoute privilege="social_media">
+                            <AtendeAIDetail />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="atende-ai/:agentNameSlug/conversations/:conversationId" element={
+                          <RoleProtectedRoute privilege="social_media">
+                            <AIAgentConversation />
+                          </RoleProtectedRoute>
+                        } />
                         <Route path="link-trees" element={
                           <RoleProtectedRoute privilege="link23">
                             <LinkTreeDashboard />
                           </RoleProtectedRoute>
                         } />
-                        <Route path="clients/:clientId/links" element={
+                        <Route path="clients/:clientIdOrSlug/links" element={
                           <RoleProtectedRoute privilege="link23">
                             <LinkTreeEditor />
                           </RoleProtectedRoute>
@@ -265,7 +301,9 @@ const App = () => {
                       {/* Admin Routes - wrapped in ProtectedRoute for auth gate */}
                       <Route path="/admin" element={
                         <ProtectedRoute>
-                          <AdminLayout />
+                          <RoleProtectedRoute allowedRoles={['qfy-admin']}>
+                            <AdminLayout />
+                          </RoleProtectedRoute>
                         </ProtectedRoute>
                       }>
                         <Route index element={<AdminDashboard />} />

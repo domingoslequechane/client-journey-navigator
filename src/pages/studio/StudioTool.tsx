@@ -23,6 +23,10 @@ import { FlyerProjectOnboarding } from '@/components/studio/FlyerProjectOnboardi
 import { CarouselSquadView } from '@/components/studio/CarouselSquadView';
 import { CarouselProjectHub } from '@/components/studio/CarouselProjectHub';
 import { CarouselProjectOnboarding } from '@/components/studio/CarouselProjectOnboarding';
+import { VideoProjectHub } from '@/components/studio/VideoProjectHub';
+import { VideoGeneratorStudio } from '@/components/studio/VideoGeneratorStudio';
+import { LongVideoStudio } from '@/components/studio/LongVideoStudio';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { StudioQuickMenu } from '@/components/studio/StudioQuickMenu';
 import { useHeader } from '@/contexts/HeaderContext';
@@ -168,6 +172,86 @@ export default function StudioTool() {
                 onCreateNew={() => setIsOnboarding(true)}
                 onSelectProject={(id) => setSelectedProjectId(id)}
                 onEditProject={(id) => setEditProjectId(id)}
+            />
+        );
+    }
+
+    if (tool.id === 'video-generator') {
+        if (isOnboarding || editProjectId) {
+            // For now, video project creation just creates a default project entry quickly.
+            // Using a simple alert-like wrapper or just a function call.
+            // But we actually need to ask for a project name or just create it with a default name.
+            // For simplicity, we can do inline creation logic or reuse Onboarding logic.
+            // Since there is no explicit VideoProjectOnboarding, we can use an effect to auto-create and select if isOnboarding.
+        }
+
+        if (selectedProjectId) {
+            return (
+                <VideoGeneratorStudio 
+                    projectId={selectedProjectId}
+                    onBackToHub={() => setSelectedProjectId(null)}
+                />
+            );
+        }
+
+        return (
+            <VideoProjectHub 
+                onCreateNew={async () => {
+                   try {
+                     const { data: { user } } = await supabase.auth.getUser();
+                     const { data: orgMember } = await supabase.from('organization_members').select('organization_id').eq('user_id', user?.id).single();
+                     if (!orgMember?.organization_id) return;
+
+                     const { data, error } = await supabase.from('video_projects').insert({
+                       name: 'Novo Projeto de Vídeo',
+                       organization_id: orgMember.organization_id,
+                       created_by: user?.id,
+                     }).select().single();
+
+                     if (error) throw error;
+                     setSelectedProjectId(data.id);
+                   } catch(err) {
+                      toast.error('Erro ao criar projeto');
+                   }
+                }}
+                onSelectProject={(id) => setSelectedProjectId(id)}
+            />
+        );
+    }
+
+    if (tool.id === 'longa-metragem') {
+        if (selectedProjectId) {
+            return (
+                <LongVideoStudio 
+                    projectId={selectedProjectId}
+                    onBackToHub={() => setSelectedProjectId(null)}
+                />
+            );
+        }
+
+        return (
+            <VideoProjectHub 
+                toolId="longa-metragem"
+                onCreateNew={async () => {
+                   try {
+                     const { data: { user } } = await supabase.auth.getUser();
+                     const { data: orgMember } = await supabase.from('organization_members').select('organization_id').eq('user_id', user?.id).single();
+                     if (!orgMember?.organization_id) return;
+
+                     const { data, error } = await supabase.from('video_projects').insert({
+                       name: 'Novo Longa Metragem',
+                       organization_id: orgMember.organization_id,
+                       created_by: user?.id,
+                       tool_id: 'longa-metragem'
+                     }).select().single();
+
+                     if (error) throw error;
+                     setSelectedProjectId(data.id);
+                   } catch(err) {
+                      toast.error('Erro ao criar projeto');
+                   }
+                }}
+                onSelectProject={(id) => setSelectedProjectId(id)}
             />
         );
     }

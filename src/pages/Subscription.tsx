@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useHeader } from '@/contexts/HeaderContext';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function Subscription() {
   const navigate = useNavigate();
@@ -15,6 +16,9 @@ export default function Subscription() {
   const { organization, refetch } = useSubscription();
   const [syncing, setSyncing] = useState(false);
   const { setBackAction } = useHeader();
+  const { isOwner, hasPrivilege } = usePermissions();
+  
+  const canManageSubscription = isOwner || hasPrivilege('finance');
 
   const syncSubscription = async () => {
     if (!organization?.id) return;
@@ -93,26 +97,30 @@ export default function Subscription() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link to="/app/upgrade">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Sparkles className="h-4 w-4" />
-              Planos
+          {canManageSubscription && (
+            <Link to="/app/upgrade">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Sparkles className="h-4 w-4" />
+                Planos
+              </Button>
+            </Link>
+          )}
+          {canManageSubscription && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={syncSubscription}
+              disabled={syncing || !organization?.id}
+              className="gap-2"
+            >
+              {syncing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Sincronizar
             </Button>
-          </Link>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={syncSubscription}
-            disabled={syncing || !organization?.id}
-            className="gap-2"
-          >
-            {syncing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Sincronizar
-          </Button>
+          )}
         </div>
       </AnimatedContainer>
 

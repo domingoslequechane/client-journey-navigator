@@ -40,25 +40,16 @@ export function useUserRole() {
         // Fetch privileges from organization_members for the active organization
         let memberPrivileges: string[] = (profileData?.privileges as string[]) || [];
         let memberRole: string = profileData?.role || 'user';
-        // isOwner: only true if this user is the owner_id of the CURRENT org
-        let isOrgOwner = false;
 
         if (effectiveOrgId) {
-          const [{ data: memberData }, { data: orgData }] = await Promise.all([
+          const [{ data: memberData }] = await Promise.all([
             supabase
               .from('organization_members')
               .select('privileges, role')
               .eq('user_id', user.id)
               .eq('organization_id', effectiveOrgId)
-              .maybeSingle(),
-            supabase
-              .from('organizations')
-              .select('owner_id')
-              .eq('id', effectiveOrgId)
-              .single()
+              .maybeSingle()
           ]);
-
-          isOrgOwner = orgData?.owner_id === user.id;
 
           if (memberData) {
             if (memberData.privileges && (memberData.privileges as string[]).length > 0) {
@@ -72,8 +63,8 @@ export function useUserRole() {
 
         setRole(memberRole as UserRole);
         setPrivileges(memberPrivileges);
-        setAccountType(isOrgOwner ? 'owner' : 'collaborator');
-        setIsOwner(isOrgOwner);
+        setAccountType(memberRole.toLowerCase() === 'owner' ? 'owner' : 'collaborator');
+        setIsOwner(memberRole.toLowerCase() === 'owner');
       } catch (error) {
         console.error('Error fetching user profile:', error);
         setRole('sales');
@@ -88,7 +79,7 @@ export function useUserRole() {
 
 
   const permissions = useMemo(() => {
-    const isAdmin = isOwner;
+    const isAdmin = role?.toLowerCase() === 'owner' || role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'qfy-admin';
     const hasPrivilege = (p: string) => isAdmin || privileges.includes(p);
     // Finance access is ALWAYS explicit — never inherited from admin role
     const hasFinanceAccess = privileges.includes('finance');
@@ -128,13 +119,13 @@ export function useUserRole() {
         return [];
       },
     };
-  }, [role, privileges]);
+  }, [role, privileges, isOwner]);
 
   return {
     role,
     loading,
-    isAdmin: role === 'owner' || role === 'Owner' || role === 'admin' || role === 'qfy-admin' || isOwner,
-    isOwner: role === 'owner' || role === 'Owner' || role === 'qfy-admin' || isOwner,
+    isAdmin: role?.toLowerCase() === 'owner' || role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'qfy-admin',
+    isOwner: role?.toLowerCase() === 'owner' || role?.toLowerCase() === 'qfy-admin',
     accountType,
     isSales: role === 'sales',
     isOperations: role === 'operations',

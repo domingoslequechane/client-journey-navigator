@@ -106,7 +106,7 @@
     "inviteMember": "Convidar Membro",
     "pendingInvites": "Convites Pendentes",
     "roles": {
-      "admin": "Administrador",
+      "admin": "Dono (Owner)",
       "sales": "Vendas",
       "operations": "Operações",
       "campaign_management": "Gestão de Campanhas"

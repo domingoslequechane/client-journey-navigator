@@ -174,7 +174,8 @@ export default function Upgrade() {
   const { user } = useAuth();
   const { loading, organization, isActive, isTrialing, trialDaysLeft, planType: currentPlanType, subscription, refetch } = useSubscription();
   const { planType: activePlanType } = usePlanLimits();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { isAdmin, canSeeFinance, loading: roleLoading } = useUserRole();
+  const canManageUpgrade = isAdmin || canSeeFinance;
   const [creatingCheckout, setCreatingCheckout] = useState<PlanType | null>(null);
   const [changingPlan, setChangingPlan] = useState<PlanType | null>(null);
   const { setBackAction, setCustomTitle } = useHeader();
@@ -289,46 +290,7 @@ export default function Upgrade() {
     );
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background py-8 px-4">
-        <div className="max-w-2xl mx-auto space-y-8">
-          <Link to="/app" className="hidden md:inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            Voltar ao Dashboard
-          </Link>
-          
-          <Alert variant="default" className="border-primary/30 bg-primary/5">
-            <ShieldAlert className="h-5 w-5" />
-            <AlertTitle>Acesso Restrito</AlertTitle>
-            <AlertDescription className="mt-2 space-y-2">
-              <p>
-                Apenas o <strong>administrador da agência</strong> pode visualizar e alterar o plano de assinatura.
-              </p>
-              <p className="text-muted-foreground">
-                Se você precisa de um upgrade ou alteração no plano, entre em contato com o administrador da sua organização.
-              </p>
-            </AlertDescription>
-          </Alert>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Por que essa restrição?
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>• Decisões de assinatura envolvem custos financeiros</p>
-              <p>• Apenas administradores têm autoridade para aprovar mudanças de plano</p>
-              <p>• Isso garante controle adequado sobre os recursos da organização</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
+  // We now allow everyone to see the plans page, but restrict actions
   const currentPlan = activePlanType || currentPlanType || 'free';
 
   const allPlans: { key: PlanType; config: PlanConfig }[] = [
@@ -529,7 +491,7 @@ export default function Upgrade() {
                   ) : hasActiveSubscription ? (
                     <Button 
                       onClick={() => handleChangePlan(planKey)}
-                      disabled={isLoading || creatingCheckout !== null || changingPlan !== null}
+                      disabled={isLoading || creatingCheckout !== null || changingPlan !== null || !canManageUpgrade}
                       className="w-full gap-2 text-white"
                       style={{ backgroundColor: colors.primary }}
                     >
@@ -552,7 +514,7 @@ export default function Upgrade() {
                   ) : (
                     <Button 
                       onClick={() => handleSubscribe(planKey)}
-                      disabled={isLoading || creatingCheckout !== null}
+                      disabled={isLoading || creatingCheckout !== null || !canManageUpgrade}
                       className="w-full gap-2 text-white"
                       style={{ backgroundColor: colors.primary }}
                     >
@@ -564,7 +526,7 @@ export default function Upgrade() {
                       ) : (
                         <>
                           <Sparkles className="h-4 w-4" />
-                          {currentPlan === 'trial' ? 'Fazer Upgrade' : 'Iniciar Minha Transformação'}
+                          {!canManageUpgrade ? 'Falar com Dono' : currentPlan === 'trial' ? 'Fazer Upgrade' : 'Iniciar Minha Transformação'}
                         </>
                       )}
                     </Button>

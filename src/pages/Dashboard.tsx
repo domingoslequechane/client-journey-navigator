@@ -38,7 +38,8 @@ export default function Dashboard() {
     canSeeOperationalFlow: canSeeOperations,
     canAddClient,
     getVisibleStages,
-    canManageFinance
+    canManageFinance,
+    canSeeClients
   } = useUserRole();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,15 +188,18 @@ export default function Dashboard() {
 
       {/* Stats Cards - Show relevant stats based on role */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
-        <AnimatedContainer animation="fade-up" delay={0.05}>
-          <StatsCard
-            title={t('stats.totalClients')}
-            value={totalClients}
-            description={t('stats.totalClientsDesc')}
-            icon={Building2}
-            variant="info"
-          />
-        </AnimatedContainer>
+        {canSeeClients && (
+          <AnimatedContainer animation="fade-up" delay={0.05}>
+            <StatsCard
+              title={t('stats.totalClients')}
+              value={totalClients}
+              description={t('stats.totalClientsDesc')}
+              icon={Building2}
+              variant="info"
+            />
+          </AnimatedContainer>
+        )}
+        
         {canManageFinance ? (
           <AnimatedContainer animation="fade-up" delay={0.1}>
             <StatsCard
@@ -206,7 +210,7 @@ export default function Dashboard() {
               variant="success"
             />
           </AnimatedContainer>
-        ) : (
+        ) : canSeeClients ? (
           <AnimatedContainer animation="fade-up" delay={0.1}>
             <StatsCard
               title={t('stats.activeClients')}
@@ -216,29 +220,37 @@ export default function Dashboard() {
               variant="success"
             />
           </AnimatedContainer>
+        ) : null}
+
+        {canSeeClients && (
+          <>
+            <AnimatedContainer animation="fade-up" delay={0.15}>
+              <StatsCard
+                title={t('stats.hotLeads')}
+                value={hotLeads}
+                description={t('stats.hotLeadsDesc')}
+                icon={Flame}
+                variant="warning"
+              />
+            </AnimatedContainer>
+            <AnimatedContainer animation="fade-up" delay={0.2}>
+              <StatsCard
+                title={t('stats.conversionRate')}
+                value={`${conversionRate}%`}
+                description={t('stats.conversionRateDesc')}
+                icon={Award}
+                variant="primary"
+              />
+            </AnimatedContainer>
+          </>
         )}
-        <AnimatedContainer animation="fade-up" delay={0.15}>
-          <StatsCard
-            title={t('stats.hotLeads')}
-            value={hotLeads}
-            description={t('stats.hotLeadsDesc')}
-            icon={Flame}
-            variant="warning"
-          />
-        </AnimatedContainer>
-        <AnimatedContainer animation="fade-up" delay={0.2}>
-          <StatsCard
-            title={t('stats.conversionRate')}
-            value={`${conversionRate}%`}
-            description={t('stats.conversionRateDesc')}
-            icon={Award}
-            variant="primary"
-          />
-        </AnimatedContainer>
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+      <div className={cn(
+        "grid grid-cols-1 gap-4 md:gap-6 mb-6",
+        canSeeClients ? "lg:grid-cols-2" : "lg:grid-cols-1"
+      )}>
         {canManageFinance ? (
           <AnimatedContainer animation="fade-up" delay={0.25}>
             <RevenueChart clients={clients} currencySymbol={currencySymbol} />
@@ -257,34 +269,36 @@ export default function Dashboard() {
         </AnimatedContainer>
       </div>
 
-      {/* Insights Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
-        <AnimatedContainer animation="fade-up" delay={0.35}>
-          {canManageFinance ? (
-            <SourcePieChart clients={clients} />
-          ) : (
-            <HighlightClientCard clients={clients} currencySymbol={currencySymbol} showBudget={false} />
-          )}
-        </AnimatedContainer>
-        <AnimatedContainer animation="fade-up" delay={0.4}>
-          {canManageFinance ? (
-            <HighlightClientCard clients={clients} currencySymbol={currencySymbol} showBudget={true} />
-          ) : (
-            <AISuggestionCard clients={clients} />
-          )}
-        </AnimatedContainer>
-        <AnimatedContainer animation="fade-up" delay={0.45}>
-          {canManageFinance ? (
-            <AISuggestionCard clients={clients} />
-          ) : (
-            <Card className="bg-card/80 backdrop-blur-sm border-border/50 flex flex-col items-center justify-center p-6 text-center h-full">
-              <TrendingUp className="h-10 w-10 text-primary mb-4" />
-              <h3 className="font-semibold mb-1">{t('focusedGrowth.title')}</h3>
-              <p className="text-sm text-muted-foreground">{t('focusedGrowth.description')}</p>
-            </Card>
-          )}
-        </AnimatedContainer>
-      </div>
+      {/* Insights Section - Only show if user can see clients */}
+      {canSeeClients && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+          <AnimatedContainer animation="fade-up" delay={0.35}>
+            {canManageFinance ? (
+              <SourcePieChart clients={clients} />
+            ) : (
+              <HighlightClientCard clients={clients} currencySymbol={currencySymbol} showBudget={false} />
+            )}
+          </AnimatedContainer>
+          <AnimatedContainer animation="fade-up" delay={0.4}>
+            {canManageFinance ? (
+              <HighlightClientCard clients={clients} currencySymbol={currencySymbol} showBudget={true} />
+            ) : (
+              <AISuggestionCard clients={clients} />
+            )}
+          </AnimatedContainer>
+          <AnimatedContainer animation="fade-up" delay={0.45}>
+            {canManageFinance ? (
+              <AISuggestionCard clients={clients} />
+            ) : (
+              <Card className="bg-card/80 backdrop-blur-sm border-border/50 flex flex-col items-center justify-center p-6 text-center h-full">
+                <TrendingUp className="h-10 w-10 text-primary mb-4" />
+                <h3 className="font-semibold mb-1">{t('focusedGrowth.title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('focusedGrowth.description')}</p>
+              </Card>
+            )}
+          </AnimatedContainer>
+        </div>
+      )}
     </div>
   );
 }

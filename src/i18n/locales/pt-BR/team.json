@@ -23,7 +23,7 @@
   },
   "roles": {
     "admin": {
-      "name": "Administrador",
+      "name": "Dono (Owner)",
       "description": "Acesso total a todas as funcionalidades"
     },
     "sales": {
@@ -95,7 +95,7 @@
     "saving": "Salvando..."
   },
   "adminPromotion": {
-    "title": "Promover a Administrador?",
+    "title": "Promover a Dono?",
     "message": "{{name}} terá acesso total ao sistema, incluindo configurações da agência e gerenciamento de equipe. Tem certeza?",
     "confirm": "Sim, promover"
   },
@@ -104,7 +104,7 @@
     "inviteResent": "Convite reenviado!",
     "inviteCancelled": "Convite cancelado",
     "accessDenied": "Acesso negado",
-    "adminOnly": "Apenas administradores podem acessar esta página",
+    "adminOnly": "Apenas o dono pode acessar esta página",
     "loadError": "Não foi possível carregar a equipe",
     "suspended": "Usuário suspenso",
     "suspendedDesc": "O usuário não poderá mais acessar o sistema",

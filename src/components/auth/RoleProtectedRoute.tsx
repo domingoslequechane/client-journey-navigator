@@ -28,7 +28,9 @@ export function RoleProtectedRoute({
     role,
     isLoading,
     hasPrivilege,
-    isAdmin
+    isAdmin,
+    isOwner,
+    privileges
   } = usePermissions();
 
   const [showDelayedLoader, setShowDelayedLoader] = useState(false);
@@ -56,8 +58,8 @@ export function RoleProtectedRoute({
   // Check specific permission requirements
   let hasAccess = true;
 
-  // System admins (qfy-admin) have access to everything
-  if (role === 'qfy-admin') {
+  // System admins and owners have access to everything
+  if (isAdmin || isOwner) {
     hasAccess = true;
   } else {
     if (allowedRoles && role) {
@@ -69,6 +71,24 @@ export function RoleProtectedRoute({
     if (requireTeam && !hasPrivilege('team')) hasAccess = false;
     if (requireSettings && !hasPrivilege('settings')) hasAccess = false;
     if (requireSubscription && !isAdmin) hasAccess = false;
+  }
+
+  // Debug log for troubleshooting access denied errors
+  if (!hasAccess) {
+    console.warn('[RoleProtectedRoute] Access Denied:', {
+      path: window.location.pathname,
+      userRole: role,
+      userPrivileges: privileges,
+      isAdmin,
+      isOwner,
+      requirements: {
+        allowedRoles,
+        privilege,
+        requireClients,
+        requireTeam,
+        requireSettings
+      }
+    });
   }
 
   if (!hasAccess) {

@@ -20,7 +20,7 @@ const ROLE_LABELS: Record<string, string> = {
   sales: 'Vendas',
   operations: 'Operações',
   campaign_management: 'Gestão de Campanhas',
-  admin: 'Administrador',
+  admin: 'Dono',
 };
 
 export default function SelectOrganization() {

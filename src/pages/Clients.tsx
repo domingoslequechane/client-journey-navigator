@@ -162,7 +162,7 @@ export default function Clients() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          {hasPrivilege('sales') && !isReadOnly && (
+          {!isReadOnly && (
             <Button
               className="gap-2 flex-1 sm:flex-none"
               onClick={() => navigate('/app/new-client')}
@@ -289,7 +289,7 @@ export default function Clients() {
                   <tr
                     key={client.id}
                     className="border-b border-border hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/app/clients/${client.id}`)}
+                    onClick={() => navigate(`/app/clients/${client.slug || client.id}`)}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">

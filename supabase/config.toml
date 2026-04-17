@@ -16,6 +16,9 @@ schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
+[functions.decompose-script]
+verify_jwt = false
+
 [db]
 port = 54322
 shadow_port = 54320

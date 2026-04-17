@@ -26,7 +26,7 @@ interface HistoryState {
 }
 
 export default function LinkTreeEditor() {
-  const { clientId } = useParams<{ clientId: string }>();
+  const { clientIdOrSlug } = useParams<{ clientIdOrSlug: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -64,18 +64,28 @@ export default function LinkTreeEditor() {
 
   // Fetch client data
   const { data: client, isLoading: loadingClient } = useQuery({
-    queryKey: ['client-for-linktree', clientId],
+    queryKey: ['client-for-linktree', clientIdOrSlug],
     queryFn: async () => {
-      if (!clientId) return null;
-      const { data, error } = await supabase
-        .from('clients')
-        .select('id, company_name, contact_name')
-        .eq('id', clientId)
+      if (!clientIdOrSlug) return null;
+      
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientIdOrSlug);
+      
+      let query = supabase.from('clients').select('id, company_name, contact_name');
+      
+      if (isUUID) {
+        query = query.eq('id', clientIdOrSlug);
+      } else {
+        query = query.eq('slug', clientIdOrSlug);
+      }
+
+      const { data, error } = await query
+        .eq('organization_id', organizationId)
         .single();
+
       if (error) throw error;
       return data;
     },
-    enabled: !!clientId,
+    enabled: !!clientIdOrSlug && !!organizationId,
   });
 
   const {
@@ -91,7 +101,7 @@ export default function LinkTreeEditor() {
     togglePublish,
     isCreating,
     isUpdating,
-  } = useLinkPage(clientId || null, organizationId);
+  } = useLinkPage(client?.id || null, organizationId);
 
   // Sync local state with remote state
   useEffect(() => {

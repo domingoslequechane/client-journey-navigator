@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -31,6 +32,8 @@ import { Search, UserX, UserCheck, Users, ShieldAlert, Trash2, Shield, Settings2
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface UserWithOrg {
   id: string; // User Profile ID
@@ -48,9 +51,11 @@ interface UserWithOrg {
     owner_id: string;
   } | null;
   subscription_status?: string | null;
+  privileges?: string[];
 }
 
 export default function AdminUsers() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserWithOrg[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -61,13 +66,29 @@ export default function AdminUsers() {
 
   const [roleUser, setRoleUser] = useState<UserWithOrg | null>(null);
   const [newRole, setNewRole] = useState<string>('');
+  const [selectedPrivileges, setSelectedPrivileges] = useState<string[]>([]);
+
+  const availablePrivileges = [
+    { id: 'clients', label: 'Gestão de Clientes' },
+    { id: 'team', label: 'Gestão de Equipa' },
+    { id: 'settings', label: 'Configurações' },
+    { id: 'sales', label: 'Pipeline / Vendas' },
+    { id: 'academy', label: 'Academia' },
+    { id: 'qia', label: 'Agente QIA' },
+    { id: 'social_media', label: 'Mídias Sociais / Atende-AI' },
+    { id: 'link23', label: 'Link23' },
+    { id: 'studio', label: 'Studio (Vídeo/Carrossel)' },
+    { id: 'finance', label: 'Financeiro' },
+    { id: 'editorial', label: 'Calendário Editorial' },
+    { id: 'ai_agents', label: 'Agentes de IA' },
+  ];
 
   const fetchUsers = async () => {
     try {
       // 1. Fetch all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, email, full_name, role, suspended, created_at')
+        .select('id, email, full_name, role, suspended, created_at, privileges')
         .order('created_at', { ascending: false });
 
       if (profilesError) throw profilesError;
@@ -116,9 +137,9 @@ export default function AdminUsers() {
               suspended: profile.suspended || false,
               created_at: profile.created_at,
               organization_id: membership.organization_id,
-              is_primary_owner: org?.owner_id === profile.id,
               organization: org ? { id: org.id, name: org.name, owner_id: org.owner_id } : null,
-              subscription_status: membership.organization_id ? subscriptionMap[membership.organization_id] : null
+              subscription_status: membership.organization_id ? subscriptionMap[membership.organization_id] : null,
+              privileges: profile.privileges || []
             });
           });
         } else {
@@ -133,7 +154,8 @@ export default function AdminUsers() {
             organization_id: null,
             is_primary_owner: false,
             organization: null,
-            subscription_status: null
+            subscription_status: null,
+            privileges: profile.privileges || []
           });
         }
       });
@@ -191,27 +213,14 @@ export default function AdminUsers() {
     
     setActionLoading(roleUser.id);
     try {
-      // 1. Atualizar perfil global
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ role: newRole as any })
-        .eq('id', roleUser.id);
+      const { error } = await supabase.rpc('admin_update_user_role', {
+        target_user_id: roleUser.id,
+        target_org_id: roleUser.organization_id || null,
+        new_role: newRole, // RPC now handles normalization
+        new_privileges: selectedPrivileges
+      });
 
-      if (profileError) throw profileError;
-
-      // 2. Atualizar função na organização específica
-      if (roleUser.organization_id) {
-        const { error: memberError } = await supabase
-          .from('organization_members')
-          .update({ role: newRole as any })
-          .eq('user_id', roleUser.id)
-          .eq('organization_id', roleUser.organization_id);
-        
-        if (memberError) {
-          console.warn('Erro ao atualizar função na organização:', memberError);
-          // Não lançamos erro aqui para não travar a UI se o perfil global foi atualizado
-        }
-      }
+      if (error) throw error;
 
       toast.success('Função actualizada com sucesso!');
       setRoleUser(null);
@@ -231,15 +240,18 @@ export default function AdminUsers() {
   );
 
   const getRoleBadge = (role: string) => {
+    // Normalize case for matching
+    const roleKey = role?.toLowerCase();
     const map: Record<string, { label: string; className: string }> = {
-      admin: { label: 'Administrador', className: 'bg-purple-500/10 text-purple-500' },
-      owner: { label: 'Proprietário', className: 'bg-amber-500/10 text-amber-600' },
-      trial: { label: 'Período de Teste', className: 'bg-yellow-500/10 text-yellow-500' },
-      sales: { label: 'Colaborador (Vendas)', className: 'bg-blue-500/10 text-blue-500' },
-      operations: { label: 'Colaborador (Ops)', className: 'bg-green-500/10 text-green-500' },
-      campaign_management: { label: 'Colaborador (Campanhas)', className: 'bg-orange-500/10 text-orange-500' },
+      'qfy-admin': { label: 'Sistema (Master)', className: 'bg-indigo-500/10 text-indigo-500' },
+      'owner': { label: 'Owner (Dono)', className: 'bg-amber-500/10 text-amber-600 font-bold' },
+      'user': { label: 'User (Colaborador)', className: 'bg-blue-500/10 text-blue-500' },
+      'trial': { label: 'Período de Teste', className: 'bg-yellow-500/10 text-yellow-500' },
+      'sales': { label: 'Colaborador (Vendas)', className: 'bg-blue-500/10 text-blue-500' },
+      'operations': { label: 'Colaborador (Ops)', className: 'bg-green-500/10 text-green-500' },
+      'campaign_management': { label: 'Colaborador (Campanhas)', className: 'bg-orange-500/10 text-orange-500' },
     };
-    const entry = map[role] || { label: role, className: 'bg-muted text-muted-foreground' };
+    const entry = map[roleKey] || { label: roleKey === 'user' ? 'User (Colaborador)' : role, className: 'bg-muted text-muted-foreground' };
     return <Badge className={`border-0 ${entry.className}`}>{entry.label}</Badge>;
   };
 
@@ -401,36 +413,55 @@ export default function AdminUsers() {
                             </AlertDialog>
 
                             <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={actionLoading === user.id || user.is_primary_owner}
-                              className={user.is_primary_owner 
-                                ? "text-stone-400 cursor-not-allowed opacity-50" 
-                                : "text-stone-500 hover:text-stone-600 hover:bg-stone-500/10"}
-                              title={user.is_primary_owner ? "Dono da Agência (Imutável)" : ""}
-                              onClick={() => {
-                                setRoleUser(user);
-                                setNewRole(user.role);
-                              }}
-                            >
-                              <Shield className="h-4 w-4 md:mr-1" /> <span className="hidden md:inline">Função</span>
-                            </Button>
+                               variant="ghost"
+                               size="sm"
+                               disabled={
+                                 actionLoading === user.id || 
+                                 user.role === 'qfy-admin' || 
+                                 user.id === currentUser?.id
+                               }
+                               className={
+                                 (user.role === 'qfy-admin' || user.id === currentUser?.id)
+                                 ? "text-stone-400 cursor-not-allowed opacity-50" 
+                                 : "text-stone-500 hover:text-stone-600 hover:bg-stone-500/10"
+                               }
+                               title={
+                                 user.role === 'qfy-admin' ? "Sistema Master (Imutável)" :
+                                 user.id === currentUser?.id ? "Você não pode mudar sua própria função" : ""
+                               }
+                               onClick={() => {
+                                 setRoleUser(user);
+                                 setNewRole(user.role.toLowerCase());
+                                 setSelectedPrivileges(user.privileges || []);
+                               }}
+                             >
+                               <Shield className="h-4 w-4 md:mr-1" /> <span className="hidden md:inline">Função</span>
+                             </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={actionLoading === user.id || user.is_primary_owner}
-                              className={user.is_primary_owner
-                                ? "text-red-300 cursor-not-allowed opacity-50"
-                                : "text-red-500 hover:text-red-600 hover:bg-red-500/10"}
-                              title={user.is_primary_owner ? "Dono da Agência (Imutável)" : ""}
-                              onClick={() => {
-                                setSelectedDeleteUser(user);
-                                setDeleteConfirmName('');
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 md:mr-1" /> <span className="hidden md:inline">Eliminar</span>
-                            </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               disabled={
+                                 actionLoading === user.id || 
+                                 user.role === 'qfy-admin' || 
+                                 user.id === currentUser?.id
+                               }
+                               className={
+                                 (user.role === 'qfy-admin' || user.id === currentUser?.id)
+                                 ? "text-red-300 cursor-not-allowed opacity-50"
+                                 : "text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                               }
+                               title={
+                                 user.role === 'qfy-admin' ? "Sistema Master (Imutável)" :
+                                 user.id === currentUser?.id ? "Você não pode eliminar sua própria conta" : ""
+                               }
+                               onClick={() => {
+                                 setSelectedDeleteUser(user);
+                                 setDeleteConfirmName('');
+                               }}
+                             >
+                               <Trash2 className="h-4 w-4 md:mr-1" /> <span className="hidden md:inline">Eliminar</span>
+                             </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -512,26 +543,61 @@ export default function AdminUsers() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Seleccione a nova função</label>
-              <Select value={newRole} onValueChange={setNewRole}>
+              <Select 
+                value={newRole} 
+                onValueChange={(val) => {
+                  setNewRole(val);
+                  if (val === 'owner') {
+                    setSelectedPrivileges(availablePrivileges.map(p => p.id));
+                  } else if (val === 'user') {
+                    setSelectedPrivileges([]);
+                  }
+                }}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccione uma função" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="sales">Colaborador (Comercial)</SelectItem>
-                  <SelectItem value="operations">Colaborador (Operações)</SelectItem>
-                  <SelectItem value="campaign_management">Colaborador (Campanhas)</SelectItem>
+                  <SelectItem value="owner">Owner (Dono da Agência)</SelectItem>
+                  <SelectItem value="user">User (Colaborador da Agência)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
+            <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
+              <label className="text-sm font-medium">Privilégios / Acesso a Módulos</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {availablePrivileges.map((p) => (
+                  <div key={p.id} className="flex items-center space-x-2 bg-muted/30 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors">
+                    <Checkbox
+                      id={`priv-${p.id}`}
+                      checked={selectedPrivileges.includes(p.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedPrivileges([...selectedPrivileges, p.id]);
+                        } else {
+                          setSelectedPrivileges(selectedPrivileges.filter(id => id !== p.id));
+                        }
+                      }}
+                    />
+                    <Label 
+                      htmlFor={`priv-${p.id}`} 
+                      className="text-xs font-medium leading-none cursor-pointer select-none"
+                    >
+                      {p.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border">
               <p className="font-semibold mb-1 flex items-center gap-1">
-                <ShieldAlert className="h-3 w-3" /> Info sobre níveis:
+                <ShieldAlert className="h-3 w-3" /> Níveis de Acesso:
               </p>
               <ul className="list-disc list-inside space-y-1">
-                <li><strong>Administrador:</strong> Gestão total da agência e definições.</li>
-                <li><strong>Colaborador:</strong> Acesso focado em operações diárias e clientes.</li>
+                <li><strong>Owner:</strong> Dono da Agência (Gestão total).</li>
+                <li><strong>User:</strong> Colaborador da Agência (Operação).</li>
               </ul>
             </div>
           </div>

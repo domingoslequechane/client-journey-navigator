@@ -2406,8 +2406,8 @@ export function CarouselSquadView({ tool, projectId, onBackToHub }: CarouselSqua
                 </div>
 
                 <Button 
-                  variant="outline"
-                  className="rounded-xl w-full h-12 font-bold border-white/10 text-white hover:bg-white/5"
+                  variant="ghost"
+                  className="rounded-xl w-full h-12 font-bold border border-white/10 text-white hover:bg-white/10 active:scale-95 transition-all"
                   onClick={() => setPreviewIndex(null)}
                 >
                   Fechar Visualização

@@ -14,23 +14,34 @@ import { useOrganization } from '@/hooks/useOrganization';
 import { useHeader } from '@/contexts/HeaderContext';
 
 // Function to fetch client data and checklist items
-const fetchClientData = async (clientId: string, organizationId: string) => {
-  // 1. Fetch Client
-  const { data: clientData, error: clientError } = await supabase
-    .from('clients')
-    .select('*')
-    .eq('id', clientId)
+const fetchClientData = async (identifier: string, organizationId: string) => {
+  // Check if identifier is a UUID
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+
+  // 1. Fetch Client using either ID or slug
+  let query = supabase.from('clients').select('*');
+  
+  if (isUUID) {
+    query = query.eq('id', identifier);
+  } else {
+    query = query.eq('slug', identifier);
+  }
+
+  const { data: clientData, error: clientError } = await query
     .eq('organization_id', organizationId)
     .single();
 
   if (clientError) throw clientError;
   if (!clientData) throw new Error('Client not found');
 
+  // Use the actual client ID for subsequent queries
+  const actualClientId = clientData.id;
+
   // 2. Fetch Checklist Items for this client
   const { data: checklistData, error: checklistError } = await supabase
     .from('checklist_items')
     .select('*')
-    .eq('client_id', clientId);
+    .eq('client_id', actualClientId);
 
   if (checklistError) throw checklistError;
 
@@ -39,7 +50,7 @@ const fetchClientData = async (clientId: string, organizationId: string) => {
 };
 
 export default function ClientDetail() {
-  const { clientId } = useParams<{ clientId: string }>();
+  const { clientIdOrSlug } = useParams<{ clientIdOrSlug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setBackAction, setCustomTitle } = useHeader();
@@ -55,9 +66,9 @@ export default function ClientDetail() {
   };
 
   const { data: client, isLoading, error, refetch } = useQuery<Client, Error>({
-    queryKey: ['client', organizationId, clientId],
-    queryFn: () => fetchClientData(clientId!, organizationId!),
-    enabled: !!clientId && !!organizationId,
+    queryKey: ['client', organizationId, clientIdOrSlug],
+    queryFn: () => fetchClientData(clientIdOrSlug!, organizationId!),
+    enabled: !!clientIdOrSlug && !!organizationId,
   });
 
   useEffect(() => {

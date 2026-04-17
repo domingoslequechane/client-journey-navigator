@@ -1,4 +1,4 @@
-import { LucideIcon, Palette, Sparkles, Image, Paintbrush } from 'lucide-react';
+import { LucideIcon, Palette, Sparkles, Image, Paintbrush, Video } from 'lucide-react';
 
 // 5 modos de geração
 export type GenerationMode = 'original' | 'copy' | 'inspiration' | 'product' | 'template' | 'squad';
@@ -49,7 +49,7 @@ export interface SizeConfig {
 
 // ── Studio Tools ──────────────────────────────────────────────────────────
 
-export type StudioToolCategory = 'create_image' | 'editing' | 'squad';
+export type StudioToolCategory = 'create_image' | 'editing' | 'squad' | 'create_video';
 
 export interface StudioTool {
   id: string;
@@ -63,6 +63,7 @@ export interface StudioTool {
   gradientFrom: string;
   gradientTo: string;
   previewImage?: string;
+  status?: 'active' | 'development';
 }
 
 export interface StudioImage {
@@ -112,6 +113,7 @@ export interface ToolGenerationSettings {
 export const STUDIO_TOOL_CATEGORIES: { id: StudioToolCategory; label: string; icon: LucideIcon }[] = [
   { id: 'squad', label: 'Especialistas', icon: Sparkles },
   { id: 'create_image', label: 'Criar Imagens com IA', icon: Palette },
+  { id: 'create_video', label: 'Criar Vídeos com IA', icon: Video },
 ];
 
 export const STUDIO_TOOLS: StudioTool[] = [
@@ -181,5 +183,34 @@ export const STUDIO_TOOLS: StudioTool[] = [
     gradientFrom: '#10b981',
     gradientTo: '#059669',
     previewImage: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=800&ar=16:9&crop=entropy',
+  },
+  // ── Criar Vídeos com IA ──────────────────────────────────────────────────
+  {
+    id: 'video-generator',
+    label: 'Gerador de Vídeo',
+    description: 'Transforme texto e imagens em vídeos incríveis com a nova IA Veo 3.1',
+    category: 'create_video',
+    icon: Video,
+    requiresInputImage: false,
+    inputLabel: 'Imagens iniciais ou finais',
+    promptPlaceholder: 'Ex: A câmera se aproxima de um escritório moderno... ',
+    gradientFrom: '#8b5cf6',
+    gradientTo: '#ef4444',
+    previewImage: 'https://images.unsplash.com/photo-1578022761797-b8636ac1773c?q=80&w=800&auto=format&fit=crop',
+    status: 'development',
+  },
+  {
+    id: 'longa-metragem',
+    label: 'Extender Vídeo (Longa Metragem)',
+    description: 'Crie um vídeo estendido encadeando múltiplas cenas e prompts.',
+    category: 'create_video',
+    icon: Video,
+    requiresInputImage: false,
+    inputLabel: 'Imagens e clipes',
+    promptPlaceholder: 'Adicione múltiplos cenários...',
+    gradientFrom: '#06b6d4',
+    gradientTo: '#d946ef',
+    previewImage: 'https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=800&auto=format&fit=crop',
+    status: 'development',
   },
 ];

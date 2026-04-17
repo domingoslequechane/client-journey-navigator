@@ -88,7 +88,7 @@ export default function LinkTreeDashboard() {
         .from('link_pages')
         .select(`
           *,
-          clients!inner(id, company_name, paused)
+          clients!inner(id, company_name, slug, paused)
         `)
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
@@ -108,7 +108,7 @@ export default function LinkTreeDashboard() {
       // Get all clients
       const { data: allClients, error: clientsError } = await supabase
         .from('clients')
-        .select('id, company_name')
+        .select('id, company_name, slug')
         .eq('organization_id', organizationId)
         .eq('paused', false)
         .order('company_name');
@@ -385,7 +385,7 @@ export default function LinkTreeDashboard() {
                     variant="ghost"
                     className="w-full justify-start gap-3 h-auto py-3"
                     onClick={() => {
-                      navigate(`/app/clients/${client.id}/links`);
+                      navigate(`/app/clients/${client.slug || client.id}/links`);
                       setSelectClientOpen(false);
                     }}
                   >
@@ -477,7 +477,7 @@ export default function LinkTreeDashboard() {
                   {/* Actions */}
                   <div className="flex gap-2">
                     <Button 
-                      onClick={() => navigate(`/app/clients/${page.client_id}/links`)}
+                      onClick={() => navigate(`/app/clients/${page.clients?.slug || page.client_id}/links`)}
                       className="flex-1 gap-2"
                     >
                       <Pencil className="h-4 w-4" />
@@ -494,7 +494,7 @@ export default function LinkTreeDashboard() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => navigate(`/app/clients/${page.client_id}/links?tab=insights`)}
+                      onClick={() => navigate(`/app/clients/${page.clients?.slug || page.client_id}/links?tab=insights`)}
                     >
                       <BarChart3 className="h-4 w-4" />
                     </Button>

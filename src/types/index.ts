@@ -34,6 +34,7 @@ export interface Client {
   paused: boolean;
   pausedAt?: string;
   pausedBy?: string;
+  slug: string;
 }
 
 export type ServiceType = 

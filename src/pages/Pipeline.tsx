@@ -97,8 +97,8 @@ export default function Pipeline() {
 
   const getClientsByStage = (stageId: string) => clients.filter(client => client.stage === stageId);
 
-  const handleClientClick = (clientId: string) => {
-    navigate(`/app/clients/${clientId}`);
+  const handleClientClick = (client: Client) => {
+    navigate(`/app/clients/${client.slug || client.id}`);
   };
 
   const handleTabChange = (tab: string) => {
@@ -225,7 +225,7 @@ export default function Pipeline() {
                         delay={0.2 + (stageIndex * 0.1) + (clientIndex * 0.05)}
                       >
                         <div
-                          onClick={() => handleClientClick(client.id)}
+                          onClick={() => handleClientClick(client)}
                           className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-4 cursor-pointer shadow-lg transition-all duration-300 hover:shadow-xl hover:border-primary/50"
                         >
                           <div className="flex items-start gap-3">

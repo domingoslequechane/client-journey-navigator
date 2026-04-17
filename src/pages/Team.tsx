@@ -57,8 +57,8 @@ const STATUS_CONFIG: Record<string, { labelKey: string; color: string; icon: any
 };
 
 const PRIVILEGES = [
-  { id: 'sales', labelKey: 'navigation.sales', descriptionKey: 'roles.sales.description' },
-  { id: 'designer', labelKey: 'navigation.operations', descriptionKey: 'roles.operations.description' },
+  { id: 'sales', labelKey: 'navigation.salesFunnel', descriptionKey: 'roles.sales.description' },
+  { id: 'designer', labelKey: 'navigation.operationalFlow', descriptionKey: 'roles.operations.description' },
   { id: 'finance', labelKey: 'navigation.finance', descriptionKey: 'finance.title' },
   { id: 'link23', labelKey: 'navigation.link23', descriptionKey: 'navigation.link23' },
   { id: 'editorial', labelKey: 'navigation.editorial', descriptionKey: 'navigation.editorial' },
@@ -66,10 +66,11 @@ const PRIVILEGES = [
   { id: 'studio', labelKey: 'navigation.studio', descriptionKey: 'navigation.studio' },
   { id: 'clients', labelKey: 'navigation.clients', descriptionKey: 'navigation.clients' },
   { id: 'team', labelKey: 'navigation.team', descriptionKey: 'navigation.team' },
+  { id: 'qia', labelKey: 'navigation.qia', descriptionKey: 'navigation.qia' },
+  { id: 'ai_agents', labelKey: 'navigation.aiAgents', descriptionKey: 'navigation.aiAgents' },
 ] as const;
 
 const UNIVERSAL_PRIVILEGES = [
-  { id: 'qia', labelKey: 'navigation.qia' },
   { id: 'academy', labelKey: 'navigation.academy' },
   { id: 'support', labelKey: 'navigation.support' },
   { id: 'notifications', labelKey: 'navigation.notifications' },
@@ -530,12 +531,12 @@ export default function Team() {
           <DialogTrigger asChild>
             <Button
               className="gap-2 w-full sm:w-auto"
-              disabled={!canInviteTeamMember || !currentUserIsOwner}
+              disabled={!canInviteTeamMember || !canManageTeam}
             >
-              {!currentUserIsOwner ? (
+              {!canManageTeam ? (
                 <>
                   <Lock className="h-4 w-4" />
-                  <span>Restrito a Donos</span>
+                  <span>Restrito</span>
                 </>
               ) : !canInviteTeamMember ? (
                 <>
@@ -621,7 +622,7 @@ export default function Team() {
                 <div className="flex items-center gap-2 px-1">
                   <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">Universal</Badge>
                   <p className="text-[11px] text-muted-foreground italic">
-                    Academia, QIA, Suporte, Notificações e Configurações são liberados para todos os membros.
+                    Academia, Suporte, Notificações e Configurações são liberados para todos os membros.
                   </p>
                 </div>
               </div>
@@ -699,7 +700,7 @@ export default function Team() {
             <div className="flex items-center gap-2 px-1 pt-2">
               <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">Universal</Badge>
               <p className="text-[11px] text-muted-foreground italic">
-                Academia, QIA, Suporte, Notificações e Configurações são liberados para todos os membros.
+                Academia, Suporte, Notificações e Configurações são liberados para todos os membros.
               </p>
             </div>
           </div>
@@ -777,7 +778,7 @@ export default function Team() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
               <ShieldAlert className="h-5 w-5" />
-              Promoção a Administrador (Owner)
+              Promoção a Dono (Owner)
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>Você está prestes a promover <strong>{pendingAdminPromotion?.member.full_name}</strong> para <strong>Dono (Owner)</strong>.</p>
@@ -860,7 +861,7 @@ export default function Team() {
                       <TableCell>
                         <div className="flex flex-col gap-1.5">
                           {/* Owner badge for org owner, Colaborador for everyone else */}
-                          {member.id === orgOwnerId || member.role === 'owner' ? (
+                          {member.role?.toLowerCase() === 'owner' ? (
                             <Badge variant="secondary" className="w-fit bg-orange-100 text-orange-800 border border-orange-200">
                               👑 {t('member.owner', 'Dono')}
                             </Badge>
@@ -904,12 +905,12 @@ export default function Team() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {!currentUserIsOwner ? (
-                              <DropdownMenuItem disabled className="text-muted-foreground italic text-xs">
-                                <Lock className="h-3 w-3 mr-2" />
-                                Apenas donos podem alterar
-                              </DropdownMenuItem>
-                            ) : isPending ? (
+                             {!canManageTeam ? (
+                               <DropdownMenuItem disabled className="text-stone-400 italic text-xs">
+                                 <Lock className="h-3 w-3 mr-2" />
+                                 Sem permissão de gestão
+                               </DropdownMenuItem>
+                             ) : isPending ? (
                               <>
                                 <DropdownMenuItem onClick={() => handleResendInvite(member)}>
                                   <RefreshCw className="h-4 w-4 mr-2" />
@@ -938,7 +939,7 @@ export default function Team() {
                                   }}
                                   disabled={
                                     member.id === currentUser?.id ||
-                                    member.id === orgOwnerId
+                                    member.role?.toLowerCase() === 'owner'
                                   }
                                 >
                                   <Shield className="h-4 w-4 mr-2" />
@@ -948,7 +949,7 @@ export default function Team() {
                                   onClick={() => handleToggleSuspend(member)}
                                   disabled={
                                     member.id === currentUser?.id ||
-                                    member.id === orgOwnerId
+                                    member.role?.toLowerCase() === 'owner'
                                   }
                                 >
                                   {member.status === 'suspended' ? (
@@ -969,7 +970,7 @@ export default function Team() {
                                   className="text-destructive"
                                   disabled={
                                     member.id === currentUser?.id ||
-                                    member.id === orgOwnerId
+                                    member.role?.toLowerCase() === 'owner'
                                   }
                                 >
                                   <UserX className="h-4 w-4 mr-2" />

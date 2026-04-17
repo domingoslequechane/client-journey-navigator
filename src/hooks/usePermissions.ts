@@ -19,10 +19,10 @@ export type PrivilegeKey =
     | 'support'
     | 'notifications'
     | 'settings'
+    | 'ai_agents'
     | 'plans';
 
 export const UNIVERSAL_PRIVILEGES: PrivilegeKey[] = [
-    'qia',
     'academy',
     'support',
     'notifications',
@@ -122,7 +122,7 @@ export function usePermissions() {
 
 
     const permissions = useMemo(() => {
-        const rawRole = profile?.role?.toLowerCase() || 'user';
+        const rawRole = profile?.role || 'User';
         const privileges = (profile?.privileges as string[]) || [];
         const isProprietor = (profile as any)?.is_proprietor || false;
         const isOrgOwner = (profile as any)?.is_org_owner || false;
@@ -131,22 +131,25 @@ export function usePermissions() {
         const globalRole = ((profile as any)?.global_role as string || '').toLowerCase();
         const emailLower = user?.email?.toLowerCase() || '';
         
+        const rawRoleLower = rawRole.toLowerCase();
+        
         const isInternalAdmin = 
-            rawRole === 'qfy-admin' || 
+            rawRoleLower === 'qfy-admin' || 
             globalRole === 'qfy-admin';
 
         const isAdmin = isInternalAdmin;
-        const isOwner = isOrgOwner || isProprietor || rawRole === 'owner' || rawRole === 'Owner' || isAdmin;
+        // Strict adherence to explicit roles. Remove bypasses like isOrgOwner or isProprietor.
+        const isOwner = rawRoleLower === 'owner' || rawRoleLower === 'admin' || isAdmin;
 
 
         const hasPrivilege = (key: PrivilegeKey): boolean => {
-            if (isAdmin) return true;
+            if (isAdmin || isOwner) return true;
             if (UNIVERSAL_PRIVILEGES.includes(key)) return true;
             return privileges.includes(key);
         };
 
         const canAccessModule = (module: string): boolean => {
-            if (isAdmin) return true;
+            if (isAdmin || isOwner) return true;
 
             switch (module.toLowerCase()) {
                 case 'pipeline':
@@ -172,7 +175,7 @@ export function usePermissions() {
                 case 'settings':
                     return hasPrivilege(module.toLowerCase() as PrivilegeKey);
                 case 'ai_agents':
-                    return privileges.includes('ai_agents') || isOwner || isAdmin;
+                    return privileges.includes('ai_agents');
                 case 'plans':
                     return isAdmin;
                 default:

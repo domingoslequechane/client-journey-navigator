@@ -45,6 +45,10 @@ export function StudioToolsHub({ className }: StudioToolsHubProps) {
                 const max = limits.maxStudioProductScene ?? (isLimited ? defaultLimit : null);
                 return { usage: usage.studioProductSceneCount, max, isLocked: isLimited && usage.studioProductSceneCount >= (max ?? 0), label: '5 Cenários de Produto no Studio' };
             }
+            case 'video-generator': {
+                const max = isLimited ? 2 : null; // Limit to 2 videos on free plan
+                return { usage: 0, max, isLocked: false, label: '2 Vídeos no Studio' }; // Assuming zero usage tracking for now for simplicity, or we could fetch it explicitly.
+            }
             default:
                 return { usage: 0, max: null, isLocked: false, label: '' };
         }

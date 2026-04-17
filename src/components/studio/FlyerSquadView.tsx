@@ -578,15 +578,24 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
 
         if (agent.id === 'reviewer') {
           if (data.result.status === 'rejected') {
-            toast.info(
-              <div className="flex flex-col gap-1">
-                <p className="font-bold text-sm text-blue-800">Diretor de Arte solicitou um ajuste</p>
-                <p className="text-xs text-blue-600 leading-relaxed">{data.result.feedback}</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">
-                  Refinando design (Tentativa {retryCount + 1} de {MAX_RETRIES})...
+            toast.error(
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Revisão do Diretor de Arte</span>
+                </div>
+                <p className="text-xs text-foreground/90 leading-relaxed font-medium">
+                  {data.result.feedback}
                 </p>
+                <div className="text-[9px] text-muted-foreground mt-1 flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  O Designer está a fazer as correções (Tentativa {retryCount + 1} de {MAX_RETRIES})...
+                </div>
               </div>,
-              { duration: 6000 }
+              { 
+                duration: 8000, 
+                className: "!bg-[#0a0a0a]/95 !backdrop-blur-xl !border-l-4 !border-l-primary !border-y !border-r !border-white/5 !shadow-2xl !rounded-xl !p-4" 
+              }
             );
             
             currentContext['reviewer_feedback'] = data.result.feedback;
@@ -594,7 +603,21 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
             currentStepIdx = 2; // Go back to Designer
             continue;
           } else {
-            toast.success(`Arte aprovada pelo Diretor! Score: ${data.result.score}/10 ✨`);
+            toast.success(
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-green-500 font-bold text-[10px] uppercase tracking-wider">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Diretor de Arte</span>
+                </div>
+                <p className="text-xs text-foreground/90 leading-relaxed">
+                  Arte aprovada com louvor! Score: <span className="font-bold text-green-500">{data.result.score}/10</span> ✨
+                </p>
+              </div>,
+              { 
+                duration: 5000,
+                className: "!bg-[#0a0a0a]/95 !backdrop-blur-xl !border-l-4 !border-l-green-500 !border-y !border-r !border-white/5 !shadow-2xl !rounded-xl !p-4"
+              }
+            );
           }
         }
 
@@ -641,10 +664,38 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         playCompletionSound();
       }
 
-      toast.success('Flyer gerado com sucesso! 🚀');
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-wider">
+            <Sparkles className="h-4 w-4" />
+            <span>Sucesso Total</span>
+          </div>
+          <p className="text-xs text-foreground/90 leading-relaxed font-medium">
+            Flyer gerado e publicado no histórico! 🚀
+          </p>
+        </div>,
+        { 
+          duration: 6000,
+          className: "!bg-[#0a0a0a]/95 !backdrop-blur-xl !border-l-4 !border-l-primary !border-y !border-r !border-white/5 !shadow-2xl !rounded-xl !p-4"
+        }
+      );
     } catch (error: any) {
       console.error('Squad Error:', error);
-      toast.error(`Falha na geração: ${error.message}`);
+      toast.error(
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-destructive font-bold text-[10px] uppercase tracking-wider">
+            <AlertCircle className="w-4 h-4" />
+            <span>Erro na Operação</span>
+          </div>
+          <p className="text-xs text-foreground/90 leading-relaxed">
+            {error.message || 'Ocorreu um problema inesperado na geração do flyer.'}
+          </p>
+        </div>,
+        { 
+          duration: 5000,
+          className: "!bg-[#0a0a0a]/95 !backdrop-blur-xl !border-l-4 !border-l-destructive !border-y !border-r !border-white/5 !shadow-2xl !rounded-xl !p-4"
+        }
+      );
       setLogs(prev => prev.map(log => 
         log.status === 'working' ? { ...log, status: 'failed', action: `Erro: ${error.message}` } : log
       ));
@@ -1547,8 +1598,8 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
                 </Button>
                 
                 <Button 
-                  variant="outline"
-                  className="rounded-xl w-full h-12 font-bold border-white/10 text-white hover:bg-white/5"
+                  variant="ghost"
+                  className="rounded-xl w-full h-12 font-bold border border-white/10 text-white hover:bg-white/10 active:scale-95 transition-all"
                   onClick={() => setPreviewIndex(null)}
                 >
                   Fechar Visualização

@@ -39,6 +39,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { PlanUsageCard } from './PlanUsageCard';
+import { usePermissions } from '@/hooks/usePermissions';
 
 import planLanca from '@/assets/plans/plan-lanca.png';
 import planArco from '@/assets/plans/plan-arco.png';
@@ -144,6 +145,9 @@ export function SubscriptionTab() {
   const [upgradeStep, setUpgradeStep] = useState<PaymentStep>('plans');
   const [selectedPlan, setSelectedPlan] = useState<UpgradePlanKey | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodKey | null>(null);
+  const { isOwner, hasPrivilege } = usePermissions();
+  
+  const canManageSubscription = isOwner || hasPrivilege('finance');
 
   const PAYMENT_METHODS = [
     {
@@ -206,6 +210,14 @@ export function SubscriptionTab() {
   };
 
   const openUpgradeModal = () => {
+    if (!canManageSubscription) {
+      toast({
+        title: 'Acesso Restrito',
+        description: 'Apenas o dono da agência ou financeiro pode alterar o plano.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setUpgradeStep('plans');
     setSelectedPlan(null);
     setSelectedMethod(null);
@@ -602,6 +614,7 @@ export function SubscriptionTab() {
                 className="gap-2 w-full sm:w-auto text-xs sm:text-sm text-white"
                 style={{ background: 'linear-gradient(135deg, hsl(25,95%,50%) 0%, hsl(270,91%,60%) 100%)' }}
                 onClick={openUpgradeModal}
+                disabled={!canManageSubscription}
               >
                 <Crown className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
                 <span>Fazer Upgrade</span>
@@ -609,8 +622,8 @@ export function SubscriptionTab() {
             )}
 
             {/* Payment management - only for paid plans */}
-            {isPaidPlan && hasActiveSubscription && (
-              <>
+            {isPaidPlan && hasActiveSubscription && canManageSubscription && (
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -666,17 +679,17 @@ export function SubscriptionTab() {
                     </AlertDialogContent>
                   </AlertDialog>
                 )}
-              </>
+              </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Plan Usage Card */}
-      <PlanUsageCard />
+       {/* Plan Usage Card - Restricted to Managers */}
+      {canManageSubscription && <PlanUsageCard />}
 
-      {/* Upgrade CTA for Free Plan */}
-      {!isPaidPlan && (
+      {/* Upgrade CTA for Free Plan - Only for Managers */}
+      {!isPaidPlan && canManageSubscription && (
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
@@ -713,7 +726,7 @@ export function SubscriptionTab() {
                 <p className="text-sm text-muted-foreground mt-1">
                   Sua assinatura está ativa. Você tem acesso a todas as funcionalidades do plano {currentPlan.name}.
                 </p>
-                {planType !== 'agency' && (
+                {planType !== 'agency' && canManageSubscription && (
                   <Link to="/app/upgrade">
                     <Button variant="outline" className="mt-4 gap-2">
                       <TrendingUp className="h-4 w-4" />
@@ -727,61 +740,63 @@ export function SubscriptionTab() {
         </Card>
       )}
 
-      {/* Payment History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            Histórico de Pagamentos
-          </CardTitle>
-          <CardDescription>
-            Veja todos os pagamentos realizados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loadingPayments ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : payments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Nenhum pagamento registrado ainda</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {payments.map((payment) => (
-                <div 
-                  key={payment.id} 
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border bg-card"
-                >
-                  <div className="flex items-center gap-3">
-                    {payment.status === 'confirmed' ? (
-                      <CheckCircle2 className={cn("h-5 w-5 shrink-0", currentPlan.color)} />
-                    ) : payment.status === 'failed' ? (
-                      <XCircle className="h-5 w-5 shrink-0 text-destructive" />
-                    ) : (
-                      <Clock className="h-5 w-5 shrink-0 text-yellow-500" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">{payment.description || 'Assinatura'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(payment.payment_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                      </p>
+      {/* Payment History - Restricted to Managers */}
+      {canManageSubscription && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              Histórico de Pagamentos
+            </CardTitle>
+            <CardDescription>
+              Veja todos os pagamentos realizados
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingPayments ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : payments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhum pagamento registrado ainda</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {payments.map((payment) => (
+                  <div 
+                    key={payment.id} 
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border bg-card"
+                  >
+                    <div className="flex items-center gap-3">
+                      {payment.status === 'confirmed' ? (
+                        <CheckCircle2 className={cn("h-5 w-5 shrink-0", currentPlan.color)} />
+                      ) : payment.status === 'failed' ? (
+                        <XCircle className="h-5 w-5 shrink-0 text-destructive" />
+                      ) : (
+                        <Clock className="h-5 w-5 shrink-0 text-yellow-500" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{payment.description || 'Assinatura'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(payment.payment_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end gap-3 pl-8 sm:pl-0">
+                      <span className="font-medium text-sm">
+                        ${payment.amount.toFixed(2)} {payment.currency}
+                      </span>
+                      {getPaymentStatusBadge(payment.status)}
                     </div>
                   </div>
-                  <div className="flex items-center justify-between sm:justify-end gap-3 pl-8 sm:pl-0">
-                    <span className="font-medium text-sm">
-                      ${payment.amount.toFixed(2)} {payment.currency}
-                    </span>
-                    {getPaymentStatusBadge(payment.status)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Upgrade Modal — 3-step flow */}
       <Dialog open={showUpgradeModal} onOpenChange={(open) => {

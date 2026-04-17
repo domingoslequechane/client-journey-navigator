@@ -107,7 +107,7 @@ export function HighlightClientCard({ clients, currencySymbol, showBudget = true
               </div>
             )}
           </div>
-          <Link to={`/app/clients/${highlightClient.id}`}>
+          <Link to={`/app/clients/${highlightClient.slug || highlightClient.id}`}>
             <Button variant="ghost" size="sm" className="gap-1">
               Ver
               <ArrowRight className="h-4 w-4" />
