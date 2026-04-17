@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Stages that count towards client limits (operational stages)
-const OPERATIONAL_STAGES = ['producao', 'trafego', 'retencao', 'fidelizacao'] as const;
+const OPERATIONAL_STAGES = ['prospeccao', 'reuniao', 'contratacao', 'producao', 'trafego', 'retencao', 'fidelizacao'] as const;
 
 export type PlanType = 'starter' | 'pro' | 'agency' | 'free' | 'trial' | null;
 
@@ -222,8 +222,8 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           // Trial has 5/day per tool limit; paid plans use their tier-based limits
           dailyStudioLimit: isTrial ? 5 : getLimitValue(dailyStudioLimits, currentPlanType),
           maxSocialPostsPerMonth: d.max_social_posts_per_month,
-          // Link23 limit equals the client limit of the plan
-          maxLinkPages: d.max_link_pages ?? calculatedMaxClients,
+          // Link23 limit ALWAYS equals the client limit of the plan as per requested rule
+          maxLinkPages: calculatedMaxClients,
           can_export_data: d.can_export_data ?? false,
           has_finance_module: d.has_finance_module ?? false,
           has_studio_module: d.has_studio_module ?? isTrial,
