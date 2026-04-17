@@ -159,7 +159,7 @@ export function Sidebar() {
     if (!isInternalAdmin) return;
     
     const fetchPendingCount = async () => {
-      const { count, error } = await supabase
+      const { count, error } = await (supabase as any)
         .from('manual_payment_requests')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
