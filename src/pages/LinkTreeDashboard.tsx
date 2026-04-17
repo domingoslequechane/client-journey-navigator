@@ -404,7 +404,29 @@ export default function LinkTreeDashboard() {
                       : t('linkTree.noClientsAvailable')
                     }
                   </p>
-                  {(!linkPages || linkPages.length === 0) && (
+                  
+                  {limits.maxLinkPages !== null && linkPages && linkPages.length < limits.maxLinkPages && (
+                    <div className="mt-4 space-y-3">
+                      <p className="text-xs text-primary font-medium bg-primary/5 py-2 px-3 rounded-full inline-block">
+                        Você ainda tem {limits.maxLinkPages - linkPages.length} vagas disponíveis no seu plano
+                      </p>
+                      <div className="flex justify-center">
+                        <Button 
+                          variant="default" 
+                          className="gap-2"
+                          onClick={() => {
+                            setSelectClientOpen(false);
+                            navigate('/app/clients/new');
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                          Adicionar Novo Cliente
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {(!linkPages || linkPages.length === 0) && (!limits.maxLinkPages || linkPages?.length >= (limits.maxLinkPages || 0)) && (
                     <Button 
                       variant="outline" 
                       className="mt-3"
