@@ -652,7 +652,7 @@ export function Sidebar() {
                 <TooltipTrigger asChild>
                   {isNoPlan ? (
                     <button
-                      onClick={() => setLockedModule({ name: t('navigation.settings'), plan: 'Lança' })}
+                      onClick={() => setLockedModule({ name: t('navigation.settings'), plan: 'Lança', type: 'plan' })}
                       className={cn(
                         'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors w-full',
                         'text-muted-foreground/50 hover:bg-accent/50 cursor-pointer'
@@ -682,7 +682,7 @@ export function Sidebar() {
             ) : (
               isNoPlan ? (
                 <button
-                  onClick={() => setLockedModule({ name: t('navigation.settings'), plan: 'Lança' })}
+                  onClick={() => setLockedModule({ name: t('navigation.settings'), plan: 'Lança', type: 'plan' })}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left',
                     'text-muted-foreground/50 hover:bg-accent/50 cursor-pointer'
