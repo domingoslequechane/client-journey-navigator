@@ -5,7 +5,8 @@
     "title": "Membros",
     "count": "{{count}} membro(s)",
     "active": "Ativos",
-    "inactive": "Inativos"
+    "inactive": "Inativos",
+    "label": "Membros da Equipe"
   },
   "invite": {
     "title": "Convidar Membro",
@@ -19,7 +20,10 @@
     "send": "Enviar Convite",
     "sending": "Enviando...",
     "success": "Convite enviado com sucesso!",
-    "error": "Erro ao enviar convite"
+    "error": "Erro ao enviar convite",
+    "restricted": "Restrito",
+    "universalLabel": "Universal",
+    "universalDescription": "Academia, Suporte, Notificações e Configurações são liberados para todos os membros."
   },
   "roles": {
     "admin": {
@@ -119,5 +123,22 @@
     "reached": "Limite de membros atingido",
     "upgrade": "Faça upgrade do plano para adicionar mais membros",
     "current": "{{current}} de {{max}} membros"
+  },
+  "privileges": {
+    "sales": "Acesso ao funil de vendas, leads e prospecção",
+    "designer": "Acesso ao fluxo operacional de produção e entregas",
+    "finance": "Gestão financeira, faturas e controle de caixa",
+    "link23": "Criação de Bio Links e monitoramento de cliques",
+    "editorial": "Planeamento de linha editorial e calendário de posts",
+    "social_media": "Gestão de contas vinculadas e agendamento direto",
+    "studio": "Criação de criativos e flyers com auxílio de IA",
+    "clients": "Gestão da base de clientes e jornada do cliente",
+    "team": "Convidar e gerenciar níveis de acesso da equipa",
+    "qia": "Uso do chat inteligente Assistente QIA",
+    "ai_agents": "Criação e execução de agentes de IA especializados",
+    "academy": "Acesso a conteúdos da Academia de Marketing",
+    "support": "Canal direto de suporte e envio de feedback",
+    "notifications": "Receção de alertas e avisos importantes",
+    "settings": "Gestão das configurações da organização e conta"
   }
 }
