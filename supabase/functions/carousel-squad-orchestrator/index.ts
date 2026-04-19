@@ -458,7 +458,9 @@ IDENTIDADE DO CLIENTE:
 - Cor Secundária: ${context.project?.secondaryColor}
 - ${fontInstruction}
 - Instruções de Marca: "${context.project?.instructions || 'Nenhuma'}"
-- Restrições: "${context.project?.restrictions || 'Nenhuma'}"
+- Restrições Críticas (NÃO FAZER): "${context.project?.restrictions || 'Nenhuma'}"
+- Padrões de Qualidade (CRÍTICO - OBRIGATÓRIO): "${context.project?.qualityStandards || 'Os mais altos padrões da agência.'}"
+- Diretrizes Extra (Recomendado): "${context.project?.extraGuidelines || 'Nenhuma'}"
 
 OBJETIVO DO CARROSSEL: "${context.project?.objective}"
 TOM: "${context.project?.tone}"
