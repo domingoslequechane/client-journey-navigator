@@ -448,6 +448,8 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
         description: project.description,
         websiteUrl: (project.settings as any)?.website_url,
         captionInstructions: (project.settings as any)?.caption_instructions,
+        qualityStandards: (project.settings as any)?.quality_standards,
+        extraGuidelines: (project.settings as any)?.extra_guidelines,
         logoUrl: project.logo_images?.[0],
         objective: FLYER_OBJECTIVES.find(o => o.id === objective)?.label || objective,
         tone: FLYER_TONES.find(t => t.id === tone)?.label || tone,

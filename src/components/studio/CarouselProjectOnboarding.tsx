@@ -67,6 +67,8 @@ export function CarouselProjectOnboarding({ onComplete, onCancel, projectId }: C
     websiteUrl: '',
     captionInstructions: '',
     primaryFont: 'Montserrat',
+    qualityStandards: '',
+    extraGuidelines: '',
   });
 
   // Fetch Existing Project Data if editing
@@ -101,7 +103,9 @@ export function CarouselProjectOnboarding({ onComplete, onCancel, projectId }: C
         logoUrl: project.logo_images?.[0] || '',
         websiteUrl: settings.website_url || '',
         captionInstructions: settings.caption_instructions || '',
-        primaryFont: settings.primary_font || project.font_family || 'Montserrat'
+        primaryFont: settings.primary_font || project.font_family || 'Montserrat',
+        qualityStandards: settings.quality_standards || '',
+        extraGuidelines: settings.extra_guidelines || ''
       });
     }
   }, [project]);
@@ -201,7 +205,9 @@ export function CarouselProjectOnboarding({ onComplete, onCancel, projectId }: C
               ...(project?.settings as any || {}),
               website_url: formData.websiteUrl,
               caption_instructions: formData.captionInstructions,
-              primary_font: formData.primaryFont
+              primary_font: formData.primaryFont,
+              quality_standards: formData.qualityStandards,
+              extra_guidelines: formData.extraGuidelines
             }
           })
           .eq('id', projectId);
@@ -223,7 +229,9 @@ export function CarouselProjectOnboarding({ onComplete, onCancel, projectId }: C
             settings: {
               website_url: formData.websiteUrl,
               caption_instructions: formData.captionInstructions,
-              primary_font: formData.primaryFont
+              primary_font: formData.primaryFont,
+              quality_standards: formData.qualityStandards,
+              extra_guidelines: formData.extraGuidelines
             }
           });
       }
@@ -485,6 +493,26 @@ export function CarouselProjectOnboarding({ onComplete, onCancel, projectId }: C
                   className="min-h-[80px] rounded-xl border-destructive/20"
                   value={formData.aiRestrictions}
                   onChange={e => setFormData({...formData, aiRestrictions: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-bold">Padrões de Qualidade (Crítico)</Label>
+                <Textarea 
+                  placeholder="Ex: Todas as imagens devem ter iluminação de estúdio profissional, alta resolução e texturas realistas..."
+                  className="min-h-[80px] rounded-xl"
+                  value={formData.qualityStandards}
+                  onChange={e => setFormData({...formData, qualityStandards: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-primary">Extra (Recomendado)</Label>
+                <Textarea 
+                  placeholder="Referências adicionais de estilo, links para moodboards, ou pedidos especiais de IA..."
+                  className="min-h-[80px] rounded-xl border-primary/20"
+                  value={formData.extraGuidelines}
+                  onChange={e => setFormData({...formData, extraGuidelines: e.target.value})}
                 />
               </div>
             </div>

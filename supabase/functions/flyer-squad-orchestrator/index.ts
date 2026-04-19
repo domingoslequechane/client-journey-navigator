@@ -251,7 +251,9 @@ serve(async (req) => {
               - Cores: Primária (${context.project?.primaryColor}), Secundária (${context.project?.secondaryColor})
               - ${fontInstruction}
               - Regras da Marca: "${context.project?.instructions || 'Nenhuma'}"
-              - Restrições: "${context.project?.restrictions || 'Nenhuma'}"
+              - Restrições Críticas (NÃO FAZER): "${context.project?.restrictions || 'Nenhuma'}"
+              - Padrões de Qualidade (CRÍTICO - OBRIGATÓRIO): "${context.project?.qualityStandards || 'Os mais altos padrões da agência.'}"
+              - Diretrizes Extra (Recomendado): "${context.project?.extraGuidelines || 'Nenhuma'}"
               - Info de Contacto: ${JSON.stringify(context.project?.contactInfo || {})}
               - Padrão de Legendas: "${captionInstructions}"
 
