@@ -730,8 +730,9 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
 
       <div className="flex-1 flex flex-col h-full bg-background overflow-hidden lg:flex-row">
       {/* ── Configuration Sidebar ── */}
-      <div className="w-full lg:w-[380px] border-r overflow-y-auto p-5 pb-6 space-y-6 bg-muted/5 shadow-inner shrink-0">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="w-full lg:w-[380px] border-r flex flex-col bg-muted/5 shadow-inner shrink-0 relative z-20">
+        <div className="flex-1 overflow-y-auto p-5 pb-6 space-y-6 min-h-0">
+          <div className="flex items-center gap-2 mb-2">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -1077,8 +1078,10 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
             </div>
           </div>
         </div>
+        </div>
 
-        <div className="sticky bottom-0 -mx-5 -mb-6 p-5 bg-background/95 backdrop-blur-md border-t z-20 flex flex-col gap-3 shadow-[0_-20px_40px_-20px_rgba(0,0,0,0.3)]">
+        {/* ── Fixed Footer ── */}
+        <div className="p-5 bg-background shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.5)] border-t border-border/40 shrink-0 flex flex-col gap-3 relative z-30">
           <div className="flex flex-row items-center justify-between px-1">
             <div className="flex flex-col gap-0.5">
               <span className="text-xs font-bold text-foreground">Continuar sem revisão</span>
