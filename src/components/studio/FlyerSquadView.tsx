@@ -181,6 +181,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
   const [isWaitingForCopyApproval, setIsWaitingForCopyApproval] = useState(false);
   const [editableCopy, setEditableCopy] = useState<any>(null);
   const [copyApprovalResolve, setCopyApprovalResolve] = useState<{ resolve: (value: any) => void } | null>(null);
+  const [autoSkipReview, setAutoSkipReview] = useState(false);
   const ITEMS_PER_PAGE = 9;
 
   useEffect(() => {
@@ -234,6 +235,7 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
       else if (settings.productImage) setProductImages([settings.productImage]);
       if (settings.referenceImage) setReferenceImage(settings.referenceImage);
       if (settings.approvedTemplateImage) setApprovedTemplateImage(settings.approvedTemplateImage);
+      if (settings.hasOwnProperty('autoSkipReview')) setAutoSkipReview(settings.autoSkipReview);
       isInitialLoad.current = false;
     } else if (!loadingProject && !project?.settings) {
       isInitialLoad.current = false;
@@ -543,34 +545,36 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           setResultCaption(data.result.social_caption);
           lastCaption = data.result.social_caption; // Track synchronously
 
-          // --- PAUSE FOR HUMAN REVIEW ---
-          setIsWaitingForCopyApproval(true);
-          setEditableCopy({
-            social_caption: data.result.social_caption,
-            headline: data.result.headline || data.result.copy?.headline || '',
-            subheadline: data.result.subheadline || data.result.copy?.subheadline || '',
-            body: data.result.body || data.result.copy?.body || '',
-            cta: data.result.cta || data.result.copy?.cta || ''
-          });
+          if (!autoSkipReview) {
+            // --- PAUSE FOR HUMAN REVIEW ---
+            setIsWaitingForCopyApproval(true);
+            setEditableCopy({
+              social_caption: data.result.social_caption,
+              headline: data.result.headline || data.result.copy?.headline || '',
+              subheadline: data.result.subheadline || data.result.copy?.subheadline || '',
+              body: data.result.body || data.result.copy?.body || '',
+              cta: data.result.cta || data.result.copy?.cta || ''
+            });
 
-          // Create a promise and store the resolve function
-          const selection = await new Promise<any>((resolve) => {
-            setCopyApprovalResolve({ resolve });
-          });
+            // Create a promise and store the resolve function
+            const selection = await new Promise<any>((resolve) => {
+              setCopyApprovalResolve({ resolve });
+            });
 
-          // Reset approval state
-          setIsWaitingForCopyApproval(false);
-          setCopyApprovalResolve(null);
+            // Reset approval state
+            setIsWaitingForCopyApproval(false);
+            setCopyApprovalResolve(null);
 
-          // Update context with the (possibly) edited copy
-          data.result.social_caption = selection.social_caption;
-          data.result.headline = selection.headline;
-          data.result.subheadline = selection.subheadline;
-          data.result.body = selection.body;
-          data.result.cta = selection.cta;
-          
-          currentContext[agent.id] = data.result;
-          lastCaption = selection.social_caption;
+            // Update context with the (possibly) edited copy
+            data.result.social_caption = selection.social_caption;
+            data.result.headline = selection.headline;
+            data.result.subheadline = selection.subheadline;
+            data.result.body = selection.body;
+            data.result.cta = selection.cta;
+            
+            currentContext[agent.id] = data.result;
+            lastCaption = selection.social_caption;
+          }
         }
 
         if (agent.id === 'designer' && data.result.imageUrl) {
@@ -1074,23 +1078,37 @@ export function FlyerSquadView({ tool, projectId, onBackToHub }: FlyerSquadViewP
           </div>
         </div>
 
-        <Button 
-          className="w-full h-12 text-sm font-bold rounded-xl shadow-md transition-all mt-4"
-          onClick={startSquad}
-          disabled={isProcessing}
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Gerando...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Gerar Flyer Profissional
-            </>
-          )}
-        </Button>
+        <div className="sticky bottom-0 -mx-5 -mb-6 p-5 bg-background/95 backdrop-blur-md border-t z-20 flex flex-col gap-3 shadow-[0_-20px_40px_-20px_rgba(0,0,0,0.3)]">
+          <div className="flex flex-row items-center justify-between px-1">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-bold text-foreground">Continuar sem revisão</span>
+              <span className="text-[10px] text-muted-foreground leading-tight">Pular a aprovação do Copywriter</span>
+            </div>
+            <Switch 
+              checked={autoSkipReview} 
+              onCheckedChange={(e) => { setAutoSkipReview(e); saveSettings({ autoSkipReview: e }); }}
+              className="scale-90"
+            />
+          </div>
+          
+          <Button 
+            className="w-full h-12 text-sm font-bold rounded-xl shadow-md transition-all"
+            onClick={startSquad}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Gerar Flyer Profissional
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* ── Main Production Area ── */}
