@@ -76,16 +76,23 @@ export function useSubscription(): UseSubscriptionReturn {
         if (cached) {
           try {
             const { subscription: cachedSub, organization: cachedOrg } = JSON.parse(cached);
+
             // Invalidate stale cache: legacy entries had plan_type='agency' for trial users.
-            // If cache has agency+trialing, it's corrupted — discard and fetch fresh.
             const isStaleLegacyEntry = cachedOrg?.planType === 'agency' && cachedSub?.status === 'trialing';
-            if (!isStaleLegacyEntry) {
+
+            // Invalidate if subscription period has already ended (prevents expired users staying in)
+            const now = Date.now();
+            const cachedPeriodEnd = cachedSub?.currentPeriodEnd ? new Date(cachedSub.currentPeriodEnd).getTime() : null;
+            const cachedTrialEnd  = cachedOrg?.trialEndsAt     ? new Date(cachedOrg.trialEndsAt).getTime()      : null;
+            const isExpiredByDate = (cachedPeriodEnd && cachedPeriodEnd < now) || (cachedTrialEnd && cachedTrialEnd < now);
+
+            if (!isStaleLegacyEntry && !isExpiredByDate) {
               setSubscription(cachedSub);
               setOrganization(cachedOrg);
               setLoading(false);
               return;
             }
-            // Remove the stale cache entry
+            // Remove stale / expired cache entry — force a fresh fetch
             sessionStorage.removeItem(cacheKey);
           } catch (e) {
             console.error('Error parsing subscription cache:', e);
@@ -153,39 +160,52 @@ export function useSubscription(): UseSubscriptionReturn {
     fetchSubscriptionData();
   }, [user]);
 
-  const planType = organization?.planType || null; // Changed fallback to null
+  const planType = organization?.planType || null;
 
-  // Determine subscription status — access is gated by LemonSqueezy subscription only
-  const isActive = subscription?.status === 'active';
-  const isTrialing = subscription?.status === 'trialing';
+  // ── Date checks (must be computed FIRST, before status derivation) ──
+  const now = Date.now();
+
+  // Has the subscription billing period ended?
+  const subscriptionHasEnded = subscription?.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).getTime() < now
+    : false;
+
+  // Has the trial period ended? (from organization.trialEndsAt)
+  const trialHasEnded = organization?.trialEndsAt
+    ? new Date(organization.trialEndsAt).getTime() < now
+    : false;
+
+  // Combined: at least one of the expiry dates has passed
+  const hasEnded = subscriptionHasEnded || trialHasEnded;
+
+  // ── Status derivation (date-aware) ──
+  // isActive: DB says active AND the billing period hasn't ended
+  const isActive = subscription?.status === 'active' && !subscriptionHasEnded;
+  // isTrialing: DB says trialing AND the trial period hasn't ended
+  const isTrialing = subscription?.status === 'trialing' && !trialHasEnded;
   const isPaidPlan = ['starter', 'pro', 'agency'].includes(planType as string);
   const isPastDue = subscription?.status === 'past_due';
   const isCancelled = subscription?.status === 'cancelled';
-  const hasEnded = subscription?.currentPeriodEnd 
-    ? new Date(subscription.currentPeriodEnd).getTime() < Date.now() 
-    : false;
-  
-  // A subscription is considered truly expired only if it's officially ended OR its status is 'expired' and the date has passed
+
+  // A subscription is truly expired if the status is expired/cancelled AND the period has ended
   const isExpired = (subscription?.status === 'expired' || subscription?.status === 'cancelled') && hasEnded;
   const cancelAtPeriodEnd = subscription?.cancelAtPeriodEnd || false;
 
   // Trial days left from organization data (informational only)
-  const trialDaysLeft = organization?.trialEndsAt // Used trialEndsAt from OrganizationData
-    ? Math.max(0, Math.ceil((new Date(organization.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+  const trialDaysLeft = organization?.trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(organization.trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24)))
     : 0;
 
-  // Active status for access control: current status is active/trialing OR (cancelled/expired but still within paid period)
+  // Active subscription: must have valid status AND not have expired by date
   const hasActiveSubscription = (isActive || isTrialing || ((isCancelled || subscription?.status === 'expired') && !hasEnded));
   const hasSubscriptionRecord = !!subscription;
-  
-  // Days until LemonSqueezy subscription expiration
+
+  // Days until subscription expiration
   const daysRemaining = subscription?.currentPeriodEnd
-    ? Math.max(0, Math.ceil((new Date(subscription.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(0, Math.ceil((new Date(subscription.currentPeriodEnd).getTime() - now) / (1000 * 60 * 60 * 24)))
     : 0;
-  
-  // Access requires an active or trialing subscription record from LemonSqueezy.
-  // Fallback: If planType is a paid plan (starter, pro, agency), grant access 
-  // to avoid locking out legitimate users who might be out of sync.
+
+  // Final access gate: active subscription OR paid plan that hasn't expired
   const hasAccess = hasActiveSubscription || (isPaidPlan && !isExpired);
 
   return {

@@ -116,11 +116,16 @@ export default function SelectOrganization() {
       // 2. Check subscription status BEFORE entering /app
       const { data: subData } = await supabase
         .from('subscriptions')
-        .select('status')
+        .select('status, current_period_end')
         .eq('organization_id', orgId)
         .maybeSingle();
 
-      const hasAccess = subData?.status === 'active' || subData?.status === 'trialing';
+      const now = new Date();
+      const periodEnd = subData?.current_period_end ? new Date(subData.current_period_end) : null;
+      const periodHasEnded = periodEnd ? periodEnd.getTime() < now.getTime() : false;
+
+      // Must have active/trialing status AND the period must not have ended
+      const hasAccess = (subData?.status === 'active' || subData?.status === 'trialing') && !periodHasEnded;
       
       clearNewLoginFlag();
 
