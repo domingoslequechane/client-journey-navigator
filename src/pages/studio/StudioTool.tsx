@@ -23,6 +23,7 @@ import { FlyerProjectOnboarding } from '@/components/studio/FlyerProjectOnboardi
 import { CarouselSquadView } from '@/components/studio/CarouselSquadView';
 import { CarouselProjectHub } from '@/components/studio/CarouselProjectHub';
 import { CarouselProjectOnboarding } from '@/components/studio/CarouselProjectOnboarding';
+import { UpscaleToolView } from '@/components/studio/UpscaleToolView';
 import { VideoProjectHub } from '@/components/studio/VideoProjectHub';
 import { VideoGeneratorStudio } from '@/components/studio/VideoGeneratorStudio';
 import { LongVideoStudio } from '@/components/studio/LongVideoStudio';
@@ -90,6 +91,10 @@ export default function StudioTool() {
 
     if (tool.id === 'recolor') {
         return <RecolorToolView tool={tool} />;
+    }
+
+    if (tool.id === 'upscale') {
+        return <UpscaleToolView tool={tool} />;
     }
 
     if (tool.id === 'product-beautifier') {
