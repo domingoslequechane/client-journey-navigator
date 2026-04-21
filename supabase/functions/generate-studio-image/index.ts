@@ -10,7 +10,7 @@ const corsHeaders = {
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 const AI_MODELS = {
-    "gemini-flash": "gemini-2.0-flash",
+    "gemini-flash": "gemini-3-flash",
     "gemini-pro":   "gemini-3-pro-image-preview", 
 } as const;
 
@@ -61,6 +61,8 @@ serve(async (req) => {
 
         // ── Per-tool expert prompts ─────────────────────────────────────────
         const TOOL_PROMPTS: Record<string, string> = {
+            'upscale': `You are a master photo retoucher and upscaling AI. The attached image needs to be highly enhanced and upscaled for high-quality printing. Task: "${prompt}". (1) Increase the perceived resolution, sharpness, and clarity. (2) Strictly maintain original object shapes, colors, and layout without ANY distortion. (3) Remove noise, artifacts, and pixelation. Output: an ultra-high definition, photorealistic, premium print-ready image.`,
+
             'recolor': `You are a professional photo retoucher. The attached image shows a product or object. Your ONLY task is to change its color to: "${prompt}". Rules: (1) Keep the object's shape, texture, reflections and proportions 100% identical. (2) Apply the new color realistically — respect existing highlights, shadows and material properties. (3) Do NOT alter the background or any other element. Output: high-resolution, photorealistic edited image.`,
 
             'product-beautifier': `You are a world-class commercial product photographer. The attached image is a product photo that needs enhancement. Task: "${prompt}". Create a stunning, magazine-quality hero shot: (1) Place the product in a premium studio environment fitting the description. (2) Apply 3-point professional lighting (key, fill, rim). (3) Add realistic drop shadows and subtle reflections. (4) Keep the product itself 100% identical — only enhance lighting, background, and environment. Output: ultra-high-definition, photorealistic product image.`,
@@ -107,18 +109,21 @@ serve(async (req) => {
             "1080x1920": "9:16",
             "1920x1080": "16:9",
             "1080x1350": "4:5",
-            "1280x720": "16:9"
+            "1280x720": "16:9",
+            "original": "SAME_AS_INPUT"
         };
 
+        const isOriginalSize = size === "original";
         const currentAspectRatio = SIZE_TO_ASPECT_RATIO[size] || "1:1";
-        const orientationLabel = currentAspectRatio === "1:1" ? "Quadrado (1:1)" :
+        const orientationLabel = isOriginalSize ? "Original" : 
+            currentAspectRatio === "1:1" ? "Quadrado (1:1)" :
             currentAspectRatio === "16:9" ? "Paisagem (16:9)" :
                 currentAspectRatio === "9:16" ? "Vertical (9:16)" :
                     currentAspectRatio === "4:5" ? "Retrato (4:5)" : currentAspectRatio;
 
         const systemPrompt = (TOOL_PROMPTS[toolId] ??
             `You are a professional creative director. Generate a high-end, commercial image. Tool: ${toolId}. Request: "${prompt}". Style: ${style}. Make it premium, photorealistic, and visually stunning.`) +
-            ` MANDATORY: Generate the image in ${orientationLabel} orientation. Ensure the entire composition fills the frame.`;
+            (isOriginalSize ? ` MANDATORY: Maintain the EXACT original aspect ratio and proportions of the input image.` : ` MANDATORY: Generate the image in ${orientationLabel} orientation. Ensure the entire composition fills the frame.`);
 
 
         const geminiKey = Deno.env.get("GEMINI_API_KEY");
@@ -154,15 +159,19 @@ serve(async (req) => {
         // Add instructions ALWAYS LAST to ensure high attention
         // Use extremely aggressive constraints as Gemini API often ignores imageGenerationConfig.aspectRatio in image-to-image
         const instructionPart = `${systemPrompt}
-MANDATORY QUALITY: Generate this image in EXTREME 4K RESOLUTION (3840x2160 equivalent quality). 
-Maintain razor-sharp edges, hyper-realistic textures, and zero noise.
+MANDATORY QUALITY: Generate this image in ULTRA-HIGH DEFINITION (300 DPI print quality, 4096px+ detail). 
+Maintain razor-sharp edges, hyper-realistic textures, zero noise, and master-level clarity.
 
 =========================================
-EXTREME MANDATORY CONSTRAINT:
+${isOriginalSize ? 
+`STRICT ASPECT RATIO CONSTRAINT:
+DO NOT CHANGE THE RATIO. KEEP THE IMAGE PROPORTIONS EXACTLY AS THEY ARE IN THE INPUT.
+NO CROPPING, NO PADDING, NO STRETCHING.` :
+`EXTREME MANDATORY CONSTRAINT:
 YOU MUST OUTPUT THIS IMAGE IN EXACTLY THE **${currentAspectRatio}** ASPECT RATIO (${orientationLabel}).
 DO NOT KEEP THE ORIGINAL IMAGE'S ASPECT RATIO.
 IF YOU IGNORE THIS, THE SYSTEM WILL CRASH.
-CROP, OUTPAINT, OR FILL THE BACKGROUND AS NECESSARY TO ACHIEVE EXACTLY A ${currentAspectRatio} CANVAS.
+CROP, OUTPAINT, OR FILL THE BACKGROUND AS NECESSARY TO ACHIEVE EXACTLY A ${currentAspectRatio} CANVAS.`}
 =========================================`;
         parts.push({ text: instructionPart });
 
@@ -171,20 +180,25 @@ CROP, OUTPAINT, OR FILL THE BACKGROUND AS NECESSARY TO ACHIEVE EXACTLY A ${curre
         // 2. Call Gemini Direct API
         const geminiUrl = `${GEMINI_API_BASE}/models/${aiModel}:generateContent?key=${geminiKey}`;
 
+        const requestBody: any = {
+            contents: [{ role: "user", parts }],
+            generationConfig: {
+                responseModalities: ["IMAGE", "TEXT"],
+            }
+        };
+
+        if (!isOriginalSize) {
+            requestBody.generationConfig.imageConfig = {
+                aspectRatio: currentAspectRatio
+            };
+        }
+
         const geminiResp = await fetch(
             geminiUrl,
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ role: "user", parts }],
-                    generationConfig: {
-                        responseModalities: ["IMAGE", "TEXT"],
-                        imageConfig: {
-                            aspectRatio: currentAspectRatio
-                        }
-                    }
-                }),
+                body: JSON.stringify(requestBody),
             }
         );
 

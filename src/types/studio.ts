@@ -1,4 +1,4 @@
-import { LucideIcon, Palette, Sparkles, Image, Paintbrush, Video } from 'lucide-react';
+import { LucideIcon, Palette, Sparkles, Image, Paintbrush, Video, Maximize } from 'lucide-react';
 
 // 5 modos de geração
 export type GenerationMode = 'original' | 'copy' | 'inspiration' | 'product' | 'template' | 'squad';
@@ -129,6 +129,19 @@ export const STUDIO_TOOLS: StudioTool[] = [
     gradientFrom: '#f59e0b',
     gradientTo: '#ef4444',
     previewImage: '/inspiration/recolor_preview_landscape.png',
+  },
+  {
+    id: 'upscale',
+    label: 'Upscale HD (Para Impressão)',
+    description: 'Aumente extrema a resolução e qualidade (Upscale 4x) para impressão sem distorcer',
+    category: 'create_image',
+    icon: Maximize,
+    requiresInputImage: true,
+    inputLabel: 'Imagem a melhorar',
+    promptPlaceholder: 'Detalhes que deseja realçar (Opcional)...',
+    gradientFrom: '#eab308',
+    gradientTo: '#ea580c',
+    previewImage: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=800&auto=format&fit=crop',
   },
   // ── Squad Specialists ──────────────────────────────────────────────
   {
