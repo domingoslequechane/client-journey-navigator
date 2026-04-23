@@ -21,6 +21,8 @@ import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { FreeLimitModal } from '@/components/subscription/FreeLimitModal';
+import { useSubscription } from '@/hooks/useSubscription';
+import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 
 
 
@@ -82,6 +84,7 @@ export default function Editorial() {
   const [formStatus, setFormStatus] = useState('pending');
   const [showLimitModal, setShowLimitModal] = useState(false);
   const { planType, editorialClientIds, refetch: refetchLimits } = usePlanLimits();
+  const { hasActiveSubscription, loading: subLoading } = useSubscription();
 
   const { tasks, loading, createTask, updateTask, deleteTask, refetch } = useEditorialTasks({
     periodFilter: 'month',
@@ -268,6 +271,18 @@ export default function Editorial() {
   const selectedDateLabel = selectedDateObj
     ? format(selectedDateObj, "EEEE, dd 'de' MMMM", { locale: ptBR })
     : '';
+
+  if (subLoading) return null;
+
+  if (!hasActiveSubscription) {
+    return (
+      <SubscriptionRequired
+        feature="Linha Editorial"
+        title="Linha Editorial Bloqueada"
+        description="Renove a sua assinatura para continuar a gerir e agendar conteúdos na Linha Editorial."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 p-4 md:p-6">

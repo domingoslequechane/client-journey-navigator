@@ -243,8 +243,8 @@ export function Sidebar() {
         icon: CalendarDays, 
         tutorialId: 'sidebar-editorial', 
         show: true, 
-        locked: !canAccessModule('editorial') || !canAccessEditorial, 
-        lockType: !canAccessEditorial ? 'plan' : (!canAccessModule('editorial') ? 'privilege' : null),
+        locked: !canAccessModule('editorial') || !canAccessEditorial || !hasActiveSubscription, 
+        lockType: (!canAccessEditorial || !hasActiveSubscription) ? 'plan' : (!canAccessModule('editorial') ? 'privilege' : null),
         requiredPlan: 'Lança' 
       },
       { 
@@ -253,8 +253,8 @@ export function Sidebar() {
         icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, 
         tutorialId: 'sidebar-social-media', 
         show: true, 
-        locked: !canAccessModule('social') || !canAccessSocialMedia, 
-        lockType: !canAccessSocialMedia ? 'plan' : (!canAccessModule('social') ? 'privilege' : null),
+        locked: !canAccessModule('social') || !canAccessSocialMedia || !hasActiveSubscription, 
+        lockType: (!canAccessSocialMedia || !hasActiveSubscription) ? 'plan' : (!canAccessModule('social') ? 'privilege' : null),
         requiredPlan: 'Lança' 
       },
       { 
@@ -263,8 +263,8 @@ export function Sidebar() {
         icon: MessagesSquare, 
         tutorialId: 'sidebar-ai', 
         show: true, 
-        locked: !canAccessModule('qia') || isNoPlan, 
-        lockType: isNoPlan ? 'plan' : (!canAccessModule('qia') ? 'privilege' : null),
+        locked: !canAccessModule('qia'), 
+        lockType: !canAccessModule('qia') ? 'privilege' : null,
         requiredPlan: 'Lança' 
       },
       { 
@@ -283,8 +283,8 @@ export function Sidebar() {
         icon: PenTool, 
         tutorialId: 'sidebar-studio', 
         show: true, 
-        locked: !canAccessModule('studio') || !canAccessStudio || isNoPlan, 
-        lockType: (!canAccessStudio || isNoPlan) ? 'plan' : (!canAccessModule('studio') ? 'privilege' : null),
+        locked: !canAccessModule('studio') || !canAccessStudio || isNoPlan || !hasActiveSubscription, 
+        lockType: (!canAccessStudio || isNoPlan || !hasActiveSubscription) ? 'plan' : (!canAccessModule('studio') ? 'privilege' : null),
         requiredPlan: 'Lança' 
       },
       { 
@@ -344,7 +344,7 @@ export function Sidebar() {
       },
     ];
     return allItems.filter(item => item.show);
-  }, [canAccessModule, canAccessFinance, canAccessStudio, canAccessLinkTree, canAccessEditorial, canAccessSocialMedia, t, isNoPlan, isInternalAdmin, pendingPaymentsCount]);
+  }, [canAccessModule, canAccessFinance, canAccessStudio, canAccessLinkTree, canAccessEditorial, canAccessSocialMedia, hasActiveSubscription, t, isNoPlan, isInternalAdmin, pendingPaymentsCount]);
 
   useEffect(() => {
     handleScroll();

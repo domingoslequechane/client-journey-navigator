@@ -26,15 +26,15 @@
   },
   "stages": {
     "prospeccao": {
-      "name": "Prospecção",
+      "name": "Prospecção de Leads",
       "description": "Novos leads e primeiros contatos"
     },
     "reuniao": {
-      "name": "Reunião",
+      "name": "Qualificação e Proposta",
       "description": "Agendamento e realização de reuniões"
     },
     "contratacao": {
-      "name": "Contratação",
+      "name": "Fechamento e Onboarding",
       "description": "Negociação e fechamento de contrato"
     },
     "producao": {

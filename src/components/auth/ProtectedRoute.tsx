@@ -143,7 +143,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
           if (isOrgAdmin) {
             resolvedForRef.current = key;
-            setDecision({ type: 'redirect', to: subData ? '/app/subscription?reason=expired' : '/select-plan' });
+            setDecision({ type: 'redirect', to: subData ? '/app/subscription' : '/select-plan' });
             return;
           }
         }

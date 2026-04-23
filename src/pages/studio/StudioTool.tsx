@@ -43,6 +43,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useSubscription } from '@/hooks/useSubscription';
+import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -63,6 +65,7 @@ export default function StudioTool() {
     const [isOnboarding, setIsOnboarding] = useState(false);
     const { setCustomTitle, setCustomIcon, setBackAction } = useHeader();
     const isMobile = useIsMobile();
+    const { hasActiveSubscription, loading: subLoading } = useSubscription();
 
     useEffect(() => {
         if (isMobile && tool) {
@@ -79,6 +82,18 @@ export default function StudioTool() {
 
     const totalPages = Math.ceil(images.length / ITEMS_PER_PAGE);
     const paginated = images.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+
+    if (subLoading) return null;
+
+    if (!hasActiveSubscription) {
+        return (
+            <SubscriptionRequired
+                feature="Studio Criativo"
+                title="Studio Criativo Bloqueado"
+                description="Renove a sua assinatura para continuar a usar as ferramentas do Studio Criativo."
+            />
+        );
+    }
 
     if (!tool) {
         return (

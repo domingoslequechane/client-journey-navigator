@@ -14,6 +14,7 @@ import { DebtsTab } from '@/components/finances/DebtsTab';
 import { TransactionModal } from '@/components/finances/TransactionModal';
 import { useFinances } from '@/hooks/useFinances';
 import { FinanceTransaction } from '@/types/finance';
+import { useSubscription } from '@/hooks/useSubscription';
 import { 
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from '@/components/ui/select';
@@ -34,6 +35,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Lock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
 
 export default function Finances() {
   const currentYear = new Date().getFullYear();
@@ -49,6 +53,9 @@ export default function Finances() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { useTransactionsQuery, deleteTransaction } = useFinances();
+  const { hasActiveSubscription } = useSubscription();
+  const navigate = useNavigate();
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
   // Filter transactions by selected range
   const { data: transactions = [], isLoading } = useTransactionsQuery(
@@ -191,13 +198,24 @@ export default function Finances() {
               </Select>
             </div>
 
-            <Button 
-              onClick={() => { setEditingTransaction(undefined); setModalOpen(true); }}
-              className="shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Lançamento
-            </Button>
+            {hasActiveSubscription ? (
+              <Button 
+                onClick={() => { setEditingTransaction(undefined); setModalOpen(true); }}
+                className="shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Lançamento
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => setShowSubscriptionModal(true)}
+                className="border-amber-500/50 text-amber-600 dark:text-amber-400 gap-2"
+              >
+                <Lock className="h-4 w-4" />
+                Novo Lançamento
+              </Button>
+            )}
           </div>
         </div>
 
@@ -291,6 +309,35 @@ export default function Finances() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Subscription Required Modal for locked button */}
+        <Dialog open={showSubscriptionModal} onOpenChange={setShowSubscriptionModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 mb-4">
+                <Lock className="h-8 w-8 text-amber-500" />
+              </div>
+              <DialogTitle className="text-center text-xl font-bold">
+                Lançamentos Bloqueados
+              </DialogTitle>
+              <DialogDescription className="text-center pt-2">
+                O registo de novos lançamentos financeiros requer uma <strong>assinatura ativa</strong>. 
+                Renove o seu plano para continuar a gerir as suas finanças.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-col gap-2 mt-2">
+              <Button
+                className="w-full gap-2"
+                onClick={() => { setShowSubscriptionModal(false); navigate('/app/subscription'); }}
+              >
+                Ver Planos
+              </Button>
+              <Button variant="ghost" className="w-full" onClick={() => setShowSubscriptionModal(false)}>
+                Fechar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AnimatedContainer>
   );

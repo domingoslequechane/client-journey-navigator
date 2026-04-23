@@ -72,7 +72,7 @@ const NAV_ITEMS: { id: NavSection; label: string; icon: React.ReactNode; adminOn
 export default function Settings() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin, isLoading: permissionsLoading } = usePermissions();
+  const { isAdmin, isOwner: isRoleOwner, isLoading: permissionsLoading } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setBackAction } = useHeader();
 
@@ -109,11 +109,11 @@ export default function Settings() {
   // ─── Section from URL ──────────────────────────────────────────────────────
   useEffect(() => {
     const tab = searchParams.get('tab') as NavSection | null;
-    const allowed: NavSection[] = isAdmin
+    const allowed: NavSection[] = (isAdmin || isRoleOwner)
       ? ['profile', 'agency', 'knowledge', 'documents']
       : ['profile'];
     if (tab && allowed.includes(tab)) setActiveSection(tab);
-  }, [isAdmin, searchParams]);
+  }, [isAdmin, isRoleOwner, searchParams]);
 
   const goTo = (section: NavSection) => {
     setActiveSection(section);
@@ -264,7 +264,7 @@ export default function Settings() {
 
   // ─── Save agency ──────────────────────────────────────────────────────────
   const handleSaveAgency = async () => {
-    if (!org?.id || !isAdmin) return;
+    if (!org?.id || !(isAdmin || isRoleOwner)) return;
     
     if (!orgName.trim()) {
       toast({ title: 'Erro', description: 'O nome da agência é obrigatório.', variant: 'destructive' });
@@ -424,7 +424,7 @@ export default function Settings() {
     );
   }
 
-  const visibleNav = NAV_ITEMS.filter(n => !n.adminOnly || isAdmin);
+  const visibleNav = NAV_ITEMS.filter(n => !n.adminOnly || isAdmin || isRoleOwner);
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -561,7 +561,7 @@ export default function Settings() {
             )}
 
             {/* ── Agency ── */}
-            {activeSection === 'agency' && isAdmin && (
+            {activeSection === 'agency' && (isAdmin || isRoleOwner) && (
               <div className="space-y-6 animate-fade-in">
                 <SectionHeader
                   icon={<Building2 className="h-5 w-5" />}
@@ -707,7 +707,7 @@ export default function Settings() {
             )}
 
             {/* ── Knowledge Base ── */}
-            {activeSection === 'knowledge' && isAdmin && (
+            {activeSection === 'knowledge' && (isAdmin || isRoleOwner) && (
               <div className="space-y-6 animate-fade-in">
                 <SectionHeader
                   icon={<BookOpen className="h-5 w-5" />}
@@ -773,7 +773,7 @@ export default function Settings() {
             )}
 
             {/* ── Documents ── */}
-            {activeSection === 'documents' && isAdmin && (
+            {activeSection === 'documents' && (isAdmin || isRoleOwner) && (
               <div className="space-y-6 animate-fade-in">
                 <SectionHeader
                   icon={<FileText className="h-5 w-5" />}

@@ -78,7 +78,13 @@ export default function Clients() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setClients(data || []);
+      
+      let fetchedClients = data || [];
+      if (!hasActiveSubscription) {
+        fetchedClients = fetchedClients.slice(0, 2);
+      }
+      
+      setClients(fetchedClients);
     } catch (error) {
       console.error('Error fetching clients:', error);
       toast({ title: t('errors.title'), description: t('errors.loadClients'), variant: 'destructive' });
@@ -112,8 +118,6 @@ export default function Clients() {
     return <ClientListSkeleton />;
   }
 
-  // If no subscription, show read-only mode with export option
-  const isReadOnly = !hasActiveSubscription;
 
   return (
     <div className="p-4 md:p-8">
@@ -162,7 +166,6 @@ export default function Clients() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          {!isReadOnly && (
             <Button
               className="gap-2 flex-1 sm:flex-none"
               onClick={() => navigate('/app/new-client')}
@@ -175,7 +178,6 @@ export default function Clients() {
               )}
               {canAddClient ? t('actions.newClient') : t('actions.limit')}
             </Button>
-          )}
         </div>
       </AnimatedContainer>
 

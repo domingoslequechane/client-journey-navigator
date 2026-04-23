@@ -8,6 +8,7 @@ import { useSyncQueue } from '@/hooks/useSyncQueue';
 import { AccessChangeNotification } from '@/components/auth/AccessChangeNotification';
 import { TrialStatusBanner } from '@/components/subscription/TrialStatusBanner';
 import { TrialStartedModal } from '@/components/subscription/TrialStartedModal';
+import { PlanExpiredModal } from '@/components/subscription/PlanExpiredModal';
 
 export function AppLayout() {
   const { queueLength, isSyncing } = useSyncQueue();
@@ -34,6 +35,7 @@ export function AppLayout() {
       <OfflineIndicator pendingCount={queueLength} isSyncing={isSyncing} />
       <AccessChangeNotification />
       <TrialStartedModal />
+      <PlanExpiredModal />
       <MobileHeader />
       <ScrollToTop />
       

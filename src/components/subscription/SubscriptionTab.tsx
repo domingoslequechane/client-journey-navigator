@@ -119,7 +119,8 @@ export function SubscriptionTab() {
   const { currency, currencySymbol } = useOrganization();
   const { 
     loading, subscription, organization, isActive, isPaidPlan, planType, 
-    isPastDue, cancelAtPeriodEnd, isExpired, hasActiveSubscription, refetch 
+    isPastDue, cancelAtPeriodEnd, isExpired, hasActiveSubscription, refetch,
+    trialDaysLeft, isTrialing
   } = useSubscription();
 
   const isMZN = currency === 'MZN';
@@ -340,7 +341,11 @@ export function SubscriptionTab() {
 
   const currentPlan = PLAN_CONFIG[planType] || PLAN_CONFIG.free;
   const PlanIcon = currentPlan.icon;
-  const displayPrice = 'priceUSD' in currentPlan ? `${formatPrice((currentPlan as any).priceUSD as number)}/mês` : currentPlan.price;
+  let displayPrice = 'priceUSD' in currentPlan ? `${formatPrice((currentPlan as any).priceUSD as number)}/mês` : currentPlan.price;
+
+  if (planType === 'trial') {
+    displayPrice = `${trialDaysLeft} dia${trialDaysLeft === 1 ? '' : 's'} restante${trialDaysLeft === 1 ? '' : 's'}`;
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);

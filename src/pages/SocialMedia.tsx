@@ -28,6 +28,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useHeader } from '@/contexts/HeaderContext';
 import { CheckCircle2 } from 'lucide-react';
 import { FreeLimitModal } from '@/components/subscription/FreeLimitModal';
+import { useSubscription } from '@/hooks/useSubscription';
+import { SubscriptionRequired } from '@/components/subscription/SubscriptionRequired';
 
 type TabValue = 'dashboard' | 'schedule' | 'calendar' | 'posts' | 'inbox' | 'reports';
 
@@ -103,6 +105,7 @@ export default function SocialMedia() {
   const { accounts, syncAccounts, connectPlatform, refetch: refetchAccounts } = useSocialAccounts(selectedClient !== 'all' ? selectedClient : undefined);
   const { unreadCount, refetch: refetchMessages } = useSocialMessages(selectedClient !== 'all' ? selectedClient : undefined);
   const { limits, usage, canAddSocialAccount, planType, socialClientIds, canPublishSocialPost } = usePlanLimits();
+  const { hasActiveSubscription, loading: subLoading } = useSubscription();
 
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [limitDescription, setLimitDescription] = useState('');
@@ -325,6 +328,18 @@ export default function SocialMedia() {
 
   const socialUsagePercent = limits.maxSocialAccounts ? (usage.socialAccountsCount / limits.maxSocialAccounts) * 100 : 0;
 
+  if (subLoading) return null;
+
+  if (!hasActiveSubscription) {
+    return (
+      <SubscriptionRequired
+        feature="Social Mídia"
+        title="Social Mídia Bloqueado"
+        description="Renove a sua assinatura para continuar a gerir e agendar posts nas suas redes sociais."
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6 pt-6 md:pt-6 pb-12">
       {/* Header */}
@@ -334,7 +349,7 @@ export default function SocialMedia() {
             <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <Megaphone className="h-6 w-6 text-primary -rotate-12" />
-                Social Media
+                Social Mídia
               </div>
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
