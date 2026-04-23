@@ -134,9 +134,7 @@ export default function NewClient() {
     );
   }
 
-  if (!hasActiveSubscription) {
-    return <SubscriptionRequired feature="cadastrar novos clientes" />;
-  }
+
 
   if (!canAddClient) {
     return (

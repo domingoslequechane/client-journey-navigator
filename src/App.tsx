@@ -17,7 +17,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { InstallPromptBanner } from "./components/pwa/InstallPromptBanner";
 import { ReloadPrompt } from "./components/pwa/ReloadPrompt";
-import { RedirectNoticeModal } from "./components/layout/RedirectNoticeModal";
+
 import { SubscriptionExpiryModal } from '@/components/subscription/SubscriptionExpiryModal';
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
@@ -116,7 +116,7 @@ const App = () => {
               <ScrollToTop />
               <ReloadPrompt />
               <AuthProvider>
-                <RedirectNoticeModal />
+
                 <SubscriptionExpiryModal />
                 <PlanThemeProvider>
                   <OrganizationProvider>

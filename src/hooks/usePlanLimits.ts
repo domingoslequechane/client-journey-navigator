@@ -172,8 +172,11 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         'agency': 30
       };
 
-      const getLimitValue = (map: Record<string, number>, type: PlanType) => 
-        (type && isPaid) ? map[type as string] : 0;
+      const getLimitValue = (map: Record<string, number>, type: PlanType) => {
+        if (type && isPaid) return map[type as string];
+        if (map === clientLimits) return 2;
+        return 0;
+      };
 
       const { data: plan_limits, error: limitsError } = await supabase
         .from('plan_limits')

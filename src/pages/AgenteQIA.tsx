@@ -471,7 +471,6 @@ export default function AgenteQIA() {
   }, [isMobile, selectedClientId, selectedClient, setCustomTitle, setCustomIcon, setBackAction]);
 
   if (subLoading) return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
-  if (!hasActiveSubscription) return <SubscriptionRequired feature="o Qualify IA" />;
 
   return (
     <AnimatedContainer animation="fade-in" className="flex h-full overflow-hidden">

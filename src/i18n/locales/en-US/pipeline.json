@@ -26,15 +26,15 @@
   },
   "stages": {
     "prospeccao": {
-      "name": "Prospecting",
+      "name": "Lead Prospecting",
       "description": "New leads and first contacts"
     },
     "reuniao": {
-      "name": "Meeting",
+      "name": "Qualification & Proposal",
       "description": "Scheduling and holding meetings"
     },
     "contratacao": {
-      "name": "Contracting",
+      "name": "Closing & Onboarding",
       "description": "Negotiation and contract closing"
     },
     "producao": {
