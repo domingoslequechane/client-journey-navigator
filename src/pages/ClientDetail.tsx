@@ -79,12 +79,7 @@ export default function ClientDetail() {
 
   useEffect(() => {
     if (client) {
-      setCustomTitle(
-        <div className="flex flex-col leading-tight -mt-0.5">
-          <span className="text-[10px] uppercase tracking-wider font-bold opacity-70">Cliente</span>
-          <span className="truncate max-w-[180px] sm:max-w-xs">{client.companyName}</span>
-        </div>
-      );
+      setCustomTitle(client.companyName);
       setBackAction(() => handleBack);
     }
     return () => {
