@@ -1700,50 +1700,49 @@ export default function SocialPostEditor() {
                         const allowedTypes = getAllowedContentTypes(schedule.platforms || [], currentPostItem.files);
                         
                         return (
-                          <div key={schedule.id} className="bg-card p-5 rounded-xl border shadow-sm relative group/schedule">
-                            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 pb-1">
-                              {/* Platform Icons (LEFT) */}
-                                <div className="flex items-center gap-1.5 shrink-0 px-1 border-r border-border/10 py-1 mr-1">
-                                  {currentPlatforms.length > 0 ? (
-                                    currentPlatforms.map(p => {
-                                      const isSelected = (schedule.platforms || []).includes(p);
-                                      return (
-                                        <Tooltip key={p}>
-                                          <TooltipTrigger asChild>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                let current = schedule.platforms || [];
-                                                if (current.includes(p)) {
-                                                  current = current.filter((x: any) => x !== p);
-                                                } else {
-                                                  current = [...current, p];
-                                                }
-                                                updateSchedule(currentPostItem.id, schedule.id, { platforms: current });
-                                              }}
-                                              className={cn(
-                                                "p-1 rounded-full relative transition-all cursor-pointer",
-                                                isSelected ? "ring-2 ring-primary scale-110 z-20" : "bg-muted/30 opacity-40 hover:opacity-100 grayscale hover:grayscale-0 z-10"
-                                              )}
-                                            >
-                                              <PlatformIcon platform={p} size="sm" />
-                                            </button>
-                                          </TooltipTrigger>
-                                          <TooltipContent side="top">
-                                            <p className="text-[10px] font-bold">Publicar no {p}</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      );
-                                    })
-                                  ) : (
-                                    <div className="text-[9px] text-muted-foreground italic px-1">—</div>
-                                  )}
-                                </div>
+                          <div key={schedule.id} className="bg-card p-4 rounded-xl border shadow-sm relative group/schedule space-y-3">
+                            {/* ROW 1: Platform Icons */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {currentPlatforms.length > 0 ? (
+                                currentPlatforms.map(p => {
+                                  const isSelected = (schedule.platforms || []).includes(p);
+                                  return (
+                                    <Tooltip key={p}>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            let current = schedule.platforms || [];
+                                            if (current.includes(p)) {
+                                              current = current.filter((x: any) => x !== p);
+                                            } else {
+                                              current = [...current, p];
+                                            }
+                                            updateSchedule(currentPostItem.id, schedule.id, { platforms: current });
+                                          }}
+                                          className={cn(
+                                            "p-1 rounded-full relative transition-all cursor-pointer",
+                                            isSelected ? "ring-2 ring-primary scale-110 z-20" : "bg-muted/30 opacity-40 hover:opacity-100 grayscale hover:grayscale-0 z-10"
+                                          )}
+                                        >
+                                          <PlatformIcon platform={p} size="sm" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top">
+                                        <p className="text-[10px] font-bold">Publicar no {p}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  );
+                                })
+                              ) : (
+                                <div className="text-[9px] text-muted-foreground italic px-1">Nenhum canal selecionado</div>
+                              )}
+                            </div>
 
-                                {/* REST Group (RIGHT) */}
-                                <div className="flex items-center gap-2 ml-auto">
+                            {/* ROW 2: Format + Date + Time — full width, no overflow */}
+                            <div className="flex items-center gap-2 w-full">
                                   {/* Format Multi-Select */}
-                                  <div className="flex bg-background/40 rounded-lg p-0.5 min-w-[140px] border shrink-0">
+                                  <div className="flex bg-background/40 rounded-lg p-0.5 border flex-1 min-w-0">
                                     {ALL_CONTENT_TYPES.filter(opt => allowedTypes.includes(opt.value)).map(opt => {
                                       const isSel = Array.isArray(schedule.contentType)
                                         ? schedule.contentType.includes(opt.value)
@@ -1780,81 +1779,76 @@ export default function SocialPostEditor() {
                                   </div>
 
                                   {/* Date Picker */}
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Popover>
-                                        <PopoverTrigger asChild>
-                                          <Button
-                                            variant="outline"
-                                            className={cn(
-                                              "h-9 px-3 min-w-[120px] rounded-lg border bg-background/50 text-[11px] font-bold flex items-center justify-start gap-2 hover:border-primary/50 transition-all shadow-sm",
-                                              (schedule.dates || []).length === 0 && "text-muted-foreground"
-                                            )}
-                                          >
-                                            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                                            {(schedule.dates || []).length === 1
-                                              ? format(new Date((schedule.dates || [])[0] + 'T00:00:00'), 'dd/MM/yyyy')
-                                              : (schedule.dates || []).length > 1
-                                                ? `${(schedule.dates || []).length} Dias`
-                                                : 'Data'}
-                                          </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0 z-[110] bg-transparent border-0 shadow-none outline-none" align="end">
-                                          <div className="bg-[#1A1A1A] rounded-2xl border border-white/5 shadow-2xl overflow-hidden flex flex-col">
-                                            <CustomCalendar
-                                              mode="multiple"
-                                              selected={(schedule.dates || []).map(d => new Date(d + 'T00:00:00'))}
-                                              onSelect={(dates) => {
-                                                if (dates) {
-                                                  const dateStrings = dates.map(d => format(d, 'yyyy-MM-dd')).sort();
-                                                  updateSchedule(currentPostItem.id, schedule.id, { dates: dateStrings });
-                                                }
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "h-9 px-2 flex-1 min-w-0 rounded-lg border bg-background/50 text-[11px] font-bold flex items-center justify-center gap-1.5 hover:border-primary/50 transition-all shadow-sm",
+                                          (schedule.dates || []).length === 0 && "text-muted-foreground"
+                                        )}
+                                      >
+                                        <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span className="truncate">
+                                          {(schedule.dates || []).length === 1
+                                            ? format(new Date((schedule.dates || [])[0] + 'T00:00:00'), 'dd/MM/yy')
+                                            : (schedule.dates || []).length > 1
+                                              ? `${(schedule.dates || []).length} dias`
+                                              : 'Data'}
+                                        </span>
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0 z-[110] bg-transparent border-0 shadow-none outline-none" align="end">
+                                      <div className="bg-[#1A1A1A] rounded-2xl border border-white/5 shadow-2xl overflow-hidden flex flex-col">
+                                        <CustomCalendar
+                                          mode="multiple"
+                                          selected={(schedule.dates || []).map(d => new Date(d + 'T00:00:00'))}
+                                          onSelect={(dates) => {
+                                            if (dates) {
+                                              const dateStrings = dates.map(d => format(d, 'yyyy-MM-dd')).sort();
+                                              updateSchedule(currentPostItem.id, schedule.id, { dates: dateStrings });
+                                            }
+                                          }}
+                                          initialFocus
+                                        />
+                                        <div className="p-5 border-t border-white/5 flex flex-col gap-5">
+                                          <p className="text-[12px] sm:text-[13px] text-white/50 italic px-1 font-medium underline underline-offset-4 decoration-white/20 text-center leading-relaxed max-w-[240px] mx-auto">
+                                            Selecione vários dias clicando neles no calendário.
+                                          </p>
+                                          <div className="flex items-center gap-2 w-full">
+                                            <Button 
+                                              variant="ghost" 
+                                              className="flex-1 h-11 text-white/70 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5"
+                                              onClick={() => {
+                                                updateSchedule(currentPostItem.id, schedule.id, { dates: [format(new Date(), 'yyyy-MM-dd')] });
+                                                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
                                               }}
-                                              initialFocus
-                                            />
-                                            <div className="p-5 border-t border-white/5 flex flex-col gap-5">
-                                              <p className="text-[12px] sm:text-[13px] text-white/50 italic px-1 font-medium underline underline-offset-4 decoration-white/20 text-center leading-relaxed max-w-[240px] mx-auto">
-                                                Selecione vários dias clicando neles no calendário.
-                                              </p>
-                                              <div className="flex items-center gap-2 w-full">
-                                                <Button 
-                                                  variant="ghost" 
-                                                  className="flex-1 h-11 text-white/70 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5"
-                                                  onClick={() => {
-                                                    updateSchedule(currentPostItem.id, schedule.id, { dates: [format(new Date(), 'yyyy-MM-dd')] });
-                                                    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-                                                  }}
-                                                  title="Limpar seleções"
-                                                >
-                                                  <X className="h-5 w-5" />
-                                                </Button>
-                                                <Button 
-                                                  size="sm"
-                                                  className="flex-1 h-11 bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95"
-                                                  onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}
-                                                  title="Confirmar e Salvar"
-                                                >
-                                                  <Check className="h-5 w-5" />
-                                                </Button>
-                                              </div>
-                                            </div>
+                                              title="Limpar seleções"
+                                            >
+                                              <X className="h-5 w-5" />
+                                            </Button>
+                                            <Button 
+                                              size="sm"
+                                              className="flex-1 h-11 bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95"
+                                              onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}
+                                              title="Confirmar e Salvar"
+                                            >
+                                              <Check className="h-5 w-5" />
+                                            </Button>
                                           </div>
-                                        </PopoverContent>
-                                      </Popover>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">
-                                      <p className="text-[10px] font-bold">Selecionar datas de publicação</p>
-                                    </TooltipContent>
-                                  </Tooltip>
+                                        </div>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
 
                                   {/* Time Picker */}
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <div className="shrink-0">
+                                      <div className="shrink-0 w-[90px]">
                                         <CustomTimePicker
                                           value={schedule.time}
                                           onChange={(val) => updateSchedule(currentPostItem.id, schedule.id, { time: val })}
-                                          className="w-[110px]"
+                                          className="w-full"
                                         />
                                       </div>
                                     </TooltipTrigger>
@@ -1880,9 +1874,8 @@ export default function SocialPostEditor() {
                                       </TooltipContent>
                                     </Tooltip>
                                   )}
-                                </div>
-                              </div>
                             </div>
+                          </div>
                         );
                       })}
 
