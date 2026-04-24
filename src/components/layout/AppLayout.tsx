@@ -11,6 +11,7 @@ import { TrialStartedModal } from '@/components/subscription/TrialStartedModal';
 import { PlanExpiredModal } from '@/components/subscription/PlanExpiredModal';
 import { BroadcastModal } from '@/components/notifications/BroadcastModal';
 import { useBroadcastNotifications } from '@/hooks/useBroadcastNotifications';
+import { cn } from '@/lib/utils';
 
 export function AppLayout() {
   const { queueLength, isSyncing } = useSyncQueue();
