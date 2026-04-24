@@ -467,8 +467,8 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
       }
       onOpenChange(value);
     }}>
-      <DialogContent className={`h-[85vh] overflow-y-auto ${showPreview ? 'max-w-6xl' : 'max-w-2xl'}`}>
-        <DialogHeader>
+      <DialogContent className={`h-[85vh] flex flex-col overflow-hidden ${showPreview ? 'max-w-6xl' : 'max-w-2xl'}`}>
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
             Facturas de Prestação de Serviços
@@ -483,10 +483,10 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : showForm ? (
-          <div className={`${showPreview ? 'grid grid-cols-2 gap-6' : ''}`}>
+          <div className={`flex-1 min-h-0 ${showPreview ? 'grid grid-cols-2 gap-6' : ''}`}>
             {/* Form Column */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col h-full min-h-0">
+              <div className="flex items-center justify-between shrink-0 pb-4">
                 <h3 className="font-medium">Nova Factura</h3>
                 <Button variant="ghost" size="sm" onClick={() => {
                   setShowForm(false);
@@ -497,9 +497,11 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
                 </Button>
               </div>
 
-            {/* Services */}
-            <div className="space-y-3">
-              <Label>Serviços</Label>
+              {/* Scrollable Form Body */}
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4 pb-2">
+                {/* Services */}
+                <div className="space-y-3">
+                  <Label>Serviços</Label>
               {formServices.map((service, index) => (
                 <div key={index} className="grid grid-cols-12 gap-2 items-end">
                   <div className="col-span-5">
@@ -581,7 +583,10 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
                 rows={2}
               />
             </div>
+            </div>
 
+            {/* Fixed Footer: Totals and Action Buttons */}
+            <div className="shrink-0 pt-4 mt-2 border-t bg-background space-y-4">
             {/* Totals */}
             <div className="bg-muted/50 rounded-lg p-4 space-y-2">
               <div className="flex justify-between text-sm">
@@ -652,8 +657,8 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
 
             {/* Preview Column */}
             {showPreview && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
+              <div className="flex flex-col h-full min-h-0 space-y-3">
+                <div className="flex items-center justify-between shrink-0">
                   <h3 className="font-medium">Pré-Visualização</h3>
                   <Button 
                     variant="ghost" 
@@ -666,7 +671,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
                     Fechar Preview
                   </Button>
                 </div>
-                <div className="border rounded-lg overflow-hidden bg-muted/30 h-[600px]">
+                <div className="border rounded-lg overflow-hidden bg-muted/30 flex-1">
                   {previewUrl ? (
                     <iframe
                       src={previewUrl}
@@ -686,17 +691,17 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="flex flex-col h-full min-h-0 space-y-4 pt-2">
             {/* Generate Button */}
-            <Button onClick={() => setShowForm(true)} className="w-full gap-2">
+            <Button onClick={() => setShowForm(true)} className="w-full gap-2 shrink-0">
               <Plus className="h-4 w-4" />
               Gerar Nova Factura
             </Button>
 
             {/* Invoice History */}
             {invoices.length > 0 ? (
-              <div className="space-y-3">
-                <h3 className="font-medium text-sm text-muted-foreground">Histórico de Facturas</h3>
+              <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+                <h3 className="font-medium text-sm text-muted-foreground sticky top-0 bg-background py-1">Histórico de Facturas</h3>
                 {invoices.map((invoice) => (
                   <div
                     key={invoice.id}
