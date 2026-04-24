@@ -351,7 +351,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(...black);
-    const defaultNote = data.notes || 'Este é um documento preliminar enviado ao cliente com os preços de um produto ou serviço com o objetivo de informa-lo (a) antes da venda ser confirmada.';
+    const defaultNote = data.notes || (data.invoiceType === 'factura' || data.invoiceType === 'recibo' ? 'Agradecemos a sua preferência. O pagamento desta factura deve ser efectuado no prazo estabelecido. Documento processado por computador.' : 'Este é um documento preliminar enviado ao cliente com os preços de um produto ou serviço com o objetivo de informa-lo (a) antes da venda ser confirmada.');
     const splitNotes = doc.splitTextToSize(defaultNote, notesBoxWidth - 12);
     doc.text(splitNotes, margin + 5, notesTotalsY + 15);
 
