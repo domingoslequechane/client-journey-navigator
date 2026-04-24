@@ -1136,18 +1136,20 @@ export default function ProspectingPage() {
                 : "bg-card/30 border-border/40"
             )}>
               <div className="flex flex-col sm:flex-row sm:items-center gap-4 relative z-10">
-                <div className={cn(
-                  "h-10 w-10 rounded-xl flex items-center justify-center",
-                  isExpiredPlan ? "bg-red-500/10" : "bg-primary/10"
-                )}>
-                  {isExpiredPlan
-                    ? <Lock className="h-5 w-5 text-red-400" />
-                    : <Target className="h-5 w-5 text-primary" />
-                  }
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">Prospecção com IA</h1>
-                  <p className="text-sm text-muted-foreground">Encontre os clientes ideais para a sua agência em segundos.</p>
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
+                    isExpiredPlan ? "bg-red-500/10" : "bg-primary/10"
+                  )}>
+                    {isExpiredPlan
+                      ? <Lock className="h-5 w-5 text-red-400" />
+                      : <Target className="h-5 w-5 text-primary" />
+                    }
+                  </div>
+                  <div>
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Prospecção com IA</h1>
+                    <p className="text-sm text-muted-foreground">Encontre os clientes ideais para a sua agência em segundos.</p>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 sm:gap-1 w-full sm:w-auto sm:ml-auto text-left sm:text-right">
                   {isExpiredPlan ? (
