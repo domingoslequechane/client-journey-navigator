@@ -1037,7 +1037,7 @@ export default function ProspectingPage() {
 
 
   return (
-    <div className="flex h-full min-h-0 bg-background overflow-hidden">
+    <div className="flex h-[calc(100dvh-5rem)] md:h-[100dvh] min-h-0 bg-background overflow-hidden">
       
       {/* ─── Sidebar History ─── */}
       <div className={cn(
