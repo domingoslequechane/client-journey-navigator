@@ -1844,28 +1844,53 @@ export default function ProspectingPage() {
           {/* Header gradient */}
           <div className="relative bg-gradient-to-br from-orange-600/30 via-orange-500/10 to-transparent p-6 pb-4 border-b border-border/40">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-orange-500/20 to-transparent pointer-events-none" />
-            <div className="relative flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center">
-                <Crown className="h-5 w-5 text-orange-400" />
+            <div className="relative flex items-start gap-4">
+              <div className="h-12 w-12 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center shrink-0">
+                <Crown className="h-6 w-6 text-orange-400" />
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-white">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-bold text-white leading-tight">
                   {!canAddClient && remainingClients === 0 ? 'Limite de Clientes' : isExpiredPlan ? 'Plano Expirado' : 'Créditos Esgotados'}
                 </h2>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-zinc-400 mt-1">
                   {!canAddClient && remainingClients === 0
                     ? 'Atingiu o número máximo de clientes do seu plano.'
                     : isExpiredPlan
                     ? 'O seu plano expirou. Renove para continuar.'
                     : 'Atingiu o limite de prospecções do seu plano actual.'}
                 </p>
+
+                {/* Plan Limitations (Mobile Only) */}
+                <div className="flex sm:hidden flex-col gap-2 mt-4 p-3 rounded-xl bg-zinc-800/40 border border-zinc-700/50">
+                   <div className="flex items-center justify-between">
+                     <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Plano Actual</span>
+                     <span className="text-xs font-semibold text-white">
+                        {planType === 'trial' ? 'Teste' :
+                         planType === 'starter' ? 'Lança' :
+                         planType === 'pro' ? 'Arco' :
+                         planType === 'agency' ? 'Catapulta' :
+                         'Gratuito'}
+                     </span>
+                   </div>
+                   <div className="flex items-center justify-between pt-2 border-t border-zinc-700/30">
+                     <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Limitação</span>
+                     <span className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                        isExpiredPlan || (!canAddClient && remainingClients === 0)
+                          ? "bg-red-500/15 text-red-400 border border-red-500/30"
+                          : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                      )}>
+                        {isExpiredPlan ? 'Expirado' : !canAddClient && remainingClients === 0 ? 'Limite Atingido' : '0 créditos'}
+                      </span>
+                   </div>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="p-6 space-y-4">
-            {/* Current plan indicator */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/50">
+            {/* Current plan indicator (Desktop Only) */}
+            <div className="hidden sm:flex items-center justify-between p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/50">
               <div className="flex items-center gap-2">
                 <div className={cn(
                   "h-2 w-2 rounded-full",
