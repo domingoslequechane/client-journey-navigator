@@ -1701,41 +1701,62 @@ export default function SocialPostEditor() {
                         
                         return (
                           <div key={schedule.id} className="bg-card p-4 rounded-xl border shadow-sm relative group/schedule space-y-3">
-                            {/* ROW 1: Platform Icons */}
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {currentPlatforms.length > 0 ? (
-                                currentPlatforms.map(p => {
-                                  const isSelected = (schedule.platforms || []).includes(p);
-                                  return (
-                                    <Tooltip key={p}>
-                                      <TooltipTrigger asChild>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            let current = schedule.platforms || [];
-                                            if (current.includes(p)) {
-                                              current = current.filter((x: any) => x !== p);
-                                            } else {
-                                              current = [...current, p];
-                                            }
-                                            updateSchedule(currentPostItem.id, schedule.id, { platforms: current });
-                                          }}
-                                          className={cn(
-                                            "p-1 rounded-full relative transition-all cursor-pointer",
-                                            isSelected ? "ring-2 ring-primary scale-110 z-20" : "bg-muted/30 opacity-40 hover:opacity-100 grayscale hover:grayscale-0 z-10"
-                                          )}
-                                        >
-                                          <PlatformIcon platform={p} size="sm" />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top">
-                                        <p className="text-[10px] font-bold">Publicar no {p}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  );
-                                })
-                              ) : (
-                                <div className="text-[9px] text-muted-foreground italic px-1">Nenhum canal selecionado</div>
+                            {/* ROW 1: Platform Icons & Actions */}
+                            <div className="flex items-center justify-between gap-1.5 w-full">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {currentPlatforms.length > 0 ? (
+                                  currentPlatforms.map(p => {
+                                    const isSelected = (schedule.platforms || []).includes(p);
+                                    return (
+                                      <Tooltip key={p}>
+                                        <TooltipTrigger asChild>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              let current = schedule.platforms || [];
+                                              if (current.includes(p)) {
+                                                current = current.filter((x: any) => x !== p);
+                                              } else {
+                                                current = [...current, p];
+                                              }
+                                              updateSchedule(currentPostItem.id, schedule.id, { platforms: current });
+                                            }}
+                                            className={cn(
+                                              "p-1 rounded-full relative transition-all cursor-pointer",
+                                              isSelected ? "ring-2 ring-primary scale-110 z-20" : "bg-muted/30 opacity-40 hover:opacity-100 grayscale hover:grayscale-0 z-10"
+                                            )}
+                                          >
+                                            <PlatformIcon platform={p} size="sm" />
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                          <p className="text-[10px] font-bold">Publicar no {p}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    );
+                                  })
+                                ) : (
+                                  <div className="text-[9px] text-muted-foreground italic px-1">Nenhum canal selecionado</div>
+                                )}
+                              </div>
+
+                              {/* Delete Button (Right) */}
+                              {currentPostItem.schedules.length > 1 && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-destructive/70 hover:bg-destructive/10 shrink-0 rounded-lg bg-background/30 hover:text-destructive"
+                                      onClick={() => handleRemoveSchedule(currentPostItem.id, schedule.id)}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    <p className="text-[10px] font-bold">Remover agendamento</p>
+                                  </TooltipContent>
+                                </Tooltip>
                               )}
                             </div>
 
@@ -1857,23 +1878,6 @@ export default function SocialPostEditor() {
                                     </TooltipContent>
                                   </Tooltip>
 
-                                  {currentPostItem.schedules.length > 1 && (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-9 w-9 text-destructive/70 hover:bg-destructive/10 shrink-0 border border-white/5 rounded-xl bg-background/30 hover:text-destructive"
-                                          onClick={() => handleRemoveSchedule(currentPostItem.id, schedule.id)}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top">
-                                        <p className="text-[10px] font-bold">Remover este agendamento</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  )}
                             </div>
                           </div>
                         );
