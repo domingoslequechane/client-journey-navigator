@@ -181,7 +181,7 @@ const PotentialBadge = ({ value }: { value: string }) => {
 };
 
 const DigitalPlatformIcon = ({ platform }: { platform: string }) => {
-  const name = platform.toLowerCase();
+  const name = (platform || '').toLowerCase();
   if (name.includes('instagram')) return <Instagram className="h-3.5 w-3.5" />;
   if (name.includes('whatsapp')) return <MessageCircle className="h-3.5 w-3.5" />;
   if (name.includes('facebook')) return <Globe className="h-3.5 w-3.5" />;
@@ -295,7 +295,7 @@ const ProspectCard = ({
               </span>
               <span className={cn(
                 'text-[10px] px-1.5 py-0.5 rounded-full font-medium',
-                prospect.status.toLowerCase().includes('aberto') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                (prospect.status || '').toLowerCase().includes('aberto') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
               )}>
                 {prospect.status}
               </span>
@@ -696,8 +696,8 @@ export default function ProspectingPage() {
     if (!organizationId) return;
 
     setHistory(prev => {
-      const prevNames = new Set(prev.map(p => p.name.toLowerCase()));
-      const filtered = newEntries.filter(n => !prevNames.has(n.name.toLowerCase()));
+      const prevNames = new Set(prev.map(p => (p.name || '').toLowerCase()));
+      const filtered = newEntries.filter(n => !prevNames.has((n.name || '').toLowerCase()));
       
       if (filtered.length > 0) {
         const insertData = filtered.map(n => ({
@@ -1079,8 +1079,8 @@ export default function ProspectingPage() {
                   return new Date(b.foundAt).getTime() - new Date(a.foundAt).getTime();
                 } else {
                   const pValues: Record<string, number> = { alto: 3, médio: 2, baixo: 1 };
-                  const valA = pValues[a.conversionPotential?.toLowerCase() || 'médio'] || 0;
-                  const valB = pValues[b.conversionPotential?.toLowerCase() || 'médio'] || 0;
+                  const valA = pValues[(a.conversionPotential || '').toLowerCase() || 'médio'] || 0;
+                  const valB = pValues[(b.conversionPotential || '').toLowerCase() || 'médio'] || 0;
                   return valB - valA;
                 }
               }).map((entry) => (
@@ -1569,11 +1569,11 @@ export default function ProspectingPage() {
                   <div className="flex items-center gap-3">
                     <div className="h-14 w-14 rounded-xl overflow-hidden bg-background/50 flex shrink-0 border border-border/50 items-center justify-center shadow-sm">
                       <img 
-                        src={`https://logo.clearbit.com/${selectedHistoryItem.name.replace(/\s+/g, '').toLowerCase()}.com`}
+                        src={`https://logo.clearbit.com/${(selectedHistoryItem.name || '').replace(/\s+/g, '').toLowerCase()}.com`}
                         alt="Logo"
                         className="w-full h-full object-cover bg-white"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedHistoryItem.name)}&background=random&color=fff&bold=true`;
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedHistoryItem.name || '')}&background=random&color=fff&bold=true`;
                         }}
                       />
                     </div>

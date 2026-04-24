@@ -39,15 +39,15 @@ export function AppLayout() {
       <ScrollToTop />
       
       {/* Desktop Sidebar */}
-      <div className="hidden md:block shrink-0 h-[100dvh] sticky top-0 z-40">
+      <aside className="hidden md:block shrink-0 h-screen sticky top-0 z-40 overflow-hidden">
         <Sidebar />
-      </div>
+      </aside>
 
       {/* Scrollable Main Content Area */}
-      <div className="flex-1 flex flex-col pt-20 md:pt-0">
+      <div className="flex-1 flex flex-col pt-20 md:pt-0 h-[100dvh] overflow-hidden">
         <main 
           ref={mainContentRef}
-          className="w-full relative px-4 md:px-0 flex-1 flex flex-col"
+          className="w-full relative px-4 md:px-0 flex-1 overflow-y-auto overflow-x-hidden flex flex-col"
         >
           <TrialStatusBanner />
           <div className="w-full h-full flex-1">
