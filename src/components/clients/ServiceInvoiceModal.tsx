@@ -654,6 +654,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
               </Button>
             </div>
             </div>
+            </div>
 
             {/* Preview Column */}
             {showPreview && (
