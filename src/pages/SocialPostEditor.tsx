@@ -1784,16 +1784,16 @@ export default function SocialPostEditor() {
                                       <Button
                                         variant="outline"
                                         className={cn(
-                                          "h-9 px-2 flex-1 min-w-0 rounded-lg border bg-background/50 text-[11px] font-bold flex items-center justify-center gap-1.5 hover:border-primary/50 transition-all shadow-sm",
+                                          "h-9 px-2 shrink-0 rounded-lg border bg-background/50 text-[11px] font-bold flex items-center justify-center gap-1.5 hover:border-primary/50 transition-all shadow-sm",
                                           (schedule.dates || []).length === 0 && "text-muted-foreground"
                                         )}
                                       >
-                                        <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <span className="truncate">
+                                        <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                        <span className="tabular-nums">
                                           {(schedule.dates || []).length === 1
                                             ? format(new Date((schedule.dates || [])[0] + 'T00:00:00'), 'dd/MM/yy')
                                             : (schedule.dates || []).length > 1
-                                              ? `${(schedule.dates || []).length} dias`
+                                              ? `${(schedule.dates || []).length}d`
                                               : 'Data'}
                                         </span>
                                       </Button>
@@ -1844,7 +1844,7 @@ export default function SocialPostEditor() {
                                   {/* Time Picker */}
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <div className="shrink-0 w-[90px]">
+                                      <div className="shrink-0 w-[76px]">
                                         <CustomTimePicker
                                           value={schedule.time}
                                           onChange={(val) => updateSchedule(currentPostItem.id, schedule.id, { time: val })}
