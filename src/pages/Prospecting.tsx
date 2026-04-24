@@ -1559,7 +1559,7 @@ export default function ProspectingPage() {
                       />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h2 className="text-xl font-bold text-foreground leading-tight truncate">{selectedHistoryItem.name}</h2>
+                      <h2 className="text-xl font-bold text-foreground leading-tight break-words max-w-[20ch] sm:max-w-none">{selectedHistoryItem.name}</h2>
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
                         <MapPin className="h-3.5 w-3.5 shrink-0" />
                         <span className="truncate">{selectedHistoryItem.location} &bull; {selectedHistoryItem.segment}</span>
