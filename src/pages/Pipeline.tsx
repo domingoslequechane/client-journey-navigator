@@ -150,7 +150,7 @@ export default function Pipeline() {
               onClick={() => navigate('/app/prospecting')}
             >
               <Bot className="h-4 w-4 text-primary" />
-              Prospecção IA
+              Prospectar
             </Button>
             {['free', 'trial'].includes(planType as string) && usage.clientsCount >= (limits.maxClients ?? 2) ? (
               <Button
