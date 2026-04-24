@@ -1541,11 +1541,11 @@ export default function ProspectingPage() {
       </Dialog>
       {/* ─── History Item Modal ─── */}
       <Dialog open={!!selectedHistoryItem} onOpenChange={(o) => !o && setSelectedHistoryItem(null)}>
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-border/40 shadow-2xl [&>button:last-child]:hidden bg-card/95 backdrop-blur-xl flex flex-col max-h-[85vh]">
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-border/40 shadow-2xl [&>button:last-child]:hidden bg-card/95 backdrop-blur-xl flex flex-col max-h-[75vh]">
           {selectedHistoryItem && (
             <>
               {/* Header (Fixed) */}
-              <div className="p-6 pb-4 shrink-0 border-b border-border/40 bg-card/95 backdrop-blur-xl z-10">
+              <div className="p-4 pb-3 shrink-0 border-b border-border/40 bg-card/95 backdrop-blur-xl z-10">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="h-14 w-14 rounded-xl overflow-hidden bg-background/50 flex shrink-0 border border-border/50 items-center justify-center shadow-sm">
@@ -1558,14 +1558,14 @@ export default function ProspectingPage() {
                         }}
                       />
                     </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground leading-tight">{selectedHistoryItem.name}</h2>
-                      <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                        <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {selectedHistoryItem.location}</span>
-                        <span>•</span>
-                        <span>{selectedHistoryItem.segment}</span>
-                        <span>•</span>
-                        <span>{selectedHistoryItem.type}</span>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-xl font-bold text-foreground leading-tight truncate">{selectedHistoryItem.name}</h2>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                        <MapPin className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{selectedHistoryItem.location} &bull; {selectedHistoryItem.segment}</span>
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-full" title={selectedHistoryItem.type}>
+                        {selectedHistoryItem.type}
                       </p>
                     </div>
                   </div>
@@ -1587,7 +1587,7 @@ export default function ProspectingPage() {
               </div>
 
               {/* Scrollable Content Area */}
-              <div className="overflow-y-auto flex-1 w-full p-6">
+              <div className="overflow-y-auto flex-1 w-full p-4">
                 <div className="space-y-6">
                   
                   {/* Revenue & Probability Banner */}
@@ -1804,24 +1804,25 @@ export default function ProspectingPage() {
                   </div>
 
                   {/* Footer (Fixed) */}
-              <div className="flex flex-col sm:flex-row gap-3 p-4 shrink-0 border-t border-border/40 bg-card/95 backdrop-blur-xl z-10">
+              <div className="flex flex-row items-center gap-2 p-3 shrink-0 border-t border-border/40 bg-card/95 backdrop-blur-xl z-10 w-full overflow-x-hidden">
                 <Button 
                   variant="destructive" 
-                  className="gap-2 sm:mr-auto"
+                  className="flex-1 h-10 px-2 text-[10px] sm:text-sm gap-1.5"
                   onClick={() => handleDeleteHistoryItem(selectedHistoryItem.id)}
                 >
-                  <Trash2 className="h-4 w-4" />
-                  Deletar do Histórico
+                  <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Deletar</span>
                 </Button>
                 <Button 
                   variant="outline" 
+                  className="flex-1 h-10 px-2 text-[10px] sm:text-sm"
                   onClick={() => setSelectedHistoryItem(null)}
                 >
                   Fechar
                 </Button>
                 <Button 
                   className={cn(
-                    "gap-2 text-white shadow-md border-0",
+                    "flex-[1.5] h-10 px-2 gap-1.5 text-white shadow-md border-0 text-[10px] sm:text-sm font-bold",
                     !canAddClient 
                       ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-400" 
                       : "bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700"
@@ -1831,8 +1832,8 @@ export default function ProspectingPage() {
                     else handleImportSingleHistoryItem(selectedHistoryItem);
                   }}
                 >
-                  {!canAddClient ? <Lock className="h-4 w-4 text-amber-500" /> : <UserPlus className="h-4 w-4" />}
-                  Adicionar como Cliente
+                  {!canAddClient ? <Lock className="h-3.5 w-3.5 shrink-0 text-amber-500" /> : <UserPlus className="h-3.5 w-3.5 shrink-0" />}
+                  <span className="truncate">Adicionar Cliente</span>
                 </Button>
               </div>
             </>
