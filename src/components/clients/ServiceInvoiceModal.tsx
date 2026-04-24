@@ -483,9 +483,9 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : showForm ? (
-          <div className={`flex-1 min-h-0 ${showPreview ? 'grid grid-cols-2 gap-6' : ''}`}>
+          <div className={`flex-1 min-h-0 ${showPreview ? 'flex flex-col md:grid md:grid-cols-2 md:gap-6' : ''}`}>
             {/* Form Column */}
-            <div className="flex flex-col h-full min-h-0">
+            <div className={`flex flex-col h-full min-h-0 ${showPreview ? 'hidden md:flex' : ''}`}>
               <div className="flex items-center justify-between shrink-0 pb-4">
                 <h3 className="font-medium">Nova Factura</h3>
                 <Button variant="ghost" size="sm" onClick={() => {
