@@ -74,12 +74,12 @@ export function CustomTimePicker({ value, onChange, className }: CustomTimePicke
               <Button
                 variant="outline"
                 className={cn(
-                  "h-10 px-3 justify-start font-bold border-border/50 bg-background/50 hover:bg-muted/30 transition-all gap-2 min-w-[110px]",
+                  "h-9 px-1.5 justify-center font-bold border-border/50 bg-background/50 hover:bg-muted/30 transition-all gap-1",
                   className
                 )}
               >
-                <Clock className="h-4 w-4 text-primary" />
-                <span>{`${tempHour.toString().padStart(2, '0')}:${tempMinute.toString().padStart(2, '0')}`}</span>
+                <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="tabular-nums">{`${tempHour.toString().padStart(2, '0')}:${tempMinute.toString().padStart(2, '0')}`}</span>
               </Button>
             </PopoverTrigger>
           </TooltipTrigger>

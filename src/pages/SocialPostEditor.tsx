@@ -1844,11 +1844,11 @@ export default function SocialPostEditor() {
                                   {/* Time Picker */}
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <div className="shrink-0 w-[76px]">
+                                      <div className="shrink-0 w-[64px]">
                                         <CustomTimePicker
                                           value={schedule.time}
                                           onChange={(val) => updateSchedule(currentPostItem.id, schedule.id, { time: val })}
-                                          className="w-full"
+                                          className="w-full text-[11px]"
                                         />
                                       </div>
                                     </TooltipTrigger>
