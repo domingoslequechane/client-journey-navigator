@@ -216,6 +216,7 @@ export default function SocialPostEditor() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [initialStatus, setInitialStatus] = useState<'draft' | 'scheduled' | 'published' | null>(null);
+  const [publishConfirmModal, setPublishConfirmModal] = useState<'draft' | 'scheduled' | 'published' | null>(null);
   const { setCustomTitle, setBackAction, setRightAction } = useHeader();
 
   const hasAnyChannelSelected = useMemo(() => postItems.some(p => p.selectedAccountIds.length > 0), [postItems]);
@@ -1277,7 +1278,7 @@ export default function SocialPostEditor() {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" onClick={() => handleSaveAction('draft')} disabled={isSaving} className="hidden lg:inline-flex">
+              <Button variant="outline" onClick={() => setPublishConfirmModal('draft')} disabled={isSaving} className="hidden lg:inline-flex">
                 {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
               </Button>
             </TooltipTrigger>
@@ -1287,7 +1288,7 @@ export default function SocialPostEditor() {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="secondary" onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 hidden lg:inline-flex">
+              <Button variant="secondary" onClick={() => setPublishConfirmModal('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 hidden lg:inline-flex">
                 <Calendar className="h-4 w-4" /> {(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}
               </Button>
             </TooltipTrigger>
@@ -1296,35 +1297,10 @@ export default function SocialPostEditor() {
             </TooltipContent>
           </Tooltip>
 
-          {/* Mobile dropdown for secondary actions */}
-          {isMobile && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-9 w-9">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleSaveAction('draft')} disabled={isSaving}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected}>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate(-1)}>
-                  <X className="h-4 w-4 mr-2" />
-                  Cancelar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button onClick={() => handleSaveAction('published')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 shadow-lg shadow-primary/20 px-4 lg:px-6">
-                <Zap className="h-4 w-4" /> <span className="hidden sm:inline">{postId ? 'Atualizar e Publicar' : 'Publicar Agora'}</span><span className="sm:hidden">Publicar</span>
+              <Button onClick={() => setPublishConfirmModal('published')} disabled={isSaving || !hasAnyChannelSelected} className="gap-2 shadow-lg shadow-primary/20 px-4 lg:px-6">
+                <Zap className="h-4 w-4" /> <span>{postId ? 'Atualizar e Publicar' : 'Publicar Agora'}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -1334,43 +1310,111 @@ export default function SocialPostEditor() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+      <main className="flex-1 flex flex-col lg:flex-row min-h-0">
 
-        {/* Mobile top action bar */}
+        {/* Mobile top action bar — 3 buttons */}
         {isMobile && (
-          <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2 bg-background shrink-0">
+          <div className="flex items-center gap-2 px-3 pt-3 pb-2 bg-background shrink-0">
+            {/* Ver Calendário */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCalendarOpen(true)}
+              className="flex-1 h-10 gap-1.5 rounded-xl border-border/60 text-[11px] font-bold"
+            >
+              <CalendarDays className="h-4 w-4 shrink-0" />
+              <span className="truncate">Calendário</span>
+            </Button>
+
+            {/* Preview */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMobilePreview(true)}
+              className="flex-1 h-10 gap-1.5 rounded-xl border-border/60 text-[11px] font-bold"
+            >
+              <Eye className="h-4 w-4 shrink-0" />
+              <span className="truncate">Preview</span>
+            </Button>
+
+            {/* Opções de publicação */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10 gap-2 shadow-sm rounded-xl border-border/50">
-                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-bold text-[13px]">Opções</span>
+                <Button
+                  size="sm"
+                  className="flex-1 h-10 gap-1.5 rounded-xl bg-[#F97316] hover:bg-[#F97316]/90 border-0 shadow-md shadow-orange-500/20 text-[11px] font-bold text-white"
+                >
+                  <Zap className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Publicar</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 rounded-xl">
-                <DropdownMenuItem onClick={() => handleSaveAction('draft')} disabled={isSaving} className="py-2.5">
-                  <Save className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="font-medium">{postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}</span>
+              <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-border/60 shadow-2xl p-2">
+                <div className="px-3 py-2 mb-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Opções de Publicação</p>
+                </div>
+                <DropdownMenuItem
+                  onClick={() => setPublishConfirmModal('published')}
+                  disabled={isSaving || !hasAnyChannelSelected}
+                  className="py-3 px-3 rounded-xl cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-[#F97316]/10 flex items-center justify-center shrink-0">
+                      <Zap className="h-4 w-4 text-[#F97316]" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{postId ? 'Atualizar e Publicar' : 'Publicar Agora'}</p>
+                      <p className="text-[10px] text-muted-foreground">Envia para as redes imediatamente</p>
+                    </div>
+                  </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="py-2.5">
-                  <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="font-medium">{(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}</span>
+                <DropdownMenuItem
+                  onClick={() => setPublishConfirmModal('scheduled')}
+                  disabled={isSaving || !hasAnyChannelSelected}
+                  className="py-3 px-3 rounded-xl cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Calendar className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}</p>
+                      <p className="text-[10px] text-muted-foreground">Publica nas datas e horas definidas</p>
+                    </div>
+                  </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate(-1)} className="py-2.5 text-destructive focus:bg-destructive/10 focus:text-destructive mt-1">
-                  <X className="h-4 w-4 mr-2" />
-                  <span className="font-bold">Cancelar</span>
+                <DropdownMenuItem
+                  onClick={() => setPublishConfirmModal('draft')}
+                  disabled={isSaving}
+                  className="py-3 px-3 rounded-xl cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <Save className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}</p>
+                      <p className="text-[10px] text-muted-foreground">Guarda para continuar depois</p>
+                    </div>
+                  </div>
                 </DropdownMenuItem>
+                <div className="border-t border-border/40 mt-1 pt-1">
+                  <DropdownMenuItem
+                    onClick={() => navigate(-1)}
+                    className="py-3 px-3 rounded-xl cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                        <X className="h-4 w-4 text-destructive" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm">Cancelar</p>
+                        <p className="text-[10px] opacity-70">Descarta as alterações</p>
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
-
-            <Button 
-              onClick={() => handleSaveAction('published')} 
-              disabled={isSaving || !hasAnyChannelSelected} 
-              size="sm"
-              className="h-10 gap-2 bg-[#F97316] hover:bg-[#F97316]/90 border-0 shadow-lg shadow-orange-500/20 px-8 rounded-xl transition-all active:scale-95"
-            >
-              <Zap className="h-4 w-4" />
-              <span className="text-[13px] font-bold tracking-wide">Publicar</span>
-            </Button>
           </div>
         )}
 
@@ -1489,9 +1533,8 @@ export default function SocialPostEditor() {
         </aside>
 
         {/* EDITOR CENTRAL */}
-        <div className="flex-1 overflow-hidden flex flex-col bg-background">
-          <ScrollArea className="flex-1">
-            <div className="p-4 md:p-10 max-w-3xl mx-auto w-full space-y-10">
+        <div className="flex-1 min-h-0 flex flex-col bg-background overflow-y-auto">
+          <div className="p-4 md:p-10 max-w-2xl mx-auto w-full space-y-10">
 
               {currentPostItem && (
                 <AnimatedContainer animation="fade-in" key={currentPostItem.id} className="space-y-10">
@@ -1864,8 +1907,7 @@ export default function SocialPostEditor() {
                 </AnimatedContainer>
               )}
             </div>
-          </ScrollArea>
-        </div>
+          </div>
 
         {/* PREVIEW LATERAL DIREITO - Desktop only */}
         <aside className="w-[450px] flex-col bg-[#0f172a] border-l border-border/10 overflow-hidden shrink-0 shadow-2xl hidden lg:flex">
@@ -1940,15 +1982,6 @@ export default function SocialPostEditor() {
           </div>
         </aside>
 
-        {/* Mobile floating preview button */}
-        {isMobile && (
-          <Button
-            onClick={() => setShowMobilePreview(true)}
-            className="fixed bottom-6 right-6 z-30 rounded-full h-14 w-14 shadow-xl shadow-primary/30 p-0"
-          >
-            <Eye className="h-6 w-6" />
-          </Button>
-        )}
       </main>
 
       {/* Mobile Preview Dialog */}
@@ -1989,6 +2022,103 @@ export default function SocialPostEditor() {
                   <p className="text-sm text-muted-foreground">Selecione canais para ver os previews</p>
                 </div>
               )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal de Confirmação de Publicação ─────────────────────────── */}
+      <Dialog open={!!publishConfirmModal} onOpenChange={(open) => !open && setPublishConfirmModal(null)}>
+        <DialogContent className="sm:max-w-md rounded-3xl border border-border/60 shadow-2xl p-0 overflow-hidden [&>button]:hidden">
+          {/* Header gradient */}
+          <div className={cn(
+            "h-2 w-full",
+            publishConfirmModal === 'published' && "bg-gradient-to-r from-[#F97316] to-[#FBBF24]",
+            publishConfirmModal === 'scheduled' && "bg-gradient-to-r from-primary to-violet-500",
+            publishConfirmModal === 'draft' && "bg-gradient-to-r from-muted-foreground/50 to-muted-foreground/20"
+          )} />
+
+          <div className="p-6 space-y-5">
+            {/* Icon + Title */}
+            <div className="flex items-start gap-4">
+              <div className={cn(
+                "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0",
+                publishConfirmModal === 'published' && "bg-[#F97316]/10",
+                publishConfirmModal === 'scheduled' && "bg-primary/10",
+                publishConfirmModal === 'draft' && "bg-muted"
+              )}>
+                {publishConfirmModal === 'published' && <Zap className="h-6 w-6 text-[#F97316]" />}
+                {publishConfirmModal === 'scheduled' && <Calendar className="h-6 w-6 text-primary" />}
+                {publishConfirmModal === 'draft' && <Save className="h-6 w-6 text-muted-foreground" />}
+              </div>
+              <div>
+                <h2 className="font-bold text-lg leading-tight">
+                  {publishConfirmModal === 'published' && (postId ? 'Atualizar e Publicar?' : 'Publicar Agora?')}
+                  {publishConfirmModal === 'scheduled' && ((postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento?' : 'Agendar Tudo?')}
+                  {publishConfirmModal === 'draft' && (postId ? 'Atualizar Rascunho?' : 'Guardar Rascunho?')}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                  {publishConfirmModal === 'published' && `O conteúdo será enviado imediatamente para ${postItems.filter(p => p.selectedAccountIds.length > 0).length} post(s) nas redes sociais selecionadas. Esta ação não pode ser desfeita.`}
+                  {publishConfirmModal === 'scheduled' && `${postItems.reduce((acc, p) => acc + p.schedules.reduce((a, s) => a + (s.dates?.length || 0), 0), 0)} publicação(ões) serão agendadas para as datas e horas que configuraste. Podes editar ou cancelar antes do horário programado.`}
+                  {publishConfirmModal === 'draft' && 'O teu conteúdo será guardado como rascunho. Podes voltar a editar e publicar quando estiveres pronto.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Summary chips */}
+            {(publishConfirmModal === 'published' || publishConfirmModal === 'scheduled') && (
+              <div className="bg-muted/50 rounded-2xl p-4 space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Resumo</p>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                    <FileText className="h-3 w-3 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium">{postItems.length} post(s) no lote</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                    <LayoutGrid className="h-3 w-3 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium">
+                    {connectedAccounts.filter(a => postItems.some(p => p.selectedAccountIds.includes(a.id))).length} canal(is) selecionado(s)
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1 h-12 rounded-2xl border-border/60 font-bold"
+                onClick={() => setPublishConfirmModal(null)}
+              >
+                Rever
+              </Button>
+              <Button
+                disabled={isSaving}
+                className={cn(
+                  "flex-[2] h-12 rounded-2xl font-bold gap-2 transition-all active:scale-95",
+                  publishConfirmModal === 'published' && "bg-[#F97316] hover:bg-[#F97316]/90 shadow-lg shadow-orange-500/20",
+                  publishConfirmModal === 'scheduled' && "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20",
+                  publishConfirmModal === 'draft' && "bg-foreground hover:bg-foreground/90 text-background"
+                )}
+                onClick={() => {
+                  const action = publishConfirmModal;
+                  setPublishConfirmModal(null);
+                  if (action) handleSaveAction(action);
+                }}
+              >
+                {isSaving ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> A processar...</>
+                ) : (
+                  <>
+                    {publishConfirmModal === 'published' && <><Zap className="h-4 w-4" />{postId ? 'Atualizar e Publicar' : 'Publicar Agora'}</>}
+                    {publishConfirmModal === 'scheduled' && <><Calendar className="h-4 w-4" />{(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}</>}
+                    {publishConfirmModal === 'draft' && <><Save className="h-4 w-4" />{postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}</>}
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </DialogContent>
