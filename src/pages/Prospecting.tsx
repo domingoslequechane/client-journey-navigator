@@ -735,7 +735,7 @@ export default function ProspectingPage() {
   };
 
   const loadingSteps = [
-    { icon: <Map className="h-8 w-8 text-blue-500" />, text: 'A pesquisar no Google Maps...' },
+    { icon: <Map className="h-8 w-8 text-blue-500" />, text: 'A Prospectar...' },
     { icon: <Instagram className="h-8 w-8 text-pink-500" />, text: 'A analisar redes sociais (Instagram, Facebook)...' },
     { icon: <Globe className="h-8 w-8 text-indigo-500" />, text: 'A verificar sites e presença digital...' },
     { icon: <BrainCircuit className="h-8 w-8 text-purple-500" />, text: 'A gerar perfis e insights de mercado...' },
@@ -1231,7 +1231,7 @@ export default function ProspectingPage() {
                     {loading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        A pesquisar...
+                        A prospectar...
                       </>
                     ) : (
                       <>
