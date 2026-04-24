@@ -467,7 +467,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
       }
       onOpenChange(value);
     }}>
-      <DialogContent className={`max-h-[85vh] overflow-y-auto ${showPreview ? 'max-w-6xl' : 'max-w-2xl'}`}>
+      <DialogContent className={`h-[85vh] overflow-y-auto ${showPreview ? 'max-w-6xl' : 'max-w-2xl'}`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
