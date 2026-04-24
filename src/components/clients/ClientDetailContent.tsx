@@ -467,8 +467,8 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
   return (
     <div className="space-y-6">
       {/* Header with Name and Buttons */}
-      <div className="flex flex-row items-center justify-between gap-4 border-b border-border/50 pb-6 mb-2">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-6 mb-2">
+        <div className="flex items-center gap-4 min-w-0 flex-1 flex-wrap">
           {onBack && (
             <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
               <ArrowLeft className="h-5 w-5" />
@@ -534,7 +534,7 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
 
 
           {/* Link Tree Button */}
