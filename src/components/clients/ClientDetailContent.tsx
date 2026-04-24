@@ -469,17 +469,6 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
       {/* Header with Name and Buttons */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-6 mb-2">
         <div className="flex items-center gap-4 min-w-0 flex-1 flex-wrap">
-          {onBack && (
-            <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          <div className="flex flex-col min-w-0">
-            <h1 className="text-xl md:text-2xl font-bold truncate tracking-tight">{client.companyName}</h1>
-            <span className="text-muted-foreground text-xs md:text-sm truncate">
-              Detalhes e acompanhamento do Cliente
-            </span>
-          </div>
 
           {/* Current Stage Badge with High-Intensity Pulse Effect */}
           <div className="relative shrink-0 ml-2">
