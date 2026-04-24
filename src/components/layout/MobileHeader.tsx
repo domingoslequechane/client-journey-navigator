@@ -223,7 +223,7 @@ export function MobileHeader() {
             {activePageInfo.icon && (
               <activePageInfo.icon className={cn("h-5 w-5 text-current shrink-0 animate-in fade-in scale-in duration-500", backAction && "ml-1")} />
             )}
-            <h1 className="font-bold text-2xl truncate animate-in fade-in slide-in-from-left-2 duration-300">
+            <h1 className="font-bold text-xl md:text-2xl animate-in fade-in slide-in-from-left-2 duration-300">
               {activePageInfo.title}
             </h1>
           </div>
