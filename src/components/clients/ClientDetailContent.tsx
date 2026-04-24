@@ -607,10 +607,10 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
                 </div>
 
                 <div className="p-6">
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-row-reverse gap-3 pt-2">
                     <Button
                       className={cn(
-                        "w-full text-white border-0 py-6 text-base font-semibold shadow-lg disabled:opacity-50",
+                        "flex-1 text-white border-0 py-6 text-base font-semibold shadow-lg disabled:opacity-50",
                         isPaused 
                           ? "bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-emerald-500/20"
                           : "bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-orange-500/20"
@@ -621,18 +621,18 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
                       {isPausing ? (
                         <>
                           <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                          Processando...
+                          ...
                         </>
                       ) : (
-                        isPaused ? 'Sim, Reativar Cliente' : 'Sim, Suspender Cliente'
+                        isPaused ? 'Reativar' : 'Suspender'
                       )}
                     </Button>
                     <Button 
                       variant="ghost" 
-                      className="text-zinc-400 hover:text-white hover:bg-white/5 h-12" 
+                      className="flex-1 text-zinc-400 hover:text-white hover:bg-white/5 h-auto py-4" 
                       onClick={() => setPauseDialogOpen(false)}
                     >
-                      {isPaused ? 'Manter suspenso' : 'Cancelar'}
+                      {isPaused ? 'Manter' : 'Cancelar'}
                     </Button>
                   </div>
                 </div>

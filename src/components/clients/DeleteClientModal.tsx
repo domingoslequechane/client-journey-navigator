@@ -190,28 +190,28 @@ export function DeleteClientModal({
             />
           </div>
 
-          <div className="flex flex-col gap-3 pt-2">
+          <div className="flex flex-row-reverse gap-3 pt-2">
             <Button
               onClick={handleDelete}
               disabled={!isConfirmValid || isDeleting}
-              className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white border-0 py-6 text-base font-semibold shadow-lg shadow-red-500/20 disabled:opacity-50"
+              className="flex-1 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white border-0 py-6 text-sm font-semibold shadow-lg shadow-red-500/20 disabled:opacity-50"
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  Eliminando...
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ...
                 </>
               ) : (
-                'Eliminar Permanentemente'
+                'Eliminar'
               )}
             </Button>
             <Button
               variant="ghost"
               onClick={() => handleOpenChange(false)}
               disabled={isDeleting}
-              className="text-zinc-400 hover:text-white hover:bg-white/5 h-12"
+              className="flex-1 text-zinc-400 hover:text-white hover:bg-white/5 h-auto py-4 text-sm"
             >
-              Cancelar e manter cliente
+              Cancelar
             </Button>
           </div>
         </div>
