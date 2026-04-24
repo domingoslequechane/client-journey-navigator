@@ -296,6 +296,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
         total,
         currency: agencyInfo.currency,
         notes: notes || undefined,
+        invoiceType: 'factura',
         templateStyle: templateSettings?.template_style || 'onix',
         primaryColor: templateSettings?.primary_color || '#C5E86C',
         showWatermark: templateSettings?.show_watermark,
@@ -388,6 +389,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
         total,
         currency: agencyInfo.currency,
         notes: notes || undefined,
+        invoiceType: 'factura',
         templateStyle: templateSettings?.template_style || 'onix',
         primaryColor: templateSettings?.primary_color || '#C5E86C',
         showWatermark: templateSettings?.show_watermark,
@@ -434,6 +436,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
       total: invoice.total,
       currency: agencyInfo.currency,
       notes: invoice.notes || undefined,
+      invoiceType: 'factura',
       templateStyle: templateSettings?.template_style || 'onix',
       primaryColor: templateSettings?.primary_color || '#C5E86C',
       showWatermark: templateSettings?.show_watermark,
@@ -469,9 +472,6 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
             Facturas de Prestação de Serviços
-            <Badge variant="outline" className="ml-2 text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">
-              Em desenvolvimento
-            </Badge>
           </DialogTitle>
           <DialogDescription>
             Gere e visualize facturas para {client.companyName}
