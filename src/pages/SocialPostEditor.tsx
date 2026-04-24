@@ -24,7 +24,7 @@ import { useSocialPosts } from '@/hooks/useSocialPosts';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
+import { cn, generateUUID } from '@/lib/utils';
 import { translateSocialError } from '@/lib/social-error-helper';
 import {
   Upload, Calendar, Clock, Loader2, X,
@@ -255,7 +255,7 @@ export default function SocialPostEditor() {
             className="gap-2 bg-[#F97316] hover:bg-[#F97316]/90 border-0 shadow-sm"
           >
             <Zap className="h-4 w-4" />
-            <span className="text-xs font-bold">Publicar</span>
+            <span className="text-xs font-bold hidden sm:inline">Publicar</span>
           </Button>
         </div>
       );
@@ -411,7 +411,7 @@ export default function SocialPostEditor() {
               latePostId: data.late_post_id || undefined,
               selectedAccountIds: ids,
               schedules: [{
-                id: crypto.randomUUID(),
+                id: generateUUID(),
                 platforms: (data.platforms as SocialPlatform[]) || [],
                 contentType: (data.content_type as ContentType) || 'feed',
                 dates: [data.scheduled_at ? format(new Date(data.scheduled_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')],
@@ -473,14 +473,14 @@ export default function SocialPostEditor() {
 
   const handleAddEmptyPost = () => {
     const newItem: PostItem = {
-      id: `new-${crypto.randomUUID()}`,
+      id: `new-${generateUUID()}`,
       content: '',
       files: [],
       mediaUrls: [],
       location: '',
       selectedAccountIds: [],
       schedules: [{
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         platforms: connectedAccounts.map(a => a.platform as SocialPlatform),
         contentType: ['feed'],
         dates: [format(new Date(), 'yyyy-MM-dd')],
@@ -498,7 +498,7 @@ export default function SocialPostEditor() {
         return {
           ...p,
           schedules: [...p.schedules, {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             platforms: connectedAccounts.map(a => a.platform as SocialPlatform),
             contentType: lastSchedule ? lastSchedule.contentType : ['feed'],
             dates: lastSchedule ? lastSchedule.dates : [format(new Date(), 'yyyy-MM-dd')],
@@ -581,14 +581,14 @@ export default function SocialPostEditor() {
       }
     } else {
       const newItems: PostItem[] = pendingFiles.map(file => ({
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         content: '',
         files: [file],
         mediaUrls: [URL.createObjectURL(file)],
         location: '',
         selectedAccountIds: currentPostItem?.selectedAccountIds || [],
         schedules: [{
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           platforms: [],
           contentType: file.type.startsWith('video/') ? ['video'] : ['feed'],
           dates: [format(new Date(), 'yyyy-MM-dd')],
@@ -704,7 +704,7 @@ export default function SocialPostEditor() {
       let originalPostIdWasUpdated = false;
 
       if (status === 'draft' && !batchIdToUse && postItems.length > 1) {
-        batchIdToUse = crypto.randomUUID();
+        batchIdToUse = generateUUID();
         setCurrentBatchId(batchIdToUse);
       }
 
@@ -1654,7 +1654,7 @@ export default function SocialPostEditor() {
                         
                         return (
                           <div key={schedule.id} className="bg-card p-5 rounded-xl border shadow-sm relative group/schedule">
-                            <div className="flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 pb-1">
                               {/* Platform Icons (LEFT) */}
                                 <div className="flex items-center gap-1.5 shrink-0 px-1 border-r border-border/10 py-1 mr-1">
                                   {currentPlatforms.length > 0 ? (
