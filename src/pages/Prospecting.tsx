@@ -1547,8 +1547,8 @@ export default function ProspectingPage() {
               {/* Header (Fixed) */}
               <div className="p-4 pb-3 shrink-0 border-b border-border/40 bg-card/95 backdrop-blur-xl z-10">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="h-12 w-12 rounded-lg overflow-hidden flex shrink-0 items-center justify-center shadow-sm">
+                  <div className="flex items-start gap-1.5">
+                    <div className="h-10 w-10 rounded-lg overflow-hidden flex shrink-0 items-center justify-center mt-0.5">
                       <img 
                         src={`https://logo.clearbit.com/${selectedHistoryItem.name.replace(/\s+/g, '').toLowerCase()}.com`}
                         alt="Logo"
