@@ -1146,12 +1146,29 @@ export default function ProspectingPage() {
                       : <Target className="h-5 w-5 text-primary" />
                     }
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Prospecção com IA</h1>
                     <p className="text-sm text-muted-foreground">Encontre os clientes ideais para a sua agência em segundos.</p>
+                    
+                    {/* Mobile: Credits & Plan */}
+                    <div className="flex sm:hidden items-center gap-2 mt-2">
+                      <div className={cn(
+                        "flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold",
+                        isExpiredPlan ? "bg-red-500/10 border-red-500/30 text-red-400" :
+                        effectiveRemaining === 0 ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : 
+                        "bg-orange-500/10 border-orange-500/20 text-orange-600"
+                      )}>
+                        {isExpiredPlan ? <Lock className="h-2.5 w-2.5" /> : <Zap className="h-2.5 w-2.5" />}
+                        {isExpiredPlan ? 'Expirado' : effectiveRemaining === null ? 'Ilimitado' : `${effectiveRemaining} Créditos`}
+                      </div>
+                      <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter bg-secondary/50 px-1.5 py-0.5 rounded">
+                        {planType === 'trial' ? 'Teste' : planType === 'starter' ? 'Lança' : planType === 'pro' ? 'Arco' : planType === 'agency' ? 'Catapulta' : planType || 'Gratuito'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 sm:gap-1 w-full sm:w-auto sm:ml-auto text-left sm:text-right">
+                {/* Desktop: Credits & Plan */}
+                <div className="hidden sm:flex flex-col items-end gap-1 ml-auto text-right">
                   {isExpiredPlan ? (
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/30">
                       <Lock className="h-3.5 w-3.5 text-red-400" />
