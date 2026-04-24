@@ -1575,7 +1575,7 @@ export default function ProspectingPage() {
                     )}
                     {selectedHistoryItem.opportunityData && (
                        <div className="text-sm font-semibold text-foreground/80 mt-1">
-                         Status: {selectedHistoryItem.opportunityData.classification}
+                         {selectedHistoryItem.opportunityData.classification}
                        </div>
                     )}
                     {!selectedHistoryItem.opportunityData && <PotentialBadge value={selectedHistoryItem.conversionPotential} />}
