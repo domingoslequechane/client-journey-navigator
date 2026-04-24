@@ -1564,9 +1564,6 @@ export default function ProspectingPage() {
                         <MapPin className="h-3.5 w-3.5 shrink-0" />
                         <span className="truncate">{selectedHistoryItem.location} &bull; {selectedHistoryItem.segment}</span>
                       </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-full" title={selectedHistoryItem.type}>
-                        {selectedHistoryItem.type}
-                      </p>
                     </div>
                   </div>
                   <div className="text-right space-y-2">
