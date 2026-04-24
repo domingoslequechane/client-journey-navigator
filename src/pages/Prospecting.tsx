@@ -1090,11 +1090,13 @@ export default function ProspectingPage() {
                   onClick={() => setSelectedHistoryItem(entry)}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold truncate group-hover:text-primary transition-colors">{entry.name}</p>
                       <p className="text-[10px] text-muted-foreground truncate">{entry.segment} • {entry.location}</p>
                     </div>
-                    <PotentialBadge value={entry.conversionPotential} />
+                    <div className="shrink-0">
+                      <PotentialBadge value={entry.conversionPotential} />
+                    </div>
                   </div>
                   <p className="text-[9px] text-muted-foreground mt-1.5 flex items-center gap-1">
                     <Clock className="h-2.5 w-2.5" />
