@@ -1548,6 +1548,16 @@ export default function ProspectingPage() {
               <div className="p-4 pb-3 shrink-0 border-b border-border/40 bg-card/95 backdrop-blur-xl z-10">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
+                    <div className="h-14 w-14 rounded-xl overflow-hidden bg-background/50 flex shrink-0 border border-border/50 items-center justify-center shadow-sm">
+                      <img 
+                        src={`https://logo.clearbit.com/${selectedHistoryItem.name.replace(/\s+/g, '').toLowerCase()}.com`}
+                        alt="Logo"
+                        className="w-full h-full object-cover bg-white"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedHistoryItem.name)}&background=random&color=fff&bold=true`;
+                        }}
+                      />
+                    </div>
                     <div className="min-w-0 flex-1">
                       <h2 className="text-xl font-bold text-foreground leading-tight break-words max-w-[20ch] sm:max-w-none">{selectedHistoryItem.name}</h2>
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
@@ -1565,7 +1575,7 @@ export default function ProspectingPage() {
                     )}
                     {selectedHistoryItem.opportunityData && (
                        <div className="text-sm font-semibold text-foreground/80 mt-1">
-                         Status: {selectedHistoryItem.opportunityData.classification}
+                         {selectedHistoryItem.opportunityData.classification}
                        </div>
                     )}
                     {!selectedHistoryItem.opportunityData && <PotentialBadge value={selectedHistoryItem.conversionPotential} />}
