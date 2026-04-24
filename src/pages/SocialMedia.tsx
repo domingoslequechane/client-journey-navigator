@@ -127,22 +127,9 @@ export default function SocialMedia() {
 
   // Set header action on mobile
   useEffect(() => {
-    if (hasClientSelected) {
-      setRightAction(
-        <Button
-          onClick={() => handleCreatePost()}
-          size="sm"
-          className="h-9 px-3 gap-2 bg-[#F97316] hover:bg-[#F97316]/90 border-0 shadow-sm animate-in zoom-in duration-300"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="text-xs font-bold">Novo Post</span>
-        </Button>
-      );
-    } else {
-      setRightAction(null);
-    }
+    setRightAction(null);
     return () => setRightAction(null);
-  }, [hasClientSelected]);
+  }, []);
 
   // Refresh data when tab changes
   useEffect(() => {
@@ -390,7 +377,7 @@ export default function SocialMedia() {
             </Button>
             <Button
               onClick={() => handleCreatePost()}
-              className="flex-1 sm:flex-none gap-2 hidden sm:flex"
+              className="flex-1 sm:flex-none gap-2 flex"
               disabled={!hasClientSelected}
               size="sm"
             >

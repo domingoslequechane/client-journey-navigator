@@ -18,23 +18,33 @@ export function AppLayout() {
   const location = useLocation();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
+  const isNativeScroll = location.pathname.includes('/social-media');
+
   // Reset scroll position and lock body scroll
   useEffect(() => {
     if (mainContentRef.current) {
       mainContentRef.current.scrollTop = 0;
     }
     
-    // Lock body scroll to ensure internal scrolling works as expected
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [location.pathname]);
+    if (!isNativeScroll) {
+      // Lock body scroll to ensure internal scrolling works as expected
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    } else {
+      document.body.style.overflow = '';
+      window.scrollTo(0, 0);
+    }
+  }, [location.pathname, isNativeScroll]);
 
   return (
-    <div className="flex flex-col md:flex-row bg-background font-sans h-[100dvh] w-full overflow-hidden">
+    <div className={cn(
+      "flex flex-col md:flex-row bg-background font-sans w-full",
+      !isNativeScroll ? "h-[100dvh] overflow-hidden" : "min-h-[100dvh]"
+    )}>
       <OfflineIndicator pendingCount={queueLength} isSyncing={isSyncing} />
       <AccessChangeNotification />
       <TrialStartedModal />
@@ -49,10 +59,16 @@ export function AppLayout() {
       </div>
 
       {/* Scrollable Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-y-auto pt-20 md:pt-0">
+      <div className={cn(
+        "flex-1 flex flex-col pt-20 md:pt-0",
+        !isNativeScroll ? "h-full overflow-y-auto" : ""
+      )}>
         <main 
           ref={mainContentRef}
-          className="w-full relative px-4 md:px-0 flex-1 flex flex-col h-full"
+          className={cn(
+            "w-full relative px-4 md:px-0 flex-1 flex flex-col",
+            !isNativeScroll ? "h-full" : ""
+          )}
         >
           <TrialStatusBanner />
           <div className="w-full h-full flex-1">
