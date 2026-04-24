@@ -644,9 +644,9 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
           {isOwner && (
             <>
               <Button
-                variant="ghost"
+                variant="destructive"
                 size="sm"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 flex-1 sm:flex-none h-9 px-4"
+                className="gap-2 flex-1 sm:flex-none h-9 px-4"
                 onClick={() => setDeleteDialogOpen(true)}
               >
                 <Trash2 className="h-3.5 w-3.5" />
