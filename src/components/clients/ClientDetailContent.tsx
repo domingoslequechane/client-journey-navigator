@@ -534,7 +534,7 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
+        <div className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
 
 
           {/* Link Tree Button */}
