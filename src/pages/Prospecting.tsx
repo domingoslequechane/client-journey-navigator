@@ -1547,17 +1547,7 @@ export default function ProspectingPage() {
               {/* Header (Fixed) */}
               <div className="p-4 pb-3 shrink-0 border-b border-border/40 bg-card/95 backdrop-blur-xl z-10">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-1.5">
-                    <div className="h-10 w-10 rounded-lg overflow-hidden flex shrink-0 items-center justify-center mt-0.5">
-                      <img 
-                        src={`https://logo.clearbit.com/${selectedHistoryItem.name.replace(/\s+/g, '').toLowerCase()}.com`}
-                        alt="Logo"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedHistoryItem.name)}&background=random&color=fff&bold=true`;
-                        }}
-                      />
-                    </div>
+                  <div className="flex items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <h2 className="text-xl font-bold text-foreground leading-tight break-words max-w-[20ch] sm:max-w-none">{selectedHistoryItem.name}</h2>
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
