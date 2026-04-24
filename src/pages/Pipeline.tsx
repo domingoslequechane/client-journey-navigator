@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SALES_FUNNEL_STAGES, OPERATIONAL_FLOW_STAGES, Client } from '@/types';
 import { mapDbClientToUiClient } from '@/lib/client-utils';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, Target, FileCheck, Phone, Cog, Megaphone, Heart, GitBranch, Kanban, Lock, Sparkles } from 'lucide-react';
+import { Plus, Search, Target, FileCheck, Phone, Cog, Megaphone, Heart, GitBranch, Kanban, Lock, Sparkles, Bot } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -143,10 +143,18 @@ export default function Pipeline() {
           </div>
         )}
         {hasPrivilege('sales') && (
-          <div className="w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              className="gap-2 flex-1 sm:flex-none"
+              onClick={() => navigate('/app/prospecting')}
+            >
+              <Bot className="h-4 w-4 text-primary" />
+              Prospecção IA
+            </Button>
             {['free', 'trial'].includes(planType as string) && usage.clientsCount >= (limits.maxClients ?? 2) ? (
-              <Button 
-                className="gap-2 w-full sm:w-auto" 
+              <Button
+                className="gap-2 flex-1 sm:flex-none"
                 onClick={() => setShowLimitModal(true)}
               >
                 <Plus className="h-4 w-4" />

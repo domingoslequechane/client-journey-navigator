@@ -90,16 +90,34 @@ export function ClientFormView({
   }, [isEditMode, setCustomTitle, setBackAction, backLink, navigate]);
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto">
-      <AnimatedContainer animation="fade-up" className="hidden md:flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
-        <Link to={backLink}>
-          <Button variant="ghost" size="icon" className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
-        </Link>
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-3xl font-bold">{isEditMode ? 'Editar Cliente' : 'Novo Cliente'}</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            {isEditMode ? 'Atualize as informações do cliente' : 'Cadastre um novo lead ou cliente'}
-          </p>
+    <div className="p-4 md:p-8 w-full">
+      <AnimatedContainer animation="fade-up" className="hidden md:flex items-center justify-between gap-4 mb-6 md:mb-8 border-b border-border/50 pb-6">
+        <div className="flex items-center gap-3 md:gap-4 min-w-0">
+          <Link to={backLink}>
+            <Button variant="ghost" size="icon" className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-3xl font-bold truncate">{isEditMode ? 'Editar Cliente' : 'Novo Cliente'}</h1>
+            <p className="text-sm md:text-base text-muted-foreground truncate">
+              {isEditMode ? 'Atualize as informações do cliente' : 'Cadastre um novo lead ou cliente'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Link to={backLink}>
+            <Button variant="outline" className="h-9 px-4">Cancelar</Button>
+          </Link>
+          <Button 
+            onClick={() => {
+              const form = document.querySelector('form');
+              if (form) form.requestSubmit();
+            }}
+            className="h-9 px-4" 
+            disabled={saving}
+          >
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</> : isEditMode ? 'Salvar Alterações' : 'Cadastrar Cliente'}
+          </Button>
         </div>
       </AnimatedContainer>
 
@@ -121,223 +139,222 @@ export function ClientFormView({
         </Alert>
       )}
 
-      <form onSubmit={onSubmit} className="space-y-6 md:space-y-8">
-        {/* Company Info */}
-        <AnimatedContainer animation="fade-up" delay={0.1} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Building2 className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">Informações da Empresa</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Nome da Empresa *</Label>
-              <Input 
-                value={formData.companyName} 
-                onChange={(e) => updateField('companyName', e.target.value)} 
-                placeholder="Ex: Restaurante Sabor & Arte" 
-                required 
-              />
+      <form onSubmit={onSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* COLUMN A */}
+        <div className="space-y-6 md:space-y-8">
+          {/* Company Info */}
+          <AnimatedContainer animation="fade-up" delay={0.1} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 className="h-5 w-5 text-primary" />
+              <h2 className="font-semibold">Informações da Empresa</h2>
             </div>
-            <div>
-              <Label>Website</Label>
-              <Input 
-                value={formData.website} 
-                onChange={(e) => updateField('website', e.target.value)} 
-                placeholder="www.empresa.com" 
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Nome da Empresa *</Label>
+                <Input 
+                  value={formData.companyName} 
+                  onChange={(e) => updateField('companyName', e.target.value)} 
+                  placeholder="Ex: Restaurante Sabor & Arte" 
+                  required 
+                />
+              </div>
+              <div>
+                <Label>Website</Label>
+                <Input 
+                  value={formData.website} 
+                  onChange={(e) => updateField('website', e.target.value)} 
+                  placeholder="www.empresa.com" 
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Endereço</Label>
+                <Input 
+                  value={formData.address} 
+                  onChange={(e) => updateField('address', e.target.value)} 
+                  placeholder="Av. Eduardo Mondlane, 123 - Maputo" 
+                />
+              </div>
             </div>
-            <div className="md:col-span-2">
-              <Label>Endereço</Label>
-              <Input 
-                value={formData.address} 
-                onChange={(e) => updateField('address', e.target.value)} 
-                placeholder="Av. Eduardo Mondlane, 123 - Maputo" 
-              />
-            </div>
-          </div>
-        </AnimatedContainer>
+          </AnimatedContainer>
 
-        {/* Contact Info */}
-        <AnimatedContainer animation="fade-up" delay={0.15} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <User className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">Contato Principal</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <div>
-              <Label>Nome do Contato *</Label>
-              <Input 
-                value={formData.contactName} 
-                onChange={(e) => updateField('contactName', e.target.value)} 
-                placeholder="Ex: Maria Santos" 
-                required 
-              />
+          {/* Contact Info */}
+          <AnimatedContainer animation="fade-up" delay={0.15} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <User className="h-5 w-5 text-primary" />
+              <h2 className="font-semibold">Contato Principal</h2>
             </div>
-            <div>
-              <Label>Telefone *</Label>
-              <PhoneInput 
-                value={formData.phone} 
-                onChange={(value) => updateField('phone', value || '')} 
-                placeholder="+258 84 123 4567" 
-                required 
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <Label>Nome do Contato *</Label>
+                <Input 
+                  value={formData.contactName} 
+                  onChange={(e) => updateField('contactName', e.target.value)} 
+                  placeholder="Ex: Maria Santos" 
+                  required 
+                />
+              </div>
+              <div>
+                <Label>Telefone *</Label>
+                <PhoneInput 
+                  value={formData.phone} 
+                  onChange={(value) => updateField('phone', value || '')} 
+                  placeholder="+258 84 123 4567" 
+                  required 
+                />
+              </div>
+              <div className="sm:col-span-2 md:col-span-1">
+                <Label>E-mail</Label>
+                <Input 
+                  type="email" 
+                  value={formData.email} 
+                  onChange={(e) => updateField('email', e.target.value)} 
+                  placeholder="email@empresa.com" 
+                />
+              </div>
             </div>
-            <div className="sm:col-span-2 md:col-span-1">
-              <Label>E-mail</Label>
-              <Input 
-                type="email" 
-                value={formData.email} 
-                onChange={(e) => updateField('email', e.target.value)} 
-                placeholder="email@empresa.com" 
-              />
-            </div>
-          </div>
-        </AnimatedContainer>
+          </AnimatedContainer>
 
-        {/* Lead Qualification */}
-        <AnimatedContainer animation="fade-up" delay={0.2} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Globe className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">Qualificação do Lead</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div>
-              <Label>Fonte de Origem</Label>
-              <Select value={formData.source} onValueChange={(value) => updateField('source', value)}>
-                <SelectTrigger><SelectValue placeholder="Como conheceu?" /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(SOURCE_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Services */}
+          <AnimatedContainer animation="fade-up" delay={0.2} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <DollarSign className="h-5 w-5 text-primary" />
+              <h2 className="font-semibold">Serviços de Interesse</h2>
             </div>
-            <div>
-              <Label>Qualificação</Label>
-              <Select value={formData.qualification} onValueChange={(value) => updateField('qualification', value)}>
-                <SelectTrigger><SelectValue placeholder="Temperatura" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cold">Frio</SelectItem>
-                  <SelectItem value="warm">Morno</SelectItem>
-                  <SelectItem value="hot">Quente</SelectItem>
-                  <SelectItem value="qualified">Qualificado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <p className="text-sm font-medium">Pontuação BANT (0-10)</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[{ key: 'budget', label: 'Budget', desc: 'Tem orçamento disponível' },
-                { key: 'authority', label: 'Authority', desc: 'Poder de decisão' },
-                { key: 'need', label: 'Need', desc: 'Necessidade real' },
-                { key: 'timeline', label: 'Timeline', desc: 'Prazo definido' }
-              ].map(item => (
-                <div key={item.key}>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>{item.label}<span className="text-muted-foreground text-xs ml-2">{item.desc}</span></span>
-                    <span className="font-medium">{formData.bant[item.key as keyof typeof formData.bant]}/10</span>
-                  </div>
-                  <Slider 
-                    value={[formData.bant[item.key as keyof typeof formData.bant]]} 
-                    max={10} 
-                    step={1} 
-                    onValueChange={([v]) => updateBant(item.key as keyof ClientFormData['bant'], v)} 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {(Object.entries(SERVICE_LABELS) as [ServiceType, string][]).map(([key, label]) => (
+                <div key={key} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={key} 
+                    checked={formData.services.includes(key)} 
+                    onCheckedChange={() => handleServiceToggle(key)} 
                   />
+                  <label htmlFor={key} className="text-sm cursor-pointer">{label}</label>
                 </div>
               ))}
             </div>
-          </div>
+          </AnimatedContainer>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <div>
-              <Label>Orçamento Mensal Estimado</Label>
-              <div className="flex gap-2 mt-1">
-                <Select value={formData.budgetCurrency} onValueChange={(value) => updateField('budgetCurrency', value)}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
+        {/* COLUMN B */}
+        <div className="space-y-6 md:space-y-8">
+          {/* Lead Qualification */}
+          <AnimatedContainer animation="fade-up" delay={0.25} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Globe className="h-5 w-5 text-primary" />
+              <h2 className="font-semibold">Qualificação do Lead</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div>
+                <Label>Fonte de Origem</Label>
+                <Select value={formData.source} onValueChange={(value) => updateField('source', value)}>
+                  <SelectTrigger><SelectValue placeholder="Como conheceu?" /></SelectTrigger>
                   <SelectContent>
-                    {CURRENCIES.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>{c.symbol}</SelectItem>
+                    {Object.entries(SOURCE_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Input 
-                  type="number" 
-                  value={formData.monthlyBudget} 
-                  onChange={(e) => updateField('monthlyBudget', e.target.value)} 
-                  placeholder="10000" 
-                  className="flex-1" 
-                />
               </div>
-            </div>
-            <div>
-              <Label>Orçamento Tráfego Pago</Label>
-              <div className="flex gap-2 mt-1">
-                <Select value={formData.trafficCurrency} onValueChange={(value) => updateField('trafficCurrency', value)}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
+              <div>
+                <Label>Qualificação</Label>
+                <Select value={formData.qualification} onValueChange={(value) => updateField('qualification', value)}>
+                  <SelectTrigger><SelectValue placeholder="Temperatura" /></SelectTrigger>
                   <SelectContent>
-                    {CURRENCIES.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>{c.symbol}</SelectItem>
-                    ))}
+                    <SelectItem value="cold">Frio</SelectItem>
+                    <SelectItem value="warm">Morno</SelectItem>
+                    <SelectItem value="hot">Quente</SelectItem>
+                    <SelectItem value="qualified">Qualificado</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input 
-                  type="number" 
-                  value={formData.trafficBudget} 
-                  onChange={(e) => updateField('trafficBudget', e.target.value)} 
-                  placeholder="500" 
-                  className="flex-1" 
-                />
               </div>
             </div>
-          </div>
-        </AnimatedContainer>
-
-        {/* Services */}
-        <AnimatedContainer animation="fade-up" delay={0.25} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <DollarSign className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">Serviços de Interesse</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {(Object.entries(SERVICE_LABELS) as [ServiceType, string][]).map(([key, label]) => (
-              <div key={key} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={key} 
-                  checked={formData.services.includes(key)} 
-                  onCheckedChange={() => handleServiceToggle(key)} 
-                />
-                <label htmlFor={key} className="text-sm cursor-pointer">{label}</label>
+            
+            <div className="space-y-4">
+              <p className="text-sm font-medium">Pontuação BANT (0-10)</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[{ key: 'budget', label: 'Budget', desc: 'Tem orçamento disponível' },
+                  { key: 'authority', label: 'Authority', desc: 'Poder de decisão' },
+                  { key: 'need', label: 'Need', desc: 'Necessidade real' },
+                  { key: 'timeline', label: 'Timeline', desc: 'Prazo definido' }
+                ].map(item => (
+                  <div key={item.key}>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span>{item.label}<span className="text-muted-foreground text-xs ml-2">{item.desc}</span></span>
+                      <span className="font-medium">{formData.bant[item.key as keyof typeof formData.bant]}/10</span>
+                    </div>
+                    <Slider 
+                      value={[formData.bant[item.key as keyof typeof formData.bant]]} 
+                      max={10} 
+                      step={1} 
+                      onValueChange={([v]) => updateBant(item.key as keyof ClientFormData['bant'], v)} 
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </AnimatedContainer>
+            </div>
 
-        {/* Notes */}
-        <AnimatedContainer animation="fade-up" delay={0.3} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
-          <Label>Observações</Label>
-          <Textarea 
-            value={formData.notes} 
-            onChange={(e) => updateField('notes', e.target.value)} 
-            placeholder="Anotações importantes sobre o cliente..." 
-            className="mt-2" 
-            rows={4} 
-          />
-        </AnimatedContainer>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              <div>
+                <Label>Orçamento Mensal Estimado</Label>
+                <div className="flex gap-2 mt-1">
+                  <Select value={formData.budgetCurrency} onValueChange={(value) => updateField('budgetCurrency', value)}>
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>{c.symbol}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input 
+                    type="number" 
+                    value={formData.monthlyBudget} 
+                    onChange={(e) => updateField('monthlyBudget', e.target.value)} 
+                    placeholder="10000" 
+                    className="flex-1" 
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Orçamento Tráfego Pago</Label>
+                <div className="flex gap-2 mt-1">
+                  <Select value={formData.trafficCurrency} onValueChange={(value) => updateField('trafficCurrency', value)}>
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>{c.symbol}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input 
+                    type="number" 
+                    value={formData.trafficBudget} 
+                    onChange={(e) => updateField('trafficBudget', e.target.value)} 
+                    placeholder="500" 
+                    className="flex-1" 
+                  />
+                </div>
+              </div>
+            </div>
+          </AnimatedContainer>
 
-        <AnimatedContainer animation="fade-up" delay={0.35} className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-end">
-          <Link to={backLink} className="w-full sm:w-auto">
-            <Button variant="outline" className="w-full">Cancelar</Button>
-          </Link>
-          <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
-            {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</> : isEditMode ? 'Salvar Alterações' : 'Cadastrar Cliente'}
-          </Button>
-        </AnimatedContainer>
+          {/* Notes */}
+          <AnimatedContainer animation="fade-up" delay={0.3} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
+            <Label>Observações</Label>
+            <Textarea 
+              value={formData.notes} 
+              onChange={(e) => updateField('notes', e.target.value)} 
+              placeholder="Anotações importantes sobre o cliente..." 
+              className="mt-2" 
+              rows={4} 
+            />
+          </AnimatedContainer>
+
+
+        </div>
       </form>
     </div>
   );

@@ -28,6 +28,7 @@ import AcceptInvite from "./pages/AcceptInvite";
 import Demo from "./pages/Demo";
 import Dashboard from "./pages/Dashboard";
 import Pipeline from "./pages/Pipeline";
+import Prospecting from "./pages/Prospecting";
 import { Navigate } from "react-router-dom";
 import Clients from "./pages/Clients";
 import NewClient from "./pages/NewClient";
@@ -79,6 +80,7 @@ import About from "./pages/About";
 import Insights from "./pages/Insights";
 import InsightDetail from "./pages/InsightDetail";
 import AdminInsights from "./pages/admin/AdminInsights";
+import AdminBroadcast from "./pages/admin/AdminBroadcast";
 import Features from "./pages/Features";
 
 import { HeaderProvider } from "@/contexts/HeaderContext";
@@ -166,6 +168,11 @@ const App = () => {
                         <Route path="pipeline" element={
                           <RoleProtectedRoute privilege="sales">
                             <Pipeline />
+                          </RoleProtectedRoute>
+                        } />
+                        <Route path="prospecting" element={
+                          <RoleProtectedRoute privilege="sales">
+                            <Prospecting />
                           </RoleProtectedRoute>
                         } />
                         <Route path="sales-funnel" element={<Navigate to="/app/pipeline?tab=sales" replace />} />
@@ -315,6 +322,7 @@ const App = () => {
                         <Route path="feedbacks" element={<AdminFeedbacks />} />
                         <Route path="support" element={<AdminSupport />} />
                         <Route path="insights" element={<AdminInsights />} />
+                        <Route path="broadcast" element={<AdminBroadcast />} />
                         <Route path="settings" element={<AdminSettings />} />
                       </Route>
                       <Route path="/not-found" element={<NotFound />} />

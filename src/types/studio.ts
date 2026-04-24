@@ -35,7 +35,7 @@ export interface FlyerSquadMetadata {
 }
 
 // Tamanhos disponíveis
-export type StudioImageSize = '1080x1080' | '1080x1920' | '1920x1080' | '1080x1350' | '1280x720';
+export type StudioImageSize = '1080x1080' | '1080x1920' | '1920x1080' | '1080x1350' | '1280x720' | 'original';
 
 // Configuração de tamanho
 export interface SizeConfig {

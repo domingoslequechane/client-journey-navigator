@@ -128,66 +128,93 @@ export function DeleteClientModal({
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogContent className="max-w-md">
-        <AlertDialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
+      <AlertDialogContent className="sm:max-w-md p-0 overflow-hidden border-0 bg-[#1c1c1e] text-white">
+        {/* Header with Gradient */}
+        <div className="bg-gradient-to-br from-orange-500 via-red-500 to-red-600 p-8 text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-black/10 blur-xl" />
+          
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-black/10 border border-white/20">
+              <Trash2 className="h-8 w-8 text-white" />
             </div>
-            <AlertDialogTitle>Eliminar Cliente Permanentemente</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl font-bold text-white mb-2">Eliminar Cliente</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/90 text-sm max-w-sm mx-auto">
+              Esta ação é <strong className="text-white font-black">irreversível</strong>. Todos os dados associados a este cliente serão apagados e não poderão ser recuperados.
+            </AlertDialogDescription>
           </div>
-          <AlertDialogDescription className="pt-4 space-y-3">
-            <p>
-              Esta acção é <strong className="text-foreground">irreversível</strong> e irá eliminar:
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>Todas as informações do cliente</li>
-              <li>Histórico de conversas com a IA</li>
-              <li>Checklist e relatórios de tarefas</li>
-              <li>Todas as atividades registadas</li>
+        </div>
+
+        {/* Body Content */}
+        <div className="p-6 space-y-6">
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-zinc-300">O que será eliminado:</p>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3 text-sm text-zinc-400">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500/10 shrink-0">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                </div>
+                Todas as informações do cliente
+              </li>
+              <li className="flex items-center gap-3 text-sm text-zinc-400">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500/10 shrink-0">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                </div>
+                Histórico de conversas com a IA
+              </li>
+              <li className="flex items-center gap-3 text-sm text-zinc-400">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500/10 shrink-0">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                </div>
+                Checklist e relatórios de tarefas
+              </li>
+              <li className="flex items-center gap-3 text-sm text-zinc-400">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500/10 shrink-0">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                </div>
+                Todas as atividades registadas
+              </li>
             </ul>
-            <div className="pt-2">
-              <p className="text-sm mb-2">
-                Para confirmar, escreva o nome da empresa:{' '}
-                <strong className="text-foreground">"{clientName}"</strong>
-              </p>
-              <Input
-                value={confirmName}
-                onChange={(e) => setConfirmName(e.target.value)}
-                placeholder="Nome da empresa"
-                disabled={isDeleting}
-                className="mt-2"
-              />
-            </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={isDeleting}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={!isConfirmValid || isDeleting}
-            className="gap-2"
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Eliminando...
-              </>
-            ) : (
-              <>
-                <Trash2 className="h-4 w-4" />
-                Eliminar Permanentemente
-              </>
-            )}
-          </Button>
-        </AlertDialogFooter>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-white/5">
+            <p className="text-sm text-zinc-400">
+              Para confirmar, escreva: <strong className="text-white">"{clientName}"</strong>
+            </p>
+            <Input
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              placeholder="Nome da empresa"
+              disabled={isDeleting}
+              className="bg-[#2a2a2c] border-white/5 focus-visible:ring-red-500/50 text-white placeholder:text-zinc-500 h-11"
+            />
+          </div>
+
+          <div className="flex flex-col gap-3 pt-2">
+            <Button
+              onClick={handleDelete}
+              disabled={!isConfirmValid || isDeleting}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white border-0 py-6 text-base font-semibold shadow-lg shadow-red-500/20 disabled:opacity-50"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  Eliminando...
+                </>
+              ) : (
+                'Eliminar Permanentemente'
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => handleOpenChange(false)}
+              disabled={isDeleting}
+              className="text-zinc-400 hover:text-white hover:bg-white/5 h-12"
+            >
+              Cancelar e manter cliente
+            </Button>
+          </div>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );
