@@ -224,41 +224,7 @@ export default function SocialPostEditor() {
     if (isMobile) {
       setCustomTitle(postId ? 'Editar Publicação' : 'Nova Publicação');
       setBackAction(() => () => navigate(-1));
-      setRightAction(
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleSaveAction('draft')} disabled={isSaving}>
-                <Save className="h-4 w-4 mr-2" />
-                {postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected}>
-                <Calendar className="h-4 w-4 mr-2" />
-                {(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate(-1)}>
-                <X className="h-4 w-4 mr-2" />
-                Cancelar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button 
-            onClick={() => handleSaveAction('published')} 
-            disabled={isSaving || !hasAnyChannelSelected} 
-            size="sm"
-            className="gap-2 bg-[#F97316] hover:bg-[#F97316]/90 border-0 shadow-sm"
-          >
-            <Zap className="h-4 w-4" />
-            <span className="text-xs font-bold hidden sm:inline">Publicar</span>
-          </Button>
-        </div>
-      );
+      setRightAction(null);
     } else {
       setCustomTitle(null);
       setBackAction(null);
@@ -1369,6 +1335,44 @@ export default function SocialPostEditor() {
       </header>
 
       <main className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+
+        {/* Mobile top action bar */}
+        {isMobile && (
+          <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2 bg-background shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-10 gap-2 shadow-sm rounded-xl border-border/50">
+                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-bold text-[13px]">Opções</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 rounded-xl">
+                <DropdownMenuItem onClick={() => handleSaveAction('draft')} disabled={isSaving} className="py-2.5">
+                  <Save className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="font-medium">{postId ? 'Atualizar Rascunho' : 'Guardar Rascunho'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSaveAction('scheduled')} disabled={isSaving || !hasAnyChannelSelected} className="py-2.5">
+                  <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="font-medium">{(postId && initialStatus === 'scheduled') ? 'Atualizar Agendamento' : 'Agendar Tudo'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(-1)} className="py-2.5 text-destructive focus:bg-destructive/10 focus:text-destructive mt-1">
+                  <X className="h-4 w-4 mr-2" />
+                  <span className="font-bold">Cancelar</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button 
+              onClick={() => handleSaveAction('published')} 
+              disabled={isSaving || !hasAnyChannelSelected} 
+              size="sm"
+              className="h-10 gap-2 bg-[#F97316] hover:bg-[#F97316]/90 border-0 shadow-lg shadow-orange-500/20 px-8 rounded-xl transition-all active:scale-95"
+            >
+              <Zap className="h-4 w-4" />
+              <span className="text-[13px] font-bold tracking-wide">Publicar</span>
+            </Button>
+          </div>
+        )}
 
         {/* Mobile horizontal page bar */}
         {isMobile && (
