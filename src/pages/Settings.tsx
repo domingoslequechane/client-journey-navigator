@@ -433,7 +433,7 @@ export default function Settings() {
 
 
       {/* ── Body: sidebar + content ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
 
         {/* Sidebar */}
         <aside className="hidden md:flex w-56 flex-col gap-1 border-r border-border px-3 py-4 bg-muted/20 shrink-0">
