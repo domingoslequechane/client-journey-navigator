@@ -27,7 +27,7 @@ export function FreeLimitModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0 shadow-2xl">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0 shadow-2xl [&>button]:hidden">
         {/* Close button */}
         <button
           onClick={() => onOpenChange(false)}

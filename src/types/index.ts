@@ -3,7 +3,7 @@ export type SalesFunnelStage = 'prospecting' | 'qualification' | 'closing';
 export type OperationalStage = 'production' | 'campaigns' | 'retention' | 'loyalty';
 export type JourneyStage = SalesFunnelStage | OperationalStage;
 
-export type LeadSource = 'google_maps' | 'social_media' | 'referral' | 'visit' | 'inbound' | 'other';
+export type LeadSource = 'google_maps' | 'social_media' | 'referral' | 'visit' | 'inbound' | 'ai_prospecting' | 'other';
 export type LeadTemperature = 'cold' | 'warm' | 'hot';
 export type ClientStatus = 'lead' | 'prospect' | 'active' | 'churned';
 
@@ -35,6 +35,7 @@ export interface Client {
   pausedAt?: string;
   pausedBy?: string;
   slug: string;
+  ai_intelligence?: any;
 }
 
 export type ServiceType = 
@@ -245,6 +246,7 @@ export const SOURCE_LABELS: Record<LeadSource, string> = {
   referral: 'Indicação',
   visit: 'Visita Presencial',
   inbound: 'Inbound',
+  ai_prospecting: 'Prospecção IA',
   other: 'Outro',
 };
 

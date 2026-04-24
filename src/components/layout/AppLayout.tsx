@@ -9,9 +9,12 @@ import { AccessChangeNotification } from '@/components/auth/AccessChangeNotifica
 import { TrialStatusBanner } from '@/components/subscription/TrialStatusBanner';
 import { TrialStartedModal } from '@/components/subscription/TrialStartedModal';
 import { PlanExpiredModal } from '@/components/subscription/PlanExpiredModal';
+import { BroadcastModal } from '@/components/notifications/BroadcastModal';
+import { useBroadcastNotifications } from '@/hooks/useBroadcastNotifications';
 
 export function AppLayout() {
   const { queueLength, isSyncing } = useSyncQueue();
+  const { pendingModalNotification, dismissModal } = useBroadcastNotifications();
   const location = useLocation();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
@@ -36,11 +39,12 @@ export function AppLayout() {
       <AccessChangeNotification />
       <TrialStartedModal />
       <PlanExpiredModal />
+      <BroadcastModal notification={pendingModalNotification} onDismiss={dismissModal} />
       <MobileHeader />
       <ScrollToTop />
       
       {/* Desktop Sidebar */}
-      <div className="hidden md:block shrink-0 h-full sticky top-0">
+      <div className="hidden md:block shrink-0 h-full sticky top-0 z-40">
         <Sidebar />
       </div>
 

@@ -76,36 +76,28 @@ export function NotificationBell({ collapsed = false }: NotificationBellProps) {
     }
   };
 
-  const content = (
-    <Link
-      to="/app/notifications"
-      className={cn(
-        'relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-        collapsed && 'justify-center px-2'
-      )}
-    >
-      <div className="relative">
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
-      </div>
-      {!collapsed && 'Notificações'}
-    </Link>
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link
+          to="/app/notifications"
+          className={cn(
+            'relative flex items-center justify-center h-10 w-10 rounded-lg text-sm transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+          )}
+        >
+          <div className="relative">
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </div>
+        </Link>
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        Notificações {unreadCount > 0 && `(${unreadCount})`}
+      </TooltipContent>
+    </Tooltip>
   );
-
-  if (collapsed) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>{content}</TooltipTrigger>
-        <TooltipContent side="right">
-          Notificações {unreadCount > 0 && `(${unreadCount})`}
-        </TooltipContent>
-      </Tooltip>
-    );
-  }
-
-  return content;
 }

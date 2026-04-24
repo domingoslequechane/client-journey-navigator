@@ -62,10 +62,10 @@ export default function Clients() {
   const { organizationId, loading: orgLoading } = useOrganization();
 
   useEffect(() => {
-    if (organizationId) {
+    if (organizationId && !subLoading) {
       fetchClients();
     }
-  }, [organizationId]);
+  }, [organizationId, subLoading, hasActiveSubscription]);
 
   const fetchClients = async () => {
     if (!organizationId) return;

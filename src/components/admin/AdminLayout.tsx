@@ -24,6 +24,7 @@ import {
   Menu,
   X,
   Newspaper,
+  Megaphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -52,6 +53,7 @@ const navigation: NavItem[] = [
   { name: 'Feedbacks', href: '/admin/feedbacks', icon: MessageSquare, badgeKey: 'feedbacks' },
   { name: 'Suporte', href: '/admin/support', icon: HeadphonesIcon, badgeKey: 'tickets' },
   { name: 'Insights', href: '/admin/insights', icon: Newspaper },
+  { name: 'Broadcasts', href: '/admin/broadcast', icon: Megaphone },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },
 ];
 

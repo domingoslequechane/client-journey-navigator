@@ -493,10 +493,19 @@ export function Sidebar() {
   return (
     <TooltipProvider delayDuration={0}>
       <div className={cn(
-        "flex h-full flex-col bg-card border-r border-border transition-all duration-300 overflow-hidden",
+        "flex h-full flex-col bg-card border-r border-border transition-all duration-300 relative group",
         collapsed ? "w-16" : "w-64"
       )}>
-        <div className="border-b border-border shrink-0">
+        {/* Toggle Handle */}
+        <button
+          onClick={() => setManualCollapsed(!manualCollapsed)}
+          className="absolute -right-3 top-4 z-[100] h-6 w-6 rounded-md bg-card border border-border flex items-center justify-center shadow-md hover:bg-accent transition-all opacity-0 group-hover:opacity-100 md:opacity-100"
+          title={collapsed ? "Expandir" : "Recolher"}
+        >
+          {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+        </button>
+
+        <div className="border-b border-border shrink-0 overflow-hidden">
           <div className={cn(
             "flex h-14 items-center gap-2 px-4 shadow-sm",
             collapsed && "justify-center px-2"
@@ -585,65 +594,42 @@ export function Sidebar() {
         <div className="border-t border-border shrink-0">
           <div className="p-2 space-y-1">
           {/* Theme Toggle & Language Selector */}
-          {collapsed ? (
-            <div className="flex flex-col items-center gap-1 py-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex justify-center">
-                    <ThemeToggle />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">{t('theme.toggleTheme')}</TooltipContent>
-              </Tooltip>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between px-2 py-2">
-              <div className="flex items-center gap-1">
-                <ThemeToggle />
-              </div>
-              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{t('theme.toggle')}</span>
-            </div>
-          )}
+          {/* Utilities Row: Support, Notifications, Theme */}
+          <div className={cn(
+            "flex items-center justify-start gap-1 p-2",
+            collapsed && "flex-col"
+          )}>
+            {/* Support & Feedback */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/app/support"
+                  className={cn(
+                    'flex items-center justify-center h-10 w-10 rounded-lg text-sm transition-colors',
+                    location.pathname === '/app/support'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )}
+                >
+                  <HeadphonesIcon className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="top">{t('navigation.support')}</TooltipContent>
+            </Tooltip>
 
-          {/* Support & Feedback */}
-          <AnimatedContainer delay={0.25}>
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    to="/app/support"
-                    className={cn(
-                      'flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                      location.pathname === '/app/support'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    )}
-                  >
-                    <HeadphonesIcon className="h-5 w-5" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">{t('navigation.support')}</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
-                to="/app/support"
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                  location.pathname === '/app/support'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                )}
-              >
-                <HeadphonesIcon className="h-5 w-5" />
-                {t('navigation.support')}
-              </Link>
-            )}
-          </AnimatedContainer>
-
-          {/* Notifications */}
-          <AnimatedContainer delay={0.3}>
+            {/* Notifications */}
             <NotificationBell collapsed={collapsed} />
-          </AnimatedContainer>
+
+            {/* Theme Toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex justify-center">
+                  <ThemeToggle />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">{t('theme.toggleTheme')}</TooltipContent>
+            </Tooltip>
+          </div>
 
           {/* Settings - Available to all users, but locked visually if no plan */}
           <AnimatedContainer delay={0.35}>
@@ -868,25 +854,6 @@ export function Sidebar() {
             </DialogContent>
           </Dialog>
 
-          {/* Collapse Toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setManualCollapsed(!manualCollapsed)}
-            className={cn(
-              "w-full mt-2 text-muted-foreground hover:bg-accent",
-              collapsed ? "justify-center px-2" : "justify-start gap-3 px-3"
-            )}
-          >
-            {collapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <>
-                <ChevronLeft className="h-4 w-4" />
-                {t('actions.collapseMenu')}
-              </>
-            )}
-          </Button>
         </div>
       </div>
     </div>

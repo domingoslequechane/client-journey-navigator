@@ -19,6 +19,13 @@ export function PlanExpiredModal() {
     // Only show on main app routes
     if (!location.pathname.startsWith('/app')) return;
 
+    // Do not show on upgrade or subscription pages to avoid confusing the user
+    const excludedRoutes = ['/app/upgrade', '/app/subscription', '/app/prospecting'];
+    if (excludedRoutes.includes(location.pathname)) {
+      setIsOpen(false);
+      return;
+    }
+
     if (!loading && !hasActiveSubscription) {
       setIsOpen(true);
     }
@@ -43,7 +50,7 @@ export function PlanExpiredModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0 shadow-2xl">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0 shadow-2xl [&>button]:hidden">
         {/* Close button */}
         <button
           onClick={handleClose}

@@ -34,6 +34,7 @@ interface PlanLimits {
   maxEditorialClients: number | null;
   maxSocialClients: number | null;
   maxAiAgents: number | null;
+  maxProspectingCredits: number | null;
 }
 
 interface Usage {
@@ -54,6 +55,7 @@ interface Usage {
   studioProductBeautyCount: number;
   studioProductSceneCount: number;
   aiAgentsCount: number;
+  prospectingUsageCount: number;
   editorialClientIds: string[];
   socialClientIds: string[];
 }
@@ -85,6 +87,7 @@ const DEFAULT_LIMITS: PlanLimits = {
   maxEditorialClients: 2,
   maxSocialClients: 2,
   maxAiAgents: 2,
+  maxProspectingCredits: 0,
 };
 
 const DEFAULT_USAGE: Usage = {
@@ -105,6 +108,7 @@ const DEFAULT_USAGE: Usage = {
   studioProductBeautyCount: 0,
   studioProductSceneCount: 0,
   aiAgentsCount: 0,
+  prospectingUsageCount: 0,
   editorialClientIds: [],
   socialClientIds: [],
 };
@@ -204,7 +208,8 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           max_studio_carousel,
           max_studio_recolor,
           max_studio_product_beauty,
-          max_studio_product_scene
+          max_studio_product_scene,
+          max_prospecting_credits
         `)
         .eq('plan_type', currentPlanType)
         .maybeSingle();
@@ -244,6 +249,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
           maxEditorialClients: d.max_editorial_clients ?? (isPaid ? null : (isTrial ? 2 : 0)),
           maxSocialClients: d.max_social_clients ?? (isPaid ? null : (isTrial ? 2 : 0)),
           maxAiAgents: d.max_ai_agents ?? (isPaid ? null : (isTrial ? 2 : 0)),
+          maxProspectingCredits: d.max_prospecting_credits ?? (isPaid ? null : (isTrial ? 5 : 0)),
         });
       } else {
         // Fallback for NULL or undefined plan
@@ -273,7 +279,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         editorialClientsResult, socialClientsResult,
         studioFlyerUsage, studioCarouselUsage, studioRecolorUsage,
         studioProductBeautyUsage, studioProductSceneUsage,
-        aiAgentsResult,
+        aiAgentsResult, prospectingUsage,
       ] = await Promise.all([
         supabase.from('clients').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).in('current_stage', OPERATIONAL_STAGES),
         supabase.from('organization_members').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('is_active', true),
@@ -292,6 +298,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         supabase.from('usage_tracking').select('usage_count').eq('organization_id', orgId).eq('feature_type', 'studio_product_beauty').gte('period_start', monthStart).maybeSingle(),
         supabase.from('usage_tracking').select('usage_count').eq('organization_id', orgId).eq('feature_type', 'studio_product_scene').gte('period_start', monthStart).maybeSingle(),
         supabase.from('ai_agents').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
+        supabase.from('usage_tracking').select('usage_count').eq('organization_id', orgId).eq('feature_type', 'prospecting').gte('period_start', monthStart).maybeSingle(),
       ]);
 
       const editorialClients = new Set(editorialClientsResult.data?.map(t => t.client_id)).size;
@@ -316,6 +323,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         studioProductBeautyCount: studioProductBeautyUsage?.data?.usage_count || 0,
         studioProductSceneCount: studioProductSceneUsage?.data?.usage_count || 0,
         aiAgentsCount: aiAgentsResult.count || 0,
+        prospectingUsageCount: prospectingUsage?.data?.usage_count || 0,
         editorialClientIds: Array.from(new Set(editorialClientsResult.data?.map(t => t.client_id) || [])),
         socialClientIds: Array.from(new Set(socialClientsResult.data?.map(p => p.client_id) || [])),
       });
@@ -330,7 +338,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     fetchData();
   }, [fetchData]);
 
-  const incrementUsage = useCallback(async (featureType: 'contracts' | 'ai_messages' | 'studio_generations' | 'social_posts' | 'studio_flyer' | 'studio_carousel' | 'studio_recolor' | 'studio_product_beauty' | 'studio_product_scene') => {
+  const incrementUsage = useCallback(async (featureType: 'contracts' | 'ai_messages' | 'studio_generations' | 'social_posts' | 'studio_flyer' | 'studio_carousel' | 'studio_recolor' | 'studio_product_beauty' | 'studio_product_scene' | 'prospecting') => {
     if (!organizationId) return;
     try {
       const { data, error } = await supabase.rpc('increment_usage', {
@@ -348,6 +356,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
         studio_recolor: 'studioRecolorCount',
         studio_product_beauty: 'studioProductBeautyCount',
         studio_product_scene: 'studioProductSceneCount',
+        prospecting: 'prospectingUsageCount',
       };
       setUsage(prev => ({ ...prev, [fieldMap[featureType]]: data }));
     } catch (error) {
@@ -398,6 +407,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     canAccessSocialInbox: limits.has_social_inbox,
     canAccessAtendeAI: limits.has_atende_ai_module,
     canInviteTeamMember: canUnlimited(limits.maxTeamMembers, usage.teamMembersCount),
+    canProspect: canUnlimited(limits.maxProspectingCredits, usage.prospectingUsageCount),
     canExportData: limits.can_export_data,
     canAddContractTemplate: canUnlimited(limits.maxContractTemplates, usage.contractTemplatesCount),
     canAddSocialAccount: canUnlimited(limits.maxSocialAccounts, usage.socialAccountsCount),
@@ -429,6 +439,7 @@ export function usePlanLimits(): UsePlanLimitsReturn {
     remainingStudioRecolor: remaining(limits.maxStudioRecolor, usage.studioRecolorCount),
     remainingStudioProductBeauty: remaining(limits.maxStudioProductBeauty, usage.studioProductBeautyCount),
     remainingStudioProductScene: remaining(limits.maxStudioProductScene, usage.studioProductSceneCount),
+    remainingProspecting: remaining(limits.maxProspectingCredits, usage.prospectingUsageCount),
     incrementUsage,
     refetch: fetchData,
   };
@@ -471,6 +482,7 @@ export interface UsePlanLimitsReturn {
   remainingStudioRecolor: number | null;
   remainingStudioProductBeauty: number | null;
   remainingStudioProductScene: number | null;
+  remainingProspecting: number | null;
   canAccessEditorialForNewClient: boolean;
   canAccessSocialForNewClient: boolean;
   canGenerateStudioFlyer: boolean;
@@ -479,8 +491,9 @@ export interface UsePlanLimitsReturn {
   canGenerateStudioProductBeauty: boolean;
   canGenerateStudioProductScene: boolean;
   canAddAiAgent: boolean;
+  canProspect: boolean;
   editorialClientIds: string[];
   socialClientIds: string[];
-  incrementUsage: (featureType: 'contracts' | 'ai_messages' | 'studio_generations' | 'social_posts' | 'studio_flyer' | 'studio_carousel' | 'studio_recolor' | 'studio_product_beauty' | 'studio_product_scene') => Promise<void>;
+  incrementUsage: (featureType: 'contracts' | 'ai_messages' | 'studio_generations' | 'social_posts' | 'studio_flyer' | 'studio_carousel' | 'studio_recolor' | 'studio_product_beauty' | 'studio_product_scene' | 'prospecting') => Promise<void>;
   refetch: () => Promise<void>;
 }

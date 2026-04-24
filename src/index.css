@@ -466,4 +466,32 @@ All colors MUST be HSL.
   .animate-slide-right {
     animation: slide-right 0.5s ease-out forwards;
   }
+
+  /* Global Thin Scrollbar */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full transition-colors;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+
+  /* Firefox support */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
 }
