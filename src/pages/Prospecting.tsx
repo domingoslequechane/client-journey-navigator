@@ -1569,7 +1569,7 @@ export default function ProspectingPage() {
                   <div className="text-right space-y-2">
                     {selectedHistoryItem.opportunityData && (
                       <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-orange-500/10 to-red-500/10 px-3 py-1.5 rounded-lg border border-orange-500/30">
-                        <span className="text-xs font-bold text-orange-500 uppercase">🔥 Pontuação:</span>
+                        <span className="text-xs font-bold text-orange-500 uppercase">🔥</span>
                         <span className="text-lg font-black text-foreground">{selectedHistoryItem.opportunityData.score}/100</span>
                       </div>
                     )}
