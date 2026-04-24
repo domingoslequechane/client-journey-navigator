@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom';
 interface HeaderContextType {
   backAction: (() => void) | null;
   setBackAction: (action: (() => void) | null) => void;
-  customTitle: string | null;
-  setCustomTitle: (title: string | null) => void;
+  customTitle: React.ReactNode | null;
+  setCustomTitle: (title: React.ReactNode | null) => void;
   customIcon: React.ElementType | null;
   setCustomIcon: (icon: React.ElementType | null) => void;
   rightAction: React.ReactNode | null;
@@ -16,7 +16,7 @@ const HeaderContext = createContext<HeaderContextType | undefined>(undefined);
 
 export function HeaderProvider({ children }: { children: React.ReactNode }) {
   const [backAction, setBackAction] = useState<(() => void) | null>(null);
-  const [customTitle, setCustomTitle] = useState<string | null>(null);
+  const [customTitle, setCustomTitle] = useState<React.ReactNode | null>(null);
   const [customIcon, setCustomIcon] = useState<React.ElementType | null>(null);
   const [rightAction, setRightAction] = useState<React.ReactNode | null>(null);
   const location = useLocation();
