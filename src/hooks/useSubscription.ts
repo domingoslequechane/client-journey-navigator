@@ -164,15 +164,16 @@ export function useSubscription(): UseSubscriptionReturn {
 
   // ── Date checks (must be computed FIRST, before status derivation) ──
   const now = Date.now();
+  const GRACE_PERIOD_MS = 3 * 24 * 60 * 60 * 1000; // 3 days grace period
 
   // Has the subscription billing period ended?
   const subscriptionHasEnded = subscription?.currentPeriodEnd
-    ? new Date(subscription.currentPeriodEnd).getTime() < now
+    ? new Date(subscription.currentPeriodEnd).getTime() + GRACE_PERIOD_MS < now
     : false;
 
   // Has the trial period ended? (from organization.trialEndsAt)
   const trialHasEnded = organization?.trialEndsAt
-    ? new Date(organization.trialEndsAt).getTime() < now
+    ? new Date(organization.trialEndsAt).getTime() + GRACE_PERIOD_MS < now
     : false;
 
   // Combined: at least one of the expiry dates has passed
@@ -206,7 +207,8 @@ export function useSubscription(): UseSubscriptionReturn {
     : 0;
 
   // Final access gate: active subscription OR paid plan that hasn't expired
-  const hasAccess = hasActiveSubscription || (isPaidPlan && !isExpired);
+  // If we don't have organization data yet, default to having access to prevent false-positive modals
+  const hasAccess = !organization || hasActiveSubscription || (isPaidPlan && !isExpired);
 
   return {
     loading,

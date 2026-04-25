@@ -7,7 +7,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { usePermissions } from '@/hooks/usePermissions';
 
 export function PlanExpiredModal() {
-  const { loading, hasActiveSubscription, planType } = useSubscription();
+  const { loading, hasAccess, planType, organization } = useSubscription();
   const { isOwner, hasPrivilege } = usePermissions();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
@@ -26,10 +26,13 @@ export function PlanExpiredModal() {
       return;
     }
 
-    if (!loading && !hasActiveSubscription) {
+    // Only show if we have successfully loaded organization data and user TRULY doesn't have access
+    if (!loading && organization && !hasAccess) {
       setIsOpen(true);
+    } else {
+      setIsOpen(false);
     }
-  }, [loading, hasActiveSubscription, location.pathname]);
+  }, [loading, hasAccess, organization, location.pathname]);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -40,7 +43,7 @@ export function PlanExpiredModal() {
     navigate('/app/subscription');
   };
 
-  if (loading || hasActiveSubscription) return null;
+  if (loading || hasAccess || !organization) return null;
 
   const isTrial = planType === 'trial';
   const title = isTrial ? 'Período de Teste Terminado' : 'Assinatura Expirada';
