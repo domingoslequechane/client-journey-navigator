@@ -27,6 +27,7 @@ import { ConnectionTab } from '@/components/atende-ai/ConnectionTab';
 import { AtendeChatTab } from '@/components/atende-ai/AtendeChatTab';
 import { AtendeTrainingTab } from '@/components/atende-ai/AtendeTrainingTab';
 import { AtendeAPITab } from '@/components/atende-ai/AtendeAPITab';
+import { AtendeLogsTab } from '@/components/atende-ai/AtendeLogsTab';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -253,6 +254,10 @@ export default function AtendeAIDetail() {
               instance={effectiveAgent}
               updateConfig={updateConfig}
             />
+          )}
+
+          {activeTab === 'logs' && (
+            <AtendeLogsTab agent={effectiveAgent} />
           )}
         </article>
 

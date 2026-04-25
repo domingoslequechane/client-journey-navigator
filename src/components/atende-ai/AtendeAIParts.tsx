@@ -122,6 +122,7 @@ export function AtendeTabs({
     { id: 'training', label: 'Treinamento', icon: BrainCircuit },
     { id: 'connection', label: 'Conexão', icon: Smartphone },
     { id: 'api', label: 'API', icon: Key },
+    { id: 'logs', label: 'Logs', icon: Activity },
   ];
 
   return (
