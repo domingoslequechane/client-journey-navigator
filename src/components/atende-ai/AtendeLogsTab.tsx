@@ -79,7 +79,7 @@ export function AtendeLogsTab({ agent }: { agent: AtendeAIInstance }) {
               
               <div className="flex-1 min-w-0 space-y-1">
                 <div className="flex items-center justify-between gap-4">
-                  <span className={\`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border \${getEventColor(log.event)}\`}>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${getEventColor(log.event)}`}>
                     {log.event.replace(/_/g, ' ')}
                   </span>
                   <span className="text-[11px] text-zinc-500 flex items-center gap-1 shrink-0">
