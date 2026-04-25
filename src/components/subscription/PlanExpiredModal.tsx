@@ -7,7 +7,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { usePermissions } from '@/hooks/usePermissions';
 
 export function PlanExpiredModal() {
-  const { loading, hasAccess, planType, organization } = useSubscription();
+  const { loading, hasActiveSubscription, planType } = useSubscription();
   const { isOwner, hasPrivilege } = usePermissions();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
@@ -19,20 +19,17 @@ export function PlanExpiredModal() {
     // Only show on main app routes
     if (!location.pathname.startsWith('/app')) return;
 
-    // Do not show on upgrade, subscription, or settings pages to avoid confusing the user
-    const excludedRoutes = ['/app/upgrade', '/app/subscription', '/app/prospecting', '/app/settings'];
+    // Do not show on upgrade or subscription pages to avoid confusing the user
+    const excludedRoutes = ['/app/upgrade', '/app/subscription', '/app/prospecting'];
     if (excludedRoutes.includes(location.pathname)) {
       setIsOpen(false);
       return;
     }
 
-    // Only show if we have successfully loaded organization data and user TRULY doesn't have access
-    if (!loading && organization && !hasAccess) {
+    if (!loading && !hasActiveSubscription) {
       setIsOpen(true);
-    } else {
-      setIsOpen(false);
     }
-  }, [loading, hasAccess, organization, location.pathname]);
+  }, [loading, hasActiveSubscription, location.pathname]);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -43,7 +40,7 @@ export function PlanExpiredModal() {
     navigate('/app/subscription');
   };
 
-  if (loading || hasAccess || !organization) return null;
+  if (loading || hasActiveSubscription) return null;
 
   const isTrial = planType === 'trial';
   const title = isTrial ? 'Período de Teste Terminado' : 'Assinatura Expirada';

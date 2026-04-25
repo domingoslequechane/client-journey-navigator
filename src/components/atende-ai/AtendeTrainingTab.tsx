@@ -93,6 +93,14 @@ const SECTIONS: ConfigSection[] = [
     iconBg: 'bg-purple-500/10',
   },
   {
+    id: 'conversation_flow',
+    title: 'Fluxo de Conversa',
+    description: 'Etapas de interacção que a IA deve conduzir (Ex: Saudação, Qualificação, Fecho)',
+    icon: MessageCircle,
+    iconColor: 'text-indigo-600',
+    iconBg: 'bg-indigo-500/10',
+  },
+  {
     id: 'extra',
     title: 'Informações extras',
     description: 'Produtos, serviços, preços ou qualquer outra informação útil',
@@ -142,6 +150,7 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
   const [address, setAddress] = useState(instance.address || '');
   const [addressReference, setAddressReference] = useState(instance.address_reference || '');
   const [instructions, setInstructions] = useState(instance.instructions || '');
+  const [conversationFlow, setConversationFlow] = useState(instance.conversation_flow || '');
   const [extraInfo, setExtraInfo] = useState(instance.extra_info || '');
   const [responseSize, setResponseSize] = useState(instance.response_size || 2);
   const [responseDelay, setResponseDelay] = useState(instance.response_delay_seconds ?? 3);
@@ -182,6 +191,7 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
         address: address || null,
         address_reference: addressReference || null,
         instructions: instructions || null,
+        conversation_flow: conversationFlow || null,
         extra_info: extraInfo || null,
         response_size: responseSize,
         response_delay_seconds: responseDelay,
@@ -207,6 +217,7 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
     setAddress(instance.address || '');
     setAddressReference(instance.address_reference || '');
     setInstructions(instance.instructions || '');
+    setConversationFlow(instance.conversation_flow || '');
     setExtraInfo(instance.extra_info || '');
     setResponseSize(instance.response_size || 2);
     setResponseDelay(instance.response_delay_seconds ?? 3);
@@ -503,6 +514,23 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
                       <p className="text-xs text-muted-foreground flex items-start gap-1.5">
                         <Info className="h-3 w-3 mt-0.5 shrink-0" />
                         Essas regras definem a personalidade e os limites do atendente
+                      </p>
+                    </>
+                  )}
+
+                  {/* Conversation Flow */}
+                  {section.id === 'conversation_flow' && (
+                    <>
+                      <Textarea
+                        value={conversationFlow}
+                        onChange={(e) => { setConversationFlow(e.target.value); markChanged(); }}
+                        placeholder={`Defina o fluxo da conversa. Ex:\n1. Acolhimento e Empatia\n2. Identificação da Dor\n3. Qualificação\n4. Apresentação de Solução\n5. Fecho e Agendamento`}
+                        rows={8}
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+                        <Info className="h-3 w-3 mt-0.5 shrink-0" />
+                        A IA usará este fluxo estruturado (Rich Text) para guiar o cliente de forma persuasiva.
                       </p>
                     </>
                   )}

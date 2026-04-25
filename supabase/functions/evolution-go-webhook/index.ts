@@ -204,6 +204,7 @@ function buildSystemPrompt(instance: any): string {
   }
 
   if (instance.instructions) parts.push(`\n## INSTRUÇÕES (PRIORIDADE MÁXIMA)\n${instance.instructions}`);
+  if (instance.conversation_flow) parts.push(`\n## FLUXO DE CONVERSA ESTRUTURADO (OBRIGATÓRIO)\n⚠️ ATENÇÃO: O fluxo abaixo define as etapas exatas que você deve seguir na condução desta conversa. Guie o usuário pelas etapas estabelecidas sem pular etapas.\n\n${instance.conversation_flow}`);
   if (instance.extra_info) parts.push(`\n## INFORMAÇÕES ADICIONAIS\n${instance.extra_info}`);
   
   // Training data from Excel/spreadsheet upload
