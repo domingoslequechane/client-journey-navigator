@@ -14,6 +14,7 @@ import {
   Building2,
   Kanban,
   Sparkles,
+  MessageSquare,
   MessagesSquare,
   PenTool,
   UsersRound,
@@ -258,6 +259,16 @@ export function Sidebar() {
         requiredPlan: 'Lança' 
       },
       { 
+        name: t('navigation.atendeAI'), 
+        href: '/app/atende-ai', 
+        icon: MessageSquare, 
+        tutorialId: 'sidebar-atende-ai', 
+        show: true, 
+        locked: !canAccessModule('social') || !canAccessAtendeAI || !hasActiveSubscription, 
+        lockType: (!canAccessAtendeAI || !hasActiveSubscription) ? 'plan' : (!canAccessModule('social') ? 'privilege' : null),
+        requiredPlan: 'Lança' 
+      },
+      { 
         name: t('navigation.qia'), 
         href: '/app/ai-assistant', 
         icon: MessagesSquare, 
@@ -266,16 +277,6 @@ export function Sidebar() {
         locked: !canAccessModule('qia'), 
         lockType: !canAccessModule('qia') ? 'privilege' : null,
         requiredPlan: 'Lança' 
-      },
-      { 
-        name: t('navigation.aiAgents'), 
-        href: '/app/ai-agents', 
-        icon: Bot, 
-        tutorialId: 'sidebar-ai-agents', 
-        show: true, 
-        locked: true, 
-        lockType: 'development',
-        requiredPlan: 'arco' 
       },
       { 
         name: t('navigation.studio'), 
@@ -344,7 +345,7 @@ export function Sidebar() {
       },
     ];
     return allItems.filter(item => item.show);
-  }, [canAccessModule, canAccessFinance, canAccessStudio, canAccessLinkTree, canAccessEditorial, canAccessSocialMedia, hasActiveSubscription, t, isNoPlan, isInternalAdmin, pendingPaymentsCount]);
+  }, [canAccessModule, canAccessFinance, canAccessStudio, canAccessLinkTree, canAccessEditorial, canAccessSocialMedia, canAccessAtendeAI, hasActiveSubscription, t, isNoPlan, isInternalAdmin, pendingPaymentsCount]);
 
   useEffect(() => {
     handleScroll();

@@ -68,11 +68,8 @@ import Finances from "./pages/Finances";
 import SocialPostEditor from "./pages/SocialPostEditor";
 import SocialApproval from "./pages/SocialApproval";
 import StudioTool from "./pages/studio/StudioTool";
-import AIAgents from "./pages/AIAgents";
 import AtendeAI from "./pages/AtendeAI";
 import AtendeAIDetail from "./pages/AtendeAIDetail";
-import AIAgentDetail from "./pages/AIAgentDetail";
-import AIAgentConversation from "./pages/AIAgentConversation";
 import Terms from "./pages/Terms";
 import PrivacyPolicy from "./pages/Privacy";
 import Contact from "./pages/Contact";
@@ -208,22 +205,6 @@ const App = () => {
                             <AgenteQIA />
                           </RoleProtectedRoute>
                         } />
-                        <Route path="ai-agents" element={
-                          <RoleProtectedRoute privilege="ai_agents">
-                            <AIAgents />
-                          </RoleProtectedRoute>
-                        } />
-                        <Route path="ai-agents/:agentId" element={
-                          <RoleProtectedRoute privilege="ai_agents">
-                            <AIAgentDetail />
-                          </RoleProtectedRoute>
-                        } />
-                        <Route path="ai-agents/:agentId/conversations/:conversationId" element={
-                          <RoleProtectedRoute privilege="ai_agents">
-                            <AIAgentConversation />
-                          </RoleProtectedRoute>
-                        } />
-                        
                         {/* Atende AI Module */}
                         <Route path="atende-ai" element={
                           <RoleProtectedRoute privilege="social_media">
@@ -233,11 +214,6 @@ const App = () => {
                         <Route path="atende-ai/:agentNameSlug" element={
                           <RoleProtectedRoute privilege="social_media">
                             <AtendeAIDetail />
-                          </RoleProtectedRoute>
-                        } />
-                        <Route path="atende-ai/:agentNameSlug/conversations/:conversationId" element={
-                          <RoleProtectedRoute privilege="social_media">
-                            <AIAgentConversation />
                           </RoleProtectedRoute>
                         } />
                         <Route path="link-trees" element={

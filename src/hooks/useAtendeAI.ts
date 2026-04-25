@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/hooks/useOrganization';
@@ -24,6 +25,31 @@ export function useAtendeAI() {
     },
     enabled: !!orgId,
   });
+
+  // ─── Realtime for instances (UI updates) ───
+  useEffect(() => {
+    if (!orgId) return;
+
+    const channel = supabase
+      .channel('atende_ai_instances_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'atende_ai_instances',
+          filter: `organization_id=eq.${orgId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['atende-ai-instances', orgId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orgId, queryClient]);
 
   const createAgent = useMutation({
     mutationFn: async ({ name, client_id }: { name: string; client_id?: string }) => {
