@@ -37,7 +37,8 @@ import {
   Rocket,
   Headset,
   Download,
-  X
+  X,
+  Bot
 } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { Badge } from '@/components/ui/badge';
@@ -95,7 +96,7 @@ export function MobileHeader() {
     mainItems.push({ name: t('navigation.socialMedia'), href: '/app/social-media', icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, show: true });
 
     mainItems.push({ name: t('navigation.qia'), href: '/app/ai-assistant', icon: MessagesSquare, show: true, isQia: true });
-    mainItems.push({ name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, show: true });
+    mainItems.push({ name: t('navigation.atendeAI', 'Atende AI'), href: '/app/atende-ai', icon: Bot, show: true });
     mainItems.push({ name: t('navigation.studio'), href: '/app/studio', icon: PenTool, show: true });
     mainItems.push({ name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true });
 
@@ -179,7 +180,7 @@ export function MobileHeader() {
       if (path.startsWith('/app/editorial')) return { title: t('navigation.editorial'), icon: CalendarDays };
       if (path.startsWith('/app/link-trees')) return { title: t('navigation.link23'), icon: Link2 };
       if (path.startsWith('/app/studio')) return { title: t('navigation.studio'), icon: PenTool };
-      if (path.startsWith('/app/ai-agents')) return { title: t('navigation.aiAgents', 'Agentes de IA'), icon: BrainCircuit };
+      if (path.startsWith('/app/atende-ai')) return { title: t('navigation.atendeAI', 'Atende AI'), icon: Bot };
       if (path.startsWith('/app/academia')) return { title: t('navigation.academy'), icon: GraduationCap };
       if (path.startsWith('/app/team')) return { title: t('navigation.team'), icon: Users };
       if (path.startsWith('/app/settings')) return { title: t('navigation.settings'), icon: Settings };

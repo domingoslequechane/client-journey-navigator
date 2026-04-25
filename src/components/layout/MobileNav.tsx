@@ -33,7 +33,8 @@ import {
   PenTool,
   ChevronUp,
   ChevronDown,
-  BrainCircuit
+  BrainCircuit,
+  Bot
 } from 'lucide-react';
 import {
   Drawer,
