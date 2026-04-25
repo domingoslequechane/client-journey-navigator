@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { downloadInvoicePDF, generateInvoicePDF } from '@/lib/invoice-pdf-generator';
+import { PrintableInvoice } from '../invoice-editor/PrintableInvoice';
+import { DEFAULT_SECTIONS, LayoutModel } from '../invoice-editor/section-types';
+import { generateInvoicePDF as generateHtmlPDF } from '@/lib/invoice-pdf-service';
 import { SERVICE_LABELS, ServiceType } from '@/types';
 
 interface ServiceInvoiceModalProps {
@@ -89,6 +91,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
   const [agencyInfo, setAgencyInfo] = useState<AgencyInfo | null>(null);
   const [templateSettings, setTemplateSettings] = useState<TemplateSettings | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [downloadingInvoice, setDownloadingInvoice] = useState<Invoice | null>(null);
   
   // Preview state
   const [showPreview, setShowPreview] = useState(false);
@@ -151,7 +154,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
       // Fetch template settings
       const { data: templateData } = await supabase
         .from('invoice_template_settings')
-        .select('template_style, primary_color, show_watermark, custom_layout, paper_size, footer_text')
+        .select('template_style, primary_color, show_watermark, custom_layout, paper_size, footer_text, layout_model, font_family')
         .eq('organization_id', orgId)
         .maybeSingle();
 
@@ -229,6 +232,23 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
     }
   };
 
+  
+  useEffect(() => {
+    if (!downloadingInvoice || !agencyInfo) return;
+    const inv = downloadingInvoice;
+    const run = async () => {
+      toast({ title: 'A gerar PDF...', description: 'Por favor aguarde.' });
+      await new Promise(r => setTimeout(r, 600));
+      try {
+        await generateHtmlPDF('hidden-history-invoice', `Factura-${inv.invoice_number}.pdf`, (templateSettings?.paper_size || 'A4') as any);
+      } catch (err) {
+        console.error('PDF History error:', err);
+      }
+      setDownloadingInvoice(null);
+    };
+    run();
+  }, [downloadingInvoice, agencyInfo, templateSettings]);
+
   const handleServiceChange = (index: number, field: keyof InvoiceService, value: string | number) => {
     setFormServices(prev => {
       const updated = [...prev];
@@ -260,7 +280,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
     return { subtotal, taxAmount, total };
   };
 
-  const handleGeneratePreview = () => {
+    const handleGeneratePreview = async () => {
     if (!agencyInfo) {
       toast({ title: 'Erro', description: 'Informações da organização não encontradas', variant: 'destructive' });
       return;
@@ -274,38 +294,8 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
 
     setGeneratingPreview(true);
     try {
-      const { subtotal, taxAmount, total } = calculateTotals();
-      const issueDate = new Date().toISOString().split('T')[0];
-
-      const pdf = generateInvoicePDF({
-        invoiceNumber: 'FAC-XXX',
-        issueDate,
-        dueDate: dueDate || undefined,
-        client: {
-          companyName: client.companyName,
-          contactName: client.contactName,
-          email: client.email,
-          phone: client.phone,
-          address: client.address,
-        },
-        agency: agencyInfo,
-        services: validServices,
-        subtotal,
-        taxPercentage,
-        taxAmount,
-        total,
-        currency: agencyInfo.currency,
-        notes: notes || undefined,
-        invoiceType: 'factura',
-        templateStyle: templateSettings?.template_style || 'onix',
-        primaryColor: templateSettings?.primary_color || '#C5E86C',
-        showWatermark: templateSettings?.show_watermark,
-        customLayout: templateSettings?.custom_layout,
-        footerText: templateSettings?.footer_text,
-      });
-
-      const dataUri = pdf.output('datauristring');
-      setPreviewUrl(dataUri);
+      // Simular um pequeno delay para feedback visual
+      await new Promise(r => setTimeout(r, 400));
       setShowPreview(true);
     } catch (error) {
       console.error('Error generating preview:', error);
@@ -369,33 +359,11 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
 
       if (error) throw error;
 
-      // Generate and download PDF
-      downloadInvoicePDF({
-        invoiceNumber,
-        issueDate,
-        dueDate: dueDate || undefined,
-        client: {
-          companyName: client.companyName,
-          contactName: client.contactName,
-          email: client.email,
-          phone: client.phone,
-          address: client.address,
-        },
-        agency: agencyInfo,
-        services: validServices,
-        subtotal,
-        taxPercentage,
-        taxAmount,
-        total,
-        currency: agencyInfo.currency,
-        notes: notes || undefined,
-        invoiceType: 'factura',
-        templateStyle: templateSettings?.template_style || 'onix',
-        primaryColor: templateSettings?.primary_color || '#C5E86C',
-        showWatermark: templateSettings?.show_watermark,
-        customLayout: templateSettings?.custom_layout,
-        footerText: templateSettings?.footer_text,
-      });
+      // Generate and download PDF using the new engine
+      toast({ title: 'A gerar PDF...', description: 'Por favor aguarde.' });
+      // Pequeno delay para garantir que o DOM oculto está pronto
+      await new Promise(r => setTimeout(r, 600));
+      await generateHtmlPDF('hidden-new-invoice', `Factura-${invoiceNumber}.pdf`, (templateSettings?.paper_size || 'A4') as any);
 
       toast({ title: 'Sucesso!', description: 'Factura gerada e guardada com sucesso' });
       
@@ -415,34 +383,7 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
   };
 
   const handleDownloadInvoice = (invoice: Invoice) => {
-    if (!agencyInfo) return;
-
-    downloadInvoicePDF({
-      invoiceNumber: invoice.invoice_number,
-      issueDate: invoice.issue_date,
-      dueDate: invoice.due_date || undefined,
-      client: {
-        companyName: client.companyName,
-        contactName: client.contactName,
-        email: client.email,
-        phone: client.phone,
-        address: client.address,
-      },
-      agency: agencyInfo,
-      services: invoice.services,
-      subtotal: invoice.subtotal,
-      taxPercentage: invoice.tax_percentage,
-      taxAmount: invoice.tax_amount,
-      total: invoice.total,
-      currency: agencyInfo.currency,
-      notes: invoice.notes || undefined,
-      invoiceType: 'factura',
-      templateStyle: templateSettings?.template_style || 'onix',
-      primaryColor: templateSettings?.primary_color || '#C5E86C',
-      showWatermark: templateSettings?.show_watermark,
-      customLayout: templateSettings?.custom_layout,
-      footerText: templateSettings?.footer_text,
-    });
+    setDownloadingInvoice(invoice);
   };
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
@@ -672,21 +613,31 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
                     Fechar Preview
                   </Button>
                 </div>
-                <div className="border rounded-lg overflow-hidden bg-muted/30 flex-1">
-                  {previewUrl ? (
-                    <iframe
-                      src={previewUrl}
-                      className="w-full h-full"
-                      title="Pré-visualização da Factura"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                      <div className="text-center">
-                        <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                        <p>Clique em "Actualizar" para gerar o preview</p>
-                      </div>
-                    </div>
-                  )}
+                <div className="border rounded-lg overflow-auto bg-gray-100 flex-1 p-2">
+                  <PrintableInvoice
+                    invoiceData={{
+                      invoiceNumber: 'PRV-000',
+                      issueDate: new Date().toISOString().split('T')[0],
+                      dueDate: dueDate || undefined,
+                      client: { companyName: client.companyName, contactName: client.contactName, email: client.email, phone: client.phone, address: client.address },
+                      agency: agencyInfo as any,
+                      services: formServices.filter(s => s.description && s.total > 0).length > 0
+                        ? formServices.filter(s => s.description && s.total > 0)
+                        : [{ description: 'Serviço de exemplo', quantity: 1, unit_price: 100, total: 100 }],
+                      subtotal, taxPercentage, taxAmount, total,
+                      currency: agencyInfo?.currency || 'MZN',
+                      notes: notes || undefined,
+                      invoiceType: 'factura' as any,
+                    }}
+                    sections={templateSettings?.custom_layout || DEFAULT_SECTIONS}
+                    paperSize={(templateSettings?.paper_size as any) || 'A4'}
+                    primaryColor={templateSettings?.primary_color || '#C5E86C'}
+                    templateStyle={templateSettings?.template_style || 'onix'}
+                    layoutModel={(templateSettings?.layout_model as LayoutModel) || 'letterhead'}
+                    fontFamily={templateSettings?.font_family || 'Inter'}
+                    agency={agencyInfo as any}
+                    showWatermark={templateSettings?.show_watermark}
+                  />
                 </div>
               </div>
             )}
@@ -771,6 +722,39 @@ export function ServiceInvoiceModal({ open, onOpenChange, client }: ServiceInvoi
             )}
           </div>
         )}
+      {/* Hidden invoice for PDF generation - new */}
+      <div className="fixed left-[-9999px] top-0 pointer-events-none" style={{width:'794px',zIndex:-1,background:'white'}}>
+        <div id="hidden-new-invoice">
+          <PrintableInvoice
+            invoiceData={{ invoiceNumber:'FAC-GEN', issueDate:new Date().toISOString().split('T')[0], dueDate:dueDate||undefined,
+              client:{companyName:client.companyName,contactName:client.contactName,email:client.email,phone:client.phone,address:client.address},
+              agency:agencyInfo as any, services:formServices.filter(s=>s.description&&s.total>0),
+              subtotal,taxPercentage,taxAmount,total, currency:agencyInfo?.currency||'MZN', notes:notes||undefined, invoiceType:'factura' as any }}
+            sections={templateSettings?.custom_layout||DEFAULT_SECTIONS} paperSize={(templateSettings?.paper_size as any)||'A4'}
+            primaryColor={templateSettings?.primary_color||'#C5E86C'} templateStyle={templateSettings?.template_style||'onix'}
+            layoutModel={(templateSettings?.layout_model as LayoutModel)||'letterhead'} fontFamily={templateSettings?.font_family||'Inter'}
+            agency={agencyInfo as any} showWatermark={templateSettings?.show_watermark}
+          />
+        </div>
+      </div>
+      {/* Hidden invoice for PDF generation - history */}
+      {downloadingInvoice && agencyInfo && (
+        <div className="fixed left-[-9999px] top-0 pointer-events-none" style={{width:'794px',zIndex:-1,background:'white'}}>
+          <div id="hidden-history-invoice">
+            <PrintableInvoice
+              invoiceData={{ invoiceNumber:downloadingInvoice.invoice_number, issueDate:downloadingInvoice.issue_date, dueDate:downloadingInvoice.due_date||undefined,
+                client:{companyName:client.companyName,contactName:client.contactName,email:client.email,phone:client.phone,address:client.address},
+                agency:agencyInfo as any, services:downloadingInvoice.services,
+                subtotal:downloadingInvoice.subtotal, taxPercentage:downloadingInvoice.tax_percentage, taxAmount:downloadingInvoice.tax_amount, total:downloadingInvoice.total,
+                currency:agencyInfo.currency, notes:downloadingInvoice.notes||undefined, invoiceType:'factura' as any }}
+              sections={templateSettings?.custom_layout||DEFAULT_SECTIONS} paperSize={(templateSettings?.paper_size as any)||'A4'}
+              primaryColor={templateSettings?.primary_color||'#C5E86C'} templateStyle={templateSettings?.template_style||'onix'}
+              layoutModel={(templateSettings?.layout_model as LayoutModel)||'letterhead'} fontFamily={templateSettings?.font_family||'Inter'}
+              agency={agencyInfo as any} showWatermark={templateSettings?.show_watermark}
+            />
+          </div>
+        </div>
+      )}
       </DialogContent>
     </Dialog>
   );

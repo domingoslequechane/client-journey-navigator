@@ -550,6 +550,19 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
             </Button>
           )}
 
+          {canSeeContract && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 flex-1 sm:flex-none h-9 px-4"
+              disabled={isPaused}
+              onClick={() => setContractDialogOpen(true)}
+            >
+              {isPaused ? <Lock className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+              {contractUrl ? 'Ver Contrato' : 'Adicionar Contrato'}
+            </Button>
+          )}
+
           {canEditClient && (
             <Button
               variant="outline"
@@ -863,7 +876,7 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
             {/* Invoice Button - Outside dropdown */}
-            <Button
+{/* <Button
               variant="outline"
               className="gap-2"
               disabled={isPaused}
@@ -871,17 +884,9 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
             >
               {isPaused ? <Lock className="h-4 w-4" /> : <Receipt className="h-4 w-4" />}
               Facturas
-            </Button>
+            </Button> */}
 
-            <Button
-              variant="outline"
-              className="gap-2"
-              disabled={isPaused}
-              onClick={() => setContractDialogOpen(true)}
-            >
-              {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-              {contractUrl ? 'Ver Contrato' : 'Adicionar Contrato'}
-            </Button>
+            {/* Contract button moved to top */}
             {/* Show Generate Contract button only in contratacao stage and when no contract exists */}
             {client.stage === 'closing' && !contractUrl && (
               <Button
@@ -896,7 +901,7 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
             )}
 
             {/* Documents Dropdown */}
-            <DropdownMenu>
+{/* <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2" disabled={isPaused}>
                   {isPaused ? <Lock className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
@@ -927,7 +932,7 @@ export function ClientDetailContent({ client, onUpdate, userId, onBack }: Client
                   Proposta Comercial
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu> */}
           </div>
           {limits.maxContractsPerMonth !== null && (
             <div className="text-xs text-muted-foreground pt-1">
