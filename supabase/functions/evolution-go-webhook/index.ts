@@ -705,7 +705,7 @@ serve(async (req: Request) => {
 
       // Enviar resposta via Evolution Go (com token específico da instância)
       if (instanceName) {
-        const delayMs = instance.show_typing ? 10000 : 500;
+        const delayMs = instance.show_typing ? 7000 : 500;
         await smartSendMessage(instanceName, phone, aiReply, instanceApiKey, delayMs);
       }
 
