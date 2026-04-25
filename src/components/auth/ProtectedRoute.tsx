@@ -123,15 +123,19 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             .maybeSingle(),
           supabase
             .from('organizations')
-            .select('onboarding_completed, name, owner_id')
+            .select('onboarding_completed, name, owner_id, plan_type')
             .eq('id', orgId)
             .maybeSingle()
         ]);
 
         const subStatus = subData?.status;
-        const subActive = subStatus === 'active' || subStatus === 'trialing' || 
-          ((subStatus === 'cancelled' || subStatus === 'past_due') && 
-           subData?.current_period_end && new Date(subData.current_period_end).getTime() > Date.now());
+        const GRACE_PERIOD_MS = 3 * 24 * 60 * 60 * 1000;
+        const hasValidSubscriptionRecord = subStatus === 'active' || subStatus === 'trialing' || 
+          ((subStatus === 'cancelled' || subStatus === 'past_due' || subStatus === 'expired') && 
+           subData?.current_period_end && (new Date(subData.current_period_end).getTime() + GRACE_PERIOD_MS) > Date.now());
+        
+        const isPaidPlan = ['starter', 'pro', 'agency'].includes(orgRow?.plan_type as string);
+        const subActive = hasValidSubscriptionRecord || isPaidPlan;
 
         const allowedWithoutSub = ['/app/settings', '/app/select-organization', '/app/subscription', '/app/onboarding'];
         const isAllowedPath = allowedWithoutSub.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));

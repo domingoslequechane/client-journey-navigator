@@ -19,8 +19,8 @@ export function PlanExpiredModal() {
     // Only show on main app routes
     if (!location.pathname.startsWith('/app')) return;
 
-    // Do not show on upgrade or subscription pages to avoid confusing the user
-    const excludedRoutes = ['/app/upgrade', '/app/subscription', '/app/prospecting'];
+    // Do not show on upgrade, subscription, or settings pages to avoid confusing the user
+    const excludedRoutes = ['/app/upgrade', '/app/subscription', '/app/prospecting', '/app/settings'];
     if (excludedRoutes.includes(location.pathname)) {
       setIsOpen(false);
       return;
