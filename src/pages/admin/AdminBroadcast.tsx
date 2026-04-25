@@ -40,7 +40,7 @@ const INTERNAL_ROUTES = [
   { value: '/app/academia', label: '🎓 Academia' },
   { value: '/app/team', label: '🧑‍🤝‍🧑 Equipa' },
   { value: '/app/ai-assistant', label: '🤖 Agente QIA' },
-  { value: '/app/ai-agents', label: '🤖 Agentes IA' },
+  { value: '/app/atende-ai', label: '⚡ Atende AI' },
   { value: '/app/subscription', label: '💳 Assinatura' },
   { value: '/app/upgrade', label: '⭐ Upgrade Planos' },
   { value: '/app/support', label: '🎧 Suporte' },
