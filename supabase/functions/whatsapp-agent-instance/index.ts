@@ -475,6 +475,28 @@ serve(async (req) => {
           return json({ ok: true, data: res.data });
         }
 
+        // ─── Fetch Profile Picture from WhatsApp ───
+        if (action === "fetch-profile-pic") {
+          const { number, conversation_id } = body;
+          if (!number) return json({ error: "number is required" }, 400);
+
+          const cleanNumber = number.replace(/[^0-9]/g, "");
+          const res = await evolutionRequest("/user/avatar", "POST", {
+            number: cleanNumber,
+            preview: true,
+          }, undefined, apiKey);
+
+          const pictureUrl = res.data?.pictureUrl || res.data?.profilePictureUrl || res.data?.url || null;
+
+          if (pictureUrl && conversation_id) {
+            await supabase.from("atende_ai_conversations").update({
+              profile_picture_url: pictureUrl
+            }).eq("id", conversation_id);
+          }
+
+          return json({ ok: true, profilePictureUrl: pictureUrl });
+        }
+
         if (action === "delete") {
           const deleteId = targetInstance.evolution_instance_id || targetInstance.evolution_id || targetInstance.name;
           await evolutionRequest(`/instance/delete/${deleteId}`, "DELETE", undefined, undefined, apiKey);

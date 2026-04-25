@@ -125,11 +125,11 @@ export function MobileNav() {
     // Add Social Media to more menu
     items.push({ name: t('navigation.socialMedia'), href: '/app/social-media', icon: ((props: any) => <Megaphone {...props} className={cn(props.className, "-rotate-12")} />) as any, show: true });
 
+    // Add Atende AI to more menu
+    items.push({ name: t('navigation.atendeAI'), href: '/app/atende-ai', icon: MessageSquare, show: true });
+
     // Add Studio Criativo to more menu
     items.push({ name: t('navigation.studio'), href: '/app/studio', icon: PenTool, show: true });
-
-    // Add AI Agents to more menu
-    items.push({ name: t('navigation.aiAgents', 'Agentes de IA'), href: '/app/ai-agents', icon: BrainCircuit, show: true });
 
     items.push(
       { name: t('navigation.academy'), href: '/app/academia', icon: GraduationCap, show: true },

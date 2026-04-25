@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/select';
 import { useAtendeAI } from '@/hooks/useAtendeAI';
 import { AtendeHeader, AtendeInstanceCard, AtendeStatCard } from '@/components/atende-ai/AtendeAIParts';
-import { CreateAgentDialog } from '@/components/ai-agents/CreateAgentDialog';
+import { CreateAgentDialog } from '@/components/atende-ai/CreateAgentDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 

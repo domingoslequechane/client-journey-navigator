@@ -156,7 +156,7 @@ export function ConnectionTab({ agent, instanceAction }: ConnectionTabProps) {
       } else if (data?.ok === false) {
         throw new Error(data.error || 'Erro ao gerar QR Code');
       } else {
-        toast.info('Aguardando QR Code... Tente novamente em alguns segundos.');
+        toast.info('O servidor está processando a solicitação do QR Code. Por favor, aguarde alguns segundos enquanto a instância inicializa.');
       }
     } catch (e: any) {
       console.error('[ConnectionTab] QR fetch error:', e);
@@ -186,7 +186,7 @@ export function ConnectionTab({ agent, instanceAction }: ConnectionTabProps) {
       } else if (data?.ok === false) {
         throw new Error(data.error || 'Erro ao gerar código de pareamento');
       } else {
-        toast.warning('Não foi possível gerar o código. Tente usar o QR Code.');
+        toast.warning('O servidor não retornou o código de pareamento. Verifique se o número está correto ou tente conectar via QR Code.');
       }
     } catch (e: any) {
       console.error('[ConnectionTab] Pairing fetch error:', e);

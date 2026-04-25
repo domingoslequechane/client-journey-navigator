@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Bot, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,6 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { useAIAgents } from '@/hooks/useAIAgents';
 import { useAtendeAI } from '@/hooks/useAtendeAI';
 import { useClients } from '@/hooks/useClients';
 import { toast } from 'sonner';
@@ -34,13 +33,9 @@ interface CreateAgentDialogProps {
 export function CreateAgentDialog({ open, onOpenChange }: CreateAgentDialogProps) {
   const [name, setName] = useState('');
   const [clientId, setClientId] = useState<string>('');
-  const { createAgent: createLegacyAgent } = useAIAgents();
-  const { createAgent: createAtendeAgent } = useAtendeAI();
+  const { createAgent } = useAtendeAI();
   const { data: clients } = useClients();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const isAtendeAI = location.pathname.includes('/app/atende-ai');
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -54,55 +49,38 @@ export function CreateAgentDialog({ open, onOpenChange }: CreateAgentDialogProps
     }
 
     try {
-      let result;
-      if (isAtendeAI) {
-        result = await createAtendeAgent.mutateAsync({ 
-          name: name.trim(),
-          client_id: clientId
-        });
-      } else {
-        result = await createLegacyAgent.mutateAsync({ 
-          name: name.trim(),
-          client_id: clientId 
-        });
-      }
+      const result = await createAgent.mutateAsync({ 
+        name: name.trim(),
+        client_id: clientId
+      });
 
       onOpenChange(false);
       setName('');
       setClientId('');
       
-      const basePath = isAtendeAI ? '/app/atende-ai' : '/app/ai-agents';
-      // Navigate using the secure unique ID to prevent agent collisions
-      navigate(`${basePath}/${result.id}`);
+      // Navigate to the new Atende AI instance
+      navigate(`/app/atende-ai/${result.id}`);
     } catch {
       // Error is already shown by the hook's onError handler
     }
   };
 
-  const isPending = isAtendeAI ? createAtendeAgent.isPending : createLegacyAgent.isPending;
+  const isPending = createAgent.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(
-        "sm:max-w-md border-zinc-200 dark:border-zinc-800 shadow-xl",
-        isAtendeAI ? "bg-white dark:bg-[#0c0c0c] text-zinc-900 dark:text-white" : ""
-      )}>
+      <DialogContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 shadow-xl bg-white dark:bg-[#0c0c0c] text-zinc-900 dark:text-white">
         <DialogHeader>
           <div className="flex justify-center mb-4">
-            <div className={cn(
-              "h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm",
-              isAtendeAI ? "bg-[#ff7a00]/10 border border-[#ff7a00]/20" : "bg-primary/10"
-            )}>
-              <Bot className={cn("h-7 w-7", isAtendeAI ? "text-[#ff7a00]" : "text-primary")} />
+            <div className="h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm bg-[#ff7a00]/10 border border-[#ff7a00]/20">
+              <Bot className="h-7 w-7 text-[#ff7a00]" />
             </div>
           </div>
           <DialogTitle className="text-center text-xl font-bold tracking-tight">
-            {isAtendeAI ? 'Novo atendente digital' : 'Novo agente IA'}
+            Novo atendente digital
           </DialogTitle>
           <DialogDescription className="text-center text-sm text-zinc-500">
-            {isAtendeAI 
-              ? 'Configure um novo atendente inteligente para o seu WhatsApp.' 
-              : 'Crie um agente de atendimento inteligente para sua organização.'}
+            Configure um novo atendente inteligente para o seu WhatsApp.
           </DialogDescription>
         </DialogHeader>
 
@@ -150,12 +128,7 @@ export function CreateAgentDialog({ open, onOpenChange }: CreateAgentDialogProps
           <Button
             onClick={handleCreate}
             disabled={isPending}
-            className={cn(
-              "flex-[1.5] h-10 rounded-md font-bold shadow-sm transition-all active:scale-[0.98]",
-              isAtendeAI 
-                ? "bg-[#ff7a00] hover:bg-[#e66e00] text-white" 
-                : "bg-primary hover:bg-primary/90"
-            )}
+            className="flex-[1.5] h-10 rounded-md font-bold shadow-sm transition-all active:scale-[0.98] bg-[#ff7a00] hover:bg-[#e66e00] text-white"
           >
             {isPending ? (
               <div className="flex items-center gap-2">

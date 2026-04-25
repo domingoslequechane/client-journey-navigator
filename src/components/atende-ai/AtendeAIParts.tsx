@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  Key,
   MessageCircle,
   MessageSquare,
   Plus,
@@ -120,6 +121,7 @@ export function AtendeTabs({
     { id: 'chat', label: 'Chat', icon: MessageCircle },
     { id: 'training', label: 'Treinamento', icon: BrainCircuit },
     { id: 'connection', label: 'Conexão', icon: Smartphone },
+    { id: 'api', label: 'API', icon: Key },
   ];
 
   return (

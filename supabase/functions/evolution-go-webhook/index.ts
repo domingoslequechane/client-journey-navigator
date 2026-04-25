@@ -54,6 +54,118 @@ async function sendTextMessage(
   return res.ok;
 }
 
+// ─── Send Link with Preview ────────────────────────────────
+async function sendLinkMessage(
+  number: string,
+  text: string,
+  url: string,
+  apiKey: string,
+  delayMs = 1500,
+) {
+  if (!EVOLUTION_GO_BASE_URL) return false;
+  try {
+    const res = await fetch(`${EVOLUTION_GO_BASE_URL}/send/link`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": apiKey || EVOLUTION_GO_API_KEY,
+      },
+      body: JSON.stringify({
+        number,
+        text,
+        url,
+        title: "",
+        description: "",
+        delay: delayMs,
+      }),
+    });
+    if (!res.ok) {
+      console.warn(`sendLinkMessage falhou (${res.status}), fallback para texto`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("sendLinkMessage erro:", err);
+    return false;
+  }
+}
+
+// ─── React to Message ──────────────────────────────────────
+async function reactToMessage(
+  messageId: string,
+  number: string,
+  apiKey: string,
+  messageText: string,
+) {
+  if (!EVOLUTION_GO_BASE_URL || !messageId) return;
+
+  // ~30% chance of reacting
+  if (Math.random() > 0.30) return;
+
+  // Pick an emoji based on message content
+  const lower = messageText.toLowerCase();
+  let emoji = "👍";
+
+  if (lower.includes("obrigad") || lower.includes("valeu") || lower.includes("thanks")) {
+    emoji = "❤️";
+  } else if (lower.includes("😂") || lower.includes("haha") || lower.includes("kk") || lower.includes("rsrs")) {
+    emoji = "😂";
+  } else if (lower.includes("bom dia") || lower.includes("boa tarde") || lower.includes("boa noite") || lower.includes("olá") || lower.includes("ola")) {
+    emoji = "👋";
+  } else if (lower.includes("urgente") || lower.includes("rápido") || lower.includes("rapido") || lower.includes("ajuda")) {
+    emoji = "⚡";
+  } else if (lower.includes("preço") || lower.includes("preco") || lower.includes("quanto") || lower.includes("valor")) {
+    emoji = "👀";
+  } else if (lower.includes("perfeito") || lower.includes("excelente") || lower.includes("top") || lower.includes("ótimo")) {
+    emoji = "🔥";
+  } else {
+    // Random friendly emoji pool
+    const pool = ["👍", "✅", "👀", "💪", "🙏"];
+    emoji = pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  try {
+    await fetch(`${EVOLUTION_GO_BASE_URL}/message/react`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": apiKey || EVOLUTION_GO_API_KEY,
+      },
+      body: JSON.stringify({ id: messageId, number, reaction: emoji }),
+    });
+    console.log(`[React] ${emoji} na msg ${messageId}`);
+  } catch (err) {
+    console.warn("[React] Erro ao reagir:", err);
+  }
+}
+
+// ─── Extract first URL from text ───────────────────────────
+function extractUrl(text: string): string | null {
+  const urlRegex = /https?:\/\/[^\s\])"'>]+/i;
+  const match = text.match(urlRegex);
+  return match ? match[0] : null;
+}
+
+// ─── Smart send: link or text ──────────────────────────────
+async function smartSendMessage(
+  instanceName: string,
+  number: string,
+  text: string,
+  apiKey: string,
+  delayMs: number,
+) {
+  const url = extractUrl(text);
+  
+  if (url) {
+    // Try sending as link first for rich preview
+    const linkSent = await sendLinkMessage(number, text, url, apiKey, delayMs);
+    if (linkSent) return true;
+  }
+  
+  // Fallback to plain text
+  return sendTextMessage(instanceName, number, text, apiKey, delayMs);
+}
+
 // ─── AI ────────────────────────────────────────────────────
 
 function buildSystemPrompt(instance: any): string {
@@ -64,17 +176,40 @@ function buildSystemPrompt(instance: any): string {
   parts.push(`## IDENTIDADE`);
   parts.push(`Você é ${name}${companyName ? `, representando a empresa ${companyName}` : ""} no atendimento via WhatsApp.`);
   parts.push("");
+
+  // Response size guidance
+  const responseSize = instance.response_size ?? 2;
   parts.push(`## COMUNICAÇÃO`);
   parts.push(`- Seja sempre educado, objetivo e em português.`);
   parts.push(`- Use emojis com moderação para manter o tom humano.`);
-  parts.push(`- Mensagens curtas e parágrafos espaçados.`);
+  if (responseSize === 1) {
+    parts.push(`- IMPORTANTE: Seja extremamente conciso. Responda em no máximo 1-2 frases curtas. Vá directo ao ponto sem rodeios.`);
+  } else if (responseSize === 3) {
+    parts.push(`- Dê respostas detalhadas e completas. Explique bem cada ponto com exemplos quando necessário.`);
+  } else {
+    parts.push(`- Mensagens curtas e parágrafos espaçados. Nem muito breve nem muito longo.`);
+  }
 
   if (instance.company_sector) parts.push(`\nRamo: ${instance.company_sector}`);
   if (instance.company_description) parts.push(`\n## SOBRE A EMPRESA\n${instance.company_description}`);
   if (instance.business_hours) parts.push(`\n## HORÁRIO\n${instance.business_hours}`);
-  if (instance.address) parts.push(`\n## ENDEREÇO\n${instance.address}`);
+  
+  // Address with reference
+  if (instance.address) {
+    let addressBlock = instance.address;
+    if (instance.address_reference) {
+      addressBlock += `\nPonto de referência: ${instance.address_reference}`;
+    }
+    parts.push(`\n## ENDEREÇO\n${addressBlock}`);
+  }
+
   if (instance.instructions) parts.push(`\n## INSTRUÇÕES (PRIORIDADE MÁXIMA)\n${instance.instructions}`);
   if (instance.extra_info) parts.push(`\n## INFORMAÇÕES ADICIONAIS\n${instance.extra_info}`);
+  
+  // Training data from Excel/spreadsheet upload
+  if (instance.training_data_text) {
+    parts.push(`\n## CATÁLOGO / BASE DE DADOS DA EMPRESA\nAbaixo estão os dados importados da empresa (produtos, serviços, preços, etc.). Use estas informações para responder perguntas dos clientes com precisão:\n\n${instance.training_data_text}`);
+  }
 
   const now = new Date();
   parts.push(`\n## DATA/HORA: ${now.toLocaleString("pt-BR", { timeZone: "Africa/Maputo" })} (Maputo)`);
@@ -86,26 +221,112 @@ async function callAI(
   systemPrompt: string,
   history: { role: string; content: string }[],
   userMessage: string,
+  instance: any,
 ): Promise<string> {
+  const provider = instance.ai_provider || "";
+  const apiKeys = instance.ai_api_keys || {};
+  const aiModels = instance.ai_models || {};
+
+  // Se não houver provedor activo configurado, não responder
+  if (!provider) {
+    console.log("[callAI] Nenhum provedor de IA activo configurado para esta instância.");
+    return "";
+  }
+
+  let apiKey = apiKeys[provider] || "";
+  let model = aiModels[provider] || "";
+  
+  // Fallbacks para variáveis de ambiente e modelos padrão
+  // Removido: O agente obrigatoriamente deve usar a chave configurada pela agência.
+
+  if (!apiKey) {
+    console.error(`Nenhuma chave de API encontrada para o provedor: ${provider}`);
+    return ""; // Retorna vazio para não enviar mensagem de erro ao cliente final
+  }
+
+  // Definir modelo padrão se não estiver configurado
+  if (!model) {
+    if (provider === 'openai') model = "gpt-4o-mini";
+    else if (provider === 'anthropic') model = "claude-3-5-sonnet-20240620";
+    else if (provider === 'groq') model = "llama-3.1-70b-versatile";
+    else if (provider === 'deepseek') model = "deepseek-chat";
+    else if (provider === 'google') model = "gemini-1.5-flash";
+  }
+
   const messages = [
     { role: "system", content: systemPrompt },
     ...history,
     { role: "user", content: userMessage },
   ];
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({ model: "gpt-4o-mini", messages, temperature: 0.4, max_tokens: 1024 }),
-  });
-  if (!res.ok) {
-    console.error("OpenAI erro:", res.status, await res.text());
-    return "Desculpe, tive um problema técnico.";
+
+  let endpoint = "";
+  let headers: Record<string, string> = { "Content-Type": "application/json" };
+  let payload: any = {};
+
+  switch (provider) {
+    case 'openai':
+      endpoint = "https://api.openai.com/v1/chat/completions";
+      headers["Authorization"] = `Bearer ${apiKey}`;
+      payload = { model, messages, temperature: 0.4, max_tokens: 1024 };
+      break;
+
+    case 'anthropic':
+      endpoint = "https://api.anthropic.com/v1/messages";
+      headers["x-api-key"] = apiKey;
+      headers["anthropic-version"] = "2023-06-01";
+      payload = {
+        model,
+        max_tokens: 1024,
+        messages: messages.filter(m => m.role !== 'system'),
+        system: systemPrompt,
+        temperature: 0.4
+      };
+      break;
+
+    case 'groq':
+      endpoint = "https://api.groq.com/openai/v1/chat/completions";
+      headers["Authorization"] = `Bearer ${apiKey}`;
+      payload = { model, messages, temperature: 0.4, max_tokens: 1024 };
+      break;
+
+    case 'deepseek':
+      endpoint = "https://api.deepseek.com/v1/chat/completions";
+      headers["Authorization"] = `Bearer ${apiKey}`;
+      payload = { model, messages, temperature: 0.4, max_tokens: 1024 };
+      break;
+
+    case 'google':
+      endpoint = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
+      headers["Authorization"] = `Bearer ${apiKey}`;
+      payload = { model, messages, temperature: 0.4, max_tokens: 1024 };
+      break;
+
+    default:
+      return "Provedor de IA não suportado.";
   }
-  const data = await res.json();
-  return (data.choices?.[0]?.message?.content || "").trim();
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`${provider} (${model}) erro:`, res.status, errText);
+      return `Erro do provedor ${provider}: ${res.status}. Verifique se o nome do modelo '${model}' está correto e se a chave tem saldo.`;
+    }
+
+    const data = await res.json();
+    
+    // Normalizar resposta dependendo do provedor
+    if (provider === 'anthropic') return data.content[0].text;
+    return (data.choices?.[0]?.message?.content || "").trim();
+  } catch (err: any) {
+    console.error(`Erro ao chamar ${provider} (${model}):`, err);
+    return "Erro na conexão com a inteligência artificial.";
+  }
 }
 
 // ─── Handler Principal ───────────────────────────────────────
@@ -116,11 +337,11 @@ serve(async (req: Request) => {
   try {
     // Extrair o secret UUID do path
     const url = new URL(req.url);
-    const pathParts = url.pathname.split("/");
-    const secret = pathParts[pathParts.length - 1];
+    const secret = url.pathname.split("/").filter(Boolean).pop();
 
-    if (!secret || secret.length < 10) {
-      return new Response(JSON.stringify({ error: "Secret inválido" }), { status: 401 });
+    if (!secret) {
+      console.error("Webhook: Secret não encontrado na URL:", req.url);
+      return new Response(JSON.stringify({ error: "Secret não fornecido" }), { status: 401 });
     }
 
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -133,16 +354,19 @@ serve(async (req: Request) => {
       .single();
 
     if (instanceErr || !instance) {
-      console.error("Webhook: instância não encontrada para o secret:", secret.substring(0, 8) + "...");
+      console.error("Webhook: instância não encontrada para o secret:", secret, "Erro:", instanceErr);
       return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401 });
     }
 
     let body: any;
     try {
       body = await req.json();
-    } catch {
+    } catch (e) {
+      console.error("Webhook: erro ao processar JSON:", e);
       return new Response(JSON.stringify({ error: "JSON inválido" }), { status: 400 });
     }
+
+    console.log(`Webhook: Instância "${instance.name}" encontrada. Evento: ${body.event}`);
 
     // O event name vem no campo "event" conforme documentação Evolution Go
     // Eventos padrão: QRCODE, CONNECTION, MESSAGE, SEND_MESSAGE, MESSAGES_SET, etc.
@@ -329,15 +553,33 @@ serve(async (req: Request) => {
       if (existingConv) {
         conversationId = existingConv.id;
 
-        // Respeitar pausa por intervenção humana
-        if (existingConv.paused_until && new Date() < new Date(existingConv.paused_until)) {
-          return new Response(JSON.stringify({ ok: true, skipped: "paused_by_human" }), { status: 200 });
-        }
-
+        // Update last_message_at always so conversation stays fresh in sidebar
         await sb
           .from("atende_ai_conversations")
           .update({ last_message_at: new Date().toISOString() })
           .eq("id", conversationId);
+
+        // Respeitar pausa por intervenção humana — salvar mensagem mas NÃO responder com IA
+        if (existingConv.paused_until && new Date() < new Date(existingConv.paused_until)) {
+          // Still save the user's message so the human agent can see it
+          await sb.from("atende_ai_messages").insert({
+            conversation_id: conversationId,
+            organization_id: instance.organization_id,
+            external_id: messageId || null,
+            role: "user",
+            content: text,
+            message_type: ["text", "image", "video", "audio", "document"].includes(messageType) ? messageType : "text",
+          });
+
+          await sb.rpc("increment_atende_ai_stats", {
+            p_instance_id: instance.id,
+            p_conversations: 0,
+            p_messages: 1,
+          });
+
+          console.log(`[Webhook] Conversa ${conversationId} pausada até ${existingConv.paused_until}. Mensagem salva, IA não responde.`);
+          return new Response(JSON.stringify({ ok: true, skipped: "paused_by_human", message_saved: true }), { status: 200 });
+        }
       } else {
         const { data: newConv } = await sb
           .from("atende_ai_conversations")
@@ -385,6 +627,12 @@ serve(async (req: Request) => {
         p_conversations: 0,
         p_messages: 1,
       });
+
+      // Reagir à mensagem do utilizador (inteligente, ~30% de chance)
+      const instanceApiKeyEarly = instance.instance_api_key || EVOLUTION_GO_API_KEY;
+      if (messageId) {
+        reactToMessage(messageId, phone, instanceApiKeyEarly, text);
+      }
 
       // Buffer para aguardar mensagens em série (debounce)
       const bufferSeconds = instance.response_delay_seconds ?? 3;
@@ -434,7 +682,7 @@ serve(async (req: Request) => {
 
       // Chamar IA
       const systemPrompt = buildSystemPrompt(instance);
-      const aiReply = await callAI(systemPrompt, history, text);
+      const aiReply = await callAI(systemPrompt, history, text, instance);
 
       if (!aiReply) {
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
@@ -457,8 +705,8 @@ serve(async (req: Request) => {
 
       // Enviar resposta via Evolution Go (com token específico da instância)
       if (instanceName) {
-        const delayMs = instance.show_typing ? 1500 : 500;
-        await sendTextMessage(instanceName, phone, aiReply, instanceApiKey, delayMs);
+        const delayMs = instance.show_typing ? 10000 : 500;
+        await smartSendMessage(instanceName, phone, aiReply, instanceApiKey, delayMs);
       }
 
       return new Response(JSON.stringify({ ok: true }), { status: 200 });

@@ -26,6 +26,7 @@ import { DashboardTab } from '@/components/atende-ai/DashboardTab';
 import { ConnectionTab } from '@/components/atende-ai/ConnectionTab';
 import { AtendeChatTab } from '@/components/atende-ai/AtendeChatTab';
 import { AtendeTrainingTab } from '@/components/atende-ai/AtendeTrainingTab';
+import { AtendeAPITab } from '@/components/atende-ai/AtendeAPITab';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -108,11 +109,11 @@ export default function AtendeAIDetail() {
   const clientName = effectiveAgent.clients?.company_name || effectiveAgent.company_name || 'Agência principal';
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0c0c0c] text-zinc-900 dark:text-white selection:bg-[#ff7a00]/30 overflow-x-hidden pb-20 transition-colors duration-300">
-      <div className="space-y-6 p-4 md:p-6 pt-6 md:pt-6 pb-12 animate-in fade-in duration-500">
+    <div className="h-screen bg-white dark:bg-[#0c0c0c] text-zinc-900 dark:text-white selection:bg-[#ff7a00]/30 overflow-hidden flex flex-col transition-colors duration-300">
+      <div className="flex-1 flex flex-col min-h-0 p-4 md:p-6 pt-6 md:pt-6 pb-4 animate-in fade-in duration-500">
         
         {/* Header navigation and actions */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -122,19 +123,67 @@ export default function AtendeAIDetail() {
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <div>
-               <div className="flex items-center gap-2">
-                 <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                   {effectiveAgent.name}
-                 </h1>
-                 <span className={cn(
-                    "px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full",
-                    effectiveAgent.whatsapp_connected 
-                      ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
-                      : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-                 )}>
-                   {effectiveAgent.whatsapp_connected ? 'Conectado' : 'Desconectado'}
-                 </span>
+               {effectiveAgent.profile_picture ? (
+                 <img src={effectiveAgent.profile_picture} alt={effectiveAgent.name} className="h-12 w-12 rounded-full object-cover border-2 border-zinc-100 dark:border-zinc-800 shadow-sm" />
+               ) : (
+                 <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 border-2 border-zinc-100 dark:border-zinc-800">
+                   <User className="h-6 w-6" />
+                 </div>
+               )}
+               <div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                      {effectiveAgent.name}
+                    </h1>
+                    
+                    <span className={cn(
+                       "px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full",
+                       effectiveAgent.whatsapp_connected 
+                         ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
+                         : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                    )}>
+                      {effectiveAgent.whatsapp_connected ? 'Conectado' : 'Desconectado'}
+                    </span>
+
+                 {/* Status Indicator */}
+                 {(() => {
+                   const aiProvider = (effectiveAgent as any).ai_provider;
+                   const aiKeys = (effectiveAgent as any).ai_api_keys || {};
+                   const hasProvider = !!aiProvider;
+                   const hasKey = hasProvider && !!aiKeys[aiProvider];
+                   const isConnected = effectiveAgent.whatsapp_connected;
+
+                   let dotColor = 'bg-zinc-400 shadow-zinc-400/20';
+                   let label = 'Aguardando Pareamento';
+                   let bgColor = 'bg-zinc-100/50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700/50';
+                   let textColor = 'text-zinc-500';
+
+                   if (isConnected && hasProvider && hasKey) {
+                     dotColor = 'bg-emerald-500 shadow-emerald-500/20';
+                     label = 'Operacional';
+                     bgColor = 'bg-emerald-500/5 border-emerald-500/20';
+                     textColor = 'text-emerald-600 dark:text-emerald-400';
+                   } else if (isConnected && !hasProvider) {
+                     dotColor = 'bg-amber-500 shadow-amber-500/20';
+                     label = 'IA Desactivada';
+                     bgColor = 'bg-amber-500/5 border-amber-500/20';
+                     textColor = 'text-amber-600 dark:text-amber-400';
+                   } else if (isConnected && hasProvider && !hasKey) {
+                     dotColor = 'bg-red-500 shadow-red-500/20';
+                     label = 'Chave API em Falta';
+                     bgColor = 'bg-red-500/5 border-red-500/20';
+                     textColor = 'text-red-600 dark:text-red-400';
+                   }
+
+                   return (
+                     <div className={cn('flex items-center gap-2 px-2.5 py-1 rounded-full border', bgColor)}>
+                       <div className={cn('h-1.5 w-1.5 rounded-full animate-pulse shadow-[0_0_8px_rgba(0,0,0,0.1)]', dotColor)} />
+                       <span className={cn("text-[10px] font-bold uppercase tracking-tight whitespace-nowrap", textColor)}>
+                         {label}
+                       </span>
+                     </div>
+                   );
+                 })()}
                </div>
                <p className="text-sm text-zinc-500 font-medium flex items-center gap-2">
                   <User className="h-3 w-3" />
@@ -164,17 +213,6 @@ export default function AtendeAIDetail() {
               Apagar atendente
             </Button>
 
-            <div className="flex items-center gap-3 pl-3 border-l border-zinc-100 dark:border-zinc-800 h-9">
-               <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "h-2 w-2 rounded-full animate-pulse shadow-[0_0_8px_rgba(0,0,0,0.1)]",
-                    effectiveAgent.whatsapp_connected ? "bg-emerald-500 shadow-emerald-500/20" : "bg-zinc-400 shadow-zinc-400/20"
-                  )} />
-                  <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-tight whitespace-nowrap">
-                    {effectiveAgent.whatsapp_connected ? 'Sistema Operacional' : 'Aguardando Pareamento'}
-                  </span>
-               </div>
-            </div>
           </div>
         </div>
 
@@ -182,7 +220,10 @@ export default function AtendeAIDetail() {
         <AtendeTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {/* Tab Content Rendering */}
-        <article className="min-h-[500px]">
+        <article className={cn(
+          "flex-1 min-h-0", 
+          activeTab !== 'chat' && "overflow-y-auto pr-1 md:pr-2 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800"
+        )}>
           {activeTab === 'dashboard' && <DashboardTab agent={effectiveAgent} />}
           {activeTab === 'connection' && effectiveAgent && (
             <ConnectionTab 
@@ -202,6 +243,13 @@ export default function AtendeAIDetail() {
 
           {activeTab === 'training' && (
             <AtendeTrainingTab
+              instance={effectiveAgent}
+              updateConfig={updateConfig}
+            />
+          )}
+
+          {activeTab === 'api' && (
+            <AtendeAPITab
               instance={effectiveAgent}
               updateConfig={updateConfig}
             />

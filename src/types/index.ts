@@ -337,6 +337,11 @@ export interface AtendeAIInstance {
   whatsapp_connected: boolean;
   connected_number: string | null;
   profile_picture: string | null;
+  ai_api_keys: Record<string, string> | null;
+  ai_provider: string | null;
+  ai_models: Record<string, string> | null;
+  training_data_text: string | null;
+  training_data_filename: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -356,6 +361,7 @@ export interface AtendeAIConversation {
   paused_until: string | null;
   waiting_human: boolean;
   created_at: string;
+  profile_picture_url?: string | null;
 }
 
 export interface AtendeAIMessage {
