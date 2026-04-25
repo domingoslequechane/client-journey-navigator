@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/hooks/useOrganization';
 import { 
   BarChart, 
   Bar, 
@@ -42,6 +45,7 @@ const CustomTooltip = ({ active, payload, label, suffix = '' }: any) => {
 };
 
 export function DashboardTab({ agent }: { agent: any }) {
+  const { organizationId: orgId } = useOrganization();
   const createdDate = agent?.created_at ? new Date(agent.created_at) : new Date();
   const diffTime = Math.abs(new Date().getTime() - createdDate.getTime());
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -53,33 +57,90 @@ export function DashboardTab({ agent }: { agent: any }) {
   const totalConversations = agent?.total_conversations || 0;
   const totalMessages = agent?.total_messages || 0;
 
-  // Generate last 6 months dynamically
-  const getLast6Months = () => {
+  // Fetch real analytics data
+  const { data: analytics } = useQuery({
+    queryKey: ['atende-ai-analytics', agent?.id],
+    queryFn: async () => {
+      if (!agent?.id || !orgId) return null;
+      
+      const { data, error } = await supabase
+        .from('atende_ai_conversations')
+        .select(`
+          created_at,
+          atende_ai_messages (
+            created_at
+          )
+        `)
+        .eq('instance_id', agent.id)
+        .eq('organization_id', orgId);
+        
+      if (error) {
+        console.error("Error fetching analytics:", error);
+        return null;
+      }
+      return data;
+    },
+    enabled: !!agent?.id && !!orgId
+  });
+
+  // Calculate message history (last 6 months)
+  const lineData = useMemo(() => {
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     const result = [];
     let currentMonth = new Date().getMonth();
+    let currentYear = new Date().getFullYear();
+    
+    // Create the last 6 months template
     for (let i = 5; i >= 0; i--) {
       let m = currentMonth - i;
-      if (m < 0) m += 12;
-      result.push(months[m]);
+      let y = currentYear;
+      if (m < 0) {
+        m += 12;
+        y -= 1;
+      }
+      result.push({
+        name: months[m],
+        monthIndex: m,
+        year: y,
+        value: 0
+      });
     }
-    return result;
-  };
 
-  const last6Months = getLast6Months();
-  const msgDistribution = [0.05, 0.10, 0.15, 0.20, 0.22, 0.28]; // Increasing trend
-  const lineData = last6Months.map((m, i) => ({
-    name: m,
-    value: totalMessages === 0 ? 0 : Math.max(1, Math.floor(totalMessages * msgDistribution[i]))
-  }));
+    if (analytics) {
+      analytics.forEach((conv: any) => {
+        if (conv.atende_ai_messages) {
+          conv.atende_ai_messages.forEach((msg: any) => {
+            const date = new Date(msg.created_at);
+            const msgMonth = date.getMonth();
+            const msgYear = date.getFullYear();
+            
+            const monthData = result.find(r => r.monthIndex === msgMonth && r.year === msgYear);
+            if (monthData) {
+              monthData.value += 1;
+            }
+          });
+        }
+      });
+    }
 
-  // Generate week distribution
-  const convDistribution = [0.08, 0.18, 0.22, 0.20, 0.15, 0.12, 0.05]; 
-  const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const barData = weekDays.map((d, i) => ({
-    name: d,
-    value: totalConversations === 0 ? 0 : Math.max(1, Math.floor(totalConversations * convDistribution[i]))
-  }));
+    return result.map(({ name, value }) => ({ name, value }));
+  }, [analytics]);
+
+  // Calculate conversation distribution by day of week
+  const barData = useMemo(() => {
+    const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const result = weekDays.map((d, i) => ({ name: d, index: i, value: 0 }));
+    
+    if (analytics) {
+      analytics.forEach((conv: any) => {
+        const date = new Date(conv.created_at);
+        const dayOfWeek = date.getDay(); // 0 is Sunday
+        result[dayOfWeek].value += 1;
+      });
+    }
+
+    return result.map(({ name, value }) => ({ name, value }));
+  }, [analytics]);
 
   // To properly color the biggest bar
   const peakBarValue = Math.max(...barData.map(d => d.value));
