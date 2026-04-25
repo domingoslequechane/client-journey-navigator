@@ -55,7 +55,7 @@ export function AtendeHeader({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="hidden md:block">
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Zap className="h-6 w-6 text-[#ff7a00]" />
+            <Bot className="h-6 w-6 text-[#ff7a00]" />
             Atende AI
             <Badge 
               variant="outline" 

@@ -261,7 +261,7 @@ export function Sidebar() {
       { 
         name: t('navigation.atendeAI'), 
         href: '/app/atende-ai', 
-        icon: MessageSquare, 
+        icon: Bot, 
         tutorialId: 'sidebar-atende-ai', 
         show: true, 
         locked: !canAccessModule('social') || !canAccessAtendeAI || !hasActiveSubscription, 
