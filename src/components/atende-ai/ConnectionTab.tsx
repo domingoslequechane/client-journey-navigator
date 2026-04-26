@@ -116,6 +116,14 @@ export function ConnectionTab({ agent, instanceAction }: ConnectionTabProps) {
 
   const isConnected = !!(agent?.whatsapp_connected);
 
+  // ─── Auto-fetch QR on mount if disconnected ───
+  React.useEffect(() => {
+    if (!isConnected && !qrCode && !pairingCode && !instanceAction.isPending && agent?.instance_api_key) {
+      console.log('[ConnectionTab] Auto-fetching QR on mount...');
+      handleGetQR();
+    }
+  }, [agent?.id, isConnected]);
+
   // Polling automático de estado enquanto a instância não está conectada
   useAtendeAIConnectionPoller(
     agent?.id,
@@ -152,11 +160,15 @@ export function ConnectionTab({ agent, instanceAction }: ConnectionTabProps) {
           ? data.qrCode
           : `data:image/png;base64,${data.qrCode}`;
         setQrCode(src);
-        toast.success('QR Code gerado! Escaneie com seu WhatsApp.');
+        toast.success('QR Code pronto!', {
+          description: 'Escaneie a imagem com o seu telemóvel para conectar.'
+        });
       } else if (data?.ok === false) {
         throw new Error(data.error || 'Erro ao gerar QR Code');
       } else {
-        toast.info('O servidor está processando a solicitação do QR Code. Por favor, aguarde alguns segundos enquanto a instância inicializa.');
+        toast.info('A preparar conexão...', {
+          description: 'O servidor está a inicializar a sua instância. Aguarde alguns segundos.'
+        });
       }
     } catch (e: any) {
       console.error('[ConnectionTab] QR fetch error:', e);
@@ -169,7 +181,9 @@ export function ConnectionTab({ agent, instanceAction }: ConnectionTabProps) {
   const handleGetPairingCode = async () => {
     const digits = phoneNumber.replace(/\D/g, '');
     if (digits.length < 9) {
-      toast.error('Digite um número de telemóvel válido com código do país (ex: 258841234567)');
+      toast.error('Número inválido', {
+        description: 'Por favor, insira o número completo com o código do país.'
+      });
       return;
     }
 
@@ -182,11 +196,15 @@ export function ConnectionTab({ agent, instanceAction }: ConnectionTabProps) {
       
       if (data?.pairingCode) {
         setPairingCode(data.pairingCode);
-        toast.success('Código de pareamento gerado! Insira no seu WhatsApp.');
+        toast.success('Código gerado!', {
+          description: 'Insira os 8 caracteres no seu WhatsApp para parear.'
+        });
       } else if (data?.ok === false) {
         throw new Error(data.error || 'Erro ao gerar código de pareamento');
       } else {
-        toast.warning('O servidor não retornou o código de pareamento. Verifique se o número está correto ou tente conectar via QR Code.');
+        toast.warning('Aguarde um momento', {
+          description: 'O servidor ainda não retornou o código. Tente novamente em instantes.'
+        });
       }
     } catch (e: any) {
       console.error('[ConnectionTab] Pairing fetch error:', e);

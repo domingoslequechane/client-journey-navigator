@@ -14,9 +14,9 @@ export function AtendeLogsTab({ agent }: { agent: AtendeAIInstance }) {
     queryKey: ['atende-logs', agent.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ai_agent_connection_log')
+        .from('atende_ai_logs' as any)
         .select('*')
-        .eq('agent_id', agent.id)
+        .eq('instance_id', agent.id)
         .order('created_at', { ascending: false })
         .limit(100);
 

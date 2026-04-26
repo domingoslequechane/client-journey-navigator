@@ -194,17 +194,17 @@ export default function AtendeAIDetail() {
           </div>
 
           <div className="flex items-center gap-3">
-             {effectiveAgent.evolution_instance_id && (
-               <Button 
-                  onClick={() => instanceAction.mutate({ action: 'status' })}
-                  disabled={instanceAction.isPending}
-                  variant="outline" 
-                  className="h-9 gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-zinc-200 dark:border-zinc-800 rounded-md text-sm transition-colors"
-               >
-                 <RefreshCw className={cn("h-4 w-4", instanceAction.isPending && "animate-spin")} />
-                 {instanceAction.isPending ? 'Sincronizando...' : 'Sincronizar'}
-               </Button>
-             )}
+              {effectiveAgent.evolution_instance_id && (
+                <Button 
+                   onClick={() => instanceAction.mutate({ action: 'status' })}
+                   disabled={instanceAction.isPending || !effectiveAgent.whatsapp_connected}
+                   variant="outline" 
+                   className="h-9 gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-zinc-200 dark:border-zinc-800 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={cn("h-4 w-4", instanceAction.isPending && "animate-spin")} />
+                  {instanceAction.isPending ? 'Sincronizando...' : 'Sincronizar'}
+                </Button>
+              )}
 
             <Button 
               onClick={handleDeleteClick}

@@ -109,10 +109,14 @@ export function useAtendeAI() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['atende-ai-instances'] });
-      toast.success('Atendente criado com sucesso!');
+      toast.success('Atendente configurado!', {
+        description: 'O seu novo agente de IA foi criado com sucesso.'
+      });
     },
     onError: (err: any) => {
-      toast.error('Erro ao criar atendente: ' + err.message);
+      toast.error('Não foi possível criar o atendente', {
+        description: err.message
+      });
     },
   });
 
@@ -152,10 +156,14 @@ export function useAtendeAI() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['atende-ai-instances'] });
-      toast.success('Atendente removido.');
+      toast.success('Atendente removido', {
+        description: 'A instância e os dados foram apagados permanentemente.'
+      });
     },
     onError: (err: any) => {
-      toast.error('Erro ao remover atendente: ' + err.message);
+      toast.error('Erro ao remover', {
+        description: err.message
+      });
     },
   });
 
@@ -180,7 +188,9 @@ export function useAtendeAI() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['atende-ai-instances'] });
-      toast.success('Solicitação de novo QR Code enviada!');
+      toast.success('QR Code solicitado', {
+        description: 'O servidor está a gerar uma nova imagem de conexão.'
+      });
     },
   });
 
@@ -209,18 +219,24 @@ export function useAtendeAI() {
     },
     onSuccess: (data) => {
       if (data?.ok === false) {
-        toast.error('Erro na sincronização: ' + data.error);
+        toast.error('Sincronização interrompida', {
+          description: data.error
+        });
       } else {
         const deleted = data?.deleted || 0;
         const msg = deleted > 0
-          ? `Sincronização concluída! ${deleted} atendente(s) removido(s) por não existirem na Evolution.`
-          : 'Sincronização concluída!';
-        toast.success(msg);
+          ? `${deleted} atendentes foram removidos por não estarem ativos no servidor.`
+          : 'Todos os seus atendentes estão sincronizados e atualizados.';
+        toast.success('Sincronização concluída', {
+          description: msg
+        });
       }
       queryClient.invalidateQueries({ queryKey: ['atende-ai-instances'] });
     },
     onError: (err: any) => {
-      toast.error('Erro na sincronização: ' + err.message);
+      toast.error('Falha na sincronização', {
+        description: 'Não foi possível comunicar com o servidor de instâncias.'
+      });
     },
   });
 

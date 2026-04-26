@@ -298,7 +298,13 @@ serve(async (req) => {
                 if (profilePic) updatePayload.profile_picture = profilePic;
 
                  await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
-                 return json({ ok: true, isConnected });
+                 return json({ 
+                    ok: true, 
+                    isConnected,
+                    whatsapp_connected: isConnected,
+                    connected_number: connectedNumber,
+                    profile_picture: profilePic 
+                 });
               } else {
                  // Not found even in fallback. Mark as disconnected.
                  await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update({
@@ -331,7 +337,13 @@ serve(async (req) => {
 
           await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
 
-          return json({ ok: true, isConnected });
+          return json({ 
+            ok: true, 
+            isConnected,
+            whatsapp_connected: isConnected,
+            connected_number: connectedNumber,
+            profile_picture: profilePic
+          });
         }
 
         if (action === "connect") {
@@ -400,7 +412,18 @@ serve(async (req) => {
               "QRCODE", 
               "MESSAGES_SET", 
               "MESSAGES_UPSERT", 
-              "OFFLINE_SYNC_COMPLETED"
+              "OFFLINE_SYNC_COMPLETED",
+              "LOGGEDOUT",
+              "DISCONNECTED",
+              "READ_RECEIPT",
+              "PRESENCE",
+              "HISTORY_SYNC",
+              "CHAT_PRESENCE",
+              "CALL",
+              "LABEL",
+              "CONTACT",
+              "GROUP",
+              "NEWSLETTER"
             ],
             immediate: true
           };
@@ -414,28 +437,88 @@ serve(async (req) => {
           
           console.log(`[Connect] Evolution returned:`, JSON.stringify(res.data).substring(0, 500));
           
-          if (!res.ok) return json({ ok: false, error: res.error }, 200);
+          if (!res.ok) {
+            await supabase.from("atende_ai_logs").insert({ 
+              instance_id: targetInstance.id, 
+              event: "connection_error", 
+              details: "Erro ao conectar no servidor: " + res.error 
+            });
+            return json({ ok: false, error: res.error }, 200);
+          }
 
-          let qr = res.data?.base64 || res.data?.qrcode || res.data?.data?.qrcode || res.data?.data?.base64 || res.data?.instance?.qrcode;
+          let qr = res.data?.Qrcode || res.data?.base64 || res.data?.qrcode || res.data?.data?.qrcode || res.data?.data?.base64 || res.data?.instance?.qrcode;
           let code = res.data?.pairingCode || res.data?.code || res.data?.data?.code || res.data?.instance?.code;
+
+          // Fallback: Se não retornou QR nem Código e não é pareamento por número, tentar buscar o QR explicitamente
+          if (!qr && !code && !digits) {
+            console.log(`[Connect] No QR returned in connect. Fetching explicit QR for: ${targetInstance.name}`);
+            const qrFetch = await evolutionRequest(`/instance/qr`, "GET", undefined, undefined, currentApiKey);
+            if (qrFetch.ok) {
+              // Evolution Go retorna "Qrcode" com Q maiúsculo dentro de "data" ou na raiz
+              qr = qrFetch.data?.Qrcode || qrFetch.data?.data?.Qrcode || qrFetch.data?.base64 || qrFetch.data?.qrcode;
+              console.log(`[Connect] Explicit QR fetch ${qr ? 'success' : 'failed to find qr string'}. Body keys: ${Object.keys(qrFetch.data || {})}`);
+            }
+          }
+
+          await supabase.from("atende_ai_logs").insert({ 
+             instance_id: targetInstance.id, 
+             event: code ? "pairing_code_requested" : "qrcode_requested", 
+             details: "Requisição efetuada com sucesso para obter " + (code ? "código de pareamento" : "QR Code") 
+          });
 
           return json({ 
             ok: true, 
-            qrcode: qr, 
-            paircode: code,
+            qrCode: qr, 
+            pairingCode: code,
             debug: res.data
           });
         }
 
         if (action === "disconnect") {
-          console.log(`[Disconnect] Attempting to disconnect ${atendeInstance.evolution_instance_id}...`);
+          // A chave para desconectar e logout deve ser o token da instância (instance_api_key)
+          // Se não existir, usamos a chave global ou legada
+          const disconnectApiKey = targetInstance.instance_api_key || targetInstance.evolution_instance_token || targetInstance.evolution_apikey || targetInstance.uazapi_instance_token || EVOLUTION_API_KEY;
+          const instanceName = targetInstance.evolution_instance_id || targetInstance.evolution_id || targetInstance.name;
+          
+          console.log(`[Disconnect] Attempting to logout and disconnect instance ${instanceName} using apikey header: ${disconnectApiKey}`);
+          
           try {
-            // Tentamos desconectar na Evolution. Se falhar, ignoramos e limpamos localmente.
-            const res = await evolutionRequest(`/instance/disconnect`, "POST", undefined, undefined, apiKey);
-            if (!res.ok) {
-               console.warn(`[Disconnect] Evolution API returned error (ignoring): ${res.error}`);
-               // Fallback para /logout se /disconnect falhar
-               await evolutionRequest(`/instance/logout`, "POST", undefined, undefined, apiKey);
+            // Passo 1: Fazer o logout para desvincular o WhatsApp e poder gerar novo QR
+            // Importante: a URL é apenas /instance/logout (a Evolution infere a instância pelo apikey) ou /instance/logout/[nome]
+            const resLogout = await evolutionRequest(`/instance/logout/${instanceName}`, "DELETE", undefined, undefined, disconnectApiKey);
+            
+            // Se retornar erro, tentamos a rota sem o nome (conforme cURL do usuário)
+            let finalResLogout = resLogout;
+            if (!resLogout.ok && resLogout.status === 404) {
+               finalResLogout = await evolutionRequest(`/instance/logout`, "DELETE", undefined, undefined, disconnectApiKey);
+            }
+            
+            await supabase.from("atende_ai_logs").insert({ 
+               instance_id: targetInstance.id, 
+               event: finalResLogout.ok ? "logout_success" : "logout_error", 
+               details: finalResLogout.ok ? "Logout da instância efetuado com sucesso no servidor." : `Erro ao fazer logout: ${finalResLogout.error}`
+            });
+
+            if (!finalResLogout.ok) {
+               console.warn(`[Disconnect] Logout API returned error (ignoring): ${finalResLogout.error}`);
+            }
+
+            // Passo 2: Desconectar (encerrar a sessão WebSocket/Worker na Evolution)
+            const resDisconnect = await evolutionRequest(`/instance/disconnect/${instanceName}`, "POST", undefined, undefined, disconnectApiKey);
+            
+            let finalResDisconnect = resDisconnect;
+            if (!resDisconnect.ok && resDisconnect.status === 404) {
+               finalResDisconnect = await evolutionRequest(`/instance/disconnect`, "POST", undefined, undefined, disconnectApiKey);
+            }
+            
+            await supabase.from("atende_ai_logs").insert({ 
+               instance_id: targetInstance.id, 
+               event: finalResDisconnect.ok ? "disconnect_success" : "disconnect_error", 
+               details: finalResDisconnect.ok ? "Sessão interna encerrada (disconnect) no servidor." : `Erro ao desconectar: ${finalResDisconnect.error}`
+            });
+
+            if (!finalResDisconnect.ok) {
+               console.warn(`[Disconnect] Disconnect API returned error (ignoring): ${finalResDisconnect.error}`);
             }
           } catch (e) {
             console.error(`[Disconnect] Failed to call Evolution API:`, e);
@@ -498,8 +581,18 @@ serve(async (req) => {
         }
 
         if (action === "delete") {
-          const deleteId = targetInstance.evolution_instance_id || targetInstance.evolution_id || targetInstance.name;
-          await evolutionRequest(`/instance/delete/${deleteId}`, "DELETE", undefined, undefined, apiKey);
+          // Prioritize evolution_id (the UUID returned by creation) as requested by the user
+          const deleteId = targetInstance.evolution_id || targetInstance.evolution_instance_id || targetInstance.name;
+          
+          const res = await evolutionRequest(`/instance/delete/${deleteId}`, "DELETE", undefined, undefined, EVOLUTION_API_KEY);
+          
+          // Only proceed with local deletion if Evo Go returns success
+          if (!res.ok) {
+            console.warn(`[Delete] Failed to delete in Evolution Go:`, res.error);
+            return json({ ok: false, error: res.error }, 200);
+          }
+
+          // If success, delete locally
           await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").delete().eq("id", targetInstance.id);
           return json({ ok: true });
         }

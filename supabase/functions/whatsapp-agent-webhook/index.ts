@@ -1,4 +1,6 @@
+// @ts-ignore - Supabase Edge Functions use Deno imports which VS Code may not recognize
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

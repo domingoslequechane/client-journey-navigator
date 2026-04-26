@@ -29,6 +29,18 @@ function normalizePhone(jid: string): string {
   return jid.replace(/@.*$/, "").replace(/:.*$/, "").replace(/[^0-9]/g, "");
 }
 
+async function logToDb(sb: any, instanceId: string, event: string, details: string) {
+  try {
+    await sb.from("atende_ai_logs").insert({
+      instance_id: instanceId,
+      event: event,
+      details: details.substring(0, 3000),
+    });
+  } catch (e) {
+    console.error("[logToDb] error:", e);
+  }
+}
+
 async function sendTextMessage(
   instanceName: string,
   number: string,
@@ -155,13 +167,13 @@ async function smartSendMessage(
   delayMs: number,
 ) {
   const url = extractUrl(text);
-  
+
   if (url) {
     // Try sending as link first for rich preview
     const linkSent = await sendLinkMessage(number, text, url, apiKey, delayMs);
     if (linkSent) return true;
   }
-  
+
   // Fallback to plain text
   return sendTextMessage(instanceName, number, text, apiKey, delayMs);
 }
@@ -193,7 +205,7 @@ function buildSystemPrompt(instance: any): string {
   if (instance.company_sector) parts.push(`\nRamo: ${instance.company_sector}`);
   if (instance.company_description) parts.push(`\n## SOBRE A EMPRESA\n${instance.company_description}`);
   if (instance.business_hours) parts.push(`\n## HORÁRIO\n${instance.business_hours}`);
-  
+
   // Address with reference
   if (instance.address) {
     let addressBlock = instance.address;
@@ -205,7 +217,7 @@ function buildSystemPrompt(instance: any): string {
 
   if (instance.instructions) parts.push(`\n## INSTRUÇÕES (PRIORIDADE MÁXIMA)\n${instance.instructions}`);
   if (instance.extra_info) parts.push(`\n## INFORMAÇÕES ADICIONAIS\n${instance.extra_info}`);
-  
+
   // Training data from Excel/spreadsheet upload
   if (instance.training_data_text) {
     parts.push(`\n## CATÁLOGO / BASE DE DADOS DA EMPRESA\nAbaixo estão os dados importados da empresa (produtos, serviços, preços, etc.). Use estas informações para responder perguntas dos clientes com precisão:\n\n${instance.training_data_text}`);
@@ -235,7 +247,7 @@ async function callAI(
 
   let apiKey = apiKeys[provider] || "";
   let model = aiModels[provider] || "";
-  
+
   // Fallbacks para variáveis de ambiente e modelos padrão
   // Removido: O agente obrigatoriamente deve usar a chave configurada pela agência.
 
@@ -319,7 +331,7 @@ async function callAI(
     }
 
     const data = await res.json();
-    
+
     // Normalizar resposta dependendo do provedor
     if (provider === 'anthropic') return data.content[0].text;
     return (data.choices?.[0]?.message?.content || "").trim();
@@ -383,6 +395,8 @@ serve(async (req: Request) => {
           .from("atende_ai_instances")
           .update({ qr_code_base64: qrBase64 })
           .eq("id", instance.id);
+
+        await logToDb(sb, instance.id, "qrcode_updated", "Novo QR Code gerado pelo servidor.");
       }
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
@@ -390,13 +404,17 @@ serve(async (req: Request) => {
     // ─── CONNECTION: mudança de estado da conexão ──────────
     // Evolution Go envia event "CONNECTION" com data.status ("open" | "close" | "connecting")
     if (event === "CONNECTION" || event === "CONNECTION_UPDATE" || event === "CONNECTED" || event === "PAIRSUCCESS") {
-      const status = (body.data?.status || body.data?.state || "").toString().toLowerCase();
+      const data = body.data || {};
+      const status = (data.status || data.state || data.connectionStatus || "").toString().toLowerCase();
 
-      if (status === "open" || event === "CONNECTED" || event === "PAIRSUCCESS") {
+      // Evolution Go docs e testes mostram que "open" ou "connected" indicam sucesso
+      const isActuallyConnected = status === "open" || status === "connected" || event === "CONNECTED" || event === "PAIRSUCCESS";
+
+      if (isActuallyConnected) {
         console.log(`[Webhook] Conexão confirmada para: ${instance.id} (Evento: ${rawEvent}, Status: ${status})`);
-        const jid = body.data?.jid || body.data?.owner || body.data?.instance?.owner || null;
+        const jid = data.jid || data.owner || data.instance?.owner || null;
         const number = jid ? normalizePhone(jid.toString()) : null;
-        const profileName = body.data?.instance?.instanceName || body.data?.name || body.data?.pushName || null;
+        const profileName = data.instance?.instanceName || data.name || data.pushName || null;
 
         const updates: any = {
           whatsapp_connected: true,
@@ -411,6 +429,8 @@ serve(async (req: Request) => {
           .from("atende_ai_instances")
           .update(updates)
           .eq("id", instance.id);
+
+        await logToDb(sb, instance.id, "connected", `Conexão estabelecida com sucesso. Status: ${status}`);
         return new Response(JSON.stringify({ ok: true, status: "connected" }), { status: 200 });
       }
 
@@ -425,6 +445,8 @@ serve(async (req: Request) => {
             qr_code_base64: null,
           })
           .eq("id", instance.id);
+
+        await logToDb(sb, instance.id, "disconnected", `Instância desconectada. Status: ${status}`);
         return new Response(JSON.stringify({ ok: true, status: "disconnected" }), { status: 200 });
       }
 
@@ -444,6 +466,8 @@ serve(async (req: Request) => {
           qr_code_base64: null,
         })
         .eq("id", instance.id);
+
+      await logToDb(sb, instance.id, "disconnected", `Logout/Desconexão explícita recebida. Evento: ${event}`);
       return new Response(JSON.stringify({ ok: true, status: "disconnected" }), { status: 200 });
     }
 
@@ -457,6 +481,8 @@ serve(async (req: Request) => {
           qr_code_base64: null,
         })
         .eq("id", instance.id);
+
+      await logToDb(sb, instance.id, "connected", "Sincronização offline completada. Instância ativa.");
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
 
@@ -500,6 +526,8 @@ serve(async (req: Request) => {
       const phone = normalizePhone(chatJid);
       const messageId = msgId;
       const senderName = pushName || phone;
+
+      await logToDb(sb, instance.id, "message_received", `Mensagem recebida de ${senderName} (${phone}). ID: ${messageId}`);
 
       // Extrair texto — suporta ambos os formatos de mensagem
       let text = (
@@ -696,6 +724,8 @@ serve(async (req: Request) => {
         content: aiReply,
         message_type: "text",
       });
+
+      await logToDb(sb, instance.id, "ai_reply_sent", `IA respondeu para ${phone}: ${aiReply.substring(0, 100)}...`);
 
       await sb.rpc("increment_atende_ai_stats", {
         p_instance_id: instance.id,

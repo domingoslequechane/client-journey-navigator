@@ -110,10 +110,14 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
     onSuccess: (updatedInstance) => {
       queryClient.setQueryData(['atende-ai-instance', instanceId], updatedInstance);
       queryClient.invalidateQueries({ queryKey: ['atende-ai-instances'] });
-      toast.success('Configurações salvas com sucesso!');
+      toast.success('Configurações salvas', {
+        description: 'As alterações do seu atendente foram aplicadas com sucesso.'
+      });
     },
     onError: (err: any) => {
-      toast.error('Erro ao salvar: ' + err.message);
+      toast.error('Erro ao salvar', {
+        description: 'Não foi possível atualizar as configurações: ' + err.message
+      });
     },
   });
 
@@ -170,9 +174,10 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
             prev
               ? {
                   ...prev,
-                  whatsapp_connected: data.whatsapp_connected!,
-                  status: data.whatsapp_connected ? 'active' : 'inactive',
+                  whatsapp_connected: (data.whatsapp_connected !== undefined ? data.whatsapp_connected : data.isConnected) ?? prev.whatsapp_connected,
+                  status: (data.whatsapp_connected || data.isConnected) ? 'active' : 'inactive',
                   connected_number: data.connected_number ?? prev.connected_number,
+                  profile_picture: data.profile_picture ?? prev.profile_picture,
                 }
               : prev
         );
@@ -181,13 +186,25 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
       
       if (action === 'status') {
         const isNowConnected = data?.isConnected || data?.whatsapp_connected;
-        toast.success(isNowConnected ? 'WhatsApp conectado e sincronizado!' : 'Sincronizado. WhatsApp continua desconectado.');
+        if (isNowConnected) {
+          toast.success('Conexão ativa!', {
+            description: 'O seu WhatsApp está sincronizado e pronto para operar.'
+          });
+        } else {
+          toast.info('Sincronização realizada', {
+            description: 'A instância foi atualizada, mas o WhatsApp continua desconectado.'
+          });
+        }
       } else if (action === 'disconnect') {
-        toast.success('WhatsApp desconectado');
+        toast.success('Aparelho desconectado', {
+          description: 'A conexão com o WhatsApp foi encerrada com sucesso.'
+        });
       }
     },
     onError: (err: any) => {
-      toast.error('Erro: ' + err.message);
+      toast.error('Ação interrompida', {
+        description: err.message
+      });
     },
   });
 
@@ -255,7 +272,9 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['atende-ai-conversations', instanceId] });
     },
     onError: (err: any) => {
-      toast.error('Erro ao enviar mensagem: ' + err.message);
+      toast.error('Falha no envio', {
+        description: 'Não foi possível enviar a mensagem: ' + err.message
+      });
     },
   });
 
@@ -324,7 +343,7 @@ export function useAtendeAIConnectionPoller(
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!active || !instanceId || !evolutionInstanceId || isConnected || !orgId) {
+    if (!active || !instanceId || !evolutionInstanceId || !orgId) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -357,8 +376,11 @@ export function useAtendeAIConnectionPoller(
                   }
                 : prev
           );
+          queryClient.invalidateQueries({ queryKey: ['atende-ai-instance', instanceId] });
           queryClient.invalidateQueries({ queryKey: ['atende-ai-instances'] });
-          toast.success('WhatsApp conectado com sucesso!');
+          toast.success('Conexão estabelecida!', {
+            description: 'O seu WhatsApp foi vinculado com sucesso.'
+          });
 
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
