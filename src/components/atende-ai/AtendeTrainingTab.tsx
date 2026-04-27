@@ -251,13 +251,14 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
         
         const headers = Object.keys(jsonData[0]);
         
-        // Format as structured text: each row as a block
+        // Format as structured text: each row as a clear block
         jsonData.forEach((row, idx) => {
           const lines = headers
             .filter(h => row[h] !== '' && row[h] !== null && row[h] !== undefined)
             .map(h => `${h}: ${row[h]}`);
           if (lines.length > 0) {
-            allText.push(lines.join(' | '));
+            allText.push(`--- REGISTO ${idx + 1} ---`);
+            allText.push(lines.join('\n'));
           }
         });
         
