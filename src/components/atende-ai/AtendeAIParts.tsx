@@ -12,8 +12,6 @@ import {
   MessageCircle,
   MessageSquare,
   Plus,
-  RefreshCw,
-  RotateCw,
   Search,
   Settings,
   Smartphone,
@@ -38,17 +36,13 @@ export const ATENDE_COLORS = {
 export function AtendeHeader({ 
   currentOrg, 
   onNewAtendente,
-  onSync,
   connectedCount = 0,
   maxConnections = 10,
-  isSyncing = false
 }: { 
   currentOrg: string;
   onNewAtendente: () => void;
-  onSync: () => void;
   connectedCount?: number;
   maxConnections?: number;
-  isSyncing?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -70,20 +64,6 @@ export function AtendeHeader({
         </div>
 
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            onClick={onSync} 
-            disabled={isSyncing}
-            className="bg-zinc-50 dark:bg-[#1a1a1a] border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200 h-9 px-4 rounded-md text-xs font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
-          >
-            {isSyncing ? (
-              <RotateCw className="h-3.5 w-3.5 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5 mr-2" />
-            )}
-            {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
-          </Button>
-          
           <Button 
             onClick={onNewAtendente} 
             className="bg-[#ff7a00] hover:bg-[#e66d00] text-white h-9 px-4 rounded-md text-xs font-bold shadow-sm transition-all"
@@ -122,6 +102,7 @@ export function AtendeTabs({
     { id: 'training', label: 'Treinamento', icon: BrainCircuit },
     { id: 'connection', label: 'Conexão', icon: Smartphone },
     { id: 'api', label: 'API', icon: Key },
+    { id: 'logs', label: 'Logs', icon: Activity },
   ];
 
   return (

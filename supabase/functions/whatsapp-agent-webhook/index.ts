@@ -1,4 +1,6 @@
+// @ts-ignore - Supabase Edge Functions use Deno imports which VS Code may not recognize
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -561,7 +563,7 @@ serve(async (req: Request) => {
               agent.uazapi_instance_token,
               phone,
               "Desculpe, não consegui entender o áudio. Pode digitar a sua mensagem?",
-              agent.show_typing ? 2000 : 500,
+              agent.show_typing ? 7000 : 500,
               agent.mark_as_read,
               null,
               uazapiUrl
@@ -831,7 +833,7 @@ serve(async (req: Request) => {
           agent.uazapi_instance_token,
           phone,
           agent.welcome_message,
-          agent.show_typing ? 2000 : 500,
+          agent.show_typing ? 7000 : 500,
           agent.mark_as_read
         );
 
@@ -931,7 +933,7 @@ serve(async (req: Request) => {
           agent.uazapi_instance_token,
           phone,
           cleanResponse,
-          agent.show_typing ? 2000 : 500,
+          agent.show_typing ? 7000 : 500,
           agent.mark_as_read,
           aiResult.replyToId,
           uazapiUrl

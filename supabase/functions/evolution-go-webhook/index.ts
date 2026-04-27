@@ -29,29 +29,65 @@ function normalizePhone(jid: string): string {
   return jid.replace(/@.*$/, "").replace(/:.*$/, "").replace(/[^0-9]/g, "");
 }
 
+async function logToDb(sb: any, instanceId: string, event: string, details: string) {
+  try {
+    await sb.from("atende_ai_logs").insert({
+      instance_id: instanceId,
+      event: event,
+      details: details.substring(0, 3000),
+    });
+  } catch (e) {
+    console.error("[logToDb] error:", e);
+  }
+}
+
 async function sendTextMessage(
+  instanceId: string,
   instanceName: string,
   number: string,
   text: string,
   apiKey: string,
+  sb: any,
   delayMs = 1500,
 ) {
   if (!EVOLUTION_GO_BASE_URL) {
     console.warn("EVOLUTION_GO_BASE_URL não configurada — não pode enviar mensagem");
+    await logToDb(sb, instanceId, "error", "EVOLUTION_GO_BASE_URL não configurada");
     return false;
   }
-  const res = await fetch(`${EVOLUTION_GO_BASE_URL}/send/text`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": apiKey || EVOLUTION_GO_API_KEY,
-    },
-    body: JSON.stringify({ number, text, delay: delayMs }),
-  });
-  if (!res.ok) {
-    console.error(`sendTextMessage falhou: ${res.status}`, await res.text());
+
+  const endpoint = `${EVOLUTION_GO_BASE_URL}/send/text`;
+  const usedKey = apiKey || EVOLUTION_GO_API_KEY;
+
+  console.log(`[sendTextMessage] Enviando para ${number} via ${instanceName}. Endpoint: ${endpoint}`);
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": usedKey,
+      },
+      body: JSON.stringify({ number, text, delay: delayMs }),
+    });
+
+    const resText = await res.text();
+    console.log(`[sendTextMessage] Resposta:`, resText);
+
+    if (!res.ok) {
+      console.error(`sendTextMessage falhou: ${res.status}`, resText);
+      await logToDb(sb, instanceId, "error", `Falha ao enviar: ${res.status} - ${resText.slice(0, 150)}`);
+      return false;
+    }
+
+    // Algumas APIs retornam 200 mas com erro no corpo
+    await logToDb(sb, instanceId, "ai_reply_sent", `Resposta enviada para ${number}. Retorno: ${resText.slice(0, 150)}`);
+    return true;
+  } catch (err) {
+    console.error(`[sendTextMessage] Erro de rede:`, err);
+    await logToDb(sb, instanceId, "error", `Erro de rede ao enviar mensagem: ${err.message}`);
+    return false;
   }
-  return res.ok;
 }
 
 // ─── Send Link with Preview ────────────────────────────────
@@ -139,6 +175,25 @@ async function reactToMessage(
   }
 }
 
+// ─── Presence: Typing/Recording ─────────────────────────────
+async function sendPresence(number: string, presence: "composing" | "recording" | "paused", apiKey: string) {
+  if (!EVOLUTION_GO_BASE_URL) return;
+  try {
+    // Evolution Go typical endpoint: /chat/presence/{number}
+    // Note: Some versions might use /presence/update
+    await fetch(`${EVOLUTION_GO_BASE_URL}/chat/presence/${number}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": apiKey || EVOLUTION_GO_API_KEY,
+      },
+      body: JSON.stringify({ presence }),
+    });
+  } catch (err) {
+    console.warn("[sendPresence] erro:", err);
+  }
+}
+
 // ─── Extract first URL from text ───────────────────────────
 function extractUrl(text: string): string | null {
   const urlRegex = /https?:\/\/[^\s\])"'>]+/i;
@@ -148,29 +203,31 @@ function extractUrl(text: string): string | null {
 
 // ─── Smart send: link or text ──────────────────────────────
 async function smartSendMessage(
+  instanceId: string,
   instanceName: string,
   number: string,
   text: string,
   apiKey: string,
+  sb: any,
   delayMs: number,
 ) {
   const url = extractUrl(text);
-  
+
   if (url) {
     // Try sending as link first for rich preview
     const linkSent = await sendLinkMessage(number, text, url, apiKey, delayMs);
     if (linkSent) return true;
   }
-  
+
   // Fallback to plain text
-  return sendTextMessage(instanceName, number, text, apiKey, delayMs);
+  return sendTextMessage(instanceId, instanceName, number, text, apiKey, sb, delayMs);
 }
 
 // ─── AI ────────────────────────────────────────────────────
 
 function buildSystemPrompt(instance: any): string {
   const parts: string[] = [];
-  const name = instance.name || "Atendente Virtual";
+  const name = instance.name || "Consultor de Atendimento";
   const companyName = instance.company_name || "";
 
   parts.push(`## IDENTIDADE`);
@@ -190,10 +247,14 @@ function buildSystemPrompt(instance: any): string {
     parts.push(`- Mensagens curtas e parágrafos espaçados. Nem muito breve nem muito longo.`);
   }
 
+  parts.push(`\n## REGRA DE CORTESIA (RETORNO DE PESQUISA):`);
+  parts.push(`- Se a conversa anterior mostrar que você disse que ia "verificar" ou "conferir" algo, SEMPRE comece sua nova resposta com frases como: "Voltei!", "Tudo certo, obrigado por aguardar.", "Consegui confirmar aqui, desculpe a demora.", ou "Prontinho, obrigado pela paciência."`);
+  parts.push(`- Mantenha o tom de um atendente prestativo que acabou de voltar de uma consulta ao estoque/sistema.`);
+
   if (instance.company_sector) parts.push(`\nRamo: ${instance.company_sector}`);
   if (instance.company_description) parts.push(`\n## SOBRE A EMPRESA\n${instance.company_description}`);
   if (instance.business_hours) parts.push(`\n## HORÁRIO\n${instance.business_hours}`);
-  
+
   // Address with reference
   if (instance.address) {
     let addressBlock = instance.address;
@@ -206,11 +267,25 @@ function buildSystemPrompt(instance: any): string {
   if (instance.instructions) parts.push(`\n## INSTRUÇÕES (PRIORIDADE MÁXIMA)\n${instance.instructions}`);
   if (instance.conversation_flow) parts.push(`\n## FLUXO DE CONVERSA ESTRUTURADO (OBRIGATÓRIO)\n⚠️ ATENÇÃO: O fluxo abaixo define as etapas exatas que você deve seguir na condução desta conversa. Guie o usuário pelas etapas estabelecidas sem pular etapas.\n\n${instance.conversation_flow}`);
   if (instance.extra_info) parts.push(`\n## INFORMAÇÕES ADICIONAIS\n${instance.extra_info}`);
-  
-  // Training data from Excel/spreadsheet upload
-  if (instance.training_data_text) {
-    parts.push(`\n## CATÁLOGO / BASE DE DADOS DA EMPRESA\nAbaixo estão os dados importados da empresa (produtos, serviços, preços, etc.). Use estas informações para responder perguntas dos clientes com precisão:\n\n${instance.training_data_text}`);
+
+  const trainingData = instance.training_data_text || instance.training_data;
+  if (trainingData) {
+    parts.push(`\n## BASE DE DADOS DA EMPRESA (CATÁLOGO)\n`);
+    parts.push(`⚠️ ATENÇÃO: As informações abaixo são a ÚNICA VERDADE sobre a empresa. Use-as estritamente.\n`);
+    parts.push(trainingData);
+    parts.push(`\n⚠️ FIM DA BASE DE DADOS.\n`);
   }
+
+  parts.push(`\n## REGRA CRÍTICA DE HUMANIZAÇÃO (SIGILO ABSOLUTO):`);
+  parts.push(`1. JAMAIS admita que você é uma IA, robô ou assistente virtual. Se perguntarem, diga que é da equipe de atendimento da empresa.`);
+  parts.push(`2. NUNCA use o termo "atendente humano" ou "sistema". Use "colega", "chefe", "especialista", "superior" ou "setor responsável".`);
+  parts.push(`3. Sua linguagem deve ser natural e calorosa, como se você estivesse realmente digitando no teclado.`);
+
+  parts.push(`\n## REGRA CRÍTICA ANTI-ALUCINAÇÃO (JAMAIS INVENTAR):`);
+  parts.push(`1. Se o cliente perguntar sobre algo que NÃO ESTÁ na BASE DE DADOS acima, responda: "Lamento, mas não tenho esse detalhe aqui comigo agora. Vou anotar para o meu colega verificar e te dar um retorno, pode ser?"`);
+  parts.push(`2. JAMAIS invente preços. Se o preço de um item não estiver na lista, diga que vai confirmar com o setor responsável.`);
+  parts.push(`3. JAMAIS invente produtos ou serviços.`);
+  parts.push(`4. Se você tiver dúvida se uma informação existe ou não, assuma que NÃO existe.`);
 
   const now = new Date();
   parts.push(`\n## DATA/HORA: ${now.toLocaleString("pt-BR", { timeZone: "Africa/Maputo" })} (Maputo)`);
@@ -236,7 +311,7 @@ async function callAI(
 
   let apiKey = apiKeys[provider] || "";
   let model = aiModels[provider] || "";
-  
+
   // Fallbacks para variáveis de ambiente e modelos padrão
   // Removido: O agente obrigatoriamente deve usar a chave configurada pela agência.
 
@@ -306,12 +381,16 @@ async function callAI(
       return "Provedor de IA não suportado.";
   }
 
+  const startTime = Date.now();
   try {
     const res = await fetch(endpoint, {
       method: "POST",
       headers,
       body: JSON.stringify(payload),
     });
+
+    const duration = Date.now() - startTime;
+    console.log(`[AI Fetch] Provider: ${provider}, Model: ${model}, Duration: ${duration}ms, Status: ${res.status}`);
 
     if (!res.ok) {
       const errText = await res.text();
@@ -320,7 +399,7 @@ async function callAI(
     }
 
     const data = await res.json();
-    
+
     // Normalizar resposta dependendo do provedor
     if (provider === 'anthropic') return data.content[0].text;
     return (data.choices?.[0]?.message?.content || "").trim();
@@ -348,15 +427,35 @@ serve(async (req: Request) => {
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Localizar a instância pelo secret UUID
-    const { data: instance, error: instanceErr } = await sb
+    let instance: any = null;
+    let isLegacy = false;
+
+    const { data: atendeInstance, error: instanceErr } = await sb
       .from("atende_ai_instances")
       .select("*")
-      .eq("evolution_webhook_secret", secret)
-      .single();
+      .or(`evolution_webhook_secret.eq.${secret},id.eq.${secret},evolution_instance_id.eq.${secret}`)
+      .maybeSingle();
 
-    if (instanceErr || !instance) {
-      console.error("Webhook: instância não encontrada para o secret:", secret, "Erro:", instanceErr);
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401 });
+    if (atendeInstance) {
+      instance = atendeInstance;
+    } else {
+      // Tentar na tabela ai_agents
+      const { data: legacyInstance, error: legacyErr } = await sb
+        .from("ai_agents")
+        .select("*")
+        .or(`uazapi_webhook_secret.eq.${secret},evolution_webhook_secret.eq.${secret}`)
+        .maybeSingle();
+      
+      if (legacyInstance) {
+        instance = legacyInstance;
+        isLegacy = true;
+      } else {
+        console.error("Webhook: instância não encontrada para o secret:", secret, "Erro Atende:", instanceErr, "Erro Legacy:", legacyErr);
+      }
+    }
+
+    if (!instance) {
+      return new Response(JSON.stringify({ error: "Não autorizado", secret_provided: secret }), { status: 401 });
     }
 
     let body: any;
@@ -384,6 +483,8 @@ serve(async (req: Request) => {
           .from("atende_ai_instances")
           .update({ qr_code_base64: qrBase64 })
           .eq("id", instance.id);
+
+        await logToDb(sb, instance.id, "qrcode_updated", "Novo QR Code gerado pelo servidor.");
       }
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
@@ -391,27 +492,45 @@ serve(async (req: Request) => {
     // ─── CONNECTION: mudança de estado da conexão ──────────
     // Evolution Go envia event "CONNECTION" com data.status ("open" | "close" | "connecting")
     if (event === "CONNECTION" || event === "CONNECTION_UPDATE" || event === "CONNECTED" || event === "PAIRSUCCESS") {
-      const status = (body.data?.status || body.data?.state || "").toString().toLowerCase();
+      const data = body.data || {};
+      const status = (data.status || data.state || data.connectionStatus || "").toString().toLowerCase();
 
-      if (status === "open" || event === "CONNECTED" || event === "PAIRSUCCESS") {
+      // Evolution Go docs e testes mostram que "open" ou "connected" indicam sucesso
+      const isActuallyConnected = status === "open" || status === "connected" || event === "CONNECTED" || event === "PAIRSUCCESS";
+
+      if (isActuallyConnected) {
         console.log(`[Webhook] Conexão confirmada para: ${instance.id} (Evento: ${rawEvent}, Status: ${status})`);
-        const jid = body.data?.jid || body.data?.owner || body.data?.instance?.owner || null;
+        const jid = data.jid || data.owner || data.instance?.owner || data.ownerJid || null;
         const number = jid ? normalizePhone(jid.toString()) : null;
-        const profileName = body.data?.instance?.instanceName || body.data?.name || body.data?.pushName || null;
+        
+        // Extrair nome de perfil de várias fontes possíveis (Evolution Go variações)
+        const profileName = data.Name || data.name || data.pushName || 
+                           data.instance?.instanceName || data.instance?.name || 
+                           data.instance?.pushName || null;
 
         const updates: any = {
           whatsapp_connected: true,
           status: "active",
           qr_code_base64: null,
+          updated_at: new Date().toISOString()
         };
 
         if (number) updates.connected_number = number;
-        if (profileName && (!instance.name || instance.name.includes("+"))) updates.name = profileName;
+        
+        // Atualizar nome se não tivermos um nome amigável definido (ou se for apenas um número/placeholder)
+        if (profileName) {
+           updates.company_name = profileName;
+           if (!instance.name || instance.name.includes("+") || instance.name === "Novo Agente") {
+             updates.name = profileName;
+           }
+        }
 
         await sb
           .from("atende_ai_instances")
           .update(updates)
           .eq("id", instance.id);
+
+        await logToDb(sb, instance.id, "connected", `Conexão estabelecida com sucesso. Status: ${status}`);
         return new Response(JSON.stringify({ ok: true, status: "connected" }), { status: 200 });
       }
 
@@ -426,6 +545,8 @@ serve(async (req: Request) => {
             qr_code_base64: null,
           })
           .eq("id", instance.id);
+
+        await logToDb(sb, instance.id, "disconnected", `Instância desconectada. Status: ${status}`);
         return new Response(JSON.stringify({ ok: true, status: "disconnected" }), { status: 200 });
       }
 
@@ -445,6 +566,8 @@ serve(async (req: Request) => {
           qr_code_base64: null,
         })
         .eq("id", instance.id);
+
+      await logToDb(sb, instance.id, "disconnected", `Logout/Desconexão explícita recebida. Evento: ${event}`);
       return new Response(JSON.stringify({ ok: true, status: "disconnected" }), { status: 200 });
     }
 
@@ -458,6 +581,8 @@ serve(async (req: Request) => {
           qr_code_base64: null,
         })
         .eq("id", instance.id);
+
+      await logToDb(sb, instance.id, "connected", "Sincronização offline completada. Instância ativa.");
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
 
@@ -501,6 +626,8 @@ serve(async (req: Request) => {
       const phone = normalizePhone(chatJid);
       const messageId = msgId;
       const senderName = pushName || phone;
+
+      await logToDb(sb, instance.id, "message_received", `Mensagem recebida de ${senderName} (${phone}). ID: ${messageId}`);
 
       // Extrair texto — suporta ambos os formatos de mensagem
       let text = (
@@ -636,8 +763,10 @@ serve(async (req: Request) => {
       }
 
       // Buffer para aguardar mensagens em série (debounce)
-      const bufferSeconds = instance.response_delay_seconds ?? 3;
+      // Reduzido para 0 por padrão para resposta instantânea
+      const bufferSeconds = instance.response_delay_seconds ?? 0;
       if (bufferSeconds > 0) {
+        console.log(`[Webhook] Aguardando buffer de ${bufferSeconds}s para agrupar mensagens...`);
         const startTime = Date.now();
         while (Date.now() - startTime < Math.min(bufferSeconds * 1000, 20000)) {
           await new Promise((r) => setTimeout(r, 1200));
@@ -651,6 +780,7 @@ serve(async (req: Request) => {
             .maybeSingle();
 
           if (latestMsg && latestMsg.id !== insertedMsg.id) {
+            console.log(`[Webhook] Nova mensagem detectada no buffer. Encerrando execução atual para favorecer a mais recente.`);
             return new Response(JSON.stringify({ ok: true, skipped: "newer_detected" }), { status: 200 });
           }
 
@@ -673,17 +803,49 @@ serve(async (req: Request) => {
           content: m.content,
         }));
 
-      const isFirstMessage = history.length === 0;
       const instanceApiKey = instance.instance_api_key || EVOLUTION_GO_API_KEY;
       const instanceName = instance.evolution_instance_id;
+      if (history.length === 0 && instance.welcome_message && instanceName) {
+        await sendTextMessage(instance.id, instanceName, phone, instance.welcome_message, instanceApiKey, sb);
+      }
 
-      if (isFirstMessage && instance.welcome_message && instanceName) {
-        await sendTextMessage(instanceName, phone, instance.welcome_message, instanceApiKey);
+      // ─── Smart Acknowledgement (Apenas para perguntas que exigem "verificação") ───
+      const isRoutineInfo = /horário|funcionamento|onde|localização|endereço|localizacao|quem|vcs|vocês|telefone|contato/i.test(text.toLowerCase());
+      const isComplex = (text.includes("?") || text.length > 50) && 
+                       /preço|valor|quanto|custo|tem|estoque|disponível|produto|catálogo|entrega|frete|taxa/i.test(text.toLowerCase()) &&
+                       !isRoutineInfo;
+
+      let ackSent = false;
+      if (isComplex && instanceName) {
+        const ackPool = [
+          "Só um momento, vou conferir isso aqui para você...",
+          "Deixa eu dar uma olhadinha aqui nos detalhes, só um instante...",
+          "Vou verificar essa informação agora mesmo, um momento...",
+          "Vou confirmar isso aqui para você, aguarde só um segundinho..."
+        ];
+        const ackMessage = ackPool[Math.floor(Math.random() * ackPool.length)];
+        
+        console.log(`[Webhook] Enviando confirmação rápida: "${ackMessage}"`);
+        ackSent = await sendTextMessage(instance.id, instanceName, phone, ackMessage, instanceApiKey, sb, 500);
+        
+        // Adicionar ao histórico para a IA saber que já iniciou o atendimento
+        if (ackSent) {
+          history.push({ role: "assistant", content: ackMessage });
+          // Aguardar 10 segundos conforme solicitado para simular o tempo de "verificação"
+          console.log(`[Webhook] Aguardando 10 segundos para retorno...`);
+          await new Promise(r => setTimeout(r, 10000));
+        }
       }
 
       // Chamar IA
       const systemPrompt = buildSystemPrompt(instance);
+      console.log(`[Processing] Instance: ${instance.name} (${instance.id}), Prompt Length: ${systemPrompt.length}`);
+      
+      const aiStartTime = Date.now();
       const aiReply = await callAI(systemPrompt, history, text, instance);
+      const aiDuration = Date.now() - aiStartTime;
+      
+      console.log(`[AI Response] Generated in ${aiDuration}ms for instance ${instance.name}`);
 
       if (!aiReply) {
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
@@ -698,6 +860,8 @@ serve(async (req: Request) => {
         message_type: "text",
       });
 
+      await logToDb(sb, instance.id, "ai_reply_sent", `IA respondeu para ${phone}: ${aiReply.substring(0, 100)}...`);
+
       await sb.rpc("increment_atende_ai_stats", {
         p_instance_id: instance.id,
         p_conversations: 0,
@@ -706,8 +870,11 @@ serve(async (req: Request) => {
 
       // Enviar resposta via Evolution Go (com token específico da instância)
       if (instanceName) {
-        const delayMs = instance.show_typing ? 10000 : 500;
-        await smartSendMessage(instanceName, phone, aiReply, instanceApiKey, delayMs);
+        // Usar o delay nativo da API para mostrar "digitando"
+        const delayMs = instance.show_typing ? (instance.typing_delay_seconds || 2) * 1000 : 0;
+        
+        console.log(`[Webhook] Enviando resposta para ${phone} com delay nativo de ${delayMs}ms`);
+        await smartSendMessage(instance.id, instanceName, phone, aiReply, instanceApiKey, sb, delayMs);
       }
 
       return new Response(JSON.stringify({ ok: true }), { status: 200 });

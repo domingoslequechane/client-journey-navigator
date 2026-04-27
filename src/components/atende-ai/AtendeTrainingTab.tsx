@@ -155,6 +155,7 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
   const [responseSize, setResponseSize] = useState(instance.response_size || 2);
   const [responseDelay, setResponseDelay] = useState(instance.response_delay_seconds ?? 3);
   const [showTyping, setShowTyping] = useState(instance.show_typing ?? true);
+  const [typingDelay, setTypingDelay] = useState(instance.typing_delay_seconds ?? 2);
   const [markAsRead, setMarkAsRead] = useState(instance.mark_as_read ?? true);
   const [humanPauseDuration, setHumanPauseDuration] = useState(instance.human_pause_duration || 60);
   const [trainingDataText, setTrainingDataText] = useState(instance.training_data_text || '');
@@ -196,6 +197,7 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
         response_size: responseSize,
         response_delay_seconds: responseDelay,
         show_typing: showTyping,
+        typing_delay_seconds: typingDelay,
         mark_as_read: markAsRead,
         human_pause_duration: humanPauseDuration,
         training_data_text: trainingDataText || null,
@@ -222,6 +224,7 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
     setResponseSize(instance.response_size || 2);
     setResponseDelay(instance.response_delay_seconds ?? 3);
     setShowTyping(instance.show_typing ?? true);
+    setTypingDelay(instance.typing_delay_seconds ?? 2);
     setMarkAsRead(instance.mark_as_read ?? true);
     setHumanPauseDuration(instance.human_pause_duration || 60);
     setTrainingDataText(instance.training_data_text || '');
@@ -755,6 +758,28 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
                             </div>
                             <Switch checked={showTyping} onCheckedChange={(v) => { setShowTyping(v); markChanged(); }} />
                           </div>
+
+                          {showTyping && (
+                            <div className="space-y-4 pl-4 pt-2 border-l-2 border-primary/10 ml-2">
+                              <div className="flex justify-between items-center mb-1">
+                                <Label className="text-xs">Tempo de digitação</Label>
+                                <span className="text-xs font-semibold text-primary">
+                                  {typingDelay} seg
+                                </span>
+                              </div>
+                              <Slider
+                                value={[typingDelay]}
+                                onValueChange={([v]) => { setTypingDelay(v); markChanged(); }}
+                                min={1}
+                                max={15}
+                                step={1}
+                                className="w-full"
+                              />
+                              <p className="text-[10px] text-muted-foreground italic">
+                                Define por quanto tempo o status "digitando..." aparecerá antes da resposta ser enviada.
+                              </p>
+                            </div>
+                          )}
 
                           <div className="flex items-center justify-between">
                             <div className="space-y-0.5">

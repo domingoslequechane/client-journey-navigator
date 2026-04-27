@@ -325,6 +325,7 @@ export interface AtendeAIInstance {
   response_size: number;
   response_delay_seconds: number;
   show_typing: boolean;
+  typing_delay_seconds: number;
   mark_as_read: boolean;
   human_pause_duration: number;
   total_conversations: number;

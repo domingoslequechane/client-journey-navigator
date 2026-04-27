@@ -116,6 +116,27 @@ export function ConnectionTab({ agent, instanceAction }: ConnectionTabProps) {
 
   const isConnected = !!(agent?.whatsapp_connected);
 
+  // ─── Auto-fetch and Poll QR if disconnected (10s interval) ───
+  React.useEffect(() => {
+    if (isConnected) return;
+
+    // Fetch inicial se necessário
+    if (!qrCode && !pairingCode && !instanceAction.isPending && agent?.instance_api_key) {
+      console.log('[ConnectionTab] Auto-fetching QR on mount...');
+      handleGetQR();
+    }
+
+    // Intervalo de 10 segundos para verificar status e renovar QR se necessário
+    const interval = setInterval(() => {
+      if (!isConnected && !instanceAction.isPending && agent?.instance_api_key && mode === 'qr') {
+        console.log('[ConnectionTab] Auto-polling status and QR (10s interval, background)...');
+        handleGetQR(true);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [agent?.id, isConnected, mode]);
+
   // Polling automático de estado enquanto a instância não está conectada
   useAtendeAIConnectionPoller(
     agent?.id,
@@ -139,37 +160,77 @@ export function ConnectionTab({ agent, instanceAction }: ConnectionTabProps) {
   );
 
   // ─── Get QR Code directly from Evolution Go API ───
-  const handleGetQR = async () => {
-    setLoadingQR(true);
-    setQrCode(null);
-    setPairingCode(null);
+  const handleGetQR = async (silent = false) => {
+    if (!silent) {
+      setLoadingQR(true);
+      setQrCode(null);
+      setPairingCode(null);
+    }
 
     try {
-      const data = await instanceAction.mutateAsync({ action: 'connect' });
+      // 1. Verificar o estado antes de pedir QR Code (conforme requisito)
+      if (!silent) console.log('[ConnectionTab] Verificando status da instância antes de solicitar QR...');
+      
+      const statusData = await instanceAction.mutateAsync({ 
+        action: 'status',
+        silent: silent 
+      });
+      
+      // Se já estiver conectada, atualizar a interface e abortar a geração de QR
+      if (statusData?.isConnected || statusData?.whatsapp_connected) {
+        if (!silent) {
+          console.log('[ConnectionTab] Instância já conectada! Cancelando pedido de QR.');
+          toast.success('Conta já está conectada!', {
+            description: 'A interface será atualizada em instantes.'
+          });
+        }
+        return;
+      }
+
+      // 2. Se não estiver conectado, solicitar QR Code
+      if (!silent) console.log('[ConnectionTab] Solicitando novo QR Code...');
+      const data = await instanceAction.mutateAsync({ 
+        action: 'connect',
+        silent: silent
+      });
       
       if (data?.qrCode) {
         const src = data.qrCode.startsWith('data:')
           ? data.qrCode
           : `data:image/png;base64,${data.qrCode}`;
-        setQrCode(src);
-        toast.success('QR Code gerado! Escaneie com seu WhatsApp.');
-      } else if (data?.ok === false) {
+        
+        // Só atualizamos se o código mudou para evitar cintilação desnecessária
+        if (src !== qrCode) {
+          setQrCode(src);
+          if (!silent) {
+            toast.success('QR Code pronto!', {
+              description: 'Escaneie a imagem com o seu telemóvel para conectar.'
+            });
+          }
+        }
+      } else if (data?.ok === false && !silent) {
         throw new Error(data.error || 'Erro ao gerar QR Code');
-      } else {
-        toast.info('O servidor está processando a solicitação do QR Code. Por favor, aguarde alguns segundos enquanto a instância inicializa.');
+      } else if (!silent) {
+        toast.info('A preparar conexão...', {
+          description: 'O servidor está a inicializar a sua instância. Aguarde alguns segundos.'
+        });
       }
     } catch (e: any) {
-      console.error('[ConnectionTab] QR fetch error:', e);
-      toast.error('Erro ao gerar QR Code: ' + e.message);
+      if (!silent) {
+        console.error('[ConnectionTab] QR fetch error:', e);
+        toast.error('Erro ao gerar QR Code: ' + e.message);
+      }
     } finally {
-      setLoadingQR(false);
+      if (!silent) setLoadingQR(false);
     }
   };
 
   const handleGetPairingCode = async () => {
     const digits = phoneNumber.replace(/\D/g, '');
     if (digits.length < 9) {
-      toast.error('Digite um número de telemóvel válido com código do país (ex: 258841234567)');
+      toast.error('Número inválido', {
+        description: 'Por favor, insira o número completo com o código do país.'
+      });
       return;
     }
 
@@ -182,11 +243,15 @@ export function ConnectionTab({ agent, instanceAction }: ConnectionTabProps) {
       
       if (data?.pairingCode) {
         setPairingCode(data.pairingCode);
-        toast.success('Código de pareamento gerado! Insira no seu WhatsApp.');
+        toast.success('Código gerado!', {
+          description: 'Insira os 8 caracteres no seu WhatsApp para parear.'
+        });
       } else if (data?.ok === false) {
         throw new Error(data.error || 'Erro ao gerar código de pareamento');
       } else {
-        toast.warning('O servidor não retornou o código de pareamento. Verifique se o número está correto ou tente conectar via QR Code.');
+        toast.warning('Aguarde um momento', {
+          description: 'O servidor ainda não retornou o código. Tente novamente em instantes.'
+        });
       }
     } catch (e: any) {
       console.error('[ConnectionTab] Pairing fetch error:', e);
