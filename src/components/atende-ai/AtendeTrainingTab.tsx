@@ -132,6 +132,22 @@ const SECTIONS: ConfigSection[] = [
     iconColor: 'text-purple-600',
     iconBg: 'bg-purple-500/10',
   },
+  {
+    id: 'follow_up',
+    title: 'Tempo de Follow Up',
+    description: 'Defina quando o agente deve retomar o contacto automaticamente',
+    icon: RotateCcw,
+    iconColor: 'text-amber-600',
+    iconBg: 'bg-amber-500/10',
+  },
+  {
+    id: 'supervisor',
+    title: 'Supervisor Especialista',
+    description: 'Número para notificações e esclarecimento de dúvidas da IA',
+    icon: Users,
+    iconColor: 'text-blue-600',
+    iconBg: 'bg-blue-500/10',
+  },
 ];
 
 const RESPONSE_SIZE_LABELS: Record<number, string> = {
@@ -160,6 +176,9 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
   const [humanPauseDuration, setHumanPauseDuration] = useState(instance.human_pause_duration || 60);
   const [trainingDataText, setTrainingDataText] = useState(instance.training_data_text || '');
   const [trainingDataFilename, setTrainingDataFilename] = useState(instance.training_data_filename || '');
+  const [followUpEnabled, setFollowUpEnabled] = useState((instance as any).follow_up_enabled ?? false);
+  const [followUpDelay, setFollowUpDelay] = useState((instance as any).follow_up_delay_minutes ?? 1440);
+  const [supervisorPhone, setSupervisorPhone] = useState((instance as any).supervisor_phone || '');
   const [isParsingFile, setIsParsingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -202,6 +221,9 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
         human_pause_duration: humanPauseDuration,
         training_data_text: trainingDataText || null,
         training_data_filename: trainingDataFilename || null,
+        follow_up_enabled: followUpEnabled,
+        follow_up_delay_minutes: followUpDelay,
+        supervisor_phone: supervisorPhone || null,
       } as any);
       setHasChanges(false);
     } catch {
@@ -229,6 +251,9 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
     setHumanPauseDuration(instance.human_pause_duration || 60);
     setTrainingDataText(instance.training_data_text || '');
     setTrainingDataFilename(instance.training_data_filename || '');
+    setFollowUpEnabled((instance as any).follow_up_enabled ?? false);
+    setFollowUpDelay((instance as any).follow_up_delay_minutes ?? 1440);
+    setSupervisorPhone((instance as any).supervisor_phone || '');
     setHasChanges(false);
   };
 
@@ -789,6 +814,69 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
                             </div>
                             <Switch checked={markAsRead} onCheckedChange={(v) => { setMarkAsRead(v); markChanged(); }} />
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Follow Up */}
+                  {section.id === 'follow_up' && (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label className="text-sm">Ativar Follow Up automático</Label>
+                          <p className="text-[10px] text-muted-foreground">O bot entrará em contacto se o cliente não responder</p>
+                        </div>
+                        <Switch checked={followUpEnabled} onCheckedChange={(v) => { setFollowUpEnabled(v); markChanged(); }} />
+                      </div>
+
+                      {followUpEnabled && (
+                        <div className="space-y-4 pl-4 pt-2 border-l-2 border-primary/10 ml-2">
+                          <div className="flex justify-between items-center mb-1">
+                            <Label className="text-xs">Tempo de espera</Label>
+                            <span className="text-xs font-semibold text-primary">
+                              {followUpDelay < 60 ? `${followUpDelay} min` : `${Math.floor(followUpDelay / 60)}h ${followUpDelay % 60}m`}
+                            </span>
+                          </div>
+                          <Slider
+                            value={[followUpDelay]}
+                            onValueChange={([v]) => { setFollowUpDelay(v); markChanged(); }}
+                            min={5}
+                            max={2880}
+                            step={5}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>5 min</span>
+                            <span>48 horas</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground italic leading-relaxed">
+                            O agente enviará uma mensagem de acompanhamento se a última mensagem for do cliente e o tempo configurado tiver passado.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Supervisor */}
+                  {section.id === 'supervisor' && (
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Número do Supervisor (WhatsApp)</Label>
+                        <Input
+                          value={supervisorPhone}
+                          onChange={(e) => { setSupervisorPhone(e.target.value); markChanged(); }}
+                          placeholder="Ex: 258841234567"
+                        />
+                      </div>
+                      <div className="p-3 rounded-lg border bg-blue-50/50 flex items-start gap-3">
+                        <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-blue-900">Como funciona?</p>
+                          <p className="text-[10px] text-blue-800/70 leading-tight">
+                            Quando o agente tiver uma dúvida ou precisar chamar um especialista, ele enviará uma mensagem para este número. 
+                            Ao responder para o bot, ele repassará a informação ao cliente automaticamente.
+                          </p>
                         </div>
                       </div>
                     </div>

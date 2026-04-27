@@ -77,16 +77,24 @@ async function sendTextMessage(
     if (!res.ok) {
       console.error(`sendTextMessage falhou: ${res.status}`, resText);
       await logToDb(sb, instanceId, "error", `Falha ao enviar: ${res.status} - ${resText.slice(0, 150)}`);
-      return false;
+      return null;
     }
 
-    // Algumas APIs retornam 200 mas com erro no corpo
-    await logToDb(sb, instanceId, "ai_reply_sent", `Resposta enviada para ${number}. Retorno: ${resText.slice(0, 150)}`);
-    return true;
+    // Tentar extrair ID da mensagem se disponível no JSON
+    let messageId = null;
+    try {
+      const resJson = JSON.parse(resText);
+      messageId = resJson.key?.id || resJson.messageId || null;
+    } catch {
+      // Ignorar erro de parse
+    }
+
+    await logToDb(sb, instanceId, "ai_reply_sent", `Resposta enviada para ${number}. ID: ${messageId}`);
+    return messageId || true; // Retorna o ID ou true se não encontrar ID mas foi OK
   } catch (err) {
     console.error(`[sendTextMessage] Erro de rede:`, err);
     await logToDb(sb, instanceId, "error", `Erro de rede ao enviar mensagem: ${err.message}`);
-    return false;
+    return null;
   }
 }
 
@@ -175,6 +183,23 @@ async function reactToMessage(
   }
 }
 
+// ─── Mark as Read ───────────────────────────────────────────
+async function markAsRead(number: string, apiKey: string) {
+  if (!EVOLUTION_GO_BASE_URL) return;
+  try {
+    await fetch(`${EVOLUTION_GO_BASE_URL}/chat/read/${number}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": apiKey || EVOLUTION_GO_API_KEY,
+      },
+      body: JSON.stringify({ read: true }),
+    });
+  } catch (err) {
+    console.warn("[markAsRead] erro:", err);
+  }
+}
+
 // ─── Presence: Typing/Recording ─────────────────────────────
 async function sendPresence(number: string, presence: "composing" | "recording" | "paused", apiKey: string) {
   if (!EVOLUTION_GO_BASE_URL) return;
@@ -251,9 +276,15 @@ function buildSystemPrompt(instance: any): string {
   parts.push(`- Se a conversa anterior mostrar que você disse que ia "verificar" ou "conferir" algo, SEMPRE comece sua nova resposta com frases como: "Voltei!", "Tudo certo, obrigado por aguardar.", "Consegui confirmar aqui, desculpe a demora.", ou "Prontinho, obrigado pela paciência."`);
   parts.push(`- Mantenha o tom de um atendente prestativo que acabou de voltar de uma consulta ao estoque/sistema.`);
 
+  if (instance.welcome_message) {
+    parts.push(`\n## ESTILO DE SAUDAÇÃO`);
+    parts.push(`Seu estilo de saudação configurado é: "${instance.welcome_message}"`);
+    parts.push(`Mantenha esse tom educado e acolhedor em todas as interações.`);
+  }
+
   if (instance.company_sector) parts.push(`\nRamo: ${instance.company_sector}`);
   if (instance.company_description) parts.push(`\n## SOBRE A EMPRESA\n${instance.company_description}`);
-  if (instance.business_hours) parts.push(`\n## HORÁRIO\n${instance.business_hours}`);
+  if (instance.business_hours) parts.push(`\n## HORÁRIO DE FUNCIONAMENTO\n${instance.business_hours}`);
 
   // Address with reference
   if (instance.address) {
@@ -264,8 +295,14 @@ function buildSystemPrompt(instance: any): string {
     parts.push(`\n## ENDEREÇO\n${addressBlock}`);
   }
 
-  if (instance.instructions) parts.push(`\n## INSTRUÇÕES (PRIORIDADE MÁXIMA)\n${instance.instructions}`);
-  if (instance.conversation_flow) parts.push(`\n## FLUXO DE CONVERSA ESTRUTURADO (OBRIGATÓRIO)\n⚠️ ATENÇÃO: O fluxo abaixo define as etapas exatas que você deve seguir na condução desta conversa. Guie o usuário pelas etapas estabelecidas sem pular etapas.\n\n${instance.conversation_flow}`);
+  if (instance.instructions) parts.push(`\n## DIRETRIZES DE COMPORTAMENTO (PRIORIDADE MÁXIMA)\n${instance.instructions}`);
+  
+  if (instance.conversation_flow) {
+    parts.push(`\n## MAPA DE NAVEGAÇÃO DA CONVERSA (ESTRITAMENTE OBRIGATÓRIO)`);
+    parts.push(`⚠️ VOCÊ NÃO PODE PULAR ETAPAS. Use o fluxo abaixo como seu guia mestre de atendimento:`);
+    parts.push(`\n${instance.conversation_flow}`);
+    parts.push(`\nINSTRUÇÃO DE FLUXO: Analise o histórico e identifique em qual etapa você está agora. Sua missão é conduzir o cliente suavemente para a PRÓXIMA etapa definida no mapa acima.`);
+  }
   if (instance.extra_info) parts.push(`\n## INFORMAÇÕES ADICIONAIS\n${instance.extra_info}`);
 
   const trainingData = instance.training_data_text || instance.training_data;
@@ -283,9 +320,10 @@ function buildSystemPrompt(instance: any): string {
 
   parts.push(`\n## REGRA CRÍTICA ANTI-ALUCINAÇÃO (JAMAIS INVENTAR):`);
   parts.push(`1. Se o cliente perguntar sobre algo que NÃO ESTÁ na BASE DE DADOS acima, responda: "Lamento, mas não tenho esse detalhe aqui comigo agora. Vou anotar para o meu colega verificar e te dar um retorno, pode ser?"`);
-  parts.push(`2. JAMAIS invente preços. Se o preço de um item não estiver na lista, diga que vai confirmar com o setor responsável.`);
-  parts.push(`3. JAMAIS invente produtos ou serviços.`);
-  parts.push(`4. Se você tiver dúvida se uma informação existe ou não, assuma que NÃO existe.`);
+  parts.push(`2. Se a dúvida for complexa e você precisar de ajuda real do seu superior, adicione a tag secreta [ASK_SUPERVISOR: Sua dúvida aqui] ao final da sua resposta interna. Eu cuidarei de enviar para o seu chefe.`);
+  parts.push(`3. JAMAIS invente preços. Se o preço de um item não estiver na lista, diga que vai confirmar com o setor responsável.`);
+  parts.push(`4. JAMAIS invente produtos ou serviços.`);
+  parts.push(`5. Se você tiver dúvida se uma informação existe ou não, assuma que NÃO existe.`);
 
   const now = new Date();
   parts.push(`\n## DATA/HORA: ${now.toLocaleString("pt-BR", { timeZone: "Africa/Maputo" })} (Maputo)`);
@@ -407,6 +445,64 @@ async function callAI(
     console.error(`Erro ao chamar ${provider} (${model}):`, err);
     return "Erro na conexão com a inteligência artificial.";
   }
+}
+
+/**
+ * Usa IA para parear uma resposta do supervisor com uma das dúvidas pendentes.
+ */
+async function matchSupervisorReplyWithQuery(supervisorAnswer: string, pendingQueries: any[]) {
+  if (!OPENAI_API_KEY) return pendingQueries[0]; // Fallback se não houver chave global
+
+  try {
+    const queryList = pendingQueries.map((q, i) => `ID: ${i} | Dúvida: "${q.query_text}" | Cliente: ${q.atende_ai_conversations?.contact_name || "Desconhecido"}`).join("\n");
+    
+    const systemPrompt = `Você é um assistente de triagem de mensagens.
+O supervisor de uma empresa enviou uma resposta via WhatsApp, mas ele não citou qual dúvida estava respondendo.
+Sua missão é identificar qual das dúvidas pendentes abaixo mais se encaixa com a resposta dele.
+
+DÚVIDAS PENDENTES:
+${queryList}
+
+RESPOSTA DO SUPERVISOR:
+"${supervisorAnswer}"
+
+REGRAS:
+1. Analise o contexto da resposta e das dúvidas.
+2. Responda APENAS o número do ID (0, 1, 2, etc) da dúvida correspondente.
+3. Se nenhuma dúvida parecer correta, responda "NENHUMA".
+4. Seja preciso. Se houver dúvida, prefira a mais recente (ID 0).`;
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "system", content: systemPrompt }],
+        temperature: 0,
+        max_tokens: 10
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const result = data.choices?.[0]?.message?.content?.trim();
+      
+      if (result && result !== "NENHUMA") {
+        const index = parseInt(result);
+        if (!isNaN(index) && pendingQueries[index]) {
+          console.log(`[Supervisor Match] IA pareou com ID ${index}: "${pendingQueries[index].query_text}"`);
+          return pendingQueries[index];
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[matchSupervisorReplyWithQuery] erro:", err);
+  }
+
+  return pendingQueries[0]; // Fallback para a mais recente
 }
 
 // ─── Handler Principal ───────────────────────────────────────
@@ -589,6 +685,18 @@ serve(async (req: Request) => {
     // ─── MESSAGE: processar e responder com IA ─────────────────
     // Evolution Go: event "MESSAGE" com data.key (remoteJid, fromMe, id) e data.message
     if (event === "MESSAGE" || event === "MESSAGES_UPSERT") {
+      // ─── Marcar como lida se configurado ───
+      if (instance.mark_as_read) {
+        markAsRead(normalizePhone(body.data?.key?.remoteJid || body.data?.Info?.Chat || ""), instance.instance_api_key || EVOLUTION_GO_API_KEY);
+      }
+
+      // ─── Atraso de resposta (debounce/delay) configurado ───
+      const baseDelay = instance.response_delay_seconds || 0;
+      if (baseDelay > 0) {
+        console.log(`[Webhook] Aplicando atraso base de ${baseDelay}s...`);
+        await new Promise(r => setTimeout(r, baseDelay * 1000));
+      }
+
       // Só responde se a instância estiver ativa
       if (instance.status !== "active") {
         return new Response(JSON.stringify({ ok: true, skipped: "instance_not_active" }), { status: 200 });
@@ -613,9 +721,130 @@ serve(async (req: Request) => {
         return new Response(JSON.stringify({ ok: true, skipped: "no_chat_jid" }), { status: 200 });
       }
 
-      // Ignorar mensagens do próprio bot
+      // ─── SUPERVISOR RESPONSE HANDLER ───
+      // Se a mensagem vier do número do supervisor, pode ser uma resposta a uma dúvida da IA
+      if (instance.supervisor_phone && normalizePhone(chatJid) === normalizePhone(instance.supervisor_phone) && !fromMe) {
+        const quotedMsgId = info.quotedMessage?.id || info.quotedMsgId || null;
+        let query = null;
+
+        if (quotedMsgId) {
+          const { data } = await sb
+            .from("atende_ai_supervisor_queries")
+            .select("*, atende_ai_conversations(contact_phone, contact_name)")
+            .eq("external_msg_id", quotedMsgId)
+            .eq("status", "pending")
+            .maybeSingle();
+          query = data;
+        }
+
+        // Se não for resposta a uma msg específica, mas houver múltiplas pendentes, usar IA para parear
+        if (!query) {
+          const { data: pendingQueries } = await sb
+            .from("atende_ai_supervisor_queries")
+            .select("*, atende_ai_conversations(contact_phone, contact_name)")
+            .eq("supervisor_phone", normalizePhone(chatJid))
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(5); // Analisar as últimas 5 dúvidas
+
+          if (pendingQueries && pendingQueries.length > 0) {
+            const supervisorAnswer = (
+              msgContent?.conversation ||
+              msgContent?.extendedTextMessage?.text ||
+              ""
+            ).trim();
+
+            if (pendingQueries.length === 1) {
+              query = pendingQueries[0];
+            } else {
+              // USAR IA PARA PAREAR O CONTEXTO
+              console.log(`[Supervisor] Usando IA para parear resposta entre ${pendingQueries.length} dúvidas...`);
+              query = await matchSupervisorReplyWithQuery(supervisorAnswer, pendingQueries);
+            }
+          }
+        }
+
+        if (query && query.atende_ai_conversations) {
+          const clientPhone = query.atende_ai_conversations.contact_phone;
+          const supervisorAnswer = (
+            msgContent?.conversation ||
+            msgContent?.extendedTextMessage?.text ||
+            ""
+          ).trim();
+
+          if (supervisorAnswer) {
+            console.log(`[Supervisor] Repassando resposta para o cliente ${clientPhone}: "${supervisorAnswer}"`);
+            
+            // Enviar resposta ao cliente (como se fosse o bot ou um colega)
+            const relayMsg = `Olá! Consegui confirmar aqui com meu colega:\n\n${supervisorAnswer}`;
+            await smartSendMessage(instance.id, instance.evolution_instance_id, clientPhone, relayMsg, instance.instance_api_key || EVOLUTION_GO_API_KEY, sb, 1000);
+            
+            // Guardar mensagem no histórico da conversa
+            await sb.from("atende_ai_messages").insert({
+              conversation_id: query.conversation_id,
+              organization_id: instance.organization_id,
+              role: "assistant",
+              content: relayMsg,
+              message_type: "text"
+            });
+
+            // Atualizar status da query
+            await sb.from("atende_ai_supervisor_queries").update({
+              supervisor_answer: supervisorAnswer,
+              status: "answered"
+            }).eq("id", query.id);
+
+            return new Response(JSON.stringify({ ok: true, status: "supervisor_answer_relayed" }), { status: 200 });
+          }
+        }
+      }
+
+      // Processar mensagens do próprio bot ou humano na mesma conta
       if (fromMe === true) {
-        return new Response(JSON.stringify({ ok: true, skipped: "from_me" }), { status: 200 });
+        const phone = normalizePhone(chatJid);
+        const { data: existingConv } = await sb
+          .from("atende_ai_conversations")
+          .select("id")
+          .eq("instance_id", instance.id)
+          .eq("contact_phone", phone)
+          .maybeSingle();
+
+        if (existingConv) {
+          const pauseMinutes = instance.human_pause_duration || 60;
+          const pausedUntil = new Date(Date.now() + pauseMinutes * 60 * 1000).toISOString();
+          
+          await sb
+            .from("atende_ai_conversations")
+            .update({ 
+              paused_until: pausedUntil,
+              waiting_human: false 
+            })
+            .eq("id", existingConv.id);
+
+          // Guardar a mensagem enviada pelo humano para o histórico da IA
+          let humanText = (
+            msgContent?.conversation ||
+            msgContent?.extendedTextMessage?.text ||
+            msgContent?.imageMessage?.caption ||
+            msgContent?.videoMessage?.caption ||
+            msgContent?.documentMessage?.caption ||
+            ""
+          ).trim();
+
+          if (humanText) {
+            await sb.from("atende_ai_messages").insert({
+              conversation_id: existingConv.id,
+              organization_id: instance.organization_id,
+              role: "assistant",
+              content: humanText,
+              message_type: "text"
+            });
+          }
+
+          console.log(`[Webhook] Intervenção humana detectada. Bot pausado por ${pauseMinutes} min até ${pausedUntil}`);
+        }
+
+        return new Response(JSON.stringify({ ok: true, status: "paused_by_human_intervention" }), { status: 200 });
       }
 
       // Ignorar grupos
@@ -809,14 +1038,14 @@ serve(async (req: Request) => {
         await sendTextMessage(instance.id, instanceName, phone, instance.welcome_message, instanceApiKey, sb);
       }
 
-      // ─── Smart Acknowledgement (Apenas para perguntas que exigem "verificação") ───
-      const isRoutineInfo = /horário|funcionamento|onde|localização|endereço|localizacao|quem|vcs|vocês|telefone|contato/i.test(text.toLowerCase());
-      const isComplex = (text.includes("?") || text.length > 50) && 
-                       /preço|valor|quanto|custo|tem|estoque|disponível|produto|catálogo|entrega|frete|taxa/i.test(text.toLowerCase()) &&
-                       !isRoutineInfo;
+      // Heurística de complexidade expandida: Detectar se a mensagem pede algo que exige "verificação"
+      // vs rotina (horário, onde fica, contato, quem são, o que fazem)
+      const lastUserMessage = text.toLowerCase();
+      const isRoutine = /horário|horario|funcionamento|onde|localização|localizacao|endereco|endereço|local|fica|contato|telefone|quem|fazem|faz|empresa|sobre|ajuda|ajudar|saudação|oi|ola|olá|bom dia|boa tarde|boa noite/i.test(lastUserMessage);
+      const isComplex = /preço|preco|valor|quanto|custa|tem|estoque|disponível|disponivel|entrega|frete|prazo|vaga|trabalhar|contratar|pagamento|forma|pix|cartao|cartão/i.test(lastUserMessage);
 
       let ackSent = false;
-      if (isComplex && instanceName) {
+      if (isComplex && !isRoutine && instanceName) {
         const ackPool = [
           "Só um momento, vou conferir isso aqui para você...",
           "Deixa eu dar uma olhadinha aqui nos detalhes, só um instante...",
@@ -851,16 +1080,44 @@ serve(async (req: Request) => {
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
 
-      // Guardar resposta da IA
+      // Detectar se a IA solicitou ajuda do supervisor
+      let processedReply = aiReply;
+      const supervisorMatch = aiReply.match(/\[ASK_SUPERVISOR:\s*(.*?)\]/i);
+      
+      if (supervisorMatch && instance.supervisor_phone) {
+        const queryText = supervisorMatch[1];
+        processedReply = aiReply.replace(/\[ASK_SUPERVISOR:.*?\]/gi, "").trim();
+        
+        console.log(`[Supervisor] Solicitando ajuda para: "${queryText}"`);
+        
+        // Notificar supervisor
+        const supervisorMsg = `🚨 *DÚVIDA DO AGENTE (${instance.name})*\n\n*Cliente:* ${senderName} (${phone})\n*Dúvida:* ${queryText}\n\n*Responda a esta mensagem* para que eu possa repassar ao cliente.`;
+        
+        const supervisorMessageId = await sendTextMessage(instance.id, instanceName, instance.supervisor_phone, supervisorMsg, instanceApiKey, sb, 500);
+        
+        if (supervisorMessageId) {
+          // Guardar na tabela de queries para mapear a resposta depois
+          await sb.from("atende_ai_supervisor_queries").insert({
+            instance_id: instance.id,
+            conversation_id: conversationId,
+            supervisor_phone: instance.supervisor_phone,
+            query_text: queryText,
+            status: 'pending',
+            external_msg_id: typeof supervisorMessageId === 'string' ? supervisorMessageId : null
+          });
+        }
+      }
+
+      // Guardar resposta da IA (sem a tag do supervisor se houver)
       await sb.from("atende_ai_messages").insert({
         conversation_id: conversationId,
         organization_id: instance.organization_id,
         role: "assistant",
-        content: aiReply,
+        content: processedReply,
         message_type: "text",
       });
 
-      await logToDb(sb, instance.id, "ai_reply_sent", `IA respondeu para ${phone}: ${aiReply.substring(0, 100)}...`);
+      await logToDb(sb, instance.id, "ai_reply_sent", `IA respondeu para ${phone}: ${processedReply.substring(0, 100)}...`);
 
       await sb.rpc("increment_atende_ai_stats", {
         p_instance_id: instance.id,
@@ -874,7 +1131,7 @@ serve(async (req: Request) => {
         const delayMs = instance.show_typing ? (instance.typing_delay_seconds || 2) * 1000 : 0;
         
         console.log(`[Webhook] Enviando resposta para ${phone} com delay nativo de ${delayMs}ms`);
-        await smartSendMessage(instance.id, instanceName, phone, aiReply, instanceApiKey, sb, delayMs);
+        await smartSendMessage(instance.id, instanceName, phone, processedReply, instanceApiKey, sb, delayMs);
       }
 
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
