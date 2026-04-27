@@ -255,6 +255,16 @@ function buildSystemPrompt(agent: Record<string, unknown>): string {
     parts.push("");
   }
 
+  // Fluxo de Conversa Específico
+  const conversationFlow = agent.conversation_flow as string;
+  if (conversationFlow) {
+    parts.push("## FLUXO DE CONVERSA ESTRUTURADO (OBRIGATÓRIO)");
+    parts.push("⚠️ ATENÇÃO: O fluxo abaixo define as etapas exatas que você deve seguir na condução desta conversa. Guie o usuário pelas etapas estabelecidas sem pular etapas.");
+    parts.push("");
+    parts.push(conversationFlow);
+    parts.push("");
+  }
+
   // Info extra
   const extra = agent.extra_info as string;
   if (extra) {

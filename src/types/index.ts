@@ -320,6 +320,7 @@ export interface AtendeAIInstance {
   business_hours: string | null;
   address: string | null;
   address_reference: string | null;
+  conversation_flow: string | null;
   extra_info: string | null;
   response_size: number;
   response_delay_seconds: number;
