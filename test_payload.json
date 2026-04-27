@@ -1,0 +1,14 @@
+{
+  "event": "MESSAGES_UPSERT",
+  "data": {
+    "key": {
+      "remoteJid": "258847969224@s.whatsapp.net",
+      "fromMe": false,
+      "id": "TEST_FROM_MODEL_4"
+    },
+    "message": {
+      "conversation": "Dessa vez vai!"
+    },
+    "pushName": "Antigravity Test"
+  }
+}

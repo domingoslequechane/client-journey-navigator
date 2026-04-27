@@ -4,7 +4,6 @@ import {
   ChevronLeft, 
   Trash2, 
   PowerOff, 
-  RefreshCw,
   User,
   AlertTriangle
 } from 'lucide-react';
@@ -35,7 +34,7 @@ import { toast } from 'sonner';
 export default function AtendeAIDetail() {
   const { agentNameSlug } = useParams();
   const navigate = useNavigate();
-  const { agents, isLoading, deleteAgent, refreshQR, syncInstance } = useAtendeAI();
+  const { agents, isLoading, deleteAgent, refreshQR } = useAtendeAI();
   const [activeTab, setActiveTab] = useState('dashboard');
   
   // Modal State
@@ -48,16 +47,9 @@ export default function AtendeAIDetail() {
   });
 
   // Detail hook — provides conversations, messages, config update and connection actions
-  const { instance, conversations, conversationsLoading, updateConfig, instanceAction, sendMessage } = useAtendeAIDetail(agent?.id);
+  const { instance, conversations, conversationsLoading, updateConfig, instanceAction, sendMessage, clearHistory } = useAtendeAIDetail(agent?.id);
 
   const effectiveAgent = instance || agent;
-
-  // NOTE: We do NOT auto-sync here because it caused a race condition:
-  // 1. Agent created locally with evolution_instance_id = null
-  // 2. Page loads, auto-sync fires
-  // 3. Sync sees no evolution_instance_id -> deletes the local record
-  // 4. Page shows "Instância não encontrada"
-  // Manual sync via the button is the safe approach.
 
   if (isLoading) {
     return (
@@ -194,18 +186,6 @@ export default function AtendeAIDetail() {
           </div>
 
           <div className="flex items-center gap-3">
-              {effectiveAgent.evolution_instance_id && (
-                <Button 
-                   onClick={() => instanceAction.mutate({ action: 'status' })}
-                   disabled={instanceAction.isPending || !effectiveAgent.whatsapp_connected}
-                   variant="outline" 
-                   className="h-9 gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border-zinc-200 dark:border-zinc-800 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <RefreshCw className={cn("h-4 w-4", instanceAction.isPending && "animate-spin")} />
-                  {instanceAction.isPending ? 'Sincronizando...' : 'Sincronizar'}
-                </Button>
-              )}
-
             <Button 
               onClick={handleDeleteClick}
               className="h-9 gap-2 bg-red-600 hover:bg-red-500 text-white border-none rounded-md text-sm font-bold shadow-sm transition-all"
@@ -238,7 +218,7 @@ export default function AtendeAIDetail() {
               instance={effectiveAgent}
               conversations={conversations}
               isLoading={conversationsLoading}
-              sendMessage={sendMessage}
+              sendMessage={sendMessage} clearHistory={clearHistory}
             />
           )}
 

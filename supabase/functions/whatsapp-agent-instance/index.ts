@@ -23,7 +23,7 @@ async function evolutionRequest<T = any>(
   body?: any,
   extraHeaders?: Record<string, string>,
   overrideApiKey?: string
-): Promise<{ ok: boolean; data?: T; error?: string; status?: number }> {
+): Promise<{ ok: boolean; data?: T; error?: string; status?: number; url?: string; apikey?: string }> {
   try {
     const rawKey = overrideApiKey || EVOLUTION_API_KEY;
     const trimmedKey = (rawKey || "").trim();
@@ -57,9 +57,9 @@ async function evolutionRequest<T = any>(
 
     if (!res.ok) {
       console.error(`[Evolution] Error ${res.status}:`, data);
-      return { ok: false, error: data?.error || data?.message || rawText || `HTTP ${res.status}`, status: res.status };
+      return { ok: false, error: data?.error || data?.message || rawText || `HTTP ${res.status}`, status: res.status, url, apikey: trimmedKey };
     }
-    return { ok: true, data: data as T, status: res.status };
+    return { ok: true, data: data as T, status: res.status, url, apikey: trimmedKey };
   } catch (err) {
     console.error(`[Evolution] Fetch Error:`, err);
     return { ok: false, error: err instanceof Error ? err.message : "Unreachable" };
@@ -68,24 +68,38 @@ async function evolutionRequest<T = any>(
 
 function extractInstanceMetadata(remote: any) {
   const data = remote.data || remote;
-  
-  // Connections status extraction
-  const state = (data.status || data.state || data.connectionStatus || "").toString().toLowerCase();
-  const isConnected = state === "open" || state === "connected" || data.Connected === true || data.status === "CONNECTED";
 
-  // Phone number extraction fallback chain
-  let rawJid = data.owner || data.ownerJid || data.jid || data.number || 
-               data.me?.id || data.info?.me?.id || 
-               data.instance?.owner || data.instance?.jid || data.instance?.settings?.owner ||
-               null;
+  // ─── Estado de conexão ────────────────────────────────────────────────────
+  const rawState = (data.status || data.state || data.connectionStatus || data.instance?.status || data.instance?.state || data.instance?.connectionStatus || "").toString().toLowerCase().trim();
   
-  let connectedNumber = rawJid ? rawJid.toString().split(/[#:@]/)[0] : null;
-  
-  // Profile picture fallback
+  // APENAS "open" indica que o WhatsApp está realmente vinculado nas versões actuais.
+  let isConnected = rawState === "open";
+
+  // Se não for "open", verificar se a API está retornando o formato antigo/alternativo:
+  // {"Connected": true, "LoggedIn": true, "Name": "..."}
+  if (!isConnected && data.Connected === true && data.LoggedIn === true) {
+     isConnected = true;
+  }
+
+  console.log(`[extractInstanceMetadata] rawState="${rawState}" → isConnected=${isConnected}`, JSON.stringify(data).substring(0, 200));
+
+  // ─── Número de telefone ───────────────────────────────────────────────────
+  const rawJid = data.owner || data.ownerJid || data.jid || data.number ||
+                 data.me?.id || data.info?.me?.id ||
+                 data.instance?.owner || data.instance?.jid || data.instance?.settings?.owner ||
+                 null;
+  const connectedNumber = rawJid ? rawJid.toString().split(/[#:@]/)[0] : null;
+
+  // ─── Foto de perfil ───────────────────────────────────────────────────────
   const profilePic = data.profilePictureUrl || data.profilePicUrl || data.profilePicture ||
                      data.instance?.profilePictureUrl || null;
 
-  return { isConnected, state, connectedNumber, profilePic, name: data.Name };
+  // ─── Nome Comercial / Perfil ──────────────────────────────────────────────
+  const businessName = data.Name || data.name || data.pushName || data.instanceName || 
+                       data.instance?.instanceName || data.instance?.name || 
+                       data.instance?.pushName || null;
+
+  return { isConnected, state: rawState, connectedNumber, profilePic, businessName };
 }
 
 serve(async (req) => {
@@ -163,7 +177,7 @@ serve(async (req) => {
              const res = await evolutionRequest(`/instance/status`, "GET", undefined, undefined, apiKey);
              
              if (res.ok && res.data) {
-               const { isConnected, connectedNumber, profilePic } = extractInstanceMetadata(res.data);
+               const { isConnected, connectedNumber, profilePic, businessName } = extractInstanceMetadata(res.data);
                const updatePayload: any = {
                   whatsapp_connected: isConnected,
                   status: isConnected ? "active" : "inactive",
@@ -172,6 +186,7 @@ serve(async (req) => {
 
                if (connectedNumber) updatePayload.connected_number = connectedNumber;
                if (profilePic) updatePayload.profile_picture = profilePic;
+               if (businessName) updatePayload.company_name = businessName;
 
                await supabase.from("atende_ai_instances").update(updatePayload).eq("id", local.id);
                updatedCount++;
@@ -287,7 +302,7 @@ serve(async (req) => {
              const remote = Array.isArray(all.data) ? all.data.find((r: any) => r.id === atendeInstance.evolution_id || r.name === atendeInstance.evolution_instance_id) : null;
              
              if (remote) {
-                const { isConnected, connectedNumber, profilePic } = extractInstanceMetadata(remote);
+                const { isConnected, connectedNumber, profilePic, businessName } = extractInstanceMetadata(remote);
                 const updatePayload: any = {
                   whatsapp_connected: isConnected,
                   status: isConnected ? "active" : "inactive",
@@ -296,23 +311,40 @@ serve(async (req) => {
 
                 if (connectedNumber) updatePayload.connected_number = connectedNumber;
                 if (profilePic) updatePayload.profile_picture = profilePic;
+                if (businessName) updatePayload.company_name = businessName;
+                if (businessName) updatePayload.company_name = businessName;
 
-                 await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
-                 return json({ 
+                await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
+                 
+                // Registar a verificação no log (fallback)
+                await supabase.from("atende_ai_logs").insert({
+                    instance_id: targetInstance.id,
+                    event: "status_check_fallback",
+                    details: `Verificação de estado (fallback via /instance/all): ${isConnected ? 'Conectado' : 'Desconectado'}\nURL Usada: ${all.url}\nHeader apikey: ${all.apikey}`
+                });
+
+                return json({ 
                     ok: true, 
                     isConnected,
                     whatsapp_connected: isConnected,
                     connected_number: connectedNumber,
                     profile_picture: profilePic 
-                 });
-              } else {
+                });
+             } else {
                  // Not found even in fallback. Mark as disconnected.
                  await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update({
                    whatsapp_connected: false,
                    status: "inactive",
                    updated_at: new Date().toISOString()
                  }).eq("id", targetInstance.id);
-                return json({ ok: true, isConnected: false });
+                 
+                 await supabase.from("atende_ai_logs").insert({
+                    instance_id: targetInstance.id,
+                    event: "status_check_failed",
+                    details: `Instância não encontrada na Evolution Go (retornou 404)\nURL Usada: ${res.url}\nHeader apikey: ${res.apikey}`
+                 });
+
+                 return json({ ok: true, isConnected: false });
              }
           } else if (!res.ok) {
              // Other error, mark disconnected.
@@ -324,7 +356,7 @@ serve(async (req) => {
              return json({ ok: false, isConnected: false, error: res.error });
           }
 
-          const { isConnected, connectedNumber, profilePic } = extractInstanceMetadata(res.data);
+          const { isConnected, connectedNumber, profilePic, businessName } = extractInstanceMetadata(res.data);
           
           const updatePayload: any = {
             whatsapp_connected: isConnected,
@@ -337,12 +369,20 @@ serve(async (req) => {
 
           await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
 
+          // Registar a verificação no log (requisito do utilizador)
+          await supabase.from("atende_ai_logs").insert({
+            instance_id: targetInstance.id,
+            event: "status_check",
+            details: `Verificação de estado: ${isConnected ? 'Conectado' : 'Desconectado'}\nURL Usada: ${res.url}\nHeader apikey: ${res.apikey}`
+          });
+
           return json({ 
             ok: true, 
             isConnected,
             whatsapp_connected: isConnected,
             connected_number: connectedNumber,
-            profile_picture: profilePic
+            profile_picture: profilePic,
+            company_name: businessName
           });
         }
 
@@ -444,6 +484,36 @@ serve(async (req) => {
               details: "Erro ao conectar no servidor: " + res.error 
             });
             return json({ ok: false, error: res.error }, 200);
+          }
+
+          // ─── Forçar re-registo do webhook com o secret actual ───────────────
+          // Isto corrige o caso em que o Evo Go tem um webhook URL antigo (com
+          // secret desactualizado), causando 401 em todos os eventos enviados.
+          try {
+            const webhookUpdateRes = await evolutionRequest(`/webhook/instance`, "PUT", {
+              url: webhookUrl,
+              events: [
+                "MESSAGE", "SEND_MESSAGE", "CONNECTION", "QRCODE",
+                "MESSAGES_SET", "MESSAGES_UPSERT", "OFFLINE_SYNC_COMPLETED",
+                "LOGGEDOUT", "DISCONNECTED", "READ_RECEIPT", "PRESENCE",
+                "HISTORY_SYNC", "CHAT_PRESENCE", "CALL", "LABEL",
+                "CONTACT", "GROUP", "NEWSLETTER"
+              ],
+              enabled: true,
+            }, undefined, currentApiKey);
+            
+            if (webhookUpdateRes.ok) {
+              console.log(`[Connect] Webhook re-registado com sucesso em: ${webhookUrl}`);
+            } else {
+              // Tentar endpoint alternativo (versões mais antigas do Evo Go)
+              await evolutionRequest(`/instance/webhook`, "POST", {
+                webhookUrl,
+                webhookEvents: ["ALL"],
+              }, undefined, currentApiKey);
+              console.log(`[Connect] Webhook re-registado via endpoint alternativo`);
+            }
+          } catch (webhookErr) {
+            console.warn(`[Connect] Falha ao re-registar webhook (não crítico):`, webhookErr);
           }
 
           let qr = res.data?.Qrcode || res.data?.base64 || res.data?.qrcode || res.data?.data?.qrcode || res.data?.data?.base64 || res.data?.instance?.qrcode;

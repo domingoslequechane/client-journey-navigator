@@ -18,8 +18,19 @@ import {
   Video,
   Phone,
   Smile,
-  Mic
+  Mic,
+  Eraser
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -35,12 +46,14 @@ interface AtendeChatTabProps {
   conversations: AtendeAIConversation[];
   isLoading: boolean;
   sendMessage?: any;
+  clearHistory?: any;
 }
 
-export function AtendeChatTab({ instance, conversations: allConversations, isLoading, sendMessage }: AtendeChatTabProps) {
+export function AtendeChatTab({ instance, conversations: allConversations, isLoading, sendMessage, clearHistory }: AtendeChatTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
+  const [isClearHistoryOpen, setIsClearHistoryOpen] = useState(false);
   const [optimisticMessages, setOptimisticMessages] = useState<AtendeAIMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const knownMsgIds = useRef<Set<string>>(new Set());
@@ -174,6 +187,16 @@ export function AtendeChatTab({ instance, conversations: allConversations, isLoa
     } catch (e) {
       // Remove on error
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempMsg.id));
+    }
+  };
+  
+  const handleClearHistory = async () => {
+    if (!selectedConvId || !clearHistory) return;
+    try {
+      await clearHistory.mutateAsync(selectedConvId);
+      setIsClearHistoryOpen(false);
+    } catch (e) {
+      // Error handled by toast in mutation
     }
   };
 
@@ -329,8 +352,14 @@ export function AtendeChatTab({ instance, conversations: allConversations, isLoa
               </div>
 
               <div className="flex items-center gap-1 md:gap-2">
-                <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 rounded-full">
-                  <Search className="h-[18px] w-[18px]" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setIsClearHistoryOpen(true)}
+                  className="h-10 w-10 text-zinc-500 hover:text-red-500 dark:hover:text-red-400 rounded-full transition-colors"
+                  title="Limpar histórico"
+                >
+                  <Eraser className="h-5 w-5" />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 rounded-full">
                   <MoreVertical className="h-5 w-5" />
@@ -541,6 +570,33 @@ export function AtendeChatTab({ instance, conversations: allConversations, isLoa
           </div>
         )}
       </div>
+
+      {/* ─── Clear History Confirmation ─── */}
+      <AlertDialog open={isClearHistoryOpen} onOpenChange={setIsClearHistoryOpen}>
+        <AlertDialogContent className="bg-white dark:bg-[#0c0c0c] border-zinc-200 dark:border-zinc-800 shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              <Eraser className="h-5 w-5 text-red-500" />
+              Limpar histórico de conversa?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[15px] text-zinc-500 dark:text-zinc-400 pt-2">
+              Isso apagará permanentemente todas as mensagens enviadas e recebidas para o contato <strong>{selectedConv?.contact_name}</strong>. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="pt-4">
+            <AlertDialogCancel className="rounded-xl border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleClearHistory}
+              disabled={clearHistory?.isPending}
+              className="rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              {clearHistory?.isPending ? 'Limpando...' : 'Sim, limpar histórico'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

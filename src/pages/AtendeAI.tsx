@@ -32,7 +32,7 @@ import { useTranslation } from 'react-i18next';
 export default function AtendeAI() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { agents, isLoading, syncAll } = useAtendeAI();
+  const { agents, isLoading } = useAtendeAI();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filterStatus, setFilterStatus] = React.useState('all');
@@ -56,9 +56,7 @@ export default function AtendeAI() {
         <AtendeHeader 
           currentOrg="Onix Agence" 
           onNewAtendente={() => setIsCreateDialogOpen(true)}
-          onSync={() => syncAll.mutate()}
           connectedCount={activeCount}
-          isSyncing={syncAll.isPending}
         />
 
         {/* Global Stats List View */}

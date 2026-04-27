@@ -194,52 +194,6 @@ export function useAtendeAI() {
     },
   });
 
-  // Sync a single instance — checks if it exists in Evolution, removes from DB if not
-  const syncInstance = useMutation({
-    mutationFn: async (agentId: string) => {
-      const { data, error } = await supabase.functions.invoke('whatsapp-agent-instance', {
-        body: { action: 'sync', instance_id: agentId, organization_id: orgId },
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['atende-ai-instances'] });
-    },
-  });
-
-  // Sync all: fetches instances from Evolution Go, removes local entries that no longer exist there
-  const syncAll = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('whatsapp-agent-instance', {
-        body: { action: 'sync-all', organization_id: orgId },
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      if (data?.ok === false) {
-        toast.error('Sincronização interrompida', {
-          description: data.error
-        });
-      } else {
-        const deleted = data?.deleted || 0;
-        const msg = deleted > 0
-          ? `${deleted} atendentes foram removidos por não estarem ativos no servidor.`
-          : 'Todos os seus atendentes estão sincronizados e atualizados.';
-        toast.success('Sincronização concluída', {
-          description: msg
-        });
-      }
-      queryClient.invalidateQueries({ queryKey: ['atende-ai-instances'] });
-    },
-    onError: (err: any) => {
-      toast.error('Falha na sincronização', {
-        description: 'Não foi possível comunicar com o servidor de instâncias.'
-      });
-    },
-  });
-
   return {
     agents: agentsQuery.data || [],
     isLoading: agentsQuery.isLoading,
@@ -247,7 +201,5 @@ export function useAtendeAI() {
     deleteAgent,
     updateAgent,
     refreshQR,
-    syncInstance,
-    syncAll
   };
 }
