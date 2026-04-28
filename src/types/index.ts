@@ -344,6 +344,9 @@ export interface AtendeAIInstance {
   ai_models: Record<string, string> | null;
   training_data_text: string | null;
   training_data_filename: string | null;
+  ai_verification_enabled: boolean;
+  welcome_notified: boolean;
+  supervisor_phone: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -362,6 +365,7 @@ export interface AtendeAIConversation {
   last_presence_at: string | null;
   paused_until: string | null;
   waiting_human: boolean;
+  is_verified: boolean;
   created_at: string;
   profile_picture_url?: string | null;
 }

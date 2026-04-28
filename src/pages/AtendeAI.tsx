@@ -11,8 +11,19 @@ import {
   Activity,
   MessageSquare,
   Bot,
-  Smartphone
+  Smartphone,
+  TrendingUp,
+  History
 } from 'lucide-react';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -32,21 +43,50 @@ import { useTranslation } from 'react-i18next';
 export default function AtendeAI() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { agents, isLoading } = useAtendeAI();
+  const { agents, isLoading, totalMessages, activeCount, inactiveCount, capacity, globalAnalytics } = useAtendeAI();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filterStatus, setFilterStatus] = React.useState('all');
 
-  const filteredAgents = agents.filter(agent => {
-    const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || agent.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  // Process global analytics for the graph
+  const graphData = React.useMemo(() => {
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const result = [];
+    const now = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      result.push({
+        name: months[d.getMonth()],
+        month: d.getMonth(),
+        year: d.getFullYear(),
+        value: 0
+      });
+    }
 
-  const activeCount = agents.filter(a => a.status === 'active').length;
-  const inactiveCount = agents.filter(a => a.status !== 'active').length;
-  const totalLeads = 0; 
-  const totalConversations = 0;
+    if (globalAnalytics) {
+      globalAnalytics.forEach((msg: any) => {
+        const date = new Date(msg.created_at);
+        const m = date.getMonth();
+        const y = date.getFullYear();
+        const found = result.find(r => r.month === m && r.year === y);
+        if (found) found.value += 1;
+      });
+    }
+
+    return result.map(({ name, value }) => ({ name, value }));
+  }, [globalAnalytics]);
+
+  const filteredAgents = React.useMemo(() => {
+    return agents.filter(agent => {
+      const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           agent.clients?.company_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = filterStatus === 'all' || 
+                           (filterStatus === 'active' && (agent.status === 'active' || agent.whatsapp_connected)) ||
+                           (filterStatus === 'inactive' && agent.status === 'inactive' && !agent.whatsapp_connected);
+      return matchesSearch && matchesStatus;
+    });
+  }, [agents, searchQuery, filterStatus]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0c0c0c] text-zinc-900 dark:text-white selection:bg-[#ff7a00]/30 pb-20 overflow-x-hidden transition-colors duration-300">
@@ -75,16 +115,82 @@ export default function AtendeAI() {
            />
             <AtendeStatCard 
               label="Mensagens processadas" 
-              value={totalConversations} 
+              value={totalMessages} 
               sublabel="Processadas pela IA" 
               icon={MessageSquare} 
             />
             <AtendeStatCard 
               label="Capacidade" 
-              value="100%" 
+              value={`${capacity}%`} 
               sublabel="SLA de Resposta" 
               icon={Activity} 
-            />
+           />
+        </div>
+
+        {/* Global Analytics Graph */}
+        <div className="bg-white dark:bg-[#121212] border border-zinc-100 dark:border-[#222] rounded-md p-6 hover:border-[#ff7a00]/20 transition-all shadow-sm">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2">
+              <History className="h-4 w-4 text-[#ff7a00]" />
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">Fluxo Global de Mensagens</h3>
+            </div>
+            <div className="flex items-center gap-4">
+               <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-[#ff7a00]" />
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Total processado</span>
+               </div>
+            </div>
+          </div>
+          
+          <div className="h-[200px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={graphData}>
+                <defs>
+                   <linearGradient id="colorGlobal" x1="0" y1="0" x2="0" y2="1">
+                     <stop offset="5%" stopColor="#ff7a00" stopOpacity={0.3}/>
+                     <stop offset="95%" stopColor="#ff7a00" stopOpacity={0}/>
+                   </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="#e4e4e7" strokeDasharray="3 3" className="dark:stroke-zinc-800" />
+                <XAxis 
+                   dataKey="name" 
+                   axisLine={false} 
+                   tickLine={false} 
+                   tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} 
+                   dy={10}
+                />
+                <YAxis 
+                   axisLine={false} 
+                   tickLine={false} 
+                   tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} 
+                />
+                <Tooltip 
+                  content={({ active, payload, label }: any) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white dark:bg-[#121212] border border-zinc-200 dark:border-zinc-800 p-3 rounded-lg shadow-xl min-w-[120px]">
+                          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">{label}</p>
+                          <p className="text-[#ff7a00] font-black text-lg flex items-baseline gap-1">
+                            {payload[0].value} <span className="text-xs text-zinc-400 font-medium normal-case">mensagens</span>
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#ff7a00" 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill="url(#colorGlobal)" 
+                  animationDuration={1500}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Filters & Actions */}

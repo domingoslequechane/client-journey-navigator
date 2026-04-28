@@ -179,6 +179,8 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
   const [followUpEnabled, setFollowUpEnabled] = useState((instance as any).follow_up_enabled ?? false);
   const [followUpDelay, setFollowUpDelay] = useState((instance as any).follow_up_delay_minutes ?? 1440);
   const [supervisorPhone, setSupervisorPhone] = useState((instance as any).supervisor_phone || '');
+  const [splitMessages, setSplitMessages] = useState((instance as any).split_messages ?? false);
+  const [typingSpeedWpm, setTypingSpeedWpm] = useState((instance as any).typing_speed_wpm ?? 60);
   const [isParsingFile, setIsParsingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -224,6 +226,8 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
         follow_up_enabled: followUpEnabled,
         follow_up_delay_minutes: followUpDelay,
         supervisor_phone: supervisorPhone || null,
+        split_messages: splitMessages,
+        typing_speed_wpm: typingSpeedWpm,
       } as any);
       setHasChanges(false);
     } catch {
@@ -254,6 +258,8 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
     setFollowUpEnabled((instance as any).follow_up_enabled ?? false);
     setFollowUpDelay((instance as any).follow_up_delay_minutes ?? 1440);
     setSupervisorPhone((instance as any).supervisor_phone || '');
+    setSplitMessages((instance as any).split_messages ?? false);
+    setTypingSpeedWpm((instance as any).typing_speed_wpm ?? 60);
     setHasChanges(false);
   };
 
@@ -813,6 +819,36 @@ export function AtendeTrainingTab({ instance, updateConfig }: AtendeTrainingTabP
                               <p className="text-[10px] text-muted-foreground">Marca mensagens como lidas automaticamente</p>
                             </div>
                             <Switch checked={markAsRead} onCheckedChange={(v) => { setMarkAsRead(v); markChanged(); }} />
+                          </div>
+
+                          <div className="pt-4 border-t space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <Label className="text-sm">Fracionar mensagens</Label>
+                                <p className="text-[10px] text-muted-foreground">Envia respostas longas em vários blocos pequenos</p>
+                              </div>
+                              <Switch checked={splitMessages} onCheckedChange={(v) => { setSplitMessages(v); markChanged(); }} />
+                            </div>
+
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center mb-1">
+                                <Label className="text-xs">Velocidade de digitação (WPM)</Label>
+                                <span className="text-xs font-semibold text-primary">
+                                  {typingSpeedWpm} WPM
+                                </span>
+                              </div>
+                              <Slider
+                                value={[typingSpeedWpm]}
+                                onValueChange={([v]) => { setTypingSpeedWpm(v); markChanged(); }}
+                                min={20}
+                                max={150}
+                                step={5}
+                                className="w-full"
+                              />
+                              <p className="text-[10px] text-muted-foreground italic">
+                                Ajusta o tempo de espera entre blocos com base em palavras por minuto.
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>

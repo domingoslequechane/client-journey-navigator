@@ -19,7 +19,8 @@ import {
   Phone,
   Smile,
   Mic,
-  Eraser
+  Eraser,
+  Bot
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -428,14 +429,33 @@ export function AtendeChatTab({ instance, conversations: allConversations, isLoa
                           <div 
                             key={msg.id || idx} 
                             className={cn(
-                              "flex w-full transition-all",
+                              "flex w-full transition-all gap-2",
                               isNewMsg ? "chat-msg-enter" : "",
-                              isMe ? "justify-end pl-12 md:pl-20" : "justify-start pr-12 md:pr-20",
+                              isMe ? "flex-row-reverse" : "flex-row",
                               marginTop
                             )}
                           >
+                            {/* Message Avatar */}
+                            <div className="shrink-0 mt-auto mb-1">
+                              <div className="h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-white dark:border-zinc-900 shadow-sm">
+                                {isMe ? (
+                                  instance.profile_picture ? (
+                                    <img src={instance.profile_picture} alt="" className="h-full w-full object-cover" />
+                                  ) : (
+                                    <Bot className="h-4 w-4 text-zinc-400" />
+                                  )
+                                ) : (
+                                  selectedConv?.profile_picture_url ? (
+                                    <img src={selectedConv.profile_picture_url} alt="" className="h-full w-full object-cover" />
+                                  ) : (
+                                    <User className="h-4 w-4 text-zinc-400" />
+                                  )
+                                )}
+                              </div>
+                            </div>
+
                             <div className={cn(
-                              "px-4 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.1)] dark:shadow-none relative group/msg flex flex-col w-fit max-w-[90%] md:max-w-[80%]",
+                              "px-4 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.1)] dark:shadow-none relative group/msg flex flex-col w-fit max-w-[85%] md:max-w-[75%]",
                               isMe 
                                 ? "bg-[#ff7a00] text-white" 
                                 : "bg-white dark:bg-[#18181b] border dark:border-zinc-800/80 text-[#111b21] dark:text-[#e9edef]",

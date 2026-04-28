@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Save, CheckCircle2, AlertCircle, ExternalLink, Key, X, Zap, PowerOff, FlaskConical, Loader2, CheckCheck, XCircle } from 'lucide-react';
+import { Eye, EyeOff, Save, CheckCircle2, AlertCircle, ExternalLink, Key, X, Zap, PowerOff, FlaskConical, Loader2, CheckCheck, XCircle, Shield, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -758,6 +758,54 @@ export function AtendeAPITab({ instance, updateConfig }: AtendeAPITabProps) {
             As chaves são armazenadas de forma segura e apenas usadas para processar as mensagens do seu atendente. Nunca partilhamos as suas credenciais.
           </p>
         </div>
+      </div>
+
+      {/* AI Verification Settings */}
+      <div className="bg-white dark:bg-[#0f0f0f] rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+        <div className="p-5 border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-xl border transition-colors",
+                instance.ai_verification_enabled 
+                  ? "bg-blue-500/10 border-blue-500/20 text-blue-500" 
+                  : "bg-zinc-500/10 border-zinc-500/20 text-zinc-500"
+              )}>
+                {instance.ai_verification_enabled ? <ShieldCheck className="h-5 w-5" /> : <Shield className="h-5 w-5" />}
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Verificação de Segurança (Whitelist)</h3>
+                <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">
+                  Quando activo, o agente Camila enviará mensagens para todos, mas apenas responderá automaticamente a contactos verificados.
+                </p>
+              </div>
+            </div>
+            
+            <Button
+              size="sm"
+              variant={instance.ai_verification_enabled ? "default" : "outline"}
+              onClick={() => updateConfig.mutateAsync({ ai_verification_enabled: !instance.ai_verification_enabled } as any)}
+              disabled={updateConfig.isPending}
+              className={cn(
+                "h-8 gap-2 text-[10px] font-bold uppercase tracking-wider transition-all px-4 rounded-full",
+                instance.ai_verification_enabled 
+                  ? "bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-lg shadow-blue-500/20" 
+                  : "border-zinc-200 dark:border-zinc-800"
+              )}
+            >
+              {updateConfig.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : (instance.ai_verification_enabled ? 'Activado' : 'Desactivado')}
+            </Button>
+          </div>
+        </div>
+        
+        {instance.ai_verification_enabled && (
+          <div className="p-5 flex items-start gap-3 bg-blue-500/5">
+            <ShieldAlert className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
+              <strong>Atenção:</strong> Novos contactos não serão atendidos pela IA até que você os "Verifique" manualmente no chat ou envie uma mensagem para eles através do sistema.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Provider grid */}

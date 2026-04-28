@@ -312,7 +312,7 @@ serve(async (req) => {
                 if (connectedNumber) updatePayload.connected_number = connectedNumber;
                 if (profilePic) updatePayload.profile_picture = profilePic;
                 if (businessName) updatePayload.company_name = businessName;
-                if (businessName) updatePayload.company_name = businessName;
+                if (!isConnected) updatePayload.welcome_notified = false;
 
                 await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
                  
@@ -335,6 +335,7 @@ serve(async (req) => {
                  await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update({
                    whatsapp_connected: false,
                    status: "inactive",
+                   welcome_notified: false,
                    updated_at: new Date().toISOString()
                  }).eq("id", targetInstance.id);
                  
@@ -351,6 +352,7 @@ serve(async (req) => {
              await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update({
                 whatsapp_connected: false,
                 status: "inactive",
+                welcome_notified: false,
                 updated_at: new Date().toISOString()
              }).eq("id", targetInstance.id);
              return json({ ok: false, isConnected: false, error: res.error });
@@ -366,6 +368,7 @@ serve(async (req) => {
 
           if (connectedNumber) updatePayload.connected_number = connectedNumber;
           if (profilePic) updatePayload.profile_picture = profilePic;
+          if (!isConnected) updatePayload.welcome_notified = false;
 
           await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
 
@@ -601,6 +604,7 @@ serve(async (req) => {
             .update({
               whatsapp_connected: false,
               status: "inactive",
+              welcome_notified: false,
               updated_at: new Date().toISOString()
             })
             .eq("id", targetInstance.id);

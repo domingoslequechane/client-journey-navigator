@@ -194,9 +194,38 @@ export function useAtendeAI() {
     },
   });
 
+  const globalAnalyticsQuery = useQuery({
+    queryKey: ['atende-ai-global-analytics', orgId],
+    queryFn: async () => {
+      if (!orgId) return [];
+      
+      const { data, error } = await supabase
+        .from('atende_ai_messages')
+        .select('created_at')
+        .eq('organization_id', orgId);
+        
+      if (error) {
+        console.error("Error fetching global analytics:", error);
+        return [];
+      }
+      return data;
+    },
+    enabled: !!orgId
+  });
+
+  const totalMessages = (agentsQuery.data || []).reduce((sum, a) => sum + (a.total_messages || 0), 0);
+  const activeCount = (agentsQuery.data || []).filter(a => a.status === 'active' || a.whatsapp_connected).length;
+  const totalCount = (agentsQuery.data || []).length;
+  const capacity = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 100;
+
   return {
     agents: agentsQuery.data || [],
     isLoading: agentsQuery.isLoading,
+    totalMessages,
+    activeCount,
+    inactiveCount: totalCount - activeCount,
+    capacity,
+    globalAnalytics: globalAnalyticsQuery.data || [],
     createAgent,
     deleteAgent,
     updateAgent,
