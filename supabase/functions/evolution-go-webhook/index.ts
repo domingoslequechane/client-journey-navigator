@@ -909,7 +909,7 @@ serve(async (req: Request) => {
         const phone = normalizePhone(chatJid);
         const { data: existingConv } = await sb
           .from("atende_ai_conversations")
-          .select("id, is_verified")
+          .select("id")
           .eq("instance_id", instance.id)
           .eq("contact_phone", phone)
           .maybeSingle();
@@ -923,8 +923,7 @@ serve(async (req: Request) => {
             .from("atende_ai_conversations")
             .update({ 
               paused_until: pausedUntil,
-              waiting_human: false,
-              is_verified: true // Auto-verificar se nós mandamos mensagem
+              waiting_human: false
             })
             .eq("id", existingConv.id);
 
@@ -954,22 +953,6 @@ serve(async (req: Request) => {
         return new Response(JSON.stringify({ ok: true, status: "paused_by_human_intervention" }), { status: 200 });
       }
 
-      // ─── VERIFICAÇÃO DE IA (WHITELIST) ───
-      // Se a verificação estiver activa, o bot só responde a conversas marcadas como verificadas.
-      // Camila (a bot) pode mandar para todos (handled above via fromMe), mas nem todos podem mandar para a Camila.
-      if (instance.ai_verification_enabled) {
-        const { data: convCheck } = await sb
-          .from("atende_ai_conversations")
-          .select("is_verified")
-          .eq("instance_id", instance.id)
-          .eq("contact_phone", phone)
-          .maybeSingle();
-        
-        if (!convCheck || !convCheck.is_verified) {
-          console.log(`[Webhook] Mensagem de ${phone} ignorada: Verificação de IA ativa e conversa não verificada.`);
-          return new Response(JSON.stringify({ ok: true, skipped: "not_verified" }), { status: 200 });
-        }
-      }
 
       // Ignorar grupos
       if (isGroup) {

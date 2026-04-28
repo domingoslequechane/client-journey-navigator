@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { User, Bot, Phone, Clock, Shield, ShieldCheck, Loader2 } from 'lucide-react';
+import { User, Bot, Phone, Clock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +22,6 @@ export function AtendeConversationView({ conversation }: AtendeConversationViewP
 
   const isVerifying = toggleVerification.isPending;
   const isVerified = conversation.is_verified;
-  const isVerificationEnabled = instance?.ai_verification_enabled;
 
   const visibleMessages = messages.filter(m => m.role === 'user' || m.role === 'assistant' || m.role === 'system');
 
@@ -38,9 +37,6 @@ export function AtendeConversationView({ conversation }: AtendeConversationViewP
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold">{conversation.contact_name}</h3>
-                {isVerified && (
-                  <ShieldCheck className="h-3.5 w-3.5 text-blue-500" title="Contacto Verificado" />
-                )}
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5">
                 {conversation.contact_phone && (
@@ -61,27 +57,7 @@ export function AtendeConversationView({ conversation }: AtendeConversationViewP
               </div>
             </div>
 
-            {isVerificationEnabled && (
-              <Button
-                size="sm"
-                variant={isVerified ? "default" : "outline"}
-                onClick={() => toggleVerification.mutate({ conversationId: conversation.id, isVerified: !isVerified })}
-                disabled={isVerifying}
-                className={cn(
-                  "h-8 gap-2 text-[10px] font-bold uppercase tracking-wider rounded-full px-4 transition-all",
-                  isVerified 
-                    ? "bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-lg shadow-blue-500/20" 
-                    : "border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-blue-600 hover:border-blue-200"
-                )}
-              >
-                {isVerifying ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  isVerified ? <ShieldCheck className="h-3 w-3" /> : <Shield className="h-3 w-3" />
-                )}
-                {isVerified ? 'Verificado' : 'Verificar'}
-              </Button>
-            )}
+
             <div className="flex flex-col items-end gap-1.5 shrink-0">
               <Badge
                 variant="outline"
