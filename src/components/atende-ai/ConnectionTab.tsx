@@ -25,7 +25,7 @@ import type { AtendeAIInstance } from '@/types';
 interface ConnectionTabProps {
   agent: AtendeAIInstance;
   instanceAction: {
-    mutateAsync: (args: { action: 'connect' | 'status' | 'disconnect' | 'get-qr' | 'debug-auth'; phone?: string }) => Promise<any>;
+    mutateAsync: (args: { action: 'connect' | 'status' | 'disconnect' | 'get-qr' | 'debug-auth'; phone?: string; silent?: boolean }) => Promise<any>;
     isPending: boolean;
   };
 }
