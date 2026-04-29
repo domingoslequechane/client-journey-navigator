@@ -179,16 +179,17 @@ export function useSubscription(): UseSubscriptionReturn {
   const hasEnded = subscriptionHasEnded || trialHasEnded;
 
   // ── Status derivation (date-aware) ──
-  // isActive: DB says active AND the billing period hasn't ended
-  const isActive = subscription?.status === 'active' && !subscriptionHasEnded;
+  // isActive: DB says active. We grant access if active, regardless of period end (trusting the DB status)
+  const isActive = subscription?.status === 'active';
   // isTrialing: DB says trialing AND the trial period hasn't ended
   const isTrialing = subscription?.status === 'trialing' && !trialHasEnded;
   const isPaidPlan = ['starter', 'pro', 'agency'].includes(planType as string);
   const isPastDue = subscription?.status === 'past_due';
   const isCancelled = subscription?.status === 'cancelled';
 
-  // A subscription is truly expired if the status is expired/cancelled AND the period has ended
-  const isExpired = (subscription?.status === 'expired' || subscription?.status === 'cancelled') && hasEnded;
+  // A subscription is truly expired if the status is explicitly expired
+  // or if it was cancelled and the period has ended.
+  const isExpired = subscription?.status === 'expired' || (isCancelled && hasEnded);
   const cancelAtPeriodEnd = subscription?.cancelAtPeriodEnd || false;
 
   // Trial days left from organization data (informational only)
@@ -196,8 +197,9 @@ export function useSubscription(): UseSubscriptionReturn {
     ? Math.max(0, Math.ceil((new Date(organization.trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24)))
     : 0;
 
-  // Active subscription: must have valid status AND not have expired by date
-  const hasActiveSubscription = (isActive || isTrialing || ((isCancelled || subscription?.status === 'expired') && !hasEnded));
+  // Active subscription: must have valid status OR be within the valid period
+  // We include 'past_due' to ensure users aren't blocked during payment processing if their date is still valid
+  const hasActiveSubscription = (isActive || isTrialing || isPastDue || ((isCancelled || subscription?.status === 'expired') && !hasEnded));
   const hasSubscriptionRecord = !!subscription;
 
   // Days until subscription expiration
