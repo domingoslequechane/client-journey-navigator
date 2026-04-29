@@ -120,26 +120,46 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
       // Create notification for supervisor assignment
       if (isNewSupervisor && updates.supervisor_phone && currentInstance?.organization_id) {
         try {
-          // Get owner info
-          const { data: ownerMember } = await (supabase
-            .from('organization_members' as any)
-            .select('user_id')
-            .eq('organization_id', currentInstance.organization_id)
-            .eq('role', 'owner')
+          // Get organization name
+          const { data: org } = await (supabase
+            .from('organizations' as any)
+            .select('name')
+            .eq('id', currentInstance.organization_id)
             .single() as any);
 
-          if (ownerMember?.user_id) {
+          // Try to find if supervisor has an account in the system
+          // Normalize phone for comparison
+          const normalizedSupervisorPhone = updates.supervisor_phone.replace(/\D/g, '');
+          
+          const { data: allProfiles } = await (supabase
+            .from('profiles' as any)
+            .select('id, phone')
+            .limit(1000) as any);
+
+          const supervisorUser = allProfiles?.find((p: any) => {
+            if (!p.phone) return false;
+            const normalizedProfilePhone = p.phone.replace(/\D/g, '');
+            return normalizedProfilePhone.includes(normalizedSupervisorPhone.slice(-9));
+          });
+
+          // Send internal notification if user found in system
+          if (supervisorUser?.id) {
             await (supabase as any).from('notifications').insert({
-              user_id: ownerMember.user_id,
-              title: '👔 Supervisor Adicionado',
-              message: `Um novo supervisor foi adicionado ao atendente "${currentInstance.name}".\n\n` +
-                `📱 Número: ${updates.supervisor_phone}\n\n` +
-                `📋 Como funciona:\n` +
-                `• Quando a IA não conseguir responder uma dúvida, você será notificado\n` +
-                `• Você pode responder diretamente pelo WhatsApp\n` +
-                `• A IA repassa sua resposta ao cliente automaticamente\n\n` +
-                `Para remover o supervisor, basta editar as configurações do atendente.`,
-              type: 'success',
+              user_id: supervisorUser.id,
+              title: '🎯 Você foi adicionado como Supervisor',
+              message: `Olá! Você foi designado como Supervisor do atendente "${currentInstance.name}" da agência "${org?.name}".\n\n` +
+                `📋 *Suas Responsabilidades:*\n` +
+                `• Responder dúvidas que a IA não conseguir resolver\n` +
+                `• Orientar a IA quando necessário\n` +
+                `• Garantir um atendimento de qualidade aos clientes\n\n` +
+                `⚠️ *Importante:* Antes de responder, verifique as mensagens anteriores para entender o contexto da dúvida do cliente.\n\n` +
+                `📱 *Como funciona:*\n` +
+                `1. A IA identificará quando não conseguir responder\n` +
+                `2. Você receberá uma notificação com a dúvida\n` +
+                `3. Responda diretamente aqui no WhatsApp\n` +
+                `4. A IA encaminhará sua resposta ao cliente\n\n` +
+                `Para dúvidas, contacte o administrador da agência.`,
+              type: 'info',
               is_broadcast: false,
               show_as_modal: true,
             });
