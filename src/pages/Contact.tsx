@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Mail, Phone, MapPin, Send, MessageSquare, Clock, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { validateAndSanitize } from '@/lib/sanitize';
 
 export default function Contact() {
   const { t } = useTranslation('landing');
@@ -29,12 +30,43 @@ export default function Contact() {
     setIsSubmitting(true);
     
     const formData = new FormData(e.target as HTMLFormElement);
+    const nameRaw = formData.get('name') as string;
+    const emailRaw = formData.get('email') as string;
+    const companyRaw = formData.get('company') as string;
+    const messageRaw = formData.get('message') as string;
+
+    const nameValidation = validateAndSanitize('Nome', nameRaw || '', 'name');
+    const emailValidation = validateAndSanitize('Email', emailRaw || '', 'email');
+    const companyValidation = validateAndSanitize('Empresa', companyRaw || '', 'text');
+    const messageValidation = validateAndSanitize('Mensagem', messageRaw || '', 'text');
+
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error || 'Nome inválido');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!emailValidation.isValid) {
+      toast.error(emailValidation.error || 'Email inválido');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!companyValidation.isValid) {
+      toast.error(companyValidation.error || 'Empresa inválida');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!messageValidation.isValid) {
+      toast.error(messageValidation.error || 'Mensagem inválida');
+      setIsSubmitting(false);
+      return;
+    }
+
     const data = {
-      name: formData.get('name'),
-      email: formData.get('email'),
-      company: formData.get('company'),
+      name: nameValidation.sanitized,
+      email: emailValidation.sanitized,
+      company: companyValidation.sanitized,
       subject: (e.target as HTMLFormElement).querySelector('select')?.value || 'Contato Web',
-      message: formData.get('message'),
+      message: messageValidation.sanitized,
     };
 
     try {
