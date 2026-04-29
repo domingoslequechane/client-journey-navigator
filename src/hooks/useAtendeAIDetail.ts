@@ -97,6 +97,17 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
     mutationFn: async (updates: Partial<AtendeAIInstance>) => {
       if (!instanceId) throw new Error('ID da instância ausente');
 
+      // Get current instance to check if supervisor is being added
+      const { data: currentInstance } = await (supabase
+        .from('atende_ai_instances' as any)
+        .select('supervisor_phone, name, organization_id')
+        .eq('id', instanceId)
+        .single() as any);
+
+      const isNewSupervisor = updates.supervisor_phone && 
+        updates.supervisor_phone !== currentInstance?.supervisor_phone &&
+        !currentInstance?.supervisor_phone;
+
       const { data, error } = await (supabase
         .from('atende_ai_instances' as any)
         .update(updates)
@@ -105,6 +116,39 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
         .single() as any);
 
       if (error) throw error;
+
+      // Create notification for supervisor assignment
+      if (isNewSupervisor && updates.supervisor_phone && currentInstance?.organization_id) {
+        try {
+          // Get owner info
+          const { data: ownerMember } = await (supabase
+            .from('organization_members' as any)
+            .select('user_id')
+            .eq('organization_id', currentInstance.organization_id)
+            .eq('role', 'owner')
+            .single() as any);
+
+          if (ownerMember?.user_id) {
+            await (supabase as any).from('notifications').insert({
+              user_id: ownerMember.user_id,
+              title: '👔 Supervisor Adicionado',
+              message: `Um novo supervisor foi adicionado ao atendente "${currentInstance.name}".\n\n` +
+                `📱 Número: ${updates.supervisor_phone}\n\n` +
+                `📋 Como funciona:\n` +
+                `• Quando a IA não conseguir responder uma dúvida, você será notificado\n` +
+                `• Você pode responder diretamente pelo WhatsApp\n` +
+                `• A IA repassa sua resposta ao cliente automaticamente\n\n` +
+                `Para remover o supervisor, basta editar as configurações do atendente.`,
+              type: 'success',
+              is_broadcast: false,
+              show_as_modal: true,
+            });
+          }
+        } catch (notifyErr) {
+          console.error('Error creating supervisor notification:', notifyErr);
+        }
+      }
+
       return data as AtendeAIInstance;
     },
     onSuccess: (updatedInstance) => {
