@@ -10,12 +10,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Mail, Phone, MapPin, Send, MessageSquare, Clock, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { validateAndSanitize } from '@/lib/sanitize';
+import { validateAndSanitize, sanitizeObject } from '@/lib/sanitize';
+import { useRateLimit } from '@/hooks/useRateLimit';
+
+const CONTACT_RATE_LIMIT = { maxRequests: 5, windowMs: 60000 };
 
 export default function Contact() {
   const { t } = useTranslation('landing');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { checkRateLimit, isRateLimited } = useRateLimit(CONTACT_RATE_LIMIT);
   
   useEffect(() => {
     const onScroll = () => {
@@ -27,6 +31,11 @@ export default function Contact() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!checkRateLimit()) {
+      return;
+    }
+    
     setIsSubmitting(true);
     
     const formData = new FormData(e.target as HTMLFormElement);
@@ -61,13 +70,13 @@ export default function Contact() {
       return;
     }
 
-    const data = {
+    const data = sanitizeObject({
       name: nameValidation.sanitized,
       email: emailValidation.sanitized,
       company: companyValidation.sanitized,
       subject: (e.target as HTMLFormElement).querySelector('select')?.value || 'Contato Web',
       message: messageValidation.sanitized,
-    };
+    });
 
     try {
       const { data: response, error } = await supabase.functions.invoke('send-landing-contact', {

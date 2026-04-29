@@ -1,15 +1,94 @@
 import DOMPurify from 'dompurify';
 
+const XSS_PAYLOADS = [
+  /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+  /javascript:/gi,
+  /on\w+\s*=/gi,
+  /data:\s*text\/html/gi,
+  /<iframe/gi,
+  /<object/gi,
+  /<embed/gi,
+  /<svg\s+onload/gi,
+  /<body\s+onload/gi,
+  /eval\s*\(/gi,
+  /expression\s*\(/gi,
+];
+
+function detectXSS(input: string): boolean {
+  return XSS_PAYLOADS.some(pattern => pattern.test(input));
+}
+
+function decodeEntities(str: string): string {
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = str;
+  return textarea.value;
+}
+
 export function sanitizeInput(input: string): string {
-  return DOMPurify.sanitize(input);
+  if (!input || typeof input !== 'string') return '';
+  
+  let sanitized = input;
+  let iterations = 0;
+  const maxIterations = 5;
+  
+  while (iterations < maxIterations) {
+    const decoded = decodeEntities(sanitized);
+    if (decoded === sanitized) break;
+    sanitized = decoded;
+    iterations++;
+  }
+  
+  if (detectXSS(sanitized)) {
+    return DOMPurify.sanitize(sanitized, { RETURN_TRUSTED_TYPE: false });
+  }
+  
+  return DOMPurify.sanitize(sanitized);
 }
 
 export function sanitizeHtml(html: string): string {
-  return DOMPurify.sanitize(html);
+  if (!html || typeof html !== 'string') return '';
+  
+  let sanitized = html;
+  let iterations = 0;
+  const maxIterations = 5;
+  
+  while (iterations < maxIterations) {
+    const decoded = decodeEntities(sanitized);
+    if (decoded === sanitized) break;
+    sanitized = decoded;
+    iterations++;
+  }
+  
+  return DOMPurify.sanitize(sanitized, {
+    ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'u', 'strong', 'em', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'div', 'a', 'table', 'thead', 'tbody', 'tr', 'td', 'th'],
+    ALLOWED_ATTR: ['href', 'class', 'target', 'rel'],
+  });
 }
 
 export function stripHtml(html: string): string {
   return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+}
+
+export function sanitizeObject<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === null || value === undefined) {
+      result[key] = value;
+    } else if (typeof value === 'string') {
+      result[key] = sanitizeInput(value);
+    } else if (Array.isArray(value)) {
+      result[key] = value.map(item => 
+        typeof item === 'object' ? sanitizeObject(item as Record<string, unknown>) : sanitizeInput(String(item))
+      );
+    } else if (typeof value === 'object') {
+      result[key] = sanitizeObject(value as Record<string, unknown>);
+    } else {
+      result[key] = value;
+    }
+  }
+  
+  return result;
 }
 
 export const inputValidation = {
@@ -35,6 +114,10 @@ export const inputValidation = {
 };
 
 export function validateAndSanitize(field: string, value: string, type: 'name' | 'email' | 'phone' | 'text'): { isValid: boolean; sanitized: string; error?: string } {
+  if (!value || typeof value !== 'string') {
+    return { isValid: false, sanitized: '', error: `${field} é obrigatório` };
+  }
+  
   const sanitized = sanitizeInput(value.trim());
   
   if (!sanitized) {
