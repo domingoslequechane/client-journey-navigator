@@ -146,19 +146,19 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
           if (supervisorUser?.id) {
             await (supabase as any).from('notifications').insert({
               user_id: supervisorUser.id,
-              title: '🎯 Você foi adicionado como Supervisor',
-              message: `Olá! Você foi designado como Supervisor do atendente "${currentInstance.name}" da agência "${org?.name}".\n\n` +
-                `📋 *Suas Responsabilidades:*\n` +
-                `• Responder dúvidas que a IA não conseguir resolver\n` +
-                `• Orientar a IA quando necessário\n` +
-                `• Garantir um atendimento de qualidade aos clientes\n\n` +
-                `⚠️ *Importante:* Antes de responder, verifique as mensagens anteriores para entender o contexto da dúvida do cliente.\n\n` +
-                `📱 *Como funciona:*\n` +
-                `1. A IA identificará quando não conseguir responder\n` +
-                `2. Você receberá uma notificação com a dúvida\n` +
-                `3. Responda diretamente aqui no WhatsApp\n` +
-                `4. A IA encaminhará sua resposta ao cliente\n\n` +
-                `Para dúvidas, contacte o administrador da agência.`,
+              title: '💡 Info: Você foi adicionado como Supervisor',
+              message: `Olá! Gostaríamos de informá-lo que o número do seu WhatsApp foi adicionado como Supervisor do atendente "${currentInstance.name}" da agência "${org?.name}".\n\n` +
+                `📋 *O que isso significa:*\n` +
+                `• Quando a IA tiver dificuldades em responder uma dúvida, você poderá ajudar\n` +
+                `• Você pode escolher responder ou não quando for contactado\n` +
+                `• Suas respostas ajudarão a melhorar o atendimento aos clientes\n\n` +
+                `💡 *Como funciona:*\n` +
+                `1. A IA pode identificar quando não consegue resolver\n` +
+                `2. Você receberá uma mensagem com a dúvida (se quiser ajudar)\n` +
+                `3. Se responder, a resposta será passada ao cliente\n` +
+                `4. Caso não responda, a IA tentará resolver sozinha\n\n` +
+                `⚠️ *Dica:* Sempre verifique as mensagens anteriores antes de responder para entender o contexto.\n\n` +
+                `Para mais informações ou para remover esta opção, contacte o administrador da agência.`,
               type: 'info',
               is_broadcast: false,
               show_as_modal: true,
