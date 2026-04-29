@@ -13,5 +13,20 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+  },
+  global: {
+    headers: {
+      'x-organization-id': localStorage.getItem('currentOrganizationId') || '',
+    },
+  },
 });
+
+export function setOrganizationContext(orgId: string) {
+  (supabase as any).rest.headers['x-organization-id'] = orgId;
+  localStorage.setItem('currentOrganizationId', orgId);
+}
+
+export function clearOrganizationContext() {
+  (supabase as any).rest.headers['x-organization-id'] = '';
+  localStorage.removeItem('currentOrganizationId');
+}
