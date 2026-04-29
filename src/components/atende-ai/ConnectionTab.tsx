@@ -434,7 +434,7 @@ export function ConnectionTab({ agent, instanceAction }: ConnectionTabProps) {
                     </div>
 
                     <Button
-                      onClick={handleGetQR}
+                      onClick={() => handleGetQR()}
                       disabled={loadingQR || !agent.instance_api_key}
                       className="w-full max-w-[320px] h-11 bg-transparent hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800 font-bold rounded-xl gap-3 transition-all"
                     >
