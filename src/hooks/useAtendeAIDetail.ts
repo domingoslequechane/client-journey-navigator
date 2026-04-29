@@ -121,6 +121,29 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
     },
   });
 
+  // ─── Toggle conversation verification ───
+  const toggleVerification = useMutation({
+    mutationFn: async ({ conversationId, isVerified }: { conversationId: string; isVerified: boolean }) => {
+      const { data, error } = await (supabase
+        .from('atende_ai_conversations' as any)
+        .update({ is_verified: !isVerified })
+        .eq('id', conversationId)
+        .select()
+        .single() as any);
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['atende-ai-conversations', instanceId] });
+    },
+    onError: (err: any) => {
+      toast.error('Erro ao atualizar verificação', {
+        description: err.message
+      });
+    },
+  });
+
   // ─── WhatsApp instance actions (connect / status / disconnect) ───
   const instanceAction = useMutation({
     mutationFn: async ({
@@ -359,6 +382,7 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
     conversationsLoading: conversationsQuery.isLoading,
     updateConfig,
     instanceAction,
+    toggleVerification,
     sendMessage,
     clearHistory,
     refetchInstance: instanceQuery.refetch,
