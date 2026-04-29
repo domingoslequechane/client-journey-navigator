@@ -205,7 +205,7 @@ export function AdminAIChat() {
       {/* Painel do Chat com Animação Slide-up */}
       <div 
         className={cn(
-          "flex flex-col shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden border-primary/20 bg-background/95 backdrop-blur-md rounded-2xl origin-bottom-right",
+          "flex flex-col shadow-2xl transition-all duration-500 ease-out overflow-hidden border-primary/20 bg-background/95 backdrop-blur-md rounded-2xl origin-bottom-right",
           isOpen 
             ? "scale-100 opacity-100 translate-y-0 pointer-events-auto" 
             : "scale-90 opacity-0 translate-y-10 pointer-events-none disabled shadow-none",

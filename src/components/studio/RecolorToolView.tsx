@@ -362,7 +362,7 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                                 key="generating-card"
                                                 onClick={() => { if (offset !== 0) setActiveIndex(logicalIndex); }}
                                                 className={cn(
-                                                    "absolute top-0 bottom-0 my-auto transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col items-center justify-center",
+                                                    "absolute top-0 bottom-0 my-auto transition-all duration-500 ease-out rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col items-center justify-center",
                                                     getCardSize(selectedSize),
                                                     offset === 0 ? "shadow-[0_0px_50px_rgba(0,0,0,0.25)] ring-1 ring-primary/20 cursor-default" : "shadow-xl cursor-pointer"
                                                 )}
@@ -435,7 +435,7 @@ export function RecolorToolView({ tool }: RecolorToolViewProps) {
                                                     else setMaximizedImage(img);
                                                 }}
                                                 className={cn(
-                                                    "absolute top-0 bottom-0 my-auto transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col",
+                                                    "absolute top-0 bottom-0 my-auto transition-all duration-500 ease-out rounded-[2rem] overflow-hidden bg-card border border-border flex flex-col",
                                                     getCardSize(img.size || selectedSize),
                                                     offset === 0 ? "shadow-[0_0px_60px_rgba(0,0,0,0.3)] ring-1 ring-primary/20 cursor-zoom-in" : "shadow-xl cursor-pointer"
                                                 )}
