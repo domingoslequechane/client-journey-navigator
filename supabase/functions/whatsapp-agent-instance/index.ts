@@ -312,7 +312,7 @@ serve(async (req) => {
                 if (connectedNumber) updatePayload.connected_number = connectedNumber;
                 if (profilePic) updatePayload.profile_picture = profilePic;
                 if (businessName) updatePayload.company_name = businessName;
-                if (!isConnected) updatePayload.welcome_notified = false;
+                if (businessName) updatePayload.company_name = businessName;
 
                 await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
                  
@@ -335,7 +335,6 @@ serve(async (req) => {
                  await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update({
                    whatsapp_connected: false,
                    status: "inactive",
-                   welcome_notified: false,
                    updated_at: new Date().toISOString()
                  }).eq("id", targetInstance.id);
                  
@@ -352,7 +351,6 @@ serve(async (req) => {
              await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update({
                 whatsapp_connected: false,
                 status: "inactive",
-                welcome_notified: false,
                 updated_at: new Date().toISOString()
              }).eq("id", targetInstance.id);
              return json({ ok: false, isConnected: false, error: res.error });
@@ -368,7 +366,6 @@ serve(async (req) => {
 
           if (connectedNumber) updatePayload.connected_number = connectedNumber;
           if (profilePic) updatePayload.profile_picture = profilePic;
-          if (!isConnected) updatePayload.welcome_notified = false;
 
           await supabase.from(isLegacyAgent ? "ai_agents" : "atende_ai_instances").update(updatePayload).eq("id", targetInstance.id);
 
@@ -472,11 +469,31 @@ serve(async (req) => {
           };
 
           // If phone is provided, Evolution uses it for Pairing Code
+          let endpoint = "/instance/connect";
+          let finalPayload = payload;
           if (digits) {
-            payload.phone = digits;
+            // Tentar fazer logout primeiro para limpar qualquer tentativa de QR anterior
+            console.log(`[Connect] Performing pre-pairing logout for: ${targetInstance.name}`);
+            await evolutionRequest(`/instance/logout`, "DELETE", undefined, undefined, currentApiKey);
+            
+            finalPayload = {
+              phone: digits
+            };
+            // Algumas versões usam /instance/pair/NOME, outras /instance/pair
+            endpoint = `/instance/pair/${encodeURIComponent(targetInstance.name)}`;
           }
 
-          const res = await evolutionRequest(`/instance/connect`, "POST", payload, undefined, currentApiKey);
+          console.log(`[Connect] Sending request to ${endpoint} with payload:`, JSON.stringify(finalPayload));
+          const res = await evolutionRequest(endpoint, "POST", finalPayload, undefined, currentApiKey);
+
+          // Se falhou com nome no URL, tentar sem nome no URL (fallback)
+          if (!res.ok && digits) {
+             console.log(`[Connect] Pairing with name in URL failed, trying root endpoint...`);
+             const fallbackRes = await evolutionRequest("/instance/pair", "POST", finalPayload, undefined, currentApiKey);
+             if (fallbackRes.ok) {
+                Object.assign(res, fallbackRes);
+             }
+          }
           
           console.log(`[Connect] Evolution returned:`, JSON.stringify(res.data).substring(0, 500));
           
@@ -520,7 +537,7 @@ serve(async (req) => {
           }
 
           let qr = res.data?.Qrcode || res.data?.base64 || res.data?.qrcode || res.data?.data?.qrcode || res.data?.data?.base64 || res.data?.instance?.qrcode;
-          let code = res.data?.pairingCode || res.data?.code || res.data?.data?.code || res.data?.instance?.code;
+          let code = res.data?.pairingCode || res.data?.code || res.data?.data?.code || res.data?.data?.PairingCode || res.data?.instance?.code;
 
           // Fallback: Se não retornou QR nem Código e não é pareamento por número, tentar buscar o QR explicitamente
           if (!qr && !code && !digits) {
@@ -535,8 +552,8 @@ serve(async (req) => {
 
           await supabase.from("atende_ai_logs").insert({ 
              instance_id: targetInstance.id, 
-             event: code ? "pairing_code_requested" : "qrcode_requested", 
-             details: "Requisição efetuada com sucesso para obter " + (code ? "código de pareamento" : "QR Code") 
+             event: digits ? "pairing_code_requested" : "qrcode_requested", 
+             details: "Requisição efetuada. Retorno: " + JSON.stringify(res.data) 
           });
 
           return json({ 
@@ -604,7 +621,6 @@ serve(async (req) => {
             .update({
               whatsapp_connected: false,
               status: "inactive",
-              welcome_notified: false,
               updated_at: new Date().toISOString()
             })
             .eq("id", targetInstance.id);

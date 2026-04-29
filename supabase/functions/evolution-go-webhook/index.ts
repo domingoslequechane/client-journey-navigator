@@ -98,62 +98,6 @@ async function sendTextMessage(
   }
 }
 
-// ─── Format to WhatsApp ────────────────────────────────────
-function formatToWhatsApp(text: string): string {
-  if (!text) return "";
-  
-  return text
-    // Bold: **text** or __text__ -> *text*
-    .replace(/(\*\*|__)(.*?)\1/g, "*$2*")
-    // Strikethrough: ~~text~~ -> ~text~
-    .replace(/~~(.*?)~~/g, "~$1~")
-    // Headers: ### text -> *text*
-    .replace(/^#{1,6}\s+(.*)$/gm, "*$1*")
-    // Code blocks: ```text``` -> ```text``` (ensure no language tag)
-    .replace(/```[a-z]*\n([\s\S]*?)\n```/g, "```$1```")
-    // Inline code: `text` -> ```text```
-    .replace(/`([^`]+)`/g, "```$1```")
-    // Remove extra newlines (more than 2)
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-// ─── Split Message into Coherent Chunks ────────────────────
-function splitMessageIntoChunks(text: string): string[] {
-  if (!text) return [];
-  
-  // 1. Dividir por parágrafos duplos
-  const paragraphs = text.split(/\n\n+/);
-  const finalChunks: string[] = [];
-
-  for (const para of paragraphs) {
-    const p = para.trim();
-    if (!p) continue;
-
-    // Se o parágrafo for curto (menos de 250 caracteres), manter inteiro
-    if (p.length < 250) {
-      finalChunks.push(p);
-      continue;
-    }
-
-    // 2. Se for longo, tentar dividir por frases que não terminem em :
-    const sentences = p.split(/(?<=[.!?])\s+(?=[A-Z]|[0-9]|["'«„])(?![^:]*:)/);
-    
-    let currentChunk = "";
-    for (const sentence of sentences) {
-      if ((currentChunk.length + sentence.length) > 400) {
-        if (currentChunk) finalChunks.push(currentChunk.trim());
-        currentChunk = sentence;
-      } else {
-        currentChunk += (currentChunk ? " " : "") + sentence;
-      }
-    }
-    if (currentChunk) finalChunks.push(currentChunk.trim());
-  }
-
-  return finalChunks.filter(c => c.length > 0);
-}
-
 // ─── Send Link with Preview ────────────────────────────────
 async function sendLinkMessage(
   number: string,
@@ -275,26 +219,6 @@ async function sendPresence(number: string, presence: "composing" | "recording" 
   }
 }
 
-// ─── Fetch Profile Picture ──────────────────────────────────
-async function fetchProfilePicture(number: string, apiKey: string): Promise<string | null> {
-  if (!EVOLUTION_GO_BASE_URL) return null;
-  try {
-    // Note: Evolution Go (Go Edition) typically has /chat/fetchProfilePictureUrl
-    const res = await fetch(`${EVOLUTION_GO_BASE_URL}/chat/fetchProfilePictureUrl/${number}`, {
-      method: "GET",
-      headers: {
-        "apikey": apiKey || EVOLUTION_GO_API_KEY,
-      },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.profilePictureUrl || data.url || null;
-  } catch (err) {
-    console.warn("[fetchProfilePicture] erro:", err);
-    return null;
-  }
-}
-
 // ─── Extract first URL from text ───────────────────────────
 function extractUrl(text: string): string | null {
   const urlRegex = /https?:\/\/[^\s\])"'>]+/i;
@@ -340,8 +264,6 @@ function buildSystemPrompt(instance: any): string {
   parts.push(`## COMUNICAÇÃO`);
   parts.push(`- Seja sempre educado, objetivo e em português.`);
   parts.push(`- Use emojis com moderação para manter o tom humano.`);
-  parts.push(`- IMPORTANTE: Use formatação nativa do WhatsApp: *negrito*, _itálico_ e ~tachado~.`);
-  parts.push(`- JAMAIS use Markdown padrão como # para títulos ou ** para negrito.`);
   if (responseSize === 1) {
     parts.push(`- IMPORTANTE: Seja extremamente conciso. Responda em no máximo 1-2 frases curtas. Vá directo ao ponto sem rodeios.`);
   } else if (responseSize === 3) {
@@ -374,7 +296,7 @@ function buildSystemPrompt(instance: any): string {
   }
 
   if (instance.instructions) parts.push(`\n## DIRETRIZES DE COMPORTAMENTO (PRIORIDADE MÁXIMA)\n${instance.instructions}`);
-  
+
   if (instance.conversation_flow) {
     parts.push(`\n## MAPA DE NAVEGAÇÃO DA CONVERSA (ESTRITAMENTE OBRIGATÓRIO)`);
     parts.push(`⚠️ VOCÊ NÃO PODE PULAR ETAPAS. Use o fluxo abaixo como seu guia mestre de atendimento:`);
@@ -403,10 +325,49 @@ function buildSystemPrompt(instance: any): string {
   parts.push(`4. JAMAIS invente produtos ou serviços.`);
   parts.push(`5. Se você tiver dúvida se uma informação existe ou não, assuma que NÃO existe.`);
 
+  parts.push(`\n## REGRA DE FORMATAÇÃO WHATSAPP (OBRIGATÓRIO):`);
+  parts.push(`1. Use APENAS a formatação suportada pelo WhatsApp:`);
+  parts.push(`   - *negrito* (use um único asterisco: *texto*)`);
+  parts.push(`   - _itálico_ (use um único underline: _texto_)`);
+  parts.push(`   - ~riscado~ (use um único til: ~texto~)`);
+  parts.push(`   - \`\`\`monoespaçado\`\`\` (para códigos ou destaque fixo)`);
+  parts.push(`2. JAMAIS use negrito com dois asteriscos (**texto**).`);
+  parts.push(`3. JAMAIS use subtítulos com # ou links em formato markdown [link](url). Coloque o link direto.`);
+  parts.push(`4. Use listas com hífens (-) ou números de forma limpa.`);
+
+  if (instance.split_messages) {
+    parts.push(`\n## REGRA DE FORMATAÇÃO DE MENSAGENS (MENSAGENS FRACIONADAS):`);
+    parts.push(`1. Divida sua resposta em parágrafos curtos e lógicos usando uma linha em branco (\\n\\n) entre eles.`);
+    parts.push(`2. Evite blocos únicos de texto muito longos. Prefira enviar uma ideia por vez.`);
+    parts.push(`3. O sistema enviará cada parágrafo como uma mensagem separada no WhatsApp para simular uma conversa humana natural.`);
+    parts.push(`4. Não quebre frases no meio. Use o ponto final ou uma quebra de parágrafo natural.`);
+  }
+
   const now = new Date();
   parts.push(`\n## DATA/HORA: ${now.toLocaleString("pt-BR", { timeZone: "Africa/Maputo" })} (Maputo)`);
 
   return parts.join("\n");
+}
+
+/**
+ * Converte formatações Markdown comuns para o padrão suportado pelo WhatsApp
+ */
+function formatForWhatsApp(text: string): string {
+  if (!text) return "";
+  
+  return text
+    // Substituir **negrito** por *negrito*
+    .replace(/\*\*(.*?)\*\*/g, "*$1*")
+    // Substituir __itálico__ por _itálico_
+    .replace(/__(.*?)__/g, "_$1_")
+    // Substituir ~~riscado~~ por ~riscado~
+    .replace(/~~(.*?)~~/g, "~$1~")
+    // Remover cabeçalhos (# Título)
+    .replace(/^#+\s+(.*)$/gm, "*$1*")
+    // Converter links markdown [nome](url) para apenas URL
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$2")
+    // Garantir que não existam triplos asteriscos residuais
+    .replace(/\*\*\*/g, "*");
 }
 
 async function callAI(
@@ -533,7 +494,7 @@ async function matchSupervisorReplyWithQuery(supervisorAnswer: string, pendingQu
 
   try {
     const queryList = pendingQueries.map((q, i) => `ID: ${i} | Dúvida: "${q.query_text}" | Cliente: ${q.atende_ai_conversations?.contact_name || "Desconhecido"}`).join("\n");
-    
+
     const systemPrompt = `Você é um assistente de triagem de mensagens.
 O supervisor de uma empresa enviou uma resposta via WhatsApp, mas ele não citou qual dúvida estava respondendo.
 Sua missão é identificar qual das dúvidas pendentes abaixo mais se encaixa com a resposta dele.
@@ -567,7 +528,7 @@ REGRAS:
     if (res.ok) {
       const data = await res.json();
       const result = data.choices?.[0]?.message?.content?.trim();
-      
+
       if (result && result !== "NENHUMA") {
         const index = parseInt(result);
         if (!isNaN(index) && pendingQueries[index]) {
@@ -606,7 +567,7 @@ serve(async (req: Request) => {
 
     const { data: atendeInstance, error: instanceErr } = await sb
       .from("atende_ai_instances")
-      .select("*, organizations(name)")
+      .select("*")
       .or(`evolution_webhook_secret.eq.${secret},id.eq.${secret},evolution_instance_id.eq.${secret}`)
       .maybeSingle();
 
@@ -619,7 +580,7 @@ serve(async (req: Request) => {
         .select("*")
         .or(`uazapi_webhook_secret.eq.${secret},evolution_webhook_secret.eq.${secret}`)
         .maybeSingle();
-      
+
       if (legacyInstance) {
         instance = legacyInstance;
         isLegacy = true;
@@ -642,133 +603,155 @@ serve(async (req: Request) => {
 
     console.log(`Webhook: Instância "${instance.name}" encontrada. Evento: ${body.event}`);
 
-    // Normalizar evento
+    // O event name vem no campo "event" conforme documentação Evolution Go
+    // Eventos padrão: QRCODE, CONNECTION, MESSAGE, SEND_MESSAGE, MESSAGES_SET, etc.
+    // Normalizar para uppercase para lidar com variações
     const rawEvent = (body.event as string) || "";
     const event = rawEvent.toUpperCase().replace(/[.\-_]/g, "_");
     console.log(`[Webhook] Evento recebido: "${rawEvent}" (normalizado: "${event}") p/ instância: ${instance.id}`);
 
-    // ─── INSTANCE LIFECYCLE EVENTS ───
-    const isConnectionEvent = [
-      "QRCODE", "QRCODE_UPDATED", 
-      "CONNECTION", "CONNECTION_UPDATE", "CONNECTED", 
-      "PAIRSUCCESS", "OFFLINE_SYNC_COMPLETED", "OFFLINESYNCCOMPLETED",
-      "LOGGEDOUT", "DISCONNECTED", "LOGOUT"
-    ].includes(event);
+    // ─── QRCODE: salvar no banco para o frontend fazer polling ───
+    if (event === "QRCODE" || event === "QRCODE_UPDATED") {
+      const qrBase64 = body.data?.qrcode || body.data?.base64 || body.data?.code || null;
+      if (qrBase64) {
+        await sb
+          .from("atende_ai_instances")
+          .update({ qr_code_base64: qrBase64 })
+          .eq("id", instance.id);
 
-    if (isConnectionEvent) {
+        await logToDb(sb, instance.id, "qrcode_updated", "Novo QR Code gerado pelo servidor.");
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }
+
+    // ─── CONNECTION: mudança de estado da conexão ──────────
+    // Evolution Go envia event "CONNECTION" com data.status ("open" | "close" | "connecting")
+    if (event === "CONNECTION" || event === "CONNECTION_UPDATE" || event === "CONNECTED" || event === "PAIRSUCCESS") {
       const data = body.data || {};
       const status = (data.status || data.state || data.connectionStatus || "").toString().toLowerCase();
 
-      // Sucesso na conexão
-      const isActuallyConnected = 
-        event === "CONNECTED" || 
-        event === "PAIRSUCCESS" || 
-        event === "OFFLINE_SYNC_COMPLETED" || 
-        event === "OFFLINESYNCCOMPLETED" ||
-        (event === "CONNECTION" && (status === "open" || status === "connected"));
-
-      // Desconexão
-      const isActuallyDisconnected = 
-        event === "LOGGEDOUT" || 
-        event === "DISCONNECTED" || 
-        event === "LOGOUT" ||
-        (event === "CONNECTION" && (status === "close" || status === "disconnected"));
-
-      // Novo QR Code
-      const isQRCode = event === "QRCODE" || event === "QRCODE_UPDATED";
+      // Evolution Go docs e testes mostram que "open" ou "connected" indicam sucesso
+      const isActuallyConnected = status === "open" || status === "connected" || event === "CONNECTED" || event === "PAIRSUCCESS";
 
       if (isActuallyConnected) {
-        console.log(`[Webhook] Conexão confirmada: ${instance.id} (Evento: ${rawEvent}, Status: ${status})`);
-        
-        // ─── Extrair Número e Nome do Proprietário ───
-        const jid = data.jid || data.ID || data.owner || data.instance?.owner || null;
-        const number = jid ? normalizePhone(jid.toString()) : (instance.connected_number || null);
-        const pushName = data.pushName || data.instance?.pushName || data.profileName || null;
-        
-        console.log(`[Webhook] Info Capturada: Número: ${number}, Nome: ${pushName}`);
+        console.log(`[Webhook] Conexão confirmada para: ${instance.id} (Evento: ${rawEvent}, Status: ${status})`);
+        const jid = data.jid || data.owner || data.instance?.owner || data.ownerJid || null;
+        const number = jid ? normalizePhone(jid.toString()) : null;
 
-        const profilePic = await fetchProfilePicture(number, instance.instance_api_key || EVOLUTION_GO_API_KEY);
+        // Extrair nome de perfil de várias fontes possíveis (Evolution Go variações)
+        const profileName = data.Name || data.name || data.pushName ||
+          data.instance?.instanceName || data.instance?.name ||
+          data.instance?.pushName || null;
 
-        // Atualizar dados da instância
-        const { error: updateError } = await sb.from("atende_ai_instances").update({
+        const updates: any = {
           whatsapp_connected: true,
           status: "active",
           qr_code_base64: null,
-          connected_number: number,
-          profile_picture: profilePic || instance.profile_picture,
-          // Se o nome da empresa estiver vazio, usar o PushName do WhatsApp como inicial
-          company_name: instance.company_name || pushName,
           updated_at: new Date().toISOString()
-        }).eq("id", instance.id);
+        };
 
-        if (updateError) {
-          console.error(`[Webhook] Erro ao atualizar instância no CONNECTED:`, updateError);
-        }
+        if (number) updates.connected_number = number;
 
-        // ─── NOTIFICAÇÕES DE ATIVAÇÃO ───
-        // Só enviar se a conta não estava marcada como notificada
-        if (number && !instance.welcome_notified) {
-          const orgName = (instance as any).organizations?.name || "sua Agência";
-          const welcomeMsg = `🤖 *Atende AI: Conexão Ativada!*\n\nOlá! Este número foi conectado com sucesso ao sistema *Atende AI* da *Qualify* através da *${orgName}*.\n\nA partir de agora, suas mensagens serão auxiliadas por um Agente de Inteligência Artificial para agilizar o atendimento e garantir que nenhum cliente seu fique sem resposta.\n\nPara pausar o atendimento automático, basta você mesmo responder a um cliente no chat.\n\nEm caso de dúvida pode perguntar por aqui mesmo, ou entre em contato com sua Agência ou Departamento de Marketing.\n\n---\n✨ *Qualify*\n🌐 https://qualify.marketing/`;
-          
-          console.log(`[Webhook] Enviando notificação de ativação (via Camila) para ${number}...`);
-          // Sempre enviado pela Camila conforme solicitação
-          const sent = await sendTextMessage(instance.id, "Camila", number, welcomeMsg, "pgpxEqPzStaQ", sb, 2000);
-
-          if (sent) {
-            // Marcar como notificado no banco apenas após envio com sucesso ou tentativa
-            await sb.from("atende_ai_instances").update({
-              welcome_notified: true
-            }).eq("id", instance.id);
-          }
-
-          // ─── NOTIFICAÇÃO DO SUPERVISOR (Apenas na primeira conexão) ───
-          if (instance.supervisor_phone) {
-            const supervisorMsg = `🛡️ *Atende AI: Onboarding de Supervisor*\n\nOlá! Sua conta acaba de ser vinculada como *Supervisor Especialista* para o Agente de IA: *${instance.name}*.\n\n*O que isso significa?*\nVocê é a "mente especialista" por trás deste agente. Sempre que ele receber uma pergunta sobre algo que não está no manual ou catálogo dele, ele não inventará respostas. Em vez disso, ele enviará a dúvida aqui para você.\n\n*Como você deve agir?*\n\n1. **Para Responder ao Cliente:** Use a função **Responder (Citar/Reply)** do WhatsApp na mensagem da dúvida. Digite sua resposta e a IA cuidará de repassá-la ao cliente de forma educada.\n2. **Sem Citar:** Se você apenas digitar a resposta sem citar, eu usarei inteligência artificial para tentar descobrir a qual cliente você está se referindo entre as últimas 5 dúvidas enviadas.\n3. **Privacidade:** O cliente nunca saberá que você interveio. Para ele, o atendimento continua sendo fluido e profissional.\n\nEstamos aqui para garantir que nenhum cliente seu fique sem resposta! ✨\n\n---\n✨ *Qualify*\n🌐 https://qualify.marketing/`;
-            
-            console.log(`[Webhook] Enviando onboarding para supervisor ${instance.supervisor_phone}...`);
-            await sendTextMessage(instance.id, instance.evolution_instance_id, instance.supervisor_phone, supervisorMsg, instance.instance_api_key || EVOLUTION_GO_API_KEY, sb, 3000);
+        // Atualizar nome se não tivermos um nome amigável definido (ou se for apenas um número/placeholder)
+        if (profileName) {
+          updates.company_name = profileName;
+          if (!instance.name || instance.name.includes("+") || instance.name === "Novo Agente") {
+            updates.name = profileName;
           }
         }
 
-        await logToDb(sb, instance.id, "connected", `Instância ativa via evento ${rawEvent}. Número: ${number}, Nome: ${pushName}`);
+        await sb
+          .from("atende_ai_instances")
+          .update(updates)
+          .eq("id", instance.id);
+
+        await logToDb(sb, instance.id, "connected", `Conexão estabelecida com sucesso. Status: ${status}`);
+
+        // Enviar notificação de sucesso via "Camila"
+        if (number) {
+          const camilaToken = "dPBGy58uk7Q6zfhF3qnXRcz57nLPrNan";
+          const instName = updates.name || updates.company_name || instance.name || "Sua Conta";
+
+          // Buscar nome da agência
+          let agencyName = "Qualify";
+          if (instance.organization_id) {
+            const { data: orgData } = await sb.from("organizations").select("name").eq("id", instance.organization_id).maybeSingle();
+            if (orgData && orgData.name) {
+              agencyName = orgData.name;
+            }
+          }
+
+          const welcomeMsg = `🎉 *Conexão realizada com sucesso!*\n\nOlá! A instância *${instName}* foi conectada à plataforma Qualify pela *${agencyName}* e já está ativa neste número.\n\nO seu Agente de IA já pode responder mensagens, automatizar atendimentos e auxiliar nas operações configuradas pela sua equipa.\n\n⚙️ Sempre que um atendente responder manualmente uma conversa, a IA será pausada temporariamente naquela conversa e retomará automaticamente após o tempo definido na configuração do agente.\n\n🤝 Para ajustes, alterações ou suporte, entre em contacto com a agência ou empresa responsável pela configuração deste assistente.\n\n🌐 Qualify — Automação inteligente para atendimento e vendas.\n🔗 https://qualify.marketing\n\n[NOREPLY]`;
+
+          console.log(`[Webhook] Enviando notificação de sucesso via Camila para o número: ${number} (Agência: ${agencyName})`);
+          await sendTextMessage(
+            instance.id,
+            "Camila (Sistema)",
+            number,
+            welcomeMsg,
+            camilaToken,
+            sb,
+            1500
+          );
+        }
+
         return new Response(JSON.stringify({ ok: true, status: "connected" }), { status: 200 });
       }
 
-      if (isActuallyDisconnected) {
-        console.log(`[Webhook] Desconexão: ${instance.id} (Evento: ${rawEvent}, Status: ${status})`);
-        await sb.from("atende_ai_instances").update({
-          whatsapp_connected: false,
-          status: "inactive",
-          qr_code_base64: null,
-          connected_number: null,
-          welcome_notified: false
-        }).eq("id", instance.id);
+      if (status === "close") {
+        console.log(`[Webhook] Desconexão detectada para: ${instance.id} (Evento: ${rawEvent})`);
+        await sb
+          .from("atende_ai_instances")
+          .update({
+            whatsapp_connected: false,
+            status: "inactive",
+            connected_number: null,
+            qr_code_base64: null,
+          })
+          .eq("id", instance.id);
 
-        await logToDb(sb, instance.id, "disconnected", `Instância desconectada via evento ${rawEvent}.`);
+        await logToDb(sb, instance.id, "disconnected", `Instância desconectada. Status: ${status}`);
         return new Response(JSON.stringify({ ok: true, status: "disconnected" }), { status: 200 });
       }
 
-          connected_number: normalizePhone(jid),
-          qr_code_base64: null // Limpar QR após conectar
-        })
-        .eq("evolution_instance_id", instance.evolution_instance_id);
-      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      // "connecting" ou outro estado — ignorar
+      return new Response(JSON.stringify({ ok: true, status }), { status: 200 });
     }
 
-    if (event === "LOGGEDOUT") {
-      console.log(`[Webhook] Instância DESCONECTADA: ${instance.evolution_instance_id}`);
-      await sb.from("atende_ai_instances")
-        .update({ 
-          status: "inactive",
+    // ─── LOGGEDOUT / DISCONNECTED: desconexão explícita ───
+    if (event === "LOGGEDOUT" || event === "DISCONNECTED") {
+      console.log(`[Webhook] Logout/Desconexão para: ${instance.id} (Evento: ${rawEvent})`);
+      await sb
+        .from("atende_ai_instances")
+        .update({
           whatsapp_connected: false,
-          qr_code_base64: null
+          status: "inactive",
+          connected_number: null,
+          qr_code_base64: null,
         })
-        .eq("evolution_instance_id", instance.evolution_instance_id);
+        .eq("id", instance.id);
+
+      await logToDb(sb, instance.id, "disconnected", `Logout/Desconexão explícita recebida. Evento: ${event}`);
+      return new Response(JSON.stringify({ ok: true, status: "disconnected" }), { status: 200 });
+    }
+
+    // ─── OFFLINE_SYNC_COMPLETED: sincronização finalizada ────────
+    if (event === "OFFLINE_SYNC_COMPLETED" || event === "OFFLINESYNCCOMPLETED") {
+      await sb
+        .from("atende_ai_instances")
+        .update({
+          whatsapp_connected: true,
+          status: "active",
+          qr_code_base64: null,
+        })
+        .eq("id", instance.id);
+
+      await logToDb(sb, instance.id, "connected", "Sincronização offline completada. Instância ativa.");
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
 
-    // Apenas mensagens recebidas
+    // ─── MESSAGE: processar e responder com IA ─────────────────
+    // Evolution Go: event "MESSAGE" com data.key (remoteJid, fromMe, id) e data.message
     if (event === "MESSAGE" || event === "MESSAGES_UPSERT") {
       // ─── Marcar como lida se configurado ───
       if (instance.mark_as_read) {
@@ -804,15 +787,6 @@ serve(async (req: Request) => {
 
       if (!chatJid) {
         return new Response(JSON.stringify({ ok: true, skipped: "no_chat_jid" }), { status: 200 });
-      }
-
-      const phone = normalizePhone(chatJid);
-
-      // ─── EVITAR LOOP INFINITO COM CONTAS DE SERVIÇO ───
-      // Se a mensagem vier da Camila ou de outros números de serviço conhecidos, ignoramos
-      if (phone === "258847969224") {
-        console.log(`[Webhook] Mensagem de conta de serviço (Camila) ignorada para evitar loop.`);
-        return new Response(JSON.stringify({ ok: true, skipped: "service_account_camila" }), { status: 200 });
       }
 
       // ─── SUPERVISOR RESPONSE HANDLER ───
@@ -868,22 +842,11 @@ serve(async (req: Request) => {
 
           if (supervisorAnswer) {
             console.log(`[Supervisor] Repassando resposta para o cliente ${clientPhone}: "${supervisorAnswer}"`);
-            
-            const formattedAnswer = formatToWhatsApp(supervisorAnswer);
-            const relayPrefix = "Olá! Consegui confirmar aqui com meu colega:";
-            
-            if (instance.split_messages) {
-              await smartSendMessage(instance.id, instance.evolution_instance_id, clientPhone, relayPrefix, instance.instance_api_key || EVOLUTION_GO_API_KEY, sb, 1000);
-              const chunks = splitMessageIntoChunks(formattedAnswer);
-              for (const chunk of chunks) {
-                const typingDelay = Math.min(chunk.length * 50, 5000); // 50ms por char, max 5s
-                await smartSendMessage(instance.id, instance.evolution_instance_id, clientPhone, chunk, instance.instance_api_key || EVOLUTION_GO_API_KEY, sb, typingDelay);
-              }
-            } else {
-              const relayMsg = `${relayPrefix}\n\n${formattedAnswer}`;
-              await smartSendMessage(instance.id, instance.evolution_instance_id, clientPhone, relayMsg, instance.instance_api_key || EVOLUTION_GO_API_KEY, sb, 1000);
-            }
-            
+
+            // Enviar resposta ao cliente (como se fosse o bot ou um colega)
+            const relayMsg = `Olá! Consegui confirmar aqui com meu colega:\n\n${supervisorAnswer}`;
+            await smartSendMessage(instance.id, instance.evolution_instance_id, clientPhone, relayMsg, instance.instance_api_key || EVOLUTION_GO_API_KEY, sb, 1000);
+
             // Guardar mensagem no histórico da conversa
             await sb.from("atende_ai_messages").insert({
               conversation_id: query.conversation_id,
@@ -917,11 +880,10 @@ serve(async (req: Request) => {
         if (existingConv) {
           const pauseMinutes = instance.human_pause_duration || 60;
           const pausedUntil = new Date(Date.now() + pauseMinutes * 60 * 1000).toISOString();
-          
-          // Se o humano/bot mandou mensagem, automaticamente consideramos a conversa como verificada/autorizada
+
           await sb
             .from("atende_ai_conversations")
-            .update({ 
+            .update({
               paused_until: pausedUntil,
               waiting_human: false
             })
@@ -953,7 +915,6 @@ serve(async (req: Request) => {
         return new Response(JSON.stringify({ ok: true, status: "paused_by_human_intervention" }), { status: 200 });
       }
 
-
       // Ignorar grupos
       if (isGroup) {
         return new Response(JSON.stringify({ ok: true, skipped: "group" }), { status: 200 });
@@ -983,6 +944,12 @@ serve(async (req: Request) => {
         else if (messageType === "video") text = "[Vídeo recebido]";
         else if (messageType === "document") text = "[Documento recebido]";
         else return new Response(JSON.stringify({ ok: true, skipped: "no_text" }), { status: 200 });
+      }
+
+      // IGNORAR mensagens de sistema (prevenção de loops entre IAs)
+      if (text.includes("[NOREPLY]")) {
+        console.log(`[Webhook] Ignorando mensagem de sistema detectada: ${messageId}`);
+        return new Response(JSON.stringify({ ok: true, skipped: "system_message_noreply" }), { status: 200 });
       }
 
       // Deduplicação por messageId
@@ -1045,9 +1012,6 @@ serve(async (req: Request) => {
           return new Response(JSON.stringify({ ok: true, skipped: "paused_by_human", message_saved: true }), { status: 200 });
         }
       } else {
-        // Fetch profile pic for new conversation
-        const profilePic = await fetchProfilePicture(phone, instance.instance_api_key || EVOLUTION_GO_API_KEY);
-
         const { data: newConv } = await sb
           .from("atende_ai_conversations")
           .insert({
@@ -1055,7 +1019,6 @@ serve(async (req: Request) => {
             organization_id: instance.organization_id,
             contact_name: senderName,
             contact_phone: phone,
-            profile_picture_url: profilePic,
             channel: "whatsapp",
             status: "open",
           })
@@ -1069,21 +1032,6 @@ serve(async (req: Request) => {
           p_conversations: 1,
           p_messages: 0,
         });
-      }
-
-      // Se a conversa já existia, atualizar nome e avatar se necessário
-      if (existingConv) {
-        const updates: any = { last_message_at: new Date().toISOString() };
-        if (senderName && senderName !== phone) updates.contact_name = senderName;
-        
-        // Buscar avatar se não tiver
-        const { data: convData } = await sb.from("atende_ai_conversations").select("profile_picture_url").eq("id", conversationId).single();
-        if (!convData?.profile_picture_url) {
-          const profilePic = await fetchProfilePicture(phone, instance.instance_api_key || EVOLUTION_GO_API_KEY);
-          if (profilePic) updates.profile_picture_url = profilePic;
-        }
-
-        await sb.from("atende_ai_conversations").update(updates).eq("id", conversationId);
       }
 
       // Guardar mensagem do utilizador
@@ -1179,10 +1127,10 @@ serve(async (req: Request) => {
           "Vou confirmar isso aqui para você, aguarde só um segundinho..."
         ];
         const ackMessage = ackPool[Math.floor(Math.random() * ackPool.length)];
-        
+
         console.log(`[Webhook] Enviando confirmação rápida: "${ackMessage}"`);
         ackSent = await sendTextMessage(instance.id, instanceName, phone, ackMessage, instanceApiKey, sb, 500);
-        
+
         // Adicionar ao histórico para a IA saber que já iniciou o atendimento
         if (ackSent) {
           history.push({ role: "assistant", content: ackMessage });
@@ -1195,32 +1143,34 @@ serve(async (req: Request) => {
       // Chamar IA
       const systemPrompt = buildSystemPrompt(instance);
       console.log(`[Processing] Instance: ${instance.name} (${instance.id}), Prompt Length: ${systemPrompt.length}`);
-      
+
       const aiStartTime = Date.now();
       const aiReply = await callAI(systemPrompt, history, text, instance);
       const aiDuration = Date.now() - aiStartTime;
-      
+
       console.log(`[AI Response] Generated in ${aiDuration}ms for instance ${instance.name}`);
 
       if (!aiReply) {
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
 
-      // Detectar se a IA solicitou ajuda do supervisor
-      let processedReply = formatToWhatsApp(aiReply);
-      const supervisorMatch = aiReply.match(/\[ASK_SUPERVISOR:\s*(.*?)\]/i);
+      // Aplicar formatação WhatsApp
+      let processedReply = formatForWhatsApp(aiReply);
       
+      // Detectar se a IA solicitou ajuda do supervisor
+      const supervisorMatch = processedReply.match(/\[ASK_SUPERVISOR:\s*(.*?)\]/i);
+
       if (supervisorMatch && instance.supervisor_phone) {
         const queryText = supervisorMatch[1];
         processedReply = aiReply.replace(/\[ASK_SUPERVISOR:.*?\]/gi, "").trim();
-        
+
         console.log(`[Supervisor] Solicitando ajuda para: "${queryText}"`);
-        
+
         // Notificar supervisor
         const supervisorMsg = `🚨 *DÚVIDA DO AGENTE (${instance.name})*\n\n*Cliente:* ${senderName} (${phone})\n*Dúvida:* ${queryText}\n\n*Responda a esta mensagem* para que eu possa repassar ao cliente.`;
-        
+
         const supervisorMessageId = await sendTextMessage(instance.id, instanceName, instance.supervisor_phone, supervisorMsg, instanceApiKey, sb, 500);
-        
+
         if (supervisorMessageId) {
           // Guardar na tabela de queries para mapear a resposta depois
           await sb.from("atende_ai_supervisor_queries").insert({
@@ -1251,47 +1201,45 @@ serve(async (req: Request) => {
         p_messages: 1,
       });
 
-      // Enviar resposta via Evolution Go (dividida ou inteira)
+      // Enviar resposta via Evolution Go (com token específico da instância)
       if (instanceName) {
-        const chunks = instance.split_messages ? splitMessageIntoChunks(processedReply) : [processedReply];
-        const wpm = instance.typing_speed_wpm || 60;
-        
-        const getTypingDelay = (txt: string) => {
-          const wordCount = txt.split(/\s+/).length;
-          const baseMs = (wordCount / wpm) * 60 * 1000;
-          return Math.min(Math.max(baseMs, 1500), 12000); // 1.5s a 12s
-        };
+        // Usar o delay nativo da API para mostrar "digitando"
+        const delayMs = instance.show_typing ? (instance.typing_delay_seconds || 2) * 1000 : 0;
 
-        for (let i = 0; i < chunks.length; i++) {
-          const chunk = chunks[i];
-          const isLast = i === chunks.length - 1;
-          
-          // Simular presença de digitação
-          await sendPresence(phone, "composing", instance.instance_api_key || EVOLUTION_GO_API_KEY);
-          
-          // Esperar tempo de digitação
-          const typingDelay = i === 0 
-            ? (instance.show_typing ? (instance.typing_delay_seconds || 2) * 1000 : 1500)
-            : getTypingDelay(chunk);
-          
-          await new Promise(r => setTimeout(r, typingDelay));
+        if (instance.split_messages) {
+          // Dividir em blocos por parágrafos
+          const chunks = processedReply.split(/\n\n+/).filter(c => c.trim().length > 0);
+          console.log(`[Webhook] Enviando resposta em ${chunks.length} blocos para ${phone}`);
 
-          const replySentId = await smartSendMessage(
-            instance.id,
-            instanceName,
-            phone,
-            chunk,
-            instance.instance_api_key || EVOLUTION_GO_API_KEY,
-            sb,
-            0 // Delay controlado aqui
-          );
+          for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i].trim();
+            
+            // Calcular delay baseado no tamanho do texto e WPM
+            // WPM padrão 60. 5 caracteres por palavra.
+            const wpm = instance.typing_speed_wpm || 60;
+            const words = chunk.length / 5;
+            const typingDurationSeconds = (words / wpm) * 60;
+            
+            // Para o primeiro bloco, usamos o delay configurado (ou o calculado se for maior)
+            // Para os blocos seguintes, usamos o calculado (mínimo 2s, máximo 10s para não travar o webhook)
+            let currentDelayMs = Math.max(2000, Math.min(10000, typingDurationSeconds * 1000));
+            
+            if (i === 0) {
+              currentDelayMs = Math.max(delayMs, currentDelayMs);
+            }
 
-          if (replySentId && isLast) {
-            await reactToMessage(typeof replySentId === 'string' ? replySentId : "", phone, instance.instance_api_key || EVOLUTION_GO_API_KEY, chunk);
+            console.log(`[Webhook] Enviando bloco ${i+1}/${chunks.length} com delay de ${currentDelayMs.toFixed(0)}ms (WPM: ${wpm})`);
+            await smartSendMessage(instance.id, instanceName, phone, chunk, instanceApiKey, sb, Math.round(currentDelayMs));
+            
+            // Pequena pausa entre envios para o webhook não processar tudo de uma vez
+            if (i < chunks.length - 1) {
+               await new Promise(r => setTimeout(r, 1000));
+            }
           }
+        } else {
+          console.log(`[Webhook] Enviando resposta única para ${phone} com delay nativo de ${delayMs}ms`);
+          await smartSendMessage(instance.id, instanceName, phone, processedReply, instanceApiKey, sb, delayMs);
         }
-        
-        await sendPresence(phone, "paused", instance.instance_api_key || EVOLUTION_GO_API_KEY);
       }
 
       return new Response(JSON.stringify({ ok: true }), { status: 200 });

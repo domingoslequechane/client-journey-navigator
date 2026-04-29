@@ -321,38 +321,6 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
     },
   });
 
-  // ─── Toggle Verification ───
-  const toggleVerification = useMutation({
-    mutationFn: async ({ conversationId, isVerified }: { conversationId: string; isVerified: boolean }) => {
-      if (!conversationId || !orgId) throw new Error('Dados ausentes');
-
-      const { data, error } = await (supabase
-        .from('atende_ai_conversations' as any)
-        .update({ is_verified: isVerified })
-        .eq('id', conversationId)
-        .select()
-        .single() as any);
-
-      if (error) throw error;
-      return data as AtendeAIConversation;
-    },
-    onSuccess: (updatedConv) => {
-      queryClient.setQueryData<AtendeAIConversation[]>(
-        ['atende-ai-conversations', instanceId],
-        (prev) => prev ? prev.map(c => c.id === updatedConv.id ? { ...c, ...updatedConv } : c) : []
-      );
-      
-      toast.success(updatedConv.is_verified ? 'Conversa verificada' : 'Verificação removida', {
-        description: updatedConv.is_verified ? 'A Camila agora pode responder a este contacto.' : 'A Camila deixará de responder automaticamente.'
-      });
-    },
-    onError: (err: any) => {
-      toast.error('Erro ao atualizar verificação', {
-        description: err.message
-      });
-    },
-  });
-
   // ─── Realtime Updates from Database ───
   useEffect(() => {
     if (!instanceId) return;
@@ -393,7 +361,6 @@ export function useAtendeAIDetail(instanceId: string | undefined) {
     instanceAction,
     sendMessage,
     clearHistory,
-    toggleVerification,
     refetchInstance: instanceQuery.refetch,
     refetchConversations: conversationsQuery.refetch,
   };
@@ -512,7 +479,22 @@ export function useAtendeAIConnectionPoller(
       toast.success('Conexão estabelecida!', { description: 'O seu WhatsApp foi vinculado com sucesso.' });
       if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
 
-      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+      const num = overrides?.connected_number ?? instance.connected_number;
+      if (num) {
+        (async () => {
+          try {
+            await supabase.functions.invoke('whatsapp-agent-instance', {
+              body: {
+                instance_id: evolutionInstanceId,
+                action: 'send-text',
+                to: num,
+                text: `Olá! Aqui é a *Quali*, da equipa *Qualify*.\n\nA sua conta WhatsApp foi *conectada com sucesso* e já está a processar mensagens em tempo real.\n\nSe tiver alguma dúvida, estamos aqui! Bom trabalho!\n\n_- Quali da Qualify_`,
+                organization_id: orgId,
+              },
+            });
+          } catch (e) { console.warn('[Poller] boas-vindas erro:', e); }
+        })();
+      }
     };
 
     const poll = async () => {
