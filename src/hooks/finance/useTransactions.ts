@@ -92,6 +92,18 @@ export function useTransactions(filters?: TransactionFilters) {
   const createTransaction = async (data: TransactionFormData): Promise<Transaction | null> => {
     if (!organizationId || !user) return null;
 
+    if (typeof data.amount !== 'number' || isNaN(data.amount) || data.amount <= 0) {
+      throw new Error('Valor inválido. O valor deve ser um número positivo.');
+    }
+
+    if (data.amount > 999999999) {
+      throw new Error('Valor excede o limite permitido');
+    }
+
+    if (!data.type || !['income', 'expense'].includes(data.type)) {
+      throw new Error('Tipo de transação inválido');
+    }
+
     try {
       const { data: newTransaction, error } = await supabase
         .from('financial_transactions')
